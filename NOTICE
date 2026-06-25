@@ -1,0 +1,24 @@
+This project was bootstrapped from the Decky Plugin Template and uses the
+standard Decky plugin build/runtime scaffolding.
+
+    Decky Plugin Template
+    Copyright (c) 2022-2024, Steam Deck Homebrew
+    Licensed under the BSD 3-Clause License.
+    https://github.com/SteamDeckHomebrew/decky-plugin-template
+
+Library context menu integration
+--------------------------------
+src/contextMenuPatch.tsx adds a single entry to the Steam library context menu.
+The technique it uses to resolve and patch Steam's internal LibraryContextMenu
+class is derived from the decky-steamgriddb plugin by the SteamGridDB project,
+which is licensed under the GNU General Public License v3.
+
+    decky-steamgriddb
+    Copyright (c) the SteamGridDB / decky-steamgriddb contributors
+    Licensed under the GNU General Public License v3.0
+    https://github.com/SteamGridDB/decky-steamgriddb
+
+Because that file is a derivative work, the entire Playhub Metadata project is
+distributed under the GNU General Public License v3.0 or later, as stated in the
+accompanying LICENSE file. The BSD 3-Clause attribution above is retained for
+the Decky Plugin Template; the GPL terms govern this project as a whole.

@@ -1,0 +1,126 @@
+import { callable } from "@decky/api";
+import {
+  AchievementSettings,
+  AchievementSource,
+  AchievementsResponse,
+  GameOption,
+  MetadataData,
+  MetadataSearchResult,
+  RetroAchievementsLoginResult,
+  RetroAchievementsGameResult,
+  RetroAchievementsSettings,
+  ScanProgress,
+  XboxSettings,
+  XboxTitleResult,
+} from "./types";
+
+export const getAllMetadata = callable<[], Record<string, MetadataData>>(
+  "get_all_metadata"
+);
+export const getMetadata = callable<[appId: number], MetadataData | null>(
+  "get_metadata"
+);
+export const saveMetadata = callable<
+  [appId: number, metadata: MetadataData],
+  MetadataData
+>("save_metadata");
+export const removeMetadata = callable<
+  [appId: number],
+  Record<string, MetadataData>
+>("remove_metadata");
+export const searchMetadata = callable<
+  [query: string, limit?: number],
+  MetadataSearchResult[]
+>("search_metadata");
+export const fetchMetadata = callable<[slugOrUrl: string], MetadataData | null>(
+  "fetch_metadata"
+);
+export const autoFetchMetadata = callable<
+  [appId: number, title: string],
+  MetadataData | null
+>("auto_fetch_metadata");
+export const enrichCommunityMedia = callable<
+  [appId: number, title?: string, sourceUrl?: string],
+  MetadataData | null
+>("enrich_community_media");
+export const startScanMissing = callable<
+  [games: GameOption[]],
+  ScanProgress
+>("start_scan_missing");
+export const getScanProgress = callable<[], ScanProgress>(
+  "get_scan_progress"
+);
+export const getLocalShortcuts = callable<[], GameOption[]>(
+  "get_local_shortcuts"
+);
+export const getAchievementSettings = callable<[], AchievementSettings>(
+  "get_achievement_settings"
+);
+export const getXboxSettings = callable<[], XboxSettings>("get_xbox_settings");
+export const setXboxSettings = callable<
+  [enabled: boolean, apiKey: string],
+  XboxSettings
+>("set_xbox_settings");
+export const loginTrueAchievements = callable<
+  [gamertag: string, password: string],
+  { ok: boolean; message: string; gamertag?: string }
+>("login_trueachievements");
+export const testOpenXblCredentials = callable<
+  [apiKey: string],
+  { ok: boolean; message: string; gamertag?: string; xuid?: string }
+>("test_openxbl_credentials");
+export const clearXboxAssociations = callable<[], XboxSettings>(
+  "clear_xbox_associations"
+);
+export const setXboxTitleId = callable<
+  [appId: number, titleId: string | number | null],
+  Record<string, string>
+>("set_xbox_title_id");
+export const setAchievementSource = callable<
+  [appId: number, source: AchievementSource],
+  Record<string, AchievementSource>
+>("set_achievement_source");
+export const setAchievementCachePolicy = callable<
+  [policy: string],
+  { policy: string }
+>("set_achievement_cache_policy");
+export const resolveXboxFromShortcut = callable<
+  [appId: number, title?: string, path?: string],
+  AchievementsResponse | null
+>("resolve_xbox_from_shortcut");
+export const searchXboxTitles = callable<
+  [query: string, limit?: number, appId?: number, includeCatalog?: boolean],
+  XboxTitleResult[]
+>("search_xbox_titles");
+export const getRetroAchievementsSettings = callable<
+  [],
+  RetroAchievementsSettings
+>("get_retroachievements_settings");
+export const setRetroAchievementsSettings = callable<
+  [enabled: boolean, username: string, apiKey: string],
+  RetroAchievementsSettings
+>("set_retroachievements_settings");
+export const testRetroAchievementsCredentials = callable<
+  [username?: string, apiKey?: string],
+  RetroAchievementsLoginResult
+>("test_retroachievements_credentials");
+export const setRetroAchievementsGameId = callable<
+  [appId: number, gameId: number | null],
+  Record<string, number>
+>("set_retroachievements_game_id");
+export const fetchAchievements = callable<
+  [appId: number],
+  AchievementsResponse | null
+>("fetch_achievements");
+export const syncTrueAchievementsProgress = callable<
+  [appId: number],
+  AchievementsResponse | null
+>("sync_trueachievements_progress");
+export const resolveRetroAchievementsFromPath = callable<
+  [appId: number, path: string, title?: string],
+  AchievementsResponse | null
+>("resolve_retroachievements_from_path");
+export const searchRetroAchievementsGames = callable<
+  [query: string, limit?: number, appId?: number],
+  RetroAchievementsGameResult[]
+>("search_retroachievements_games");

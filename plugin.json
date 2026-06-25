@@ -1,0 +1,20 @@
+{
+  "name": "Playhub Metadata",
+  "author": "ZazaMastro",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": [
+      "metadata",
+      "library",
+      "non-steam",
+      "achievements",
+      "openxbl",
+      "trueachievements",
+      "xbox"
+    ],
+    "description": "Add clean game metadata plus RetroAchievements and optional Xbox/OpenXBL achievements to non-Steam games in Steam Gaming Mode.",
+    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+  },
+  "version": "1.4.0"
+}
