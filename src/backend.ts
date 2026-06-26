@@ -50,6 +50,13 @@ export const startScanMissing = callable<
 export const getScanProgress = callable<[], ScanProgress>(
   "get_scan_progress"
 );
+export const startRefreshSteamActivities = callable<
+  [games: GameOption[]],
+  ScanProgress
+>("start_refresh_steam_activities");
+export const getActivityRefreshProgress = callable<[], ScanProgress>(
+  "get_activity_refresh_progress"
+);
 export const getLocalShortcuts = callable<[], GameOption[]>(
   "get_local_shortcuts"
 );

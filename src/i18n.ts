@@ -1,7 +1,10 @@
 const STRINGS = {
   en: {
     pluginName: "Playhub Metadata",
-    scanMissing: "Scan missing metadata",
+    scanMissing: "Scan metadata",
+    refreshActivities: "Refresh Activity",
+    refreshingActivities: "Refreshing Activity...",
+    activityRefreshComplete: "Activity refresh complete",
     scanning: "Scanning...",
     detected: "Detected non-Steam games",
     saved: "Metadata saved",
@@ -122,7 +125,10 @@ const STRINGS = {
   },
   it: {
     pluginName: "Playhub Metadata",
-    scanMissing: "Scansiona metadata mancanti",
+    scanMissing: "Scansiona metadata",
+    refreshActivities: "Aggiorna attività",
+    refreshingActivities: "Aggiornamento attività...",
+    activityRefreshComplete: "Aggiornamento attività completato",
     scanning: "Scansione...",
     detected: "Giochi non Steam rilevati",
     saved: "Metadata salvati",

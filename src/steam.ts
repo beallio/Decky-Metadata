@@ -368,6 +368,28 @@ const playhubCommunityId = (appId: number, index: number) =>
 const isPlayhubCommunityId = (value: unknown) =>
   typeof value === "string" && value.startsWith("90909");
 
+const PLAYHUB_COMMUNITY_YOUTUBE_ICON = "data:image/png;base64,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";
+const PLAYHUB_COMMUNITY_IGN_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAErpJREFUeJztnfl/E2Uex/dvkbK70nKI5T4FQQ6XSwQWBQERRVkRd1FxEUHkUBZc0UU8UEFEURABRVwvDkGuFSFN0jPpkaZpmzZtrjZn90mnhtJkZp65mpLv5/t6/8CrTOY5Zt4zzzPzzPP8wXRbHwDI8oeM5wCADAIBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASNNDBbDmj4i3traJh23ugoxnEmQBPVSA2p27JM5+Fp4vjmU8kyAL6KECtFis0gLEQyFz3/yM5xPc6vREAQpHjGuLxaUFYFG+5LGMZxXc6vREAZwvbZE9+1m4P9iX8axmN5b+g+2Lljk3bHZtf71m86sVj6+0DhmT8VzpS08RoGz2/LL7HxD+7f3+Rx4BwtVOYfvie6ZV/u1pU06eERmr3/Nh1OORwH/xkvZUCkeOdzy3tuHAQd/ps0FTQWuZPVTlCDmqdafyqdXy+emV61izLnj1WjwSSa321pJS146d5jzd2p/OjVsjtXVdYKk0HjxUOPwuo0+8zAtgf3BJ4NffWM3a5i8W/hJ2VPMIwKJw2Fi2vaXfoLZYLFReUf38i7pr0PDJZ9J5YN0V1TsvmTKTnfQs55zl1R6JKpLMku2vD7Xa7LL7ibjdVf9Yo0sN1+7YKZZKLBAoX/yooadfJgVgfnt/Ot0W72juW4eMZn+05I9I/kU27IseEXYVqqgU/tJiLSqb9VcdM2mQAJVPPBX87Tp/SfUKaQFqNr0SD6e56otF42eHC3r31VjDEgKwiLe2Fo2bbNxJmDEBHM+9EPX6kuWMNjYKfy9fupz/ANRs3ib8ynvqzI2/xmLuPXsL/thPl3zqLgBr6QWvF/CXUd+QEKBm63YVQjYd+5o1mbTUsLQALNhN0rjzMBMC5OQ1HjrSpZC+Mz8L/1v3xlsKav/rk8Kv3O/v7fJfgavXrINGas+tjgIU/Kl/w8cH49EofwF1DzEB7IuXxSMqM5a8DKlDVoDkxdEIulsAc+5A/8XLqYWsf3uPsAE7p/mrnrV8hF85Vj+f+r+sL6H97qmXAEV3TWIdO/6iGRRpBWBmhqudqvfJ+srFd09VXcOyArAw7oTsVgHY2R+8bkpbQseza4Vt2JVbSd3HC26/g/2qdNrstP8fcTdoOTZ6CWCbtzDq8Sgol2GRVgDXqzs07pb15SCAHL37Bi5dESuhfdEyYTOll6KiMRPb1bpTbINIbV3h8HEZFMC+8OGYP6CoUMZFWgFay2za92xf8DAEkMJz+Eux4oXKKzresPTKjYfDiuq9bM6Dwv5ZL0JsmxZrEbv5ZESAsplzY36/ohIZGqkCFI29R5c9h2zlrCkFAdLD6l2sbE3Hvjb3GyRslhgEoTAqn/x7Ryq9cl3bXhN7jtF48FD3C2AdPCpSV6+0RIZGqgASh0bxzv+5HgKkoXDk+JjPl7Zg9bvfNXV6kGy5Y1i4poa/xln3q3TG3M5pVa5Ylfb9JYvypcu7WYDAlV/5y9I9kSpA/bsfyP4q7OQ6KFGv15o/AgJ0xXf6bNpS1e9+L/URcuGwsS1FxXzV7SubNS81uYrHV7bFYqnbs4uxud/gbhPAte3fPKXoWiiPx3vqjPvDj+re3F375lu6Uzp9jtIChmtc7CLV8PGnPPmv37MXAtwE692mbZY0HT9hEnmJaOk/2P/LJZmjUu2UeMRZs+mVtL9ybX+9ewRgGscCCjq+rJdcu3NXyZSZBo1o0lLAVpudbcauHZGGRo6SxIon/kVRBrJcgOC166nlCVVUSV+MC/48gPUNxKqjxWwRxk1I0PzfH9IcnWCLReE9Wp0AEpnvGvF43a53LAOGGH0gVBdQEMDEPUo3+U6Tk2wWwDZ3QVt7Sz1YYGYV7dywqXzp46XT77cMGCr/81659e+8n6Z+T59ltwjZn5v7DCyZMsO+6BHHmhfce/b6L16OBYPs5zWbXtX3/EgVoGj0BM5nWeyaWnbffEMPgfYCJgVgd6fW4hKectkfeoQ/A9ksQMnkGSWTpqt7OibAnOncgmo8dKTg9gEq95aTVzR2Ytl9yobKqRCg4YDMT4RgbeuiUXcbWv+6FPCGAO3vNHiKFqqoZPdwzgxkswBisCaybf6iksnTeTZmndp4KMRqoW7X22Ldhpt2PnIcuwIVjb2HZ2NZFAuQkxdtlH/py25Hhg5y1LGAnQUwJcYdpn+k0SWq123kzECWC1DQu2/pjLnOjVs8h79k7ZBQlUM4m9vaR7pyDl22zVngeO4Fni2t+SNYEh37j0YjrtrA1WtNX33j2rHTvuBhFa/DlArA2ng850flilVG17xeBewiALuyJI+gRMR8fs7BiNkoQK9cdoF3f7g/eM0Ua5Ga3STa1KxxrE5nCvoMbLEWSiTHlGgtKWUqsvOP8x6tVACJF97J8J3+WeMQYh1RKgDDve9j2TKycO/dz5OBrBKgdNr9niPHIm43TwUJEXbWCB92aSUnz//LRf50Y4GA99SZikdXSJ+LSgXg6SaK9UPYxZUlZwT17+wpX/Jo2mesKgQw9x3EdYhjMZ5WblYJoO4Tp9biUu3PAZuOn1CRNAv7wqV6CcC6+2LvoW8UtrRMTLmy2fPVFYEz2Klc+pfZ2gVgVL/4Mk+K/nMXiAmgNgKXrqh/vJP4IGaf6qSln9kpEqBk6kzZ5FzbXhNLy2gB2hJv3PxdXlSpE4DdTFoKi3hSlJ29BgJ0RPPJ79S9B615ZbuWdHUUoPKJp+STe3BJBgVg4b9wUQcBbutje2AxT3LhKof0pQ0C3Aj3RweUpli1+vk2bR8Z6ihA9Xr5hoHE08/uEYBFYaf3D6oFYHh/PMWTnPOlzRCAN1zb/s2fHLu9xlvlH8lJh44CuLbK34usg0dlXADbvIW6CFA4egJP/ccCAYmhKxDgpuB83i9QOn1OLBDUmKKOAtRs2SabnMSp0H0CzF+kiwAm7t5Xw/5PIYB8uLbvVJqifdEy2Qcv0qFnE+iFDbLJFU+8N5sEMOflc330E4+XTJ0JAaSiYd8Bda+Hqv7+nJYZpnQUoOLRFbLJSUx1disKYOLTvi3R+b4MAUSj+cRJLVNZaZnXQEcBiifcK5tc3Zu7s0wAdtmSnc5eiIplT2S5AOpaI/6Ll1V/tJ7EvXe/iqTbbj4bNApgysmTXtiGRdjlEnvae6sK0D7vC0+64WqnMI1N1gpgHTrG+eLLwQIL13Foj5biEssdw3RIvVdus5JJtcLOmrqduyRa5GoEuK0PT9nF3j2b+w1mp6ZGHGvWyWZAdwEYzd9xzemd+j1GVgmQpGj0hMqV//AcPirdQ4rU1hYO020K7II/9fdfkBoOFPP7vT/8VL12A//Hh0oF4Pl2lkmiy1DttJRMnSWbASMEKBw5Pi458FGIWDBoHXrT0K/sFOCmqhl+l/3BJdXrNjZ+8nng6rWo19tRFz4/51DQyhVP1+7cxdNFNvcblBwQylojLYVFnqNf1Wz5V/nS5UXjpqg47ZQKYJv3kOzhZMHukwbVdqYEYNS/9wFP2Rs//bzzr7JfgFQsA4YUT5rGrhk8Gzs3bhG6Fp4vjvJ0lC13DmcngXXQKF2GHCv+IKZXLs8kIvFwmLX4jajbDApgzr0z4qqVTb0tHu88Ji+bBSh/eDnr+Fvu4PgCWIT6t/d0fsTpO3tO9dokBbcPYH21qtXKlnVQ8Ulk2k+ZUyPa7E2dpEQ7GRSAwdMDYRG48mvy8pTNApTee59QgLCr1n/xMruEu7a9VrH8ycKhHB8A5OQ1Hf0qtS4SU0JwfGqUWN9q8TLnS1vYAWbahMorhHnJq9cqm71MhQCWO0fEgi0850EsEKxa9Yy+dZ5ZAdhpHSww85S94rEnhZ9kswAM/4U0M/xE6t3WfKmT2NxnoP+8aHc2VFlVdNckFelGvb7kNIycqJsWpWE/1zRSQnh/OFU0eoJeFZ5hAdpXAOF5LxmucQnPvrNcgNKZc9NWh//8BbEGPbvAy441jzY2sj2LJVr/9ntpf+Vcv0lp/tUJYOk/JMozjdTvwTo53p9OV65YxZrRGis84wIwmr/9nqfUNVu3m7JeAJP4mheeI8dS+6nFd0/lnCGdNTPSTvfpXP9y2mWGQ/YKdmNRmnnVUyM6nl3LU4ouwUxgrbXA5f/5zp73nTmnAmHFQeno3P82QoDExHgcjcBYS0vRmIk8Xxjf2gKwNnGkoSFtwTxfHu98H7AOG6NsIYlotMv3JYlJEUU+Dyibu0BF5rVMjuvlezfU/SEsqmCcACbh6QVHJGYQk2svRZu9t7YAjIrH/iZWTv+lK8kpha1Dx/DUWue4Mb9ITl7DgYNiqdS99a66nGsRgPU3eJYc7eaIer2dl3Y0SAB2s2WtfF0yzO6Ht7wAJsm3JKxPnJjH6rb2BTLkxtJ0ieTdPGgSffiQ6G9wT1SmowAMdq2NuNPf/TIVjZ8dVlRAdQIwHM/8U5cM1+54IxsEYFdoib5R8tPp5LRWnCF83WfuP1hsg5DNbhk4XHW2tS+RVDJpulgLMCORXFPHaAESj0T1WBC2dFrXmSxuTQHa53wWWyvAsWadsI2yRSXicWHi0dJZ89L+P9NJ46RDuiySVzx+SshRraBchoX/wqUuDx4MFEA4LtoWAw/876qhk4h191CIxLznJ75NLaf794UVFEwszo5NmU34VXW6F5At1kLZWdS7RwCGJX+E7+fz/EUzItKuZ2qoAAxFQ3RTQ+lkxkrJxFigXrm1r/+ny4WBNdOF/6197Q3+2mk6erzjKKY8Sms++Z1F+Xowqch+aqNgpficPOeGTUo7OTpG5crVaQr4L5mVbDQKwNqfkdo6dRmu2/2e0WdjZgbDmRITbS/tPL1e1OcT7nT2hx7hryDnho75NnxnzyX/GI9EnetfNvXWZ6kV1seQXttdgQDtsG5x01ffqDgbNIZDZI14VsC0K0olQ6MAJmHuAuVLZTZ9862WifU5yZgApvZrQ8NHB5K3gsLhiQ8D2GWbv9WYfAkQ/r2FzUzQfdrxhv2fSORBqQACJVNner44Kq2WXhGpq7M9sFiqgJLfMGgXgFE6Y46iGWMbDhxU/eBOEZkUoONUmDy96cRJdtInv5MKlVdwVlNizHP7+Gf28+C164k9GNBhKujdt/Gzw2J5UCeAgHXwaMczz/vOnjfIhKinybV1u+zSgAV/7Nd46IjYTnQRoL2wozxHj8vmOVJXX7F8ZbedfpkXQKB4/JTiCR1fJzZ/81+eo5s8MIWjJyTeBhg84ThLwv3+Pt/5C4Fff+sMu5Br37k5L7901ryqp5+t3bnLc/hL7/c/+s/9og7vD6fY2Vyz+VXb3IWKLqJlsx9wf/CRP6WArMGmYzWWTJ7h3rM3zXPheNx/4VLVqmdUDFfRQk8RoDPVa9fzCNANPSRgFL1yWd+DXVPYTTuxVtCUmea+Kj/z0EhPFMCSP0K6WyaETXyWWQA46YkCMIK/pVlctXPEgsHUCTYAUEoPFUB2xvOGj0XnmgSAnx4qgLnf4JhfaqV1I76mBQTpoQIA0D1AAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAECa/wNL4ZWiPylAFAAAAABJRU5ErkJggg==";
+const PLAYHUB_COMMUNITY_RAWG_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGlQTFRFAAAABAQElJSU////9vb23NzcxcXFubm5s7OzZWVlEBAQCAgIjIyM/Pz86enpy8vLHh4e1tbWe3t7m5ub+fn5U1NTWVlZSEhIgYGBqampbW1t4+PjJSUlLCwsNjY2Ozs78PDwGBgY8/Pz0uSjuQAACCBJREFUeJztnXtbEzkUxk8oUJuWy4gWEBB3v/93WlYWlVsLYqcUKLPJgKurpT15cqZvMs37h/LocHL6ay4ntzOKFlwK7QBaCQDaAbQSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCYDv7xeqEHHk/zapqMLwxML8TSwJ1SJlZP/ILQKi9kDG7KxSvQ0UnaGAHzrXeflDe6hHt/bjz6cC+DcBkgFgZRBoysu/jeHOXS5kd6oCagK/a131LGGqsjIEDcCosXZZVrPKCggZgGkKWV8vXVv7lREIGQBl1NfNUb6+fF5dIwgawLNMTdg6qwpBDADM2KBapxVFRjEAyEYmSFAP1dSBGACQ2uybT9+4q8S2v4nqAXzX5qWdJMgOCVEBoHEZE4i2hagAqGJ1qLTsLCEmAJqaV5sXwnFhTACeNJY1Fx+At6eLXQOy/ptTSXvRATAxQfezpD1/E3NuAkbbn+Q6wigB7JwsOICsuBSzFSUAncuNhXECoOXVU6F4MEoAZiwsCqFOIEoAmZkdj4VC4igBmDZAq0L94PwA6Cn7HOV+iKPGMp1ACDWg3BFqjtwgSC2RzQ/A7uTHlLqlr2M7rE2rIpOKvXd6/CXND8B44g5X+W/2j03V6LuVK9MG5ghglr9b124f6N2x0+MvaJ41YLofhSp2zrX9mdUUdC4zKQwFQNkO2oOOopzdF7z9wnxwarH+JuQAGG92T1WLBSDr0/KIVfCMYv1NyDSB4vm40Z7D1zq5X3VTKAB+6PU9ezgcC+wXhgfAIbDa+8h98mWFBsB+o2+4AcGbM//5UGgALILmAzMq3BSYEIUHwKjBjYsFFoaCBPDhmAugjqOAVYMZDNW1BtA685hsbQHsM8P8mgJQxR8XvAnRTU37AFUwO4Ga1gALgPdgXQGUkYC4zclKAPxNJAAJAOuxBMDFZgLAe6ymAEwkyFzqqSkAou4jb1GotgDY02H/MwJBAti+YO6X1xOAKj4c82rA8qh+AOwe4f4Vc2dg79h/fzg4AHpA6wVzf3D3pI4bI6o14p6Yqd3OkN0gpOLDZc4hoPPsglXwjDL9TUgCMC1g45G7O9z6xip4Rpn+JkRrAK3lGXNnbLl1xXtwepn+JgT7ANVa+caMgVSrU7MTIrYCdC/ZZ8WkDkzP85DUS0FLeTbE9OdL7dzhrFz7a2ynxKZmRdlc6VHZs7G1dcZ/doqCaAIHt+p2UKZLcPhSYzsqO71uP/+vy2FRgYmQVQhnhZ1lc+5IHI+xihKAGQO3jhb5vkBG/Y2eUKqlKAGoYqMnZsvfBKAJCMUAVlECyL7ditmKEoC+kbMVHYBslNP7I7kL9NEBMB1A55OgtegAZLK35+MDoO9GC5tEpZTILYmfFBWAp1sii5xFJrsZtfMFTqREK6NCOr9kHACe1gkau3+TeH7RGACY6b+9TCibPue7YgBQRn+HJ8Ld/7MiAdB87MnX/lJRAJDZBJusGAC8/VJhZuUYANDW+YIDkE6h97PmuC8wYduHuRMkuQDyq+ZXAyZsenB3wvSwopy6NEcA5hP8iiDr8wjoJkmcBZks7N4g70CkbvY7104uOQgMgFeCIbD3saJGgASgite8L9bUk+1PFb1mAbw93h0yM6bY4wCRh8ITagAR936c6TAl8mVMELYJEO2ecc8EFI8uTrGFPiFy2GPmzVFKJnXWb3b9TfgdkeFmjdFUTTgIB0DLvLxBpJcqiQXQAEw/sMY9GFTJQIAGwL8pTrTRq2AcQAMwH2lnwE8eVsMaQOyAuDwdK04AD0AVr1a4KfTu7sRfOYUHYOLhS+7KwMER6zEXhQCAnTSG1IrUq/1+mPQ34Q/gcDBirgvIng6xCgIAHbA/lsg9oZ8VAgD7Fil2ae+OZUeCEAC0B/SKPdM5OIp1e3xaE1B7/INPQvcE/iva34TInaHmAzMg1rf3tWsCVp0he5NAdlocCgDi3hgnfS93UJjCAaB2b5qsYICEF8dCAUC095W7QCyUV/5J4QDgJ5Ol/Y9yI2EwAFThkFNacLs8GACk3v/DLVE/5nWsAQ7x8EqMN0ZmVlvVvGemjojzTVMMn9e4LxcQjAWCArD0mv2qGbFGEBQAbgYpTTR8YBU6WyEBMNNil3WByG6PszJI2KziXMV2fZ6XRGWbveKVrcqsDgYGgN8G9PJVZLfHeUN384GdRmMscn48MACqWGPuEqmisS2xPhoSAJtJRu0wc6OYoLFzXcNcYvyzg9TsSwTEQQEope/YX+rWeTE1Nw9H4QGgP88d3rRUu4ySJhzs8l+e0/1crz7AymldQCCVRnAA2gO1yn3REulX5+YXvPqB0ACUAxv//Gz7ftjOvfqB0ACUBLgHJkws0P3sOQ6EBqB87yD7uIAh8P4v5rMvFej36/Yqd4d3bMUlufr+LXuPYOek7bVE7F0DFBsAe8x2Ggh8Xzs5xybAb6zlG/e42vZbF/BuAuzpiMPExS2+84sGq7/1GbgSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCQDaAbQSALQDaC08gH8B8MCNH1oGk2wAAAAASUVORK5CYII=";
+
+const playhubCommunityProviderIcon = (source?: string) => {
+  const cleanSource = String(source || "").trim().toLowerCase();
+  if (cleanSource.includes("youtube")) return PLAYHUB_COMMUNITY_YOUTUBE_ICON;
+  if (cleanSource.includes("rawg")) return PLAYHUB_COMMUNITY_RAWG_ICON;
+  return PLAYHUB_COMMUNITY_IGN_ICON;
+};
+
+const playhubCommunityCreator = (source: string, avatar: string) => ({
+  steamid: "76561197960287930",
+  name: source || "Playhub Metadata",
+  avatar,
+  avatar_url: avatar,
+  avatar_medium: avatar,
+  avatar_full: avatar,
+  avatarFullURL: avatar,
+});
+
+
 const interleavedCommunityMedia = (metadata: MetadataData) => {
   const ign = (metadata.screenshots || [])
     .filter((image) => image?.url)
@@ -401,6 +423,7 @@ const interleavedCommunityMedia = (metadata: MetadataData) => {
 
 const steamCommunityItemsFromMetadata = (appId: number, metadata: MetadataData) =>
   interleavedCommunityMedia(metadata).map((item, index) => {
+    const providerIconUrl = playhubCommunityProviderIcon(item.source);
     if (item.kind === "video") {
       const video = item.video;
       return {
@@ -420,11 +443,12 @@ const steamCommunityItemsFromMetadata = (appId: number, metadata: MetadataData) 
         spoiler_tag: false,
         content_descriptorids: [],
         reactions: [],
-        creator: {
-          steamid: "76561197960287930",
-          name: "YouTube",
-          avatar: "",
-        },
+        avatar: providerIconUrl,
+        avatar_url: providerIconUrl,
+        creator_avatar_url: providerIconUrl,
+        author_avatar_url: providerIconUrl,
+        owner_avatar_url: providerIconUrl,
+        creator: playhubCommunityCreator("YouTube", providerIconUrl),
         time_created: Math.floor(Date.now() / 1000) - index * 60,
         votes_up: 0,
         votes_down: 0,
@@ -449,11 +473,12 @@ const steamCommunityItemsFromMetadata = (appId: number, metadata: MetadataData) 
       spoiler_tag: false,
       content_descriptorids: [],
       reactions: [],
-      creator: {
-        steamid: "76561197960287930",
-        name: "Playhub Metadata",
-        avatar: "",
-      },
+      avatar: providerIconUrl,
+      avatar_url: providerIconUrl,
+      creator_avatar_url: providerIconUrl,
+      author_avatar_url: providerIconUrl,
+      owner_avatar_url: providerIconUrl,
+      creator: playhubCommunityCreator(item.source || "IGN", providerIconUrl),
       time_created: Math.floor(Date.now() / 1000) - index * 60,
       votes_up: 0,
       votes_down: 0,
@@ -479,20 +504,38 @@ const numericSteamNewsGid = (value: unknown) => {
 
 const cleanSteamNewsDisplayText = (value: unknown) =>
   String(value || "")
+    .replace(/\[previewyoutube=[A-Za-z0-9_-]{11}(?:;[^\]]*)?\]\s*\[\/previewyoutube\]/gi, " ")
+    .replace(/\[previewyoutube=[^\]]+\]/gi, " ")
     .replace(/\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/\d+\/[^\s<>\)\]\[]+/gi, " ")
     .replace(/\[img\][\s\S]*?\[\/img\]/gi, " ")
-    .replace(/\[\/?(?:img|url|h1|h2|h3|b|i|u|list|\*)[^\]]*\]/gi, " ")
+    .replace(/\[url=[^\]]+\]([\s\S]*?)\[\/url\]/gi, "$1")
+    .replace(/\[\/?(?:p|br|hr|quote|spoiler|table|tr|td|th|img|url|h1|h2|h3|h4|b|i|u|s|strike|list|\*|code|noparse|previewyoutube|video|youtube|size|color|font|center|left|right)[^\]]*\]/gi, " ")
     .replace(/<br\s*\/?>/gi, " ")
     .replace(/<[^>]*>/g, " ")
     .replace(/&[a-z0-9#]+;/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
+const steamNewsRawBodyForModal = (value: unknown) =>
+  String(value || "")
+    .replace(/\\\//g, "/")
+    .trim();
+
+const steamAppHeaderImage = (steamAppId?: number | null) =>
+  steamAppId ? `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : "";
+
+const steamNewsImageCandidatesForMetadata = (_metadata: MetadataData, news: NonNullable<MetadataData["steam_news"]>[number]) => {
+  const rawSources = Array.isArray((news as any).image_sources) ? (news as any).image_sources : [];
+  return Array.from(new Set([
+    news.image,
+    (news as any).image_url,
+    (news as any).preview_image_url,
+    ...rawSources,
+  ].map(cleanSteamImageUrl).filter(Boolean)));
+};
+
 const steamNewsImageForMetadata = (metadata: MetadataData, news: NonNullable<MetadataData["steam_news"]>[number]) =>
-  news.image ||
-  (metadata.steam_appid
-    ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${metadata.steam_appid}/header.jpg`
-    : "");
+  steamNewsImageCandidatesForMetadata(metadata, news)[0] || "";
 
 const normaliseActivityNewsKeyText = (value: unknown) =>
   String(value || "")
@@ -524,20 +567,26 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
   uniqueSteamNewsForActivity(metadata)
     .map((news, index) => {
       const date = Number(news.date || 0) || Math.floor(Date.now() / 1000) - index * 60;
-      const imageUrl = steamNewsImageForMetadata(metadata, news);
-      const fallbackImageUrl = metadata.steam_appid
-        ? `https://cdn.akamai.steamstatic.com/steam/apps/${metadata.steam_appid}/header.jpg`
-        : "";
-      const summary = cleanSteamNewsDisplayText(news.summary || news.title || "");
+      const imageCandidates = steamNewsImageCandidatesForMetadata(metadata, news);
+      const imageUrl = imageCandidates[0] || "";
+      const fallbackImageUrl = steamAppHeaderImage(metadata.steam_appid);
+      const displayImageUrl = imageUrl || fallbackImageUrl;
+      const eventType = normalizePlayhubSteamActivityType((news as any).event_type || (news as any).type);
+      const eventTags = playhubSteamActivityTypeTags(eventType);
+      const eventLabel = playhubSteamActivityTypeLabel(eventType);
+      const rawBody = steamNewsRawBodyForModal((news as any).raw_body || (news as any).body || news.summary || "");
+      const summary = eventType === 12 ? "" : cleanSteamNewsDisplayText(news.summary || news.title || "");
       const title = cleanSteamNewsDisplayText(news.title || metadata.title || "Steam news");
       const url = news.url || metadata.steam_store_url || "";
       const id = playhubActivityId(appId, index, date);
-      const steamGid = numericSteamNewsGid((news as any).gid || (news as any).news_id || (news as any).announcement_gid || news.id || news.url);
+      const steamGid = numericSteamNewsGid((news as any).gid || (news as any).news_id || (news as any).announcement_gid || (news as any).event_gid || news.id || news.url);
+      const eventGid = numericSteamNewsGid((news as any).event_gid || (news as any).gid || (news as any).news_id || (news as any).announcement_gid || news.id || news.url);
       const jsondata = JSON.stringify({
-        localized_title_image: imageUrl,
-        localized_capsule_image: imageUrl,
-        localized_spotlight_image: imageUrl,
+        localized_title_image: displayImageUrl,
+        localized_capsule_image: displayImageUrl,
+        localized_spotlight_image: displayImageUrl,
         localized_summary: summary,
+        localized_body: rawBody,
         store_url: url,
       });
       return {
@@ -548,25 +597,28 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
         announcement_gid: steamGid || id,
         clan_steamid: "103582791429521412",
         event_name: title,
-        event_type: STEAM_PARTNER_EVENT_TYPE_NEWS,
-        type: STEAM_PARTNER_EVENT_TYPE_NEWS,
+        event_type: eventType,
+        type: eventType,
         title,
         headline: title,
         description: summary,
         summary,
-        body: summary,
+        body: cleanSteamNewsDisplayText((news as any).body || summary),
+        raw_body: rawBody,
         contents: summary,
         url,
         external_url: url,
         link: url,
-        image: imageUrl,
-        image_url: imageUrl,
+        image: displayImageUrl,
+        image_url: displayImageUrl,
+        event_image_url: imageUrl,
+        image_sources: imageCandidates,
         fallback_image_url: fallbackImageUrl,
         header_image_url: fallbackImageUrl,
-        capsule: imageUrl,
-        capsule_image: imageUrl,
-        preview_image_url: imageUrl,
-        full_image_url: imageUrl || url,
+        capsule: displayImageUrl,
+        capsule_image: displayImageUrl,
+        preview_image_url: displayImageUrl,
+        full_image_url: displayImageUrl || url,
         rtime32_start_time: date,
         rtime32_end_time: date,
         rtime32_last_modified: date,
@@ -574,8 +626,8 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
         published: date,
         time_created: date,
         date,
-        feedlabel: news.feedLabel || news.author || "Steam News",
-        author: news.author || news.feedLabel || "Steam News",
+        feedlabel: news.feedLabel || news.author || eventLabel,
+        author: news.author || news.feedLabel || eventLabel,
         comment_count: 0,
         upvotes: 0,
         downvotes: 0,
@@ -587,13 +639,13 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
           headline: title,
           posttime: date,
           updatetime: date,
-          body: summary,
+          body: rawBody || summary,
           commentcount: 0,
-          tags: ["news"],
+          tags: eventTags,
           language: 0,
           hidden: 0,
           forum_topic_id: "0",
-          event_gid: steamGid || id,
+          event_gid: eventGid || steamGid || id,
           voteupcount: 0,
           votedowncount: 0,
         },
@@ -606,10 +658,6 @@ const steamActivityPayloadForApp = async (appId: number) => {
   await ensureMetadataCache();
   let metadata = metadataCache[String(appId)];
   if (!metadata) return null;
-  if (!metadata?.steam_news_enriched_at || !(metadata?.steam_news || []).length) {
-    await tryEnrichCommunityMediaForApp(appId);
-    metadata = metadataCache[String(appId)];
-  }
   const items = metadata ? steamActivityNewsItemsFromMetadata(appId, metadata) : [];
   if (!items.length) return null;
   // Steam client internals changed names across versions. Return a deliberately
@@ -634,10 +682,37 @@ const steamActivityPayloadForApp = async (appId: number) => {
 
 
 const STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE = 1002;
-// Steam PartnerEvent type 28 is the regular News card used by Steam's native
-// Activity feed. Type 14 renders as the blue Major Update card, which made
-// non-Steam news look different from real Steam news.
 const STEAM_PARTNER_EVENT_TYPE_NEWS = 28;
+const PLAYHUB_SUPPORTED_STEAM_ACTIVITY_TYPES = new Set([12, 13, 14, 15, 23, 24, 25, 28, 35]);
+const PLAYHUB_STEAM_ACTIVITY_TYPE_LABELS: Record<number, string> = {
+  12: "Aggiornamento minore / Note della patch",
+  13: "Aggiornamento standard",
+  14: "Aggiornamento importante",
+  15: "Pubblicazione contenuti scaricabili",
+  23: "Evento: bottino",
+  24: "Evento: vantaggi",
+  25: "Evento: sfida",
+  28: "Notizie",
+  35: "Evento nel gioco",
+};
+const PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS: Record<number, string[]> = {
+  12: ["patchnotes", "update", "playhub_metadata"],
+  13: ["update", "playhub_metadata"],
+  14: ["majorupdate", "update", "playhub_metadata"],
+  15: ["dlc", "release", "playhub_metadata"],
+  23: ["loot", "event", "playhub_metadata"],
+  24: ["perks", "event", "playhub_metadata"],
+  25: ["challenge", "event", "playhub_metadata"],
+  28: ["news", "playhub_metadata"],
+  35: ["ingame", "event", "playhub_metadata"],
+};
+const normalizePlayhubSteamActivityType = (value: unknown) => {
+  const type = Number(value || 0) || STEAM_PARTNER_EVENT_TYPE_NEWS;
+  return PLAYHUB_SUPPORTED_STEAM_ACTIVITY_TYPES.has(type) ? type : STEAM_PARTNER_EVENT_TYPE_NEWS;
+};
+const playhubSteamActivityTypeLabel = (type: number) => PLAYHUB_STEAM_ACTIVITY_TYPE_LABELS[type] || "Notizie";
+const playhubSteamActivityTypeTags = (type: number) => PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS[type] || PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS[28];
+const isPlayhubPatchNoteActivity = (item: any) => normalizePlayhubSteamActivityType(item?.event_type || item?.type) === 12;
 const PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY = "__playhubNativeActivityCache";
 const PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__playhubNativePartnerEvents";
 const PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY = "__playhubNativePartnerEventStore";
@@ -679,6 +754,8 @@ const cleanSteamImageUrl = (value: unknown) => {
   return /^https:\/\//i.test(text) ? text : "";
 };
 
+
+
 const collectSteamNewsImages = (steamAppId: number, item: any) => {
   const values = [
     item.image,
@@ -694,10 +771,8 @@ const collectSteamNewsImages = (steamAppId: number, item: any) => {
     item.fallback_image_url,
   ];
   if (Array.isArray(item.image_sources)) values.push(...item.image_sources);
-  if (steamAppId) {
-    values.push(`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${steamAppId}/header.jpg`);
-    values.push(`https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg`);
-  }
+  // Keep the explicit fallback at the end: cards with no embedded artwork should
+  // still show the game header, but embedded/event-specific images stay first.
   return Array.from(new Set(values.map(cleanSteamImageUrl).filter(Boolean)));
 };
 
@@ -857,20 +932,30 @@ const playhubNativePartnerEventForGid = (value: unknown, cloneForRoute = false) 
 
 const makePlayhubNativePartnerEvent = (appId: number, steamAppId: number, item: any, index: number) => {
   const date = Number(item.date || item.posttime || item.published || 0) || Math.floor(Date.now() / 1000) - index * 60;
-  const gid = numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url);
-  const nativeEventGid = gid ? `old_announce_${gid}` : "0";
+  const announcementGid = numericSteamNewsGid(item.announcement_gid || item.news_id || item.gid || item.id || item.url);
+  const eventGid = numericSteamNewsGid(item.event_gid || "");
+  const gid = announcementGid || eventGid;
+  const nativeEventGid = eventGid && eventGid !== announcementGid ? eventGid : gid ? `old_announce_${gid}` : "0";
+  const isOldAnnouncement = nativeEventGid.startsWith("old_announce_");
   const title = cleanSteamNewsDisplayText(item.title || item.event_name || item.headline || "Steam News");
   const summary = cleanSteamNewsDisplayText(item.summary || item.description || item.body || title);
   const body = cleanSteamNewsDisplayText(item.body || item.content || item.description || item.summary || title);
   const images = collectSteamNewsImages(steamAppId, item);
   const primaryImage = images[0] || "";
   const clanSteamID = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
-  const type = STEAM_PARTNER_EVENT_TYPE_NEWS;
-  const announcementUrl = item.url || item.external_url || item.link || (steamAppId && gid ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${gid}` : "");
+  const type = normalizePlayhubSteamActivityType(item.event_type || item.type);
+  const isPatchNote = type === 12;
+  const eventLabel = playhubSteamActivityTypeLabel(type);
+  const eventTags = playhubSteamActivityTypeTags(type);
+  const modalBody = steamNewsRawBodyForModal(item.raw_body || item.rawBody || item.body_html || item.body_raw || item.body || body || summary);
+  const activitySummary = isPatchNote ? "" : summary;
+  const announcementUrl = item.url || item.external_url || item.link || (steamAppId && announcementGid ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${announcementGid}` : steamAppId && eventGid ? `https://store.steampowered.com/news/app/${steamAppId}/view/${eventGid}` : "");
   const jsondata = {
-    localized_summary: [summary],
-    localized_subtitle: [summary],
-    localized_body: [body],
+    // Keep the detail viewer from rendering a duplicated non-clickable preview
+    // paragraph above Steam's real BBCode/HTML body.
+    localized_summary: [""],
+    localized_subtitle: [""],
+    localized_body: [modalBody],
     localized_title_image: [primaryImage],
     localized_capsule_image: [primaryImage],
     localized_spotlight_image: [primaryImage],
@@ -883,15 +968,15 @@ const makePlayhubNativePartnerEvent = (appId: number, steamAppId: number, item: 
     GID: nativeEventGid,
     gid: nativeEventGid,
     event_gid: nativeEventGid,
-    AnnouncementGID: gid || "0",
-    announcement_gid: gid || "0",
-    announcementGID: gid || "0",
+    AnnouncementGID: announcementGid || gid || "0",
+    announcement_gid: announcementGid || gid || "0",
+    announcementGID: announcementGid || gid || "0",
     appid: appId,
     reference_appid: steamAppId || appId,
     steam_appid: steamAppId || appId,
     type,
     event_type: type,
-    bOldAnnouncement: true,
+    bOldAnnouncement: isOldAnnouncement,
     bLoaded: true,
     loadedAllLanguages: true,
     visibility_state: 2,
@@ -913,29 +998,29 @@ const makePlayhubNativePartnerEvent = (appId: number, steamAppId: number, item: 
     announcementClanSteamID: clanSteamID,
     jsondata,
     name: new Map([[0, title]]),
-    description: new Map([[0, body || summary]]),
+    description: new Map([[0, modalBody || body || summary]]),
     timestamp_loc_updated: new Map([[0, date]]),
-    vecTags: ["patchnotes", "playhub_metadata"],
-    tags: ["patchnotes", "playhub_metadata"],
-    BHasTag: (tag: string) => ["patchnotes", "playhub_metadata"].includes(String(tag || "")),
-    BHasTagStartingWith: (prefix: string) => ["patchnotes", "playhub_metadata"].some((tag) => tag.startsWith(String(prefix || ""))),
-    GetAllTags: () => ["patchnotes", "playhub_metadata"],
-    BMatchesAllTags: (tags?: string[]) => !Array.isArray(tags) || tags.every((tag) => ["patchnotes", "playhub_metadata"].includes(String(tag || ""))),
+    vecTags: eventTags,
+    tags: eventTags,
+    BHasTag: (tag: string) => eventTags.includes(String(tag || "")),
+    BHasTagStartingWith: (prefix: string) => eventTags.some((tag) => tag.startsWith(String(prefix || ""))),
+    GetAllTags: () => eventTags,
+    BMatchesAllTags: (tags?: string[]) => !Array.isArray(tags) || tags.every((tag) => eventTags.includes(String(tag || ""))),
     BInRealmGlobal: () => true,
     BInRealmChina: () => false,
     BIsLanguageValidForRealms: () => true,
     GetNameWithFallback: () => title,
     GetGameTitle: () => title,
-    GetDescriptionWithFallback: () => body || summary,
-    GetSummaryWithFallback: () => summary,
-    GetSummary: () => summary,
-    BHasSummary: () => !!summary,
-    GetSubTitle: () => summary,
-    BHasSubTitle: () => !!summary,
-    GetSubTitleWithLanguageFallback: () => summary,
-    GetSubTitleWithSummaryFallback: () => summary,
-    GetCategoryAsString: () => "Notizie",
-    GetEventTypeAsString: () => "Notizie",
+    GetDescriptionWithFallback: () => modalBody || body || summary,
+    GetSummaryWithFallback: () => activitySummary,
+    GetSummary: () => activitySummary,
+    BHasSummary: () => !!activitySummary,
+    GetSubTitle: () => "",
+    BHasSubTitle: () => false,
+    GetSubTitleWithLanguageFallback: () => "",
+    GetSubTitleWithSummaryFallback: () => "",
+    GetCategoryAsString: () => eventLabel,
+    GetEventTypeAsString: () => eventLabel,
     GetImgArray: () => images,
     GetImageHash: () => null,
     GetImageHashAndExt: () => null,
@@ -957,8 +1042,8 @@ const makePlayhubNativePartnerEvent = (appId: number, steamAppId: number, item: 
     GetStartTimeAndDateUnixSeconds: () => date,
     GetEndTimeAndDateUnixSeconds: () => date,
     GetPostTimeAndDateUnixSeconds: () => date,
-    GetAnnouncementGID: () => gid || "0",
-    BHasAnnouncementGID: () => !!gid,
+    GetAnnouncementGID: () => announcementGid || gid || "0",
+    BHasAnnouncementGID: () => !!(announcementGid || gid),
     GetAppID: () => appId,
     GetReferenceAppID: () => steamAppId || appId,
     GetStoreAppID: () => steamAppId || appId,
@@ -1039,7 +1124,7 @@ const makePlayhubNativePartnerEvent = (appId: number, steamAppId: number, item: 
     GetLastUpdaterSteamIDStr: () => "",
     GetStoreOrCommunityURL: () => announcementUrl,
     GetCommunityDiscussionURL: () => announcementUrl,
-    GetStoreNewsURL: () => steamAppId && gid ? `https://store.steampowered.com/news/app/${steamAppId}/view/${gid}` : announcementUrl,
+    GetStoreNewsURL: () => steamAppId && (announcementGid || eventGid || gid) ? `https://store.steampowered.com/news/app/${steamAppId}/view/${announcementGid || eventGid || gid}` : announcementUrl,
     url: announcementUrl,
   };
   rememberPlayhubNativePartnerEvent(partnerEvent);
@@ -1178,10 +1263,6 @@ const refreshPlayhubNativeActivityForApp = async (appId: number, store?: any) =>
   await ensureMetadataCache();
   let metadata = metadataCache[String(appId)];
   if (!metadata) return null;
-  if (!metadata?.steam_news_enriched_at || !(metadata?.steam_news || []).length) {
-    await tryEnrichCommunityMediaForApp(appId);
-    metadata = metadataCache[String(appId)];
-  }
   const native = metadata ? makePlayhubNativeActivity(appId, metadata) : null;
   if (!native) return null;
   playhubNativeActivityCache().set(appId, native);
@@ -2167,6 +2248,44 @@ const ensurePlayhubActivityStyle = () => {
       box-shadow: 0 0 0 3px rgba(255,255,255,0.42), 0 16px 44px rgba(0,0,0,0.34);
       outline: none;
     }
+    .playhub-activity-news-card.is-patch-note {
+      grid-template-columns: 74px 1fr;
+      gap: 20px;
+      min-height: 132px;
+      padding: 20px 22px;
+      margin: 0 0 22px;
+      background: rgba(42,49,57,0.80);
+    }
+    .playhub-activity-news-update-icon {
+      width: 64px;
+      height: 64px;
+      align-self: center;
+      color: rgba(255,255,255,0.52);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.22));
+    }
+    .playhub-activity-news-update-icon svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .playhub-activity-news-card.is-patch-note .playhub-activity-news-content {
+      gap: 8px;
+    }
+    .playhub-activity-news-card.is-patch-note .playhub-activity-news-kind {
+      font-size: 16px;
+    }
+    .playhub-activity-news-card.is-patch-note .playhub-activity-news-title {
+      font-size: 24px;
+      -webkit-line-clamp: 1;
+    }
+    .playhub-activity-news-card.is-patch-note .playhub-activity-news-summary {
+      max-width: none;
+      font-size: 17px;
+      -webkit-line-clamp: 1;
+    }
     .playhub-activity-news-image {
       width: 100%;
       height: 136px;
@@ -2347,22 +2466,41 @@ const appendActivityDiagnostic = (root: HTMLElement, appId: number, diagnostic: 
   root.appendChild(box);
 };
 
-const activityNewsKindLabel = () =>
-  String(navigator.language || "").toLowerCase().startsWith("it") ? "Notizie" : "News";
+const activityNewsKindLabel = (item?: any) => {
+  const type = normalizePlayhubSteamActivityType(item?.event_type || item?.type);
+  if (type) return playhubSteamActivityTypeLabel(type);
+  return String(navigator.language || "").toLowerCase().startsWith("it") ? "Notizie" : "News";
+};
 
-const normalizeSteamNewsImageUrl = (value: unknown, steamAppId?: number | null) => {
+const patchNoteActivityIconSvg = () => `
+  <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <path fill="currentColor" d="M38.8 7.9c4.5-1.6 9.8-.5 13.4 3.1 3.2 3.2 4.5 7.6 3.6 11.8l-8.1-8.1-8.3 8.3 8.2 8.2c-4.2.9-8.7-.4-11.9-3.6-3.7-3.7-4.8-9-3.1-13.5L10.4 36.3c-3.1 3.1-3.1 8.2 0 11.3l5.9 5.9c3.1 3.1 8.2 3.1 11.3 0l22.1-22.1-5.2-5.2-21.9 21.9c-.9.9-2.3.9-3.2 0l-3.6-3.6c-.9-.9-.9-2.3 0-3.2L38.8 7.9Z"/>
+    <path fill="currentColor" d="M13.3 10.2 7.6 15.9l12.2 12.2 5.7-5.7-3.1-3.1 4.7-4.7-3.9-3.9-4.7 4.7-5.2-5.2Z" opacity=".82"/>
+    <path fill="currentColor" d="M43.2 37.1 37.5 42.8 50.4 55.7c1.6 1.6 4.2 1.6 5.8 0 1.6-1.6 1.6-4.2 0-5.8L43.2 37.1Z" opacity=".82"/>
+  </svg>
+`;
+
+const patchNoteActivityIconReact = () =>
+  React.createElement(
+    "svg",
+    { viewBox: "0 0 64 64", "aria-hidden": "true", focusable: "false", style: { width: "100%", height: "100%" } },
+    React.createElement("path", { fill: "currentColor", d: "M38.8 7.9c4.5-1.6 9.8-.5 13.4 3.1 3.2 3.2 4.5 7.6 3.6 11.8l-8.1-8.1-8.3 8.3 8.2 8.2c-4.2.9-8.7-.4-11.9-3.6-3.7-3.7-4.8-9-3.1-13.5L10.4 36.3c-3.1 3.1-3.1 8.2 0 11.3l5.9 5.9c3.1 3.1 8.2 3.1 11.3 0l22.1-22.1-5.2-5.2-21.9 21.9c-.9.9-2.3.9-3.2 0l-3.6-3.6c-.9-.9-.9-2.3 0-3.2L38.8 7.9Z" }),
+    React.createElement("path", { fill: "currentColor", opacity: ".82", d: "M13.3 10.2 7.6 15.9l12.2 12.2 5.7-5.7-3.1-3.1 4.7-4.7-3.9-3.9-4.7 4.7-5.2-5.2Z" }),
+    React.createElement("path", { fill: "currentColor", opacity: ".82", d: "M43.2 37.1 37.5 42.8 50.4 55.7c1.6 1.6 4.2 1.6 5.8 0 1.6-1.6 1.6-4.2 0-5.8L43.2 37.1Z" })
+  );
+
+const normalizeSteamNewsImageUrl = (value: unknown, _steamAppId?: number | null) => {
   let url = String(value || "").trim().replace(/\\\//g, "/");
   try {
     url = decodeURIComponent(url);
   } catch (_error) {
     // Keep original URL if it is not URI-encoded.
   }
-  const clan = url.match(/\{STEAM_CLAN_IMAGE\}\/(\d+)\/([^\s<>\)\]]+)/i);
+  const clan = url.match(/\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/(\d+)\/([^\s<>\)\]\[]+)/i);
   if (clan) return `https://clan.cloudflare.steamstatic.com/images/${clan[1]}/${clan[2]}`;
   if (url.startsWith("//")) return `https:${url}`;
   if (/^http:\/\//i.test(url)) return url.replace(/^http:\/\//i, "https://");
   if (/^https:\/\//i.test(url)) return url;
-  if (steamAppId) return `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg`;
   return "";
 };
 
@@ -2412,8 +2550,9 @@ const renderPlayhubActivityNewsDom = (
       root.appendChild(day);
     }
 
+    const isPatchNote = isPlayhubPatchNoteActivity(item);
     const card = document.createElement("div");
-    card.className = "playhub-activity-news-card";
+    card.className = `playhub-activity-news-card${isPatchNote ? " is-patch-note" : ""}`;
     card.tabIndex = 0;
     card.setAttribute("data-focusable", "true");
     card.setAttribute("role", "button");
@@ -2427,43 +2566,62 @@ const renderPlayhubActivityNewsDom = (
       }
     };
 
-    const imageWrap = document.createElement("div");
-    const image = document.createElement("img");
-    image.className = "playhub-activity-news-image";
-    image.src = normalizeSteamNewsImageUrl(item.image_url || item.image || item.preview_image_url, metadata?.steam_appid || null);
-    image.referrerPolicy = "no-referrer";
-    image.loading = "lazy";
-    const imageFallback = document.createElement("div");
-    imageFallback.className = "playhub-activity-news-image-fallback";
-    imageFallback.textContent = metadata?.title || "Steam News";
-    image.onerror = () => {
-      const fallbackHeader = normalizeSteamNewsImageUrl("", metadata?.steam_appid || null);
-      if (fallbackHeader && image.src !== fallbackHeader) {
-        image.src = fallbackHeader;
-        return;
-      }
-      image.style.display = "none";
-      imageFallback.style.display = "flex";
-    };
-    if (!image.src) {
-      image.style.display = "none";
-      imageFallback.style.display = "flex";
-    }
-    imageWrap.append(image, imageFallback);
-
     const content = document.createElement("div");
     content.className = "playhub-activity-news-content";
     const kind = document.createElement("div");
     kind.className = "playhub-activity-news-kind";
-    kind.textContent = activityNewsKindLabel();
+    kind.textContent = activityNewsKindLabel(item);
     const title = document.createElement("div");
     title.className = "playhub-activity-news-title";
     title.textContent = cleanSteamNewsDisplayText(item.title || item.event_name || "");
-    const summary = document.createElement("div");
-    summary.className = "playhub-activity-news-summary";
-    summary.textContent = cleanSteamNewsDisplayText(item.summary || item.description || "");
-    content.append(kind, title, summary);
-    card.append(imageWrap, content);
+    content.append(kind, title);
+    const summaryText = isPatchNote ? "" : cleanSteamNewsDisplayText(item.summary || item.description || "");
+    if (summaryText) {
+      const summary = document.createElement("div");
+      summary.className = "playhub-activity-news-summary";
+      summary.textContent = summaryText;
+      content.appendChild(summary);
+    }
+
+    if (isPatchNote) {
+      const icon = document.createElement("div");
+      icon.className = "playhub-activity-news-update-icon";
+      icon.innerHTML = patchNoteActivityIconSvg();
+      card.append(icon, content);
+    } else {
+      const imageWrap = document.createElement("div");
+      imageWrap.style.width = "100%";
+      imageWrap.style.height = "136px";
+      imageWrap.style.overflow = "hidden";
+      imageWrap.style.borderRadius = "6px";
+      imageWrap.style.alignSelf = "center";
+      const primaryImage = normalizeSteamNewsImageUrl(item.event_image_url || item.image_url || item.image || item.preview_image_url, metadata?.steam_appid || null);
+      const fallbackHeader = normalizeSteamNewsImageUrl(item.fallback_image_url || item.header_image_url, metadata?.steam_appid || null);
+      const displayImage = primaryImage || fallbackHeader;
+      const image = document.createElement("img");
+      image.className = "playhub-activity-news-image";
+      image.referrerPolicy = "no-referrer";
+      image.loading = "lazy";
+      const imageFallback = document.createElement("div");
+      imageFallback.className = "playhub-activity-news-image-fallback";
+      imageFallback.textContent = metadata?.title || "Steam News";
+      image.onerror = () => {
+        if (fallbackHeader && image.src !== fallbackHeader) {
+          image.src = fallbackHeader;
+          return;
+        }
+        image.style.display = "none";
+        imageFallback.style.display = "flex";
+      };
+      if (displayImage) {
+        image.src = displayImage;
+      } else {
+        image.style.display = "none";
+        imageFallback.style.display = "flex";
+      }
+      imageWrap.append(image, imageFallback);
+      card.append(imageWrap, content);
+    }
     root.appendChild(card);
   });
 
@@ -2475,7 +2633,6 @@ const removePlayhubActivityNewsDom = () => {
   restoreNativeActivityEmptyStates();
 };
 
-const loadingActivityDomNews = new Set<number>();
 
 const refreshPlayhubActivityNewsDom = async () => {
   const appId = currentGameDetailAppId();
@@ -2506,17 +2663,6 @@ const refreshPlayhubActivityNewsDom = async () => {
   if (!metadata) {
     removePlayhubActivityNewsDom();
     return;
-  }
-
-  if (!(metadata.steam_news || []).length && !loadingActivityDomNews.has(appId)) {
-    loadingActivityDomNews.add(appId);
-    removePlayhubActivityNewsDom();
-    try {
-      await tryEnrichCommunityMediaForApp(appId);
-      metadata = metadataCache[String(appId)] || metadata;
-    } finally {
-      loadingActivityDomNews.delete(appId);
-    }
   }
 
   const newsCount = metadata.steam_news?.length || 0;
@@ -2644,15 +2790,6 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
       if (!isActive || !hasOwnership) return;
       await ensureMetadataCache();
       let next = metadataCache[String(appId)] || null;
-      if (next && !(next.steam_news || []).length && !loadingActivityDomNews.has(appId)) {
-        loadingActivityDomNews.add(appId);
-        try {
-          await tryEnrichCommunityMediaForApp(appId);
-          next = metadataCache[String(appId)] || next;
-        } finally {
-          loadingActivityDomNews.delete(appId);
-        }
-      }
       if (!cancelled) setMetadata(next);
     };
     const updateListener = () => void refresh().catch((error) => console.warn("[Playhub Metadata] activity overlay refresh failed", error));
@@ -2720,42 +2857,27 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
         )
       );
     }
-    const imageUrl = String(item.image_url || item.image || item.preview_image_url || "");
-    const fallbackImageUrl = String(item.fallback_image_url || item.header_image_url || "");
+    const isPatchNote = isPlayhubPatchNoteActivity(item);
+    const imageUrl = normalizeSteamNewsImageUrl(item.event_image_url || item.image_url || item.image || item.preview_image_url, metadata?.steam_appid || null);
+    const fallbackImageUrl = normalizeSteamNewsImageUrl(item.fallback_image_url || item.header_image_url, metadata?.steam_appid || null);
+    const displayImageUrl = imageUrl || fallbackImageUrl;
     const url = String(item.url || item.external_url || item.link || "");
-    children.push(
-      React.createElement(
-        Focusable as any,
-        {
-          key: String(item.id || item.gid || item.news_id),
-          className: "playhub-activity-news-card",
-          focusClassName: "playhub-activity-news-card-focused",
-          "data-playhub-activity-news-card": "1",
-          onActivate: () => openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id),
-          onClick: () => openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id),
-          onFocus: (event: any) => event.currentTarget?.scrollIntoView?.({ block: "nearest", behavior: "smooth" }),
-          onKeyDown: (event: any) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id);
-            }
-          },
+    const visual = isPatchNote
+      ? React.createElement("div", {
+          className: "playhub-activity-news-update-icon",
           style: {
-            display: "grid",
-            gridTemplateColumns: "320px 1fr",
-            gap: 24,
-            minHeight: 172,
-            padding: 18,
-            margin: "0 0 24px",
-            borderRadius: 10,
-            background: "rgba(48,55,63,0.86)",
-            boxSizing: "border-box",
-            cursor: url ? "pointer" : "default",
+            width: 64,
+            height: 64,
+            alignSelf: "center",
+            color: "rgba(255,255,255,0.52)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           },
-        },
-        imageUrl
+        }, patchNoteActivityIconReact())
+      : (displayImageUrl
           ? React.createElement("img", {
-              src: imageUrl,
+              src: displayImageUrl,
               referrerPolicy: "no-referrer",
               loading: "lazy",
               onError: (event: any) => {
@@ -2792,11 +2914,42 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
                 color: "rgba(255,255,255,0.42)",
                 fontSize: 14,
               },
-            }, "News"),
+            }, "News"));
+    children.push(
+      React.createElement(
+        Focusable as any,
+        {
+          key: String(item.id || item.gid || item.news_id),
+          className: `playhub-activity-news-card${isPatchNote ? " is-patch-note" : ""}`,
+          focusClassName: "playhub-activity-news-card-focused",
+          "data-playhub-activity-news-card": "1",
+          onActivate: () => openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id),
+          onClick: () => openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id),
+          onFocus: (event: any) => event.currentTarget?.scrollIntoView?.({ block: "nearest", behavior: "smooth" }),
+          onKeyDown: (event: any) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              openExternalActivityUrl(url, metadata?.steam_appid || null, item.gid || item.id || item.news_id);
+            }
+          },
+          style: {
+            display: "grid",
+            gridTemplateColumns: isPatchNote ? "74px 1fr" : "320px 1fr",
+            gap: isPatchNote ? 20 : 24,
+            minHeight: isPatchNote ? 132 : 172,
+            padding: isPatchNote ? "20px 22px" : 18,
+            margin: isPatchNote ? "0 0 22px" : "0 0 24px",
+            borderRadius: 10,
+            background: isPatchNote ? "rgba(42,49,57,0.80)" : "rgba(48,55,63,0.86)",
+            boxSizing: "border-box",
+            cursor: url ? "pointer" : "default",
+          },
+        },
+        visual,
         React.createElement(
           "div",
-          { style: { minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 10 } },
-          React.createElement("div", { style: { color: "rgba(255,255,255,0.62)", fontSize: 16 } }, activityNewsKindLabel()),
+          { style: { minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: isPatchNote ? 8 : 10 } },
+          React.createElement("div", { style: { color: "rgba(255,255,255,0.62)", fontSize: 16 } }, activityNewsKindLabel(item)),
           React.createElement(
             "div",
             {
@@ -2807,29 +2960,31 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 display: "-webkit-box",
-                WebkitLineClamp: 2,
+                WebkitLineClamp: isPatchNote ? 1 : 2,
                 WebkitBoxOrient: "vertical",
               },
             },
             cleanSteamNewsDisplayText(item.title || item.event_name || "")
           ),
-          React.createElement(
-            "div",
-            {
-              style: {
-                maxWidth: 940,
-                color: "rgba(255,255,255,0.58)",
-                fontSize: 16,
-                lineHeight: 1.35,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              },
-            },
-            cleanSteamNewsDisplayText(item.summary || item.description || "")
-          )
+          ...(!isPatchNote && cleanSteamNewsDisplayText(item.summary || item.description || "")
+            ? [React.createElement(
+                "div",
+                {
+                  style: {
+                    maxWidth: 940,
+                    color: "rgba(255,255,255,0.58)",
+                    fontSize: 16,
+                    lineHeight: 1.35,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  },
+                },
+                cleanSteamNewsDisplayText(item.summary || item.description || "")
+              )]
+            : [])
         )
       )
     );
@@ -3972,6 +4127,16 @@ export const installSteamPatches = (): Unpatch => {
   // intentionally native-only.
   installNativeActivityStorePatch(unpatchers);
   installNativePartnerEventStorePatch(unpatchers);
+  const activityRefreshedListener = () => {
+    playhubNativeActivityCache().clear();
+    playhubNativePartnerEventCache().clear();
+    const appId = currentGameDetailAppId();
+    void ensureMetadataCache().then(() => {
+      if (appId) void refreshPlayhubNativeActivityForApp(appId);
+    });
+  };
+  window.addEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener);
+  unpatchers.push(() => window.removeEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener));
   void flushTrueAchievementsNativeCache();
   window.setTimeout(() => void flushTrueAchievementsNativeCache(), 2500);
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
@@ -4330,9 +4495,6 @@ export const installSteamPatches = (): Unpatch => {
               // Add the real Steam Activity section too. News are deliberately
               // served through the Activity feed patch, not the Community feed.
               ret.add("activity");
-              if (!metadata?.steam_news_enriched_at && !(metadata?.steam_news || []).length) {
-                void tryEnrichCommunityMediaForApp(appId);
-              }
             }
             return ret;
           }
@@ -4448,7 +4610,6 @@ export const installSteamPatches = (): Unpatch => {
               applyMetadata(appId);
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
-              void tryEnrichCommunityMediaForApp(appId);
             });
             void loadAchievementsForApp(appId);
             void refreshPlayhubNativeActivityForApp(appId);
@@ -4477,7 +4638,6 @@ export const installSteamPatches = (): Unpatch => {
             noteDetailsTabIndexSelection(0);
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
-              void tryEnrichCommunityMediaForApp(appId);
             });
             void refreshPlayhubNativeActivityForApp(appId);
             return ret;

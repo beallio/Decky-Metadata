@@ -57,7 +57,9 @@ MICROSOFT_DISPLAY_CATALOG_PRODUCTS_URL = "https://displaycatalog.mp.microsoft.co
 TRUEACHIEVEMENTS_BASE_URL = "https://www.trueachievements.com"
 STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
 STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
+STEAM_EVENTS_URL = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/"
 STEAM_STORE_APP_URL = "https://store.steampowered.com/app/{appid}/"
+STEAM_ACTIVITY_EVENT_TYPES = {12, 13, 14, 15, 23, 24, 25, 28, 35}
 ACHIEVEMENT_SOURCES = {"auto", "retroachievements", "xbox", "disabled"}
 ACHIEVEMENT_CACHE_POLICIES = {"hourly", "daily", "weekly", "pc_session", "manual"}
 ACHIEVEMENT_CACHE_DEFAULT_POLICY = "daily"
@@ -172,6 +174,8 @@ class Plugin:
         self._data_file = self._settings_dir / "playhub_metadata.json"
         self._scan_task: asyncio.Task[Any] | None = None
         self._scan_progress = self._new_scan_progress("idle")
+        self._activity_refresh_task: asyncio.Task[Any] | None = None
+        self._activity_refresh_progress = self._new_scan_progress("idle")
         self._data = self._default_data()
         self._hash_library: dict[str, int] = {}
         self._ra_title_index: list[dict[str, Any]] = []
@@ -212,6 +216,8 @@ class Plugin:
     async def _unload(self) -> None:
         if self._scan_task and not self._scan_task.done():
             self._scan_task.cancel()
+        if self._activity_refresh_task and not self._activity_refresh_task.done():
+            self._activity_refresh_task.cancel()
         self._stop_image_proxy_server()
         decky.logger.info("Playhub Metadata backend unloaded")
 
@@ -520,6 +526,16 @@ class Plugin:
 
     async def get_scan_progress(self) -> dict[str, Any]:
         return self._scan_progress
+
+    async def start_refresh_steam_activities(self, games: list[dict[str, Any]]) -> dict[str, Any]:
+        if self._activity_refresh_task and not self._activity_refresh_task.done():
+            return self._activity_refresh_progress
+        self._activity_refresh_progress = self._new_scan_progress("running")
+        self._activity_refresh_task = asyncio.create_task(self._refresh_steam_activities(games or []))
+        return self._activity_refresh_progress
+
+    async def get_activity_refresh_progress(self) -> dict[str, Any]:
+        return self._activity_refresh_progress
 
     async def get_local_shortcuts(self) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._read_steam_shortcuts)
@@ -857,17 +873,16 @@ class Plugin:
             "error": "",
         }
 
-    def _metadata_needs_scan_news(self, app_id: int) -> bool:
+    def _metadata_needs_scan(self, app_id: int) -> bool:
         metadata = self._data["metadata"].get(str(app_id))
         if not isinstance(metadata, dict):
             return True
-        if self._sanitize_steam_news(metadata.get("steam_news")):
-            return False
-        # If we already tried to enrich news and resolved a Steam AppID, avoid
-        # hammering Steam on every bulk scan for titles that simply have no news.
-        if self._safe_int(metadata.get("steam_appid")) and int(self._as_number(metadata.get("steam_news_enriched_at"), 0)):
-            return False
-        return True
+        # Treat empty/manual shells as missing so the metadata scan can repair them,
+        # but do not use missing Steam Activity/news as a reason to scan metadata.
+        title = self._clean_game_title(str(metadata.get("title") or ""))
+        source = str(metadata.get("source") or "").strip().casefold()
+        has_description = bool(self._clean_html_text(str(metadata.get("description") or metadata.get("short_description") or "")))
+        return not title or (source in {"", "manual"} and not has_description)
 
     async def _scan_missing(self, games: list[dict[str, Any]]) -> None:
         self._load_data()
@@ -876,43 +891,79 @@ class Plugin:
             for game in games
             if isinstance(game, dict)
             and str(game.get("appid", "")).strip()
-            and self._metadata_needs_scan_news(int(game.get("appid")))
+            and self._metadata_needs_scan(int(game.get("appid")))
         ]
         self._scan_progress.update({"total": len(missing), "completed": 0})
         for game in missing:
             app_id = int(game.get("appid"))
             title = self._clean_game_title(str(game.get("name") or ""))
-            self._scan_progress["current"] = title
+            self._scan_progress["current"] = f"{self._scan_progress['completed'] + 1}/{len(missing)} - {title}" if title else f"{self._scan_progress['completed'] + 1}/{len(missing)}"
             try:
-                existing = self._data["metadata"].get(str(app_id))
-                if isinstance(existing, dict):
-                    metadata = dict(existing)
-                else:
-                    self._scan_progress["message"] = f"Fetching metadata for {title}"
-                    metadata = await asyncio.to_thread(
-                        self._auto_fetch_metadata_sync, title
-                    )
+                self._scan_progress["message"] = f"Fetching metadata for {title}"
+                metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
                 if metadata:
-                    self._scan_progress["message"] = f"Fetching Steam news for {title}"
-                    metadata = await asyncio.to_thread(
-                        self._metadata_with_steam_news_sync, metadata, title, 6
-                    )
                     await self.save_metadata(app_id, metadata)
                     self._scan_progress["assigned"] += 1
-                    self._scan_progress["message"] = f"Saved metadata/news for {title}"
+                    self._scan_progress["message"] = f"Saved metadata for {title}"
                 else:
                     self._scan_progress["failed"] += 1
-                    self._scan_progress["message"] = f"No match for {title}"
+                    self._scan_progress["message"] = f"No metadata match for {title}"
             except Exception as error:
                 self._scan_progress["failed"] += 1
                 self._scan_progress["message"] = f"Failed: {title}"
                 self._scan_progress["error"] = str(error)
-                decky.logger.error(f"Metadata/news scan failed for {title}: {error}")
+                decky.logger.error(f"Metadata scan failed for {title}: {error}")
             finally:
                 self._scan_progress["completed"] += 1
         self._scan_progress["running"] = False
         self._scan_progress["status"] = "completed"
         self._scan_progress["current"] = ""
+
+    async def _refresh_steam_activities(self, games: list[dict[str, Any]]) -> None:
+        self._load_data()
+        targets: list[dict[str, Any]] = []
+        for game in games:
+            if not isinstance(game, dict) or not str(game.get("appid", "")).strip():
+                continue
+            metadata = self._data["metadata"].get(str(int(game.get("appid"))))
+            if isinstance(metadata, dict):
+                targets.append(game)
+        self._activity_refresh_progress.update({"total": len(targets), "completed": 0})
+        for game in targets:
+            app_id = int(game.get("appid"))
+            metadata = self._data["metadata"].get(str(app_id))
+            title = self._clean_game_title(str(game.get("name") or (metadata or {}).get("title") or ""))
+            current = f"{self._activity_refresh_progress['completed'] + 1}/{len(targets)} - {title}" if title else f"{self._activity_refresh_progress['completed'] + 1}/{len(targets)}"
+            self._activity_refresh_progress["current"] = current
+            self._activity_refresh_progress["message"] = f"Refreshing Steam Activity for {title}"
+            try:
+                refreshed = await asyncio.to_thread(
+                    self._metadata_with_steam_news_sync,
+                    dict(metadata or {}),
+                    title,
+                    10,
+                )
+                if refreshed and self._sanitize_steam_news(refreshed.get("steam_news")):
+                    self._data["metadata"][str(app_id)] = refreshed
+                    self._save_data()
+                    self._activity_refresh_progress["assigned"] += 1
+                    self._activity_refresh_progress["message"] = f"Updated Steam Activity for {title}"
+                else:
+                    if refreshed:
+                        self._data["metadata"][str(app_id)] = refreshed
+                        self._save_data()
+                    self._activity_refresh_progress["failed"] += 1
+                    self._activity_refresh_progress["message"] = f"No Steam Activity found for {title}"
+            except Exception as error:
+                self._activity_refresh_progress["failed"] += 1
+                self._activity_refresh_progress["message"] = f"Failed: {title}"
+                self._activity_refresh_progress["error"] = str(error)
+                decky.logger.error(f"Steam Activity refresh failed for {title}: {error}")
+            finally:
+                self._activity_refresh_progress["completed"] += 1
+        self._activity_refresh_progress["running"] = False
+        self._activity_refresh_progress["status"] = "completed"
+        self._activity_refresh_progress["current"] = ""
 
     def _search_metadata_sync(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
         cleaned = self._clean_game_title(query)
@@ -1203,20 +1254,17 @@ class Plugin:
             source_url or str(metadata.get("source_url") or ""),
             limit=10,
         )
-        steam_appid, steam_store_url, steam_news = self._steam_news_for_metadata(
-            metadata,
-            clean_title,
-            limit=6,
-        )
         next_metadata = dict(metadata)
         next_metadata.update(
             {
                 "community_videos": videos,
                 "community_images": images,
-                "steam_appid": steam_appid or metadata.get("steam_appid"),
-                "steam_store_url": steam_store_url or metadata.get("steam_store_url") or "",
-                "steam_news": steam_news,
-                "steam_news_enriched_at": now() if steam_news else int(self._as_number(metadata.get("steam_news_enriched_at"), 0)),
+                # Steam Activity/news are refreshed only by the explicit
+                # “Aggiorna attività” action. Keeping this enrichment limited to
+                # community media prevents Activity refreshes from running in the
+                # background while the Steam UI is being opened.
+                "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
+                "steam_news_enriched_at": int(self._as_number(metadata.get("steam_news_enriched_at"), 0)),
                 "community_enriched_at": now(),
                 "updated_at": now(),
             }
@@ -1240,6 +1288,252 @@ class Plugin:
             return None, "", []
         news = self._steam_news_for_appid(steam_appid, title, limit=limit)
         return steam_appid, steam_store_url or STEAM_STORE_APP_URL.format(appid=steam_appid), news
+
+    def _steam_event_json(self, value: Any) -> dict[str, Any]:
+        if isinstance(value, dict):
+            return value
+        if not isinstance(value, str) or not value.strip():
+            return {}
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+
+    def _steam_localized_value(self, value: Any) -> str:
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    return item.strip()
+            return ""
+        if isinstance(value, dict):
+            for key in ("0", "english", "en", 0):
+                item = value.get(key)
+                if isinstance(item, str) and item.strip():
+                    return item.strip()
+            for item in value.values():
+                if isinstance(item, str) and item.strip():
+                    return item.strip()
+            return ""
+        return str(value or "").strip()
+
+    def _steam_event_clan_id(self, event: dict[str, Any]) -> str:
+        announcement = event.get("announcement_body") if isinstance(event.get("announcement_body"), dict) else {}
+        for value in (
+            announcement.get("clanid"),
+            announcement.get("clan_id"),
+            event.get("clanid"),
+            event.get("clan_id"),
+            event.get("clan_account_id"),
+        ):
+            digits = re.sub(r"[^0-9]", "", str(value or ""))
+            if digits:
+                return digits
+        return ""
+
+    def _steam_partner_asset_url(self, raw: str, clan_id: str = "") -> str:
+        value = urllib.parse.unquote(html.unescape(str(raw or ""))).strip().strip('"\'')
+        if not value:
+            return ""
+        value = value.replace("\\/", "/")
+        value = re.sub(r"\[/img\].*$", "", value, flags=re.I).strip()
+        value = re.sub(r"[\]\)>.,;]+$", "", value).strip()
+        clan_match = re.match(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)", value, re.I)
+        if clan_match:
+            return f"https://clan.cloudflare.steamstatic.com/images/{clan_match.group(1)}/{clan_match.group(2)}"
+        if re.match(r"^(?:https?:)?//", value, re.I):
+            return self._https_url(value)
+        # Steam partner-event JSON often stores only the asset filename in
+        # localized_*_image fields. Rebuild the CDN URL from the announcement clan id.
+        if clan_id and re.search(r"\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#].*)?$", value, re.I):
+            return f"https://clan.cloudflare.steamstatic.com/images/{clan_id}/{value.lstrip('/')}"
+        return ""
+
+    def _steam_news_image_candidates(self, contents: str, steam_appid: int = 0) -> list[str]:
+        text = urllib.parse.unquote(html.unescape(str(contents or ""))).replace("\\/", "/")
+        if not text:
+            return []
+
+        candidates: list[tuple[int, int, str]] = []
+
+        def add(raw: str, position: int = 0, context: str = "", base_score: int = 0) -> None:
+            url = self._steam_partner_asset_url(str(raw or "")) or self._https_url(str(raw or "").strip())
+            if not url:
+                return
+            haystack = f"{url} {context}".casefold()
+            score = base_score
+            # Steam BBCode bodies often start with decorative bars, logos, or small
+            # separators. The real Activity preview art is usually the content image
+            # attached around headings such as roadmap/calendar/update/image below.
+            positive_tokens = (
+                "roadmap", "calendar", "schedule", "content", "update", "patch",
+                "feature", "features", "event", "events", "challenge", "dlc",
+                "preview", "screenshot", "image below", "new content", "release",
+            )
+            negative_tokens = (
+                "divider", "separator", "spacer", "line", "border", "footer",
+                "headerbar", "header_bar", "logo", "icon", "avatar", "button",
+                "bullet", "store_capsule", "small_capsule", "capsule_sm", "discord",
+            )
+            for token in positive_tokens:
+                if token in haystack:
+                    score += 90
+            for token in negative_tokens:
+                if token in haystack:
+                    score -= 120
+            if re.search(r"(?:1920|1600|1280|1200|1080|800|720|roadmap|calendar|wide)", haystack, re.I):
+                score += 20
+            # If several body images are present, do not let the first tiny/decorative
+            # asset always win. Real article artwork often appears after intro text.
+            score += min(position // 500, 20)
+            candidates.append((score, position, url))
+
+        preview_youtube = re.search(r"\[previewyoutube=([A-Za-z0-9_-]{11})(?:;[^\]]*)?\]", text, re.I)
+        if preview_youtube:
+            add(f"https://i.ytimg.com/vi/{preview_youtube.group(1)}/hqdefault.jpg", preview_youtube.start(), "youtube preview", 45)
+
+        patterns = [
+            r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/\d+/[^\s<>\)\]\[]+\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#][^\s<>\)\]\[]*)?",
+            r'<img[^>]+src=["\']([^"\']+)["\']',
+            r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image|image)["\'][^>]+content=["\']([^"\']+)["\']',
+            r"\[img\]([^\[]+)\[/img\]",
+            r"((?:https?:)?//[^\s<>\)]+\.(?:jpg|jpeg|png|webp|gif|avif))(?:[?&][^\s<>\)]*)?",
+        ]
+        for pattern in patterns:
+            for match in re.finditer(pattern, text, re.I | re.S):
+                raw = match.group(1) if match.lastindex else match.group(0)
+                context = text[max(0, match.start() - 260): min(len(text), match.end() + 260)]
+                add(raw, match.start(), context, 50)
+
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for _score, _pos, url in sorted(candidates, key=lambda row: (-row[0], row[1])):
+            if url not in seen:
+                seen.add(url)
+                ordered.append(url)
+        return ordered
+
+    def _steam_news_image(self, contents: str, steam_appid: int = 0) -> str:
+        images = self._steam_news_image_candidates(contents, steam_appid)
+        return images[0] if images else ""
+
+    def _steam_partner_event_images(self, event: dict[str, Any], steam_appid: int) -> list[str]:
+        jsondata = self._steam_event_json(event.get("jsondata"))
+        clan_id = self._steam_event_clan_id(event)
+        announcement = event.get("announcement_body") if isinstance(event.get("announcement_body"), dict) else {}
+        body = str((announcement or {}).get("body") or event.get("event_notes") or "")
+
+        images: list[str] = []
+        seen: set[str] = set()
+
+        def add(raw: Any) -> None:
+            raw_value = self._steam_localized_value(raw)
+            if not raw_value:
+                return
+            # raw_value can be a complete body fragment, a Steam clan placeholder,
+            # or a bare asset filename from localized_*_image.
+            expanded = self._steam_news_image_candidates(str(raw_value), steam_appid)
+            if not expanded:
+                direct = self._steam_partner_asset_url(str(raw_value), clan_id) or self._https_url(str(raw_value).strip())
+                expanded = [direct] if direct else []
+            for url in expanded:
+                if url and url not in seen:
+                    seen.add(url)
+                    images.append(url)
+
+        # Prefer images embedded in the actual announcement body for Activity cards:
+        # for many Steam events, localized_title/capsule assets are generic headers,
+        # while the body [img] is the article artwork shown in the full native viewer.
+        add(body)
+        candidates = [
+            jsondata.get("localized_capsule_image"),
+            jsondata.get("localized_spotlight_image"),
+            jsondata.get("localized_title_image"),
+            jsondata.get("localized_header_image"),
+            event.get("image"),
+            event.get("capsule"),
+            event.get("capsule_image"),
+            event.get("header_image_url"),
+            event.get("preview_image_url"),
+        ]
+        if announcement:
+            candidates.extend([
+                announcement.get("image"),
+                announcement.get("capsule"),
+                announcement.get("capsule_image"),
+            ])
+        for candidate in candidates:
+            add(candidate)
+        return images
+
+    def _steam_partner_event_image(self, event: dict[str, Any], steam_appid: int) -> str:
+        images = self._steam_partner_event_images(event, steam_appid)
+        return images[0] if images else ""
+
+    def _steam_partner_events_for_appid(self, steam_appid: int, limit: int = 10) -> list[dict[str, Any]]:
+        params = urllib.parse.urlencode(
+            {
+                "appid": int(steam_appid),
+                "offset": 0,
+                "count": max(10, min(int(limit or 10) * 3, 50)),
+                "l": "english",
+                "origin": "https://store.steampowered.com",
+            }
+        )
+        try:
+            payload = self._http_json(f"{STEAM_EVENTS_URL}?{params}", timeout=12)
+        except Exception as error:
+            decky.logger.error(f"Failed Steam partner events fetch for {steam_appid}: {error}")
+            return []
+        events = payload.get("events") if isinstance(payload, dict) else []
+        if not isinstance(events, list):
+            return []
+        rows: list[dict[str, Any]] = []
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            event_type = int(self._as_number(event.get("event_type") or event.get("type"), 0))
+            if event_type not in STEAM_ACTIVITY_EVENT_TYPES:
+                continue
+            announcement = event.get("announcement_body") if isinstance(event.get("announcement_body"), dict) else {}
+            event_gid = str(event.get("gid") or "").strip()
+            announcement_gid = str((announcement or {}).get("gid") or "").strip()
+            gid = event_gid or announcement_gid
+            title_text = self._clean_html_text(str((announcement or {}).get("headline") or event.get("event_name") or ""))
+            if not gid or not title_text:
+                continue
+            body = str((announcement or {}).get("body") or event.get("event_notes") or "")
+            date = int(self._as_number((announcement or {}).get("posttime") or event.get("rtime32_start_time") or event.get("rtime_created"), 0))
+            url = (
+                f"https://steamcommunity.com/games/{int(steam_appid)}/announcements/detail/{announcement_gid}"
+                if announcement_gid
+                else f"https://store.steampowered.com/news/app/{int(steam_appid)}/view/{event_gid}"
+            )
+            image_sources = self._steam_partner_event_images(event, int(steam_appid))
+            rows.append(
+                {
+                    "id": announcement_gid or event_gid,
+                    "gid": announcement_gid or event_gid,
+                    "event_gid": event_gid,
+                    "news_id": announcement_gid or event_gid,
+                    "announcement_gid": announcement_gid or event_gid,
+                    "event_type": event_type,
+                    "type": event_type,
+                    "title": title_text,
+                    "url": self._https_url(url),
+                    "summary": self._steam_news_summary(body or title_text),
+                    "body": self._clean_steam_news_text(body)[:4000],
+                    "raw_body": body,
+                    "image": image_sources[0] if image_sources else "",
+                    "image_sources": image_sources,
+                    "author": "Steam",
+                    "feedLabel": self._clean_html_text(str(event.get("event_type_name") or "Steam")),
+                    "date": date,
+                }
+            )
+            if len(rows) >= max(1, min(int(limit or 10), 12)):
+                break
+        return self._sanitize_steam_news(rows)
 
     def _resolve_steam_appid_for_title(
         self,
@@ -1297,6 +1591,9 @@ class Plugin:
         return best[1], best[2]
 
     def _steam_news_for_appid(self, steam_appid: int, title: str = "", limit: int = 6) -> list[dict[str, Any]]:
+        partner_events = self._steam_partner_events_for_appid(steam_appid, limit=max(limit or 6, 10))
+        if partner_events:
+            return partner_events
         params = urllib.parse.urlencode(
             {
                 "appid": int(steam_appid),
@@ -1321,11 +1618,15 @@ class Plugin:
             if not url or not title_text:
                 continue
             contents = str(item.get("contents") or "")
-            image_url = self._steam_news_image(contents, int(steam_appid))
+            image_sources = self._steam_news_image_candidates(contents, int(steam_appid))
+            image_url = image_sources[0] if image_sources else ""
             if not image_url:
                 image_url = self._steam_announcement_page_image(url)
-            if not image_url and steam_appid:
-                image_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{int(steam_appid)}/header.jpg"
+                if image_url:
+                    image_sources = [image_url]
+            # Keep image empty when the news item has no real embedded artwork.
+            # The frontend/native event model has its own explicit fallback image,
+            # but storing the generic app header here makes every item look the same.
             gid = str(item.get("gid") or "").strip()
             rows.append(
                 {
@@ -1338,7 +1639,10 @@ class Plugin:
                     "title": title_text,
                     "url": url,
                     "summary": self._steam_news_summary(contents),
+                    "body": self._clean_steam_news_text(contents)[:4000],
+                    "raw_body": contents,
                     "image": image_url,
+                    "image_sources": image_sources,
                     "author": self._clean_html_text(str(item.get("author") or "")),
                     "feedLabel": self._clean_html_text(str(item.get("feedlabel") or item.get("feedname") or "Steam News")),
                     "date": int(self._as_number(item.get("date"), 0)),
@@ -1347,41 +1651,8 @@ class Plugin:
         return self._sanitize_steam_news(rows)
 
     def _steam_news_image(self, contents: str, steam_appid: int = 0) -> str:
-        text = urllib.parse.unquote(html.unescape(str(contents or ""))).replace("\\/", "/")
-
-        def clan_image_url(raw: str) -> str:
-            raw = urllib.parse.unquote(str(raw or "").strip().strip('"\''))
-            raw = raw.replace("\\/", "/")
-            raw = re.sub(r"\[/img\].*$", "", raw, flags=re.I).strip()
-            raw = re.sub(r"[\]\)>.,;]+$", "", raw).strip()
-            raw = self._https_url(raw)
-            clan_match = re.match(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)", raw, re.I)
-            if clan_match:
-                return f"https://clan.cloudflare.steamstatic.com/images/{clan_match.group(1)}/{clan_match.group(2)}"
-            return raw
-
-        # Steam announcements often use BBCode placeholders such as
-        # {STEAM_CLAN_IMAGE}/123456/file.jpg instead of absolute URLs. Those are
-        # valid in Steam's own renderer but break as normal <img src> values.
-        placeholder = re.search(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/\d+/[^\s<>\)\]\[]+\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#][^\s<>\)\]\[]*)?", text, re.I)
-        if placeholder:
-            url = clan_image_url(placeholder.group(0))
-            if url:
-                return url
-
-        patterns = [
-            r'<img[^>]+src=["\']([^"\']+)["\']',
-            r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image|image)["\'][^>]+content=["\']([^"\']+)["\']',
-            r'\[img\]([^\[]+)\[/img\]',
-            r"((?:https?:)?//[^\s<>\)]+\.(?:jpg|jpeg|png|webp|gif|avif))(?:[?&][^\s<>\)]*)?",
-        ]
-        for pattern in patterns:
-            match = re.search(pattern, text, re.I | re.S)
-            if match:
-                url = clan_image_url(match.group(1))
-                if url:
-                    return url
-        return ""
+        images = self._steam_news_image_candidates(contents, steam_appid)
+        return images[0] if images else ""
 
     def _steam_announcement_page_image(self, url: str) -> str:
         url = self._https_url(str(url or ""))
@@ -1416,6 +1687,8 @@ class Plugin:
 
     def _clean_steam_news_text(self, value: str) -> str:
         text = urllib.parse.unquote(html.unescape(str(value or ""))).replace("\\/", "/")
+        text = re.sub(r"\[previewyoutube=[A-Za-z0-9_-]{11}(?:;[^\]]*)?\]\s*\[/previewyoutube\]", " ", text, flags=re.I)
+        text = re.sub(r"\[previewyoutube=[^\]]+\]", " ", text, flags=re.I)
         text = re.sub(
             r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/\d+\/[^\s<>\)\]\[]+",
             " ",
@@ -1423,10 +1696,26 @@ class Plugin:
             flags=re.I,
         )
         text = re.sub(r"\[img\][\s\S]*?\[/img\]", " ", text, flags=re.I)
-        text = re.sub(r"\[/?(?:img|url|h1|h2|h3|b|i|u|list|\*)[^\]]*\]", " ", text, flags=re.I)
+        text = re.sub(r"\[url=([^\]]+)\]([\s\S]*?)\[/url\]", r"\2", text, flags=re.I)
+        text = re.sub(r"\[list\][\s\S]*?\[/list\]", lambda m: re.sub(r"\[/?(?:list|\*)[^\]]*\]", " ", m.group(0), flags=re.I), text, flags=re.I)
+        text = re.sub(
+            r"\[/?(?:p|br|hr|quote|spoiler|table|tr|td|th|img|url|h1|h2|h3|h4|b|i|u|s|strike|list|\*|code|noparse|previewyoutube|video|youtube|size|color|font|center|left|right)[^\]]*\]",
+            " ",
+            text,
+            flags=re.I,
+        )
         text = re.sub(r"<br\s*/?>", " ", text, flags=re.I)
         text = self._clean_html_text(text)
         return re.sub(r"\s+", " ", text).strip()
+
+    def _steam_news_raw_body(self, value: str) -> str:
+        text = urllib.parse.unquote(html.unescape(str(value or ""))).replace("\\/", "/").strip()
+        # Steam's native event renderer understands Steam BBCode. Keep links,
+        # images and previewyoutube blocks intact for the detail viewer, but
+        # normalize paragraph-only noise and clamp to a sane size so metadata
+        # files cannot grow without bound.
+        text = re.sub(r"\s+", " ", text) if len(text) < 4000 else text
+        return text[:16000].strip()
 
     def _steam_news_summary(self, contents: str) -> str:
         return self._clean_steam_news_text(contents)[:600]
@@ -1525,14 +1814,17 @@ class Plugin:
         for item in values:
             if not isinstance(item, dict):
                 continue
-            raw_gid = str(item.get("gid") or item.get("news_id") or item.get("announcement_gid") or "").strip()
+            raw_gid = str(item.get("gid") or item.get("news_id") or item.get("announcement_gid") or item.get("event_gid") or "").strip()
             raw_id = str(item.get("id") or raw_gid or item.get("url") or "").strip()
-            title = self._clean_html_text(str(item.get("title") or ""))
+            title = self._clean_steam_news_text(str(item.get("title") or ""))
             url = self._https_url(str(item.get("url") or "").strip())
             if not title or not url:
                 continue
+            event_type = int(self._as_number(item.get("event_type") or item.get("type"), 28))
+            raw_body_source = str(item.get("raw_body") or item.get("body") or item.get("description") or item.get("contents") or "")
+            raw_body = self._steam_news_raw_body(raw_body_source)
             canonical_url = re.sub(r"[?#].*$", "", url).casefold()
-            clean_summary = self._clean_steam_news_text(str(item.get("summary") or item.get("contents") or ""))
+            clean_summary = "" if event_type == 12 else self._clean_steam_news_text(str(item.get("summary") or item.get("contents") or raw_body_source or ""))
             summary_key = clean_summary[:180].casefold()
             title_key = title.casefold()
             date_key = str(int(self._as_number(item.get("date"), 0)) // 86400)
@@ -1540,24 +1832,36 @@ class Plugin:
             if key in seen:
                 continue
             seen.add(key)
+            raw_sources = item.get("image_sources") if isinstance(item.get("image_sources"), list) else []
+            image_sources: list[str] = []
+            for candidate in [*raw_sources, item.get("image"), item.get("image_url"), item.get("preview_image_url")]:
+                for image in self._steam_news_image_candidates(str(candidate or ""), 0) or [self._https_url(str(candidate or "").strip())]:
+                    if image and image not in image_sources:
+                        image_sources.append(image)
+            if not image_sources:
+                image_sources = self._steam_news_image_candidates(raw_body_source, 0)
             rows.append(
                 {
                     "id": raw_id or url,
                     "gid": raw_gid,
                     "news_id": raw_gid,
-                    "announcement_gid": raw_gid,
-                    "event_type": int(self._as_number(item.get("event_type") or item.get("type"), 28)),
-                    "type": int(self._as_number(item.get("event_type") or item.get("type"), 28)),
+                    "announcement_gid": str(item.get("announcement_gid") or raw_gid).strip(),
+                    "event_gid": str(item.get("event_gid") or raw_gid).strip(),
+                    "event_type": event_type,
+                    "type": event_type,
                     "title": title,
                     "url": url,
                     "summary": clean_summary[:900],
-                    "image": self._steam_news_image(str(item.get("image") or ""), 0) or self._https_url(str(item.get("image") or "").strip()),
+                    "body": self._clean_steam_news_text(raw_body_source or clean_summary)[:4000],
+                    "raw_body": raw_body,
+                    "image": image_sources[0] if image_sources else "",
+                    "image_sources": image_sources,
                     "author": self._clean_html_text(str(item.get("author") or "")),
                     "feedLabel": self._clean_html_text(str(item.get("feedLabel") or item.get("feedlabel") or item.get("feedname") or "Steam News")),
                     "date": int(self._as_number(item.get("date"), 0)),
                 }
             )
-            if len(rows) >= 8:
+            if len(rows) >= 12:
                 break
         return rows
 
@@ -6411,6 +6715,7 @@ try {
                         start_dir = str(shortcut.get("start_dir") or "")
                         launch_options = str(shortcut.get("launch_options") or "")
                         shortcut_path = str(shortcut.get("shortcut_path") or "")
+                        icon = str(shortcut.get("icon") or "")
                         app_id = shortcut.get("appid")
                         if isinstance(app_id, int):
                             app_id = int(app_id) & 0xFFFFFFFF
@@ -6424,6 +6729,7 @@ try {
                                 "start_dir": start_dir,
                                 "launch_options": launch_options,
                                 "shortcut_path": shortcut_path,
+                                "icon": icon,
                                 "isNonSteam": True,
                             }
             except Exception as error:
@@ -6490,6 +6796,7 @@ try {
                     shortcut_path = str(
                         self._vdf_get(value, "shortcutpath", "ShortcutPath") or ""
                     ).strip()
+                    icon = str(self._vdf_get(value, "icon", "Icon") or "").strip()
                     if name:
                         shortcuts.append(
                             {
@@ -6498,6 +6805,7 @@ try {
                                 "start_dir": start_dir,
                                 "launch_options": launch_options,
                                 "shortcut_path": shortcut_path,
+                                "icon": icon,
                                 "appid": self._vdf_get(value, "appid", "AppID"),
                             }
                         )
@@ -6510,6 +6818,7 @@ try {
         launch_options = re.findall(
             r"launchoptions\x00([^\x00]*)", text, flags=re.IGNORECASE
         )
+        icons = re.findall(r"icon\x00([^\x00]*)", text, flags=re.IGNORECASE)
         return [
             {
                 "name": name.strip(),
@@ -6517,6 +6826,7 @@ try {
                 "launch_options": launch_options[index].strip()
                 if index < len(launch_options)
                 else "",
+                "icon": icons[index].strip() if index < len(icons) else "",
             }
             for index, name in enumerate(names)
             if name.strip()

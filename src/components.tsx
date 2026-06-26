@@ -18,6 +18,7 @@ import {
   getAchievementSettings,
   getMetadata,
   getRetroAchievementsSettings,
+  getActivityRefreshProgress,
   removeMetadata,
   resolveRetroAchievementsFromPath,
   resolveXboxFromShortcut,
@@ -31,6 +32,7 @@ import {
   setRetroAchievementsSettings,
   setXboxSettings,
   setXboxTitleId,
+  startRefreshSteamActivities,
   startScanMissing,
   testRetroAchievementsCredentials,
   getScanProgress,
@@ -107,6 +109,15 @@ const spacedButtonRowStyle = {
   marginTop: "0.35rem",
 } as const;
 
+const actionButtonStackStyle = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "stretch",
+  gap: "0.35rem",
+  flex: "1 1 13rem",
+  minWidth: 0,
+} as const;
+
 const resultsStackStyle = {
   ...rowStackStyle,
   marginTop: "1.25rem",
@@ -135,6 +146,43 @@ const inlineStatusStyle = {
   alignItems: "center",
   gap: "0.5rem",
   ...compactTextStyle,
+} as const;
+
+const scanSpinnerStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "1rem",
+  height: "1rem",
+  flex: "0 0 1rem",
+  overflow: "hidden",
+} as const;
+
+const scanSpinnerInnerStyle = {
+  display: "inline-flex",
+  transform: "scale(0.5)",
+  transformOrigin: "center",
+} as const;
+
+const activityStatusStyle = {
+  ...inlineStatusStyle,
+  minHeight: "3.35rem",
+} as const;
+
+const activitySpinnerStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "3.35rem",
+  height: "3.35rem",
+  flex: "0 0 3.35rem",
+  overflow: "hidden",
+} as const;
+
+const activitySpinnerInnerStyle = {
+  display: "inline-flex",
+  transform: "scale(0.72)",
+  transformOrigin: "center",
 } as const;
 
 const sectionHeadingStyle = {
@@ -219,6 +267,8 @@ export const Content = () => {
   const [metadataCount, setMetadataCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [activityBusy, setActivityBusy] = useState(false);
+  const [activityMessage, setActivityMessage] = useState("");
   const [xboxBulkBusy, setXboxBulkBusy] = useState(false);
   const [xboxBulkMessage, setXboxBulkMessage] = useState("");
   const [ra, setRa] = useState<RetroAchievementsSettings>({
@@ -276,6 +326,35 @@ export const Content = () => {
       }, 800);
     } catch (error) {
       setBusy(false);
+      toaster.toast({ title: t("pluginName"), body: String(error) });
+    }
+  };
+
+  const refreshActivities = async () => {
+    if (activityBusy) return;
+    setActivityBusy(true);
+    setActivityMessage(t("refreshingActivities"));
+    try {
+      await startRefreshSteamActivities(games);
+      const interval = window.setInterval(async () => {
+        const progress = await getActivityRefreshProgress();
+        setActivityMessage(
+          progress.current ||
+            progress.message ||
+            `${progress.completed}/${progress.total}`
+        );
+        if (!progress.running) {
+          window.clearInterval(interval);
+          await refreshMetadataCache();
+          setMetadataCount(Object.keys(metadataCache).length);
+          setActivityBusy(false);
+          window.dispatchEvent(new Event("playhub-metadata:activity-refreshed"));
+          window.dispatchEvent(new Event("playhub-metadata:updated"));
+          toaster.toast({ title: t("pluginName"), body: t("activityRefreshComplete") });
+        }
+      }, 800);
+    } catch (error) {
+      setActivityBusy(false);
       toaster.toast({ title: t("pluginName"), body: String(error) });
     }
   };
@@ -490,23 +569,34 @@ export const Content = () => {
           <div>
             <b>{t("missing")}:</b> {missing}
           </div>
-          {busy || scanMessage ? (
-            <div style={inlineStatusStyle}>
-              {busy ? <Spinner /> : null}
-              <span>{scanMessage || t("scanning")}</span>
-            </div>
-          ) : null}
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={spacedButtonRowStyle}>
-          <FocusableButton
-            className="DialogButton"
-            disabled={busy || !games.length}
-            onClick={scanMissing}
-          >
-            {busy ? t("scanning") : t("scanMissing")}
-          </FocusableButton>
+          <div style={actionButtonStackStyle}>
+            <FocusableButton
+              className="DialogButton"
+              disabled={busy || !games.length}
+              onClick={scanMissing}
+            >
+              {busy ? t("scanning") : t("scanMissing")}
+            </FocusableButton>
+            {busy || scanMessage ? (
+              <div style={inlineStatusStyle}>{scanMessage || t("scanning")}</div>
+            ) : null}
+          </div>
+          <div style={actionButtonStackStyle}>
+            <FocusableButton
+              className="DialogButton"
+              disabled={activityBusy || busy || !games.length}
+              onClick={refreshActivities}
+            >
+              {activityBusy ? t("refreshingActivities") : t("refreshActivities")}
+            </FocusableButton>
+            {activityBusy || activityMessage ? (
+              <div style={inlineStatusStyle}>{activityMessage || t("refreshingActivities")}</div>
+            ) : null}
+          </div>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
@@ -1016,7 +1106,9 @@ export const MetadataPage = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              {busy ? <Spinner /> : null}
+              {busy ? (
+                <div style={compactTextStyle}>{t("searching")}</div>
+              ) : null}
               {!busy && !results.length ? (
                 <div style={compactTextStyle}>{t("noResults")}</div>
               ) : null}

@@ -61,6 +61,14 @@ export type MetadataNews = {
   image?: string;
   author?: string;
   feedLabel?: string;
+  event_type?: number;
+  type?: number;
+  gid?: string;
+  news_id?: string;
+  announcement_gid?: string;
+  event_gid?: string;
+  body?: string;
+  raw_body?: string;
   date?: number;
 };
 
@@ -71,6 +79,7 @@ export type GameOption = {
   start_dir?: string;
   launch_options?: string;
   shortcut_path?: string;
+  icon?: string;
   isNonSteam?: boolean;
 };
 
