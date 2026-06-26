@@ -11,9 +11,11 @@
       "achievements",
       "openxbl",
       "trueachievements",
-      "xbox"
+      "xbox",
+      "news",
+      "activity"
     ],
-    "description": "Add clean game metadata plus RetroAchievements and optional Xbox/OpenXBL achievements to non-Steam games in Steam Gaming Mode.",
+    "description": "Add clean game metadata, Steam activity news, RetroAchievements and optional Xbox achievements to non-Steam games in Steam Gaming Mode.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   },
   "version": "1.4.0"

@@ -20,6 +20,10 @@ export type MetadataData = {
   screenshots?: MetadataScreenshot[];
   community_images?: MetadataScreenshot[];
   community_videos?: MetadataVideo[];
+  steam_appid?: number | null;
+  steam_store_url?: string;
+  steam_news?: MetadataNews[];
+  steam_news_enriched_at?: number;
   community_enriched_at?: number;
   updated_at?: number;
 };
@@ -47,6 +51,17 @@ export type MetadataVideo = {
   url?: string;
   thumbnail?: string;
   source?: string;
+};
+
+export type MetadataNews = {
+  id: string;
+  title: string;
+  url: string;
+  summary?: string;
+  image?: string;
+  author?: string;
+  feedLabel?: string;
+  date?: number;
 };
 
 export type GameOption = {

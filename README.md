@@ -18,6 +18,12 @@ including RetroAchievements and Xbox PC achievements.
 - Adds screenshots and community media when available.
 - Lets you edit metadata manually for each game.
 
+
+## Steam Activity News
+
+For non-Steam shortcuts that can be matched to a Steam Store app, Playhub Metadata can fetch Steam news and announcements and feed them into Steam Big Picture's normal Activity area.
+
+
 ## Achievements
 
 Playhub Metadata can show achievements for non-Steam games inside Steam Big Picture.
@@ -84,6 +90,8 @@ Xbox achievement data comes from OpenXBL. RetroAchievements data comes from Retr
 ## License & credits
 
 Playhub Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
+
+Playhub Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
 
 The library context-menu integration (`src/contextMenuPatch.tsx`) is derived from the
 [decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) plugin by the SteamGridDB

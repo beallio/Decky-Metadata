@@ -55,6 +55,9 @@ MICROSOFT_STORE_SEARCH_URL = "https://storeedgefd.dsx.mp.microsoft.com/v9.0/page
 MICROSOFT_STORE_PRODUCTS_URL = "https://storeedgefd.dsx.mp.microsoft.com/v8.0/sdk/products"
 MICROSOFT_DISPLAY_CATALOG_PRODUCTS_URL = "https://displaycatalog.mp.microsoft.com/v7.0/products"
 TRUEACHIEVEMENTS_BASE_URL = "https://www.trueachievements.com"
+STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
+STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
+STEAM_STORE_APP_URL = "https://store.steampowered.com/app/{appid}/"
 ACHIEVEMENT_SOURCES = {"auto", "retroachievements", "xbox", "disabled"}
 ACHIEVEMENT_CACHE_POLICIES = {"hourly", "daily", "weekly", "pc_session", "manual"}
 ACHIEVEMENT_CACHE_DEFAULT_POLICY = "daily"
@@ -854,6 +857,18 @@ class Plugin:
             "error": "",
         }
 
+    def _metadata_needs_scan_news(self, app_id: int) -> bool:
+        metadata = self._data["metadata"].get(str(app_id))
+        if not isinstance(metadata, dict):
+            return True
+        if self._sanitize_steam_news(metadata.get("steam_news")):
+            return False
+        # If we already tried to enrich news and resolved a Steam AppID, avoid
+        # hammering Steam on every bulk scan for titles that simply have no news.
+        if self._safe_int(metadata.get("steam_appid")) and int(self._as_number(metadata.get("steam_news_enriched_at"), 0)):
+            return False
+        return True
+
     async def _scan_missing(self, games: list[dict[str, Any]]) -> None:
         self._load_data()
         missing = [
@@ -861,7 +876,7 @@ class Plugin:
             for game in games
             if isinstance(game, dict)
             and str(game.get("appid", "")).strip()
-            and str(game.get("appid")) not in self._data["metadata"]
+            and self._metadata_needs_scan_news(int(game.get("appid")))
         ]
         self._scan_progress.update({"total": len(missing), "completed": 0})
         for game in missing:
@@ -869,13 +884,22 @@ class Plugin:
             title = self._clean_game_title(str(game.get("name") or ""))
             self._scan_progress["current"] = title
             try:
-                metadata = await asyncio.to_thread(
-                    self._auto_fetch_metadata_sync, title
-                )
+                existing = self._data["metadata"].get(str(app_id))
+                if isinstance(existing, dict):
+                    metadata = dict(existing)
+                else:
+                    self._scan_progress["message"] = f"Fetching metadata for {title}"
+                    metadata = await asyncio.to_thread(
+                        self._auto_fetch_metadata_sync, title
+                    )
                 if metadata:
+                    self._scan_progress["message"] = f"Fetching Steam news for {title}"
+                    metadata = await asyncio.to_thread(
+                        self._metadata_with_steam_news_sync, metadata, title, 6
+                    )
                     await self.save_metadata(app_id, metadata)
                     self._scan_progress["assigned"] += 1
-                    self._scan_progress["message"] = f"Saved metadata for {title}"
+                    self._scan_progress["message"] = f"Saved metadata/news for {title}"
                 else:
                     self._scan_progress["failed"] += 1
                     self._scan_progress["message"] = f"No match for {title}"
@@ -883,7 +907,7 @@ class Plugin:
                 self._scan_progress["failed"] += 1
                 self._scan_progress["message"] = f"Failed: {title}"
                 self._scan_progress["error"] = str(error)
-                decky.logger.error(f"Metadata scan failed for {title}: {error}")
+                decky.logger.error(f"Metadata/news scan failed for {title}: {error}")
             finally:
                 self._scan_progress["completed"] += 1
         self._scan_progress["running"] = False
@@ -1120,10 +1144,44 @@ class Plugin:
             "community_videos": self._sanitize_videos(
                 metadata.get("community_videos")
             ),
+            "steam_appid": self._safe_int(metadata.get("steam_appid")),
+            "steam_store_url": self._https_url(str(metadata.get("steam_store_url") or "")),
+            "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
+            "steam_news_enriched_at": int(
+                self._as_number(metadata.get("steam_news_enriched_at"), 0)
+            ),
             "community_enriched_at": int(
                 self._as_number(metadata.get("community_enriched_at"), 0)
             ),
         }
+
+    def _metadata_with_steam_news_sync(
+        self, metadata: dict[str, Any], title: str, limit: int = 6
+    ) -> dict[str, Any]:
+        if not isinstance(metadata, dict):
+            return metadata
+        clean_title = self._clean_game_title(title or str(metadata.get("title") or ""))
+        if not clean_title:
+            return self._sanitize_metadata(metadata)
+        steam_appid, steam_store_url, steam_news = self._steam_news_for_metadata(
+            metadata,
+            clean_title,
+            limit=limit,
+        )
+        next_metadata = dict(metadata)
+        if steam_appid:
+            next_metadata["steam_appid"] = steam_appid
+        if steam_store_url:
+            next_metadata["steam_store_url"] = steam_store_url
+        if steam_news:
+            next_metadata["steam_news"] = steam_news
+            next_metadata["steam_news_enriched_at"] = now()
+        else:
+            next_metadata["steam_news"] = self._sanitize_steam_news(next_metadata.get("steam_news"))
+            next_metadata["steam_news_enriched_at"] = int(
+                self._as_number(next_metadata.get("steam_news_enriched_at"), 0)
+            )
+        return self._sanitize_metadata(next_metadata)
 
     def _enrich_community_media_sync(
         self, app_id: int, title: str = "", source_url: str = ""
@@ -1145,11 +1203,20 @@ class Plugin:
             source_url or str(metadata.get("source_url") or ""),
             limit=10,
         )
+        steam_appid, steam_store_url, steam_news = self._steam_news_for_metadata(
+            metadata,
+            clean_title,
+            limit=6,
+        )
         next_metadata = dict(metadata)
         next_metadata.update(
             {
                 "community_videos": videos,
                 "community_images": images,
+                "steam_appid": steam_appid or metadata.get("steam_appid"),
+                "steam_store_url": steam_store_url or metadata.get("steam_store_url") or "",
+                "steam_news": steam_news,
+                "steam_news_enriched_at": now() if steam_news else int(self._as_number(metadata.get("steam_news_enriched_at"), 0)),
                 "community_enriched_at": now(),
                 "updated_at": now(),
             }
@@ -1158,6 +1225,211 @@ class Plugin:
         self._data["metadata"][key] = saved
         self._save_data()
         return saved
+
+    def _steam_news_for_metadata(
+        self,
+        metadata: dict[str, Any],
+        title: str,
+        limit: int = 6,
+    ) -> tuple[int | None, str, list[dict[str, Any]]]:
+        steam_appid = self._safe_int(metadata.get("steam_appid"))
+        steam_store_url = self._https_url(str(metadata.get("steam_store_url") or ""))
+        if not steam_appid:
+            steam_appid, steam_store_url = self._resolve_steam_appid_for_title(title, metadata)
+        if not steam_appid:
+            return None, "", []
+        news = self._steam_news_for_appid(steam_appid, title, limit=limit)
+        return steam_appid, steam_store_url or STEAM_STORE_APP_URL.format(appid=steam_appid), news
+
+    def _resolve_steam_appid_for_title(
+        self,
+        title: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[int | None, str]:
+        metadata = metadata or {}
+        for value in (metadata.get("steam_store_url"), metadata.get("source_url"), metadata.get("id")):
+            match = re.search(r"store\.steampowered\.com/app/(\d+)", str(value or ""), re.I)
+            if match:
+                appid = self._safe_int(match.group(1))
+                if appid:
+                    return appid, STEAM_STORE_APP_URL.format(appid=appid)
+        clean_title = self._clean_game_title(title)
+        if not clean_title:
+            return None, ""
+        try:
+            params = urllib.parse.urlencode({"term": clean_title, "cc": "US", "l": "english"})
+            payload = self._http_json(f"{STEAM_STORE_SEARCH_URL}?{params}", timeout=12)
+        except Exception as error:
+            decky.logger.error(f"Failed Steam store search for {clean_title}: {error}")
+            return None, ""
+        items = payload.get("items") if isinstance(payload, dict) else []
+        if not isinstance(items, list):
+            return None, ""
+        normalised_query = self._normalise_match_title(clean_title)
+        best: tuple[int, int, str, str] | None = None
+        for index, item in enumerate(items[:12]):
+            if not isinstance(item, dict):
+                continue
+            appid = self._safe_int(item.get("id") or item.get("appid"))
+            name = self._clean_game_title(str(item.get("name") or ""))
+            if not appid or not name:
+                continue
+            score = 0
+            normalised_name = self._normalise_match_title(name)
+            if normalised_name == normalised_query:
+                score += 1000
+            elif self._reasonable_match(clean_title, name):
+                score += 700
+            else:
+                ratio = difflib.SequenceMatcher(None, normalised_query, normalised_name).ratio()
+                if ratio < 0.72:
+                    continue
+                score += int(ratio * 500)
+            # Prefer the first Steam result when scores are close. The store
+            # already ranks exact/official pages above DLC, demos and bundles.
+            score -= index * 5
+            url = STEAM_STORE_APP_URL.format(appid=appid)
+            row = (score, appid, url, name)
+            if not best or row[0] > best[0]:
+                best = row
+        if not best:
+            return None, ""
+        return best[1], best[2]
+
+    def _steam_news_for_appid(self, steam_appid: int, title: str = "", limit: int = 6) -> list[dict[str, Any]]:
+        params = urllib.parse.urlencode(
+            {
+                "appid": int(steam_appid),
+                "count": max(1, min(int(limit or 6), 10)),
+                "maxlength": 600,
+                "format": "json",
+                "feeds": "steam_community_announcements,steam_community_announcements_koreana,steam_community_announcements_japanese,steam_community_announcements_schinese,steam_community_announcements_tchinese,steam_community_announcements_french,steam_community_announcements_german,steam_community_announcements_spanish,steam_community_announcements_italian,steam_community_announcements_polish,steam_community_announcements_portuguese,steam_community_announcements_russian",
+            }
+        )
+        try:
+            payload = self._http_json(f"{STEAM_NEWS_URL}?{params}", timeout=12)
+        except Exception as error:
+            decky.logger.error(f"Failed Steam news fetch for {steam_appid}: {error}")
+            return []
+        newsitems = (((payload or {}).get("appnews") or {}).get("newsitems") or []) if isinstance(payload, dict) else []
+        rows: list[dict[str, Any]] = []
+        for item in newsitems:
+            if not isinstance(item, dict):
+                continue
+            url = self._https_url(str(item.get("url") or ""))
+            title_text = self._clean_html_text(str(item.get("title") or ""))
+            if not url or not title_text:
+                continue
+            contents = str(item.get("contents") or "")
+            image_url = self._steam_news_image(contents, int(steam_appid))
+            if not image_url:
+                image_url = self._steam_announcement_page_image(url)
+            if not image_url and steam_appid:
+                image_url = f"https://cdn.akamai.steamstatic.com/steam/apps/{int(steam_appid)}/header.jpg"
+            gid = str(item.get("gid") or "").strip()
+            rows.append(
+                {
+                    "id": gid or url,
+                    "gid": gid,
+                    "news_id": gid,
+                    "announcement_gid": gid,
+                    "event_type": 28,
+                    "type": 28,
+                    "title": title_text,
+                    "url": url,
+                    "summary": self._steam_news_summary(contents),
+                    "image": image_url,
+                    "author": self._clean_html_text(str(item.get("author") or "")),
+                    "feedLabel": self._clean_html_text(str(item.get("feedlabel") or item.get("feedname") or "Steam News")),
+                    "date": int(self._as_number(item.get("date"), 0)),
+                }
+            )
+        return self._sanitize_steam_news(rows)
+
+    def _steam_news_image(self, contents: str, steam_appid: int = 0) -> str:
+        text = urllib.parse.unquote(html.unescape(str(contents or ""))).replace("\\/", "/")
+
+        def clan_image_url(raw: str) -> str:
+            raw = urllib.parse.unquote(str(raw or "").strip().strip('"\''))
+            raw = raw.replace("\\/", "/")
+            raw = re.sub(r"\[/img\].*$", "", raw, flags=re.I).strip()
+            raw = re.sub(r"[\]\)>.,;]+$", "", raw).strip()
+            raw = self._https_url(raw)
+            clan_match = re.match(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)", raw, re.I)
+            if clan_match:
+                return f"https://clan.cloudflare.steamstatic.com/images/{clan_match.group(1)}/{clan_match.group(2)}"
+            return raw
+
+        # Steam announcements often use BBCode placeholders such as
+        # {STEAM_CLAN_IMAGE}/123456/file.jpg instead of absolute URLs. Those are
+        # valid in Steam's own renderer but break as normal <img src> values.
+        placeholder = re.search(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/\d+/[^\s<>\)\]\[]+\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#][^\s<>\)\]\[]*)?", text, re.I)
+        if placeholder:
+            url = clan_image_url(placeholder.group(0))
+            if url:
+                return url
+
+        patterns = [
+            r'<img[^>]+src=["\']([^"\']+)["\']',
+            r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image|image)["\'][^>]+content=["\']([^"\']+)["\']',
+            r'\[img\]([^\[]+)\[/img\]',
+            r"((?:https?:)?//[^\s<>\)]+\.(?:jpg|jpeg|png|webp|gif|avif))(?:[?&][^\s<>\)]*)?",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, re.I | re.S)
+            if match:
+                url = clan_image_url(match.group(1))
+                if url:
+                    return url
+        return ""
+
+    def _steam_announcement_page_image(self, url: str) -> str:
+        url = self._https_url(str(url or ""))
+        if not url:
+            return ""
+        try:
+            text = self._http_text(url, timeout=7)
+        except Exception:
+            return ""
+        text = urllib.parse.unquote(html.unescape(str(text or ""))).replace("\\/", "/")
+        patterns = [
+            r'<meta[^>]+(?:property|name)=["\'](?:og:image|twitter:image|image)["\'][^>]+content=["\']([^"\']+)["\']',
+            r'<link[^>]+rel=["\']image_src["\'][^>]+href=["\']([^"\']+)["\']',
+            r'background-image\s*:\s*url\(["\']?([^"\')]+)["\']?\)',
+            r'\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/\d+/[^\s<>\)\]\[]+\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#][^\s<>\)\]\[]*)?',
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, re.I | re.S)
+            if not match:
+                continue
+            raw = match.group(1) if match.lastindex else match.group(0)
+            raw = str(raw or "").strip().strip('"\'')
+            raw = re.sub(r"\[/img\].*$", "", raw, flags=re.I).strip()
+            raw = re.sub(r"[\]\)>.,;]+$", "", raw).strip()
+            clan_match = re.match(r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)", raw, re.I)
+            if clan_match:
+                return f"https://clan.cloudflare.steamstatic.com/images/{clan_match.group(1)}/{clan_match.group(2)}"
+            image = self._https_url(raw)
+            if image:
+                return image
+        return ""
+
+    def _clean_steam_news_text(self, value: str) -> str:
+        text = urllib.parse.unquote(html.unescape(str(value or ""))).replace("\\/", "/")
+        text = re.sub(
+            r"\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/\d+\/[^\s<>\)\]\[]+",
+            " ",
+            text,
+            flags=re.I,
+        )
+        text = re.sub(r"\[img\][\s\S]*?\[/img\]", " ", text, flags=re.I)
+        text = re.sub(r"\[/?(?:img|url|h1|h2|h3|b|i|u|list|\*)[^\]]*\]", " ", text, flags=re.I)
+        text = re.sub(r"<br\s*/?>", " ", text, flags=re.I)
+        text = self._clean_html_text(text)
+        return re.sub(r"\s+", " ", text).strip()
+
+    def _steam_news_summary(self, contents: str) -> str:
+        return self._clean_steam_news_text(contents)[:600]
 
     def _ign_images_to_screenshots(self, game: dict[str, Any]) -> list[dict[str, Any]]:
         images: list[dict[str, Any]] = []
@@ -1244,6 +1516,50 @@ class Plugin:
             if len(videos) >= 10:
                 break
         return videos
+
+    def _sanitize_steam_news(self, values: Any) -> list[dict[str, Any]]:
+        rows: list[dict[str, Any]] = []
+        if not isinstance(values, list):
+            return rows
+        seen: set[str] = set()
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            raw_gid = str(item.get("gid") or item.get("news_id") or item.get("announcement_gid") or "").strip()
+            raw_id = str(item.get("id") or raw_gid or item.get("url") or "").strip()
+            title = self._clean_html_text(str(item.get("title") or ""))
+            url = self._https_url(str(item.get("url") or "").strip())
+            if not title or not url:
+                continue
+            canonical_url = re.sub(r"[?#].*$", "", url).casefold()
+            clean_summary = self._clean_steam_news_text(str(item.get("summary") or item.get("contents") or ""))
+            summary_key = clean_summary[:180].casefold()
+            title_key = title.casefold()
+            date_key = str(int(self._as_number(item.get("date"), 0)) // 86400)
+            key = f"{title_key}|{canonical_url or date_key}|{summary_key}"
+            if key in seen:
+                continue
+            seen.add(key)
+            rows.append(
+                {
+                    "id": raw_id or url,
+                    "gid": raw_gid,
+                    "news_id": raw_gid,
+                    "announcement_gid": raw_gid,
+                    "event_type": int(self._as_number(item.get("event_type") or item.get("type"), 28)),
+                    "type": int(self._as_number(item.get("event_type") or item.get("type"), 28)),
+                    "title": title,
+                    "url": url,
+                    "summary": clean_summary[:900],
+                    "image": self._steam_news_image(str(item.get("image") or ""), 0) or self._https_url(str(item.get("image") or "").strip()),
+                    "author": self._clean_html_text(str(item.get("author") or "")),
+                    "feedLabel": self._clean_html_text(str(item.get("feedLabel") or item.get("feedlabel") or item.get("feedname") or "Steam News")),
+                    "date": int(self._as_number(item.get("date"), 0)),
+                }
+            )
+            if len(rows) >= 8:
+                break
+        return rows
 
     def _youtube_videos_for_title(
         self, title: str, limit: int = 10
@@ -1348,6 +1664,8 @@ class Plugin:
     @staticmethod
     def _https_url(value: str) -> str:
         text = str(value or "").strip()
+        if text.startswith("//"):
+            return "https:" + text
         if text.startswith("http://"):
             return "https://" + text[7:]
         return text

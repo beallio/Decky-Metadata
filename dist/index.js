@@ -206,8 +206,8 @@ const STRINGS = {
         xboxClearAllDone: "Xbox associations cleared",
         xboxSyncProgress: "Sync progress",
         xboxSyncAllProgress: "Sync progress",
-        xboxSyncProgressOk: "OpenXBL progress synced",
-        xboxSyncProgressFailed: "No OpenXBL progress found. Check the API key and Xbox match.",
+        xboxSyncProgressOk: "Progress synced",
+        xboxSyncProgressFailed: "No progress found. Check the selected Xbox match.",
         xboxLoginOk: "OpenXBL verified",
         xboxLoginFailed: "OpenXBL not verified",
         xboxBulkScan: "Scan Xbox achievements",
@@ -253,6 +253,11 @@ const STRINGS = {
         fetchCurrent: "Fetch from IGN",
         removeToast: "Metadata removed",
         scanComplete: "Scan complete",
+        backgroundSyncStarted: "Progress sync started",
+        backgroundSyncFinished: "Progress sync finished",
+        backgroundSyncUpdated: "updated",
+        backgroundSyncSkipped: "skipped",
+        backgroundSyncFailed: "Progress sync failed",
         notNonSteam: "This plugin only changes non-Steam games.",
     },
     it: {
@@ -314,8 +319,8 @@ const STRINGS = {
         xboxClearAllDone: "Associazioni Xbox cancellate",
         xboxSyncProgress: "Sincronizza progressi",
         xboxSyncAllProgress: "Sincronizza progressi",
-        xboxSyncProgressOk: "Progressi OpenXBL sincronizzati",
-        xboxSyncProgressFailed: "Nessun progresso OpenXBL trovato. Controlla chiave API e match Xbox.",
+        xboxSyncProgressOk: "Progressi sincronizzati",
+        xboxSyncProgressFailed: "Nessun progresso trovato. Controlla il match Xbox selezionato.",
         xboxLoginOk: "OpenXBL verificato",
         xboxLoginFailed: "OpenXBL non verificato",
         xboxBulkScan: "Scansiona obiettivi Xbox",
@@ -361,6 +366,11 @@ const STRINGS = {
         fetchCurrent: "Scarica da IGN",
         removeToast: "Metadata rimossi",
         scanComplete: "Scansione completata",
+        backgroundSyncStarted: "Sincronizzazione progressi avviata",
+        backgroundSyncFinished: "Sincronizzazione completata",
+        backgroundSyncUpdated: "aggiornati",
+        backgroundSyncSkipped: "saltati",
+        backgroundSyncFailed: "Sincronizzazione progressi fallita",
         notNonSteam: "Questo plugin modifica solo i giochi non Steam.",
     },
 };
@@ -411,6 +421,14 @@ const GAME_DETAIL_ROUTES = [
     "/library/details/:appid",
     "/library/:collection/app/:appid",
 ];
+const GAME_ACTIVITY_ROUTES = [
+    "/library/app/:appid/activity",
+    "/library/app/:appid/activity/:rest",
+    "/library/details/:appid/activity",
+    "/library/details/:appid/activity/:rest",
+    "/library/:collection/app/:appid/activity",
+    "/library/:collection/app/:appid/activity/:rest",
+];
 const PLAYHUB_ACHIEVEMENTS_ROUTE = "/playhub-metadata/achievements/:appid";
 let achievementSettingsCache = null;
 let bypassCounter = 0;
@@ -422,6 +440,13 @@ const loadingAchievements = new Set();
 const loadingScreenshots = new Set();
 const loadingCommunityMedia = new Set();
 let steamAchievementStoreRef = null;
+let lastObservedGameDetailAppId = 0;
+let backgroundAchievementSyncTimer;
+let backgroundAchievementSyncRunning = false;
+const BACKGROUND_SYNC_CHECK_MS = 60 * 1000;
+const BACKGROUND_SYNC_INITIAL_DELAY_MS = 20 * 1000;
+const BACKGROUND_SYNC_LOCAL_PREFIX = "playhub-metadata:bg-achievement-sync:last";
+const BACKGROUND_SYNC_SESSION_KEY = "playhub-metadata:bg-achievement-sync:pc-session";
 const shouldShowAchievements = (appId) => {
     const key = String(appId);
     if (achievementsCache[key]?.steam?.nTotal)
@@ -464,10 +489,19 @@ const isNonSteamAppWithoutPatchedMethod = (overview) => {
 };
 const currentRoutePath = () => {
     const steamRouter = globalThis.Router ?? globalThis.window?.Router;
-    return (steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location
-        ?.pathname ||
-        globalThis.window?.location?.pathname ||
-        "");
+    const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
+    const windowLocation = globalThis.window?.location;
+    return [
+        location?.pathname,
+        location?.search,
+        location?.hash,
+        windowLocation?.pathname,
+        windowLocation?.search,
+        windowLocation?.hash,
+        windowLocation?.href,
+    ]
+        .filter(Boolean)
+        .join(" ");
 };
 const isNonSteamApp = (overview) => {
     if (isNonSteamAppWithoutPatchedMethod(overview))
@@ -532,8 +566,10 @@ const startMetadataBootstrap = () => {
         }
     };
     void tick();
+    const stopAchievementSync = startBackgroundAchievementSync();
     return () => {
         cancelled = true;
+        stopAchievementSync?.();
     };
 };
 const refreshRaSettings = async () => {
@@ -638,6 +674,8 @@ const interleavedCommunityMedia = (metadata) => {
         .filter((image) => image?.url)
         .slice(0, 10)
         .map((image) => ({ kind: "image", source: "RAWG", image }));
+    // Keep Steam news out of the Community tab. News belongs to Activity, while
+    // Community should stay screenshots/videos/community-style media only.
     const buckets = [ign, videos, webImages];
     const mixed = [];
     let index = 0;
@@ -709,6 +747,1258 @@ const steamCommunityItemsFromMetadata = (appId, metadata) => interleavedCommunit
         num_comments_public: 0,
     };
 });
+const playhubActivityId = (appId, index, date) => `playhub-activity-${appId}-${date || 0}-${index}`;
+const numericSteamNewsGid = (value) => {
+    const text = String(value || "");
+    const direct = text.match(/^\d{8,}$/);
+    if (direct)
+        return direct[0];
+    const fromUrl = text.match(/(?:announcements\/detail|news\/app\/\d+\/view)\/(\d{8,})/i);
+    if (fromUrl?.[1])
+        return fromUrl[1];
+    const fromOldAnnouncement = text.match(/old_announce_(\d{8,})/i);
+    if (fromOldAnnouncement?.[1])
+        return fromOldAnnouncement[1];
+    const anyNumericGid = text.match(/\b(\d{8,})\b/);
+    return anyNumericGid?.[1] || "";
+};
+const cleanSteamNewsDisplayText = (value) => String(value || "")
+    .replace(/\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/\d+\/[^\s<>\)\]\[]+/gi, " ")
+    .replace(/\[img\][\s\S]*?\[\/img\]/gi, " ")
+    .replace(/\[\/?(?:img|url|h1|h2|h3|b|i|u|list|\*)[^\]]*\]/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const steamNewsImageForMetadata = (metadata, news) => news.image ||
+    (metadata.steam_appid
+        ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${metadata.steam_appid}/header.jpg`
+        : "");
+const normaliseActivityNewsKeyText = (value) => String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/[\u2018\u2019\u201c\u201d]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("en-US");
+const uniqueSteamNewsForActivity = (metadata) => {
+    const seen = new Set();
+    return (metadata.steam_news || [])
+        .filter((item) => item?.url && item?.title)
+        .filter((item) => {
+        const title = normaliseActivityNewsKeyText(item.title);
+        const summary = normaliseActivityNewsKeyText(item.summary || "").slice(0, 160);
+        const canonicalUrl = String(item.url || "").replace(/[?#].*$/, "").toLocaleLowerCase("en-US");
+        const day = Math.floor((Number(item.date || 0) || 0) / 86400);
+        const key = `${title}|${canonicalUrl || day}|${summary}`;
+        if (seen.has(key))
+            return false;
+        seen.add(key);
+        return true;
+    })
+        .slice(0, 12);
+};
+const steamActivityNewsItemsFromMetadata = (appId, metadata) => uniqueSteamNewsForActivity(metadata)
+    .map((news, index) => {
+    const date = Number(news.date || 0) || Math.floor(Date.now() / 1000) - index * 60;
+    const imageUrl = steamNewsImageForMetadata(metadata, news);
+    const fallbackImageUrl = metadata.steam_appid
+        ? `https://cdn.akamai.steamstatic.com/steam/apps/${metadata.steam_appid}/header.jpg`
+        : "";
+    const summary = cleanSteamNewsDisplayText(news.summary || news.title || "");
+    const title = cleanSteamNewsDisplayText(news.title || metadata.title || "Steam news");
+    const url = news.url || metadata.steam_store_url || "";
+    const id = playhubActivityId(appId, index, date);
+    const steamGid = numericSteamNewsGid(news.gid || news.news_id || news.announcement_gid || news.id || news.url);
+    const jsondata = JSON.stringify({
+        localized_title_image: imageUrl,
+        localized_capsule_image: imageUrl,
+        localized_spotlight_image: imageUrl,
+        localized_summary: summary,
+        store_url: url,
+    });
+    return {
+        appid: appId,
+        gid: steamGid || id,
+        id,
+        news_id: steamGid || id,
+        announcement_gid: steamGid || id,
+        clan_steamid: "103582791429521412",
+        event_name: title,
+        event_type: STEAM_PARTNER_EVENT_TYPE_NEWS,
+        type: STEAM_PARTNER_EVENT_TYPE_NEWS,
+        title,
+        headline: title,
+        description: summary,
+        summary,
+        body: summary,
+        contents: summary,
+        url,
+        external_url: url,
+        link: url,
+        image: imageUrl,
+        image_url: imageUrl,
+        fallback_image_url: fallbackImageUrl,
+        header_image_url: fallbackImageUrl,
+        capsule: imageUrl,
+        capsule_image: imageUrl,
+        preview_image_url: imageUrl,
+        full_image_url: imageUrl || url,
+        rtime32_start_time: date,
+        rtime32_end_time: date,
+        rtime32_last_modified: date,
+        posttime: date,
+        published: date,
+        time_created: date,
+        date,
+        feedlabel: news.feedLabel || news.author || "Steam News",
+        author: news.author || news.feedLabel || "Steam News",
+        comment_count: 0,
+        upvotes: 0,
+        downvotes: 0,
+        jsondata,
+        announcement_body: {
+            gid: steamGid || id,
+            clanid: "0",
+            posterid: "0",
+            headline: title,
+            posttime: date,
+            updatetime: date,
+            body: summary,
+            commentcount: 0,
+            tags: ["news"],
+            language: 0,
+            hidden: 0,
+            forum_topic_id: "0",
+            event_gid: steamGid || id,
+            voteupcount: 0,
+            votedowncount: 0,
+        },
+    };
+});
+const steamActivityPayloadForApp = async (appId) => {
+    const overview = getOverview(appId);
+    if (!appId || !isNonSteamApp(overview))
+        return null;
+    await ensureMetadataCache();
+    let metadata = metadataCache[String(appId)];
+    if (!metadata)
+        return null;
+    if (!metadata?.steam_news_enriched_at || !(metadata?.steam_news || []).length) {
+        await tryEnrichCommunityMediaForApp(appId);
+        metadata = metadataCache[String(appId)];
+    }
+    const items = metadata ? steamActivityNewsItemsFromMetadata(appId, metadata) : [];
+    if (!items.length)
+        return null;
+    // Steam client internals changed names across versions. Return a deliberately
+    // redundant shape so the native Activity store can read the same cards through
+    // the field name it expects, while keeping the items Steam-like.
+    return {
+        events: items,
+        rgEvents: items,
+        rgNews: items,
+        rgActivity: items,
+        rgFeedItems: items,
+        activity: items,
+        activities: items,
+        news: items,
+        items,
+        results: items,
+        count: items.length,
+        bHasMore: false,
+        success: 1,
+    };
+};
+const STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE = 1002;
+// Steam PartnerEvent type 28 is the regular News card used by Steam's native
+// Activity feed. Type 14 renders as the blue Major Update card, which made
+// non-Steam news look different from real Steam news.
+const STEAM_PARTNER_EVENT_TYPE_NEWS = 28;
+const PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY = "__playhubNativeActivityCache";
+const PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__playhubNativePartnerEvents";
+const PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY = "__playhubNativePartnerEventStore";
+const fakeSteamId = (accountId = 0, steamId64 = "76561197960287930") => ({
+    GetAccountID: () => accountId,
+    ConvertTo64BitString: () => steamId64,
+    toString: () => steamId64,
+});
+const toSteamClanImageUrl = (value) => {
+    const text = String(value || "").trim().replace(/\\\//g, "/");
+    const match = text.match(/\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}\/(\d+)\/([^\s<>\)\]\[]+)/i);
+    if (!match)
+        return text;
+    return `https://clan.cloudflare.steamstatic.com/images/${match[1]}/${match[2].replace(/[\"'.,;:]+$/g, "")}`;
+};
+const cleanSteamImageUrl = (value) => {
+    let text = String(value || "").trim();
+    if (!text)
+        return "";
+    try {
+        text = decodeURIComponent(text);
+    }
+    catch (_error) {
+        // Keep the original URL if it is not URI encoded.
+    }
+    text = text.replace(/\\\//g, "/").replace(/&amp;/gi, "&").trim();
+    text = text.replace(/\[\/?img\].*$/i, "").replace(/[\]\)>.,;:'"]+$/g, "").trim();
+    text = toSteamClanImageUrl(text);
+    if (text.startsWith("//"))
+        text = `https:${text}`;
+    if (text.startsWith("http://"))
+        text = text.replace(/^http:\/\//i, "https://");
+    return /^https:\/\//i.test(text) ? text : "";
+};
+const collectSteamNewsImages = (steamAppId, item) => {
+    const values = [
+        item.image,
+        item.image_url,
+        item.preview_image_url,
+        item.full_image_url,
+        item.capsule_image,
+        item.capsule,
+        item.localized_title_image,
+        item.localized_capsule_image,
+        item.localized_spotlight_image,
+        item.header_image_url,
+        item.fallback_image_url,
+    ];
+    if (Array.isArray(item.image_sources))
+        values.push(...item.image_sources);
+    if (steamAppId) {
+        values.push(`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${steamAppId}/header.jpg`);
+        values.push(`https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg`);
+    }
+    return Array.from(new Set(values.map(cleanSteamImageUrl).filter(Boolean)));
+};
+const playhubNativeActivityCache = () => {
+    const host = globalThis;
+    if (!host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY])
+        host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
+    return host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY];
+};
+const playhubNativePartnerEventCache = () => {
+    const host = globalThis;
+    if (!host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
+        host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
+    return host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
+};
+const uniqueNonEmptyStrings = (values) => Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
+const playhubNativePartnerEventKeys = (event) => {
+    const gid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.announcementGID || event?.gid || event?.GID || event?.url);
+    const oldAnnouncementGid = gid ? `old_announce_${gid}` : "";
+    return uniqueNonEmptyStrings([
+        event?.GID,
+        event?.gid,
+        event?.event_gid,
+        event?.AnnouncementGID,
+        event?.announcement_gid,
+        event?.announcementGID,
+        gid,
+        oldAnnouncementGid,
+    ]);
+};
+const playhubNativePartnerEventStore = () => globalThis[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+const collectNativePartnerEventStores = () => {
+    const host = globalThis;
+    const stores = [];
+    const add = (candidate) => {
+        if (!candidate || typeof candidate !== "object")
+            return;
+        const looksLikeStore = typeof candidate.GetClanEventModel === "function" ||
+            typeof candidate.GetClanEventFromAnnouncementGID === "function" ||
+            typeof candidate.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
+            candidate.m_mapExistingEvents?.set;
+        if (looksLikeStore && !stores.includes(candidate))
+            stores.push(candidate);
+    };
+    // Steam currently exposes multiple PartnerEvent stores. The Activity cards can
+    // render from our custom event object, but the modal uses the native
+    // window.partnerEventStore (`r(57016).IB`). Earlier builds sometimes patched the
+    // base/summary store instead, which made the modal open but stay blurred/empty.
+    add(host.partnerEventStore);
+    add(host.g_PartnerEventStore);
+    add(host.g_PartnerEventSummaryStore);
+    add(host[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY]);
+    try {
+        const discovered = DFL.findModuleChild((module) => {
+            if (!module || typeof module !== "object")
+                return undefined;
+            for (const prop in module) {
+                const candidate = module[prop];
+                if (candidate &&
+                    typeof candidate === "object" &&
+                    (typeof candidate.GetClanEventFromAnnouncementGID === "function" ||
+                        typeof candidate.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
+                        typeof candidate.GetClanEventModel === "function")) {
+                    return candidate;
+                }
+            }
+            return undefined;
+        });
+        add(discovered);
+    }
+    catch (_error) {
+        // Decky may not expose the module yet. The interval installer retries.
+    }
+    if (stores[0])
+        host[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] = stores[0];
+    return stores;
+};
+const registerPlayhubNativePartnerEventInSteamStore = (event, partnerStore) => {
+    const store = partnerStore || playhubNativePartnerEventStore();
+    if (!store || !event)
+        return;
+    const keys = playhubNativePartnerEventKeys(event);
+    const numericGid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.GID || event?.gid);
+    const canonicalEventGid = String(event?.GID || (numericGid ? `old_announce_${numericGid}` : "")).trim();
+    try {
+        if (store.m_mapExistingEvents?.set) {
+            keys.forEach((key) => store.m_mapExistingEvents.set(key, event));
+        }
+        if (numericGid && store.m_mapAnnouncementBodyToEvent?.set) {
+            store.m_mapAnnouncementBodyToEvent.set(numericGid, canonicalEventGid || numericGid);
+            store.m_mapAnnouncementBodyToEvent.set(String(numericGid), canonicalEventGid || numericGid);
+            store.m_mapAnnouncementBodyToEvent.set(`old_announce_${numericGid}`, canonicalEventGid || `old_announce_${numericGid}`);
+        }
+        const appendToMapList = (map, key, value) => {
+            if (!map?.get || !map?.set || !key || !value)
+                return;
+            const mapKey = typeof key === "number" ? key : Number(key);
+            const actualKey = Number.isFinite(mapKey) && mapKey > 0 ? mapKey : key;
+            const current = map.get(actualKey) || [];
+            if (Array.isArray(current) && !current.includes(value)) {
+                map.set(actualKey, [...current, value]);
+            }
+        };
+        appendToMapList(store.m_mapAppIDToGIDs, event.appid, canonicalEventGid);
+        appendToMapList(store.m_mapAppIDToGIDs, event.reference_appid || event.steam_appid, canonicalEventGid);
+        const clanAccountId = event.clanSteamID?.GetAccountID?.();
+        appendToMapList(store.m_mapClanToGIDs, clanAccountId, canonicalEventGid);
+        if (canonicalEventGid && typeof store.GetPartnerEventChangeCallback === "function") {
+            store.GetPartnerEventChangeCallback(canonicalEventGid)?.Dispatch?.(event);
+        }
+    }
+    catch (error) {
+        console.warn("Playhub Metadata: unable to register native PartnerEvent", error);
+    }
+};
+const rememberPlayhubNativePartnerEvent = (event) => {
+    const cache = playhubNativePartnerEventCache();
+    playhubNativePartnerEventKeys(event).forEach((key) => cache.set(String(key), event));
+    const stores = collectNativePartnerEventStores();
+    if (stores.length)
+        stores.forEach((store) => registerPlayhubNativePartnerEventInSteamStore(event, store));
+    else
+        registerPlayhubNativePartnerEventInSteamStore(event);
+};
+const clonePlayhubNativePartnerEventForRoute = (event, requestedKey) => {
+    if (!event)
+        return null;
+    const raw = String(requestedKey || "").trim();
+    const numericGid = numericSteamNewsGid(raw || event?.AnnouncementGID || event?.announcement_gid || event?.GID || event?.gid);
+    // Steam's event overlay validates with a strict `event.GID == initialEventID` check.
+    // Activity cards, old announcements and Store News routes may pass either the numeric
+    // announcement id or the `old_announce_<gid>` event id, so return a route-local
+    // clone whose GID matches the key Steam asked for while keeping AnnouncementGID
+    // numeric for the real announcement data.
+    const routeGid = raw || String(event?.GID || (numericGid ? `old_announce_${numericGid}` : "0"));
+    return {
+        ...event,
+        GID: routeGid,
+        gid: routeGid,
+        event_gid: routeGid,
+        AnnouncementGID: numericGid || event?.AnnouncementGID || event?.announcement_gid || "0",
+        announcement_gid: numericGid || event?.announcement_gid || event?.AnnouncementGID || "0",
+        announcementGID: numericGid || event?.announcementGID || event?.AnnouncementGID || "0",
+        GetAnnouncementGID: () => numericGid || event?.AnnouncementGID || event?.announcement_gid || "0",
+    };
+};
+const playhubNativePartnerEventForGid = (value, cloneForRoute = false) => {
+    const raw = String(value || "").trim();
+    const gid = numericSteamNewsGid(raw);
+    const cache = playhubNativePartnerEventCache();
+    const event = (raw && cache.get(raw)) || (gid && (cache.get(String(gid)) || cache.get(`old_announce_${gid}`))) || null;
+    return cloneForRoute ? clonePlayhubNativePartnerEventForRoute(event, raw || gid) : event;
+};
+const makePlayhubNativePartnerEvent = (appId, steamAppId, item, index) => {
+    const date = Number(item.date || item.posttime || item.published || 0) || Math.floor(Date.now() / 1000) - index * 60;
+    const gid = numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url);
+    const nativeEventGid = gid ? `old_announce_${gid}` : "0";
+    const title = cleanSteamNewsDisplayText(item.title || item.event_name || item.headline || "Steam News");
+    const summary = cleanSteamNewsDisplayText(item.summary || item.description || item.body || title);
+    const body = cleanSteamNewsDisplayText(item.body || item.content || item.description || item.summary || title);
+    const images = collectSteamNewsImages(steamAppId, item);
+    const primaryImage = images[0] || "";
+    const clanSteamID = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
+    const type = STEAM_PARTNER_EVENT_TYPE_NEWS;
+    const announcementUrl = item.url || item.external_url || item.link || (steamAppId && gid ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${gid}` : "");
+    const jsondata = {
+        localized_summary: [summary],
+        localized_subtitle: [summary],
+        localized_body: [body],
+        localized_title_image: [primaryImage],
+        localized_capsule_image: [primaryImage],
+        localized_spotlight_image: [primaryImage],
+        library_spotlight: true,
+        library_spotlight_text: true,
+        referenced_appids: steamAppId ? [steamAppId] : [],
+    };
+    const partnerEvent = {
+        __playhubNativePartnerEvent: true,
+        GID: nativeEventGid,
+        gid: nativeEventGid,
+        event_gid: nativeEventGid,
+        AnnouncementGID: gid || "0",
+        announcement_gid: gid || "0",
+        announcementGID: gid || "0",
+        appid: appId,
+        reference_appid: steamAppId || appId,
+        steam_appid: steamAppId || appId,
+        type,
+        event_type: type,
+        bOldAnnouncement: true,
+        bLoaded: true,
+        loadedAllLanguages: true,
+        visibility_state: 2,
+        postTime: date,
+        createTime: date,
+        startTime: date,
+        endTime: date,
+        visibilityStartTime: date,
+        visibilityEndTime: date + 86400 * 365,
+        rtime32_moderator_reviewed: date,
+        rtime32_start_time: date,
+        rtime32_end_time: date,
+        rtime32_last_modified: date,
+        nVotesUp: Number(item.upvotes || 0) || 0,
+        nVotesDown: Number(item.downvotes || 0) || 0,
+        nCommentCount: Number(item.comment_count || 0) || 0,
+        forumTopicGID: item.forumTopicGID || item.forum_topic_id || "0",
+        clanSteamID,
+        announcementClanSteamID: clanSteamID,
+        jsondata,
+        name: new Map([[0, title]]),
+        description: new Map([[0, body || summary]]),
+        timestamp_loc_updated: new Map([[0, date]]),
+        vecTags: ["patchnotes", "playhub_metadata"],
+        tags: ["patchnotes", "playhub_metadata"],
+        BHasTag: (tag) => ["patchnotes", "playhub_metadata"].includes(String(tag || "")),
+        BHasTagStartingWith: (prefix) => ["patchnotes", "playhub_metadata"].some((tag) => tag.startsWith(String(prefix || ""))),
+        GetAllTags: () => ["patchnotes", "playhub_metadata"],
+        BMatchesAllTags: (tags) => !Array.isArray(tags) || tags.every((tag) => ["patchnotes", "playhub_metadata"].includes(String(tag || ""))),
+        BInRealmGlobal: () => true,
+        BInRealmChina: () => false,
+        BIsLanguageValidForRealms: () => true,
+        GetNameWithFallback: () => title,
+        GetGameTitle: () => title,
+        GetDescriptionWithFallback: () => body || summary,
+        GetSummaryWithFallback: () => summary,
+        GetSummary: () => summary,
+        BHasSummary: () => !!summary,
+        GetSubTitle: () => summary,
+        BHasSubTitle: () => !!summary,
+        GetSubTitleWithLanguageFallback: () => summary,
+        GetSubTitleWithSummaryFallback: () => summary,
+        GetCategoryAsString: () => "Notizie",
+        GetEventTypeAsString: () => "Notizie",
+        GetImgArray: () => images,
+        GetImageHash: () => null,
+        GetImageHashAndExt: () => null,
+        GetImageFromBeginningOfDescription: () => primaryImage || "",
+        GetImageURL: () => primaryImage,
+        GetImageURLWithFallback: () => primaryImage || images[0] || "",
+        GetImageForSizeAsArrayWithFallback: (_size, _language, _format, skipFallback) => {
+            const out = images.slice();
+            if (!skipFallback && steamAppId) {
+                out.push(`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${steamAppId}/header.jpg`);
+                out.push(`https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg`);
+            }
+            return Array.from(new Set(out.map(cleanSteamImageUrl).filter(Boolean)));
+        },
+        BImageNeedScreenshotFallback: () => images.length === 0,
+        BHasSomeImage: () => images.length > 0,
+        BHasImage: () => images.length > 0,
+        GetFallbackArtworkScreenshot: () => images[0] || (steamAppId ? `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : ""),
+        GetStartTimeAndDateUnixSeconds: () => date,
+        GetEndTimeAndDateUnixSeconds: () => date,
+        GetPostTimeAndDateUnixSeconds: () => date,
+        GetAnnouncementGID: () => gid || "0",
+        BHasAnnouncementGID: () => !!gid,
+        GetAppID: () => appId,
+        GetReferenceAppID: () => steamAppId || appId,
+        GetStoreAppID: () => steamAppId || appId,
+        BIsPartnerEvent: () => false,
+        BIsOGGEvent: () => !!steamAppId,
+        BIsEventInFuture: () => false,
+        BHasEventEnded: () => false,
+        BIsEventActionEnabled: () => false,
+        BShowLibrarySpotlight: () => false,
+        BShowLibrarySpotlightText: () => false,
+        BIsImageSafeForAllAges: () => true,
+        BHasBroadcastEnabled: () => false,
+        BEventCanShowBroadcastWidget: () => false,
+        BHasBroadcastForceBanner: () => false,
+        BSaleShowBroadcastAtTopOfPage: () => false,
+        GetVisibilityStartTimeAndDateUnixSeconds: () => date,
+        BHasForumTopicGID: () => false,
+        GetForumTopicURL: () => "",
+        GetAppIDOrReferenceAppID: () => steamAppId || appId,
+        GetEventType: () => type,
+        BIsVisibleEvent: () => true,
+        BIsStagedEvent: () => false,
+        BIsUnlistedEvent: () => false,
+        BHasEmailEnabled: () => false,
+        BHasSaleEnabled: () => false,
+        BHasSaleVanity: () => false,
+        GetSaleVanity: () => "",
+        BHasSaleUpdateLandingPageVanity: () => false,
+        GetSaleUpdateLandingPageVanity: () => "",
+        GetSaleURL: () => null,
+        GetSaleSections: () => [],
+        GenerateDynamicSaleSections: () => [],
+        GetSaleSectionIncludingFooterSections: () => null,
+        GetSaleSectionByID: () => null,
+        GetSaleSectionCount: () => 0,
+        GetSaleSectionsByType: () => [],
+        GetSaleSectionFirstMatchByType: () => null,
+        GetSaleItemOfType: () => null,
+        GetSaleItemCountOfType: () => 0,
+        GetSaleFeaturedAppsCount: () => 0,
+        GetSaleFeaturedAppsAndDemosCount: () => 0,
+        GetSaleFeaturedBundlesCount: () => 0,
+        GetSaleFeaturedPackagesCount: () => 0,
+        GetSaleFeaturedApps: () => [],
+        GetSaleFeaturedAppsAndDemos: () => [],
+        GetSaleFeaturedBundles: () => [],
+        GetSaleFeaturedPackages: () => [],
+        GetTaggedItems: () => [],
+        BHasScheduleEnabled: () => false,
+        BAllowedSteamStoreSpotlight: () => false,
+        BHasLibaryHomeSpotlight: () => false,
+        BHasLibraryHomeSpotlight: () => false,
+        BHasSaleProductBanners: () => false,
+        GetSteamAwardCategory: () => 0,
+        GetSteamAwardNomineeCategories: () => [],
+        BIsLockedToGameOwners: () => false,
+        GetRequiredAppIDs: () => [],
+        GetRequiredPackageIDs: () => [],
+        BUseSubscriptionLayout: () => false,
+        BIsLockedToPartnerAppRights: () => false,
+        GetRequiredPartnerAppRights: () => undefined,
+        GetValveAccessLog: () => [],
+        BUsesContentHubForItemSource: () => false,
+        GetContentHubType: () => undefined,
+        GetContentHubCategory: () => undefined,
+        GetContentHubTag: () => undefined,
+        GetContentHub: () => undefined,
+        BContentHubDiscountedOnly: () => false,
+        BIsBackgroundImageGroupingEnabled: () => false,
+        GetSalePageGroupDefinition: () => undefined,
+        GetSalePageBackgroundImageGroupCount: () => 0,
+        GetAllSalePageGroups: () => [],
+        GetSalePageBackgroundGroup: () => undefined,
+        GetIncludedRealmList: () => [0],
+        BIsValidForRealm: () => true,
+        BIsNextFest: () => false,
+        GetLastUpdateTime: () => date,
+        GetLastUpdaterSteamIDStr: () => "",
+        GetStoreOrCommunityURL: () => announcementUrl,
+        GetCommunityDiscussionURL: () => announcementUrl,
+        GetStoreNewsURL: () => steamAppId && gid ? `https://store.steampowered.com/news/app/${steamAppId}/view/${gid}` : announcementUrl,
+        url: announcementUrl,
+    };
+    rememberPlayhubNativePartnerEvent(partnerEvent);
+    return partnerEvent;
+};
+const makePlayhubNativeActivityEvent = (appId, metadata, item, index) => {
+    const steamAppId = Number(metadata.steam_appid || item.appid || appId) || appId;
+    const partnerEvent = makePlayhubNativePartnerEvent(appId, steamAppId, item, index);
+    const date = Number(partnerEvent.postTime || 0) || Math.floor(Date.now() / 1000) - index * 60;
+    const gid = numericSteamNewsGid(partnerEvent.GID || item.url) || String(date);
+    const actor = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
+    return {
+        __playhubNativeActivityEvent: true,
+        gameid: String(appId),
+        unUniqueID: Number(`${String(gid).slice(-8)}${index}`.slice(-9)) || date + index,
+        rtEventTime: date,
+        steamIDActor: actor,
+        steamIDTarget: fakeSteamId(),
+        eEventType: STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE,
+        eEventSubType: 0,
+        eGameActivityType: 0,
+        bIsGameActivity: false,
+        commentThreads: [],
+        activeThread: 0,
+        get appid() {
+            return appId;
+        },
+        get referenceAppID() {
+            return steamAppId || appId;
+        },
+        get announcementGID() {
+            return gid;
+        },
+        get clan_announcementid() {
+            return gid;
+        },
+        get eventModel() {
+            return partnerEvent;
+        },
+        get forumTopicGID() {
+            return partnerEvent.forumTopicGID;
+        },
+        get upvotes() {
+            return partnerEvent.nVotesUp;
+        },
+        get downvotes() {
+            return partnerEvent.nVotesDown;
+        },
+        get comment_count() {
+            return partnerEvent.nCommentCount;
+        },
+        BIsValid: () => true,
+        IsEventLoaded: () => true,
+        GetEvent: async () => partnerEvent,
+        ReloadEvent: async () => partnerEvent,
+        GetParentalFeature: () => 0,
+        BUserCanDelete: () => false,
+        BSupportsCommentThreads: () => false,
+        GetActiveCommentThread: () => null,
+        SetActiveCommentThread: () => undefined,
+    };
+};
+const makePlayhubNativeActivity = (appId, metadata) => {
+    const items = steamActivityNewsItemsFromMetadata(appId, metadata)
+        .filter((item) => numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url));
+    if (!items.length)
+        return null;
+    const events = items
+        .map((item, index) => makePlayhubNativeActivityEvent(appId, metadata, item, index))
+        .sort((a, b) => Number(b.rtEventTime || 0) - Number(a.rtEventTime || 0));
+    const grouped = new Map();
+    for (const event of events) {
+        const day = Math.floor(Number(event.rtEventTime || 0) / 86400) * 86400;
+        if (!grouped.has(day))
+            grouped.set(day, []);
+        grouped.get(day).push(event);
+    }
+    const days = Array.from(grouped.entries())
+        .sort((a, b) => b[0] - a[0])
+        .map(([, dayEvents]) => ({
+        isValid: dayEvents.length > 0,
+        events: dayEvents,
+        GetLatestEventTime: () => Math.max(...dayEvents.map((event) => Number(event.rtEventTime || 0))),
+        GetEarliestEventTime: () => Math.min(...dayEvents.map((event) => Number(event.rtEventTime || 0))),
+        BHasEvents: () => dayEvents.length > 0,
+    }));
+    const latest = events[0]?.rtEventTime || 0;
+    const earliest = events[events.length - 1]?.rtEventTime || latest;
+    return {
+        __playhubNativeActivity: true,
+        appid: appId,
+        m_bNoMoreHistoryAvailable: true,
+        lastAddedEventType: STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE,
+        lastAddedPartnerEvent: null,
+        get appActivityByDay() {
+            return days;
+        },
+        get latest_user_news_time() {
+            return latest;
+        },
+        get earliest_user_news_time() {
+            return earliest;
+        },
+        get latest_game_activity_time() {
+            return 0;
+        },
+        get earliest_game_activity_time() {
+            return 0;
+        },
+        BHasEvents: () => events.length > 0,
+        SortEvents: () => undefined,
+        RequestStoreItems: async () => undefined,
+        MergeUserNews: async () => undefined,
+        MergeGameActivity: () => undefined,
+        GetAchievementMapCache: () => "[]",
+        GetUserNewsCache: () => [],
+        GetGameActivityCache: () => [],
+    };
+};
+const getPlayhubNativeActivityForApp = (appId) => {
+    const overview = getOverview(appId);
+    if (!appId || !isNonSteamApp(overview))
+        return null;
+    const cached = playhubNativeActivityCache().get(appId);
+    if (cached)
+        return cached;
+    const metadata = metadataCache[String(appId)];
+    if (!metadata)
+        return null;
+    const native = makePlayhubNativeActivity(appId, metadata);
+    if (native)
+        playhubNativeActivityCache().set(appId, native);
+    return native;
+};
+const refreshPlayhubNativeActivityForApp = async (appId, store) => {
+    const overview = getOverview(appId);
+    if (!appId || !isNonSteamApp(overview))
+        return null;
+    await ensureMetadataCache();
+    let metadata = metadataCache[String(appId)];
+    if (!metadata)
+        return null;
+    if (!metadata?.steam_news_enriched_at || !(metadata?.steam_news || []).length) {
+        await tryEnrichCommunityMediaForApp(appId);
+        metadata = metadataCache[String(appId)];
+    }
+    const native = metadata ? makePlayhubNativeActivity(appId, metadata) : null;
+    if (!native)
+        return null;
+    playhubNativeActivityCache().set(appId, native);
+    const appActivityStore = store || globalThis.appActivityStore;
+    try {
+        if (appActivityStore?.m_mapAppActivity?.set)
+            appActivityStore.m_mapAppActivity.set(appId, native);
+    }
+    catch (_error) {
+        // If Steam changes the store shape, GetAppActivity still returns our cache.
+    }
+    return native;
+};
+const installNativeActivityStorePatch = (unpatchers) => {
+    let attempts = 0;
+    const tryInstall = () => {
+        const store = globalThis.appActivityStore;
+        if (!store || store.__playhubNativeActivityPatched)
+            return !!store?.__playhubNativeActivityPatched;
+        store.__playhubNativeActivityPatched = true;
+        unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
+            const appId = Number(args[0]);
+            const native = getPlayhubNativeActivityForApp(appId);
+            if (native)
+                return native;
+            if (appId && isNonSteamApp(getOverview(appId))) {
+                void refreshPlayhubNativeActivityForApp(appId, store);
+            }
+            return original(...args);
+        }));
+        for (const methodName of ["RequestRestoreActivity", "RestoreActivity", "FetchLatestActivity", "FetchLatestActivityFromServer", "FetchActivityHistory"]) {
+            if (typeof store[methodName] !== "function")
+                continue;
+            unpatchers.push(patchMethod(store, methodName, (_thisValue, original, args) => {
+                const appId = Number(args[0]);
+                const native = getPlayhubNativeActivityForApp(appId);
+                if (native)
+                    return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
+                if (appId && isNonSteamApp(getOverview(appId))) {
+                    void refreshPlayhubNativeActivityForApp(appId, store);
+                }
+                return original(...args);
+            }));
+        }
+        return true;
+    };
+    if (tryInstall())
+        return;
+    const timer = window.setInterval(() => {
+        attempts += 1;
+        if (tryInstall() || attempts >= 40)
+            window.clearInterval(timer);
+    }, 500);
+    unpatchers.push(() => window.clearInterval(timer));
+};
+const installNativePartnerEventStorePatch = (unpatchers) => {
+    let attempts = 0;
+    const patchedStores = new WeakSet();
+    const patchOneStore = (partnerStore) => {
+        if (!partnerStore || typeof partnerStore !== "object")
+            return false;
+        globalThis[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] = partnerStore;
+        for (const event of playhubNativePartnerEventCache().values())
+            registerPlayhubNativePartnerEventInSteamStore(event, partnerStore);
+        if (partnerStore.__playhubNativePartnerEventsPatched || patchedStores.has(partnerStore))
+            return true;
+        partnerStore.__playhubNativePartnerEventsPatched = true;
+        patchedStores.add(partnerStore);
+        const maybePatch = (methodName, handler) => {
+            if (typeof partnerStore[methodName] !== "function")
+                return;
+            unpatchers.push(patchMethod(partnerStore, methodName, (_thisValue, original, args) => handler(original, args)));
+        };
+        maybePatch("GetClanEventFromAnnouncementGID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], false);
+            return event || original(...args);
+        });
+        maybePatch("BHasClanAnnouncementGID", (original, args) => {
+            if (playhubNativePartnerEventForGid(args[0]))
+                return true;
+            return original(...args);
+        });
+        maybePatch("GetClanEventGIDFromAnnouncementGID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], false);
+            return event?.GID || original(...args);
+        });
+        maybePatch("GetClanEventModel", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], true);
+            return event || original(...args);
+        });
+        maybePatch("BHasClanEventModel", (original, args) => {
+            if (playhubNativePartnerEventForGid(args[0]))
+                return true;
+            return original(...args);
+        });
+        maybePatch("GetClanEventGIDs", (original, args) => {
+            const originalResult = original(...args) || [];
+            const accountId = args[0]?.GetAccountID?.();
+            const playhubGids = Array.from(playhubNativePartnerEventCache().values())
+                .filter((event) => !accountId || event?.clanSteamID?.GetAccountID?.() === accountId)
+                .map((event) => event?.GID)
+                .filter(Boolean);
+            return Array.from(new Set([...originalResult, ...playhubGids]));
+        });
+        maybePatch("GetClanEventGIDsForApp", (original, args) => {
+            const appId = Number(args[0]);
+            const originalResult = original(...args) || [];
+            const playhubGids = Array.from(playhubNativePartnerEventCache().values())
+                .filter((event) => Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId)
+                .map((event) => event?.GID)
+                .filter(Boolean);
+            return Array.from(new Set([...originalResult, ...playhubGids]));
+        });
+        maybePatch("GetRankedClanEvents", (original, args) => {
+            const originalResult = original(...args) || [];
+            const clanAccountId = args[0]?.GetAccountID?.();
+            const appId = Number(args[1] || 0);
+            const playhubEvents = Array.from(playhubNativePartnerEventCache().values()).filter((event) => {
+                const clanMatches = !clanAccountId || event?.clanSteamID?.GetAccountID?.() === clanAccountId;
+                const appMatches = !appId || Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId;
+                return clanMatches && appMatches;
+            });
+            return Array.from(new Map([...originalResult, ...playhubEvents].map((event) => [String(event?.GID || event?.AnnouncementGID), event])).values());
+        });
+        maybePatch("LoadPartnerEventFromAnnoucementGID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], false);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadPartnerEventFromAnnoucementGIDAndClanSteamID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[1] || args[0], false);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadPartnerEventFromClanEventGID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], true);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadPartnerEventFromClanEventGIDAndClanSteamID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[1] || args[0], true);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadPartnerEventGeneric", (original, args) => {
+            // Real Steam signature is (clanSteamID, appid, eventGID, announcementGID, ...).
+            const requestKey = args.find((arg) => playhubNativePartnerEventForGid(arg));
+            const event = playhubNativePartnerEventForGid(requestKey, !!args[2]);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadHiddenPartnerEvent", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], true);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadHiddenPartnerEventByAnnouncementGID", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[0], false);
+            if (event)
+                return Promise.resolve(event);
+            return original(...args);
+        });
+        maybePatch("LoadAdjacentPartnerEvents", (original, args) => {
+            const requestedId = args[0];
+            const appId = Number(args[2] || 0);
+            const direct = playhubNativePartnerEventForGid(requestedId, true);
+            if (direct)
+                return Promise.resolve([direct]);
+            const appEvents = Array.from(playhubNativePartnerEventCache().values()).filter((event) => {
+                return appId && (Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId);
+            });
+            if (appEvents.length)
+                return Promise.resolve(appEvents);
+            return original(...args);
+        });
+        maybePatch("LoadBatchPartnerEventsByEventGIDsOrAnnouncementGIDs", (original, args) => {
+            const eventGids = Array.isArray(args[0]) ? args[0] : [];
+            const announcementGids = Array.isArray(args[1]) ? args[1] : [];
+            const hits = [];
+            const missingEventGids = [];
+            const missingAnnouncementGids = [];
+            eventGids.forEach((gid) => {
+                const event = playhubNativePartnerEventForGid(gid, true);
+                if (event)
+                    hits.push(event);
+                else
+                    missingEventGids.push(gid);
+            });
+            announcementGids.forEach((gid) => {
+                const event = playhubNativePartnerEventForGid(gid, false);
+                if (event)
+                    hits.push(event);
+                else
+                    missingAnnouncementGids.push(gid);
+            });
+            if (!hits.length)
+                return original(...args);
+            if (!missingEventGids.length && !missingAnnouncementGids.length)
+                return Promise.resolve(hits);
+            return Promise.resolve(original(missingEventGids, missingAnnouncementGids, args[2])).then((rest) => [...hits, ...((Array.isArray(rest) && rest) || [])]);
+        });
+        maybePatch("FlushEventFromCache", (original, args) => {
+            const event = playhubNativePartnerEventForGid(args[1] || args[0]);
+            if (event)
+                return undefined;
+            return original(...args);
+        });
+        return true;
+    };
+    const tryInstall = () => {
+        const stores = collectNativePartnerEventStores();
+        let patchedAny = false;
+        for (const store of stores)
+            patchedAny = patchOneStore(store) || patchedAny;
+        return patchedAny;
+    };
+    if (tryInstall())
+        return;
+    const timer = window.setInterval(() => {
+        attempts += 1;
+        if (tryInstall() || attempts >= 80)
+            window.clearInterval(timer);
+    }, 500);
+    unpatchers.push(() => window.clearInterval(timer));
+};
+const activityAppIdFromUrl = (url) => {
+    const decoded = decodeURIComponent(String(url || ""));
+    const patterns = [
+        /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
+        /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
+        /(?:appid|app_id|appId)=(\d+).*?(?:appactivity|activity|appnews|appupdates)/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1]);
+    }
+    return 0;
+};
+const gameDetailAppIdFromPath = (path) => {
+    const decoded = decodeURIComponent(String(path || ""));
+    const patterns = [
+        /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
+        /(?:^|[?#&\s])appid=(\d+)/i,
+        /(?:^|[?#&\s])app_id=(\d+)/i,
+        /\bapp\/(\d+)\b/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1] || 0);
+    }
+    return 0;
+};
+const appIdFromDom = () => {
+    const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
+    const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
+    for (const element of candidates) {
+        if (!visibleElement(element))
+            continue;
+        for (const attribute of attributes) {
+            const value = element.getAttribute(attribute) || "";
+            const appId = gameDetailAppIdFromPath(value);
+            if (appId)
+                return appId;
+        }
+    }
+    return 0;
+};
+const appIdFromVisibleMetadataTitle = () => {
+    try {
+        const pageText = normalizedTabText(document.body?.textContent || "");
+        if (!pageText || !metadataCache)
+            return 0;
+        const candidates = Object.entries(metadataCache)
+            .map(([key, metadata]) => {
+            const appId = Number(key);
+            const title = normalizedTabText(metadata?.title || appName(appId));
+            return { appId, title };
+        })
+            .filter((candidate) => candidate.appId && candidate.title && candidate.title.length >= 3)
+            .sort((a, b) => b.title.length - a.title.length);
+        for (const candidate of candidates) {
+            if (pageText.includes(candidate.title))
+                return candidate.appId;
+        }
+    }
+    catch (_error) {
+        // Best-effort fallback only.
+    }
+    return 0;
+};
+const currentGameDetailAppId = () => {
+    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
+    if (routeAppId)
+        return routeAppId;
+    if (lastObservedGameDetailAppId)
+        return lastObservedGameDetailAppId;
+    const titleAppId = appIdFromVisibleMetadataTitle();
+    if (titleAppId)
+        return titleAppId;
+    const domAppId = appIdFromDom();
+    if (domAppId && (metadataCache[String(domAppId)] || isNonSteamAppWithoutPatchedMethod(getOverview(domAppId))))
+        return domAppId;
+    return domAppId || 0;
+};
+const isTransparentColor = (value) => {
+    const color = String(value || "").trim().toLowerCase();
+    return !color || color === "transparent" || color === "rgba(0, 0, 0, 0)" || color === "rgba(0,0,0,0)";
+};
+const visibleElement = (element) => {
+    if (!(element instanceof HTMLElement))
+        return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2)
+        return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
+};
+const textOf = (element) => String(element?.textContent || "").replace(/\s+/g, " ").trim();
+const isPlayhubActivityNewsElement = (element) => !!(element instanceof HTMLElement && element.closest("#playhub-activity-news-root, #playhub-activity-news-overlay, [data-playhub-activity-news='1']"));
+const deepQuerySelectorAll = (selector, root = document) => {
+    const results = [];
+    const seen = new Set();
+    const visit = (scope) => {
+        let elements = [];
+        try {
+            elements = Array.from(scope.querySelectorAll?.(selector) || []);
+        }
+        catch (_error) {
+            elements = [];
+        }
+        elements.forEach((element) => {
+            if (!seen.has(element)) {
+                seen.add(element);
+                results.push(element);
+            }
+            const shadowRoot = element.shadowRoot;
+            if (shadowRoot)
+                visit(shadowRoot);
+        });
+    };
+    visit(root);
+    return results;
+};
+const knownDetailsTabLabels = ["Attività", "Activity", "I tuoi articoli", "Your Stuff", "Comunità", "Community", "Informazioni sul gioco", "Game Info"];
+const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
+const canonicalDetailsTabLabel = (label) => {
+    const normalized = normalizedTabText(label);
+    if (normalized === normalizedTabText("Activity"))
+        return "Attività";
+    if (normalized === normalizedTabText("Your Stuff"))
+        return "I tuoi articoli";
+    if (normalized === normalizedTabText("Community"))
+        return "Comunità";
+    if (normalized === normalizedTabText("Game Info"))
+        return "Informazioni sul gioco";
+    return label;
+};
+const detailsTabLabelFromText = (value) => {
+    const text = normalizedTabText(value);
+    if (!text)
+        return "";
+    for (const label of knownDetailsTabLabels) {
+        if (text === normalizedTabText(label))
+            return canonicalDetailsTabLabel(label);
+    }
+    // Steam sometimes wraps the label with focus helpers / counters. Accept a
+    // short containing text, but avoid the full tab row because it contains every
+    // label and would otherwise always resolve to Activity.
+    for (const label of knownDetailsTabLabels) {
+        const wanted = normalizedTabText(label);
+        if (text.includes(wanted) && text.length <= wanted.length + 28)
+            return canonicalDetailsTabLabel(label);
+    }
+    return "";
+};
+const detailsTabLabelFromElement = (element) => {
+    let current = element;
+    for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
+        const directLabel = detailsTabLabelFromText(textOf(current));
+        if (directLabel)
+            return directLabel;
+        const ariaLabel = detailsTabLabelFromText(current.getAttribute("aria-label") || current.getAttribute("title") || "");
+        if (ariaLabel)
+            return ariaLabel;
+        current = current.parentElement;
+    }
+    return "";
+};
+const tabCandidateText = (element) => {
+    const text = textOf(element);
+    // Steam sometimes puts helper text/counters inside focus wrappers. We only need
+    // short visible labels for geometry grouping, not the localized wording.
+    if (text.length > 96)
+        return "";
+    return text;
+};
+const elementDepth = (element) => {
+    let depth = 0;
+    let current = element?.parentElement || null;
+    while (current && current !== document.body) {
+        depth += 1;
+        current = current.parentElement;
+    }
+    return depth;
+};
+const uniqueVisibleElements = (elements) => {
+    const out = [];
+    for (const element of elements) {
+        if (!(element instanceof HTMLElement) || !visibleElement(element))
+            continue;
+        if (out.some((existing) => existing === element))
+            continue;
+        out.push(element);
+    }
+    return out;
+};
+const tabLikeElement = (element) => {
+    if (isPlayhubActivityNewsElement(element))
+        return false;
+    const rect = element.getBoundingClientRect();
+    const text = tabCandidateText(element);
+    if (!text)
+        return false;
+    if (rect.width < 34 || rect.width > Math.min(420, window.innerWidth * 0.45))
+        return false;
+    if (rect.height < 18 || rect.height > 82)
+        return false;
+    if (rect.top < window.innerHeight * 0.18 || rect.top > window.innerHeight * 0.58)
+        return false;
+    if (rect.left < 0 || rect.right > window.innerWidth + 8)
+        return false;
+    // Avoid the big Play button / header stats row. The details tab strip is below
+    // the hero/header controls and is usually centered around the page content.
+    if (rect.top < 220 && window.innerHeight > 850)
+        return false;
+    return true;
+};
+const dedupeNestedTabCandidates = (elements) => {
+    const sorted = elements.slice().sort((a, b) => elementDepth(b) - elementDepth(a));
+    const kept = [];
+    for (const element of sorted) {
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const duplicate = kept.some((other) => {
+            const otherRect = other.getBoundingClientRect();
+            const otherCenterX = otherRect.left + otherRect.width / 2;
+            const otherCenterY = otherRect.top + otherRect.height / 2;
+            return Math.abs(centerX - otherCenterX) < 18 && Math.abs(centerY - otherCenterY) < 14;
+        });
+        if (!duplicate)
+            kept.push(element);
+    }
+    return kept;
+};
+const groupTabCandidatesByRow = (elements) => {
+    const rows = [];
+    const sorted = elements.slice().sort((a, b) => {
+        const ar = a.getBoundingClientRect();
+        const br = b.getBoundingClientRect();
+        return ar.top - br.top || ar.left - br.left;
+    });
+    for (const element of sorted) {
+        const rect = element.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+        const row = rows.find((candidate) => {
+            const firstRect = candidate[0].getBoundingClientRect();
+            const firstCenterY = firstRect.top + firstRect.height / 2;
+            return Math.abs(centerY - firstCenterY) <= 18;
+        });
+        if (row)
+            row.push(element);
+        else
+            rows.push([element]);
+    }
+    return rows
+        .map((row) => row.slice().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left))
+        .filter((row) => row.length >= 3);
+};
+const scoreTabRow = (row) => {
+    const rects = row.map((element) => element.getBoundingClientRect());
+    const left = Math.min(...rects.map((rect) => rect.left));
+    const right = Math.max(...rects.map((rect) => rect.right));
+    const top = Math.min(...rects.map((rect) => rect.top));
+    const bottom = Math.max(...rects.map((rect) => rect.bottom));
+    const width = right - left;
+    const height = bottom - top;
+    const selectedBonus = row.some((element) => elementLooksSelected(element)) ? 500 : 0;
+    const countBonus = Math.min(row.length, 6) * 60;
+    const contentWidthBonus = width > window.innerWidth * 0.22 && width < window.innerWidth * 0.78 ? 120 : 0;
+    const compactBonus = height < 92 ? 120 : 0;
+    const verticalPreference = Math.max(0, 160 - Math.abs(top - window.innerHeight * 0.31));
+    return selectedBonus + countBonus + contentWidthBonus + compactBonus + verticalPreference;
+};
+const findDetailsTabCandidates = () => {
+    const roleTabs = uniqueVisibleElements(deepQuerySelectorAll("[role='tab']"));
+    const roleRows = groupTabCandidatesByRow(dedupeNestedTabCandidates(roleTabs.filter(tabLikeElement)));
+    if (roleRows.length)
+        return roleRows.sort((a, b) => scoreTabRow(b) - scoreTabRow(a))[0];
+    const raw = uniqueVisibleElements(deepQuerySelectorAll("button, [role='button'], [tabindex], a, div, span")).filter(tabLikeElement);
+    const rows = groupTabCandidatesByRow(dedupeNestedTabCandidates(raw));
+    if (!rows.length)
+        return [];
+    return rows.sort((a, b) => scoreTabRow(b) - scoreTabRow(a))[0];
+};
+const detailsTabIndexFromPoint = (x, y) => {
+    const tabs = findDetailsTabCandidates();
+    return tabs.findIndex((tab) => {
+        const rect = tab.getBoundingClientRect();
+        return x >= rect.left - 10 && x <= rect.right + 10 && y >= rect.top - 10 && y <= rect.bottom + 10;
+    });
+};
+const detailsTabIndexFromElement = (element) => {
+    if (!element)
+        return -1;
+    const tabs = findDetailsTabCandidates();
+    return tabs.findIndex((tab) => tab === element || tab.contains(element) || element.contains(tab));
+};
+const elementLooksSelected = (element) => {
+    let current = element;
+    for (let depth = 0; current && current !== document.body && depth < 5; depth += 1) {
+        const ariaSelected = current.getAttribute("aria-selected") || current.getAttribute("aria-current");
+        if (ariaSelected === "true" || ariaSelected === "page")
+            return true;
+        const className = String(current.className || "").toLowerCase();
+        if (/(active|selected|current)/.test(className))
+            return true;
+        const style = window.getComputedStyle(current);
+        const rect = current.getBoundingClientRect();
+        const radius = Math.max(parseFloat(style.borderTopLeftRadius || "0") || 0, parseFloat(style.borderTopRightRadius || "0") || 0, parseFloat(style.borderBottomLeftRadius || "0") || 0, parseFloat(style.borderBottomRightRadius || "0") || 0);
+        if (rect.width >= 48 && rect.height >= 24 && radius >= 8 && !isTransparentColor(style.backgroundColor)) {
+            return true;
+        }
+        current = current.parentElement;
+    }
+    return false;
+};
 const communityPayloadForApp = async (appId) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
@@ -721,27 +2011,212 @@ const communityPayloadForApp = async (appId) => {
         await tryEnrichScreenshotsForApp(appId);
         metadata = metadataCache[String(appId)];
     }
-    if (!metadata?.community_enriched_at) {
+    if (!metadata?.community_enriched_at || (!metadata?.steam_news_enriched_at && !(metadata?.steam_news || []).length)) {
         await tryEnrichCommunityMediaForApp(appId);
         metadata = metadataCache[String(appId)];
     }
     const hub = metadata ? steamCommunityItemsFromMetadata(appId, metadata) : [];
     return hub.length ? { hub } : null;
 };
+const achievementSortTimestamp = (item) => Number(item?.rtUnlocked || 0);
+const achievementDisplayName = (item) => String(item?.strName || item?.name || "");
+const sortAchievementsForMyAchievements = (items) => items.slice().sort((a, b) => {
+    const achievedDiff = Number(Boolean(b?.bAchieved)) - Number(Boolean(a?.bAchieved));
+    if (achievedDiff)
+        return achievedDiff;
+    const dateDiff = achievementSortTimestamp(b) - achievementSortTimestamp(a);
+    if (dateDiff)
+        return dateDiff;
+    return achievementDisplayName(a).localeCompare(achievementDisplayName(b));
+});
+const orderedAchievementRecord = (record) => {
+    const out = {};
+    sortAchievementsForMyAchievements(Object.values(record || {})).forEach((item) => {
+        const key = String(item?.strID || item?.strName || "");
+        if (key)
+            out[key] = item;
+    });
+    return out;
+};
+const sortedAchievementPayloadForNative = (payload) => {
+    const userData = payload.user?.data;
+    const sortedAchieved = orderedAchievementRecord(userData?.achieved);
+    const sortedHidden = orderedAchievementRecord(userData?.hidden);
+    const sortedUnachieved = orderedAchievementRecord(userData?.unachieved);
+    const achievedList = Object.values(sortedAchieved);
+    const hiddenList = Object.values(sortedHidden);
+    const unachievedList = Object.values(sortedUnachieved);
+    return {
+        ...payload,
+        user: payload.user
+            ? {
+                ...payload.user,
+                data: {
+                    achieved: sortedAchieved,
+                    hidden: sortedHidden,
+                    unachieved: sortedUnachieved,
+                },
+            }
+            : payload.user,
+        steam: payload.steam
+            ? {
+                ...payload.steam,
+                vecHighlight: sortAchievementsForMyAchievements([
+                    ...(payload.steam.vecHighlight || []),
+                    ...achievedList,
+                ]).filter((item, index, list) => list.findIndex((candidate) => candidate.strID === item.strID) === index).slice(0, Math.max(3, Math.min(12, achievedList.length || 3))),
+                vecAchievedHidden: sortAchievementsForMyAchievements(hiddenList),
+                vecUnachieved: sortAchievementsForMyAchievements(unachievedList),
+            }
+            : payload.steam,
+    };
+};
+const backgroundPolicyIntervalMs = (policy) => {
+    switch (policy) {
+        case "hourly":
+            return 60 * 60 * 1000;
+        case "daily":
+            return 24 * 60 * 60 * 1000;
+        case "weekly":
+            return 7 * 24 * 60 * 60 * 1000;
+        default:
+            return 0;
+    }
+};
+const backgroundSyncLastKey = (policy) => `${BACKGROUND_SYNC_LOCAL_PREFIX}:${policy}`;
+const backgroundAchievementSyncIsDue = (policy) => {
+    if (policy === "manual")
+        return false;
+    if (policy === "pc_session") {
+        try {
+            return sessionStorage.getItem(BACKGROUND_SYNC_SESSION_KEY) !== "done";
+        }
+        catch (_error) {
+            return true;
+        }
+    }
+    const interval = backgroundPolicyIntervalMs(policy);
+    if (!interval)
+        return false;
+    try {
+        const last = Number(localStorage.getItem(backgroundSyncLastKey(policy)) || 0);
+        return !last || Date.now() - last >= interval;
+    }
+    catch (_error) {
+        return true;
+    }
+};
+const markBackgroundAchievementSyncDone = (policy) => {
+    try {
+        if (policy === "pc_session")
+            sessionStorage.setItem(BACKGROUND_SYNC_SESSION_KEY, "done");
+        else
+            localStorage.setItem(backgroundSyncLastKey(policy), String(Date.now()));
+    }
+    catch (_error) {
+        // Storage can be unavailable in some embedded Steam contexts.
+    }
+};
+const scheduledAchievementTargets = async (settings) => {
+    const games = await allNonSteamGames();
+    const targets = [];
+    const sources = settings.achievement_sources || {};
+    const raIds = settings.retroachievements?.game_ids || {};
+    const xboxIds = settings.xbox?.title_ids || {};
+    for (const game of games) {
+        const key = String(game.appid);
+        const source = sources[key] || "auto";
+        if (source === "disabled")
+            continue;
+        const hasXbox = Boolean(xboxIds[key]);
+        const hasRa = Boolean(raIds[key]);
+        if ((source === "xbox" || (source === "auto" && hasXbox)) && hasXbox && isUwphookGameOption(game)) {
+            targets.push({ appid: game.appid, name: game.name, provider: "xbox" });
+            continue;
+        }
+        if ((source === "retroachievements" || (source === "auto" && !hasXbox && hasRa)) && hasRa) {
+            targets.push({ appid: game.appid, name: game.name, provider: "retroachievements" });
+        }
+    }
+    return targets;
+};
+const runBackgroundAchievementSync = async (reason = "scheduled") => {
+    if (backgroundAchievementSyncRunning)
+        return;
+    backgroundAchievementSyncRunning = true;
+    let policy = "daily";
+    let updated = 0;
+    let skipped = 0;
+    try {
+        const settings = await refreshRaSettings();
+        policy = settings?.achievement_cache?.policy || "daily";
+        if (!backgroundAchievementSyncIsDue(policy))
+            return;
+        const targets = await scheduledAchievementTargets(settings);
+        toaster.toast({
+            title: t("pluginName"),
+            body: `${t("backgroundSyncStarted")}: ${targets.length}`,
+        });
+        for (const target of targets) {
+            try {
+                const payload = target.provider === "xbox"
+                    ? ((await syncTrueAchievementsProgress(target.appid)) || (await fetchAchievements(target.appid)))
+                    : await fetchAchievements(target.appid);
+                if (payload?.steam?.nTotal) {
+                    applyAchievementPayload(target.appid, payload);
+                    updated += 1;
+                }
+                else {
+                    skipped += 1;
+                }
+            }
+            catch (error) {
+                skipped += 1;
+                console.warn(`[Playhub Metadata] background achievement sync failed for ${target.name}`, error);
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, 350));
+        }
+        markBackgroundAchievementSyncDone(policy);
+        toaster.toast({
+            title: t("pluginName"),
+            body: `${t("backgroundSyncFinished")}: ${updated} ${t("backgroundSyncUpdated")}, ${skipped} ${t("backgroundSyncSkipped")}`,
+        });
+    }
+    catch (error) {
+        toaster.toast({ title: t("pluginName"), body: `${t("backgroundSyncFailed")}: ${String(error)}` });
+    }
+    finally {
+        backgroundAchievementSyncRunning = false;
+    }
+};
+const startBackgroundAchievementSync = () => {
+    if (backgroundAchievementSyncTimer)
+        window.clearInterval(backgroundAchievementSyncTimer);
+    const run = () => void runBackgroundAchievementSync("timer");
+    const initial = window.setTimeout(run, BACKGROUND_SYNC_INITIAL_DELAY_MS);
+    backgroundAchievementSyncTimer = window.setInterval(run, BACKGROUND_SYNC_CHECK_MS);
+    return () => {
+        window.clearTimeout(initial);
+        if (backgroundAchievementSyncTimer)
+            window.clearInterval(backgroundAchievementSyncTimer);
+        backgroundAchievementSyncTimer = undefined;
+    };
+};
 const applyAchievementPayload = (appId, payload) => {
     if (!payload?.steam?.nTotal)
         return;
+    const sortedPayload = sortedAchievementPayloadForNative(payload);
     clearAchievementStoreMapsForApp(appId);
-    achievementsCache[String(appId)] = payload;
+    achievementsCache[String(appId)] = sortedPayload;
     if (steamAchievementStoreRef)
-        primeAchievementStore(steamAchievementStoreRef, appId, payload);
+        primeAchievementStore(steamAchievementStoreRef, appId, sortedPayload);
     const appData = appDetailsStore?.GetAppData?.(appId);
     if (appData?.details) {
-        appData.details.achievements = payload.steam;
+        appData.details.achievements = sortedPayload.steam;
         appData.bLoadingAchievments = false;
     }
     try {
-        appDetailsCache?.SetCachedDataForApp?.(appId, "achievements", 2, payload.steam);
+        appDetailsCache?.SetCachedDataForApp?.(appId, "achievements", 2, sortedPayload.steam);
     }
     catch (_error) {
         // Best effort, same cache route used by Steam.
@@ -749,12 +2224,12 @@ const applyAchievementPayload = (appId, payload) => {
     try {
         if (appAchievementProgressCache?.m_achievementProgress) {
             appAchievementProgressCache.m_achievementProgress.mapCache.set(appId, {
-                all_unlocked: payload.progress.achieved === payload.progress.total,
+                all_unlocked: sortedPayload.progress.achieved === sortedPayload.progress.total,
                 appid: appId,
                 cache_time: Date.now(),
-                percentage: payload.progress.percentage,
-                total: payload.progress.total,
-                unlocked: payload.progress.achieved,
+                percentage: sortedPayload.progress.percentage,
+                total: sortedPayload.progress.total,
+                unlocked: sortedPayload.progress.achieved,
             });
             appAchievementProgressCache.SaveCacheFile?.();
         }
@@ -864,17 +2339,18 @@ const flushTrueAchievementsNativeCache = async () => {
 const primeAchievementStore = (store, appId, payload) => {
     if (!payload)
         return;
+    const sortedPayload = sortedAchievementPayloadForNative(payload);
     try {
         const keys = [appId, String(appId)];
         for (const key of keys) {
-            if (payload.global) {
-                store?.m_mapGlobalAchievements?.set?.(key, payload.global);
-                store?.m_mapGlobalAchievementPercentages?.set?.(key, payload.global);
-                store?.m_mapAchievementPercentages?.set?.(key, payload.global);
+            if (sortedPayload.global) {
+                store?.m_mapGlobalAchievements?.set?.(key, sortedPayload.global);
+                store?.m_mapGlobalAchievementPercentages?.set?.(key, sortedPayload.global);
+                store?.m_mapAchievementPercentages?.set?.(key, sortedPayload.global);
             }
-            if (payload.user) {
-                store?.m_mapMyAchievements?.set?.(key, payload.user);
-                store?.m_mapAchievements?.set?.(key, payload.user);
+            if (sortedPayload.user) {
+                store?.m_mapMyAchievements?.set?.(key, sortedPayload.user);
+                store?.m_mapAchievements?.set?.(key, sortedPayload.user);
             }
         }
     }
@@ -946,7 +2422,9 @@ const tryEnrichCommunityMediaForApp = async (appId) => {
     await ensureMetadataCache();
     const metadata = metadataCache[String(appId)];
     const enrichedRecently = metadata?.community_enriched_at &&
-        Date.now() / 1000 - Number(metadata.community_enriched_at) < 7 * 24 * 60 * 60;
+        metadata?.steam_news_enriched_at &&
+        Date.now() / 1000 - Number(metadata.community_enriched_at) < 7 * 24 * 60 * 60 &&
+        Date.now() / 1000 - Number(metadata.steam_news_enriched_at) < 6 * 60 * 60;
     if (!metadata || enrichedRecently || loadingCommunityMedia.has(appId)) {
         return;
     }
@@ -956,6 +2434,7 @@ const tryEnrichCommunityMediaForApp = async (appId) => {
         if (enriched) {
             metadataCache[String(appId)] = enriched;
             applyMetadata(appId);
+            void refreshPlayhubNativeActivityForApp(appId);
             window.dispatchEvent(new Event("playhub-metadata:updated"));
         }
     }
@@ -1343,9 +2822,116 @@ const PlayhubAchievementsRoute = () => {
     const appId = routeAchievementAppId();
     return SP_REACT.createElement(PlayhubAchievementsPage, { appId });
 };
+const overviewFromReactTree = (tree) => {
+    try {
+        const holder = DFL.findInReactTree(tree, (node) => {
+            const overview = node?.props?.overview || node?.overview;
+            return overview?.appid ? true : undefined;
+        });
+        return holder?.props?.overview || holder?.overview || null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const appIdFromReactTree = (tree) => {
+    const overview = overviewFromReactTree(tree);
+    const appId = Number(overview?.appid || 0);
+    return Number.isFinite(appId) ? appId : 0;
+};
+const historyPathFromArgs = (args) => {
+    const first = args?.[0];
+    if (typeof first === "string")
+        return first;
+    if (first && typeof first === "object") {
+        return String(first.pathname || first.path || first.href || first.url || "");
+    }
+    return "";
+};
+const historyStateFromArgs = (args) => {
+    const first = args?.[0];
+    const second = args?.[1];
+    // React Router / Steam history may call push(path, { state }), push(path, state),
+    // push({ pathname, state }), replace(location, state), or the raw browser
+    // history API with the state as first argument. The previous build only handled
+    // the direct state shapes, so Steam's Navigator.App(appid, { gidPartnerEvent })
+    // slipped through as args[1].state and kept polluting the back stack.
+    if (first && typeof first === "object") {
+        if (first.state?.event_to_show)
+            return first.state;
+        if (first.event_to_show)
+            return first;
+        if ("state" in first && first.state)
+            return first.state;
+    }
+    if (second && typeof second === "object") {
+        if (second.state?.event_to_show)
+            return second.state;
+        if (second.event_to_show)
+            return second;
+        if ("state" in second && second.state)
+            return second.state;
+    }
+    return second;
+};
+const isPlayhubNativeNewsRouteState = (state) => {
+    const eventToShow = state?.event_to_show;
+    if (!eventToShow)
+        return false;
+    const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
+    return !!eventId && !!playhubNativePartnerEventForGid(eventId);
+};
+const playhubNativeNewsRouteAppId = (state, fallbackPath = "") => {
+    const eventToShow = state?.event_to_show || {};
+    const appId = Number(eventToShow.appid || gameDetailAppIdFromPath(fallbackPath));
+    return Number.isFinite(appId) && appId > 0 ? appId : 0;
+};
+const shouldReplacePlayhubNativeNewsPush = (targetPath, state) => {
+    if (!isPlayhubNativeNewsRouteState(state))
+        return false;
+    const targetAppId = playhubNativeNewsRouteAppId(state, targetPath);
+    const currentAppId = gameDetailAppIdFromPath(currentRoutePath());
+    // Steam's native Activity click normally pushes the same game-detail route with
+    // only `event_to_show` added. Its close handler then replaces the current route
+    // to remove `event_to_show`, leaving a duplicate game-detail entry behind. That
+    // is why Andrea had to press B/Esc once for every news he had opened. For
+    // Playhub native news, make that event navigation replace the current game route
+    // instead of pushing a new history entry. The modal still opens natively, but
+    // closing it returns to the original route without polluting the back stack.
+    return !!targetAppId && (!currentAppId || currentAppId === targetAppId);
+};
+const currentSteamHistoryState = (steamHistory) => {
+    const location = steamHistory?.location || globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
+    return location?.state || null;
+};
+const shouldBackOutOfPlayhubNativeNewsClose = (steamHistory, targetPath, nextState) => {
+    const currentState = currentSteamHistoryState(steamHistory);
+    if (!isPlayhubNativeNewsRouteState(currentState))
+        return false;
+    if (isPlayhubNativeNewsRouteState(nextState))
+        return false;
+    const currentAppId = playhubNativeNewsRouteAppId(currentState, currentRoutePath());
+    const targetAppId = Number(gameDetailAppIdFromPath(targetPath) || currentAppId);
+    return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
+};
+const backSteamHistory = (steamHistory) => {
+    if (typeof steamHistory?.goBack === "function")
+        return steamHistory.goBack();
+    if (typeof steamHistory?.back === "function")
+        return steamHistory.back();
+    if (typeof steamHistory?.go === "function")
+        return steamHistory.go(-1);
+    return undefined;
+};
 const installSteamPatches = () => {
     const unpatchers = [];
     installAchievementImageCoverPatch(unpatchers);
+    // Activity news now use Steam's own AppActivityStore and native Activity
+    // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
+    // source only as old fallbacks, but the integration attempt for this build is
+    // intentionally native-only.
+    installNativeActivityStorePatch(unpatchers);
+    installNativePartnerEventStorePatch(unpatchers);
     void flushTrueAchievementsNativeCache();
     window.setTimeout(() => void flushTrueAchievementsNativeCache(), 2500);
     const overviewProto = appStore?.allApps?.[0]?.__proto__;
@@ -1395,10 +2981,25 @@ const installSteamPatches = () => {
         for (const methodName of ["push", "replace"]) {
             if (steamHistory?.[methodName]) {
                 unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
-                    const target = typeof args[0] === "string" ? args[0] : args[0]?.pathname;
+                    const target = historyPathFromArgs(args);
                     const redirected = redirectAchievementTarget(target);
                     if (redirected)
                         return original(redirected);
+                    const state = historyStateFromArgs(args);
+                    if (methodName === "push" && shouldReplacePlayhubNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
+                        globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                        return steamHistory.replace(...args);
+                    }
+                    if (methodName === "replace" && shouldBackOutOfPlayhubNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
+                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                        // If our push->replace interception ran, closing the modal should keep using
+                        // Steam's replace. If Steam opened via a path we did not intercept, use Back
+                        // for the close action so the event entry is removed instead of replaced by a
+                        // duplicate app-detail entry.
+                        if (!replacedAt || Date.now() - replacedAt > 15000) {
+                            return backSteamHistory(steamHistory) ?? original(...args);
+                        }
+                    }
                     return original(...args);
                 }));
             }
@@ -1413,9 +3014,25 @@ const installSteamPatches = () => {
             if (typeof original !== "function")
                 continue;
             const patched = function (...args) {
-                const redirected = redirectAchievementTarget(args[2] || args[0]);
+                const target = String(args[2] || "");
+                const redirected = redirectAchievementTarget(target || args[0]);
                 if (redirected) {
                     args[2] = redirected;
+                }
+                const state = historyStateFromArgs(args);
+                if (methodName === "pushState" && shouldReplacePlayhubNativeNewsPush(target, state)) {
+                    globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                    return window.history.replaceState(args[0], args[1], args[2]);
+                }
+                if (methodName === "replaceState") {
+                    const currentState = window.history?.state;
+                    if (isPlayhubNativeNewsRouteState(currentState) && !isPlayhubNativeNewsRouteState(state)) {
+                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                        if (!replacedAt || Date.now() - replacedAt > 15000) {
+                            window.history.back();
+                            return undefined;
+                        }
+                    }
                 }
                 return original.apply(this, args);
             };
@@ -1445,6 +3062,16 @@ const installSteamPatches = () => {
     };
     document.addEventListener("click", clickAchievementRedirect, true);
     unpatchers.push(() => document.removeEventListener("click", clickAchievementRedirect, true));
+    const clickDetailsTabTracker = (event) => {
+        const target = event.target;
+        detailsTabLabelFromElement(target);
+        Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+            ? detailsTabIndexFromPoint(event.clientX, event.clientY)
+            : -1;
+        detailsTabIndexFromElement(target);
+    };
+    document.addEventListener("click", clickDetailsTabTracker, true);
+    unpatchers.push(() => document.removeEventListener("click", clickDetailsTabTracker, true));
     const routeGuard = () => {
         const path = currentRoutePath();
         const redirected = redirectAchievementTarget(path);
@@ -1583,13 +3210,21 @@ const installSteamPatches = () => {
                     void loadAchievementsForApp(appId);
                 }
                 if (appId && isNonSteamApp(overview) && metadataCache[String(appId)]) {
-                    if (metadataCache[String(appId)]?.screenshots?.length) {
+                    lastObservedGameDetailAppId = appId;
+                    const metadata = metadataCache[String(appId)];
+                    if (metadata?.screenshots?.length) {
                         ret.add("screenshots");
                     }
                     else {
                         void tryEnrichScreenshotsForApp(appId);
                     }
                     ret.add("community");
+                    // Add the real Steam Activity section too. News are deliberately
+                    // served through the Activity feed patch, not the Community feed.
+                    ret.add("activity");
+                    if (!metadata?.steam_news_enriched_at && !(metadata?.steam_news || []).length) {
+                        void tryEnrichCommunityMediaForApp(appId);
+                    }
                 }
                 return ret;
             }).unpatch);
@@ -1607,9 +3242,19 @@ const installSteamPatches = () => {
             }
             return undefined;
         });
-        if (httpClient?.get) {
-            unpatchers.push(patchMethod(httpClient, "get", (_thisValue, original, args) => {
+        const patchFeedMethod = (methodName) => {
+            if (!httpClient?.[methodName])
+                return;
+            unpatchers.push(patchMethod(httpClient, methodName, (_thisValue, original, args) => {
                 const url = String(args[0] || "");
+                const activityAppId = activityAppIdFromUrl(url);
+                if (activityAppId) {
+                    return steamActivityPayloadForApp(activityAppId).then((payload) => {
+                        if (payload)
+                            return payload;
+                        return original(...args);
+                    });
+                }
                 const match = url.match(/library\/appcommunityfeed\/(\d+)/);
                 if (match) {
                     const appId = Number(match[1]);
@@ -1621,7 +3266,9 @@ const installSteamPatches = () => {
                 }
                 return original(...args);
             }));
-        }
+        };
+        patchFeedMethod("get");
+        patchFeedMethod("post");
     }
     catch (error) {
         console.warn("[Playhub Metadata] community feed patch skipped", error);
@@ -1669,16 +3316,46 @@ const installSteamPatches = () => {
             const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
             if (routeProps?.renderFunc) {
                 const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const overview = ret?.props?.children?.props?.overview;
-                    const appId = Number(overview?.appid);
-                    if (appId && isNonSteamApp(overview)) {
+                    const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
+                    const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
+                    const appOverview = overview || getOverview(appId);
+                    if (appId && isNonSteamApp(appOverview)) {
+                        lastObservedGameDetailAppId = appId;
                         bypassBypass = 11;
                         void ensureMetadataCache().then(() => {
                             applyMetadata(appId);
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
+                            void tryEnrichCommunityMediaForApp(appId);
                         });
                         void loadAchievementsForApp(appId);
+                        void refreshPlayhubNativeActivityForApp(appId);
+                        return ret;
+                    }
+                    return ret;
+                });
+                unpatchers.push(renderPatch.unpatch);
+            }
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    });
+    GAME_ACTIVITY_ROUTES.forEach((route) => {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
+            if (routeProps?.renderFunc) {
+                const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, ret) => {
+                    const treeAppId = appIdFromReactTree(ret);
+                    const appId = currentGameDetailAppId() || treeAppId;
+                    const overview = overviewFromReactTree(ret) || getOverview(appId);
+                    if (appId && isNonSteamApp(overview)) {
+                        lastObservedGameDetailAppId = appId;
+                        void ensureMetadataCache().then(() => {
+                            applyMetadata(appId);
+                            void tryEnrichCommunityMediaForApp(appId);
+                        });
+                        void refreshPlayhubNativeActivityForApp(appId);
+                        return ret;
                     }
                     return ret;
                 });
@@ -2425,7 +4102,15 @@ const MetadataPage = () => {
                                                             : "", result.gamerscore != null ? ` - ${result.gamerscore}G` : "", ` - ${result.source || "TrueAchievements"} - ${result.id}`] })] }) }, result.id)))] }) })] })] }) }));
 };
 
+// Stable key for the entry we inject, so we can find and de-duplicate it.
 const ENTRY_KEY = "playhub-metadata-edit";
+/**
+ * Resolve Steam's internal LibraryContextMenu class at runtime.
+ *
+ * The class is not exported, so we locate the webpack module that references
+ * it, pick the member whose source mentions "navigator:", and read the type
+ * back from a throwaway render.
+ */
 const resolveLibraryContextMenu = () => {
     const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
         member.toString().includes("().LibraryContextMenu"));
@@ -2434,6 +4119,13 @@ const resolveLibraryContextMenu = () => {
     return DFL.fakeRenderComponent(menuComponent).type;
 };
 const LibraryContextMenu = resolveLibraryContextMenu();
+/**
+ * Work out which appid the menu is really for.
+ *
+ * Steam reuses context-menu instances, so the appid passed in can be stale.
+ * Prefer a fresh appid carried on the owning React node; otherwise scan the
+ * node tree for an `app.appid` (used by newer Steam clients).
+ */
 const resolveAppId = (nodes, fallbackAppId) => {
     const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
         node._owner.pendingProps.overview.appid !== fallbackAppId);
@@ -2445,16 +4137,23 @@ const resolveAppId = (nodes, fallbackAppId) => {
     });
     return Number(taggedNode?.app?.appid ?? fallbackAppId);
 };
+/**
+ * True only for the per-game context menu. Its launch action's handler
+ * references "launchSource"; menus like the screenshot menu do not, which
+ * lets us ignore them.
+ */
 const isGameContextMenu = (items) => {
     if (!Array.isArray(items) || items.length === 0)
         return false;
     return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
 };
+/** Remove any previously injected entry so re-renders cannot stack copies. */
 const removeOurEntry = (items) => {
     const existingIndex = items.findIndex((node) => node?.key === ENTRY_KEY);
     if (existingIndex !== -1)
         items.splice(existingIndex, 1);
 };
+/** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items, appId) => {
     if (!isNonSteamApp(getOverview(appId)))
         return;
@@ -2462,10 +4161,16 @@ const insertOurEntry = (items, appId) => {
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
     items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/playhub-metadata/${appId}`), children: t("editMetadata") }, ENTRY_KEY));
 };
+/** De-duplicate, then (re)insert the entry against the best-known appid. */
 const syncOurEntry = (items, appId) => {
     removeOurEntry(items);
     insertOurEntry(items, resolveAppId(items, appId));
 };
+/**
+ * Patch the library context menu so non-Steam games gain a Playhub entry.
+ * @param LibraryContextMenuClass The resolved menu class.
+ * @returns An object exposing unpatch() for plugin teardown.
+ */
 const contextMenuPatch = (LibraryContextMenuClass) => {
     let innerPatch;
     const outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
@@ -2473,6 +4178,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
         const appId = ownerAppId || resolveAppId(menu?.props?.children ?? [], 0);
         if (!innerPatch) {
             innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                // First render of the menu body.
                 DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
                     const items = output?.props?.children?.[0];
                     if (isGameContextMenu(items)) {
@@ -2480,10 +4186,12 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                             syncOurEntry(items, appId);
                         }
                         catch (_error) {
+                            // Steam reshapes this tree often; skip on mismatch.
                         }
                     }
                     return output;
                 });
+                // Subsequent updates when Steam refreshes the app overview.
                 DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                     try {
                         removeOurEntry(nextProps.children);
@@ -2492,6 +4200,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                         }
                     }
                     catch (_error) {
+                        // Not our menu; leave the decision untouched.
                     }
                     return shouldUpdate;
                 });
@@ -2503,6 +4212,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                 syncOurEntry(menu.props.children, appId);
             }
             catch (_error) {
+                // Ignore non-matching menus.
             }
         }
         return menu;
