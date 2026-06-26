@@ -523,6 +523,54 @@ const getOverview = (appId) => {
         return null;
     }
 };
+const shortcutAppIdForSteamAppId = (steamAppId) => {
+    if (!Number.isFinite(steamAppId) || steamAppId <= 0)
+        return null;
+    for (const [shortcutAppIdText, metadata] of Object.entries(metadataCache)) {
+        const shortcutAppId = Number(shortcutAppIdText);
+        const metadataSteamAppId = Number(metadata?.steam_appid);
+        if (Number.isFinite(shortcutAppId) &&
+            shortcutAppId > 0 &&
+            metadataSteamAppId === steamAppId) {
+            return shortcutAppId;
+        }
+    }
+    return null;
+};
+const ensureDetailsOverviewSafeFields = (appId) => {
+    try {
+        const appData = appDetailsStore?.GetAppData?.(appId);
+        const details = appData?.details;
+        const overview = getOverview(appId);
+        if (!details || !isNonSteamApp(overview))
+            return;
+        const detailsAppId = Number(details.unAppID ?? details.appid ?? details.nAppID ?? 0);
+        const detailsOverview = Number.isFinite(detailsAppId) && detailsAppId > 0 ? getOverview(detailsAppId) : null;
+        // Steam's play bar calls GetAppOverviewByAppID(details.unAppID).BIsApplicationOrTool().
+        // For non-Steam games that have been enriched with official Steam data, the first
+        // page render can temporarily expose a details object whose unAppID points nowhere
+        // in the local library. Keep it tied to the actual shortcut AppID so SteamUI never
+        // dereferences a null overview during the first open.
+        if (!detailsOverview) {
+            details.unAppID = appId;
+        }
+        // Some SteamUI reactions iterate these arrays while details are still being
+        // bootstrapped. Non-Steam shortcut details can miss them on first render.
+        if (!Array.isArray(details.vecDLC))
+            details.vecDLC = [];
+        if (!Array.isArray(details.vecChildConfigApps))
+            details.vecChildConfigApps = [];
+        if (!Array.isArray(details.vecScreenShots))
+            details.vecScreenShots = [];
+        if (details.appid == null)
+            details.appid = appId;
+        if (details.nAppID == null)
+            details.nAppID = appId;
+    }
+    catch (_error) {
+        // Best-effort guard only; never block Steam's native bootstrap.
+    }
+};
 const appName = (appId) => {
     const overview = getOverview(appId);
     return cleanTitle(overview?.display_name ||
@@ -600,6 +648,7 @@ const applyMetadata = (appId) => {
     const appData = appDetailsStore?.GetAppData?.(appId);
     if (!appData)
         return;
+    ensureDetailsOverviewSafeFields(appId);
     const description = metadata.description || metadata.short_description || "";
     appData.descriptionsData = {
         strFullDescription: description,
@@ -3086,34 +3135,73 @@ const installSteamPatches = () => {
     };
     const routeGuardTimer = window.setInterval(routeGuard, 250);
     unpatchers.push(() => window.clearInterval(routeGuardTimer));
+    if (appStore?.GetAppOverviewByAppID) {
+        unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
+            const requestedAppId = Number(args[0]);
+            const result = original(...args);
+            if (result || !Number.isFinite(requestedAppId) || requestedAppId <= 0) {
+                return result;
+            }
+            const shortcutAppId = shortcutAppIdForSteamAppId(requestedAppId);
+            if (!shortcutAppId || shortcutAppId === requestedAppId)
+                return result;
+            try {
+                const shortcutOverview = original(shortcutAppId);
+                if (isNonSteamAppWithoutPatchedMethod(shortcutOverview))
+                    return shortcutOverview;
+            }
+            catch (_error) {
+                // Fall through to Steam's native null result.
+            }
+            return result;
+        }));
+    }
     unpatchers.push(patchMethod(detailsProto, "GetDescriptions", (_thisValue, original, args) => {
         const appId = Number(args[0]);
         const overview = getOverview(appId);
+        const originalResult = original(...args);
         if (isNonSteamApp(overview)) {
+            ensureDetailsOverviewSafeFields(appId);
             const metadata = metadataCache[String(appId)];
             if (metadata) {
                 applyMetadata(appId);
-                return appDetailsStore?.GetAppData?.(appId)?.descriptionsData;
+                const appData = appDetailsStore?.GetAppData?.(appId);
+                // Keep Steam's first-run detail bootstrap intact. Returning Playhub data
+                // before Steam has created the native details object can make SteamUI
+                // render the play bar with an invalid/null AppOverview and crash on
+                // BIsApplicationOrTool during the first page open.
+                if (appData?.details && appData?.descriptionsData) {
+                    return appData.descriptionsData;
+                }
             }
-            void ensureMetadataCache().then(() => {
-                if (metadataCache[String(appId)]) {
-                    applyMetadata(appId);
-                    void tryEnrichScreenshotsForApp(appId);
-                }
-                else {
-                    void tryFetchMetadataForApp(appId);
-                }
-            });
+            else {
+                void ensureMetadataCache().then(() => {
+                    if (metadataCache[String(appId)]) {
+                        applyMetadata(appId);
+                        void tryEnrichScreenshotsForApp(appId);
+                    }
+                    else {
+                        void tryFetchMetadataForApp(appId);
+                    }
+                });
+            }
         }
-        return original(...args);
+        return originalResult;
     }));
     unpatchers.push(patchMethod(detailsProto, "GetAssociations", (_thisValue, original, args) => {
         const appId = Number(args[0]);
+        const originalResult = original(...args);
         const overview = getOverview(appId);
+        if (isNonSteamApp(overview))
+            ensureDetailsOverviewSafeFields(appId);
         if (isNonSteamApp(overview) && metadataCache[String(appId)]) {
             applyMetadata(appId);
+            const appData = appDetailsStore?.GetAppData?.(appId);
+            if (appData?.details && appData?.associationData) {
+                return appData.associationData;
+            }
         }
-        return original(...args);
+        return originalResult;
     }));
     unpatchers.push(patchMethod(detailsProto, "GetAchievements", (_thisValue, original, args) => {
         const appId = Number(args[0]);
@@ -3205,6 +3293,8 @@ const installSteamPatches = () => {
             unpatchers.push(DFL.afterPatch(appDetailsSections.prototype, "GetSections", function (_args, ret) {
                 const overview = this?.props?.overview;
                 const appId = Number(overview?.appid);
+                if (appId && isNonSteamApp(overview))
+                    ensureDetailsOverviewSafeFields(appId);
                 if (appId && isNonSteamApp(overview) && shouldShowAchievements(appId)) {
                     ret.add("achievements");
                     void loadAchievementsForApp(appId);
