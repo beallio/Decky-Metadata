@@ -11,6 +11,11 @@ and more console-like, even when the games are not from Steam.
 It can add metadata, community images and videos, categories, and achievements to non-Steam games,
 including RetroAchievements and Xbox PC achievements.
 
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 192605" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8" />
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 193229" src="https://github.com/user-attachments/assets/5f774ac2-4d08-4d33-a5ff-f109da88a68a" />
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 192634" src="https://github.com/user-attachments/assets/1bb89158-1142-410e-9793-63492fbb55a3" />
+
+
 ## Features
 
 - Finds missing game metadata automatically.
@@ -22,6 +27,9 @@ including RetroAchievements and Xbox PC achievements.
 ## Steam Activity News
 
 For non-Steam shortcuts that can be matched to a Steam Store app, Playhub Metadata can fetch Steam news and announcements and feed them into Steam Big Picture's normal Activity area.
+
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 192356" src="https://github.com/user-attachments/assets/10184af8-2b4e-4d9a-ae41-870981fbdc1d" />
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 192444" src="https://github.com/user-attachments/assets/07ed9950-a616-4ed7-a2e4-4866c868293e" />
 
 
 ## Achievements
@@ -47,6 +55,8 @@ Playhub Metadata can show Xbox PC / Game Pass achievements directly inside Steam
 This means Xbox PC achievements can appear in Steam's interface for non-Steam shortcuts.
 
 To use Xbox achievements, you need an OpenXBL API key first.
+
+<img width="3840" height="2160" alt="Screenshot 2026-06-26 192515" src="https://github.com/user-attachments/assets/f7f7b41d-d07a-48a5-9102-d3f0294d90d0" />
 
 ## OpenXBL Setup
 
