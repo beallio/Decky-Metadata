@@ -208,6 +208,24 @@ STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
 STEAM_EVENTS_URL = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/"
 STEAM_DECK_COMPAT_URL = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport"
 STEAM_STORE_APP_URL = "https://store.steampowered.com/app/{appid}/"
+NON_PRIMARY_STEAM_TITLE_PATTERNS = (
+    r"\bdemo\b",
+    r"\bbeta\b",
+    r"\bplaytest\b",
+    r"\bprototype\b",
+    r"\bsoundtrack\b",
+    r"\bost\b",
+    r"\bseason\s+pass\b",
+    r"\bdlc\b",
+    r"\bpack\b",
+    r"\bbundle\b",
+    r"\bartbook\b",
+    r"\bart\s+book\b",
+    r"\btrailer\b",
+    r"\bdedicated\s+server\b",
+    r"\bserver\b",
+    r"\btest\b",
+)
 STEAM_ACTIVITY_EVENT_TYPES = {12, 13, 14, 15, 23, 24, 25, 28, 35}
 ACHIEVEMENT_SOURCES = {"auto", "retroachievements", "xbox", "disabled"}
 ACHIEVEMENT_CACHE_POLICIES = {"hourly", "daily", "weekly", "pc_session", "manual"}
@@ -1986,7 +2004,7 @@ class Plugin:
         metadata: dict[str, Any] | None = None,
     ) -> tuple[int | None, str]:
         metadata = metadata or {}
-        for value in (metadata.get("steam_store_url"), metadata.get("source_url"), metadata.get("id")):
+        for value in (metadata.get("source_url"), metadata.get("id")):
             match = re.search(r"store\.steampowered\.com/app/(\d+)", str(value or ""), re.I)
             if match:
                 appid = self._safe_int(match.group(1))
@@ -2015,23 +2033,27 @@ class Plugin:
                 continue
             score = 0
             normalised_name = self._normalise_match_title(name)
+            if not normalised_name or not self._distinctive_tokens_present(normalised_query, normalised_name):
+                continue
             if normalised_name == normalised_query:
                 score += 1000
-            elif self._reasonable_match(clean_title, name):
-                score += 700
             else:
                 ratio = difflib.SequenceMatcher(None, normalised_query, normalised_name).ratio()
                 if ratio < 0.72:
                     continue
                 score += int(ratio * 500)
-            # Prefer the first Steam result when scores are close. The store
-            # already ranks exact/official pages above DLC, demos and bundles.
+            if self._is_non_primary_steam_title(name):
+                score -= 800
+            query_numbers = set(re.findall(r"\d+", normalised_query))
+            candidate_numbers = set(re.findall(r"\d+", normalised_name))
+            if candidate_numbers - query_numbers:
+                score -= 120
             score -= index * 5
             url = STEAM_STORE_APP_URL.format(appid=appid)
             row = (score, appid, url, name)
             if not best or row[0] > best[0]:
                 best = row
-        if not best:
+        if not best or best[0] < 300:
             return None, ""
         return best[1], best[2]
 
@@ -7082,6 +7104,22 @@ try {
         )
         text = re.sub(r"[^a-z0-9]+", " ", text)
         return re.sub(r"\s+", " ", text).strip()
+
+    @staticmethod
+    def _is_non_primary_steam_title(name: str) -> bool:
+        text = html.unescape(str(name or "")).casefold()
+        return any(re.search(pattern, text, re.I) for pattern in NON_PRIMARY_STEAM_TITLE_PATTERNS)
+
+    @staticmethod
+    def _distinctive_tokens_present(query_norm: str, candidate_norm: str) -> bool:
+        query_tokens = set(str(query_norm or "").split())
+        candidate_tokens = set(str(candidate_norm or "").split())
+        distinctive = {
+            token
+            for token in query_tokens
+            if len(token) >= 3 or re.fullmatch(r"\d+", token)
+        }
+        return distinctive.issubset(candidate_tokens)
 
     @staticmethod
     def _title_match_score(target: str, candidate: str) -> float:
