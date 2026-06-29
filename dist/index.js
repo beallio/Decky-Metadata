@@ -185,6 +185,11 @@ const STRINGS = {
         categories: "Steam info fields",
         community: "Community",
         communitySource: "Playhub Metadata",
+        steamLinks: "Steam",
+        steamStorePage: "Store Page",
+        steamCommunityHub: "Community Hub",
+        steamDiscussions: "Discussions",
+        steamGuides: "Guides",
         retroTitle: "Achievements",
         retroEnabled: "Enable achievements",
         retroUser: "RetroAchievements username",
@@ -318,6 +323,11 @@ const STRINGS = {
         categories: "Campi informazioni Steam",
         community: "Comunità",
         communitySource: "Playhub Metadata",
+        steamLinks: "Steam",
+        steamStorePage: "Store Page",
+        steamCommunityHub: "Community Hub",
+        steamDiscussions: "Discussions",
+        steamGuides: "Guides",
         retroTitle: "Obiettivi",
         retroEnabled: "Abilita obiettivi",
         retroUser: "Username RetroAchievements",
@@ -449,6 +459,20 @@ const warn = (area, message, ...args) => {
 };
 const error = (area, message, ...args) => {
     console.error(prefix(area), message, ...args);
+};
+
+const steamAppLinks = (steamAppId) => {
+    if (!Number.isFinite(steamAppId) || !Number.isInteger(steamAppId) || steamAppId <= 0) {
+        return null;
+    }
+    const storeBase = `https://store.steampowered.com/app/${steamAppId}`;
+    const communityBase = `https://steamcommunity.com/app/${steamAppId}`;
+    return {
+        store: storeBase,
+        community: communityBase,
+        discussions: `${communityBase}/discussions/`,
+        guides: `${communityBase}/guides/`,
+    };
 };
 
 var StoreCategory;
@@ -3917,6 +3941,23 @@ const achievementCachePolicies = [
     "pc_session",
     "manual",
 ];
+const openExternalUrl = (url) => {
+    try {
+        const steamClient = window?.SteamClient;
+        if (steamClient?.System?.OpenInSystemBrowser) {
+            steamClient.System.OpenInSystemBrowser(url);
+            return;
+        }
+        if (steamClient?.Overlay?.OpenExternalBrowserURL) {
+            steamClient.Overlay.OpenExternalBrowserURL(url);
+            return;
+        }
+    }
+    catch (_error) {
+        // Fall back to the browser below.
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+};
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState([]);
     const loadGames = SP_REACT.useCallback(async () => {
@@ -4099,23 +4140,6 @@ const Content = () => {
         setXbox(refreshed.xbox);
         await refreshRaSettings();
         toaster.toast({ title: t("pluginName"), body: result.ok ? t("xboxLoginOk") : result.message || t("xboxLoginFailed") });
-    };
-    const openExternalUrl = (url) => {
-        try {
-            const steamClient = window?.SteamClient;
-            if (steamClient?.System?.OpenInSystemBrowser) {
-                steamClient.System.OpenInSystemBrowser(url);
-                return;
-            }
-            if (steamClient?.Overlay?.OpenExternalBrowserURL) {
-                steamClient.Overlay.OpenExternalBrowserURL(url);
-                return;
-            }
-        }
-        catch (_error) {
-            // Fall back to the browser below.
-        }
-        window.open(url, "_blank", "noopener,noreferrer");
     };
     const openRetroAchievements = () => openExternalUrl("https://retroachievements.org/");
     const openOpenXbl = () => openExternalUrl("https://xbl.io/");
@@ -4304,6 +4328,7 @@ const MetadataPage = () => {
         rating: parseRating(ratingText),
         store_categories: metadata.store_categories || [],
     }), [developerText, metadata, publisherText, ratingText, releaseText]);
+    const steamLinks = SP_REACT.useMemo(() => steamAppLinks(Number(metadata?.steam_appid) || 0), [metadata?.steam_appid]);
     const saveCurrent = async () => {
         if (!nonSteam) {
             toaster.toast({ title: t("pluginName"), body: t("notNonSteam") });
@@ -4552,7 +4577,7 @@ const MetadataPage = () => {
                                                 color: "white",
                                                 background: "rgba(0,0,0,0.28)",
                                                 border: "1px solid rgba(255,255,255,0.18)",
-                                            } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("developers") }), SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("publishers") }), SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: "8rem" }, children: [SP_JSX.jsx("label", { children: t("releaseDate") }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: "7rem" }, children: [SP_JSX.jsx("label", { children: t("rating") }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: t("categories"), children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }) }, category))) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("achievementSourceTitle"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("achievementSourceHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: buttonRowStyle, children: ["auto", "retroachievements", "xbox", "disabled"].map((source) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void saveAchievementSource(source), style: {
+                                            } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("developers") }), SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("publishers") }), SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: "8rem" }, children: [SP_JSX.jsx("label", { children: t("releaseDate") }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: "7rem" }, children: [SP_JSX.jsx("label", { children: t("rating") }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), steamLinks ? (SP_JSX.jsxs(DFL.PanelSection, { title: t("steamLinks"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => openExternalUrl(steamLinks.store), children: t("steamStorePage") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => openExternalUrl(steamLinks.community), children: t("steamCommunityHub") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => openExternalUrl(steamLinks.discussions), children: t("steamDiscussions") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => openExternalUrl(steamLinks.guides), children: t("steamGuides") }) })] })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("categories"), children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }) }, category))) }), SP_JSX.jsxs(DFL.PanelSection, { title: t("achievementSourceTitle"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("achievementSourceHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: buttonRowStyle, children: ["auto", "retroachievements", "xbox", "disabled"].map((source) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void saveAchievementSource(source), style: {
                                         opacity: achievementSource === source ? 1 : 0.72,
                                         fontWeight: achievementSource === source ? 700 : 400,
                                     }, children: t(`achievementSource_${source}`) }, source))) }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("retroTitle"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("retroHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: raGameId, onChange: (e) => setRaGameId(e.target.value), style: { ...flexFieldStyle, minWidth: "8rem" } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: saveRaGameId, children: t("save") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: autoDetectAchievements, children: t("retroGameDetect") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testAchievements, children: t("retroGameTest") })] }) }), raSettings && !raSettings.enabled ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [t("retroEnabled"), ": Off"] }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("retroGameSearchHint") }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: raQuery, onChange: (e) => setRaQuery(e.target.value), style: { ...flexFieldStyle, minWidth: "10rem" } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: raSearching, onClick: searchAchievements, children: raSearching ? t("searching") : t("retroGameSearch") })] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [raSearching ? SP_JSX.jsx(DFL.Spinner, {}) : null, !raSearching && !raResults.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("retroGameNoMatches") })) : null, raResults.map((result) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void useAchievementResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsxs("span", { style: compactTextStyle, children: [result.console ? `${result.console} - ` : "", Math.round(result.score * 100), "% match"] })] }) }, result.id)))] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: t("xboxPerGameTitle"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("xboxHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("xboxCurrentMatch") }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: xboxTitleId, onChange: (e) => setXboxTitleIdState(e.target.value), style: { ...flexFieldStyle, minWidth: "18rem" } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: saveXboxMatchManual, children: t("save") })] }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: autoDetectXboxAchievements, children: t("xboxGameDetect") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: !xboxTitleId, onClick: syncXboxProgress, children: t("xboxSyncProgress") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: clearXboxMatch, children: t("xboxClearMatch") })] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("xboxGameSearchHint") }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: xboxQuery, onChange: (e) => setXboxQuery(e.target.value), style: { ...flexFieldStyle, minWidth: "10rem" } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: xboxSearching, onClick: searchXbox, children: xboxSearching ? t("searching") : t("xboxGameSearch") })] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: resultsStackStyle, children: [xboxSearching ? SP_JSX.jsx(DFL.Spinner, {}) : null, !xboxSearching && !xboxResults.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("xboxGameNoMatches") })) : null, xboxResults.map((result) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void useXboxResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsxs("span", { style: compactTextStyle, children: [Math.round(result.score * 100), "% match", result.unlocked != null && result.total != null
