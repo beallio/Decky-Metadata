@@ -65,6 +65,10 @@ export const getLocalShortcuts = callable<[], GameOption[]>(
 export const getPlatformCapabilities = callable<[], PlatformCapabilities>(
   "get_platform_capabilities"
 );
+export const getDebugLogging = callable<[], boolean>("get_debug_logging");
+export const setDebugLogging = callable<[enabled: boolean], boolean>(
+  "set_debug_logging"
+);
 export const getAchievementSettings = callable<[], AchievementSettings>(
   "get_achievement_settings"
 );

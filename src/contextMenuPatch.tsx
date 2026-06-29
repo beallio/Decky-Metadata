@@ -36,6 +36,7 @@ import { FC } from "react";
 
 import { getOverview, isNonSteamApp, patchInstallStatus, hasSteamInternals } from "./steam";
 import { t } from "./i18n";
+import * as log from "./log";
 
 // Stable key for the entry we inject, so we can find and de-duplicate it.
 const ENTRY_KEY = "playhub-metadata-edit";
@@ -145,8 +146,8 @@ const syncOurEntry = (items: any[], appId: number): void => {
 const contextMenuPatch = (LibraryContextMenuClass: any) => {
   if (!LibraryContextMenuClass || !hasSteamInternals()) {
     if (patchInstallStatus.contextMenu === "pending") {
-      console.warn("[Playhub Metadata] missing context menu class or steam internals, skipping context menu UI patch");
       patchInstallStatus.contextMenu = "skipped-missing-internal";
+      log.warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
     }
     return { unpatch: () => {} };
   }
@@ -215,9 +216,10 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
     }
   );
   patchInstallStatus.contextMenu = "installed";
+  log.info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
   } catch (error) {
-    console.warn("[Playhub Metadata] context menu patch failed", error);
     patchInstallStatus.contextMenu = "failed";
+    log.warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
   }
 
   return {
