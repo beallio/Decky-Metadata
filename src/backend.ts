@@ -6,6 +6,7 @@ import {
   GameOption,
   MetadataData,
   MetadataSearchResult,
+  PlatformCapabilities,
   RetroAchievementsLoginResult,
   RetroAchievementsGameResult,
   RetroAchievementsSettings,
@@ -59,6 +60,9 @@ export const getActivityRefreshProgress = callable<[], ScanProgress>(
 );
 export const getLocalShortcuts = callable<[], GameOption[]>(
   "get_local_shortcuts"
+);
+export const getPlatformCapabilities = callable<[], PlatformCapabilities>(
+  "get_platform_capabilities"
 );
 export const getAchievementSettings = callable<[], AchievementSettings>(
   "get_achievement_settings"

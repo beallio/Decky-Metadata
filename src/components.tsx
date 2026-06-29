@@ -17,6 +17,7 @@ import {
   fetchMetadata,
   getAchievementSettings,
   getMetadata,
+  getPlatformCapabilities,
   getRetroAchievementsSettings,
   getActivityRefreshProgress,
   removeMetadata,
@@ -64,6 +65,7 @@ import {
   GameOption,
   MetadataData,
   MetadataSearchResult,
+  PlatformCapabilities,
   RetroAchievementsGameResult,
   RetroAchievementsSettings,
   StoreCategory,
@@ -192,6 +194,42 @@ const sectionHeadingStyle = {
   fontSize: "0.95rem",
 } as const;
 
+const diagnosticsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: "0.35rem",
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
+} as const;
+
+const diagnosticsRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  gap: "0.75rem",
+  alignItems: "start",
+  ...compactTextStyle,
+} as const;
+
+const diagnosticsValueStyle = {
+  minWidth: 0,
+  overflowWrap: "anywhere",
+  textAlign: "right",
+} as const;
+
+const platformSupportKeys = [
+  "supports_metadata",
+  "supports_steam_activity",
+  "supports_retroachievements",
+  "supports_retroachievements_auto",
+  "supports_xbox_manual",
+  "supports_xbox_uwphook_auto",
+  "supports_xbox_app_scan",
+  "supports_loopback_icons",
+  "supports_localhost_icon_proxy",
+] as const;
+
 const metadataTemplate = (title: string): MetadataData => ({
   title,
   id: title,
@@ -287,6 +325,9 @@ export const Content = () => {
   });
   const [achievementCachePolicy, setAchievementCachePolicyState] =
     useState<AchievementCachePolicy>("daily");
+  const [platformCapabilities, setPlatformCapabilities] =
+    useState<PlatformCapabilities | undefined>();
+  const [showPlatformDiagnostics, setShowPlatformDiagnostics] = useState(false);
 
   const missing = Math.max(games.length - metadataCount, 0);
 
@@ -303,6 +344,20 @@ export const Content = () => {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getPlatformCapabilities()
+      .then((capabilities) => {
+        if (!cancelled) {
+          setPlatformCapabilities(capabilities);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const scanMissing = async () => {
     if (busy) return;
@@ -736,6 +791,61 @@ export const Content = () => {
           </div>
         </div>
       </PanelSectionRow>
+      {platformCapabilities ? (
+        <>
+          <PanelSectionRow>
+            <div style={sectionHeadingStyle}>{t("diagnosticsTitle")}</div>
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <div style={rowStackStyle}>
+              <FocusableButton
+                className="DialogButton"
+                onClick={() => setShowPlatformDiagnostics((visible) => !visible)}
+              >
+                {showPlatformDiagnostics
+                  ? t("diagnosticsHidePlatform")
+                  : t("diagnosticsShowPlatform")}
+              </FocusableButton>
+              {showPlatformDiagnostics ? (
+                <div style={diagnosticsGridStyle}>
+                  <div style={diagnosticsRowStyle}>
+                    <span>{t("platformLabel")}</span>
+                    <span style={diagnosticsValueStyle}>{platformCapabilities.platform}</span>
+                  </div>
+                  <div style={diagnosticsRowStyle}>
+                    <span>{t("platformSteamOS")}</span>
+                    <span style={diagnosticsValueStyle}>
+                      {platformCapabilities.is_steamos
+                        ? t("diagnosticsYes")
+                        : t("diagnosticsNo")}
+                    </span>
+                  </div>
+                  <div style={diagnosticsRowStyle}>
+                    <span>{t("platformSteamRoot")}</span>
+                    <span style={diagnosticsValueStyle}>
+                      {platformCapabilities.steam_root || t("none")}
+                    </span>
+                  </div>
+                  <div style={diagnosticsRowStyle}>
+                    <span>{t("platformSupports")}</span>
+                    <span />
+                  </div>
+                  {platformSupportKeys.map((key) => (
+                    <div key={key} style={diagnosticsRowStyle}>
+                      <span>{key}</span>
+                      <span style={diagnosticsValueStyle}>
+                        {platformCapabilities[key]
+                          ? t("diagnosticsYes")
+                          : t("diagnosticsNo")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </PanelSectionRow>
+        </>
+      ) : null}
     </PanelSection>
   );
 };
