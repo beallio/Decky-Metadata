@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import concurrent.futures
+import functools
 import http.server
 import io
 import difflib
@@ -30,6 +31,47 @@ try:
     from PIL import Image
 except Exception:  # Pillow is available in Decky on most setups, but keep fallback.
     Image = None
+
+MAX_ROM_HASH_BYTES = 4 * 1024 * 1024 * 1024
+ROM_HASH_MEMORY_BYTES = 512 * 1024 * 1024
+ROM_HASH_CHUNK_BYTES = 1024 * 1024
+
+
+@functools.lru_cache(maxsize=1)
+def _build_https_context() -> ssl.SSLContext:
+    try:
+        import certifi
+
+        context = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        context = ssl.create_default_context()
+    context.check_hostname = True
+    context.verify_mode = ssl.CERT_REQUIRED
+    return context
+
+
+def _is_tls_verification_error(error: BaseException) -> bool:
+    if isinstance(error, ssl.SSLCertVerificationError):
+        return True
+    reason = getattr(error, "reason", None)
+    return isinstance(reason, ssl.SSLCertVerificationError)
+
+
+def _tls_log_target(request_or_url: Any) -> str:
+    url = getattr(request_or_url, "full_url", request_or_url)
+    parsed = urllib.parse.urlsplit(str(url or ""))
+    if parsed.scheme and parsed.netloc:
+        path = parsed.path or "/"
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
+    return str(url or "<unknown>")
+
+
+def _log_tls_verification_failure(request_or_url: Any, error: BaseException) -> None:
+    if _is_tls_verification_error(error):
+        decky.logger.error(
+            "TLS certificate verification failed for "
+            f"{_tls_log_target(request_or_url)}: {error}"
+        )
 
 IGN_GRAPHQL_URL = "https://mollusk.apis.ign.com/graphql"
 IGN_BASE_URL = "https://www.ign.com"
@@ -1954,9 +1996,13 @@ class Plugin:
                 "Accept-Language": "en-US,en;q=0.9",
             },
         )
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-            return response.read().decode("utf-8", errors="ignore")
+        context = _build_https_context()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+                return response.read().decode("utf-8", errors="ignore")
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
 
     @staticmethod
     def _jsonish_unescape(value: str) -> str:
@@ -1988,13 +2034,16 @@ class Plugin:
                 "User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)",
             },
         )
-        context = ssl._create_unverified_context()
+        context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=20, context=context) as response:
                 payload = json.loads(response.read().decode("utf-8", errors="ignore"))
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", errors="ignore")
             raise RuntimeError(f"IGN request failed: {error.code} {detail}") from error
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
         if payload.get("errors"):
             raise RuntimeError(f"IGN GraphQL error: {payload['errors']}")
         return payload
@@ -2043,9 +2092,13 @@ class Plugin:
             f"{RETROACHIEVEMENTS_GAME_URL}?{params}",
             headers={"User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)"},
         )
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(request, timeout=25, context=context) as response:
-            payload = json.loads(response.read().decode("utf-8", errors="ignore"))
+        context = _build_https_context()
+        try:
+            with urllib.request.urlopen(request, timeout=25, context=context) as response:
+                payload = json.loads(response.read().decode("utf-8", errors="ignore"))
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
         self._save_ra_achievement_cache(cache_key, payload)
         return self._retro_payload_to_steam(payload, int(game_id))
 
@@ -2161,7 +2214,7 @@ class Plugin:
                 "User-Agent": "PlayhubMetadata/1.3.18 (+Decky Loader)",
             },
         )
-        context = ssl._create_unverified_context()
+        context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
                 payload = json.loads(response.read().decode("utf-8", errors="ignore") or "null")
@@ -2170,6 +2223,9 @@ class Plugin:
             if error.code == 429:
                 self._openxbl_rate_limited_until = time.monotonic() + 600
                 decky.logger.error("OpenXBL returned 429 Too Many Requests; pausing OpenXBL calls for 10 minutes")
+            raise
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
             raise
         payload = self._unwrap_openxbl_payload(payload)
         if cache_ttl > 0:
@@ -3001,9 +3057,13 @@ class Plugin:
 
     def _http_text_urllib(self, url: str, timeout: int = 18) -> str:
         request = urllib.request.Request(url, headers=self._http_request_headers())
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-            return response.read().decode("utf-8", errors="ignore")
+        context = _build_https_context()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+                return response.read().decode("utf-8", errors="ignore")
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
 
     def _http_text_curl(self, url: str, timeout: int = 18) -> str:
         headers = self._http_request_headers()
@@ -4611,9 +4671,13 @@ class Plugin:
             method=str(method or "GET").upper(),
             headers=request_headers,
         )
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-            return json.loads(response.read().decode("utf-8", errors="ignore") or "null")
+        context = _build_https_context()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+                return json.loads(response.read().decode("utf-8", errors="ignore") or "null")
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
 
     def _extract_microsoft_store_products(self, payload: Any) -> list[dict[str, Any]]:
         nodes: list[dict[str, Any]] = []
@@ -5766,9 +5830,13 @@ class Plugin:
                 "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
             },
         )
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(request, timeout=25, context=context) as response:
-            raw = response.read()
+        context = _build_https_context()
+        try:
+            with urllib.request.urlopen(request, timeout=25, context=context) as response:
+                raw = response.read()
+        except Exception as error:
+            _log_tls_verification_failure(request, error)
+            raise
         if Image is None:
             if self._crop_xbox_icon_with_windows(raw, output_path):
                 return
@@ -6078,7 +6146,7 @@ try {
             f"{RETROACHIEVEMENTS_PROFILE_URL}?{params}",
             headers={"User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)"},
         )
-        context = ssl._create_unverified_context()
+        context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=20, context=context) as response:
                 payload = json.loads(response.read().decode("utf-8", errors="ignore"))
@@ -6088,6 +6156,7 @@ try {
                 "message": f"RetroAchievements login failed: HTTP {error.code}.",
             }
         except Exception as error:
+            _log_tls_verification_failure(request, error)
             return {"ok": False, "message": f"RetroAchievements login failed: {error}"}
 
         if isinstance(payload, dict) and (
@@ -6371,7 +6440,7 @@ try {
     def _ra_request_json(
         self, url: str, params: dict[str, Any], timeout: int = 25
     ) -> Any:
-        context = ssl._create_unverified_context()
+        context = _build_https_context()
         last_error: Exception | None = None
         for attempt in range(4):
             request = urllib.request.Request(
@@ -6395,6 +6464,9 @@ try {
                 except Exception:
                     delay = min(1.5 * (attempt + 1), 6.0)
                 time.sleep(delay)
+            except Exception as error:
+                _log_tls_verification_failure(request, error)
+                raise
         if last_error:
             raise last_error
         return None
@@ -6585,11 +6657,12 @@ try {
             RETROACHIEVEMENTS_HASH_LIBRARY_URL,
             headers={"User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)"},
         )
-        context = ssl._create_unverified_context()
+        context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=30, context=context) as response:
                 payload = json.loads(response.read().decode("utf-8", errors="ignore"))
         except Exception as error:
+            _log_tls_verification_failure(request, error)
             decky.logger.error(f"Failed loading RetroAchievements hash library: {error}")
             return
         md5list = payload.get("MD5List") or payload.get("md5list") or {}
@@ -7129,13 +7202,20 @@ try {
                     if not entry.is_dir()
                     and self._is_supported_rom_path(Path(entry.filename))
                     and entry.file_size > 0
+                    and entry.file_size <= MAX_ROM_HASH_BYTES
                 ]
                 if not entries:
                     return [self._md5_file(path)]
                 entries.sort(key=lambda item: item.file_size, reverse=True)
-                with archive.open(entries[0]) as file:
-                    data = file.read()
-                return self._bytes_hash_candidates(data, Path(entries[0].filename))
+                for entry in entries:
+                    with archive.open(entry) as file:
+                        data = self._read_limited_rom_bytes(
+                            file, MAX_ROM_HASH_BYTES
+                        )
+                    if data is None:
+                        continue
+                    return self._bytes_hash_candidates(data, Path(entry.filename))
+                return [self._md5_file(path)]
         except Exception as error:
             decky.logger.error(f"Failed hashing zip ROM {path}: {error}")
             return [self._md5_file(path)]
@@ -7143,7 +7223,7 @@ try {
     def _file_hash_candidates(self, path: Path) -> list[str]:
         try:
             size = path.stat().st_size
-            if size <= 512 * 1024 * 1024:
+            if size <= min(ROM_HASH_MEMORY_BYTES, MAX_ROM_HASH_BYTES):
                 return self._bytes_hash_candidates(path.read_bytes(), path)
         except Exception as error:
             decky.logger.error(f"Failed reading ROM for candidate hashes {path}: {error}")
@@ -7169,10 +7249,24 @@ try {
         return path.suffix.lower() in ROM_EXTENSIONS
 
     @staticmethod
+    def _read_limited_rom_bytes(file: Any, max_bytes: int) -> bytes | None:
+        data = io.BytesIO()
+        while True:
+            remaining = max_bytes - data.tell()
+            if remaining < 0:
+                return None
+            chunk = file.read(min(ROM_HASH_CHUNK_BYTES, remaining + 1))
+            if not chunk:
+                return data.getvalue()
+            data.write(chunk)
+            if data.tell() > max_bytes:
+                return None
+
+    @staticmethod
     def _md5_file(path: Path) -> str:
         digest = hashlib.md5()
         with path.open("rb") as file:
-            for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            for chunk in iter(lambda: file.read(ROM_HASH_CHUNK_BYTES), b""):
                 digest.update(chunk)
         return digest.hexdigest()
 
