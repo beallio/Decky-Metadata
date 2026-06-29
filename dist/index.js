@@ -459,6 +459,16 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
+const patchInstallStatus = {
+    achievements: "pending",
+    activity: "pending",
+    partnerEvents: "pending",
+    contextMenu: "pending",
+    router: "pending"
+};
+const hasSteamInternals = () => !!globalThis.SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+const hasAchievementProgressCache = () => typeof appAchievementProgressCache !== "undefined" && !!appAchievementProgressCache;
+const hasActivityStore = () => !!globalThis.appActivityStore;
 const metadataCache = {};
 const achievementsCache = {};
 const NON_STEAM_APP_TYPE = 1073741824;
@@ -1635,35 +1645,50 @@ const refreshPlayhubNativeActivityForApp = async (appId, store) => {
 const installNativeActivityStorePatch = (unpatchers) => {
     let attempts = 0;
     const tryInstall = () => {
+        if (!hasActivityStore()) {
+            if (patchInstallStatus.activity === "pending") {
+                console.warn("[Playhub Metadata] missing activity store, skipping activity UI patch");
+                patchInstallStatus.activity = "skipped-missing-internal";
+            }
+            return true;
+        }
         const store = globalThis.appActivityStore;
         if (!store || store.__playhubNativeActivityPatched)
             return !!store?.__playhubNativeActivityPatched;
-        store.__playhubNativeActivityPatched = true;
-        unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
-            const appId = Number(args[0]);
-            const native = getPlayhubNativeActivityForApp(appId);
-            if (native)
-                return native;
-            if (appId && isNonSteamApp(getOverview(appId))) {
-                void refreshPlayhubNativeActivityForApp(appId, store);
-            }
-            return original(...args);
-        }));
-        for (const methodName of ["RequestRestoreActivity", "RestoreActivity", "FetchLatestActivity", "FetchLatestActivityFromServer", "FetchActivityHistory"]) {
-            if (typeof store[methodName] !== "function")
-                continue;
-            unpatchers.push(patchMethod(store, methodName, (_thisValue, original, args) => {
+        try {
+            store.__playhubNativeActivityPatched = true;
+            unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
                 const appId = Number(args[0]);
                 const native = getPlayhubNativeActivityForApp(appId);
                 if (native)
-                    return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
+                    return native;
                 if (appId && isNonSteamApp(getOverview(appId))) {
                     void refreshPlayhubNativeActivityForApp(appId, store);
                 }
                 return original(...args);
             }));
+            for (const methodName of ["RequestRestoreActivity", "RestoreActivity", "FetchLatestActivity", "FetchLatestActivityFromServer", "FetchActivityHistory"]) {
+                if (typeof store[methodName] !== "function")
+                    continue;
+                unpatchers.push(patchMethod(store, methodName, (_thisValue, original, args) => {
+                    const appId = Number(args[0]);
+                    const native = getPlayhubNativeActivityForApp(appId);
+                    if (native)
+                        return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
+                    if (appId && isNonSteamApp(getOverview(appId))) {
+                        void refreshPlayhubNativeActivityForApp(appId, store);
+                    }
+                    return original(...args);
+                }));
+            }
+            patchInstallStatus.activity = "installed";
+            return true;
         }
-        return true;
+        catch (error) {
+            console.warn("[Playhub Metadata] activity store patch failed", error);
+            patchInstallStatus.activity = "failed";
+            return true;
+        }
     };
     if (tryInstall())
         return;
@@ -1835,11 +1860,28 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
         return true;
     };
     const tryInstall = () => {
-        const stores = collectNativePartnerEventStores();
-        let patchedAny = false;
-        for (const store of stores)
-            patchedAny = patchOneStore(store) || patchedAny;
-        return patchedAny;
+        if (!hasSteamInternals()) {
+            if (patchInstallStatus.partnerEvents === "pending") {
+                console.warn("[Playhub Metadata] missing steam internals, skipping partner events UI patch");
+                patchInstallStatus.partnerEvents = "skipped-missing-internal";
+            }
+            return true;
+        }
+        try {
+            const stores = collectNativePartnerEventStores();
+            let patchedAny = false;
+            for (const store of stores)
+                patchedAny = patchOneStore(store) || patchedAny;
+            if (patchedAny) {
+                patchInstallStatus.partnerEvents = "installed";
+            }
+            return patchedAny;
+        }
+        catch (error) {
+            console.warn("[Playhub Metadata] partner event store patch failed", error);
+            patchInstallStatus.partnerEvents = "failed";
+            return true;
+        }
     };
     if (tryInstall())
         return;
@@ -2698,6 +2740,13 @@ let achievementStorePatchInstalled = false;
 const tryInstallAchievementStorePatch = (unpatchers) => {
     if (achievementStorePatchInstalled)
         return true;
+    if (!hasAchievementProgressCache()) {
+        if (patchInstallStatus.achievements === "pending") {
+            console.warn("[Playhub Metadata] missing achievement progress cache, skipping achievement UI patch");
+            patchInstallStatus.achievements = "skipped-missing-internal";
+        }
+        return true;
+    }
     try {
         const achievementsStore = DFL.findModuleChild((module) => {
             if (!module || typeof module !== "object")
@@ -2759,11 +2808,13 @@ const tryInstallAchievementStorePatch = (unpatchers) => {
             }));
         }
         achievementStorePatchInstalled = true;
+        patchInstallStatus.achievements = "installed";
         return true;
     }
     catch (error) {
-        console.warn("[Playhub Metadata] achievement store patch skipped", error);
-        return false;
+        console.warn("[Playhub Metadata] achievement store patch failed", error);
+        patchInstallStatus.achievements = "failed";
+        return true;
     }
 };
 const routeAchievementAppId = () => achievementAppIdFromPath(currentRoutePath());
@@ -3120,15 +3171,14 @@ const installSteamPatches = () => {
     window.setTimeout(() => void flushTrueAchievementsNativeCache(), 2500);
     const overviewProto = appStore?.allApps?.[0]?.__proto__;
     const detailsProto = appDetailsStore?.__proto__;
-    if (!overviewProto || !detailsProto) {
+    if (!hasSteamInternals() || !overviewProto || !detailsProto) {
         let cancelled = false;
         let delayedUnpatch = null;
         let retryId;
         const retry = () => {
             if (cancelled)
                 return;
-            const ready = appStore?.allApps?.[0]?.__proto__ && appDetailsStore?.__proto__;
-            if (ready) {
+            if (hasSteamInternals()) {
                 delayedUnpatch = installSteamPatches();
                 return;
             }
@@ -3152,124 +3202,131 @@ const installSteamPatches = () => {
         }
         return "";
     };
-    if (DFL.Navigation?.Navigate) {
-        unpatchers.push(patchMethod(DFL.Navigation, "Navigate", (_thisValue, original, args) => {
-            const redirected = redirectAchievementTarget(args[0]);
-            if (redirected)
-                return original(redirected);
-            return original(...args);
-        }));
-    }
     try {
-        const steamHistory = globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
-        for (const methodName of ["push", "replace"]) {
-            if (steamHistory?.[methodName]) {
-                unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
-                    const target = historyPathFromArgs(args);
-                    const redirected = redirectAchievementTarget(target);
-                    if (redirected)
-                        return original(redirected);
-                    const state = historyStateFromArgs(args);
-                    if (methodName === "push" && shouldReplacePlayhubNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
-                        globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
-                        return steamHistory.replace(...args);
-                    }
-                    if (methodName === "replace" && shouldBackOutOfPlayhubNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
-                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
-                        // If our push->replace interception ran, closing the modal should keep using
-                        // Steam's replace. If Steam opened via a path we did not intercept, use Back
-                        // for the close action so the event entry is removed instead of replaced by a
-                        // duplicate app-detail entry.
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            return backSteamHistory(steamHistory) ?? original(...args);
-                        }
-                    }
-                    return original(...args);
-                }));
-            }
+        if (DFL.Navigation?.Navigate) {
+            unpatchers.push(patchMethod(DFL.Navigation, "Navigate", (_thisValue, original, args) => {
+                const redirected = redirectAchievementTarget(args[0]);
+                if (redirected)
+                    return original(redirected);
+                return original(...args);
+            }));
         }
-    }
-    catch (error) {
-        console.warn("[Playhub Metadata] history achievement redirect patch skipped", error);
-    }
-    try {
-        for (const methodName of ["pushState", "replaceState"]) {
-            const original = window.history?.[methodName];
-            if (typeof original !== "function")
-                continue;
-            const patched = function (...args) {
-                const target = String(args[2] || "");
-                const redirected = redirectAchievementTarget(target || args[0]);
-                if (redirected) {
-                    args[2] = redirected;
-                }
-                const state = historyStateFromArgs(args);
-                if (methodName === "pushState" && shouldReplacePlayhubNativeNewsPush(target, state)) {
-                    globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
-                    return window.history.replaceState(args[0], args[1], args[2]);
-                }
-                if (methodName === "replaceState") {
-                    const currentState = window.history?.state;
-                    if (isPlayhubNativeNewsRouteState(currentState) && !isPlayhubNativeNewsRouteState(state)) {
-                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            window.history.back();
-                            return undefined;
-                        }
-                    }
-                }
-                return original.apply(this, args);
-            };
-            window.history[methodName] = patched;
-            unpatchers.push(() => {
-                window.history[methodName] = original;
-            });
-        }
-    }
-    catch (error) {
-        console.warn("[Playhub Metadata] window history redirect patch skipped", error);
-    }
-    const clickAchievementRedirect = (event) => {
         try {
-            const target = event.target;
-            const anchor = target?.closest?.("a[href]");
-            const redirected = redirectAchievementTarget(anchor?.getAttribute?.("href") || anchor?.href || "");
-            if (redirected) {
-                event.preventDefault();
-                event.stopPropagation();
-                DFL.Navigation?.Navigate?.(redirected);
+            const steamHistory = globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+            for (const methodName of ["push", "replace"]) {
+                if (steamHistory?.[methodName]) {
+                    unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
+                        const target = historyPathFromArgs(args);
+                        const redirected = redirectAchievementTarget(target);
+                        if (redirected)
+                            return original(redirected);
+                        const state = historyStateFromArgs(args);
+                        if (methodName === "push" && shouldReplacePlayhubNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
+                            globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                            return steamHistory.replace(...args);
+                        }
+                        if (methodName === "replace" && shouldBackOutOfPlayhubNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
+                            const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                            // If our push->replace interception ran, closing the modal should keep using
+                            // Steam's replace. If Steam opened via a path we did not intercept, use Back
+                            // for the close action so the event entry is removed instead of replaced by a
+                            // duplicate app-detail entry.
+                            if (!replacedAt || Date.now() - replacedAt > 15000) {
+                                return backSteamHistory(steamHistory) ?? original(...args);
+                            }
+                        }
+                        return original(...args);
+                    }));
+                }
             }
         }
-        catch (_error) {
-            // Best effort only.
+        catch (error) {
+            console.warn("[Playhub Metadata] history achievement redirect patch skipped", error);
         }
-    };
-    document.addEventListener("click", clickAchievementRedirect, true);
-    unpatchers.push(() => document.removeEventListener("click", clickAchievementRedirect, true));
-    const clickDetailsTabTracker = (event) => {
-        const target = event.target;
-        detailsTabLabelFromElement(target);
-        Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
-            ? detailsTabIndexFromPoint(event.clientX, event.clientY)
-            : -1;
-        detailsTabIndexFromElement(target);
-    };
-    document.addEventListener("click", clickDetailsTabTracker, true);
-    unpatchers.push(() => document.removeEventListener("click", clickDetailsTabTracker, true));
-    const routeGuard = () => {
-        const path = currentRoutePath();
-        const redirected = redirectAchievementTarget(path);
-        if (redirected) {
+        try {
+            for (const methodName of ["pushState", "replaceState"]) {
+                const original = window.history?.[methodName];
+                if (typeof original !== "function")
+                    continue;
+                const patched = function (...args) {
+                    const target = String(args[2] || "");
+                    const redirected = redirectAchievementTarget(target || args[0]);
+                    if (redirected) {
+                        args[2] = redirected;
+                    }
+                    const state = historyStateFromArgs(args);
+                    if (methodName === "pushState" && shouldReplacePlayhubNativeNewsPush(target, state)) {
+                        globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                        return window.history.replaceState(args[0], args[1], args[2]);
+                    }
+                    if (methodName === "replaceState") {
+                        const currentState = window.history?.state;
+                        if (isPlayhubNativeNewsRouteState(currentState) && !isPlayhubNativeNewsRouteState(state)) {
+                            const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                            if (!replacedAt || Date.now() - replacedAt > 15000) {
+                                window.history.back();
+                                return undefined;
+                            }
+                        }
+                    }
+                    return original.apply(this, args);
+                };
+                window.history[methodName] = patched;
+                unpatchers.push(() => {
+                    window.history[methodName] = original;
+                });
+            }
+        }
+        catch (error) {
+            console.warn("[Playhub Metadata] window history redirect patch skipped", error);
+        }
+        const clickAchievementRedirect = (event) => {
             try {
-                DFL.Navigation?.Navigate?.(redirected);
+                const target = event.target;
+                const anchor = target?.closest?.("a[href]");
+                const redirected = redirectAchievementTarget(anchor?.getAttribute?.("href") || anchor?.href || "");
+                if (redirected) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    DFL.Navigation?.Navigate?.(redirected);
+                }
             }
             catch (_error) {
-                // If the router is mid-transition, the route patch below will still catch.
+                // Best effort only.
             }
-        }
-    };
-    const routeGuardTimer = window.setInterval(routeGuard, 250);
-    unpatchers.push(() => window.clearInterval(routeGuardTimer));
+        };
+        document.addEventListener("click", clickAchievementRedirect, true);
+        unpatchers.push(() => document.removeEventListener("click", clickAchievementRedirect, true));
+        const clickDetailsTabTracker = (event) => {
+            const target = event.target;
+            detailsTabLabelFromElement(target);
+            Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
+                ? detailsTabIndexFromPoint(event.clientX, event.clientY)
+                : -1;
+            detailsTabIndexFromElement(target);
+        };
+        document.addEventListener("click", clickDetailsTabTracker, true);
+        unpatchers.push(() => document.removeEventListener("click", clickDetailsTabTracker, true));
+        const routeGuard = () => {
+            const path = currentRoutePath();
+            const redirected = redirectAchievementTarget(path);
+            if (redirected) {
+                try {
+                    DFL.Navigation?.Navigate?.(redirected);
+                }
+                catch (_error) {
+                    // If the router is mid-transition, the route patch below will still catch.
+                }
+            }
+        };
+        const routeGuardTimer = window.setInterval(routeGuard, 250);
+        unpatchers.push(() => window.clearInterval(routeGuardTimer));
+        patchInstallStatus.router = "installed";
+    }
+    catch (error) {
+        console.warn("[Playhub Metadata] router patch failed", error);
+        patchInstallStatus.router = "failed";
+    }
     if (appStore?.GetAppOverviewByAppID) {
         unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
             const requestedAppId = Number(args[0]);
@@ -4128,7 +4185,7 @@ const Content = () => {
                                                         ? t("diagnosticsYes")
                                                         : t("diagnosticsNo") })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSteamRoot") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.steam_root || t("none") })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSupports") }), SP_JSX.jsx("span", {})] }), platformSupportKeys.map((key) => (SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: key }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities[key]
                                                         ? t("diagnosticsYes")
-                                                        : t("diagnosticsNo") })] }, key)))] })) : null] }) })] })) : null] }));
+                                                        : t("diagnosticsNo") })] }, key))), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Patch Status" }), SP_JSX.jsx("span", {})] }), Object.entries(patchInstallStatus).map(([patchName, status]) => (SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: patchName }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: status })] }, patchName)))] })) : null] }) })] })) : null] }));
 };
 const MetadataPage = () => {
     const { appid } = DFL.useParams();
@@ -4507,51 +4564,66 @@ const syncOurEntry = (items, appId) => {
  * @returns An object exposing unpatch() for plugin teardown.
  */
 const contextMenuPatch = (LibraryContextMenuClass) => {
+    if (!LibraryContextMenuClass || !hasSteamInternals()) {
+        if (patchInstallStatus.contextMenu === "pending") {
+            console.warn("[Playhub Metadata] missing context menu class or steam internals, skipping context menu UI patch");
+            patchInstallStatus.contextMenu = "skipped-missing-internal";
+        }
+        return { unpatch: () => { } };
+    }
     let innerPatch;
-    const outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-        const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-        const appId = ownerAppId || resolveAppId(menu?.props?.children ?? [], 0);
-        if (!innerPatch) {
-            innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
-                // First render of the menu body.
-                DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
-                    const items = output?.props?.children?.[0];
-                    if (isGameContextMenu(items)) {
+    let outerPatch;
+    try {
+        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
+            const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            const appId = ownerAppId || resolveAppId(menu?.props?.children ?? [], 0);
+            if (!innerPatch) {
+                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    // First render of the menu body.
+                    DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
+                        const items = output?.props?.children?.[0];
+                        if (isGameContextMenu(items)) {
+                            try {
+                                syncOurEntry(items, appId);
+                            }
+                            catch (_error) {
+                                // Steam reshapes this tree often; skip on mismatch.
+                            }
+                        }
+                        return output;
+                    });
+                    // Subsequent updates when Steam refreshes the app overview.
+                    DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
-                            syncOurEntry(items, appId);
+                            removeOurEntry(nextProps.children);
+                            if (shouldUpdate === true) {
+                                syncOurEntry(nextProps.children, appId);
+                            }
                         }
                         catch (_error) {
-                            // Steam reshapes this tree often; skip on mismatch.
+                            // Not our menu; leave the decision untouched.
                         }
-                    }
-                    return output;
+                        return shouldUpdate;
+                    });
+                    return rendered;
                 });
-                // Subsequent updates when Steam refreshes the app overview.
-                DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
-                    try {
-                        removeOurEntry(nextProps.children);
-                        if (shouldUpdate === true) {
-                            syncOurEntry(nextProps.children, appId);
-                        }
-                    }
-                    catch (_error) {
-                        // Not our menu; leave the decision untouched.
-                    }
-                    return shouldUpdate;
-                });
-                return rendered;
-            });
-        }
-        else if (Array.isArray(menu?.props?.children)) {
-            try {
-                syncOurEntry(menu.props.children, appId);
             }
-            catch (_error) {
-                // Ignore non-matching menus.
+            else if (Array.isArray(menu?.props?.children)) {
+                try {
+                    syncOurEntry(menu.props.children, appId);
+                }
+                catch (_error) {
+                    // Ignore non-matching menus.
+                }
             }
-        }
-        return menu;
-    });
+            return menu;
+        });
+        patchInstallStatus.contextMenu = "installed";
+    }
+    catch (error) {
+        console.warn("[Playhub Metadata] context menu patch failed", error);
+        patchInstallStatus.contextMenu = "failed";
+    }
     return {
         unpatch: () => {
             outerPatch?.unpatch();
