@@ -42,6 +42,7 @@ ROM_HASH_CHUNK_BYTES = 1024 * 1024
 MAX_SHORTCUTS_VDF_BYTES = 2 * 1024 * 1024
 MAX_SHORTCUTS_VDF_DEPTH = 32
 MAX_SHORTCUTS_VDF_ENTRIES = 2048
+_LOG_FILE_HANDLER: logging.Handler | None = None
 
 
 def _redact(text: Any) -> str:
@@ -73,6 +74,55 @@ def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = Fal
             decky.logger.log(level, text)
     except Exception:
         pass
+
+
+def _resolve_log_dir() -> Path | None:
+    for attr in (
+        "DECKY_PLUGIN_LOG_DIR",
+        "DECKY_PLUGIN_RUNTIME_DIR",
+        "DECKY_PLUGIN_SETTINGS_DIR",
+    ):
+        value = getattr(decky, attr, None)
+        if value:
+            return Path(str(value))
+    return None
+
+
+def _install_file_logging() -> str:
+    global _LOG_FILE_HANDLER
+    try:
+        if _LOG_FILE_HANDLER is not None:
+            return str(getattr(_LOG_FILE_HANDLER, "baseFilename", ""))
+
+        log_dir = _resolve_log_dir()
+        if log_dir is None:
+            return ""
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "playhub-metadata.log"
+
+        from logging.handlers import RotatingFileHandler
+
+        for handler in decky.logger.handlers:
+            if (
+                isinstance(handler, RotatingFileHandler)
+                and Path(str(getattr(handler, "baseFilename", ""))) == log_path
+            ):
+                _LOG_FILE_HANDLER = handler
+                return str(log_path)
+
+        handler = RotatingFileHandler(
+            log_path,
+            maxBytes=2 * 1024 * 1024,
+            backupCount=3,
+            encoding="utf-8",
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        handler.setLevel(logging.DEBUG)
+        decky.logger.addHandler(handler)
+        _LOG_FILE_HANDLER = handler
+        return str(log_path)
+    except Exception:
+        return ""
 
 
 @dataclass(frozen=True)
@@ -292,6 +342,8 @@ class Plugin:
         self._pc_session_id = str(int(time.time() - time.monotonic()))
 
     async def _main(self) -> None:
+        log_path = _install_file_logging()
+        _plog("load", "file logging enabled", path=log_path or "unavailable")
         _plog("load", "backend startup begin")
         step = "settings_dir"
         try:
