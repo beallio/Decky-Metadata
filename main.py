@@ -308,7 +308,7 @@ class Plugin:
                     self.wfile.write(data)
                 except Exception as error:
                     try:
-                        decky.logger.error(f"Playhub image proxy failed: {error}")
+                        decky.logger.error(f"Playhub image proxy_unavailable: could not handle request: {error}")
                     except Exception:
                         pass
                     self.send_error(500)
@@ -326,7 +326,7 @@ class Plugin:
             self._image_proxy_server = None
             self._image_proxy_thread = None
             self._image_proxy_port = 0
-            decky.logger.error(f"Playhub image proxy could not start: {error}")
+            decky.logger.error(f"Playhub image proxy_unavailable: could not start: {error}")
 
     def _stop_image_proxy_server(self) -> None:
         server = self._image_proxy_server
@@ -354,12 +354,12 @@ class Plugin:
         return str(fallback) if fallback.exists() else ""
 
     def _can_crop_xbox_icons(self) -> bool:
-        return Image is not None or bool(self._windows_powershell_executable())
+        return self._xbox_cropper_name() != "none"
 
     def _xbox_cropper_name(self) -> str:
         if Image is not None:
             return "pillow"
-        if self._windows_powershell_executable():
+        if os.name == "nt" and self._windows_powershell_executable():
             return "windows"
         return "none"
 
@@ -444,7 +444,7 @@ class Plugin:
             except Exception:
                 continue
         decky.logger.info(
-            "Playhub loopback icon dir unavailable; falling back to 127.0.0.1 image proxy"
+            "Playhub loopback_unavailable: icon dir unavailable; falling back to 127.0.0.1 image proxy"
         )
         return None
 
@@ -612,13 +612,15 @@ class Plugin:
                 return loopback_url
             if not generate:
                 return ""
-            # Reuse a crop already produced by the 127.0.0.1 proxy if present,
-            # otherwise download and crop now. Same sha1 key in both caches.
+            # Prefer Decky cache dirs for generated images.
             proxy_cached = self._xbox_card_proxy_dir / name
-            if proxy_cached.exists() and proxy_cached.stat().st_size > 0:
-                shutil.copyfile(proxy_cached, output_path)
-            else:
-                self._download_and_crop_xbox_icon(source_url, output_path)
+            if not proxy_cached.exists() or proxy_cached.stat().st_size == 0:
+                self._download_and_crop_xbox_icon(source_url, proxy_cached)
+            try:
+                if proxy_cached.exists() and proxy_cached.stat().st_size > 0:
+                    shutil.copyfile(proxy_cached, output_path)
+            except Exception as e:
+                decky.logger.warning(f"Playhub loopback_unavailable: failed to copy to steamui: {e}")
             if output_path.exists() and output_path.stat().st_size > 0:
                 return loopback_url
         except Exception as error:
@@ -706,6 +708,17 @@ class Plugin:
             capabilities["supports_localhost_icon_proxy"] = int(getattr(self, "_image_proxy_port", 0) or 0) > 0
         except Exception:
             pass
+        
+        mode = self._xbox_cropper_name()
+        if mode == "none":
+            mode = "no_crop"
+        if os.name != "nt":
+            if not capabilities.get("supports_loopback_icons"):
+                mode = "loopback_unavailable"
+            if not capabilities.get("supports_localhost_icon_proxy"):
+                mode = "proxy_unavailable"
+        capabilities["icon_mode"] = mode
+
         return capabilities
 
     async def get_state(self) -> dict[str, Any]:
@@ -6037,30 +6050,44 @@ class Plugin:
         except Exception as error:
             _log_tls_verification_failure(request, error)
             raise
-        if Image is None:
+        cropper = self._xbox_cropper_name()
+        if cropper == "none":
+            decky.logger.info("Playhub no_crop mode: using uncropped icon")
+            output_path.write_bytes(raw)
+            return
+        if cropper == "windows":
             if self._crop_xbox_icon_with_windows(raw, output_path):
                 return
-            raise RuntimeError("no Xbox image cropper available")
-        image = Image.open(io.BytesIO(raw)).convert("RGBA")
-        width, height = image.size
-        if width <= 0 or height <= 0:
-            raise RuntimeError("invalid Xbox icon size")
-        # First make a centered square crop; then zoom 40% into the square, which
-        # matches Xbox's own achievement-card layout where the badge is centered.
-        side = min(width, height)
-        left = max(0, (width - side) // 2)
-        top = max(0, (height - side) // 2)
-        image = image.crop((left, top, left + side, top + side))
-        zoom = 1.4
-        inner = max(1, int(side / zoom))
-        inset = max(0, (side - inner) // 2)
-        image = image.crop((inset, inset, inset + inner, inset + inner))
-        image = image.resize((256, 256), Image.LANCZOS)
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG", optimize=True)
-        output_path.write_bytes(buffer.getvalue())
+            decky.logger.info("Playhub windows crop failed, using uncropped icon")
+            output_path.write_bytes(raw)
+            return
+
+        try:
+            image = Image.open(io.BytesIO(raw)).convert("RGBA")
+            width, height = image.size
+            if width <= 0 or height <= 0:
+                raise RuntimeError("invalid Xbox icon size")
+            # First make a centered square crop; then zoom 40% into the square, which
+            # matches Xbox's own achievement-card layout where the badge is centered.
+            side = min(width, height)
+            left = max(0, (width - side) // 2)
+            top = max(0, (height - side) // 2)
+            image = image.crop((left, top, left + side, top + side))
+            zoom = 1.4
+            inner = max(1, int(side / zoom))
+            inset = max(0, (side - inner) // 2)
+            image = image.crop((inset, inset, inset + inner, inset + inner))
+            image = image.resize((256, 256), Image.LANCZOS)
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG", optimize=True)
+            output_path.write_bytes(buffer.getvalue())
+        except Exception as error:
+            decky.logger.warning(f"Playhub Xbox icon pillow crop failed: {error}")
+            output_path.write_bytes(raw)
 
     def _crop_xbox_icon_with_windows(self, raw: bytes, output_path: Path) -> bool:
+        if os.name != "nt":
+            return False
         powershell = self._windows_powershell_executable()
         if not powershell:
             return False
