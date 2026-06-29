@@ -83,6 +83,26 @@ export type GameOption = {
   isNonSteam?: boolean;
 };
 
+export type PlatformCapabilities = {
+  platform: string;
+  os_name: string;
+  is_linux: boolean;
+  is_windows: boolean;
+  is_steamos: boolean;
+  steam_root: string;
+  steam_roots: string[];
+  has_pillow: boolean;
+  supports_metadata: boolean;
+  supports_steam_activity: boolean;
+  supports_retroachievements: boolean;
+  supports_retroachievements_auto: boolean;
+  supports_xbox_manual: boolean;
+  supports_xbox_uwphook_auto: boolean;
+  supports_xbox_app_scan: boolean;
+  supports_loopback_icons: boolean;
+  supports_localhost_icon_proxy: boolean;
+};
+
 export type ScanProgress = {
   running: boolean;
   status: string;

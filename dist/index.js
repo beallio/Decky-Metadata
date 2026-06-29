@@ -94,6 +94,7 @@ const getScanProgress = callable("get_scan_progress");
 const startRefreshSteamActivities = callable("start_refresh_steam_activities");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
+const getPlatformCapabilities = callable("get_platform_capabilities");
 const getAchievementSettings = callable("get_achievement_settings");
 const getXboxSettings = callable("get_xbox_settings");
 const setXboxSettings = callable("set_xbox_settings");
@@ -126,6 +127,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getAllMetadata: getAllMetadata,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
+    getPlatformCapabilities: getPlatformCapabilities,
     getRetroAchievementsSettings: getRetroAchievementsSettings,
     getScanProgress: getScanProgress,
     getXboxSettings: getXboxSettings,
@@ -236,6 +238,15 @@ const STRINGS = {
         achievementCache_weekly: "Weekly",
         achievementCache_pc_session: "PC session",
         achievementCache_manual: "Manually",
+        diagnosticsTitle: "Diagnostics",
+        diagnosticsShowPlatform: "Platform",
+        diagnosticsHidePlatform: "Hide platform",
+        diagnosticsYes: "Yes",
+        diagnosticsNo: "No",
+        platformLabel: "Platform",
+        platformSteamOS: "SteamOS",
+        platformSteamRoot: "Steam root",
+        platformSupports: "Capabilities",
         achievementSourceTitle: "Achievement source",
         achievementSourceHint: "Auto keeps RetroAchievements for ROM/emulator shortcuts and uses OpenXBL only for likely Xbox/UWPHook shortcuts.",
         achievementSource_auto: "Auto",
@@ -352,6 +363,15 @@ const STRINGS = {
         achievementCache_weekly: "Ogni settimana",
         achievementCache_pc_session: "Sessione PC",
         achievementCache_manual: "Manualmente",
+        diagnosticsTitle: "Diagnostica",
+        diagnosticsShowPlatform: "Piattaforma",
+        diagnosticsHidePlatform: "Nascondi piattaforma",
+        diagnosticsYes: "Sì",
+        diagnosticsNo: "No",
+        platformLabel: "Piattaforma",
+        platformSteamOS: "SteamOS",
+        platformSteamRoot: "Cartella Steam",
+        platformSupports: "Funzionalità",
         achievementSourceTitle: "Fonte obiettivi",
         achievementSourceHint: "Auto mantiene RetroAchievements per ROM/emulatori e usa OpenXBL solo per collegamenti probabilmente Xbox/UWPHook.",
         achievementSource_auto: "Auto",
@@ -3665,6 +3685,38 @@ const sectionHeadingStyle = {
     fontWeight: 700,
     fontSize: "0.95rem",
 };
+const diagnosticsGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: "0.35rem",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+};
+const diagnosticsRowStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: "0.75rem",
+    alignItems: "start",
+    ...compactTextStyle,
+};
+const diagnosticsValueStyle = {
+    minWidth: 0,
+    overflowWrap: "anywhere",
+    textAlign: "right",
+};
+const platformSupportKeys = [
+    "supports_metadata",
+    "supports_steam_activity",
+    "supports_retroachievements",
+    "supports_retroachievements_auto",
+    "supports_xbox_manual",
+    "supports_xbox_uwphook_auto",
+    "supports_xbox_app_scan",
+    "supports_loopback_icons",
+    "supports_localhost_icon_proxy",
+];
 const metadataTemplate = (title) => ({
     title,
     id: title,
@@ -3755,6 +3807,8 @@ const Content = () => {
         title_ids: {},
     });
     const [achievementCachePolicy, setAchievementCachePolicyState] = SP_REACT.useState("daily");
+    const [platformCapabilities, setPlatformCapabilities] = SP_REACT.useState();
+    const [showPlatformDiagnostics, setShowPlatformDiagnostics] = SP_REACT.useState(false);
     const missing = Math.max(games.length - metadataCount, 0);
     const refresh = SP_REACT.useCallback(async () => {
         await refreshMetadataCache();
@@ -3768,6 +3822,19 @@ const Content = () => {
     SP_REACT.useEffect(() => {
         void refresh();
     }, [refresh]);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getPlatformCapabilities()
+            .then((capabilities) => {
+            if (!cancelled) {
+                setPlatformCapabilities(capabilities);
+            }
+        })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
     const scanMissing = async () => {
         if (busy)
             return;
@@ -4011,7 +4078,13 @@ const Content = () => {
     return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("detected"), ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("saved"), ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("missing"), ":"] }), " ", missing] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? t("scanning") : t("scanMissing") }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || t("scanning") })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? t("refreshingActivities") : t("refreshActivities") }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || t("refreshingActivities") })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("retroTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("retroEnabled"), checked: ra.enabled, onChange: (checked) => void saveRaSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("retroLoginHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("retroUser") }), SP_JSX.jsx(DFL.TextField, { value: ra.username, onChange: (e) => setRa((prev) => ({ ...prev, username: e.target.value })), onBlur: () => void saveRaSettings({ username: ra.username }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("retroKey") }), SP_JSX.jsx(DFL.TextField, { value: ra.api_key, onChange: (e) => setRa((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveRaSettings({ api_key: ra.api_key }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testRaLogin, children: t("retroLogin") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openRetroAchievements, children: t("retroCreateAccount") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("xboxTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("xboxEnabled"), checked: xbox.enabled, onChange: (checked) => void saveXboxSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("xboxProfile") }), SP_JSX.jsx(DFL.TextField, { value: xbox.api_key, onChange: (e) => setXbox((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveXboxSettings({ api_key: xbox.api_key }), style: fieldStyle }), xbox.ta_logged_in ? (SP_JSX.jsx("div", { style: compactTextStyle, children: xbox.gamertag ? `${t("xboxLoggedIn")}: ${xbox.gamertag}` : t("xboxLoggedIn") })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testXboxLogin, children: t("xboxLogin") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openOpenXbl, children: t("xboxOpenOpenXbl") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: bulkApplyXboxAchievements, children: xboxBulkBusy ? t("xboxBulkScanning") : t("xboxBulkScan") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length || !xbox.api_key.trim(), onClick: syncMatchedTrueAchievementsProgress, children: t("xboxSyncAllProgress") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: clearAllXboxMatches, children: t("xboxClearAll") }), xboxBulkBusy || xboxBulkMessage ? (SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [xboxBulkBusy ? SP_JSX.jsx(DFL.Spinner, {}) : null, SP_JSX.jsx("span", { children: xboxBulkMessage })] })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("achievementCacheTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("achievementCacheHint") }), SP_JSX.jsx("div", { style: buttonRowStyle, children: achievementCachePolicies.map((policy) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void saveAchievementCachePolicy(policy), style: {
                                     opacity: achievementCachePolicy === policy ? 1 : 0.72,
                                     fontWeight: achievementCachePolicy === policy ? 700 : 400,
-                                }, children: t(`achievementCache_${policy}`) }, policy))) })] }) })] }));
+                                }, children: t(`achievementCache_${policy}`) }, policy))) })] }) }), platformCapabilities ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("diagnosticsTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => setShowPlatformDiagnostics((visible) => !visible), children: showPlatformDiagnostics
+                                        ? t("diagnosticsHidePlatform")
+                                        : t("diagnosticsShowPlatform") }), showPlatformDiagnostics ? (SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformLabel") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.platform })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSteamOS") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.is_steamos
+                                                        ? t("diagnosticsYes")
+                                                        : t("diagnosticsNo") })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSteamRoot") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.steam_root || t("none") })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSupports") }), SP_JSX.jsx("span", {})] }), platformSupportKeys.map((key) => (SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: key }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities[key]
+                                                        ? t("diagnosticsYes")
+                                                        : t("diagnosticsNo") })] }, key)))] })) : null] }) })] })) : null] }));
 };
 const MetadataPage = () => {
     const { appid } = DFL.useParams();
