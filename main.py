@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import concurrent.futures
-from dataclasses import dataclass
 import functools
 import http.server
 import io
@@ -125,13 +124,20 @@ def _install_file_logging() -> str:
         return ""
 
 
-@dataclass(frozen=True)
 class SteamInstall:
-    root: Path
-    userdata_dirs: list[Path]
-    shortcut_files: list[Path]
-    libraryfolders_files: list[Path]
-    appmanifest_dirs: list[Path]
+    def __init__(
+        self,
+        root: Path,
+        userdata_dirs: list[Path],
+        shortcut_files: list[Path],
+        libraryfolders_files: list[Path],
+        appmanifest_dirs: list[Path],
+    ) -> None:
+        self.root = root
+        self.userdata_dirs = userdata_dirs
+        self.shortcut_files = shortcut_files
+        self.libraryfolders_files = libraryfolders_files
+        self.appmanifest_dirs = appmanifest_dirs
 
 
 @functools.lru_cache(maxsize=1)
