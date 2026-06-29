@@ -21,6 +21,7 @@ export type MetadataData = {
   community_images?: MetadataScreenshot[];
   community_videos?: MetadataVideo[];
   steam_appid?: number | null;
+  deck_compat_category?: number | null;
   steam_store_url?: string;
   steam_news?: MetadataNews[];
   steam_news_enriched_at?: number;

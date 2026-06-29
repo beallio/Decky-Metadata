@@ -284,6 +284,13 @@ export const applyMetadata = (appId: number) => {
     if (typeof metadata.rating === "number") {
       overview.metacritic_score = metadata.rating;
     }
+    if (
+      typeof metadata.deck_compat_category === "number" &&
+      metadata.deck_compat_category >= 1 &&
+      metadata.deck_compat_category <= 3
+    ) {
+      overview.steam_deck_compat_category = metadata.deck_compat_category;
+    }
     if (!overview.m_setStoreCategories) {
       overview.m_setStoreCategories = new Set<number>();
     }
@@ -314,6 +321,20 @@ export const applyMetadata = (appId: number) => {
     })),
     rgFranchises: [],
   };
+
+  try {
+    const details = appData.details;
+    const releaseDate = metadata.release_date;
+    if (details && typeof releaseDate === "number" && releaseDate > 0) {
+      details.unTimeReleased = releaseDate;
+      details.strReleaseDate = new Date(releaseDate * 1000).toLocaleDateString();
+    }
+    if (details && metadata.genres?.length) {
+      details.vecGenres = metadata.genres;
+    }
+  } catch (_error) {
+    // Steam objects are not always writable during early bootstrap.
+  }
 
   const screenshots = steamScreenshotsFromMetadata(appId, metadata);
   if (screenshots.length) {
