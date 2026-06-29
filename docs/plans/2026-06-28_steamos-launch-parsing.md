@@ -152,6 +152,12 @@ git commit -m "docs(plan): add steamos-launch-parsing implementation plan"
    playlist paths; include quoted paths even if missing (mark `exists=false`); URL-decode
    segments if present; rank by likelihood (suffix match + existence + token position),
    not just first match. Return highest-score first. Never raise.
+   **Security:** this function tokenizes and inspects shortcut-derived strings only.
+   It must **never execute** any parsed value — no `subprocess`, `os.system`, `os.popen`,
+   `shell=True`, or `eval`. `shlex.split` is used purely to tokenize; tokens are treated as
+   path data. Only files whose suffix is in `ROM_EXTENSIONS` should be opened/hashed, reads
+   must be size-bounded so a hostile path cannot force a huge allocation, and special files
+   (sockets/devices/FIFOs) must not be opened.
 
 3. **Route resolution through the extractor.** Refactor `resolve_retroachievements_from_path`
    so it: builds candidates from the provided `path` (and, when available, the shortcut's

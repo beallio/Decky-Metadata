@@ -194,6 +194,11 @@ git commit -m "docs(plan): add steamos-platform-capabilities implementation plan
    "Platform" section showing: platform, is_steamos, steam_root, and the `supports_*`
    flags. Use the i18n helper for any new visible strings, adding English keys in
    `src/i18n.ts` following the existing key pattern.
+   **Security/privacy:** the diagnostics readout must never render secrets — no
+   RetroAchievements or OpenXBL API keys, tokens, or credential material may appear in
+   `get_platform_capabilities` output or the panel. `steam_root`/`steam_roots` may contain
+   the local username; keep these strictly local (display only) and never send them to any
+   remote API or log sink.
 
 10. Do not yet change Xbox/UWPHook or Steam-internal behavior — that is `steamos-xbox-gating`
     and `steamos-ui-guards`. This plan only *exposes* capabilities and the diagnostics

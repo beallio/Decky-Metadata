@@ -173,6 +173,12 @@ git commit -m "docs(plan): add steamos-shortcut-discovery implementation plan"
 5. **Resilience:** a missing, empty, or corrupt `shortcuts.vdf`, or a userdata dir that
    does not exist, must yield an empty contribution and a debug log line — never an
    exception that breaks `get_local_shortcuts`.
+   **Security:** `shortcuts.vdf` is attacker-influenceable binary input. The parser must
+   be hardened against malformed data: bound the maximum file size it will read, cap
+   nesting depth in `_parse_binary_vdf_object` (reject/stop on absurd depth rather than
+   recursing unboundedly), and cap the number of shortcuts processed, so a crafted file
+   cannot cause unbounded memory use, a stack overflow, or a hang (DoS). All byte decoding
+   stays replacement-based; no value is ever executed.
 
 6. **Tests + fixtures** (`tests/`):
    - `tests/fixtures/shortcuts/` containing at least a Windows-style and a SteamOS/SRM-style
