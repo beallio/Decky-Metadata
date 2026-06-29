@@ -145,6 +145,7 @@ const STRINGS = {
     backgroundSyncSkipped: "skipped",
     backgroundSyncFailed: "Progress sync failed",
     notNonSteam: "This plugin only changes non-Steam games.",
+    xboxAutoScanUnsupported: "Xbox automatic scanning is Windows-only because it depends on UWPHook/Xbox App shortcuts. Manual OpenXBL title mapping is still available.",
   },
   it: {
     pluginName: "Playhub Metadata",
@@ -292,6 +293,7 @@ const STRINGS = {
     backgroundSyncSkipped: "saltati",
     backgroundSyncFailed: "Sincronizzazione progressi fallita",
     notNonSteam: "Questo plugin modifica solo i giochi non Steam.",
+    xboxAutoScanUnsupported: "La scansione automatica Xbox è disponibile solo su Windows perché dipende dai collegamenti UWPHook/Xbox App. L'associazione manuale dei titoli OpenXBL è ancora disponibile.",
   },
 } as const;
 

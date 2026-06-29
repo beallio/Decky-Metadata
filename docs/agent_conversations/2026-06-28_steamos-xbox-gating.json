@@ -1,0 +1,23 @@
+{
+  "date": "2026-06-28",
+  "task_objective": "Implement SteamOS Xbox and UWPHook platform gating",
+  "files_modified": [
+    "main.py",
+    "src/components.tsx",
+    "src/i18n.ts",
+    "src/steam.ts",
+    "tests/test_xbox_gating.py"
+  ],
+  "tests_added": [
+    "test_resolve_xbox_from_shortcut_sync_short_circuits_on_non_windows",
+    "test_resolve_xbox_from_shortcut_sync_proceeds_on_windows"
+  ],
+  "design_decisions": [
+    "Short-circuited `_resolve_xbox_from_shortcut_sync` in `main.py` when `os.name != 'nt'`.",
+    "Gated Xbox auto-scan UI elements in `src/components.tsx` using `platformCapabilities.supports_xbox_uwphook_auto`.",
+    "Added explanatory localized string `xboxAutoScanUnsupported` to English and Italian dictionaries in `src/i18n.ts`.",
+    "Imported `getPlatformCapabilities` and guarded Xbox background auto-detection via `fetchAchievements` in `src/steam.ts`.",
+    "Gated manual Xbox auto-detect button behavior in `src/components.tsx` using `getPlatformCapabilities()`."
+  ],
+  "results": "All tests and quality gates pass. SteamOS gracefully hides and skips Windows-only Xbox auto-scanning features."
+}
