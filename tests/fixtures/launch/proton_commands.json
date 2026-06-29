@@ -1,0 +1,14 @@
+[
+  {
+    "name": "proton_command_placeholder",
+    "exe": "/home/deck/.local/share/Steam/steamapps/common/Proton - Experimental/proton",
+    "launch_options": "run %command% \"/home/deck/Emulation/roms/ps2/Shadow Hearts.iso\"",
+    "expected": "/home/deck/Emulation/roms/ps2/Shadow Hearts.iso"
+  },
+  {
+    "name": "bash_c_inner_command",
+    "exe": "/usr/bin/bash",
+    "launch_options": "-c \"retroarch -L mgba_libretro.so '/home/deck/Emulation/roms/gba/Golden Sun.gba'\"",
+    "expected": "/home/deck/Emulation/roms/gba/Golden Sun.gba"
+  }
+]

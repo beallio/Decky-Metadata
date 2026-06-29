@@ -155,6 +155,24 @@ export type RetroAchievementsGameResult = {
   score: number;
 };
 
+export type RetroAchievementsResolutionReason =
+  | "no_candidate_path"
+  | "candidate_missing"
+  | "unsupported_extension"
+  | "hash_not_found"
+  | "api_credentials_missing"
+  | "api_error"
+  | "matched"
+  | "manual_mapping_exists";
+
+export type RetroAchievementsResolutionCandidate = {
+  path: string;
+  exists: boolean;
+  suffix: string;
+  source: "launch_options" | "exe" | "start_dir" | "shell_command";
+  score: number;
+};
+
 export type XboxTitleResult = {
   id: string;
   title: string;
@@ -197,6 +215,8 @@ export type SteamAchievementsPayload = {
 export type AchievementsResponse = {
   game_id: number;
   provider?: "retroachievements" | "xbox";
+  reason?: RetroAchievementsResolutionReason;
+  candidate?: RetroAchievementsResolutionCandidate | null;
   title: string;
   steam: SteamAchievementsPayload;
   user?: {
@@ -216,6 +236,12 @@ export type AchievementsResponse = {
     total: number;
     percentage: number;
   };
+};
+
+export type RetroAchievementsResolutionResult = Partial<AchievementsResponse> & {
+  provider: "retroachievements";
+  reason: RetroAchievementsResolutionReason;
+  candidate?: RetroAchievementsResolutionCandidate | null;
 };
 
 export enum StoreCategory {

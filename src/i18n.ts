@@ -49,6 +49,20 @@ const STRINGS = {
     retroGameFailed: "No achievements loaded. Check the RetroAchievements game ID.",
     retroDetectFailed:
       "No RetroAchievements match found from this game's shortcut path.",
+    retroDetectNoCandidate:
+      "No ROM path was detected from this Steam shortcut. Use manual RetroAchievements search or check the launch options.",
+    retroDetectCandidateMissing:
+      "The detected ROM path does not exist. Check the shortcut launch options or pick the game manually.",
+    retroDetectUnsupportedExtension:
+      "The detected path is not a supported ROM file. Use manual RetroAchievements search or check the shortcut target.",
+    retroDetectHashNotFound:
+      "No RetroAchievements game matched the detected ROM. Search manually and pick the closest entry.",
+    retroDetectCredentialsMissing:
+      "Add your RetroAchievements username and API key before auto-detecting achievements.",
+    retroDetectApiError:
+      "RetroAchievements lookup failed. Try again later or search manually.",
+    retroDetectManualMapping:
+      "This game already has a RetroAchievements game ID. Manual selection was kept.",
     retroHint:
       "Paste the numeric RetroAchievements game ID from the game page URL. Leave empty to hide achievements for this game.",
     xboxTitle: "Xbox achievements / OpenXBL",
@@ -182,6 +196,20 @@ const STRINGS = {
     retroGameFailed: "Nessun obiettivo caricato. Controlla l'ID gioco RetroAchievements.",
     retroDetectFailed:
       "Nessun match RetroAchievements trovato dal percorso del collegamento.",
+    retroDetectNoCandidate:
+      "Nessun percorso ROM rilevato dal collegamento Steam. Usa la ricerca manuale RetroAchievements o controlla le opzioni di avvio.",
+    retroDetectCandidateMissing:
+      "Il percorso ROM rilevato non esiste. Controlla le opzioni di avvio o scegli il gioco manualmente.",
+    retroDetectUnsupportedExtension:
+      "Il percorso rilevato non e un file ROM supportato. Usa la ricerca manuale RetroAchievements o controlla il collegamento.",
+    retroDetectHashNotFound:
+      "Nessun gioco RetroAchievements corrisponde alla ROM rilevata. Cerca manualmente e scegli la voce piu vicina.",
+    retroDetectCredentialsMissing:
+      "Aggiungi username e API key RetroAchievements prima del rilevamento automatico.",
+    retroDetectApiError:
+      "Ricerca RetroAchievements non riuscita. Riprova piu tardi o cerca manualmente.",
+    retroDetectManualMapping:
+      "Questo gioco ha gia un ID RetroAchievements. La selezione manuale e stata mantenuta.",
     retroHint:
       "Incolla l'ID numerico RetroAchievements dall'URL della pagina del gioco. Lascialo vuoto per nascondere gli obiettivi di questo gioco.",
     xboxTitle: "Obiettivi Xbox / OpenXBL",

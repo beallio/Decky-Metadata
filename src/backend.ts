@@ -9,6 +9,7 @@ import {
   PlatformCapabilities,
   RetroAchievementsLoginResult,
   RetroAchievementsGameResult,
+  RetroAchievementsResolutionResult,
   RetroAchievementsSettings,
   ScanProgress,
   XboxSettings,
@@ -129,7 +130,7 @@ export const syncTrueAchievementsProgress = callable<
 >("sync_trueachievements_progress");
 export const resolveRetroAchievementsFromPath = callable<
   [appId: number, path: string, title?: string],
-  AchievementsResponse | null
+  AchievementsResponse | RetroAchievementsResolutionResult | null
 >("resolve_retroachievements_from_path");
 export const searchRetroAchievementsGames = callable<
   [query: string, limit?: number, appId?: number],
