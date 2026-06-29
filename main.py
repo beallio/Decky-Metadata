@@ -2939,6 +2939,8 @@ class Plugin:
     def _resolve_xbox_from_shortcut_sync(
         self, app_id: int, title: str = "", path: str = ""
     ) -> dict[str, Any] | None:
+        if os.name != "nt":
+            return {"ok": False, "reason": "uwphook_auto_unsupported_on_platform", "manual_supported": True}
         self._load_data()
         if not self._is_uwphook_shortcut(app_id, " ".join(str(v or "") for v in (title, path))):
             return None

@@ -761,13 +761,19 @@ export const Content = () => {
             <FocusableButton className="DialogButton" onClick={openOpenXbl}>
               {t("xboxOpenOpenXbl")}
             </FocusableButton>
-            <FocusableButton
-              className="DialogButton"
-              disabled={busy || xboxBulkBusy || !games.length}
-              onClick={bulkApplyXboxAchievements}
-            >
-              {xboxBulkBusy ? t("xboxBulkScanning") : t("xboxBulkScan")}
-            </FocusableButton>
+            {platformCapabilities?.supports_xbox_uwphook_auto ? (
+              <FocusableButton
+                className="DialogButton"
+                disabled={busy || xboxBulkBusy || !games.length}
+                onClick={bulkApplyXboxAchievements}
+              >
+                {xboxBulkBusy ? t("xboxBulkScanning") : t("xboxBulkScan")}
+              </FocusableButton>
+            ) : (
+              <div style={compactTextStyle}>
+                {t("xboxAutoScanUnsupported")}
+              </div>
+            )}
             <FocusableButton
               className="DialogButton"
               disabled={busy || xboxBulkBusy || !games.length || !xbox.api_key.trim()}
@@ -1102,6 +1108,8 @@ export const MetadataPage = () => {
   };
 
   const autoDetectXboxAchievements = async () => {
+    const caps = await getPlatformCapabilities();
+    if (!caps?.supports_xbox_uwphook_auto) return;
     const currentSettings = await getAchievementSettings();
     await setXboxSettings(true, currentSettings.xbox.api_key || "");
     const details = await getAppDetails(appId);

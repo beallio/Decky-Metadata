@@ -11,6 +11,7 @@ import {
   resolveRetroAchievementsFromPath,
   saveMetadata,
   syncTrueAchievementsProgress,
+  getPlatformCapabilities,
 } from "./backend";
 import {
   AchievementSettings,
@@ -3568,6 +3569,12 @@ const loadAchievementsForApp = async (appId: number) => {
     // data folders are deleted. Clear the native cache before loading TA data
     // so old OpenXBL payloads cannot leak into the page.
     clearAchievementsForApp(appId);
+  }
+
+  const capabilities = await getPlatformCapabilities();
+  const isXboxAutoDetect = !hasXboxMatch && (source === "xbox" || source === "auto");
+  if (isXboxAutoDetect && !capabilities?.supports_xbox_uwphook_auto && !settings?.retroachievements?.enabled) {
+    return null;
   }
 
   loadingAchievements.add(appId);
