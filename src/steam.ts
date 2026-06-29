@@ -289,7 +289,11 @@ export const applyMetadata = (appId: number) => {
       metadata.deck_compat_category >= 1 &&
       metadata.deck_compat_category <= 3
     ) {
-      overview.steam_deck_compat_category = metadata.deck_compat_category;
+      const category = metadata.deck_compat_category & 3;
+      const prevPacked = Number(overview.steam_hw_compat_category_packed) || 0;
+      // bits 0-1 = steam_deck_compat_category; bits 2-3 = verified-filter copy; keep bits >= 4
+      overview.steam_hw_compat_category_packed =
+        (prevPacked & ~0xf) | category | (category << 2);
     }
     if (!overview.m_setStoreCategories) {
       overview.m_setStoreCategories = new Set<number>();
@@ -323,14 +327,10 @@ export const applyMetadata = (appId: number) => {
   };
 
   try {
-    const details = appData.details;
     const releaseDate = metadata.release_date;
-    if (details && typeof releaseDate === "number" && releaseDate > 0) {
-      details.unTimeReleased = releaseDate;
-      details.strReleaseDate = new Date(releaseDate * 1000).toLocaleDateString();
-    }
-    if (details && metadata.genres?.length) {
-      details.vecGenres = metadata.genres;
+    if (typeof releaseDate === "number" && releaseDate > 0) {
+      overview.rt_original_release_date = releaseDate;
+      overview.rt_steam_release_date = releaseDate;
     }
   } catch (_error) {
     // Steam objects are not always writable during early bootstrap.
