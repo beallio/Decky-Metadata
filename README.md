@@ -77,6 +77,20 @@ OpenXBL API limits apply, so Playhub keeps scans conservative and uses cache set
 
 For individual ROMs, Playhub can try to detect the matching RetroAchievements game automatically. You can also search and select the correct game manually.
 
+## Building on Linux / SteamOS
+
+From a checkout with Node.js installed:
+
+```bash
+npm install
+npm run build
+npm run package
+```
+
+`npm run package` creates `Playhub-Metadata_<version>_Installer.zip` in the
+repository root for Decky Loader sideloading. The Windows PowerShell packaging
+path remains available as `npm run package:win`.
+
 ## Cache Options
 
 Playhub Metadata lets you choose when achievement data should refresh:

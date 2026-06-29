@@ -6,7 +6,9 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File ./package-win.ps1"
+    "package": "node ./scripts/package.mjs",
+    "package:linux": "node ./scripts/package.mjs",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File ./package-win.ps1"
   },
   "keywords": [
     "decky",
