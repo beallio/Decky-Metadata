@@ -27,7 +27,7 @@ Key facts about this repo (verify before relying on them):
   Node, only ever use `npm ci` / `pnpm install --frozen-lockfile` (lockfile-exact); never
   run an unpinned `npm install`/`npm install <pkg>@latest`, and add no new npm dependency.
 - Caches must stay under `/tmp/Playhub-Metadata-local` per `AGENTS.md` and `run.sh`.
-- This plan file is already committed on the base branch `main`. If the Setup
+- This plan file is already committed on the base branch `dev`. If the Setup
   "commit this plan first" step finds nothing to commit, that is expected — continue.
 
 **Slug used throughout this plan:** `steamos-test-harness`
@@ -86,7 +86,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -119,11 +119,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/steamos-test-harness
 ```
 

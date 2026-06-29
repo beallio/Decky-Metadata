@@ -44,7 +44,7 @@ Key facts (verify before relying on them):
 - The test harness (`steamos-test-harness`) is available; the TLS-context construction and
   md5 streaming are unit-testable off-device. The actual network handshake is deferred to
   on-device testing.
-- This plan file is already committed on base branch `main`; a no-op "commit this plan
+- This plan file is already committed on base branch `dev`; a no-op "commit this plan
   first" is expected.
 
 **Slug used throughout this plan:** `security-tls-verification`
@@ -103,7 +103,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -136,11 +136,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/security-tls-verification
 ```
 

@@ -29,7 +29,7 @@ the **real** functions:
   be **additive** so the existing `GameOption` shape keeps working (read `src/backend.ts`
   / `src/steam.ts` for the consumed fields before changing output).
 - The test harness is available; add fixtures + pytest tests.
-- This plan file is already committed on base branch `main`; a no-op "commit this plan
+- This plan file is already committed on base branch `dev`; a no-op "commit this plan
   first" is expected.
 
 **Slug used throughout this plan:** `steamos-shortcut-discovery`
@@ -88,7 +88,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -121,11 +121,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/steamos-shortcut-discovery
 ```
 

@@ -19,7 +19,7 @@ Key facts (verify before relying on them):
 - Node has no built-in ZIP writer. Do **not** add an npm dependency for packaging and do
   **not** rely on a system `zip` binary being present. Write the archive with a small,
   dependency-free ZIP writer built on `node:zlib` (deflate) — see tasks.
-- This plan file is already committed on base branch `main`; if "commit this plan first"
+- This plan file is already committed on base branch `dev`; if "commit this plan first"
   finds nothing to commit, that is expected — continue.
 
 **Slug used throughout this plan:** `steamos-packaging`
@@ -78,7 +78,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -111,11 +111,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/steamos-packaging
 ```
 

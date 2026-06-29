@@ -21,7 +21,7 @@ Key facts (verify before relying on them):
 - `capabilities` and the settings diagnostics panel exist from
   `steamos-platform-capabilities`; reuse the panel to surface patch-install status.
 - Current version is `1.4.0` in `package.json` and `plugin.json`.
-- This plan file is already committed on base branch `main`; a no-op "commit this plan
+- This plan file is already committed on base branch `dev`; a no-op "commit this plan
   first" is expected.
 
 **Slug used throughout this plan:** `steamos-ui-guards`
@@ -80,7 +80,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -113,11 +113,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/steamos-ui-guards
 ```
 

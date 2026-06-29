@@ -22,7 +22,7 @@ Key facts (verify before relying on them):
 - `capabilities.supports_xbox_uwphook_auto` is already provided by
   `getPlatformCapabilities` (true only on Windows) and loaded at panel start.
 - The test harness is available.
-- This plan file is already committed on base branch `main`; a no-op "commit this plan
+- This plan file is already committed on base branch `dev`; a no-op "commit this plan
   first" is expected.
 
 **Slug used throughout this plan:** `steamos-xbox-gating`
@@ -81,7 +81,7 @@ STATUS: APPROVED
 
 1. Use the **implementer** skill.
 2. Work from the repository root.
-3. Branch from `main`.
+3. Branch from `dev`.
 4. Commit this plan as the first commit on the implementation branch.
 5. Follow TDD where behavior changes are testable.
 6. Run quality gates before marking any round complete.
@@ -114,11 +114,10 @@ STATUS: APPROVED
 
 ## Setup
 
-Start from `main`:
+Start from `dev`:
 
 ```bash
-git checkout main
-git pull --ff-only origin main
+git checkout dev
 git checkout -b feat/steamos-xbox-gating
 ```
 
