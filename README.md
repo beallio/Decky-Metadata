@@ -1,9 +1,21 @@
 # Playhub Metadata
 
-Playhub Metadata is a Decky Loader plugin for Windows.
+Playhub Metadata is a Decky Loader plugin.
 
-This plugin is built for Steam Big Picture on Windows, especially for non-Steam
+**Supported platforms**: Windows Steam Big Picture **and** SteamOS / Steam Deck via Decky Loader.
+
+**SteamOS / Steam Deck limitations**: RetroAchievements are first-class; Xbox/OpenXBL is manual-only on SteamOS; UWPHook/Xbox-App auto scanning is Windows-only.
+
+This plugin is built for Steam Big Picture, especially for non-Steam
 PC games, Game Pass games, Xbox App games, and emulated games.
+
+## Installation
+
+For manual installation, you can perform a Decky sideload install from the generated ZIP. See the [Building on Linux / SteamOS](#building-on-linux--steamos) section for how to generate this ZIP with `npm run package`.
+
+## Troubleshooting & Diagnostics
+
+If you experience issues or missing functionality, please check the settings diagnostics panel. It surfaces per-patch install status (installed / skipped-missing-internal / failed) and platform details.
 
 The goal is simple: make your Steam Big Picture library feel cleaner, richer,
 and more console-like, even when the games are not from Steam.
