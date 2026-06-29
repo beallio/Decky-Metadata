@@ -1,0 +1,20 @@
+[
+  {
+    "appname": "SteamOS SRM Shortcut",
+    "exe": "\"/home/deck/Emulation/tools/launchers/game.sh\"",
+    "startdir": "\"/home/deck/Emulation/roms\"",
+    "launchoptions": "\"/home/deck/Emulation/roms/Game.rom\"",
+    "shortcutpath": "",
+    "icon": "/home/deck/Emulation/tools/downloaded_media/game.png",
+    "appid": 3483760051
+  },
+  {
+    "appname": "SteamOS SRM Shortcut",
+    "exe": "\"/home/deck/Emulation/tools/launchers/game.sh\"",
+    "startdir": "\"/home/deck/Emulation/roms\"",
+    "launchoptions": "\"/home/deck/Emulation/roms/Game.rom\"",
+    "shortcutpath": "",
+    "icon": "/home/deck/Emulation/tools/downloaded_media/game.png",
+    "appid": 3483760051
+  }
+]
