@@ -95,6 +95,8 @@ const startRefreshSteamActivities = callable("start_refresh_steam_activities");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
 const getPlatformCapabilities = callable("get_platform_capabilities");
+const getDebugLogging = callable("get_debug_logging");
+const setDebugLogging = callable("set_debug_logging");
 const getAchievementSettings = callable("get_achievement_settings");
 const getXboxSettings = callable("get_xbox_settings");
 const setXboxSettings = callable("set_xbox_settings");
@@ -125,6 +127,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getAchievementSettings: getAchievementSettings,
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
+    getDebugLogging: getDebugLogging,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
     getPlatformCapabilities: getPlatformCapabilities,
@@ -141,6 +144,7 @@ var backend = /*#__PURE__*/Object.freeze({
     searchXboxTitles: searchXboxTitles,
     setAchievementCachePolicy: setAchievementCachePolicy,
     setAchievementSource: setAchievementSource,
+    setDebugLogging: setDebugLogging,
     setRetroAchievementsGameId: setRetroAchievementsGameId,
     setRetroAchievementsSettings: setRetroAchievementsSettings,
     setXboxSettings: setXboxSettings,
@@ -431,6 +435,22 @@ const currentLang = () => {
 };
 const t = (key) => STRINGS[currentLang()][key] ?? STRINGS.en[key];
 
+let verbose = false;
+const setVerboseLogging = (enabled) => {
+    verbose = !!enabled;
+};
+const prefix = (area) => `[Playhub Metadata][${area}]`;
+const info = (area, message, ...args) => {
+    if (verbose)
+        console.info(prefix(area), message, ...args);
+};
+const warn = (area, message, ...args) => {
+    console.warn(prefix(area), message, ...args);
+};
+const error = (area, message, ...args) => {
+    console.error(prefix(area), message, ...args);
+};
+
 var StoreCategory;
 (function (StoreCategory) {
     StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
@@ -662,7 +682,7 @@ const startMetadataBootstrap = () => {
             Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
         }
         catch (error) {
-            console.warn("[Playhub Metadata] metadata bootstrap failed", error);
+            warn("bridge", "metadata bootstrap failed", error);
         }
         attempts += 1;
         if (!cancelled && attempts < 24) {
@@ -1250,7 +1270,7 @@ const registerPlayhubNativePartnerEventInSteamStore = (event, partnerStore) => {
         }
     }
     catch (error) {
-        console.warn("Playhub Metadata: unable to register native PartnerEvent", error);
+        warn("patch", "unable to register native PartnerEvent", error);
     }
 };
 const rememberPlayhubNativePartnerEvent = (event) => {
@@ -1647,8 +1667,8 @@ const installNativeActivityStorePatch = (unpatchers) => {
     const tryInstall = () => {
         if (!hasActivityStore()) {
             if (patchInstallStatus.activity === "pending") {
-                console.warn("[Playhub Metadata] missing activity store, skipping activity UI patch");
                 patchInstallStatus.activity = "skipped-missing-internal";
+                warn("patch", "activity UI patch skipped", { status: patchInstallStatus.activity });
             }
             return true;
         }
@@ -1682,11 +1702,12 @@ const installNativeActivityStorePatch = (unpatchers) => {
                 }));
             }
             patchInstallStatus.activity = "installed";
+            info("patch", "activity store patch installed", { status: patchInstallStatus.activity });
             return true;
         }
         catch (error) {
-            console.warn("[Playhub Metadata] activity store patch failed", error);
             patchInstallStatus.activity = "failed";
+            warn("patch", "activity store patch failed", { status: patchInstallStatus.activity }, error);
             return true;
         }
     };
@@ -1862,8 +1883,8 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
     const tryInstall = () => {
         if (!hasSteamInternals()) {
             if (patchInstallStatus.partnerEvents === "pending") {
-                console.warn("[Playhub Metadata] missing steam internals, skipping partner events UI patch");
                 patchInstallStatus.partnerEvents = "skipped-missing-internal";
+                warn("patch", "partner events UI patch skipped", { status: patchInstallStatus.partnerEvents });
             }
             return true;
         }
@@ -1874,12 +1895,13 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
                 patchedAny = patchOneStore(store) || patchedAny;
             if (patchedAny) {
                 patchInstallStatus.partnerEvents = "installed";
+                info("patch", "partner event store patch installed", { status: patchInstallStatus.partnerEvents });
             }
             return patchedAny;
         }
         catch (error) {
-            console.warn("[Playhub Metadata] partner event store patch failed", error);
             patchInstallStatus.partnerEvents = "failed";
+            warn("patch", "partner event store patch failed", { status: patchInstallStatus.partnerEvents }, error);
             return true;
         }
     };
@@ -2379,7 +2401,7 @@ const runBackgroundAchievementSync = async (reason = "scheduled") => {
             }
             catch (error) {
                 skipped += 1;
-                console.warn(`[Playhub Metadata] background achievement sync failed for ${target.name}`, error);
+                warn("achievements", "background achievement sync failed", target.name, error);
             }
             await new Promise((resolve) => window.setTimeout(resolve, 350));
         }
@@ -2485,7 +2507,7 @@ const clearAchievementStoreMapsForApp = (appId) => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] failed to clear achievement store maps", error);
+        warn("achievements", "failed to clear achievement store maps", error);
     }
 };
 const clearAchievementsForApp = (appId) => {
@@ -2540,7 +2562,7 @@ const flushTrueAchievementsNativeCache = async () => {
         });
     }
     catch (error) {
-        console.warn("[Playhub Metadata] failed to flush stale achievement cache", error);
+        warn("achievements", "failed to flush stale achievement cache", error);
     }
 };
 const primeAchievementStore = (store, appId, payload) => {
@@ -2562,7 +2584,7 @@ const primeAchievementStore = (store, appId, payload) => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] failed to prime achievement store", error);
+        warn("achievements", "failed to prime achievement store", error);
     }
 };
 const emptyAchievementUserPayload = () => ({
@@ -2619,7 +2641,7 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] screenshot enrichment failed", error);
+        warn("bridge", "screenshot enrichment failed", error);
     }
     finally {
         loadingScreenshots.delete(appId);
@@ -2646,7 +2668,7 @@ const tryEnrichCommunityMediaForApp = async (appId) => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] community media enrichment failed", error);
+        warn("bridge", "community media enrichment failed", error);
     }
     finally {
         loadingCommunityMedia.delete(appId);
@@ -2717,8 +2739,8 @@ const loadAchievementsForApp = async (appId) => {
             applyAchievementPayload(appId, payload);
         return payload || achievementsCache[String(appId)] || null;
     }
-    catch (error) {
-        console.error("[Playhub Metadata] achievements fetch failed", error);
+    catch (error$1) {
+        error("achievements", "achievements fetch failed", error$1);
         return achievementsCache[String(appId)] || null;
     }
     finally {
@@ -2742,8 +2764,8 @@ const tryInstallAchievementStorePatch = (unpatchers) => {
         return true;
     if (!hasAchievementProgressCache()) {
         if (patchInstallStatus.achievements === "pending") {
-            console.warn("[Playhub Metadata] missing achievement progress cache, skipping achievement UI patch");
             patchInstallStatus.achievements = "skipped-missing-internal";
+            warn("patch", "achievement UI patch skipped", { status: patchInstallStatus.achievements });
         }
         return true;
     }
@@ -2778,8 +2800,8 @@ const tryInstallAchievementStorePatch = (unpatchers) => {
                     primeAchievementStore(thisValue, appId, payload);
                     return payload?.user ?? emptyAchievementUserPayload();
                 })
-                    .catch((error) => {
-                    console.error("[Playhub Metadata] LoadMyAchievements failed", error);
+                    .catch((error$1) => {
+                    error("achievements", "LoadMyAchievements failed", error$1);
                     return emptyAchievementUserPayload();
                 });
             }));
@@ -2809,11 +2831,12 @@ const tryInstallAchievementStorePatch = (unpatchers) => {
         }
         achievementStorePatchInstalled = true;
         patchInstallStatus.achievements = "installed";
+        info("patch", "achievement store patch installed", { status: patchInstallStatus.achievements });
         return true;
     }
     catch (error) {
-        console.warn("[Playhub Metadata] achievement store patch failed", error);
         patchInstallStatus.achievements = "failed";
+        warn("patch", "achievement store patch failed", { status: patchInstallStatus.achievements }, error);
         return true;
     }
 };
@@ -3241,7 +3264,7 @@ const installSteamPatches = () => {
             }
         }
         catch (error) {
-            console.warn("[Playhub Metadata] history achievement redirect patch skipped", error);
+            warn("patch", "history achievement redirect patch skipped", error);
         }
         try {
             for (const methodName of ["pushState", "replaceState"]) {
@@ -3278,7 +3301,7 @@ const installSteamPatches = () => {
             }
         }
         catch (error) {
-            console.warn("[Playhub Metadata] window history redirect patch skipped", error);
+            warn("patch", "window history redirect patch skipped", error);
         }
         const clickAchievementRedirect = (event) => {
             try {
@@ -3322,10 +3345,11 @@ const installSteamPatches = () => {
         const routeGuardTimer = window.setInterval(routeGuard, 250);
         unpatchers.push(() => window.clearInterval(routeGuardTimer));
         patchInstallStatus.router = "installed";
+        info("patch", "router patch installed", { status: patchInstallStatus.router });
     }
     catch (error) {
-        console.warn("[Playhub Metadata] router patch failed", error);
         patchInstallStatus.router = "failed";
+        warn("patch", "router patch failed", { status: patchInstallStatus.router }, error);
     }
     if (appStore?.GetAppOverviewByAppID) {
         unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
@@ -3510,7 +3534,7 @@ const installSteamPatches = () => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] app details sections patch skipped", error);
+        warn("patch", "app details sections patch skipped", error);
     }
     try {
         const httpClient = DFL.findModuleChild((module) => {
@@ -3550,7 +3574,7 @@ const installSteamPatches = () => {
         patchFeedMethod("post");
     }
     catch (error) {
-        console.warn("[Playhub Metadata] community feed patch skipped", error);
+        warn("patch", "community feed patch skipped", error);
     }
     try {
         const communityVoteModule = DFL.findModuleChild((module) => {
@@ -3575,7 +3599,7 @@ const installSteamPatches = () => {
         }
     }
     catch (error) {
-        console.warn("[Playhub Metadata] community vote patch skipped", error);
+        warn("patch", "community vote patch skipped", error);
     }
     tryInstallAchievementStorePatch(unpatchers);
     let achievementPatchAttempts = 0;
@@ -3647,8 +3671,8 @@ const installSteamPatches = () => {
             try {
                 unpatch();
             }
-            catch (error) {
-                console.error("[Playhub Metadata] unpatch failed", error);
+            catch (error$1) {
+                error("patch", "unpatch failed", error$1);
             }
         });
     };
@@ -3910,6 +3934,7 @@ const Content = () => {
     const [achievementCachePolicy, setAchievementCachePolicyState] = SP_REACT.useState("daily");
     const [platformCapabilities, setPlatformCapabilities] = SP_REACT.useState();
     const [showPlatformDiagnostics, setShowPlatformDiagnostics] = SP_REACT.useState(false);
+    const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const missing = Math.max(games.length - metadataCount, 0);
     const refresh = SP_REACT.useCallback(async () => {
         await refreshMetadataCache();
@@ -3925,17 +3950,39 @@ const Content = () => {
     }, [refresh]);
     SP_REACT.useEffect(() => {
         let cancelled = false;
+        void getDebugLogging()
+            .then((enabled) => {
+            if (!cancelled) {
+                setDebugLoggingState(enabled);
+                setVerboseLogging(enabled);
+            }
+        })
+            .catch((error) => warn("bridge", "debug logging setting load failed", error));
         void getPlatformCapabilities()
             .then((capabilities) => {
             if (!cancelled) {
                 setPlatformCapabilities(capabilities);
+                info("bridge", "platform capabilities loaded", capabilities);
             }
         })
-            .catch(() => undefined);
+            .catch((error) => warn("bridge", "platform capabilities load failed", error));
         return () => {
             cancelled = true;
         };
     }, []);
+    const saveDebugLogging = async (enabled) => {
+        setDebugLoggingState(enabled);
+        setVerboseLogging(enabled);
+        try {
+            const saved = await setDebugLogging(enabled);
+            setDebugLoggingState(saved);
+            setVerboseLogging(saved);
+            info("bridge", "debug logging setting updated", saved);
+        }
+        catch (error) {
+            warn("bridge", "debug logging setting update failed", error);
+        }
+    };
     const scanMissing = async () => {
         if (busy)
             return;
@@ -4179,7 +4226,7 @@ const Content = () => {
     return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("detected"), ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("saved"), ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("missing"), ":"] }), " ", missing] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? t("scanning") : t("scanMissing") }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || t("scanning") })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? t("refreshingActivities") : t("refreshActivities") }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || t("refreshingActivities") })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("retroTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("retroEnabled"), checked: ra.enabled, onChange: (checked) => void saveRaSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("retroLoginHint") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("retroUser") }), SP_JSX.jsx(DFL.TextField, { value: ra.username, onChange: (e) => setRa((prev) => ({ ...prev, username: e.target.value })), onBlur: () => void saveRaSettings({ username: ra.username }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("retroKey") }), SP_JSX.jsx(DFL.TextField, { value: ra.api_key, onChange: (e) => setRa((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveRaSettings({ api_key: ra.api_key }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testRaLogin, children: t("retroLogin") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openRetroAchievements, children: t("retroCreateAccount") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("xboxTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("xboxEnabled"), checked: xbox.enabled, onChange: (checked) => void saveXboxSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: t("xboxProfile") }), SP_JSX.jsx(DFL.TextField, { value: xbox.api_key, onChange: (e) => setXbox((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveXboxSettings({ api_key: xbox.api_key }), style: fieldStyle }), xbox.ta_logged_in ? (SP_JSX.jsx("div", { style: compactTextStyle, children: xbox.gamertag ? `${t("xboxLoggedIn")}: ${xbox.gamertag}` : t("xboxLoggedIn") })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testXboxLogin, children: t("xboxLogin") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openOpenXbl, children: t("xboxOpenOpenXbl") }), platformCapabilities?.supports_xbox_uwphook_auto ? (SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: bulkApplyXboxAchievements, children: xboxBulkBusy ? t("xboxBulkScanning") : t("xboxBulkScan") })) : (SP_JSX.jsx("div", { style: compactTextStyle, children: t("xboxAutoScanUnsupported") })), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length || !xbox.api_key.trim(), onClick: syncMatchedTrueAchievementsProgress, children: t("xboxSyncAllProgress") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: clearAllXboxMatches, children: t("xboxClearAll") }), xboxBulkBusy || xboxBulkMessage ? (SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [xboxBulkBusy ? SP_JSX.jsx(DFL.Spinner, {}) : null, SP_JSX.jsx("span", { children: xboxBulkMessage })] })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("achievementCacheTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("achievementCacheHint") }), SP_JSX.jsx("div", { style: buttonRowStyle, children: achievementCachePolicies.map((policy) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void saveAchievementCachePolicy(policy), style: {
                                     opacity: achievementCachePolicy === policy ? 1 : 0.72,
                                     fontWeight: achievementCachePolicy === policy ? 700 : 400,
-                                }, children: t(`achievementCache_${policy}`) }, policy))) })] }) }), platformCapabilities ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("diagnosticsTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => setShowPlatformDiagnostics((visible) => !visible), children: showPlatformDiagnostics
+                                }, children: t(`achievementCache_${policy}`) }, policy))) })] }) }), platformCapabilities ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("diagnosticsTitle") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => setShowPlatformDiagnostics((visible) => !visible), children: showPlatformDiagnostics
                                         ? t("diagnosticsHidePlatform")
                                         : t("diagnosticsShowPlatform") }), showPlatformDiagnostics ? (SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformLabel") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.platform })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: t("platformSteamOS") }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.is_steamos
                                                         ? t("diagnosticsYes")
@@ -4566,8 +4613,8 @@ const syncOurEntry = (items, appId) => {
 const contextMenuPatch = (LibraryContextMenuClass) => {
     if (!LibraryContextMenuClass || !hasSteamInternals()) {
         if (patchInstallStatus.contextMenu === "pending") {
-            console.warn("[Playhub Metadata] missing context menu class or steam internals, skipping context menu UI patch");
             patchInstallStatus.contextMenu = "skipped-missing-internal";
+            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
         }
         return { unpatch: () => { } };
     }
@@ -4619,10 +4666,11 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             return menu;
         });
         patchInstallStatus.contextMenu = "installed";
+        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
     }
     catch (error) {
-        console.warn("[Playhub Metadata] context menu patch failed", error);
         patchInstallStatus.contextMenu = "failed";
+        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
     }
     return {
         unpatch: () => {
@@ -4634,6 +4682,9 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
 
 const METADATA_ROUTE = "/playhub-metadata/:appid";
 var index = DFL.definePlugin(() => {
+    void getDebugLogging()
+        .then((enabled) => setVerboseLogging(enabled))
+        .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
     void refreshRaSettings();
     const unpatchSteam = installSteamPatches();
@@ -4650,27 +4701,27 @@ var index = DFL.definePlugin(() => {
             try {
                 menuPatch?.unpatch?.();
             }
-            catch (error) {
-                console.error("[Playhub Metadata] context menu unpatch failed", error);
+            catch (error$1) {
+                error("patch", "context menu unpatch failed", error$1);
             }
             try {
                 stopMetadataBootstrap?.();
             }
-            catch (error) {
-                console.error("[Playhub Metadata] metadata bootstrap stop failed", error);
+            catch (error$1) {
+                error("patch", "metadata bootstrap stop failed", error$1);
             }
             try {
                 unpatchSteam?.();
             }
-            catch (error) {
-                console.error("[Playhub Metadata] Steam unpatch failed", error);
+            catch (error$1) {
+                error("patch", "Steam unpatch failed", error$1);
             }
             try {
                 routerHook.removeRoute(METADATA_ROUTE);
                 routerHook.removeRoute(PLAYHUB_ACHIEVEMENTS_ROUTE);
             }
-            catch (error) {
-                console.error("[Playhub Metadata] route remove failed", error);
+            catch (error$1) {
+                error("patch", "route remove failed", error$1);
             }
         },
     };

@@ -16,6 +16,7 @@ import {
   fetchAchievements,
   fetchMetadata,
   getAchievementSettings,
+  getDebugLogging,
   getMetadata,
   getPlatformCapabilities,
   getRetroAchievementsSettings,
@@ -29,6 +30,7 @@ import {
   searchMetadata,
   setAchievementCachePolicy,
   setAchievementSource,
+  setDebugLogging,
   setRetroAchievementsGameId,
   setRetroAchievementsSettings,
   setXboxSettings,
@@ -42,6 +44,7 @@ import {
   syncTrueAchievementsProgress,
 } from "./backend";
 import { t } from "./i18n";
+import * as log from "./log";
 import {
   allNonSteamGames,
   appName,
@@ -351,6 +354,7 @@ export const Content = () => {
   const [platformCapabilities, setPlatformCapabilities] =
     useState<PlatformCapabilities | undefined>();
   const [showPlatformDiagnostics, setShowPlatformDiagnostics] = useState(false);
+  const [debugLogging, setDebugLoggingState] = useState(false);
 
   const missing = Math.max(games.length - metadataCount, 0);
 
@@ -370,17 +374,39 @@ export const Content = () => {
 
   useEffect(() => {
     let cancelled = false;
+    void getDebugLogging()
+      .then((enabled) => {
+        if (!cancelled) {
+          setDebugLoggingState(enabled);
+          log.setVerboseLogging(enabled);
+        }
+      })
+      .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
     void getPlatformCapabilities()
       .then((capabilities) => {
         if (!cancelled) {
           setPlatformCapabilities(capabilities);
+          log.info("bridge", "platform capabilities loaded", capabilities);
         }
       })
-      .catch(() => undefined);
+      .catch((error) => log.warn("bridge", "platform capabilities load failed", error));
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const saveDebugLogging = async (enabled: boolean) => {
+    setDebugLoggingState(enabled);
+    log.setVerboseLogging(enabled);
+    try {
+      const saved = await setDebugLogging(enabled);
+      setDebugLoggingState(saved);
+      log.setVerboseLogging(saved);
+      log.info("bridge", "debug logging setting updated", saved);
+    } catch (error) {
+      log.warn("bridge", "debug logging setting update failed", error);
+    }
+  };
 
   const scanMissing = async () => {
     if (busy) return;
@@ -827,6 +853,11 @@ export const Content = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
+              <ToggleField
+                label="Debug Logging"
+                checked={debugLogging}
+                onChange={(checked) => void saveDebugLogging(checked)}
+              />
               <FocusableButton
                 className="DialogButton"
                 onClick={() => setShowPlatformDiagnostics((visible) => !visible)}

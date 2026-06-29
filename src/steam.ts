@@ -21,6 +21,7 @@ import {
   StoreCategory,
 } from "./types";
 import { t } from "./i18n";
+import * as log from "./log";
 
 declare const appStore: any;
 declare const appDetailsStore: any;
@@ -253,7 +254,7 @@ export const startMetadataBootstrap = (): Unpatch => {
       await ensureMetadataCache();
       Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
     } catch (error) {
-      console.warn("[Playhub Metadata] metadata bootstrap failed", error);
+      log.warn("bridge", "metadata bootstrap failed", error);
     }
     attempts += 1;
     if (!cancelled && attempts < 24) {
@@ -902,7 +903,7 @@ const registerPlayhubNativePartnerEventInSteamStore = (event: any, partnerStore?
       store.GetPartnerEventChangeCallback(canonicalEventGid)?.Dispatch?.(event);
     }
   } catch (error) {
-    console.warn("Playhub Metadata: unable to register native PartnerEvent", error);
+    log.warn("patch", "unable to register native PartnerEvent", error);
   }
 };
 
@@ -1294,8 +1295,8 @@ const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
   const tryInstall = (): boolean => {
     if (!hasActivityStore()) {
       if (patchInstallStatus.activity === "pending") {
-        console.warn("[Playhub Metadata] missing activity store, skipping activity UI patch");
         patchInstallStatus.activity = "skipped-missing-internal";
+        log.warn("patch", "activity UI patch skipped", { status: patchInstallStatus.activity });
       }
       return true;
     }
@@ -1329,10 +1330,11 @@ const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
         );
       }
       patchInstallStatus.activity = "installed";
+      log.info("patch", "activity store patch installed", { status: patchInstallStatus.activity });
       return true;
     } catch (error) {
-      console.warn("[Playhub Metadata] activity store patch failed", error);
       patchInstallStatus.activity = "failed";
+      log.warn("patch", "activity store patch failed", { status: patchInstallStatus.activity }, error);
       return true;
     }
   };
@@ -1491,8 +1493,8 @@ const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
   const tryInstall = (): boolean => {
     if (!hasSteamInternals()) {
       if (patchInstallStatus.partnerEvents === "pending") {
-        console.warn("[Playhub Metadata] missing steam internals, skipping partner events UI patch");
         patchInstallStatus.partnerEvents = "skipped-missing-internal";
+        log.warn("patch", "partner events UI patch skipped", { status: patchInstallStatus.partnerEvents });
       }
       return true;
     }
@@ -1502,11 +1504,12 @@ const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
       for (const store of stores) patchedAny = patchOneStore(store) || patchedAny;
       if (patchedAny) {
         patchInstallStatus.partnerEvents = "installed";
+        log.info("patch", "partner event store patch installed", { status: patchInstallStatus.partnerEvents });
       }
       return patchedAny;
     } catch (error) {
-      console.warn("[Playhub Metadata] partner event store patch failed", error);
       patchInstallStatus.partnerEvents = "failed";
+      log.warn("patch", "partner event store patch failed", { status: patchInstallStatus.partnerEvents }, error);
       return true;
     }
   };
@@ -2726,7 +2729,7 @@ const installActivityNewsDomPatch = (unpatchers: Unpatch[]) => {
     timer = window.setTimeout(() => {
       if (cancelled) return;
       void refreshPlayhubActivityNewsDom().catch((error) => {
-        console.warn("[Playhub Metadata] activity news DOM patch failed", error);
+        log.warn("patch", "activity news DOM patch failed", error);
       });
     }, delay);
   };
@@ -2836,7 +2839,7 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
       let next = metadataCache[String(appId)] || null;
       if (!cancelled) setMetadata(next);
     };
-    const updateListener = () => void refresh().catch((error) => console.warn("[Playhub Metadata] activity overlay refresh failed", error));
+    const updateListener = () => void refresh().catch((error) => log.warn("patch", "activity overlay refresh failed", error));
     const clickListener = (event: MouseEvent) => {
       const target = event.target as Element | null;
       const label = detailsTabLabelFromElement(target);
@@ -2847,14 +2850,14 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
       const tabIndex = pointerIndex >= 0 ? pointerIndex : elementIndex;
       if (tabIndex >= 0) noteDetailsTabIndexSelection(tabIndex);
       if (label) noteDetailsTabSelection(label);
-      void refresh().catch((error) => console.warn("[Playhub Metadata] activity overlay click refresh failed", error));
+      void refresh().catch((error) => log.warn("patch", "activity overlay click refresh failed", error));
     };
     const timer = window.setInterval(updateListener, 750);
     window.addEventListener("playhub-metadata:updated", updateListener);
     document.addEventListener("click", clickListener, true);
     window.addEventListener("scroll", updateListener, true);
     document.addEventListener("wheel", updateListener, true);
-    void refresh().catch((error) => console.warn("[Playhub Metadata] activity overlay initial refresh failed", error));
+    void refresh().catch((error) => log.warn("patch", "activity overlay initial refresh failed", error));
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -3294,7 +3297,7 @@ const runBackgroundAchievementSync = async (reason = "scheduled") => {
         }
       } catch (error) {
         skipped += 1;
-        console.warn(`[Playhub Metadata] background achievement sync failed for ${target.name}`, error);
+        log.warn("achievements", "background achievement sync failed", target.name, error);
       }
       await new Promise((resolve) => window.setTimeout(resolve, 350));
     }
@@ -3401,7 +3404,7 @@ const clearAchievementStoreMapsForApp = (appId: number) => {
       }
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] failed to clear achievement store maps", error);
+    log.warn("achievements", "failed to clear achievement store maps", error);
   }
 };
 
@@ -3454,7 +3457,7 @@ const flushTrueAchievementsNativeCache = async () => {
       if (appId) clearAchievementsForApp(appId);
     });
   } catch (error) {
-    console.warn("[Playhub Metadata] failed to flush stale achievement cache", error);
+    log.warn("achievements", "failed to flush stale achievement cache", error);
   }
 };
 
@@ -3475,7 +3478,7 @@ const primeAchievementStore = (store: any, appId: number, payload: AchievementsR
       }
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] failed to prime achievement store", error);
+    log.warn("achievements", "failed to prime achievement store", error);
   }
 };
 
@@ -3532,7 +3535,7 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
       window.dispatchEvent(new Event("playhub-metadata:updated"));
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] screenshot enrichment failed", error);
+    log.warn("bridge", "screenshot enrichment failed", error);
   } finally {
     loadingScreenshots.delete(appId);
   }
@@ -3564,7 +3567,7 @@ export const tryEnrichCommunityMediaForApp = async (appId: number) => {
       window.dispatchEvent(new Event("playhub-metadata:updated"));
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] community media enrichment failed", error);
+    log.warn("bridge", "community media enrichment failed", error);
   } finally {
     loadingCommunityMedia.delete(appId);
   }
@@ -3646,7 +3649,7 @@ const loadAchievementsForApp = async (appId: number) => {
     if (payload) applyAchievementPayload(appId, payload);
     return payload || achievementsCache[String(appId)] || null;
   } catch (error) {
-    console.error("[Playhub Metadata] achievements fetch failed", error);
+    log.error("achievements", "achievements fetch failed", error);
     return achievementsCache[String(appId)] || null;
   } finally {
     loadingAchievements.delete(appId);
@@ -3674,8 +3677,8 @@ const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
   if (achievementStorePatchInstalled) return true;
   if (!hasAchievementProgressCache()) {
     if (patchInstallStatus.achievements === "pending") {
-      console.warn("[Playhub Metadata] missing achievement progress cache, skipping achievement UI patch");
       patchInstallStatus.achievements = "skipped-missing-internal";
+      log.warn("patch", "achievement UI patch skipped", { status: patchInstallStatus.achievements });
     }
     return true;
   }
@@ -3713,7 +3716,7 @@ const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
                 return payload?.user ?? emptyAchievementUserPayload();
               })
               .catch((error) => {
-                console.error("[Playhub Metadata] LoadMyAchievements failed", error);
+                log.error("achievements", "LoadMyAchievements failed", error);
                 return emptyAchievementUserPayload();
               });
           }
@@ -3748,10 +3751,11 @@ const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
 
     achievementStorePatchInstalled = true;
     patchInstallStatus.achievements = "installed";
+    log.info("patch", "achievement store patch installed", { status: patchInstallStatus.achievements });
     return true;
   } catch (error) {
-    console.warn("[Playhub Metadata] achievement store patch failed", error);
     patchInstallStatus.achievements = "failed";
+    log.warn("patch", "achievement store patch failed", { status: patchInstallStatus.achievements }, error);
     return true;
   }
 };
@@ -4275,7 +4279,7 @@ export const installSteamPatches = (): Unpatch => {
       }
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] history achievement redirect patch skipped", error);
+    log.warn("patch", "history achievement redirect patch skipped", error);
   }
 
   try {
@@ -4311,7 +4315,7 @@ export const installSteamPatches = (): Unpatch => {
       });
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] window history redirect patch skipped", error);
+    log.warn("patch", "window history redirect patch skipped", error);
   }
 
   const clickAchievementRedirect = (event: MouseEvent) => {
@@ -4359,9 +4363,10 @@ export const installSteamPatches = (): Unpatch => {
   const routeGuardTimer = window.setInterval(routeGuard, 250);
   unpatchers.push(() => window.clearInterval(routeGuardTimer));
   patchInstallStatus.router = "installed";
+  log.info("patch", "router patch installed", { status: patchInstallStatus.router });
   } catch (error) {
-    console.warn("[Playhub Metadata] router patch failed", error);
     patchInstallStatus.router = "failed";
+    log.warn("patch", "router patch failed", { status: patchInstallStatus.router }, error);
   }
 
   if (appStore?.GetAppOverviewByAppID) {
@@ -4568,7 +4573,7 @@ export const installSteamPatches = (): Unpatch => {
       );
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] app details sections patch skipped", error);
+    log.warn("patch", "app details sections patch skipped", error);
   }
 
   try {
@@ -4610,7 +4615,7 @@ export const installSteamPatches = (): Unpatch => {
     patchFeedMethod("get");
     patchFeedMethod("post");
   } catch (error) {
-    console.warn("[Playhub Metadata] community feed patch skipped", error);
+    log.warn("patch", "community feed patch skipped", error);
   }
 
   try {
@@ -4643,7 +4648,7 @@ export const installSteamPatches = (): Unpatch => {
       );
     }
   } catch (error) {
-    console.warn("[Playhub Metadata] community vote patch skipped", error);
+    log.warn("patch", "community vote patch skipped", error);
   }
 
   tryInstallAchievementStorePatch(unpatchers);
@@ -4722,7 +4727,7 @@ export const installSteamPatches = (): Unpatch => {
       try {
         unpatch();
       } catch (error) {
-        console.error("[Playhub Metadata] unpatch failed", error);
+        log.error("patch", "unpatch failed", error);
       }
     });
   };

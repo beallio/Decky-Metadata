@@ -11,6 +11,7 @@ import difflib
 import hashlib
 import html
 import json
+import logging
 import os
 import re
 import shlex
@@ -41,6 +42,37 @@ ROM_HASH_CHUNK_BYTES = 1024 * 1024
 MAX_SHORTCUTS_VDF_BYTES = 2 * 1024 * 1024
 MAX_SHORTCUTS_VDF_DEPTH = 32
 MAX_SHORTCUTS_VDF_ENTRIES = 2048
+
+
+def _redact(text: Any) -> str:
+    value = str(text or "")
+    value = re.sub(r"([?&]y=)[^&#\s]+", r"\1***", value, flags=re.IGNORECASE)
+    value = re.sub(r"(\bapi[_-]?key=)[^&#\s]+", r"\1***", value, flags=re.IGNORECASE)
+    value = re.sub(
+        r"((?:['\"])?\bAuthorization(?:['\"])?\s*[:=]\s*(?:['\"])?)(Bearer\s+)?[^'\"\s,}]+",
+        r"\1***",
+        value,
+        flags=re.IGNORECASE,
+    )
+    value = re.sub(
+        r"((?:['\"])?\bX-Authorization(?:['\"])?\s*[:=]\s*(?:['\"])?)[^'\"\s,}]+",
+        r"\1***",
+        value,
+        flags=re.IGNORECASE,
+    )
+    return value
+
+
+def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = False, **fields: Any) -> None:
+    try:
+        detail = "".join(f" {key}={_redact(value)!r}" for key, value in fields.items())
+        text = f"[playhub:{area}] {message}{detail}"
+        if exc:
+            decky.logger.error(text, exc_info=True)
+        else:
+            decky.logger.log(level, text)
+    except Exception:
+        pass
 
 
 @dataclass(frozen=True)
@@ -83,9 +115,12 @@ def _tls_log_target(request_or_url: Any) -> str:
 
 def _log_tls_verification_failure(request_or_url: Any, error: BaseException) -> None:
     if _is_tls_verification_error(error):
-        decky.logger.error(
-            "TLS certificate verification failed for "
-            f"{_tls_log_target(request_or_url)}: {error}"
+        _plog(
+            "http",
+            "TLS certificate verification failed",
+            level=logging.ERROR,
+            target=_tls_log_target(request_or_url),
+            error=error,
         )
 
 IGN_GRAPHQL_URL = "https://mollusk.apis.ign.com/graphql"
@@ -257,26 +292,42 @@ class Plugin:
         self._pc_session_id = str(int(time.time() - time.monotonic()))
 
     async def _main(self) -> None:
-        self._settings_dir.mkdir(parents=True, exist_ok=True)
-        self._start_image_proxy_server()
-        self._cleanup_loopback_icons()
-        self._load_data()
-        decky.logger.info(
-            "Playhub image pipeline status: "
-            f"pillow={'yes' if Image is not None else 'NO'} "
-            f"cropper={self._xbox_cropper_name()} "
-            f"proxy_port={self._image_proxy_port} "
-            f"loopback_dir={self._steamui_loopback_icon_dir() or 'unavailable'}"
-        )
-        decky.logger.info("Playhub Metadata backend ready")
+        _plog("load", "backend startup begin")
+        step = "settings_dir"
+        try:
+            self._settings_dir.mkdir(parents=True, exist_ok=True)
+            step = "image_proxy"
+            self._start_image_proxy_server()
+            step = "loopback_cleanup"
+            self._cleanup_loopback_icons()
+            step = "load_data"
+            self._load_data()
+            self._apply_debug_logging()
+            step = "platform_capabilities"
+            capabilities = await self.get_platform_capabilities()
+            _plog("platform", "capabilities loaded", **capabilities)
+            _plog(
+                "icons",
+                "image pipeline status",
+                pillow=Image is not None,
+                cropper=self._xbox_cropper_name(),
+                proxy_port=self._image_proxy_port,
+                loopback_dir=self._steamui_loopback_icon_dir() or "unavailable",
+                icon_mode=capabilities.get("icon_mode", ""),
+            )
+            _plog("load", "backend ready")
+        except Exception:
+            _plog("load", "backend startup failed", level=logging.ERROR, exc=True, step=step)
+            raise
 
     async def _unload(self) -> None:
+        _plog("load", "backend unload begin")
         if self._scan_task and not self._scan_task.done():
             self._scan_task.cancel()
         if self._activity_refresh_task and not self._activity_refresh_task.done():
             self._activity_refresh_task.cancel()
         self._stop_image_proxy_server()
-        decky.logger.info("Playhub Metadata backend unloaded")
+        _plog("load", "backend unloaded")
 
     def _start_image_proxy_server(self) -> None:
         if self._image_proxy_server is not None:
@@ -307,10 +358,7 @@ class Plugin:
                     self.end_headers()
                     self.wfile.write(data)
                 except Exception as error:
-                    try:
-                        decky.logger.error(f"Playhub image proxy_unavailable: could not handle request: {error}")
-                    except Exception:
-                        pass
+                    _plog("proxy", "request handling failed", level=logging.ERROR, exc=True, error=error)
                     self.send_error(500)
 
         try:
@@ -321,12 +369,12 @@ class Plugin:
             self._image_proxy_server = server
             self._image_proxy_thread = thread
             self._image_proxy_port = int(server.server_address[1])
-            decky.logger.info(f"Playhub image proxy ready on 127.0.0.1:{self._image_proxy_port}")
+            _plog("proxy", "image proxy ready", port=self._image_proxy_port)
         except Exception as error:
             self._image_proxy_server = None
             self._image_proxy_thread = None
             self._image_proxy_port = 0
-            decky.logger.error(f"Playhub image proxy_unavailable: could not start: {error}")
+            _plog("proxy", "proxy_unavailable: image proxy could not start", level=logging.ERROR, exc=True, error=error)
 
     def _stop_image_proxy_server(self) -> None:
         server = self._image_proxy_server
@@ -439,13 +487,12 @@ class Plugin:
                 probe.write_bytes(b"ok")
                 probe.unlink(missing_ok=True)
                 self._steamui_icon_dir = icon_dir
-                decky.logger.info(f"Playhub loopback icon dir ready: {icon_dir}")
+                _plog("icons", "loopback icon dir writable", icon_dir=icon_dir)
                 return icon_dir
-            except Exception:
+            except Exception as error:
+                _plog("icons", "loopback icon dir not writable", level=logging.DEBUG, icon_dir=candidate / "steamui" / PLAYHUB_LOOPBACK_ICON_SUBDIR, error=error)
                 continue
-        decky.logger.info(
-            "Playhub loopback_unavailable: icon dir unavailable; falling back to 127.0.0.1 image proxy"
-        )
+        _plog("icons", "loopback_unavailable: icon dir unavailable; falling back to 127.0.0.1 image proxy", level=logging.WARNING)
         return None
 
     def _is_steamos(self) -> bool:
@@ -512,12 +559,15 @@ class Plugin:
             try:
                 resolved = candidate.resolve()
                 key = str(resolved).casefold() if os.name == "nt" else str(resolved)
+                _plog("discovery", "steam root candidate", level=logging.DEBUG, path=resolved, exists=resolved.exists())
                 if key in seen or not resolved.exists():
                     continue
                 roots.append(resolved)
                 seen.add(key)
-            except Exception:
+            except Exception as error:
+                _plog("discovery", "steam root candidate unreadable", level=logging.DEBUG, path=candidate, error=error)
                 continue
+        _plog("discovery", "steam roots detected", roots=[str(root) for root in roots])
         return roots
 
     def _detect_steam_installs(self) -> list[SteamInstall]:
@@ -526,7 +576,7 @@ class Plugin:
             try:
                 resolved_root = root.resolve()
             except Exception as error:
-                decky.logger.debug(f"Skipping unreadable Steam root {root}: {error}")
+                _plog("discovery", "skipping unreadable Steam root", level=logging.DEBUG, root=root, error=error)
                 continue
 
             userdata_dirs: list[Path] = []
@@ -544,11 +594,11 @@ class Plugin:
                             if shortcut_file.is_file():
                                 shortcut_files.append(shortcut_file.resolve())
                         except Exception as error:
-                            decky.logger.debug(f"Skipping unreadable Steam userdata {user_dir}: {error}")
+                            _plog("discovery", "skipping unreadable Steam userdata", level=logging.DEBUG, user_dir=user_dir, error=error)
                 else:
-                    decky.logger.debug(f"Steam userdata root not found: {userdata_root}")
+                    _plog("discovery", "Steam userdata root not found", level=logging.DEBUG, userdata_root=userdata_root)
             except Exception as error:
-                decky.logger.debug(f"Skipping unreadable Steam userdata root {userdata_root}: {error}")
+                _plog("discovery", "skipping unreadable Steam userdata root", level=logging.DEBUG, userdata_root=userdata_root, error=error)
 
             libraryfolders_files: list[Path] = []
             for libraryfolders_file in (
@@ -559,7 +609,7 @@ class Plugin:
                     if libraryfolders_file.is_file():
                         libraryfolders_files.append(libraryfolders_file.resolve())
                 except Exception as error:
-                    decky.logger.debug(f"Skipping unreadable Steam library file {libraryfolders_file}: {error}")
+                    _plog("discovery", "skipping unreadable Steam library file", level=logging.DEBUG, libraryfolders_file=libraryfolders_file, error=error)
 
             appmanifest_dirs: list[Path] = []
             steamapps_dir = resolved_root / "steamapps"
@@ -567,7 +617,7 @@ class Plugin:
                 if steamapps_dir.is_dir():
                     appmanifest_dirs.append(steamapps_dir.resolve())
             except Exception as error:
-                decky.logger.debug(f"Skipping unreadable Steam appmanifest dir {steamapps_dir}: {error}")
+                _plog("discovery", "skipping unreadable Steam appmanifest dir", level=logging.DEBUG, steamapps_dir=steamapps_dir, error=error)
 
             installs.append(
                 SteamInstall(
@@ -578,6 +628,16 @@ class Plugin:
                     appmanifest_dirs=appmanifest_dirs,
                 )
             )
+            _plog(
+                "discovery",
+                "steam install detected",
+                root=resolved_root,
+                userdata_dirs=len(userdata_dirs),
+                shortcut_files=len(shortcut_files),
+                libraryfolders_files=len(libraryfolders_files),
+                appmanifest_dirs=len(appmanifest_dirs),
+            )
+        _plog("discovery", "steam installs detected", count=len(installs))
         return installs
 
     def _detect_steam_root(self) -> Path | None:
@@ -620,11 +680,11 @@ class Plugin:
                 if proxy_cached.exists() and proxy_cached.stat().st_size > 0:
                     shutil.copyfile(proxy_cached, output_path)
             except Exception as e:
-                decky.logger.warning(f"Playhub loopback_unavailable: failed to copy to steamui: {e}")
+                _plog("icons", "loopback_unavailable: failed to copy to steamui", level=logging.WARNING, source_url=source_url, output_path=output_path, error=e)
             if output_path.exists() and output_path.stat().st_size > 0:
                 return loopback_url
         except Exception as error:
-            decky.logger.error(f"Playhub loopback icon failed for {source_url}: {error}")
+            _plog("icons", "loopback icon failed", level=logging.ERROR, exc=True, source_url=source_url, error=error)
         return ""
 
     def _prefetch_xbox_loopback_icons(self, sources: list[str]) -> None:
@@ -649,7 +709,7 @@ class Plugin:
             with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
                 list(pool.map(lambda src: self._xbox_loopback_icon_url(src, generate=True), pending))
         except Exception as error:
-            decky.logger.error(f"Playhub loopback icon prefetch failed: {error}")
+            _plog("icons", "loopback icon prefetch failed", level=logging.ERROR, exc=True, count=len(pending), error=error)
 
     def _cleanup_loopback_icons(self, max_age_days: int = 60) -> None:
         # Keep <Steam>/steamui tidy: drop crops not touched in a long time.
@@ -724,6 +784,25 @@ class Plugin:
     async def get_state(self) -> dict[str, Any]:
         self._load_data()
         return self._data
+
+    def _apply_debug_logging(self) -> bool:
+        enabled = bool((self._data.get("settings") or {}).get("debug_logging", False))
+        decky.logger.setLevel(logging.DEBUG if enabled else logging.INFO)
+        _plog("load", "debug logging level applied", level=logging.DEBUG, enabled=enabled)
+        return enabled
+
+    async def get_debug_logging(self) -> bool:
+        self._load_data()
+        return self._apply_debug_logging()
+
+    async def set_debug_logging(self, enabled: bool) -> bool:
+        self._load_data()
+        value = bool(enabled)
+        self._data.setdefault("settings", {})["debug_logging"] = value
+        self._save_data()
+        decky.logger.setLevel(logging.DEBUG if value else logging.INFO)
+        _plog("load", "debug logging updated", level=logging.INFO, enabled=value)
+        return value
 
     async def get_metadata(self, app_id: int) -> dict[str, Any] | None:
         self._load_data()
@@ -1012,6 +1091,7 @@ class Plugin:
         return {
             "metadata": {},
             "settings": {
+                "debug_logging": False,
                 "retroachievements": {
                     "enabled": False,
                     "username": "",
@@ -1042,13 +1122,14 @@ class Plugin:
         try:
             payload = json.loads(self._data_file.read_text(encoding="utf-8"))
         except Exception as error:
-            decky.logger.error(f"Failed reading metadata settings: {error}")
+            _plog("load", "failed reading metadata settings", level=logging.ERROR, exc=True, path=self._data_file, error=error)
             return
         if not isinstance(payload, dict):
             return
         default = self._default_data()
         default["metadata"].update(payload.get("metadata") or {})
         default["settings"].update(payload.get("settings") or {})
+        default["settings"]["debug_logging"] = bool(default["settings"].get("debug_logging", False))
         if "retroachievements" not in default["settings"]:
             default["settings"]["retroachievements"] = {
                 "enabled": False,
@@ -1165,7 +1246,7 @@ class Plugin:
                 self._scan_progress["failed"] += 1
                 self._scan_progress["message"] = f"Failed: {title}"
                 self._scan_progress["error"] = str(error)
-                decky.logger.error(f"Metadata scan failed for {title}: {error}")
+                _plog("load", "metadata scan failed", level=logging.ERROR, exc=True, title=title, app_id=app_id, error=error)
             finally:
                 self._scan_progress["completed"] += 1
         self._scan_progress["running"] = False
@@ -1211,7 +1292,7 @@ class Plugin:
                 self._activity_refresh_progress["failed"] += 1
                 self._activity_refresh_progress["message"] = f"Failed: {title}"
                 self._activity_refresh_progress["error"] = str(error)
-                decky.logger.error(f"Steam Activity refresh failed for {title}: {error}")
+                _plog("load", "Steam Activity refresh failed", level=logging.ERROR, exc=True, title=title, app_id=app_id, error=error)
             finally:
                 self._activity_refresh_progress["completed"] += 1
         self._activity_refresh_progress["running"] = False
@@ -2413,30 +2494,32 @@ class Plugin:
         if time.monotonic() < self._openxbl_rate_limited_until:
             remaining = int(self._openxbl_rate_limited_until - time.monotonic())
             raise RuntimeError(f"OpenXBL rate-limited (429); cooling down for {remaining}s")
-        decky.logger.info(f"OpenXBL request: {method} {path}")
+        request_headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Authorization": api_key,
+            "User-Agent": "PlayhubMetadata/1.3.18 (+Decky Loader)",
+        }
+        _plog("xbox", "OpenXBL request", level=logging.DEBUG, method=method, path=path, url=url, headers=request_headers)
         request = urllib.request.Request(
             url,
             data=body_bytes,
             method=method,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Authorization": api_key,
-                "User-Agent": "PlayhubMetadata/1.3.18 (+Decky Loader)",
-            },
+            headers=request_headers,
         )
         context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
                 payload = json.loads(response.read().decode("utf-8", errors="ignore") or "null")
         except urllib.error.HTTPError as error:
-            decky.logger.error(f"OpenXBL {method} {path} -> HTTP {error.code}")
+            _plog("xbox", "OpenXBL HTTP error", level=logging.ERROR, method=method, path=path, status=error.code)
             if error.code == 429:
                 self._openxbl_rate_limited_until = time.monotonic() + 600
-                decky.logger.error("OpenXBL returned 429 Too Many Requests; pausing OpenXBL calls for 10 minutes")
+                _plog("xbox", "OpenXBL returned 429 Too Many Requests; pausing OpenXBL calls for 10 minutes", level=logging.ERROR)
             raise
         except Exception as error:
             _log_tls_verification_failure(request, error)
+            _plog("xbox", "OpenXBL request failed", level=logging.ERROR, exc=True, method=method, path=path, error=error)
             raise
         payload = self._unwrap_openxbl_payload(payload)
         if cache_ttl > 0:
@@ -2738,7 +2821,7 @@ class Plugin:
                     self._save_persisted_xbox_achievement_payload(app_id, match_id, payload)
                     return payload
             except Exception as error:
-                decky.logger.error(f"OpenXBL achievement fetch failed for {match_id}: {error}")
+                _plog("xbox", "OpenXBL achievement fetch failed", level=logging.ERROR, exc=True, match_id=match_id, error=error)
             return self._persisted_xbox_achievement_payload(app_id, match_id)
 
         if auto_resolve:
@@ -2797,7 +2880,7 @@ class Plugin:
             return payload
 
         if errors:
-            decky.logger.error("OpenXBL achievement fetch failed: " + " | ".join(errors))
+            _plog("xbox", "OpenXBL achievement fetch failed", level=logging.ERROR, errors=errors[-5:])
         return None
 
     def _fetch_openxbl_title_achievement_definitions(self, api_key: str, title_id: str) -> Any:
@@ -2813,7 +2896,7 @@ class Plugin:
             except Exception as error:
                 errors.append(f"{path}: {error}")
         if errors:
-            decky.logger.error("OpenXBL definition fetch failed: " + " | ".join(errors))
+            _plog("xbox", "OpenXBL definition fetch failed", level=logging.ERROR, errors=errors[-5:])
         return None
 
     def _merge_xbox_achievement_definitions(self, player_payload: Any, definition_payload: Any) -> Any:
@@ -2888,7 +2971,7 @@ class Plugin:
             if self._achievement_cache_entry_is_fresh(entry):
                 return entry.get("payload")
         except Exception as error:
-            decky.logger.error(f"Failed loading OpenXBL achievement cache: {error}")
+            _plog("xbox", "failed loading OpenXBL achievement cache", level=logging.ERROR, exc=True, path=self._xbox_achievement_cache_file, error=error)
         return None
 
     def _save_xbox_achievement_cache(self, cache_key: str, payload: Any) -> None:
@@ -2912,7 +2995,7 @@ class Plugin:
                 json.dumps(cached, ensure_ascii=False), encoding="utf-8"
             )
         except Exception as error:
-            decky.logger.error(f"Failed saving OpenXBL achievement cache: {error}")
+            _plog("xbox", "failed saving OpenXBL achievement cache", level=logging.ERROR, exc=True, path=self._xbox_achievement_cache_file, error=error)
 
     def _load_ra_achievement_cache(self, cache_key: str) -> Any | None:
         try:
@@ -2923,7 +3006,7 @@ class Plugin:
             if self._achievement_cache_entry_is_fresh(entry):
                 return entry.get("payload")
         except Exception as error:
-            decky.logger.error(f"Failed loading RetroAchievements achievement cache: {error}")
+            _plog("ra", "failed loading RetroAchievements achievement cache", level=logging.ERROR, exc=True, path=self._ra_achievement_cache_file, error=error)
         return None
 
     def _save_ra_achievement_cache(self, cache_key: str, payload: Any) -> None:
@@ -2947,7 +3030,7 @@ class Plugin:
                 json.dumps(cached, ensure_ascii=False), encoding="utf-8"
             )
         except Exception as error:
-            decky.logger.error(f"Failed saving RetroAchievements achievement cache: {error}")
+            _plog("ra", "failed saving RetroAchievements achievement cache", level=logging.ERROR, exc=True, path=self._ra_achievement_cache_file, error=error)
 
     def _resolve_xbox_from_shortcut_sync(
         self, app_id: int, title: str = "", path: str = ""
@@ -3233,25 +3316,31 @@ class Plugin:
         errors: list[str] = []
         raw_url = str(url or "").strip()
         is_reader = "r.jina.ai/http" in raw_url.casefold()
+        _plog("http", "http text request start", level=logging.DEBUG, strategy="urllib", url=raw_url, timeout=timeout)
         try:
             text = self._http_text_urllib(raw_url, timeout=timeout)
             if text and not self._looks_like_blocked_trueachievements_page(text):
                 return text
             if text:
                 errors.append(f"urllib: blocked/invalid page ({len(text)} bytes)")
+                _plog("http", "http text strategy returned blocked page", level=logging.WARNING, strategy="urllib", url=raw_url, bytes=len(text))
         except Exception as error:
             errors.append(f"urllib: {error}")
+            _plog("http", "http text strategy failed", level=logging.WARNING, strategy="urllib", url=raw_url, error=error)
 
         if (not is_reader) and "trueachievements.com" in raw_url.casefold():
             for reader_url in self._trueachievements_reader_urls(raw_url):
+                _plog("http", "http text request retry", level=logging.DEBUG, strategy="reader", url=reader_url, timeout=max(timeout, 26))
                 try:
                     text = self._http_text_urllib(reader_url, timeout=max(timeout, 26))
                     if text and not self._looks_like_blocked_trueachievements_page(text):
                         return text
                     if text:
                         errors.append(f"reader: blocked/invalid page ({len(text)} bytes)")
+                        _plog("http", "http reader returned blocked page", level=logging.WARNING, strategy="reader", url=reader_url, bytes=len(text))
                 except Exception as error:
                     errors.append(f"reader: {error}")
+                    _plog("http", "http reader strategy failed", level=logging.WARNING, strategy="reader", url=reader_url, error=error)
         raise RuntimeError("TrueAchievements fetch failed: " + " | ".join(errors[-5:]))
 
 
@@ -3271,11 +3360,13 @@ class Plugin:
     def _http_text_urllib(self, url: str, timeout: int = 18) -> str:
         request = urllib.request.Request(url, headers=self._http_request_headers())
         context = _build_https_context()
+        _plog("http", "urllib request", level=logging.DEBUG, url=url, headers=self._http_request_headers())
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
                 return response.read().decode("utf-8", errors="ignore")
         except Exception as error:
             _log_tls_verification_failure(request, error)
+            _plog("http", "urllib request failed", level=logging.WARNING, url=url, error=error)
             raise
 
     def _http_text_curl(self, url: str, timeout: int = 18) -> str:
@@ -3299,9 +3390,11 @@ class Plugin:
                 continue
             command.extend(["-H", f"{key}: {value}"])
         command.append(url)
+        _plog("http", "curl request", level=logging.DEBUG, url=url, headers=headers)
         completed = subprocess.run(command, capture_output=True, timeout=max(10, int(timeout or 18) + 5))
         if completed.returncode != 0:
             stderr = completed.stderr.decode("utf-8", errors="ignore").strip()
+            _plog("http", "curl request failed", level=logging.WARNING, url=url, returncode=completed.returncode, stderr=stderr)
             raise RuntimeError(stderr or f"curl exited {completed.returncode}")
         return completed.stdout.decode("utf-8", errors="ignore")
 
@@ -3318,6 +3411,7 @@ class Plugin:
             f"$headers={ps_headers};"
             f"(Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -TimeoutSec {max(8, int(timeout or 18))} -Headers $headers -Uri '{str(url).replace(chr(39), chr(39)+chr(39))}').Content"
         )
+        _plog("http", "PowerShell request", level=logging.DEBUG, url=url, headers=headers)
         completed = subprocess.run(
             ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
             capture_output=True,
@@ -3325,6 +3419,7 @@ class Plugin:
         )
         if completed.returncode != 0:
             stderr = completed.stderr.decode("utf-8", errors="ignore").strip()
+            _plog("http", "PowerShell request failed", level=logging.WARNING, url=url, returncode=completed.returncode, stderr=stderr)
             raise RuntimeError(stderr or f"PowerShell exited {completed.returncode}")
         return completed.stdout.decode("utf-8", errors="ignore")
 
@@ -4885,11 +4980,20 @@ class Plugin:
             headers=request_headers,
         )
         context = _build_https_context()
+        _plog(
+            "http",
+            "json request",
+            level=logging.DEBUG,
+            method=request.get_method(),
+            url=url,
+            headers=request_headers,
+        )
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
                 return json.loads(response.read().decode("utf-8", errors="ignore") or "null")
         except Exception as error:
             _log_tls_verification_failure(request, error)
+            _plog("http", "json request failed", level=logging.WARNING, method=request.get_method(), url=url, error=error)
             raise
 
     def _extract_microsoft_store_products(self, payload: Any) -> list[dict[str, Any]]:
@@ -6051,14 +6155,15 @@ class Plugin:
             _log_tls_verification_failure(request, error)
             raise
         cropper = self._xbox_cropper_name()
+        _plog("icons", "downloaded Xbox icon", level=logging.DEBUG, url=url, output_path=output_path, cropper=cropper)
         if cropper == "none":
-            decky.logger.info("Playhub no_crop mode: using uncropped icon")
+            _plog("icons", "no_crop mode: using uncropped icon", level=logging.WARNING, url=url, output_path=output_path)
             output_path.write_bytes(raw)
             return
         if cropper == "windows":
             if self._crop_xbox_icon_with_windows(raw, output_path):
                 return
-            decky.logger.info("Playhub windows crop failed, using uncropped icon")
+            _plog("icons", "windows crop failed, using uncropped icon", level=logging.WARNING, url=url, output_path=output_path)
             output_path.write_bytes(raw)
             return
 
@@ -6082,7 +6187,7 @@ class Plugin:
             image.save(buffer, format="PNG", optimize=True)
             output_path.write_bytes(buffer.getvalue())
         except Exception as error:
-            decky.logger.warning(f"Playhub Xbox icon pillow crop failed: {error}")
+            _plog("icons", "Xbox icon pillow crop failed", level=logging.WARNING, url=url, output_path=output_path, error=error)
             output_path.write_bytes(raw)
 
     def _crop_xbox_icon_with_windows(self, raw: bytes, output_path: Path) -> bool:
@@ -6095,7 +6200,7 @@ class Plugin:
         try:
             work_dir.mkdir(parents=True, exist_ok=True)
         except Exception as error:
-            decky.logger.error(f"Playhub Windows crop work dir unavailable: {error}")
+            _plog("icons", "Windows crop work dir unavailable", level=logging.ERROR, exc=True, work_dir=work_dir, error=error)
             return False
 
         script_path = work_dir / "crop-xbox-icon.ps1"
@@ -6167,10 +6272,10 @@ try {
             )
             if completed.returncode != 0:
                 detail = (completed.stderr or completed.stdout or "").strip()
-                decky.logger.error(f"Playhub Windows image crop failed: {detail}")
+                _plog("icons", "Windows image crop failed", level=logging.ERROR, returncode=completed.returncode, detail=detail)
                 return False
             if not temp_output.exists() or temp_output.stat().st_size <= 0:
-                decky.logger.error("Playhub Windows image crop produced no output")
+                _plog("icons", "Windows image crop produced no output", level=logging.ERROR, output_path=temp_output)
                 return False
             output_path.parent.mkdir(parents=True, exist_ok=True)
             os.replace(temp_output, output_path)
@@ -6180,7 +6285,7 @@ try {
                 pass
             return True
         except Exception as error:
-            decky.logger.error(f"Playhub Windows image crop failed: {error}")
+            _plog("icons", "Windows image crop failed", level=logging.ERROR, exc=True, error=error)
             return False
         finally:
             try:
@@ -6406,6 +6511,7 @@ try {
         self._load_data()
         key = str(app_id)
         if self._data["ra_game_ids"].get(key):
+            _plog("ra", "resolution reason", app_id=app_id, path=path, reason="manual_mapping_exists", game_id=self._data["ra_game_ids"].get(key))
             payload = self._fetch_ra_achievements_sync(app_id)
             return self._ra_resolution_result(
                 payload, "manual_mapping_exists", game_id=self._data["ra_game_ids"].get(key)
@@ -6413,19 +6519,23 @@ try {
 
         candidates = self._candidate_game_paths_for_resolution(app_id, path)
         if not candidates:
+            _plog("ra", "resolution reason", app_id=app_id, path=path, reason="no_candidate_path")
             return self._ra_resolution_result(None, "no_candidate_path")
 
         candidate = candidates[0]
         candidate_path = Path(str(candidate.get("path") or ""))
         if not candidate.get("suffix") or not self._is_supported_rom_path(candidate_path):
+            _plog("ra", "resolution reason", app_id=app_id, path=candidate_path, reason="unsupported_extension")
             return self._ra_resolution_result(None, "unsupported_extension", candidate)
         if not candidate.get("exists") or not candidate_path.is_file():
+            _plog("ra", "resolution reason", app_id=app_id, path=candidate_path, reason="candidate_missing")
             return self._ra_resolution_result(None, "candidate_missing", candidate)
 
         ra = self._data["settings"].get("retroachievements") or {}
         username = str(ra.get("username") or "").strip()
         api_key = str(ra.get("api_key") or "").strip()
         if not username or not api_key:
+            _plog("ra", "resolution reason", app_id=app_id, path=candidate_path, reason="api_credentials_missing")
             return self._ra_resolution_result(None, "api_credentials_missing", candidate)
 
         resolved = candidate_path.resolve()
@@ -6452,18 +6562,20 @@ try {
                     if game_id:
                         break
         except Exception as error:
-            decky.logger.error(f"RetroAchievements resolution failed: {error}")
+            _plog("ra", "resolution failed", level=logging.ERROR, exc=True, app_id=app_id, path=candidate_path, reason="api_error", error=error)
             return self._ra_resolution_result(None, "api_error", candidate)
 
         if not game_id:
+            _plog("ra", "resolution reason", app_id=app_id, path=candidate_path, reason="hash_not_found")
             return self._ra_resolution_result(None, "hash_not_found", candidate)
         self._data["ra_game_ids"][key] = int(game_id)
         self._save_data()
         try:
             payload = self._fetch_ra_achievements_sync(app_id)
         except Exception as error:
-            decky.logger.error(f"RetroAchievements achievement fetch failed: {error}")
+            _plog("ra", "achievement fetch failed after resolution", level=logging.ERROR, exc=True, app_id=app_id, path=candidate_path, reason="api_error", game_id=game_id, error=error)
             return self._ra_resolution_result(None, "api_error", candidate, game_id=game_id)
+        _plog("ra", "resolution reason", app_id=app_id, path=candidate_path, reason="matched", game_id=game_id)
         return self._ra_resolution_result(payload, "matched", candidate, game_id=game_id)
 
     def _candidate_game_paths_for_resolution(
@@ -6630,7 +6742,7 @@ try {
                         self._ra_title_index = games
                         return self._ra_title_index
         except Exception as error:
-            decky.logger.error(f"Failed loading RetroAchievements title cache: {error}")
+            _plog("ra", "failed loading RetroAchievements title cache", level=logging.ERROR, exc=True, path=self._ra_index_file, error=error)
 
         if requested_console_ids:
             games_by_console = {}
@@ -6676,9 +6788,7 @@ try {
                 console_games = self._normalise_ra_game_list(int(console_id), game_list)
                 by_console[int(console_id)] = console_games
             except Exception as error:
-                decky.logger.error(
-                    f"Failed loading RetroAchievements game list for console {console_id}: {error}"
-                )
+                _plog("ra", "failed loading RetroAchievements game list", level=logging.ERROR, exc=True, console_id=console_id, error=error)
         return by_console
 
     def _normalise_ra_game_list(
@@ -6726,7 +6836,7 @@ try {
                 encoding="utf-8",
             )
         except Exception as error:
-            decky.logger.error(f"Failed saving RetroAchievements title cache: {error}")
+            _plog("ra", "failed saving RetroAchievements title cache", level=logging.ERROR, exc=True, path=self._ra_index_file, error=error)
 
     def _ra_request_json(
         self, url: str, params: dict[str, Any], timeout: int = 25
@@ -6734,10 +6844,12 @@ try {
         context = _build_https_context()
         last_error: Exception | None = None
         for attempt in range(4):
+            request_url = f"{url}?{urllib.parse.urlencode(params)}"
             request = urllib.request.Request(
-                f"{url}?{urllib.parse.urlencode(params)}",
+                request_url,
                 headers={"User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)"},
             )
+            _plog("ra", "RetroAchievements API request", level=logging.DEBUG, url=request_url, attempt=attempt + 1)
             try:
                 with urllib.request.urlopen(
                     request, timeout=timeout, context=context
@@ -6747,6 +6859,7 @@ try {
                     )
             except urllib.error.HTTPError as error:
                 last_error = error
+                _plog("ra", "RetroAchievements API HTTP error", level=logging.WARNING, url=request_url, status=error.code, attempt=attempt + 1)
                 if error.code != 429 or attempt == 3:
                     raise
                 retry_after = error.headers.get("Retry-After")
@@ -6757,6 +6870,7 @@ try {
                 time.sleep(delay)
             except Exception as error:
                 _log_tls_verification_failure(request, error)
+                _plog("ra", "RetroAchievements API request failed", level=logging.ERROR, exc=True, url=request_url, attempt=attempt + 1, error=error)
                 raise
         if last_error:
             raise last_error
@@ -6942,7 +7056,7 @@ try {
                     if self._hash_library:
                         return
         except Exception as error:
-            decky.logger.error(f"Failed loading cached RetroAchievements hashes: {error}")
+            _plog("ra", "failed loading cached RetroAchievements hashes", level=logging.ERROR, exc=True, path=self._ra_hash_file, error=error)
 
         request = urllib.request.Request(
             RETROACHIEVEMENTS_HASH_LIBRARY_URL,
@@ -6954,7 +7068,7 @@ try {
                 payload = json.loads(response.read().decode("utf-8", errors="ignore"))
         except Exception as error:
             _log_tls_verification_failure(request, error)
-            decky.logger.error(f"Failed loading RetroAchievements hash library: {error}")
+            _plog("ra", "failed loading RetroAchievements hash library", level=logging.ERROR, exc=True, url=RETROACHIEVEMENTS_HASH_LIBRARY_URL, error=error)
             return
         md5list = payload.get("MD5List") or payload.get("md5list") or {}
         if isinstance(md5list, dict):
@@ -6973,7 +7087,7 @@ try {
                     encoding="utf-8",
                 )
             except Exception as error:
-                decky.logger.error(f"Failed saving RetroAchievements hashes: {error}")
+                _plog("ra", "failed saving RetroAchievements hashes", level=logging.ERROR, exc=True, path=self._ra_hash_file, error=error)
 
     def _retro_payload_to_steam(
         self, payload: dict[str, Any], game_id: int
@@ -7068,7 +7182,7 @@ try {
         seen: set[tuple[int, str, str, str]] = set()
         for base in self._steam_userdata_roots():
             if not base.exists():
-                decky.logger.debug(f"Steam userdata root not found: {base}")
+                _plog("shortcuts", "Steam userdata root not found", level=logging.DEBUG, base=base)
                 continue
             try:
                 for user_dir in base.iterdir():
@@ -7076,9 +7190,11 @@ try {
                         continue
                     shortcut_file = user_dir / "config" / "shortcuts.vdf"
                     if not shortcut_file.exists() or not shortcut_file.is_file():
-                        decky.logger.debug(f"Steam shortcuts file not found: {shortcut_file}")
+                        _plog("shortcuts", "Steam shortcuts file not found", level=logging.DEBUG, path=shortcut_file)
                         continue
-                    for shortcut in self._extract_shortcuts_from_vdf(shortcut_file):
+                    extracted = self._extract_shortcuts_from_vdf(shortcut_file)
+                    _plog("shortcuts", "shortcuts.vdf parsed", path=shortcut_file, count=len(extracted))
+                    for shortcut in extracted:
                         name = self._clean_game_title(str(shortcut.get("name") or ""))
                         exe = str(shortcut.get("exe") or "")
                         start_dir = str(shortcut.get("start_dir") or "")
@@ -7112,7 +7228,8 @@ try {
                             )
                             shortcuts.append(item)
             except Exception as error:
-                decky.logger.error(f"Failed reading Steam shortcuts: {error}")
+                _plog("shortcuts", "failed reading Steam shortcuts", level=logging.ERROR, exc=True, base=base, error=error)
+        _plog("shortcuts", "steam shortcuts returned", count=len(shortcuts))
         return shortcuts
 
     def _steam_userdata_roots(self) -> list[Path]:
@@ -7143,7 +7260,7 @@ try {
                 roots.append(resolved)
                 seen.add(key)
             except Exception as error:
-                decky.logger.debug(f"Skipping unreadable Steam userdata root {candidate}: {error}")
+                _plog("shortcuts", "skipping unreadable Steam userdata root", level=logging.DEBUG, candidate=candidate, error=error)
         return roots
 
     def _read_windows_steam_path(self) -> Path | None:
@@ -7167,19 +7284,17 @@ try {
             try:
                 size = path.stat().st_size
             except Exception as error:
-                decky.logger.debug(f"Failed stat for shortcuts.vdf {path}: {error}")
+                _plog("shortcuts", "failed stat for shortcuts.vdf", level=logging.WARNING, path=path, error=error)
                 return []
             if size <= 0:
-                decky.logger.debug(f"Steam shortcuts file is empty: {path}")
+                _plog("shortcuts", "Steam shortcuts file is empty", level=logging.DEBUG, path=path)
                 return []
             if size > MAX_SHORTCUTS_VDF_BYTES:
-                decky.logger.debug(
-                    f"Steam shortcuts file too large: {path} ({size} bytes)"
-                )
+                _plog("shortcuts", "Steam shortcuts file too large", level=logging.WARNING, path=path, size=size, cap=MAX_SHORTCUTS_VDF_BYTES)
                 return []
             data = path.read_bytes()
         except Exception as error:
-            decky.logger.debug(f"Failed reading shortcuts.vdf {path}: {error}")
+            _plog("shortcuts", "failed reading shortcuts.vdf", level=logging.WARNING, path=path, exc=True, error=error)
             return []
         try:
             root, _pos = self._parse_binary_vdf_object(data, 0)
@@ -7188,9 +7303,7 @@ try {
                 shortcuts: list[dict[str, Any]] = []
                 for value in container.values():
                     if len(shortcuts) >= MAX_SHORTCUTS_VDF_ENTRIES:
-                        decky.logger.debug(
-                            f"Steam shortcuts entry cap reached for {path}"
-                        )
+                        _plog("shortcuts", "Steam shortcuts entry cap reached", level=logging.WARNING, path=path, cap=MAX_SHORTCUTS_VDF_ENTRIES)
                         break
                     if not isinstance(value, dict):
                         continue
@@ -7229,9 +7342,10 @@ try {
                                 "shortcut_file": str(path),
                             }
                         )
+                _plog("shortcuts", "binary shortcuts.vdf parsed", level=logging.DEBUG, path=path, count=len(shortcuts))
                 return shortcuts
         except Exception as error:
-            decky.logger.debug(f"Failed parsing shortcuts.vdf {path}: {error}")
+            _plog("shortcuts", "failed parsing binary shortcuts.vdf", level=logging.WARNING, path=path, exc=True, error=error)
         text = data.decode("utf-8", errors="replace")
         names = re.findall(r"appname\x00([^\x00]+)", text, flags=re.IGNORECASE)
         exes = re.findall(r"exe\x00([^\x00]+)", text, flags=re.IGNORECASE)
@@ -7717,7 +7831,7 @@ try {
                         check=True,
                     )
                 except Exception as error:
-                    decky.logger.error(f"RetroAchievements hash helper failed: {error}")
+                    _plog("ra", "RetroAchievements hash helper failed", level=logging.ERROR, exc=True, path=path, helper=helper, error=error)
                     continue
                 match = re.search(r"[0-9a-fA-F]{32}", result.stdout or "")
                 if match:
@@ -7748,7 +7862,7 @@ try {
                     return self._bytes_hash_candidates(data, Path(entry.filename))
                 return [self._md5_file(path)]
         except Exception as error:
-            decky.logger.error(f"Failed hashing zip ROM {path}: {error}")
+            _plog("ra", "failed hashing zip ROM", level=logging.ERROR, exc=True, path=path, error=error)
             return [self._md5_file(path)]
 
     def _file_hash_candidates(self, path: Path) -> list[str]:
@@ -7757,7 +7871,7 @@ try {
             if size <= min(ROM_HASH_MEMORY_BYTES, MAX_ROM_HASH_BYTES):
                 return self._bytes_hash_candidates(path.read_bytes(), path)
         except Exception as error:
-            decky.logger.error(f"Failed reading ROM for candidate hashes {path}: {error}")
+            _plog("ra", "failed reading ROM for candidate hashes", level=logging.ERROR, exc=True, path=path, error=error)
         return [self._md5_file(path)]
 
     def _bytes_hash_candidates(self, data: bytes, path: Path) -> list[str]:
