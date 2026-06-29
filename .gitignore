@@ -4,6 +4,7 @@ node_modules/
 *.log
 __pycache__/
 *.py[cod]
+.pytest_cache/
 *.zip
 
 # orchestration engine: machine/trial-only config override

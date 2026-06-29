@@ -7,9 +7,10 @@
 #   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
 #   - a single-file Python backend (main.py)
 #
-# There is no automated test suite yet, so the gate is a build + static check:
+# The gate is a build + static check + Python unit test pass:
 #   1. TypeScript type-check (tsc --noEmit) and rollup production build
 #   2. Python backend byte-compile (syntax check) of main.py
+#   3. Python tests when tests/ exists
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -38,6 +39,13 @@ fi
 if [[ -f main.py ]]; then
   python_bin="$(command -v python3 || command -v python)"
   "$python_bin" -m py_compile main.py
+fi
+
+# --- backend: Python tests ---------------------------------------------------
+if [[ -d tests ]]; then
+  export UV_CACHE_DIR="/tmp/Playhub-Metadata-local/.uv"
+  mkdir -p "$UV_CACHE_DIR"
+  uv run --with pytest -- pytest -q
 fi
 
 echo "quality-gates: OK"
