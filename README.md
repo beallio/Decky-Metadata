@@ -103,6 +103,13 @@ Playhub Metadata lets you choose when achievement data should refresh:
 
 Manual mode is useful if you want fewer API calls and prefer refreshing only when you explicitly scan or sync.
 
+## Platform Diagnostics
+
+The Decky settings panel includes a compact diagnostics section that shows the
+detected platform, SteamOS status, local Steam root, and which Playhub capability
+flags are available on the current host. This readout stays local to the panel
+and does not include API keys or tokens.
+
 ## Notes
 
 Keep in mind that Playhub Metadata does not turn non-Steam achievements into "real" Steam achievements. It just displays supported achievement data inside Steam Big Picture.
