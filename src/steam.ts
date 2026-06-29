@@ -3583,11 +3583,14 @@ const loadAchievementsForApp = async (appId: number) => {
         details?.strShortcutLaunchOptions || ""
       }`;
       if (launchPath.trim()) {
-        payload = await resolveRetroAchievementsFromPath(
+        const resolvedPayload = await resolveRetroAchievementsFromPath(
           appId,
           launchPath,
           appName(appId)
         );
+        if (resolvedPayload?.steam) {
+          payload = resolvedPayload as AchievementsResponse;
+        }
       }
     }
     if (payload) applyAchievementPayload(appId, payload);

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "quoted_path_with_spaces",
+    "exe": "/usr/bin/retroarch",
+    "launch_options": "-L /home/deck/.var/app/org.libretro.RetroArch/config/retroarch/cores/snes9x_libretro.so \"/home/deck/Emulation/roms/snes/Chrono Trigger (USA).sfc\"",
+    "expected": "/home/deck/Emulation/roms/snes/Chrono Trigger (USA).sfc"
+  },
+  {
+    "name": "sd_card_path",
+    "exe": "/usr/bin/retroarch",
+    "launch_options": "\"/run/media/mmcblk0p1/Emulation/roms/gba/Metroid Fusion.gba\"",
+    "expected": "/run/media/mmcblk0p1/Emulation/roms/gba/Metroid Fusion.gba"
+  },
+  {
+    "name": "appimage",
+    "exe": "/home/deck/Applications/DuckStation.AppImage",
+    "launch_options": "\"/home/deck/Emulation/roms/psx/Ridge Racer.cue\"",
+    "expected": "/home/deck/Emulation/roms/psx/Ridge Racer.cue"
+  }
+]

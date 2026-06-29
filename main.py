@@ -13,6 +13,7 @@ import html
 import json
 import os
 import re
+import shlex
 import shutil
 import ssl
 import subprocess
@@ -6374,35 +6375,99 @@ try {
         self, app_id: int, path: str, title: str = ""
     ) -> dict[str, Any] | None:
         self._load_data()
-        resolved = self._extract_rom_path(path)
+        key = str(app_id)
+        if self._data["ra_game_ids"].get(key):
+            payload = self._fetch_ra_achievements_sync(app_id)
+            return self._ra_resolution_result(
+                payload, "manual_mapping_exists", game_id=self._data["ra_game_ids"].get(key)
+            )
+
+        candidates = self._candidate_game_paths_for_resolution(app_id, path)
+        if not candidates:
+            return self._ra_resolution_result(None, "no_candidate_path")
+
+        candidate = candidates[0]
+        candidate_path = Path(str(candidate.get("path") or ""))
+        if not candidate.get("suffix") or not self._is_supported_rom_path(candidate_path):
+            return self._ra_resolution_result(None, "unsupported_extension", candidate)
+        if not candidate.get("exists") or not candidate_path.is_file():
+            return self._ra_resolution_result(None, "candidate_missing", candidate)
+
+        ra = self._data["settings"].get("retroachievements") or {}
+        username = str(ra.get("username") or "").strip()
+        api_key = str(ra.get("api_key") or "").strip()
+        if not username or not api_key:
+            return self._ra_resolution_result(None, "api_credentials_missing", candidate)
+
+        resolved = candidate_path.resolve()
         game_id = None
 
-        if resolved:
+        try:
             if not self._hash_library:
                 self._load_hash_library()
             if self._hash_library:
                 digest = ""
-                for candidate in self._retroachievements_hash_candidates(resolved):
-                    digest = candidate.lower()
+                for digest_candidate in self._retroachievements_hash_candidates(resolved):
+                    digest = digest_candidate.lower()
                     game_id = self._hash_library.get(digest)
                     if game_id:
                         break
 
-        if not game_id:
-            for fallback_title in self._retroachievements_title_candidates(
-                app_id, path, title, resolved
-            ):
-                game_id = self._resolve_ra_game_id_by_title(
-                    fallback_title, app_id=app_id, path=path, resolved=resolved
-                )
-                if game_id:
-                    break
+            if not game_id:
+                for fallback_title in self._retroachievements_title_candidates(
+                    app_id, path, title, resolved
+                ):
+                    game_id = self._resolve_ra_game_id_by_title(
+                        fallback_title, app_id=app_id, path=path, resolved=resolved
+                    )
+                    if game_id:
+                        break
+        except Exception as error:
+            decky.logger.error(f"RetroAchievements resolution failed: {error}")
+            return self._ra_resolution_result(None, "api_error", candidate)
 
         if not game_id:
-            return None
-        self._data["ra_game_ids"][str(app_id)] = int(game_id)
+            return self._ra_resolution_result(None, "hash_not_found", candidate)
+        self._data["ra_game_ids"][key] = int(game_id)
         self._save_data()
-        return self._fetch_ra_achievements_sync(app_id)
+        try:
+            payload = self._fetch_ra_achievements_sync(app_id)
+        except Exception as error:
+            decky.logger.error(f"RetroAchievements achievement fetch failed: {error}")
+            return self._ra_resolution_result(None, "api_error", candidate, game_id=game_id)
+        return self._ra_resolution_result(payload, "matched", candidate, game_id=game_id)
+
+    def _candidate_game_paths_for_resolution(
+        self, app_id: int, path: str
+    ) -> list[dict[str, Any]]:
+        shortcut: dict[str, Any] | None = None
+        try:
+            shortcut = self._shortcut_for_app(app_id)
+        except Exception:
+            shortcut = None
+        if shortcut:
+            candidates = self.extract_candidate_game_paths(
+                str(shortcut.get("exe") or path or ""),
+                str(shortcut.get("launch_options") or ""),
+                str(shortcut.get("start_dir") or ""),
+            )
+            if candidates:
+                return candidates
+        return self.extract_candidate_game_paths("", path, "")
+
+    @staticmethod
+    def _ra_resolution_result(
+        payload: dict[str, Any] | None,
+        reason: str,
+        candidate: dict[str, Any] | None = None,
+        game_id: Any = None,
+    ) -> dict[str, Any]:
+        result = dict(payload) if isinstance(payload, dict) else {"provider": "retroachievements"}
+        result["reason"] = reason
+        result["candidate"] = candidate
+        if game_id is not None and "game_id" not in result:
+            result["game_id"] = int(game_id)
+        return result
 
     def _resolve_ra_game_id_by_title(
         self,
@@ -7421,15 +7486,150 @@ try {
             return fallback
 
     def _extract_rom_path(self, value: str) -> Path | None:
-        text = str(value or "").strip()
-        for raw in self._path_candidates_from_text(text):
-            path = Path(raw.strip().strip('"')).expanduser()
-            if self._is_supported_rom_path(path) and path.exists() and path.is_file():
+        for candidate in self.extract_candidate_game_paths("", value, ""):
+            if not candidate.get("exists"):
+                continue
+            path = Path(str(candidate.get("path") or ""))
+            if self._is_supported_rom_path(path) and path.is_file():
                 return path.resolve()
-        path = Path(text.strip('"')).expanduser()
-        if self._is_supported_rom_path(path) and path.exists() and path.is_file():
-            return path.resolve()
         return None
+
+    def extract_candidate_game_paths(
+        self, exe: str, launch_options: str = "", start_dir: str = ""
+    ) -> list[dict[str, Any]]:
+        candidates: list[dict[str, Any]] = []
+        seen: set[str] = set()
+
+        exe_text = str(exe or "").strip()
+        launch_text = str(launch_options or "").strip()
+        if "%command%" in launch_text:
+            launch_text = launch_text.replace("%command%", exe_text)
+
+        def add_candidate(raw: str, source: str, index: int) -> None:
+            cleaned = self._normalise_launch_path_token(raw)
+            if not cleaned:
+                return
+            if not self._is_plausible_launch_path_token(cleaned):
+                return
+            suffix = self._rom_suffix_for_path_value(cleaned)
+            if not suffix:
+                return
+            if suffix == ".app" and self._looks_like_reverse_domain_identifier(cleaned):
+                return
+            path = Path(cleaned)
+            exists = path.exists() and path.is_file()
+            key = str(path)
+            if key in seen:
+                return
+            seen.add(key)
+            source_penalty = {"launch_options": 0.0, "shell_command": 0.02, "exe": 0.08, "start_dir": 0.16}.get(source, 0.1)
+            score = 1.0 - source_penalty + max(0.0, 0.35 - (index * 0.015))
+            if exists:
+                score += 1.0
+            if self._looks_like_rom_storage_path(cleaned):
+                score += 0.2
+            candidates.append(
+                {
+                    "path": str(path),
+                    "exists": exists,
+                    "suffix": suffix,
+                    "source": source,
+                    "score": round(score, 4),
+                }
+            )
+
+        def collect(text: str, source: str, depth: int = 0) -> None:
+            if not text or depth > 3:
+                return
+            tokens = self._tokenize_launch_text(text)
+            for index, token in enumerate(tokens):
+                add_candidate(token, source, index)
+            for index, token in enumerate(tokens):
+                if Path(token).name.casefold() in {"bash", "sh"} and index + 2 < len(tokens) and tokens[index + 1] == "-c":
+                    collect(tokens[index + 2], "shell_command", depth + 1)
+                if token == "-c" and index + 1 < len(tokens):
+                    collect(tokens[index + 1], "shell_command", depth + 1)
+
+        collect(launch_text, "launch_options")
+        if self._is_shell_launcher(exe_text):
+            tokens = self._tokenize_launch_text(launch_text)
+            if "-c" in tokens:
+                command_index = tokens.index("-c") + 1
+                if command_index < len(tokens):
+                    collect(tokens[command_index], "shell_command")
+        collect(exe_text, "exe")
+        collect(str(start_dir or "").strip(), "start_dir")
+
+        candidates.sort(key=lambda item: float(item["score"]), reverse=True)
+        return candidates
+
+    @staticmethod
+    def _tokenize_launch_text(text: str) -> list[str]:
+        value = str(text or "").strip()
+        if not value:
+            return []
+        try:
+            return shlex.split(value, posix=True)
+        except ValueError:
+            return value.split()
+
+    @staticmethod
+    def _normalise_launch_path_token(value: str) -> str:
+        text = str(value or "").strip().strip('"').strip("'")
+        if not text:
+            return ""
+        if text.startswith("file://"):
+            text = text[7:]
+        try:
+            text = urllib.parse.unquote(text)
+        except Exception:
+            pass
+        text = os.path.expandvars(os.path.expanduser(text))
+        return text.rstrip(",;")
+
+    @staticmethod
+    def _is_shell_launcher(value: str) -> bool:
+        token = Path(str(value or "").strip().strip('"')).name.casefold()
+        return token in {"bash", "sh"}
+
+    @staticmethod
+    def _looks_like_rom_storage_path(value: str) -> bool:
+        lowered = str(value or "").casefold()
+        return (
+            "/emulation/roms/" in lowered
+            or lowered.startswith("/run/media/")
+            or "/roms/" in lowered
+        )
+
+    @staticmethod
+    def _is_plausible_launch_path_token(value: str) -> bool:
+        text = str(value or "").strip()
+        if not text:
+            return False
+        if re.match(r"^[A-Za-z]:[\\/]", text):
+            return True
+        if text.startswith(("/", "~", "$HOME", "${HOME}", "file://")):
+            return True
+        if any(character.isspace() for character in text):
+            return False
+        if "/" in text or "\\" in text:
+            return True
+        return True
+
+    @staticmethod
+    def _looks_like_reverse_domain_identifier(value: str) -> bool:
+        text = str(value or "").strip()
+        if "/" in text or "\\" in text:
+            return False
+        return bool(re.fullmatch(r"[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){2,}", text))
+
+    @staticmethod
+    def _rom_suffix_for_path_value(value: str) -> str:
+        name = Path(str(value or "")).name.casefold()
+        for ext in sorted(ROM_EXTENSIONS, key=len, reverse=True):
+            if name.endswith(ext.casefold()):
+                return ext
+        return ""
 
     def _path_candidates_from_text(self, text: str) -> list[str]:
         candidates: list[str] = []

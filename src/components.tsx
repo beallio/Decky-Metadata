@@ -61,6 +61,7 @@ import {
 import {
   AchievementSource,
   AchievementCachePolicy,
+  AchievementsResponse,
   CATEGORY_LABELS,
   GameOption,
   MetadataData,
@@ -72,6 +73,27 @@ import {
   XboxSettings,
   XboxTitleResult,
 } from "./types";
+
+const retroResolutionMessageKey = (reason?: string) => {
+  switch (reason) {
+    case "no_candidate_path":
+      return "retroDetectNoCandidate";
+    case "candidate_missing":
+      return "retroDetectCandidateMissing";
+    case "unsupported_extension":
+      return "retroDetectUnsupportedExtension";
+    case "hash_not_found":
+      return "retroDetectHashNotFound";
+    case "api_credentials_missing":
+      return "retroDetectCredentialsMissing";
+    case "api_error":
+      return "retroDetectApiError";
+    case "manual_mapping_exists":
+      return "retroDetectManualMapping";
+    default:
+      return "retroDetectFailed";
+  }
+};
 
 const FocusableButton = (props: any) => (
   <DialogButton focusable={true} {...props} />
@@ -1012,7 +1034,8 @@ export const MetadataPage = () => {
       launchPath,
       appName(appId)
     );
-    applyAchievementPayload(appId, payload);
+    const achievementPayload = payload?.steam ? (payload as AchievementsResponse) : null;
+    applyAchievementPayload(appId, achievementPayload);
     if (payload?.steam?.nTotal) {
       setRaGameId(String(payload.game_id));
       await saveAchievementSource("retroachievements");
@@ -1022,7 +1045,7 @@ export const MetadataPage = () => {
       title: t("pluginName"),
       body: payload?.steam?.nTotal
         ? `${t("retroGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("retroDetectFailed"),
+        : t(retroResolutionMessageKey(payload?.reason) as any),
     });
   };
 

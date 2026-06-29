@@ -200,6 +200,13 @@ const STRINGS = {
         retroGameOk: "Achievements loaded",
         retroGameFailed: "No achievements loaded. Check the RetroAchievements game ID.",
         retroDetectFailed: "No RetroAchievements match found from this game's shortcut path.",
+        retroDetectNoCandidate: "No ROM path was detected from this Steam shortcut. Use manual RetroAchievements search or check the launch options.",
+        retroDetectCandidateMissing: "The detected ROM path does not exist. Check the shortcut launch options or pick the game manually.",
+        retroDetectUnsupportedExtension: "The detected path is not a supported ROM file. Use manual RetroAchievements search or check the shortcut target.",
+        retroDetectHashNotFound: "No RetroAchievements game matched the detected ROM. Search manually and pick the closest entry.",
+        retroDetectCredentialsMissing: "Add your RetroAchievements username and API key before auto-detecting achievements.",
+        retroDetectApiError: "RetroAchievements lookup failed. Try again later or search manually.",
+        retroDetectManualMapping: "This game already has a RetroAchievements game ID. Manual selection was kept.",
         retroHint: "Paste the numeric RetroAchievements game ID from the game page URL. Leave empty to hide achievements for this game.",
         xboxTitle: "Xbox achievements / OpenXBL",
         xboxEnabled: "Enable Xbox achievements",
@@ -325,6 +332,13 @@ const STRINGS = {
         retroGameOk: "Obiettivi caricati",
         retroGameFailed: "Nessun obiettivo caricato. Controlla l'ID gioco RetroAchievements.",
         retroDetectFailed: "Nessun match RetroAchievements trovato dal percorso del collegamento.",
+        retroDetectNoCandidate: "Nessun percorso ROM rilevato dal collegamento Steam. Usa la ricerca manuale RetroAchievements o controlla le opzioni di avvio.",
+        retroDetectCandidateMissing: "Il percorso ROM rilevato non esiste. Controlla le opzioni di avvio o scegli il gioco manualmente.",
+        retroDetectUnsupportedExtension: "Il percorso rilevato non e un file ROM supportato. Usa la ricerca manuale RetroAchievements o controlla il collegamento.",
+        retroDetectHashNotFound: "Nessun gioco RetroAchievements corrisponde alla ROM rilevata. Cerca manualmente e scegli la voce piu vicina.",
+        retroDetectCredentialsMissing: "Aggiungi username e API key RetroAchievements prima del rilevamento automatico.",
+        retroDetectApiError: "Ricerca RetroAchievements non riuscita. Riprova piu tardi o cerca manualmente.",
+        retroDetectManualMapping: "Questo gioco ha gia un ID RetroAchievements. La selezione manuale e stata mantenuta.",
         retroHint: "Incolla l'ID numerico RetroAchievements dall'URL della pagina del gioco. Lascialo vuoto per nascondere gli obiettivi di questo gioco.",
         xboxTitle: "Obiettivi Xbox / OpenXBL",
         xboxEnabled: "Abilita obiettivi Xbox",
@@ -2644,7 +2658,10 @@ const loadAchievementsForApp = async (appId) => {
             const details = await getAppDetails(appId);
             const launchPath = `${details?.strShortcutExe || ""} ${details?.strShortcutLaunchOptions || ""}`;
             if (launchPath.trim()) {
-                payload = await resolveRetroAchievementsFromPath(appId, launchPath, appName(appId));
+                const resolvedPayload = await resolveRetroAchievementsFromPath(appId, launchPath, appName(appId));
+                if (resolvedPayload?.steam) {
+                    payload = resolvedPayload;
+                }
             }
         }
         if (payload)
@@ -3615,6 +3632,26 @@ const allNonSteamGames = async () => {
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
 
+const retroResolutionMessageKey = (reason) => {
+    switch (reason) {
+        case "no_candidate_path":
+            return "retroDetectNoCandidate";
+        case "candidate_missing":
+            return "retroDetectCandidateMissing";
+        case "unsupported_extension":
+            return "retroDetectUnsupportedExtension";
+        case "hash_not_found":
+            return "retroDetectHashNotFound";
+        case "api_credentials_missing":
+            return "retroDetectCredentialsMissing";
+        case "api_error":
+            return "retroDetectApiError";
+        case "manual_mapping_exists":
+            return "retroDetectManualMapping";
+        default:
+            return "retroDetectFailed";
+    }
+};
 const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
 const pageStyle = {
     padding: 24,
@@ -4221,7 +4258,8 @@ const MetadataPage = () => {
             return;
         }
         const payload = await resolveRetroAchievementsFromPath(appId, launchPath, appName(appId));
-        applyAchievementPayload(appId, payload);
+        const achievementPayload = payload?.steam ? payload : null;
+        applyAchievementPayload(appId, achievementPayload);
         if (payload?.steam?.nTotal) {
             setRaGameId(String(payload.game_id));
             await saveAchievementSource("retroachievements");
@@ -4231,7 +4269,7 @@ const MetadataPage = () => {
             title: t("pluginName"),
             body: payload?.steam?.nTotal
                 ? `${t("retroGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-                : t("retroDetectFailed"),
+                : t(retroResolutionMessageKey(payload?.reason)),
         });
     };
     const searchAchievements = async () => {

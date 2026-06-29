@@ -1,0 +1,8 @@
+[
+  {
+    "name": "flatpak_retroarch",
+    "exe": "/usr/bin/flatpak",
+    "launch_options": "run org.libretro.RetroArch -L /home/deck/.var/app/org.libretro.RetroArch/config/retroarch/cores/mgba_libretro.so \"/home/deck/Emulation/roms/gba/Advance Wars.gba\"",
+    "expected": "/home/deck/Emulation/roms/gba/Advance Wars.gba"
+  }
+]
