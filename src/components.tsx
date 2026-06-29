@@ -57,6 +57,7 @@ import {
   refreshMetadataCache,
   refreshRaSettings,
   isUwphookGameOption,
+  patchInstallStatus,
 } from "./steam";
 import {
   AchievementSource,
@@ -866,6 +867,16 @@ export const Content = () => {
                           ? t("diagnosticsYes")
                           : t("diagnosticsNo")}
                       </span>
+                    </div>
+                  ))}
+                  <div style={diagnosticsRowStyle}>
+                    <span>Patch Status</span>
+                    <span />
+                  </div>
+                  {Object.entries(patchInstallStatus).map(([patchName, status]) => (
+                    <div key={patchName} style={diagnosticsRowStyle}>
+                      <span>{patchName}</span>
+                      <span style={diagnosticsValueStyle}>{status}</span>
                     </div>
                   ))}
                 </div>

@@ -28,6 +28,19 @@ declare const appDetailsCache: any;
 declare const appAchievementProgressCache: any;
 declare const SteamClient: any;
 
+export const patchInstallStatus = {
+  achievements: "pending",
+  activity: "pending",
+  partnerEvents: "pending",
+  contextMenu: "pending",
+  router: "pending"
+};
+
+export const hasSteamInternals = () => !!(globalThis as any).SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+export const hasAchievementProgressCache = () => typeof appAchievementProgressCache !== "undefined" && !!appAchievementProgressCache;
+export const hasActivityStore = () => !!(globalThis as any).appActivityStore;
+export const hasAppDetailsStore = () => typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+
 type Unpatch = () => void;
 
 export const metadataCache: Record<string, MetadataData> = {};
@@ -1279,35 +1292,49 @@ const refreshPlayhubNativeActivityForApp = async (appId: number, store?: any) =>
 const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
   let attempts = 0;
   const tryInstall = (): boolean => {
+    if (!hasActivityStore()) {
+      if (patchInstallStatus.activity === "pending") {
+        console.warn("[Playhub Metadata] missing activity store, skipping activity UI patch");
+        patchInstallStatus.activity = "skipped-missing-internal";
+      }
+      return true;
+    }
     const store = (globalThis as any).appActivityStore;
     if (!store || store.__playhubNativeActivityPatched) return !!store?.__playhubNativeActivityPatched;
-    store.__playhubNativeActivityPatched = true;
-    unpatchers.push(
-      patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
-        const appId = Number(args[0]);
-        const native = getPlayhubNativeActivityForApp(appId);
-        if (native) return native;
-        if (appId && isNonSteamApp(getOverview(appId))) {
-          void refreshPlayhubNativeActivityForApp(appId, store);
-        }
-        return original(...args);
-      })
-    );
-    for (const methodName of ["RequestRestoreActivity", "RestoreActivity", "FetchLatestActivity", "FetchLatestActivityFromServer", "FetchActivityHistory"] as const) {
-      if (typeof store[methodName] !== "function") continue;
+    try {
+      store.__playhubNativeActivityPatched = true;
       unpatchers.push(
-        patchMethod(store, methodName, (_thisValue, original, args) => {
+        patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
           const appId = Number(args[0]);
           const native = getPlayhubNativeActivityForApp(appId);
-          if (native) return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
+          if (native) return native;
           if (appId && isNonSteamApp(getOverview(appId))) {
             void refreshPlayhubNativeActivityForApp(appId, store);
           }
           return original(...args);
         })
       );
+      for (const methodName of ["RequestRestoreActivity", "RestoreActivity", "FetchLatestActivity", "FetchLatestActivityFromServer", "FetchActivityHistory"] as const) {
+        if (typeof store[methodName] !== "function") continue;
+        unpatchers.push(
+          patchMethod(store, methodName, (_thisValue, original, args) => {
+            const appId = Number(args[0]);
+            const native = getPlayhubNativeActivityForApp(appId);
+            if (native) return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
+            if (appId && isNonSteamApp(getOverview(appId))) {
+              void refreshPlayhubNativeActivityForApp(appId, store);
+            }
+            return original(...args);
+          })
+        );
+      }
+      patchInstallStatus.activity = "installed";
+      return true;
+    } catch (error) {
+      console.warn("[Playhub Metadata] activity store patch failed", error);
+      patchInstallStatus.activity = "failed";
+      return true;
     }
-    return true;
   };
   if (tryInstall()) return;
   const timer = window.setInterval(() => {
@@ -1462,10 +1489,26 @@ const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
   };
 
   const tryInstall = (): boolean => {
-    const stores = collectNativePartnerEventStores();
-    let patchedAny = false;
-    for (const store of stores) patchedAny = patchOneStore(store) || patchedAny;
-    return patchedAny;
+    if (!hasSteamInternals()) {
+      if (patchInstallStatus.partnerEvents === "pending") {
+        console.warn("[Playhub Metadata] missing steam internals, skipping partner events UI patch");
+        patchInstallStatus.partnerEvents = "skipped-missing-internal";
+      }
+      return true;
+    }
+    try {
+      const stores = collectNativePartnerEventStores();
+      let patchedAny = false;
+      for (const store of stores) patchedAny = patchOneStore(store) || patchedAny;
+      if (patchedAny) {
+        patchInstallStatus.partnerEvents = "installed";
+      }
+      return patchedAny;
+    } catch (error) {
+      console.warn("[Playhub Metadata] partner event store patch failed", error);
+      patchInstallStatus.partnerEvents = "failed";
+      return true;
+    }
   };
 
   if (tryInstall()) return;
@@ -3629,6 +3672,13 @@ let achievementStorePatchInstalled = false;
 
 const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
   if (achievementStorePatchInstalled) return true;
+  if (!hasAchievementProgressCache()) {
+    if (patchInstallStatus.achievements === "pending") {
+      console.warn("[Playhub Metadata] missing achievement progress cache, skipping achievement UI patch");
+      patchInstallStatus.achievements = "skipped-missing-internal";
+    }
+    return true;
+  }
   try {
     const achievementsStore = findModuleChild((module: any) => {
       if (!module || typeof module !== "object") return undefined;
@@ -3697,10 +3747,12 @@ const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
     }
 
     achievementStorePatchInstalled = true;
+    patchInstallStatus.achievements = "installed";
     return true;
   } catch (error) {
-    console.warn("[Playhub Metadata] achievement store patch skipped", error);
-    return false;
+    console.warn("[Playhub Metadata] achievement store patch failed", error);
+    patchInstallStatus.achievements = "failed";
+    return true;
   }
 };
 
@@ -4152,15 +4204,13 @@ export const installSteamPatches = (): Unpatch => {
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
   const detailsProto = appDetailsStore?.__proto__;
 
-  if (!overviewProto || !detailsProto) {
+  if (!hasSteamInternals() || !overviewProto || !detailsProto) {
     let cancelled = false;
     let delayedUnpatch: Unpatch | null = null;
     let retryId: number | undefined;
     const retry = () => {
       if (cancelled) return;
-      const ready =
-        appStore?.allApps?.[0]?.__proto__ && appDetailsStore?.__proto__;
-      if (ready) {
+      if (hasSteamInternals()) {
         delayedUnpatch = installSteamPatches();
         return;
       }
@@ -4184,7 +4234,8 @@ export const installSteamPatches = (): Unpatch => {
     return "";
   };
 
-  if ((Navigation as any)?.Navigate) {
+  try {
+    if ((Navigation as any)?.Navigate) {
     unpatchers.push(
       patchMethod(Navigation as any, "Navigate", (_thisValue, original, args) => {
         const redirected = redirectAchievementTarget(args[0]);
@@ -4307,6 +4358,11 @@ export const installSteamPatches = (): Unpatch => {
   };
   const routeGuardTimer = window.setInterval(routeGuard, 250);
   unpatchers.push(() => window.clearInterval(routeGuardTimer));
+  patchInstallStatus.router = "installed";
+  } catch (error) {
+    console.warn("[Playhub Metadata] router patch failed", error);
+    patchInstallStatus.router = "failed";
+  }
 
   if (appStore?.GetAppOverviewByAppID) {
     unpatchers.push(
