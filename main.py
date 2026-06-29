@@ -206,6 +206,7 @@ TRUEACHIEVEMENTS_BASE_URL = "https://www.trueachievements.com"
 STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
 STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
 STEAM_EVENTS_URL = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/"
+STEAM_DECK_COMPAT_URL = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport"
 STEAM_STORE_APP_URL = "https://store.steampowered.com/app/{appid}/"
 STEAM_ACTIVITY_EVENT_TYPES = {12, 13, 14, 15, 23, 24, 25, 28, 35}
 ACHIEVEMENT_SOURCES = {"auto", "retroachievements", "xbox", "disabled"}
@@ -1553,6 +1554,16 @@ class Plugin:
         except Exception:
             release_date = None
 
+        deck_compat_category = metadata.get("deck_compat_category")
+        try:
+            deck_compat_category = (
+                int(deck_compat_category) if deck_compat_category is not None else None
+            )
+        except Exception:
+            deck_compat_category = None
+        if deck_compat_category not in {0, 1, 2, 3}:
+            deck_compat_category = None
+
         title = self._clean_game_title(str(metadata.get("title") or ""))
         description = self._clean_html_text(str(metadata.get("description") or ""))
         short_description = self._clean_html_text(
@@ -1569,6 +1580,7 @@ class Plugin:
             "publishers": clean_people(metadata.get("publishers")),
             "release_date": release_date,
             "rating": rating,
+            "deck_compat_category": deck_compat_category,
             "store_categories": categories,
             "genres": [
                 str(value).strip()
@@ -1614,6 +1626,9 @@ class Plugin:
         next_metadata = dict(metadata)
         if steam_appid:
             next_metadata["steam_appid"] = steam_appid
+            deck_compat_category = self._steam_deck_compat_for_appid(steam_appid)
+            if deck_compat_category is not None:
+                next_metadata["deck_compat_category"] = deck_compat_category
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -1861,6 +1876,44 @@ class Plugin:
     def _steam_partner_event_image(self, event: dict[str, Any], steam_appid: int) -> str:
         images = self._steam_partner_event_images(event, steam_appid)
         return images[0] if images else ""
+
+    def _steam_deck_compat_for_appid(self, steam_appid: int) -> int | None:
+        try:
+            appid = int(steam_appid)
+        except Exception:
+            return None
+        if appid <= 0:
+            return None
+
+        params = urllib.parse.urlencode({"nAppID": appid, "l": "english"})
+        try:
+            payload = self._http_json(f"{STEAM_DECK_COMPAT_URL}?{params}", timeout=12)
+            if not isinstance(payload, dict):
+                raise ValueError("unexpected deck compatibility payload")
+            results = payload.get("results")
+            if not isinstance(results, dict):
+                raise ValueError("missing deck compatibility results")
+            category = int(results.get("resolved_category"))
+        except Exception:
+            _plog(
+                "steam",
+                "deck compat fetch failed",
+                level=logging.WARNING,
+                exc=True,
+                steam_appid=appid,
+            )
+            return None
+
+        if category not in {0, 1, 2, 3}:
+            return None
+        _plog(
+            "steam",
+            "deck compat resolved",
+            level=logging.DEBUG,
+            steam_appid=appid,
+            category=category,
+        )
+        return category
 
     def _steam_partner_events_for_appid(self, steam_appid: int, limit: int = 10) -> list[dict[str, Any]]:
         params = urllib.parse.urlencode(
