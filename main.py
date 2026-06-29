@@ -15,6 +15,7 @@ import re
 import shutil
 import ssl
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -433,6 +434,89 @@ class Plugin:
         )
         return None
 
+    def _is_steamos(self) -> bool:
+        if not sys.platform.startswith("linux"):
+            return False
+        try:
+            if Path("/etc/steamos-release").exists():
+                return True
+        except Exception:
+            return False
+        try:
+            fields: dict[str, str] = {}
+            for raw_line in Path("/etc/os-release").read_text(encoding="utf-8").splitlines():
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                fields[key.strip()] = value.strip().strip("'\"")
+            if fields.get("ID", "").casefold() == "steamos":
+                return True
+            return "steamos" in fields.get("ID_LIKE", "").casefold().split()
+        except Exception:
+            return False
+
+    def _detect_steam_roots(self) -> list[Path]:
+        candidates: list[Path] = []
+        try:
+            compat_path = os.environ.get("STEAM_COMPAT_CLIENT_INSTALL_PATH")
+            if compat_path:
+                candidates.append(Path(compat_path))
+            candidates.extend(
+                [
+                    Path.home() / ".local" / "share" / "Steam",
+                    Path.home() / ".steam" / "steam",
+                    Path.home() / ".steam" / "root",
+                    Path.home()
+                    / ".var"
+                    / "app"
+                    / "com.valvesoftware.Steam"
+                    / ".local"
+                    / "share"
+                    / "Steam",
+                ]
+            )
+            try:
+                candidates.extend(Path("/run/media").glob("*/SteamLibrary"))
+                candidates.extend(path.parent for path in Path("/run/media").glob("*/steamapps"))
+            except Exception:
+                pass
+            if os.name == "nt":
+                steam_path = self._read_windows_steam_path()
+                if steam_path:
+                    candidates.append(steam_path)
+                for env_name in ("PROGRAMFILES(X86)", "PROGRAMFILES"):
+                    value = os.environ.get(env_name)
+                    if value:
+                        candidates.append(Path(value) / "Steam")
+        except Exception:
+            return []
+
+        roots: list[Path] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            try:
+                resolved = candidate.resolve()
+                key = str(resolved).casefold() if os.name == "nt" else str(resolved)
+                if key in seen or not resolved.exists():
+                    continue
+                roots.append(resolved)
+                seen.add(key)
+            except Exception:
+                continue
+        return roots
+
+    def _detect_steam_root(self) -> Path | None:
+        roots = self._detect_steam_roots()
+        return roots[0] if roots else None
+
+    def _can_use_loopback_icons(self) -> bool:
+        try:
+            icon_dir = self._steamui_loopback_icon_dir()
+            return bool(icon_dir and icon_dir.exists() and os.access(icon_dir, os.W_OK))
+        except Exception:
+            return False
+
     def _xbox_loopback_icon_url(self, source_url: str, generate: bool = True) -> str:
         # Preferred square-icon strategy: write the cropped PNG into
         # <Steam>/steamui/playhub_xbox_icons and reference it through
@@ -509,6 +593,46 @@ class Plugin:
 
     async def _migration(self) -> None:
         self._settings_dir.mkdir(parents=True, exist_ok=True)
+
+    async def get_platform_capabilities(self) -> dict[str, Any]:
+        capabilities: dict[str, Any] = {
+            "platform": str(sys.platform),
+            "os_name": str(os.name),
+            "is_linux": sys.platform.startswith("linux"),
+            "is_windows": os.name == "nt",
+            "is_steamos": False,
+            "steam_root": "",
+            "steam_roots": [],
+            "has_pillow": Image is not None,
+            "supports_metadata": True,
+            "supports_steam_activity": True,
+            "supports_retroachievements": True,
+            "supports_retroachievements_auto": True,
+            "supports_xbox_manual": True,
+            "supports_xbox_uwphook_auto": os.name == "nt",
+            "supports_xbox_app_scan": os.name == "nt",
+            "supports_loopback_icons": False,
+            "supports_localhost_icon_proxy": False,
+        }
+        try:
+            capabilities["is_steamos"] = bool(self._is_steamos())
+        except Exception:
+            pass
+        try:
+            steam_roots = self._detect_steam_roots()
+            capabilities["steam_roots"] = [str(root) for root in steam_roots]
+            capabilities["steam_root"] = str(steam_roots[0]) if steam_roots else ""
+        except Exception:
+            pass
+        try:
+            capabilities["supports_loopback_icons"] = bool(self._can_use_loopback_icons())
+        except Exception:
+            pass
+        try:
+            capabilities["supports_localhost_icon_proxy"] = int(getattr(self, "_image_proxy_port", 0) or 0) > 0
+        except Exception:
+            pass
+        return capabilities
 
     async def get_state(self) -> dict[str, Any]:
         self._load_data()
