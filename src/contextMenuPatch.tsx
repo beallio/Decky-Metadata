@@ -34,7 +34,7 @@ import {
 } from "@decky/ui";
 import { FC } from "react";
 
-import { getOverview, isNonSteamApp } from "./steam";
+import { getOverview, isNonSteamApp, patchInstallStatus, hasSteamInternals } from "./steam";
 import { t } from "./i18n";
 
 // Stable key for the entry we inject, so we can find and de-duplicate it.
@@ -143,11 +143,21 @@ const syncOurEntry = (items: any[], appId: number): void => {
  * @returns An object exposing unpatch() for plugin teardown.
  */
 const contextMenuPatch = (LibraryContextMenuClass: any) => {
-  let innerPatch: Patch | undefined;
+  if (!LibraryContextMenuClass || !hasSteamInternals()) {
+    if (patchInstallStatus.contextMenu === "pending") {
+      console.warn("[Playhub Metadata] missing context menu class or steam internals, skipping context menu UI patch");
+      patchInstallStatus.contextMenu = "skipped-missing-internal";
+    }
+    return { unpatch: () => {} };
+  }
 
-  const outerPatch = afterPatch(
-    LibraryContextMenuClass.prototype,
-    "render",
+  let innerPatch: Patch | undefined;
+  let outerPatch: Patch | undefined;
+
+  try {
+    outerPatch = afterPatch(
+      LibraryContextMenuClass.prototype,
+      "render",
     (_renderArgs: any[], menu: any) => {
       const ownerAppId = Number(
         menu?._owner?.pendingProps?.overview?.appid ?? 0
@@ -204,6 +214,11 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
       return menu;
     }
   );
+  patchInstallStatus.contextMenu = "installed";
+  } catch (error) {
+    console.warn("[Playhub Metadata] context menu patch failed", error);
+    patchInstallStatus.contextMenu = "failed";
+  }
 
   return {
     unpatch: () => {
