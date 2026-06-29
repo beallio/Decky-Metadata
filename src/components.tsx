@@ -45,7 +45,7 @@ import {
 } from "./backend";
 import { t } from "./i18n";
 import * as log from "./log";
-import { steamAppLinks } from "./steamLinks";
+import { openExternalUrl } from "./openExternalUrl";
 import {
   allNonSteamGames,
   appName,
@@ -315,23 +315,6 @@ const achievementCachePolicies: AchievementCachePolicy[] = [
   "pc_session",
   "manual",
 ];
-
-const openExternalUrl = (url: string) => {
-  try {
-    const steamClient = (window as any)?.SteamClient;
-    if (steamClient?.System?.OpenInSystemBrowser) {
-      steamClient.System.OpenInSystemBrowser(url);
-      return;
-    }
-    if (steamClient?.Overlay?.OpenExternalBrowserURL) {
-      steamClient.Overlay.OpenExternalBrowserURL(url);
-      return;
-    }
-  } catch (_error) {
-    // Fall back to the browser below.
-  }
-  window.open(url, "_blank", "noopener,noreferrer");
-};
 
 const useNonSteamGames = () => {
   const [games, setGames] = useState<GameOption[]>([]);
@@ -986,11 +969,6 @@ export const MetadataPage = () => {
     }),
     [developerText, metadata, publisherText, ratingText, releaseText]
   );
-  const steamLinks = useMemo(
-    () => steamAppLinks(Number(metadata?.steam_appid) || 0),
-    [metadata?.steam_appid]
-  );
-
   const saveCurrent = async () => {
     if (!nonSteam) {
       toaster.toast({ title: t("pluginName"), body: t("notNonSteam") });
@@ -1399,43 +1377,6 @@ export const MetadataPage = () => {
             </div>
           </PanelSectionRow>
         </PanelSection>
-
-        {steamLinks ? (
-          <PanelSection title={t("steamLinks")}>
-            <PanelSectionRow>
-              <FocusableButton
-                className="DialogButton"
-                onClick={() => openExternalUrl(steamLinks.store)}
-              >
-                {t("steamStorePage")}
-              </FocusableButton>
-            </PanelSectionRow>
-            <PanelSectionRow>
-              <FocusableButton
-                className="DialogButton"
-                onClick={() => openExternalUrl(steamLinks.community)}
-              >
-                {t("steamCommunityHub")}
-              </FocusableButton>
-            </PanelSectionRow>
-            <PanelSectionRow>
-              <FocusableButton
-                className="DialogButton"
-                onClick={() => openExternalUrl(steamLinks.discussions)}
-              >
-                {t("steamDiscussions")}
-              </FocusableButton>
-            </PanelSectionRow>
-            <PanelSectionRow>
-              <FocusableButton
-                className="DialogButton"
-                onClick={() => openExternalUrl(steamLinks.guides)}
-              >
-                {t("steamGuides")}
-              </FocusableButton>
-            </PanelSectionRow>
-          </PanelSection>
-        ) : null}
 
         <PanelSection title={t("categories")}>
           {Object.entries(CATEGORY_LABELS).map(([category, label]) => (

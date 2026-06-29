@@ -169,6 +169,9 @@ export const getOverview = (appId: number): any | null => {
   }
 };
 
+export const steamAppIdForApp = (appId: number): number =>
+  Number(metadataCache[String(appId)]?.steam_appid) || 0;
+
 const shortcutAppIdForSteamAppId = (steamAppId: number): number | null => {
   if (!Number.isFinite(steamAppId) || steamAppId <= 0) return null;
   for (const [shortcutAppIdText, metadata] of Object.entries(metadataCache)) {
