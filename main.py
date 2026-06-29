@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import concurrent.futures
+from dataclasses import dataclass
 import functools
 import http.server
 import io
@@ -36,6 +37,18 @@ except Exception:  # Pillow is available in Decky on most setups, but keep fallb
 MAX_ROM_HASH_BYTES = 4 * 1024 * 1024 * 1024
 ROM_HASH_MEMORY_BYTES = 512 * 1024 * 1024
 ROM_HASH_CHUNK_BYTES = 1024 * 1024
+MAX_SHORTCUTS_VDF_BYTES = 2 * 1024 * 1024
+MAX_SHORTCUTS_VDF_DEPTH = 32
+MAX_SHORTCUTS_VDF_ENTRIES = 2048
+
+
+@dataclass(frozen=True)
+class SteamInstall:
+    root: Path
+    userdata_dirs: list[Path]
+    shortcut_files: list[Path]
+    libraryfolders_files: list[Path]
+    appmanifest_dirs: list[Path]
 
 
 @functools.lru_cache(maxsize=1)
@@ -505,6 +518,66 @@ class Plugin:
             except Exception:
                 continue
         return roots
+
+    def _detect_steam_installs(self) -> list[SteamInstall]:
+        installs: list[SteamInstall] = []
+        for root in self._detect_steam_roots():
+            try:
+                resolved_root = root.resolve()
+            except Exception as error:
+                decky.logger.debug(f"Skipping unreadable Steam root {root}: {error}")
+                continue
+
+            userdata_dirs: list[Path] = []
+            shortcut_files: list[Path] = []
+            userdata_root = resolved_root / "userdata"
+            try:
+                if userdata_root.is_dir():
+                    for user_dir in userdata_root.iterdir():
+                        try:
+                            if not user_dir.is_dir():
+                                continue
+                            resolved_user_dir = user_dir.resolve()
+                            userdata_dirs.append(resolved_user_dir)
+                            shortcut_file = resolved_user_dir / "config" / "shortcuts.vdf"
+                            if shortcut_file.is_file():
+                                shortcut_files.append(shortcut_file.resolve())
+                        except Exception as error:
+                            decky.logger.debug(f"Skipping unreadable Steam userdata {user_dir}: {error}")
+                else:
+                    decky.logger.debug(f"Steam userdata root not found: {userdata_root}")
+            except Exception as error:
+                decky.logger.debug(f"Skipping unreadable Steam userdata root {userdata_root}: {error}")
+
+            libraryfolders_files: list[Path] = []
+            for libraryfolders_file in (
+                resolved_root / "config" / "libraryfolders.vdf",
+                resolved_root / "steamapps" / "libraryfolders.vdf",
+            ):
+                try:
+                    if libraryfolders_file.is_file():
+                        libraryfolders_files.append(libraryfolders_file.resolve())
+                except Exception as error:
+                    decky.logger.debug(f"Skipping unreadable Steam library file {libraryfolders_file}: {error}")
+
+            appmanifest_dirs: list[Path] = []
+            steamapps_dir = resolved_root / "steamapps"
+            try:
+                if steamapps_dir.is_dir():
+                    appmanifest_dirs.append(steamapps_dir.resolve())
+            except Exception as error:
+                decky.logger.debug(f"Skipping unreadable Steam appmanifest dir {steamapps_dir}: {error}")
+
+            installs.append(
+                SteamInstall(
+                    root=resolved_root,
+                    userdata_dirs=userdata_dirs,
+                    shortcut_files=shortcut_files,
+                    libraryfolders_files=libraryfolders_files,
+                    appmanifest_dirs=appmanifest_dirs,
+                )
+            )
+        return installs
 
     def _detect_steam_root(self) -> Path | None:
         roots = self._detect_steam_roots()
@@ -6897,14 +6970,19 @@ try {
         }
 
     def _read_steam_shortcuts(self) -> list[dict[str, Any]]:
-        shortcuts: dict[int, dict[str, Any]] = {}
+        shortcuts: list[dict[str, Any]] = []
+        seen: set[tuple[int, str, str, str]] = set()
         for base in self._steam_userdata_roots():
             if not base.exists():
+                decky.logger.debug(f"Steam userdata root not found: {base}")
                 continue
             try:
                 for user_dir in base.iterdir():
+                    if not user_dir.is_dir():
+                        continue
                     shortcut_file = user_dir / "config" / "shortcuts.vdf"
                     if not shortcut_file.exists() or not shortcut_file.is_file():
+                        decky.logger.debug(f"Steam shortcuts file not found: {shortcut_file}")
                         continue
                     for shortcut in self._extract_shortcuts_from_vdf(shortcut_file):
                         name = self._clean_game_title(str(shortcut.get("name") or ""))
@@ -6913,31 +6991,37 @@ try {
                         launch_options = str(shortcut.get("launch_options") or "")
                         shortcut_path = str(shortcut.get("shortcut_path") or "")
                         icon = str(shortcut.get("icon") or "")
-                        app_id = shortcut.get("appid")
-                        if isinstance(app_id, int):
-                            app_id = int(app_id) & 0xFFFFFFFF
-                        else:
-                            app_id = self._shortcut_app_id(exe, name)
-                        if app_id > 0 and name:
-                            shortcuts[app_id] = {
-                                "appid": app_id,
-                                "name": name,
-                                "exe": exe,
-                                "start_dir": start_dir,
-                                "launch_options": launch_options,
-                                "shortcut_path": shortcut_path,
-                                "icon": icon,
-                                "isNonSteam": True,
-                            }
+                        app_id = self._normalize_shortcut_app_id(
+                            shortcut.get("app_id", shortcut.get("appid")),
+                            exe,
+                            name,
+                        )
+                        dedupe_key = (app_id, name, exe, launch_options)
+                        if app_id > 0 and name and dedupe_key not in seen:
+                            seen.add(dedupe_key)
+                            item = dict(shortcut)
+                            item.update(
+                                {
+                                    "appid": app_id,
+                                    "app_id": app_id,
+                                    "name": name,
+                                    "exe": exe,
+                                    "start_dir": start_dir,
+                                    "launch_options": launch_options,
+                                    "shortcut_path": shortcut_path,
+                                    "icon": icon,
+                                    "source": "steam_shortcuts_vdf",
+                                    "steam_user_id": user_dir.name,
+                                    "shortcut_file": str(shortcut_file),
+                                    "isNonSteam": True,
+                                }
+                            )
+                            shortcuts.append(item)
             except Exception as error:
                 decky.logger.error(f"Failed reading Steam shortcuts: {error}")
-        return sorted(shortcuts.values(), key=lambda item: item["name"].casefold())
+        return shortcuts
 
     def _steam_userdata_roots(self) -> list[Path]:
-        candidates = [
-            Path.home() / ".local" / "share" / "Steam" / "userdata",
-            Path.home() / ".steam" / "steam" / "userdata",
-        ]
         if os.name == "nt":
             windows_candidates: list[Path] = []
             for env_name in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA"):
@@ -6947,8 +7031,26 @@ try {
             steam_path = self._read_windows_steam_path()
             if steam_path:
                 windows_candidates.append(steam_path / "userdata")
-            candidates = windows_candidates + candidates
-        return candidates
+            candidates = windows_candidates + [
+                Path.home() / ".local" / "share" / "Steam" / "userdata",
+                Path.home() / ".steam" / "steam" / "userdata",
+            ]
+        else:
+            candidates = [root / "userdata" for root in self._detect_steam_roots()]
+
+        roots: list[Path] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            try:
+                resolved = candidate.resolve()
+                key = str(resolved).casefold() if os.name == "nt" else str(resolved)
+                if key in seen or not resolved.is_dir():
+                    continue
+                roots.append(resolved)
+                seen.add(key)
+            except Exception as error:
+                decky.logger.debug(f"Skipping unreadable Steam userdata root {candidate}: {error}")
+        return roots
 
     def _read_windows_steam_path(self) -> Path | None:
         try:
@@ -6968,9 +7070,22 @@ try {
 
     def _extract_shortcuts_from_vdf(self, path: Path) -> list[dict[str, Any]]:
         try:
+            try:
+                size = path.stat().st_size
+            except Exception as error:
+                decky.logger.debug(f"Failed stat for shortcuts.vdf {path}: {error}")
+                return []
+            if size <= 0:
+                decky.logger.debug(f"Steam shortcuts file is empty: {path}")
+                return []
+            if size > MAX_SHORTCUTS_VDF_BYTES:
+                decky.logger.debug(
+                    f"Steam shortcuts file too large: {path} ({size} bytes)"
+                )
+                return []
             data = path.read_bytes()
         except Exception as error:
-            decky.logger.error(f"Failed reading shortcuts.vdf {path}: {error}")
+            decky.logger.debug(f"Failed reading shortcuts.vdf {path}: {error}")
             return []
         try:
             root, _pos = self._parse_binary_vdf_object(data, 0)
@@ -6978,12 +7093,18 @@ try {
             if isinstance(container, dict):
                 shortcuts: list[dict[str, Any]] = []
                 for value in container.values():
+                    if len(shortcuts) >= MAX_SHORTCUTS_VDF_ENTRIES:
+                        decky.logger.debug(
+                            f"Steam shortcuts entry cap reached for {path}"
+                        )
+                        break
                     if not isinstance(value, dict):
                         continue
                     name = str(
                         self._vdf_get(value, "appname", "AppName", "name") or ""
                     ).strip()
-                    exe = str(self._vdf_get(value, "exe", "Exe") or "").strip()
+                    exe_raw = str(self._vdf_get(value, "exe", "Exe") or "").strip()
+                    exe = self._strip_surrounding_quotes(exe_raw)
                     start_dir = str(
                         self._vdf_get(value, "startdir", "StartDir") or ""
                     ).strip()
@@ -6995,39 +7116,64 @@ try {
                     ).strip()
                     icon = str(self._vdf_get(value, "icon", "Icon") or "").strip()
                     if name:
+                        appid_raw = self._vdf_get(value, "appid", "AppID")
+                        app_id = self._normalize_shortcut_app_id(appid_raw, exe, name)
                         shortcuts.append(
                             {
                                 "name": name,
                                 "exe": exe,
+                                "exe_raw": exe_raw,
                                 "start_dir": start_dir,
                                 "launch_options": launch_options,
                                 "shortcut_path": shortcut_path,
                                 "icon": icon,
-                                "appid": self._vdf_get(value, "appid", "AppID"),
+                                "appid": appid_raw,
+                                "appid_raw": appid_raw,
+                                "app_id": app_id,
+                                "source": "steam_shortcuts_vdf",
+                                "steam_user_id": self._steam_user_id_from_shortcut_path(path),
+                                "shortcut_file": str(path),
                             }
                         )
                 return shortcuts
         except Exception as error:
-            decky.logger.error(f"Failed parsing shortcuts.vdf {path}: {error}")
-        text = data.decode("utf-8", errors="ignore")
+            decky.logger.debug(f"Failed parsing shortcuts.vdf {path}: {error}")
+        text = data.decode("utf-8", errors="replace")
         names = re.findall(r"appname\x00([^\x00]+)", text, flags=re.IGNORECASE)
         exes = re.findall(r"exe\x00([^\x00]+)", text, flags=re.IGNORECASE)
         launch_options = re.findall(
             r"launchoptions\x00([^\x00]*)", text, flags=re.IGNORECASE
         )
         icons = re.findall(r"icon\x00([^\x00]*)", text, flags=re.IGNORECASE)
-        return [
-            {
-                "name": name.strip(),
-                "exe": exes[index].strip() if index < len(exes) else "",
-                "launch_options": launch_options[index].strip()
-                if index < len(launch_options)
-                else "",
-                "icon": icons[index].strip() if index < len(icons) else "",
-            }
-            for index, name in enumerate(names)
-            if name.strip()
-        ]
+        shortcuts = []
+        for index, name in enumerate(names[:MAX_SHORTCUTS_VDF_ENTRIES]):
+            clean_name = name.strip()
+            if not clean_name:
+                continue
+            exe_raw = exes[index].strip() if index < len(exes) else ""
+            exe = self._strip_surrounding_quotes(exe_raw)
+            launch_options_value = (
+                launch_options[index].strip() if index < len(launch_options) else ""
+            )
+            app_id = self._shortcut_app_id(exe, clean_name)
+            shortcuts.append(
+                {
+                    "name": clean_name,
+                    "exe": exe,
+                    "exe_raw": exe_raw,
+                    "start_dir": "",
+                    "launch_options": launch_options_value,
+                    "shortcut_path": "",
+                    "icon": icons[index].strip() if index < len(icons) else "",
+                    "appid": None,
+                    "appid_raw": None,
+                    "app_id": app_id,
+                    "source": "steam_shortcuts_vdf",
+                    "steam_user_id": self._steam_user_id_from_shortcut_path(path),
+                    "shortcut_file": str(path),
+                }
+            )
+        return shortcuts
 
     @staticmethod
     def _vdf_get(values: dict[str, Any], *names: str) -> Any:
@@ -7037,9 +7183,41 @@ try {
                 return lowered[name.casefold()]
         return None
 
+    @staticmethod
+    def _strip_surrounding_quotes(value: str) -> str:
+        stripped = value.strip()
+        if len(stripped) >= 2 and stripped[0] == stripped[-1] == '"':
+            return stripped[1:-1]
+        return stripped
+
+    @staticmethod
+    def _steam_user_id_from_shortcut_path(path: Path) -> str:
+        try:
+            parts = path.parts
+            for index, part in enumerate(parts):
+                if part == "userdata" and index + 1 < len(parts):
+                    return parts[index + 1]
+        except Exception:
+            pass
+        return ""
+
+    def _normalize_shortcut_app_id(self, value: Any, exe: str, name: str) -> int:
+        if isinstance(value, int):
+            return int(value) & 0xFFFFFFFF
+        try:
+            if value not in (None, ""):
+                return int(value) & 0xFFFFFFFF
+        except Exception:
+            pass
+        if exe or name:
+            return self._shortcut_app_id(exe, name)
+        return 0
+
     def _parse_binary_vdf_object(
-        self, data: bytes, pos: int
+        self, data: bytes, pos: int, depth: int = 0
     ) -> tuple[dict[str, Any], int]:
+        if depth > MAX_SHORTCUTS_VDF_DEPTH:
+            raise ValueError("binary VDF nesting depth exceeded")
         result: dict[str, Any] = {}
         while pos < len(data):
             value_type = data[pos]
@@ -7048,7 +7226,7 @@ try {
                 break
             key, pos = self._read_vdf_cstring(data, pos)
             if value_type == 0x00:
-                child, pos = self._parse_binary_vdf_object(data, pos)
+                child, pos = self._parse_binary_vdf_object(data, pos, depth + 1)
                 result[key] = child
             elif value_type == 0x01:
                 value, pos = self._read_vdf_cstring(data, pos)
@@ -7072,7 +7250,7 @@ try {
         end = data.find(b"\x00", pos)
         if end < 0:
             return "", len(data)
-        return data[pos:end].decode("utf-8", errors="ignore"), end + 1
+        return data[pos:end].decode("utf-8", errors="replace"), end + 1
 
     @staticmethod
     def _shortcut_app_id(exe: str, name: str) -> int:

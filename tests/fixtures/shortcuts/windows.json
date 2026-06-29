@@ -1,0 +1,11 @@
+[
+  {
+    "appname": "Windows Shortcut",
+    "exe": "\"C:\\Games\\Windows Game\\Game.exe\"",
+    "startdir": "\"C:\\Games\\Windows Game\"",
+    "launchoptions": "--fullscreen",
+    "shortcutpath": "",
+    "icon": "C:\\Games\\Windows Game\\Game.ico",
+    "appid": 2147488308
+  }
+]
