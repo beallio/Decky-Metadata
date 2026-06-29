@@ -5,3 +5,6 @@ node_modules/
 __pycache__/
 *.py[cod]
 *.zip
+
+# orchestration engine: machine/trial-only config override
+orchestration.conf.local

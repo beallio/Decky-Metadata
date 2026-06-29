@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Project quality gates. Invoked by orchestration/run-quality-gates from the repo
+# root. Exit non-zero to fail the gate. The engine separately enforces that
+# review notes are not deleted, so that is not repeated here.
+#
+# Playhub Metadata is a Decky Loader plugin:
+#   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
+#   - a single-file Python backend (main.py)
+#
+# There is no automated test suite yet, so the gate is a build + static check:
+#   1. TypeScript type-check (tsc --noEmit) and rollup production build
+#   2. Python backend byte-compile (syntax check) of main.py
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$repo_root"
+
+# Keep generated caches/installs outside Dropbox.
+export npm_config_cache="/tmp/Playhub-Metadata-local/.npm"
+mkdir -p "$npm_config_cache"
+
+# --- frontend: type-check + build -------------------------------------------
+if [[ -f package.json ]]; then
+  if [[ ! -d node_modules ]]; then
+    if command -v pnpm >/dev/null 2>&1; then
+      pnpm install --frozen-lockfile
+    else
+      npm ci
+    fi
+  fi
+
+  # Type-check without emitting, then run the real rollup build.
+  npx tsc --noEmit
+  npm run build
+fi
+
+# --- backend: Python syntax check -------------------------------------------
+if [[ -f main.py ]]; then
+  python_bin="$(command -v python3 || command -v python)"
+  "$python_bin" -m py_compile main.py
+fi
+
+echo "quality-gates: OK"

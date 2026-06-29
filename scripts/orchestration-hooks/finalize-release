@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Project release step. Invoked by orchestration/finalize AFTER it has merged the
+# feature branch into the base branch and pushed. Any args passed to `finalize`
+# after the slug are forwarded here (e.g. a release version).
+#
+# This hook is optional. If you delete it, finalize simply skips the release step.
+#
+# Playhub Metadata has no automated release pipeline: a release is a manual
+# rollup build + Decky package zip (Windows: package-win.ps1). So this hook is a
+# safe no-op by default — finalize merges the branch and stops here. Uncomment
+# the packaging block below to produce the plugin zip as part of finalize.
+set -euo pipefail
+
+version="${1:-}"
+
+# repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+# cd "$repo_root"
+# npm run build
+# npm run package        # -> Decky plugin zip via package-win.ps1 (Windows/pwsh)
+
+echo "finalize-release: no automated release for this project (version=${version:-none}); skipping" >&2
+exit 0

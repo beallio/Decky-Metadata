@@ -1,0 +1,4 @@
+PROTOCOL_VERSION=2
+HANDSHAKE_REQUIRED=true
+TDD_REQUIRED=false
+CACHE_ROOT=/tmp/Playhub-Metadata-local
