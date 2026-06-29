@@ -21,6 +21,11 @@ Key facts about this repo (verify before relying on them):
 - `uv` is installed and available; `pytest` is **not** installed. Use
   `uv run --with pytest` so pytest runs in an ephemeral, cache-isolated environment
   without adding a `pyproject.toml` or polluting the repo.
+- **Supply-chain cooldown policy (do not bypass).** The user's `~/.config/uv/uv.toml`
+  sets `exclude-newer = "7 days"`; `uv run --with pytest` honors it automatically. Do
+  **not** pass `--exclude-newer`, edit uv config, or otherwise override the cooldown. For
+  Node, only ever use `npm ci` / `pnpm install --frozen-lockfile` (lockfile-exact); never
+  run an unpinned `npm install`/`npm install <pkg>@latest`, and add no new npm dependency.
 - Caches must stay under `/tmp/Playhub-Metadata-local` per `AGENTS.md` and `run.sh`.
 - This plan file is already committed on the base branch `main`. If the Setup
   "commit this plan first" step finds nothing to commit, that is expected — continue.

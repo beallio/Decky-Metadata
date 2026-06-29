@@ -202,7 +202,7 @@ The round is not complete unless:
 Run on this Linux host and confirm:
 
 ```bash
-npm install
+npm ci                 # lockfile-exact; never `npm install` (respects pinned versions)
 npm run build
 npm run package
 ls -1 Playhub-Metadata_*_Installer.zip
