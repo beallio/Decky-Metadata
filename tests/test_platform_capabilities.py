@@ -118,6 +118,7 @@ def test_get_platform_capabilities_returns_required_keys_and_types(
         "supports_xbox_app_scan",
         "supports_loopback_icons",
         "supports_localhost_icon_proxy",
+        "icon_mode",
     }
     assert set(capabilities) == expected_keys
     assert isinstance(capabilities["platform"], str)
@@ -125,7 +126,7 @@ def test_get_platform_capabilities_returns_required_keys_and_types(
     assert isinstance(capabilities["steam_root"], str)
     assert isinstance(capabilities["steam_roots"], list)
     assert all(isinstance(item, str) for item in capabilities["steam_roots"])
-    for key in expected_keys - {"platform", "os_name", "steam_root", "steam_roots"}:
+    for key in expected_keys - {"platform", "os_name", "steam_root", "steam_roots", "icon_mode"}:
         assert isinstance(capabilities[key], bool)
     assert capabilities["steam_root"] == str(steam_root)
     assert capabilities["steam_roots"] == [str(steam_root)]
