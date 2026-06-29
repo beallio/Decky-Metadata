@@ -15,9 +15,9 @@ Playhub Metadata is a **Decky Loader plugin** for Steam Big Picture on Windows:
 - **Backend:** a single-file Python module, `main.py`, using only the standard
   library and the Decky runtime.
 
-There is **no uv/pytest project layout and no automated test suite** here, so the
-strict TDD requirements of the template do not apply (`.protocol: TDD_REQUIRED=false`).
-The quality gate is build + static check, defined in
+There is **no uv project layout** here, but Python backend tests run through
+`uv run --with pytest` in an ephemeral environment (`.protocol: TDD_REQUIRED=true`).
+The quality gate is build + static check + pytest, defined in
 `scripts/orchestration-hooks/quality-gates`.
 
 ---
@@ -151,6 +151,7 @@ which runs:
 npx tsc --noEmit          # frontend type-check
 npm run build             # rollup bundle -> dist/index.js
 python3 -m py_compile main.py   # backend syntax check
+uv run --with pytest -- pytest -q   # backend tests
 ```
 
 A modifying task is complete only when:
@@ -159,6 +160,7 @@ A modifying task is complete only when:
 [ ] tsc --noEmit passes
 [ ] npm run build succeeds (dist/index.js regenerated when frontend changed)
 [ ] main.py byte-compiles
+[ ] pytest passes when tests/ exists
 [ ] README updated when behavior or usage changed
 [ ] caches/installs stayed under /tmp/Playhub-Metadata-local
 [ ] session log recorded in docs/agent_conversations/

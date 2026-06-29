@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Pre-commit sanity check for Playhub Metadata.
 #
-# This repo has no automated test suite yet (a Decky plugin: TS/React frontend +
-# single-file Python backend), so strict TDD is not enforced (.protocol:
-# TDD_REQUIRED=false). Instead, guard the two things that break a build silently:
+# This repo is a Decky plugin: TS/React frontend + single-file Python backend.
+# Guard the checks that break a build silently:
 #   1. staged TypeScript still type-checks
 #   2. a staged main.py still parses
+#   3. backend tests pass when backend/test files are staged
 #
 # Exit non-zero to block the commit. Skips cleanly when the relevant files or
 # tools are not part of the staged change.
@@ -29,6 +29,17 @@ if echo "$staged" | grep -qx 'main.py'; then
     "$python_bin" -m py_compile main.py
   else
     echo "⚠️  skipping py_compile (python unavailable)"
+  fi
+fi
+
+# --- backend: pytest staged backend/tests -----------------------------------
+if [ -d tests ] && echo "$staged" | grep -Eq '^(main\.py|tests/)'; then
+  if command -v uv >/dev/null 2>&1; then
+    export UV_CACHE_DIR="/tmp/Playhub-Metadata-local/.uv"
+    mkdir -p "$UV_CACHE_DIR"
+    uv run --with pytest -- pytest -q
+  else
+    echo "⚠️  skipping pytest (uv unavailable)"
   fi
 fi
 
