@@ -42,6 +42,7 @@ import {
   testOpenXblCredentials,
   clearXboxAssociations,
   clearMetadataCache,
+  enrichSteamApp,
   syncTrueAchievementsProgress,
 } from "./backend";
 import { t } from "./i18n";
@@ -99,6 +100,20 @@ const retroResolutionMessageKey = (reason?: string) => {
     default:
       return "retroDetectFailed";
   }
+};
+
+export const parseSteamAppId = (input: string): number => {
+  const s = String(input || "").trim();
+  if (!s) return 0;
+  const match =
+    (/^\d+$/.test(s) ? [s, s] : null) ||
+    s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
+    s.match(/[?&]appid=(\d+)/i) ||
+    s.match(/\bapp\/(\d+)\b/i);
+  const parsed = Number(match?.[1] || 0);
+  return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : 0;
 };
 
 const FocusableButton = (props: any) => (
@@ -960,6 +975,7 @@ export const MetadataPage = () => {
     null
   );
   const [raGameId, setRaGameId] = useState("");
+  const [steamAppIdText, setSteamAppIdText] = useState("");
   const [raQuery, setRaQuery] = useState(appName(appId));
   const [raResults, setRaResults] = useState<RetroAchievementsGameResult[]>([]);
   const [raSearching, setRaSearching] = useState(false);
@@ -981,6 +997,7 @@ export const MetadataPage = () => {
   const load = useCallback(async () => {
     const saved = await getMetadata(appId);
     setFormMetadata(saved || metadataTemplate(appName(appId)));
+    setSteamAppIdText(saved?.steam_appid ? String(saved.steam_appid) : "");
     const settings = await getAchievementSettings();
     setRaSettings(settings.retroachievements);
     setRaGameId(settings.retroachievements.game_ids[String(appId)]?.toString() || "");
@@ -1015,6 +1032,43 @@ export const MetadataPage = () => {
     metadataCache[String(appId)] = saved;
     applyMetadata(appId);
     toaster.toast({ title: t("pluginName"), body: t("saved") });
+  };
+
+  const applySteamAppId = async () => {
+    if (!nonSteam) {
+      toaster.toast({ title: t("pluginName"), body: t("notNonSteam") });
+      return;
+    }
+    setBusy(true);
+    try {
+      const parsed = parseSteamAppId(steamAppIdText);
+      const next = {
+        ...normalizedMetadata,
+        steam_appid: parsed || null,
+        steam_store_url: parsed
+          ? `https://store.steampowered.com/app/${parsed}/`
+          : "",
+      };
+      const saved = await saveMetadata(appId, next);
+      metadataCache[String(appId)] = saved;
+      setFormMetadata(saved);
+      const enriched = await enrichSteamApp(appId);
+      if (enriched) {
+        metadataCache[String(appId)] = enriched;
+        setFormMetadata(enriched);
+        setSteamAppIdText(
+          enriched.steam_appid ? String(enriched.steam_appid) : ""
+        );
+      } else {
+        setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
+      }
+      applyMetadata(appId);
+      toaster.toast({ title: t("pluginName"), body: t("saved") });
+    } catch (error) {
+      toaster.toast({ title: t("pluginName"), body: String(error) });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const search = async () => {
@@ -1446,6 +1500,28 @@ export const MetadataPage = () => {
                   {t(`achievementSource_${source}` as any)}
                 </FocusableButton>
               ))}
+            </div>
+          </PanelSectionRow>
+        </PanelSection>
+
+        <PanelSection title={t("steamAppIdLabel")}>
+          <PanelSectionRow>
+            <div style={rowStackStyle}>
+              <div style={compactTextStyle}>{t("steamAppIdDescription")}</div>
+              <div style={buttonRowStyle}>
+                <TextField
+                  value={steamAppIdText}
+                  onChange={(e) => setSteamAppIdText(e.target.value)}
+                  style={{ ...flexFieldStyle, minWidth: "18rem" }}
+                />
+                <FocusableButton
+                  className="DialogButton"
+                  disabled={busy}
+                  onClick={applySteamAppId}
+                >
+                  {t("steamAppIdApply")}
+                </FocusableButton>
+              </div>
             </div>
           </PanelSectionRow>
         </PanelSection>
