@@ -1684,6 +1684,8 @@ class Plugin:
                     if value:
                         next_metadata[key] = value
                 next_metadata["source"] = "Steam"
+                next_metadata["community_videos"] = []
+                next_metadata["community_enriched_at"] = now()
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -2072,6 +2074,7 @@ class Plugin:
             )
             if screenshots:
                 details["screenshots"] = screenshots
+                details["community_images"] = screenshots
 
             _plog(
                 "steam",
