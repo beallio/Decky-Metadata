@@ -41,6 +41,7 @@ import {
   getScanProgress,
   testOpenXblCredentials,
   clearXboxAssociations,
+  clearMetadataCache,
   syncTrueAchievementsProgress,
 } from "./backend";
 import { t } from "./i18n";
@@ -334,6 +335,7 @@ export const Content = () => {
   const [scanMessage, setScanMessage] = useState("");
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
+  const [cacheBusy, setCacheBusy] = useState(false);
   const [xboxBulkBusy, setXboxBulkBusy] = useState(false);
   const [xboxBulkMessage, setXboxBulkMessage] = useState("");
   const [ra, setRa] = useState<RetroAchievementsSettings>({
@@ -508,6 +510,21 @@ export const Content = () => {
     setAchievementCachePolicyState((saved.policy as AchievementCachePolicy) || policy);
     clearAchievementsForApps(games.map((game) => game.appid));
     await refreshRaSettings();
+  };
+
+  const clearCache = async () => {
+    if (cacheBusy || busy) return;
+    setCacheBusy(true);
+    try {
+      await clearMetadataCache();
+      await refreshMetadataCache();
+      setMetadataCount(Object.keys(metadataCache).length);
+      toaster.toast({ title: t("pluginName"), body: t("clearCacheDone") });
+    } catch (error) {
+      toaster.toast({ title: t("pluginName"), body: String(error) });
+    } finally {
+      setCacheBusy(false);
+    }
   };
 
   const testXboxLogin = async () => {
@@ -828,6 +845,21 @@ export const Content = () => {
               </FocusableButton>
             ))}
           </div>
+        </div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div style={sectionHeadingStyle}>{t("cacheTitle")}</div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div style={rowStackStyle}>
+          <div style={compactTextStyle}>{t("cacheHint")}</div>
+          <FocusableButton
+            className="DialogButton"
+            disabled={cacheBusy || busy}
+            onClick={clearCache}
+          >
+            {t("clearCache")}
+          </FocusableButton>
         </div>
       </PanelSectionRow>
       {platformCapabilities ? (

@@ -30,6 +30,9 @@ export const removeMetadata = callable<
   [appId: number],
   Record<string, MetadataData>
 >("remove_metadata");
+export const clearMetadataCache = callable<[], { ok: boolean; cleared?: number }>(
+  "clear_metadata_cache"
+);
 export const searchMetadata = callable<
   [query: string, limit?: number],
   MetadataSearchResult[]
