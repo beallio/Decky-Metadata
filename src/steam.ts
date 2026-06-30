@@ -3846,11 +3846,38 @@ const installSteamNavigationRedirect = (unpatchers: Unpatch[]) => {
     });
   };
 
+  const patchAppIdOpener = (target: any, methodName: string, argIndex = 0) => {
+    if (typeof target?.[methodName] !== "function") return;
+    const original = target[methodName];
+    const patched = function playhubSteamAppIdNavigationRedirect(this: any, ...args: any[]) {
+      try {
+        const originalAppId = Number(args[argIndex]);
+        const mapped = steamAppIdForApp(originalAppId);
+        if (mapped > 0 && mapped !== originalAppId) {
+          const nextArgs = [...args];
+          nextArgs[argIndex] = mapped;
+          logSteamLinkNavigation("store", String(args[argIndex]), String(mapped));
+          return original.apply(this, nextArgs);
+        }
+        return original.apply(this, args);
+      } catch (_error) {
+        return original.apply(this, args);
+      }
+    };
+    target[methodName] = patched;
+    redirectUnpatchers.push(() => {
+      if (target?.[methodName] === patched) {
+        target[methodName] = original;
+      }
+    });
+  };
+
   patchUrlOpener(Navigation as any, "NavigateToSteamWeb");
   patchUrlOpener(Navigation as any, "NavigateToExternalWeb");
   patchUrlOpener((window as any)?.SteamClient?.System, "OpenInSystemBrowser");
   patchUrlOpener((window as any)?.SteamClient?.Overlay, "OpenExternalBrowserURL");
   patchUrlOpener(window, "open", true);
+  patchAppIdOpener((window as any)?.SteamClient?.Apps, "ShowStore", 0);
 
   unpatchers.push(() => {
     redirectUnpatchers.splice(0).reverse().forEach((unpatch) => {
