@@ -3003,11 +3003,16 @@ const installSteamNavigationRedirect = (unpatchers) => {
 };
 const NAVIGATION_TRACE_NOISE_PATTERN = /cached|registerfor|getlaunch|getgameaction|appdetails|appdata|appoverview|appachievement/i;
 const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide|workshop|market|navigate|openurl|executesteamurl|browser|web|overlay|showstore|link/i;
+const NAVIGATION_TRACE_CLICK_PATTERN = /store|community|hub|discuss|guide|market|support/i;
+const truncateTraceValue = (value, limit = 80) => {
+    const normalized = String(value || "").replace(/\s+/g, " ").trim();
+    return normalized.length > limit ? `${normalized.slice(0, Math.max(0, limit - 3))}...` : normalized;
+};
 const navigationTraceArg = (value) => {
     if (typeof value === "number")
         return Number.isFinite(value) ? value : String(value);
     if (typeof value === "string")
-        return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+        return truncateTraceValue(value);
     if (value === null)
         return "null";
     if (typeof value === "boolean")
@@ -3028,6 +3033,87 @@ const shouldTraceNavigationCall = (methodName, args) => {
     if (NAVIGATION_TRACE_METHOD_PATTERN.test(methodName))
         return true;
     return args.some((arg) => typeof arg === "number" && steamAppIdForApp(arg) > 0);
+};
+const installClickTrace = (unpatchers) => {
+    const globalState = globalThis;
+    if (globalState.__playhubClickTrace) {
+        unpatchers.push(() => undefined);
+        return;
+    }
+    if (typeof document === "undefined" || typeof document.addEventListener !== "function") {
+        unpatchers.push(() => undefined);
+        return;
+    }
+    globalState.__playhubClickTrace = { installed: true };
+    const isActionableTraceElement = (element) => {
+        const tag = element.tagName.toLowerCase();
+        return (tag === "button" ||
+            tag === "a" ||
+            element.getAttribute("role") === "button" ||
+            element.hasAttribute("onclick") ||
+            element.hasAttribute("href"));
+    };
+    const actionableElement = (target) => {
+        let current = target instanceof Element ? target : null;
+        for (let depth = 0; current && depth < 6; depth += 1) {
+            if (isActionableTraceElement(current))
+                return current;
+            current = current.parentElement;
+        }
+        return null;
+    };
+    const dataAttributes = (element) => {
+        const attrs = {};
+        for (const attr of Array.from(element.attributes || [])) {
+            if (attr.name.startsWith("data-")) {
+                attrs[attr.name] = truncateTraceValue(attr.value, 60);
+            }
+        }
+        return attrs;
+    };
+    const handler = (event) => {
+        try {
+            const element = actionableElement(event.target);
+            if (!element)
+                return;
+            const text = truncateTraceValue(element.textContent || "", 60);
+            const ariaLabel = truncateTraceValue(element.getAttribute("aria-label") || "", 60);
+            if (!NAVIGATION_TRACE_CLICK_PATTERN.test(`${text} ${ariaLabel}`))
+                return;
+            const href = element instanceof HTMLAnchorElement
+                ? element.href
+                : element.getAttribute("href") || undefined;
+            const descriptor = {
+                tag: element.tagName.toLowerCase(),
+                text,
+                href: href ? truncateTraceValue(href, 120) : undefined,
+                role: element.getAttribute("role") || undefined,
+                "aria-label": ariaLabel || undefined,
+                data: dataAttributes(element),
+            };
+            void frontendLog("trace", "click", descriptor).catch(() => undefined);
+        }
+        catch (_error) {
+            // Passive diagnostics must never affect click behavior.
+        }
+    };
+    try {
+        document.addEventListener("click", handler, true);
+    }
+    catch (_error) {
+        delete globalState.__playhubClickTrace;
+        unpatchers.push(() => undefined);
+        return;
+    }
+    unpatchers.push(() => {
+        try {
+            document.removeEventListener("click", handler, true);
+        }
+        catch (_error) {
+            // Best effort teardown.
+        }
+        delete globalState.__playhubClickTrace;
+    });
 };
 const installNavigationTrace = (unpatchers) => {
     const globalState = globalThis;
@@ -3061,34 +3147,84 @@ const installNavigationTrace = (unpatchers) => {
         return [...names];
     };
     const patchTraceTarget = (target, objLabel) => {
-        if (!target || seenTargets.has(target))
-            return;
-        seenTargets.add(target);
-        for (const name of collectMethodNames(target)) {
-            const original = target[name];
+        try {
+            if (!target || seenTargets.has(target))
+                return 0;
+            seenTargets.add(target);
+            let wrapped = 0;
+            for (const name of collectMethodNames(target)) {
+                const original = target[name];
+                if (typeof original !== "function")
+                    continue;
+                const patched = function playhubNavigationTrace(...args) {
+                    try {
+                        if (shouldTraceNavigationCall(name, args)) {
+                            void frontendLog("trace", `${objLabel}.${name}`, { args: args.map(navigationTraceArg) }).catch(() => undefined);
+                        }
+                    }
+                    catch (_error) {
+                        // Diagnostic tracing must never affect Steam navigation.
+                    }
+                    return original.apply(this, args);
+                };
+                try {
+                    target[name] = patched;
+                }
+                catch (_error) {
+                    continue;
+                }
+                wrapped += 1;
+                traceUnpatchers.push(() => {
+                    try {
+                        if (target?.[name] === patched) {
+                            target[name] = original;
+                        }
+                    }
+                    catch (_error) {
+                        // Best effort teardown.
+                    }
+                });
+            }
+            return wrapped;
+        }
+        catch (_error) {
+            return 0;
+        }
+    };
+    const counts = {
+        "SteamClient.Apps": patchTraceTarget(window?.SteamClient?.Apps, "SteamClient.Apps"),
+        Navigation: patchTraceTarget(DFL.Navigation, "Navigation"),
+        Router: 0,
+        "SteamClient.URL": patchTraceTarget(window?.SteamClient?.URL, "SteamClient.URL"),
+        "SteamClient.System": patchTraceTarget(window?.SteamClient?.System, "SteamClient.System"),
+        "SteamClient.Overlay": patchTraceTarget(window?.SteamClient?.Overlay, "SteamClient.Overlay"),
+        MainWindowBrowserManager: patchTraceTarget(window?.MainWindowBrowserManager, "MainWindowBrowserManager"),
+    };
+    counts.Router += patchTraceTarget(window?.SteamClient?.Router, "SteamClient.Router");
+    counts.Router += patchTraceTarget(globalState.Router, "Router");
+    try {
+        const history = window?.history;
+        for (const methodName of ["pushState", "replaceState"]) {
+            const original = history?.[methodName];
             if (typeof original !== "function")
                 continue;
-            const patched = function playhubNavigationTrace(...args) {
+            const patched = function playhubHistoryTrace(...args) {
                 try {
-                    if (shouldTraceNavigationCall(name, args)) {
-                        void frontendLog("trace", `${objLabel}.${name}`, { args: args.map(navigationTraceArg) }).catch(() => undefined);
-                    }
+                    void frontendLog("trace", "history", {
+                        method: methodName,
+                        url: truncateTraceValue(String(args[2] ?? ""), 120),
+                    }).catch(() => undefined);
                 }
                 catch (_error) {
                     // Diagnostic tracing must never affect Steam navigation.
                 }
                 return original.apply(this, args);
             };
-            try {
-                target[name] = patched;
-            }
-            catch (_error) {
-                continue;
-            }
+            history[methodName] = patched;
             traceUnpatchers.push(() => {
                 try {
-                    if (target?.[name] === patched) {
-                        target[name] = original;
+                    if (history?.[methodName] === patched) {
+                        history[methodName] = original;
                     }
                 }
                 catch (_error) {
@@ -3096,15 +3232,16 @@ const installNavigationTrace = (unpatchers) => {
                 }
             });
         }
-    };
-    patchTraceTarget(window?.SteamClient?.Apps, "SteamClient.Apps");
-    patchTraceTarget(DFL.Navigation, "Navigation");
-    patchTraceTarget(window?.SteamClient?.Router, "SteamClient.Router");
-    patchTraceTarget(globalState.Router, "Router");
-    patchTraceTarget(window?.SteamClient?.URL, "SteamClient.URL");
-    patchTraceTarget(window?.SteamClient?.System, "SteamClient.System");
-    patchTraceTarget(window?.SteamClient?.Overlay, "SteamClient.Overlay");
-    patchTraceTarget(window?.MainWindowBrowserManager, "MainWindowBrowserManager");
+    }
+    catch (_error) {
+        // History tracing is diagnostic-only.
+    }
+    try {
+        void frontendLog("trace", "nav trace installed", { counts }).catch(() => undefined);
+    }
+    catch (_error) {
+        // Diagnostic tracing must never affect Steam navigation.
+    }
     unpatchers.push(() => {
         traceUnpatchers.splice(0).reverse().forEach((unpatch) => {
             try {
@@ -3576,6 +3713,7 @@ const installSteamPatches = () => {
     }
     installSteamNavigationRedirect(unpatchers);
     installNavigationTrace(unpatchers);
+    installClickTrace(unpatchers);
     const redirectAchievementTarget = (target) => {
         const raw = String(target || "");
         if (raw.includes("/playhub-metadata/achievements/"))
