@@ -3001,7 +3001,8 @@ const installSteamNavigationRedirect = (unpatchers) => {
         delete globalState.__playhubNavRedirect;
     });
 };
-const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide|review|news|workshop|market|nav|url|web|app|overlay/i;
+const NAVIGATION_TRACE_NOISE_PATTERN = /cached|registerfor|getlaunch|getgameaction|appdetails|appdata|appoverview|appachievement/i;
+const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide|workshop|market|navigate|openurl|executesteamurl|browser|web|overlay|showstore|link/i;
 const navigationTraceArg = (value) => {
     if (typeof value === "number")
         return Number.isFinite(value) ? value : String(value);
@@ -3022,6 +3023,8 @@ const navigationTraceArg = (value) => {
     return value?.constructor?.name || "Object";
 };
 const shouldTraceNavigationCall = (methodName, args) => {
+    if (NAVIGATION_TRACE_NOISE_PATTERN.test(methodName))
+        return false;
     if (NAVIGATION_TRACE_METHOD_PATTERN.test(methodName))
         return true;
     return args.some((arg) => typeof arg === "number" && steamAppIdForApp(arg) > 0);
@@ -3035,15 +3038,36 @@ const installNavigationTrace = (unpatchers) => {
     const traceUnpatchers = [];
     const seenTargets = new Set();
     globalState.__playhubNavTrace = { installed: true };
+    const collectMethodNames = (obj) => {
+        const names = new Set();
+        let cur = obj;
+        let depth = 0;
+        while (cur && cur !== Object.prototype && depth < 6) {
+            for (const name of Object.getOwnPropertyNames(cur)) {
+                if (name === "constructor")
+                    continue;
+                try {
+                    if (typeof obj[name] === "function") {
+                        names.add(name);
+                    }
+                }
+                catch (_error) {
+                    // Some Steam getters throw outside their expected runtime path.
+                }
+            }
+            cur = Object.getPrototypeOf(cur);
+            depth += 1;
+        }
+        return [...names];
+    };
     const patchTraceTarget = (target, objLabel) => {
         if (!target || seenTargets.has(target))
             return;
         seenTargets.add(target);
-        for (const name of Object.keys(target)) {
-            const descriptor = Object.getOwnPropertyDescriptor(target, name);
-            if (!descriptor || typeof descriptor.value !== "function")
+        for (const name of collectMethodNames(target)) {
+            const original = target[name];
+            if (typeof original !== "function")
                 continue;
-            const original = descriptor.value;
             const patched = function playhubNavigationTrace(...args) {
                 try {
                     if (shouldTraceNavigationCall(name, args)) {
@@ -3077,6 +3101,10 @@ const installNavigationTrace = (unpatchers) => {
     patchTraceTarget(DFL.Navigation, "Navigation");
     patchTraceTarget(window?.SteamClient?.Router, "SteamClient.Router");
     patchTraceTarget(globalState.Router, "Router");
+    patchTraceTarget(window?.SteamClient?.URL, "SteamClient.URL");
+    patchTraceTarget(window?.SteamClient?.System, "SteamClient.System");
+    patchTraceTarget(window?.SteamClient?.Overlay, "SteamClient.Overlay");
+    patchTraceTarget(window?.MainWindowBrowserManager, "MainWindowBrowserManager");
     unpatchers.push(() => {
         traceUnpatchers.splice(0).reverse().forEach((unpatch) => {
             try {
