@@ -905,6 +905,14 @@ class Plugin:
         self._save_data()
         return self._data["metadata"]
 
+    async def clear_metadata_cache(self) -> dict[str, Any]:
+        self._load_data()
+        cleared = len(self._data.get("metadata") or {})
+        self._data["metadata"] = {}
+        self._save_data()
+        _plog("cache", "metadata cache cleared", count=cleared)
+        return {"ok": True, "cleared": cleared}
+
     async def search_metadata(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._search_metadata_sync, query, limit)
 
