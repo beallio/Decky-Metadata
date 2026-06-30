@@ -3856,6 +3856,51 @@ const logSteamLinkNavigation = (kind: string, original: string, rewritten: strin
 const PLAYHUB_HIDE_APP_LINKS_CLASS = "playhub-hide-applinks";
 const PLAYHUB_HIDE_APP_LINKS_STYLE_ID = "playhub-hide-applinks-style";
 
+const isAppDetailsLinkRowModule = (candidate: any) =>
+  !!candidate &&
+  typeof candidate === "object" &&
+  typeof candidate.LinkRow === "string" &&
+  typeof candidate.LinkRowText === "string" &&
+  typeof candidate.LinkRowIcon === "string";
+
+const resolveAppDetailsLinkRowClasses = (): string[] => {
+  try {
+    const discovered = findModuleChild((module: any) => {
+      if (isAppDetailsLinkRowModule(module)) return module;
+      if (!module || typeof module !== "object") return undefined;
+      for (const prop in module) {
+        const candidate = module[prop];
+        if (isAppDetailsLinkRowModule(candidate)) return candidate;
+      }
+      return undefined;
+    });
+    const linkRow = discovered?.LinkRow;
+    return typeof linkRow === "string" && linkRow.trim() ? [linkRow.trim()] : [];
+  } catch (_error) {
+    return [];
+  }
+};
+
+const appLinksHiderClassSelector = (className: string) => {
+  const trimmed = className.trim();
+  return /^[A-Za-z_-][A-Za-z0-9_-]*$/.test(trimmed) ? `.${trimmed}` : "";
+};
+
+const buildUnmatchedAppLinksHiderStyle = (linkRowClasses: string[]) => {
+  const selectors = Array.from(new Set(linkRowClasses))
+    .map(appLinksHiderClassSelector)
+    .filter(Boolean)
+    .map((selector) => `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} ${selector}`);
+  const targetSelector = selectors.length
+    ? selectors.join(",\n")
+    : `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} [class*="LinkRow"]`;
+  return `
+${targetSelector} {
+  display: none !important;
+}
+`;
+};
+
 const shouldHideUnmatchedAppLinks = () => {
   const pathAppId = gameDetailAppIdFromPath(currentRoutePath());
   if (!pathAppId) return false;
@@ -3881,16 +3926,24 @@ const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
   const style = existingStyle || document.createElement("style");
   if (!existingStyle) {
     style.id = PLAYHUB_HIDE_APP_LINKS_STYLE_ID;
-    style.textContent = `
-      body.${PLAYHUB_HIDE_APP_LINKS_CLASS} [class*="LinkRow"] {
-        display: none !important;
-      }
-    `;
     document.head.appendChild(style);
   }
 
+  let resolvedLinkRowClasses: string[] = [];
+  let appliedLinkRowClasses = "";
+  const updateStyle = () => {
+    if (resolvedLinkRowClasses.length === 0) {
+      resolvedLinkRowClasses = resolveAppDetailsLinkRowClasses();
+    }
+    const nextAppliedLinkRowClasses = resolvedLinkRowClasses.join(" ");
+    if (style.textContent && nextAppliedLinkRowClasses === appliedLinkRowClasses) return;
+    style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedLinkRowClasses);
+    appliedLinkRowClasses = nextAppliedLinkRowClasses;
+  };
+
   const update = () => {
     try {
+      updateStyle();
       document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, shouldHideUnmatchedAppLinks());
     } catch (_error) {
       // Passive UI polish must never affect Steam navigation or rendering.
