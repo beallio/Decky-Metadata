@@ -1460,7 +1460,7 @@ class Plugin:
         for slug in self._slug_candidates(cleaned):
             try:
                 metadata = self._fetch_metadata_sync(slug)
-                if metadata and self._reasonable_match(cleaned, metadata.get("title", "")):
+                if metadata and self._ign_title_acceptable(cleaned, metadata.get("title", "")):
                     return metadata
             except Exception:
                 continue
@@ -1469,9 +1469,16 @@ class Plugin:
         if not results:
             return None
         best = results[0]
-        if not self._reasonable_match(cleaned, best.get("title", "")):
+        if not self._ign_title_acceptable(cleaned, best.get("title", "")):
             return None
         return self._fetch_metadata_sync(best["slug"] or best["url"])
+
+    def _ign_title_acceptable(self, query: str, candidate_title: str) -> bool:
+        if not self._reasonable_match(query, candidate_title):
+            return False
+        query_norm = self._normalise_match_title(query)
+        candidate_norm = self._normalise_match_title(candidate_title)
+        return self._distinctive_tokens_present(query_norm, candidate_norm)
 
     def _fetch_metadata_sync(self, slug_or_url: str) -> dict[str, Any] | None:
         slug = self._slug_from_ign_value(slug_or_url)
