@@ -2975,26 +2975,44 @@ const isAppDetailsLinkRowModule = (candidate) => !!candidate &&
     typeof candidate.LinkRow === "string" &&
     typeof candidate.LinkRowText === "string" &&
     typeof candidate.LinkRowIcon === "string";
+const appDetailsLinkRowModuleFromExports = (module) => {
+    if (isAppDetailsLinkRowModule(module))
+        return module;
+    if (!module || typeof module !== "object")
+        return undefined;
+    for (const candidate of Object.values(module)) {
+        if (isAppDetailsLinkRowModule(candidate))
+            return candidate;
+    }
+    return undefined;
+};
 const resolveAppDetailsLinkRowClasses = () => {
     try {
-        const discovered = DFL.findModuleChild((module) => {
-            if (isAppDetailsLinkRowModule(module))
-                return module;
-            if (!module || typeof module !== "object")
+        let discovered = DFL.findModuleChild(appDetailsLinkRowModuleFromExports);
+        if (!discovered) {
+            discovered = DFL.findModuleChild((module) => {
+                if (!module || typeof module !== "object")
+                    return undefined;
+                for (const candidate of Object.values(module)) {
+                    const nested = appDetailsLinkRowModuleFromExports(candidate);
+                    if (nested)
+                        return nested;
+                }
                 return undefined;
-            for (const prop in module) {
-                const candidate = module[prop];
-                if (isAppDetailsLinkRowModule(candidate))
-                    return candidate;
-            }
-            return undefined;
-        });
+            });
+        }
         const linkRow = discovered?.LinkRow;
         return typeof linkRow === "string" && linkRow.trim() ? [linkRow.trim()] : [];
     }
     catch (_error) {
         return [];
     }
+};
+const onGameDetailRoute = (path) => {
+    const decoded = safeDecodeURIComponent(String(path || ""));
+    if (/\/achievements(\b|\/)/i.test(decoded))
+        return false;
+    return gameDetailAppIdFromPath(decoded) > 0 || /\/library\/(app|details)\//i.test(decoded);
 };
 const appLinksHiderClassSelector = (className) => {
     const trimmed = className.trim();
@@ -3014,12 +3032,55 @@ ${targetSelector} {
 }
 `;
 };
+const appLinksDomClassPresent = (className) => {
+    const trimmed = className.trim();
+    if (!trimmed)
+        return false;
+    try {
+        const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(trimmed)
+            : trimmed.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        return !!document.querySelector(`.${escaped}`);
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const unmatchedAppLinksDecisionDetails = () => {
+    const appId = currentGameDetailAppId();
+    const overview = appId ? getOverview(appId) : null;
+    const isNonSteam = !!(appId && isNonSteamApp(overview));
+    const steamAppId = appId ? steamAppIdForApp(appId) : 0;
+    return { appId, isNonSteam, steamAppId };
+};
+const logUnmatchedAppLinksDecision = (decision, resolvedLinkRowClasses, lastSignature) => {
+    const details = unmatchedAppLinksDecisionDetails();
+    const signature = `${decision}|${resolvedLinkRowClasses.join(",")}|${details.appId}`;
+    if (signature === lastSignature)
+        return lastSignature;
+    try {
+        void frontendLog("applinks", "hider decision", {
+            decision,
+            appId: details.appId,
+            isNonSteam: details.isNonSteam,
+            steamAppId: details.steamAppId,
+            resolvedClasses: resolvedLinkRowClasses,
+            classPresentInDom: resolvedLinkRowClasses[0]
+                ? appLinksDomClassPresent(resolvedLinkRowClasses[0])
+                : false,
+        }).catch(() => undefined);
+    }
+    catch (_error) {
+        // Diagnostic logging must never affect the passive hider.
+    }
+    return signature;
+};
 const shouldHideUnmatchedAppLinks = () => {
-    const pathAppId = gameDetailAppIdFromPath(currentRoutePath());
-    if (!pathAppId)
+    const path = currentRoutePath();
+    if (!onGameDetailRoute(path))
         return false;
     const appId = currentGameDetailAppId();
-    if (!appId || appId !== pathAppId)
+    if (!appId)
         return false;
     return isNonSteamApp(getOverview(appId)) && steamAppIdForApp(appId) === 0;
 };
@@ -3042,6 +3103,7 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
     }
     let resolvedLinkRowClasses = [];
     let appliedLinkRowClasses = "";
+    let lastDecisionLogSignature = "";
     const updateStyle = () => {
         if (resolvedLinkRowClasses.length === 0) {
             resolvedLinkRowClasses = resolveAppDetailsLinkRowClasses();
@@ -3055,7 +3117,9 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
     const update = () => {
         try {
             updateStyle();
-            document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, shouldHideUnmatchedAppLinks());
+            const decision = shouldHideUnmatchedAppLinks();
+            lastDecisionLogSignature = logUnmatchedAppLinksDecision(decision, resolvedLinkRowClasses, lastDecisionLogSignature);
+            document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, decision);
         }
         catch (_error) {
             // Passive UI polish must never affect Steam navigation or rendering.
