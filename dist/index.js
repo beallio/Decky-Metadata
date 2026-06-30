@@ -3335,6 +3335,183 @@ const installNavigationTrace = (unpatchers) => {
         delete globalState.__playhubNavTrace;
     });
 };
+const HISTORY_INSTANCE_TRACE_KEY_PATTERN = /window|instance|store|history|nav|main|browser|gamepad|overlay/i;
+const safeTraceProperty = (obj, key) => {
+    try {
+        return obj?.[key];
+    }
+    catch (_error) {
+        return undefined;
+    }
+};
+const safeTraceOwnPropertyNames = (obj) => {
+    try {
+        return Object.getOwnPropertyNames(obj);
+    }
+    catch (_error) {
+        return [];
+    }
+};
+const isHistoryInstanceTraceTarget = (value) => {
+    try {
+        if (!value || typeof value !== "object")
+            return false;
+        if (typeof value.push !== "function" || typeof value.replace !== "function")
+            return false;
+        const location = safeTraceProperty(value, "location");
+        const entries = safeTraceProperty(value, "entries");
+        const length = safeTraceProperty(value, "length");
+        return ((!!location && typeof location === "object") ||
+            Array.isArray(entries) ||
+            typeof length === "number");
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const hasTraceableHistoryMethods = (value) => {
+    try {
+        return !!value && typeof value.push === "function" && typeof value.replace === "function";
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const collectHistoryInstanceTraceTargets = () => {
+    const globalState = globalThis;
+    const windowState = typeof window !== "undefined" ? window : undefined;
+    const roots = [
+        { label: "Router", history: safeTraceProperty(globalState, "Router") },
+        { label: "Router.WindowStore", history: safeTraceProperty(safeTraceProperty(globalState, "Router"), "WindowStore") },
+        { label: "SteamUIStore", history: safeTraceProperty(windowState, "SteamUIStore") },
+        { label: "App", history: safeTraceProperty(windowState, "App") },
+    ];
+    const instances = [];
+    const seenNodes = new WeakSet();
+    let scannedNodes = 0;
+    const maxDepth = 4;
+    const maxNodes = 400;
+    const recordInstance = (label, history, requireShape = true) => {
+        if (!history || typeof history !== "object")
+            return;
+        if (requireShape ? !isHistoryInstanceTraceTarget(history) : !hasTraceableHistoryMethods(history))
+            return;
+        instances.push({ label, history });
+    };
+    const queue = roots
+        .filter(({ history }) => !!history && typeof history === "object")
+        .map(({ label, history }) => ({ label, value: history, depth: 0 }));
+    for (let index = 0; index < queue.length && scannedNodes < maxNodes; index += 1) {
+        const { label, value, depth } = queue[index];
+        if (!value || typeof value !== "object")
+            continue;
+        if (seenNodes.has(value))
+            continue;
+        seenNodes.add(value);
+        scannedNodes += 1;
+        recordInstance(label, value);
+        recordInstance(`${label}.m_history`, safeTraceProperty(value, "m_history"), false);
+        if (depth >= maxDepth)
+            continue;
+        for (const key of safeTraceOwnPropertyNames(value)) {
+            if (scannedNodes + queue.length >= maxNodes * 2)
+                break;
+            if (!HISTORY_INSTANCE_TRACE_KEY_PATTERN.test(key))
+                continue;
+            const next = safeTraceProperty(value, key);
+            if (!next || typeof next !== "object")
+                continue;
+            queue.push({ label: `${label}.${key}`, value: next, depth: depth + 1 });
+        }
+    }
+    return instances;
+};
+const installHistoryInstanceTrace = (unpatchers) => {
+    const globalState = globalThis;
+    if (globalState.__playhubHistoryInstanceTrace) {
+        unpatchers.push(() => undefined);
+        return;
+    }
+    const traceUnpatchers = [];
+    const wrappedHistories = new WeakSet();
+    globalState.__playhubHistoryInstanceTrace = { installed: true };
+    const instances = collectHistoryInstanceTraceTargets();
+    try {
+        void frontendLog("trace", "history instances", {
+            labels: instances.map(({ label }) => label),
+            count: instances.length,
+        }).catch(() => undefined);
+    }
+    catch (_error) {
+        // Passive diagnostics must never affect Steam navigation.
+    }
+    const shouldTraceHistoryInstanceCall = (path, state) => {
+        if (String(path || "").toLowerCase().includes("steamweb"))
+            return true;
+        const url = typeof state?.url === "string" ? state.url : "";
+        return !!url && !!steamLinkTarget(url);
+    };
+    for (const { label, history } of instances) {
+        try {
+            if (!history || typeof history !== "object" || wrappedHistories.has(history))
+                continue;
+            wrappedHistories.add(history);
+            for (const methodName of ["push", "replace"]) {
+                const original = history[methodName];
+                if (typeof original !== "function")
+                    continue;
+                const patched = function playhubHistoryInstanceTrace(...args) {
+                    try {
+                        const path = historyPathFromArgs(args);
+                        const state = historyStateFromArgs(args);
+                        if (shouldTraceHistoryInstanceCall(path, state)) {
+                            void frontendLog("trace", "history call", {
+                                instance: label,
+                                method: methodName,
+                                path: truncateTraceValue(path, 120),
+                                url: typeof state?.url === "string" ? truncateTraceValue(state.url, 160) : "",
+                            }).catch(() => undefined);
+                        }
+                    }
+                    catch (_error) {
+                        // Diagnostic tracing must never affect Steam navigation.
+                    }
+                    return original.apply(this, args);
+                };
+                try {
+                    history[methodName] = patched;
+                }
+                catch (_error) {
+                    continue;
+                }
+                traceUnpatchers.push(() => {
+                    try {
+                        if (history?.[methodName] === patched) {
+                            history[methodName] = original;
+                        }
+                    }
+                    catch (_error) {
+                        // Best effort teardown.
+                    }
+                });
+            }
+        }
+        catch (_error) {
+            // Keep scanning and patching other history instances.
+        }
+    }
+    unpatchers.push(() => {
+        traceUnpatchers.splice(0).reverse().forEach((unpatch) => {
+            try {
+                unpatch();
+            }
+            catch (_error) {
+                // Best effort teardown.
+            }
+        });
+        delete globalState.__playhubHistoryInstanceTrace;
+    });
+};
 let achievementStorePatchInstalled = false;
 const tryInstallAchievementStorePatch = (unpatchers) => {
     if (achievementStorePatchInstalled)
@@ -3794,6 +3971,7 @@ const installSteamPatches = () => {
     }
     installSteamNavigationRedirect(unpatchers);
     installNavigationTrace(unpatchers);
+    installHistoryInstanceTrace(unpatchers);
     installClickTrace(unpatchers);
     const redirectAchievementTarget = (target) => {
         const raw = String(target || "");
