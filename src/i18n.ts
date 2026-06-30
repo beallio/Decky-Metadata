@@ -32,6 +32,10 @@ const STRINGS = {
     steamCommunityHub: "Community Hub",
     steamDiscussions: "Discussions",
     steamGuides: "Guides",
+    steamAppIdLabel: "Steam App ID",
+    steamAppIdDescription:
+      "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
+    steamAppIdApply: "Apply Steam App ID",
     retroTitle: "Achievements",
     retroEnabled: "Enable achievements",
     retroUser: "RetroAchievements username",
@@ -189,6 +193,10 @@ const STRINGS = {
     steamCommunityHub: "Community Hub",
     steamDiscussions: "Discussions",
     steamGuides: "Guides",
+    steamAppIdLabel: "ID app Steam",
+    steamAppIdDescription:
+      "Incolla un ID app Steam, URL dello Store, URL Community o URL SteamDB. Lascia vuoto per cancellare il match Steam fissato.",
+    steamAppIdApply: "Applica ID app Steam",
     retroTitle: "Obiettivi",
     retroEnabled: "Abilita obiettivi",
     retroUser: "Username RetroAchievements",

@@ -937,6 +937,18 @@ class Plugin:
             await self.save_metadata(app_id, metadata)
         return metadata
 
+    async def enrich_steam_app(self, app_id: int) -> dict[str, Any] | None:
+        self._load_data()
+        key = str(app_id)
+        metadata = self._data["metadata"].get(key)
+        if not isinstance(metadata, dict):
+            return None
+        title = str(metadata.get("title") or "")
+        enriched = await asyncio.to_thread(
+            self._metadata_with_steam_news_sync, metadata, title
+        )
+        return await self.save_metadata(app_id, enriched)
+
     async def enrich_community_media(
         self, app_id: int, title: str = "", source_url: str = ""
     ) -> dict[str, Any] | None:
