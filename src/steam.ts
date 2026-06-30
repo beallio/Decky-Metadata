@@ -3853,6 +3853,64 @@ const logSteamLinkNavigation = (kind: string, original: string, rewritten: strin
   void frontendLog("nav", "steam link", { kind, original, rewritten }).catch(() => undefined);
 };
 
+const PLAYHUB_HIDE_APP_LINKS_CLASS = "playhub-hide-applinks";
+const PLAYHUB_HIDE_APP_LINKS_STYLE_ID = "playhub-hide-applinks-style";
+
+const shouldHideUnmatchedAppLinks = () => {
+  const pathAppId = gameDetailAppIdFromPath(currentRoutePath());
+  if (!pathAppId) return false;
+  const appId = currentGameDetailAppId();
+  if (!appId || appId !== pathAppId) return false;
+  return isNonSteamApp(getOverview(appId)) && steamAppIdForApp(appId) === 0;
+};
+
+const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
+  const globalState = globalThis as any;
+  if (globalState.__playhubAppLinksHider) {
+    unpatchers.push(() => undefined);
+    return;
+  }
+  if (typeof document === "undefined" || !document.body || !document.head) {
+    unpatchers.push(() => undefined);
+    return;
+  }
+
+  globalState.__playhubAppLinksHider = { installed: true };
+
+  const existingStyle = document.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID);
+  const style = existingStyle || document.createElement("style");
+  if (!existingStyle) {
+    style.id = PLAYHUB_HIDE_APP_LINKS_STYLE_ID;
+    style.textContent = `
+      body.${PLAYHUB_HIDE_APP_LINKS_CLASS} [class*="LinkRow"] {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const update = () => {
+    try {
+      document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, shouldHideUnmatchedAppLinks());
+    } catch (_error) {
+      // Passive UI polish must never affect Steam navigation or rendering.
+    }
+  };
+
+  update();
+  const timer = window.setInterval(update, 400);
+  unpatchers.push(() => {
+    try {
+      window.clearInterval(timer);
+      document.body?.classList.remove(PLAYHUB_HIDE_APP_LINKS_CLASS);
+      style.remove();
+    } catch (_error) {
+      // Best effort teardown.
+    }
+    delete globalState.__playhubAppLinksHider;
+  });
+};
+
 const installSteamNavigationRedirect = (unpatchers: Unpatch[]) => {
   const globalState = globalThis as any;
   if (globalState.__playhubNavRedirect) {
@@ -5017,6 +5075,7 @@ const backSteamHistory = (steamHistory: any) => {
 export const installSteamPatches = (): Unpatch => {
   const unpatchers: Unpatch[] = [];
   installAchievementImageCoverPatch(unpatchers);
+  installUnmatchedAppLinksHider(unpatchers);
   // Activity news now use Steam's own AppActivityStore and native Activity
   // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
   // source only as old fallbacks, but the integration attempt for this build is
