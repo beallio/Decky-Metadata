@@ -4827,6 +4827,21 @@ export const installSteamPatches = (): Unpatch => {
                 return backSteamHistory(steamHistory) ?? original(...args);
               }
             }
+            try {
+              const path = String(target || "").toLowerCase();
+              if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
+                const rewritten = rewriteSteamLinkToMatchedApp(state.url);
+                if (rewritten.rewrote) {
+                  state.url = rewritten.url;
+                  void frontendLog("nav", "steamweb router rewrite", {
+                    from: rewritten.fromAppId,
+                    to: rewritten.toAppId,
+                  }).catch(() => undefined);
+                }
+              }
+            } catch (_error) {
+              // Steam navigation must continue even if the redirect probe fails.
+            }
             return original(...args);
           })
         );
