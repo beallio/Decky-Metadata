@@ -518,6 +518,11 @@ export const Content = () => {
     try {
       await clearMetadataCache();
       await refreshMetadataCache();
+      if (games.length) {
+        void startScanMissing(games).catch((error) => {
+          log.warn("bridge", "metadata scan start after clear cache failed", error);
+        });
+      }
       setMetadataCount(Object.keys(metadataCache).length);
       toaster.toast({ title: t("pluginName"), body: t("clearCacheDone") });
     } catch (error) {

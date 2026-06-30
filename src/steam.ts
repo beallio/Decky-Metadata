@@ -6,6 +6,7 @@ import {
   enrichCommunityMedia,
   fetchAchievements,
   fetchMetadata,
+  frontendLog,
   getAchievementSettings,
   getAllMetadata,
   resolveRetroAchievementsFromPath,
@@ -22,8 +23,6 @@ import {
 } from "./types";
 import { t } from "./i18n";
 import * as log from "./log";
-import { openExternalUrl } from "./openExternalUrl";
-import { steamAppLinks, type SteamAppLinks } from "./steamLinks";
 
 declare const appStore: any;
 declare const appDetailsStore: any;
@@ -173,6 +172,104 @@ export const getOverview = (appId: number): any | null => {
 
 export const steamAppIdForApp = (appId: number): number =>
   Number(metadataCache[String(appId)]?.steam_appid) || 0;
+
+type SteamLinkTarget = {
+  kind: "store" | "community";
+  appId: number;
+  replace: (mappedAppId: number) => string;
+};
+
+type SteamLinkRewrite = {
+  url: string;
+  rewrote: boolean;
+  fromAppId?: number;
+  toAppId?: number;
+};
+
+const safeDecodeURIComponent = (value: string): string => {
+  try {
+    return decodeURIComponent(value);
+  } catch (_error) {
+    return value;
+  }
+};
+
+const steamWebLinkTarget = (url: string): SteamLinkTarget | null => {
+  const match =
+    url.match(/(?:https?:\/\/)?store\.steampowered\.com\/app\/(\d+)/i) ||
+    url.match(/(?:https?:\/\/)?steamcommunity\.com\/app\/(\d+)/i);
+  if (!match?.[1]) return null;
+  const appId = Number(match[1]);
+  if (!Number.isFinite(appId) || appId <= 0) return null;
+  const kind = /steamcommunity\.com\/app\//i.test(match[0]) ? "community" : "store";
+  const idIndex = match.index === undefined ? -1 : match.index + match[0].lastIndexOf(match[1]);
+  if (idIndex < 0) return null;
+  return {
+    kind,
+    appId,
+    replace: (mappedAppId: number) =>
+      `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + match[1].length)}`,
+  };
+};
+
+const steamProtocolLinkTarget = (url: string): SteamLinkTarget | null => {
+  const storeMatch =
+    url.match(/^steam:\/\/store\/(\d+)/i) ||
+    url.match(/^steam:\/\/url\/StoreAppPage\/(\d+)/i);
+  if (storeMatch?.[1]) {
+    const appId = Number(storeMatch[1]);
+    const idIndex = storeMatch.index === undefined ? -1 : storeMatch.index + storeMatch[0].lastIndexOf(storeMatch[1]);
+    if (Number.isFinite(appId) && appId > 0 && idIndex >= 0) {
+      return {
+        kind: "store",
+        appId,
+        replace: (mappedAppId: number) =>
+          `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + storeMatch[1].length)}`,
+      };
+    }
+  }
+
+  const openUrlMatch = url.match(/^steam:\/\/openurl\/(.+)$/i);
+  if (!openUrlMatch?.[1]) return null;
+  const rawTarget = openUrlMatch[1];
+  const decodedTarget = safeDecodeURIComponent(rawTarget);
+  const nested = steamWebLinkTarget(decodedTarget) || steamWebLinkTarget(rawTarget);
+  if (!nested) return null;
+  return {
+    kind: nested.kind,
+    appId: nested.appId,
+    replace: (mappedAppId: number) => `steam://openurl/${nested.replace(mappedAppId)}`,
+  };
+};
+
+const steamLinkTarget = (url: string): SteamLinkTarget | null => {
+  try {
+    const rawUrl = String(url || "");
+    return steamProtocolLinkTarget(rawUrl) || steamWebLinkTarget(rawUrl);
+  } catch (_error) {
+    return null;
+  }
+};
+
+export const rewriteSteamLinkToMatchedApp = (url: string): SteamLinkRewrite => {
+  try {
+    const rawUrl = String(url || "");
+    const target = steamLinkTarget(rawUrl);
+    if (!target) return { url: rawUrl, rewrote: false };
+    const mapped = steamAppIdForApp(target.appId);
+    if (mapped > 0 && mapped !== target.appId) {
+      return {
+        url: target.replace(mapped),
+        rewrote: true,
+        fromAppId: target.appId,
+        toAppId: mapped,
+      };
+    }
+    return { url: rawUrl, rewrote: false };
+  } catch (_error) {
+    return { url: String(url || ""), rewrote: false };
+  }
+};
 
 const shortcutAppIdForSteamAppId = (steamAppId: number): number | null => {
   if (!Number.isFinite(steamAppId) || steamAppId <= 0) return null;
@@ -2199,124 +2296,6 @@ const mountActivityNewsRoot = (root: HTMLElement, mount: ActivityNewsMountInfo) 
   if (!root.parentElement || root.parentElement !== target) target.appendChild(root);
 };
 
-type SteamLinkButton = {
-  key: keyof SteamAppLinks;
-  label: string;
-};
-
-const ensurePlayhubSteamLinksStyle = () => {
-  if (document.getElementById("playhub-steam-links-style")) return;
-  const style = document.createElement("style");
-  style.id = "playhub-steam-links-style";
-  style.textContent = `
-    .playhub-steam-links-root {
-      width: 100%;
-      margin: 0 0 16px;
-      padding: 10px 0 18px;
-      box-sizing: border-box;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      color: rgba(255,255,255,0.92);
-    }
-    .playhub-steam-links-button {
-      min-width: 154px;
-      min-height: 38px;
-      padding: 0 18px;
-      border: 0;
-      border-radius: 3px;
-      background: rgba(103, 112, 123, 0.68);
-      color: rgba(255,255,255,0.94);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-      font: inherit;
-      font-size: 15px;
-      line-height: 38px;
-      text-align: center;
-      cursor: pointer;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .playhub-steam-links-button:hover,
-    .playhub-steam-links-button:focus {
-      background: rgba(124, 139, 153, 0.92);
-      box-shadow: 0 0 0 2px rgba(255,255,255,0.38), inset 0 0 0 1px rgba(255,255,255,0.16);
-      outline: none;
-    }
-  `;
-  document.head.appendChild(style);
-};
-
-const removeSteamLinksRow = () => {
-  document.getElementById("playhub-steam-links-root")?.remove();
-};
-
-const removeSteamLinksArtifacts = () => {
-  removeSteamLinksRow();
-  document.getElementById("playhub-steam-links-style")?.remove();
-};
-
-const mountSteamLinksRow = (appId: number) => {
-  try {
-    const currentAppId = currentGameDetailAppId();
-    if (currentAppId && currentAppId !== appId) {
-      removeSteamLinksRow();
-      return;
-    }
-
-    const overview = getOverview(appId);
-    const links = steamAppLinks(steamAppIdForApp(appId));
-    if (!links || !isNonSteamApp(overview)) {
-      removeSteamLinksRow();
-      return;
-    }
-
-    const mount = findActivityNewsMountInfo();
-    if (mount.mode !== "native" || !mount.anchor || mount.anchor.parentElement !== mount.target) {
-      removeSteamLinksRow();
-      return;
-    }
-
-    ensurePlayhubSteamLinksStyle();
-    const root = document.getElementById("playhub-steam-links-root") || document.createElement("div");
-    root.id = "playhub-steam-links-root";
-    root.className = "playhub-steam-links-root";
-    root.setAttribute("data-playhub-steam-links", "1");
-    root.setAttribute("data-playhub-appid", String(appId));
-    root.innerHTML = "";
-
-    const buttons: SteamLinkButton[] = [
-      { key: "store", label: t("steamStorePage") },
-      { key: "community", label: t("steamCommunityHub") },
-      { key: "discussions", label: t("steamDiscussions") },
-      { key: "guides", label: t("steamGuides") },
-    ];
-
-    buttons.forEach(({ key, label }) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "playhub-steam-links-button DialogButton";
-      button.textContent = label;
-      button.setAttribute("data-focusable", "true");
-      button.setAttribute("data-playhub-steam-link", key);
-      button.onclick = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        openExternalUrl(links[key]);
-      };
-      root.appendChild(button);
-    });
-
-    if (root.parentElement !== mount.target || root.nextElementSibling !== mount.anchor) {
-      mount.target.insertBefore(root, mount.anchor);
-    }
-  } catch (error) {
-    log.warn("patch", "Steam links row skipped", error);
-    removeSteamLinksRow();
-  }
-};
-
 const steamNewsNativeUrl = (url: string, steamAppId?: number | null, gid?: string | number | null) => {
   const rawUrl = String(url || "");
   const eventGid = numericSteamNewsGid(gid) || numericSteamNewsGid(rawUrl);
@@ -3815,6 +3794,76 @@ const patchMethod = (
   };
 };
 
+const firstUrlishArgIndex = (args: any[], firstOnly = false): number => {
+  const limit = firstOnly ? Math.min(args.length, 1) : args.length;
+  for (let index = 0; index < limit; index += 1) {
+    const value = args[index];
+    if (typeof value === "string") return index;
+    if (typeof URL !== "undefined" && value instanceof URL) return index;
+  }
+  return -1;
+};
+
+const logSteamLinkNavigation = (kind: string, original: string, rewritten: string) => {
+  void frontendLog("nav", "steam link", { kind, original, rewritten }).catch(() => undefined);
+};
+
+const installSteamNavigationRedirect = (unpatchers: Unpatch[]) => {
+  const globalState = globalThis as any;
+  if (globalState.__playhubNavRedirect) {
+    unpatchers.push(() => undefined);
+    return;
+  }
+
+  const redirectUnpatchers: Unpatch[] = [];
+  globalState.__playhubNavRedirect = { installed: true };
+
+  const patchUrlOpener = (target: any, methodName: string, firstOnly = false) => {
+    if (typeof target?.[methodName] !== "function") return;
+    const original = target[methodName];
+    const patched = function playhubSteamNavigationRedirect(this: any, ...args: any[]) {
+      try {
+        const index = firstUrlishArgIndex(args, firstOnly);
+        if (index < 0) return original.apply(this, args);
+        const originalUrl = String(args[index] || "");
+        const targetInfo = steamLinkTarget(originalUrl);
+        if (!targetInfo) return original.apply(this, args);
+        const rewritten = rewriteSteamLinkToMatchedApp(originalUrl);
+        logSteamLinkNavigation(targetInfo.kind, originalUrl, rewritten.url);
+        if (!rewritten.rewrote) return original.apply(this, args);
+        const nextArgs = [...args];
+        nextArgs[index] = rewritten.url;
+        return original.apply(this, nextArgs);
+      } catch (_error) {
+        return original.apply(this, args);
+      }
+    };
+    target[methodName] = patched;
+    redirectUnpatchers.push(() => {
+      if (target?.[methodName] === patched) {
+        target[methodName] = original;
+      }
+    });
+  };
+
+  patchUrlOpener(Navigation as any, "NavigateToSteamWeb");
+  patchUrlOpener(Navigation as any, "NavigateToExternalWeb");
+  patchUrlOpener((window as any)?.SteamClient?.System, "OpenInSystemBrowser");
+  patchUrlOpener((window as any)?.SteamClient?.Overlay, "OpenExternalBrowserURL");
+  patchUrlOpener(window, "open", true);
+
+  unpatchers.push(() => {
+    redirectUnpatchers.splice(0).reverse().forEach((unpatch) => {
+      try {
+        unpatch();
+      } catch (_error) {
+        // Best effort teardown.
+      }
+    });
+    delete globalState.__playhubNavRedirect;
+  });
+};
+
 let achievementStorePatchInstalled = false;
 
 const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
@@ -4330,7 +4379,6 @@ const backSteamHistory = (steamHistory: any) => {
 
 export const installSteamPatches = (): Unpatch => {
   const unpatchers: Unpatch[] = [];
-  unpatchers.push(removeSteamLinksArtifacts);
   installAchievementImageCoverPatch(unpatchers);
   // Activity news now use Steam's own AppActivityStore and native Activity
   // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
@@ -4372,6 +4420,8 @@ export const installSteamPatches = (): Unpatch => {
       delayedUnpatch?.();
     };
   }
+
+  installSteamNavigationRedirect(unpatchers);
 
   const redirectAchievementTarget = (target: any): string => {
     const raw = String(target || "");
@@ -4824,7 +4874,6 @@ export const installSteamPatches = (): Unpatch => {
             bypassBypass = 11;
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
-              mountSteamLinksRow(appId);
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
             });
@@ -4832,7 +4881,6 @@ export const installSteamPatches = (): Unpatch => {
             void refreshPlayhubNativeActivityForApp(appId);
             return ret;
           }
-          removeSteamLinksRow();
           return ret;
         });
         unpatchers.push(renderPatch.unpatch);

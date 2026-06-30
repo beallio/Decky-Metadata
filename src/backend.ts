@@ -33,6 +33,10 @@ export const removeMetadata = callable<
 export const clearMetadataCache = callable<[], { ok: boolean; cleared?: number }>(
   "clear_metadata_cache"
 );
+export const frontendLog = callable<
+  [area: string, message: string, fields?: Record<string, unknown> | null],
+  boolean
+>("frontend_log");
 export const searchMetadata = callable<
   [query: string, limit?: number],
   MetadataSearchResult[]
