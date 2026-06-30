@@ -204,6 +204,7 @@ MICROSOFT_STORE_PRODUCTS_URL = "https://storeedgefd.dsx.mp.microsoft.com/v8.0/sd
 MICROSOFT_DISPLAY_CATALOG_PRODUCTS_URL = "https://displaycatalog.mp.microsoft.com/v7.0/products"
 TRUEACHIEVEMENTS_BASE_URL = "https://www.trueachievements.com"
 STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
+STEAM_APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
 STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
 STEAM_EVENTS_URL = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/"
 STEAM_DECK_COMPAT_URL = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport"
@@ -1677,6 +1678,12 @@ class Plugin:
             deck_compat_category = self._steam_deck_compat_for_appid(steam_appid)
             if deck_compat_category is not None:
                 next_metadata["deck_compat_category"] = deck_compat_category
+            steam_details = self._steam_appdetails_for_appid(steam_appid)
+            if steam_details:
+                for key, value in steam_details.items():
+                    if value:
+                        next_metadata[key] = value
+                next_metadata["source"] = "Steam"
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -1962,6 +1969,127 @@ class Plugin:
             category=category,
         )
         return category
+
+    def _steam_appdetails_for_appid(self, steam_appid: int) -> dict[str, Any] | None:
+        try:
+            appid = int(steam_appid)
+        except Exception:
+            return None
+        if appid <= 0:
+            return None
+
+        try:
+            params = urllib.parse.urlencode({"appids": appid, "l": "english"})
+            payload = self._http_json(f"{STEAM_APP_DETAILS_URL}?{params}", timeout=12)
+            app_payload = payload.get(str(appid)) if isinstance(payload, dict) else None
+            if not isinstance(app_payload, dict) or not app_payload.get("success"):
+                return None
+            data = app_payload.get("data")
+            if not isinstance(data, dict):
+                return None
+
+            details: dict[str, Any] = {}
+
+            title = str(data.get("name") or "").strip()
+            if title:
+                details["title"] = title
+
+            description = self._clean_html_text(
+                str(
+                    data.get("detailed_description")
+                    or data.get("about_the_game")
+                    or data.get("short_description")
+                    or ""
+                )
+            )
+            if description:
+                details["description"] = description
+
+            short_description = self._clean_html_text(
+                str(data.get("short_description") or "")
+            )
+            if short_description:
+                details["short_description"] = short_description
+
+            developers = [
+                {"name": str(name).strip(), "url": ""}
+                for name in (data.get("developers") or [])
+                if str(name).strip()
+            ]
+            if developers:
+                details["developers"] = developers
+
+            publishers = [
+                {"name": str(name).strip(), "url": ""}
+                for name in (data.get("publishers") or [])
+                if str(name).strip()
+            ]
+            if publishers:
+                details["publishers"] = publishers
+
+            genres = [
+                str(genre.get("description") or "").strip()
+                for genre in (data.get("genres") or [])
+                if isinstance(genre, dict) and str(genre.get("description") or "").strip()
+            ]
+            if genres:
+                details["genres"] = genres
+
+            release_date = data.get("release_date") or {}
+            if isinstance(release_date, dict):
+                release_epoch = self._date_to_epoch(release_date.get("date"))
+                if release_epoch > 0:
+                    details["release_date"] = release_epoch
+
+            metacritic = data.get("metacritic") or {}
+            if isinstance(metacritic, dict):
+                rating = self._rating_to_percent(metacritic.get("score"))
+                if rating is not None:
+                    details["rating"] = rating
+
+            store_categories = [
+                category_id
+                for category_id in (
+                    self._safe_int(category.get("id"))
+                    for category in (data.get("categories") or [])
+                    if isinstance(category, dict)
+                )
+                if category_id
+            ]
+            if store_categories:
+                details["store_categories"] = store_categories
+
+            screenshots = self._sanitize_screenshots(
+                [
+                    {
+                        "id": screenshot.get("id"),
+                        "url": screenshot.get("path_full"),
+                        "thumbnail": screenshot.get("path_thumbnail"),
+                    }
+                    for screenshot in (data.get("screenshots") or [])
+                    if isinstance(screenshot, dict) and screenshot.get("path_full")
+                ]
+            )
+            if screenshots:
+                details["screenshots"] = screenshots
+
+            _plog(
+                "steam",
+                "appdetails resolved",
+                level=logging.DEBUG,
+                steam_appid=appid,
+                name=title,
+            )
+            return details or None
+        except Exception:
+            _plog(
+                "steam",
+                "appdetails fetch failed",
+                level=logging.WARNING,
+                exc=True,
+                steam_appid=appid,
+            )
+            return None
 
     def _steam_partner_events_for_appid(self, steam_appid: int, limit: int = 10) -> list[dict[str, Any]]:
         params = urllib.parse.urlencode(
