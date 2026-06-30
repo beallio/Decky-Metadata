@@ -39,26 +39,13 @@ import {
   isNonSteamApp,
   patchInstallStatus,
   hasSteamInternals,
-  steamAppIdForApp,
 } from "./steam";
 import { t } from "./i18n";
 import * as log from "./log";
-import { openExternalUrl } from "./openExternalUrl";
-import { steamAppLinks } from "./steamLinks";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "playhub-metadata-edit";
-const STEAM_STORE_KEY = "playhub-steam-store";
-const STEAM_COMMUNITY_KEY = "playhub-steam-community";
-const STEAM_DISCUSSIONS_KEY = "playhub-steam-discussions";
-const STEAM_GUIDES_KEY = "playhub-steam-guides";
-const ENTRY_KEYS = new Set([
-  ENTRY_KEY,
-  STEAM_STORE_KEY,
-  STEAM_COMMUNITY_KEY,
-  STEAM_DISCUSSIONS_KEY,
-  STEAM_GUIDES_KEY,
-]);
+const ENTRY_KEYS = new Set([ENTRY_KEY]);
 
 /**
  * Resolve Steam's internal LibraryContextMenu class at runtime.
@@ -139,7 +126,6 @@ const insertOurEntry = (items: any[], appId: number): void => {
     )
   );
   const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-  const links = steamAppLinks(steamAppIdForApp(appId));
 
   items.splice(
     insertAt,
@@ -149,37 +135,6 @@ const insertOurEntry = (items: any[], appId: number): void => {
       onSelected={() => Navigation.Navigate(`/playhub-metadata/${appId}`)}
     >
       {t("editMetadata")}
-    </MenuItem>
-  );
-
-  if (!links) return;
-
-  items.splice(
-    insertAt + 1,
-    0,
-    <MenuItem
-      key={STEAM_STORE_KEY}
-      onSelected={() => openExternalUrl(links.store)}
-    >
-      {t("steamStorePage")}
-    </MenuItem>,
-    <MenuItem
-      key={STEAM_COMMUNITY_KEY}
-      onSelected={() => openExternalUrl(links.community)}
-    >
-      {t("steamCommunityHub")}
-    </MenuItem>,
-    <MenuItem
-      key={STEAM_DISCUSSIONS_KEY}
-      onSelected={() => openExternalUrl(links.discussions)}
-    >
-      {t("steamDiscussions")}
-    </MenuItem>,
-    <MenuItem
-      key={STEAM_GUIDES_KEY}
-      onSelected={() => openExternalUrl(links.guides)}
-    >
-      {t("steamGuides")}
     </MenuItem>
   );
 };

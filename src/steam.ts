@@ -22,6 +22,8 @@ import {
 } from "./types";
 import { t } from "./i18n";
 import * as log from "./log";
+import { openExternalUrl } from "./openExternalUrl";
+import { steamAppLinks, type SteamAppLinks } from "./steamLinks";
 
 declare const appStore: any;
 declare const appDetailsStore: any;
@@ -2197,6 +2199,124 @@ const mountActivityNewsRoot = (root: HTMLElement, mount: ActivityNewsMountInfo) 
   if (!root.parentElement || root.parentElement !== target) target.appendChild(root);
 };
 
+type SteamLinkButton = {
+  key: keyof SteamAppLinks;
+  label: string;
+};
+
+const ensurePlayhubSteamLinksStyle = () => {
+  if (document.getElementById("playhub-steam-links-style")) return;
+  const style = document.createElement("style");
+  style.id = "playhub-steam-links-style";
+  style.textContent = `
+    .playhub-steam-links-root {
+      width: 100%;
+      margin: 0 0 16px;
+      padding: 10px 0 18px;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: rgba(255,255,255,0.92);
+    }
+    .playhub-steam-links-button {
+      min-width: 154px;
+      min-height: 38px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 3px;
+      background: rgba(103, 112, 123, 0.68);
+      color: rgba(255,255,255,0.94);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      font: inherit;
+      font-size: 15px;
+      line-height: 38px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .playhub-steam-links-button:hover,
+    .playhub-steam-links-button:focus {
+      background: rgba(124, 139, 153, 0.92);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.38), inset 0 0 0 1px rgba(255,255,255,0.16);
+      outline: none;
+    }
+  `;
+  document.head.appendChild(style);
+};
+
+const removeSteamLinksRow = () => {
+  document.getElementById("playhub-steam-links-root")?.remove();
+};
+
+const removeSteamLinksArtifacts = () => {
+  removeSteamLinksRow();
+  document.getElementById("playhub-steam-links-style")?.remove();
+};
+
+const mountSteamLinksRow = (appId: number) => {
+  try {
+    const currentAppId = currentGameDetailAppId();
+    if (currentAppId && currentAppId !== appId) {
+      removeSteamLinksRow();
+      return;
+    }
+
+    const overview = getOverview(appId);
+    const links = steamAppLinks(steamAppIdForApp(appId));
+    if (!links || !isNonSteamApp(overview)) {
+      removeSteamLinksRow();
+      return;
+    }
+
+    const mount = findActivityNewsMountInfo();
+    if (mount.mode !== "native" || !mount.anchor || mount.anchor.parentElement !== mount.target) {
+      removeSteamLinksRow();
+      return;
+    }
+
+    ensurePlayhubSteamLinksStyle();
+    const root = document.getElementById("playhub-steam-links-root") || document.createElement("div");
+    root.id = "playhub-steam-links-root";
+    root.className = "playhub-steam-links-root";
+    root.setAttribute("data-playhub-steam-links", "1");
+    root.setAttribute("data-playhub-appid", String(appId));
+    root.innerHTML = "";
+
+    const buttons: SteamLinkButton[] = [
+      { key: "store", label: t("steamStorePage") },
+      { key: "community", label: t("steamCommunityHub") },
+      { key: "discussions", label: t("steamDiscussions") },
+      { key: "guides", label: t("steamGuides") },
+    ];
+
+    buttons.forEach(({ key, label }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "playhub-steam-links-button DialogButton";
+      button.textContent = label;
+      button.setAttribute("data-focusable", "true");
+      button.setAttribute("data-playhub-steam-link", key);
+      button.onclick = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openExternalUrl(links[key]);
+      };
+      root.appendChild(button);
+    });
+
+    if (root.parentElement !== mount.target || root.nextElementSibling !== mount.anchor) {
+      mount.target.insertBefore(root, mount.anchor);
+    }
+  } catch (error) {
+    log.warn("patch", "Steam links row skipped", error);
+    removeSteamLinksRow();
+  }
+};
+
 const steamNewsNativeUrl = (url: string, steamAppId?: number | null, gid?: string | number | null) => {
   const rawUrl = String(url || "");
   const eventGid = numericSteamNewsGid(gid) || numericSteamNewsGid(rawUrl);
@@ -4210,6 +4330,7 @@ const backSteamHistory = (steamHistory: any) => {
 
 export const installSteamPatches = (): Unpatch => {
   const unpatchers: Unpatch[] = [];
+  unpatchers.push(removeSteamLinksArtifacts);
   installAchievementImageCoverPatch(unpatchers);
   // Activity news now use Steam's own AppActivityStore and native Activity
   // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
@@ -4703,6 +4824,7 @@ export const installSteamPatches = (): Unpatch => {
             bypassBypass = 11;
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
+              mountSteamLinksRow(appId);
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
             });
@@ -4710,6 +4832,7 @@ export const installSteamPatches = (): Unpatch => {
             void refreshPlayhubNativeActivityForApp(appId);
             return ret;
           }
+          removeSteamLinksRow();
           return ret;
         });
         unpatchers.push(renderPatch.unpatch);
