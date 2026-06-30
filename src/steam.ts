@@ -198,17 +198,20 @@ const steamWebLinkTarget = (url: string): SteamLinkTarget | null => {
   const match =
     url.match(/(?:https?:\/\/)?store\.steampowered\.com\/app\/(\d+)/i) ||
     url.match(/(?:https?:\/\/)?steamcommunity\.com\/app\/(\d+)/i);
-  if (!match?.[1]) return null;
-  const appId = Number(match[1]);
+  const queryMatch =
+    match ||
+    url.match(/(?:https?:\/\/)?(?:store\.steampowered\.com|steamcommunity\.com)\/[^?#]*\?(?:[^#&]*&)*appid=(\d+)/i);
+  if (!queryMatch?.[1]) return null;
+  const appId = Number(queryMatch[1]);
   if (!Number.isFinite(appId) || appId <= 0) return null;
-  const kind = /steamcommunity\.com\/app\//i.test(match[0]) ? "community" : "store";
-  const idIndex = match.index === undefined ? -1 : match.index + match[0].lastIndexOf(match[1]);
+  const kind = /steamcommunity\.com/i.test(queryMatch[0]) ? "community" : "store";
+  const idIndex = queryMatch.index === undefined ? -1 : queryMatch.index + queryMatch[0].lastIndexOf(queryMatch[1]);
   if (idIndex < 0) return null;
   return {
     kind,
     appId,
     replace: (mappedAppId: number) =>
-      `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + match[1].length)}`,
+      `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + queryMatch[1].length)}`,
   };
 };
 
@@ -3933,6 +3936,99 @@ const installSteamNavigationRedirect = (unpatchers: Unpatch[]) => {
   });
 };
 
+const installMainWindowHistoryRedirect = (unpatchers: Unpatch[]) => {
+  const globalState = globalThis as any;
+  if (globalState.__playhubMainWindowHistoryRedirect) {
+    unpatchers.push(() => undefined);
+    return;
+  }
+
+  const redirectUnpatchers: Unpatch[] = [];
+  let cancelled = false;
+  let retryId: number | undefined;
+  let attempts = 0;
+  globalState.__playhubMainWindowHistoryRedirect = { installed: true };
+
+  const clearRetry = () => {
+    if (retryId !== undefined) {
+      window.clearTimeout(retryId);
+      retryId = undefined;
+    }
+  };
+
+  const mainWindowHistory = () =>
+    (window as any)?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_history ??
+    (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+
+  const patchHistoryMethod = (history: any, methodName: "push" | "replace") => {
+    const unpatch = patchMethod(history, methodName, (_thisValue, original, args) => {
+      try {
+        const path = historyPathFromArgs(args);
+        const state = historyStateFromArgs(args);
+        if (
+          String(path || "").toLowerCase().includes("steamweb") &&
+          state &&
+          typeof state === "object" &&
+          typeof state.url === "string"
+        ) {
+          const rewritten = rewriteSteamLinkToMatchedApp(state.url);
+          if (rewritten.rewrote) {
+            state.url = rewritten.url;
+            void frontendLog("nav", "mainwindow steamweb rewrite", {
+              method: methodName,
+              from: rewritten.fromAppId,
+              to: rewritten.toAppId,
+            }).catch(() => undefined);
+          }
+        }
+      } catch (_error) {
+        // Steam navigation must continue even if the redirect probe fails.
+      }
+      return original(...args);
+    });
+    const patched = history?.[methodName];
+    redirectUnpatchers.push(() => {
+      try {
+        if (history?.[methodName] === patched) {
+          unpatch();
+        }
+      } catch (_error) {
+        // Best effort teardown.
+      }
+    });
+  };
+
+  const tryInstall = () => {
+    if (cancelled) return;
+    const history = mainWindowHistory();
+    if (history && typeof history.push === "function" && typeof history.replace === "function") {
+      clearRetry();
+      patchHistoryMethod(history, "push");
+      patchHistoryMethod(history, "replace");
+      return;
+    }
+    attempts += 1;
+    if (attempts < 30) {
+      retryId = window.setTimeout(tryInstall, 500);
+    }
+  };
+
+  tryInstall();
+
+  unpatchers.push(() => {
+    cancelled = true;
+    clearRetry();
+    redirectUnpatchers.splice(0).reverse().forEach((unpatch) => {
+      try {
+        unpatch();
+      } catch (_error) {
+        // Best effort teardown.
+      }
+    });
+    delete globalState.__playhubMainWindowHistoryRedirect;
+  });
+};
+
 const NAVIGATION_TRACE_NOISE_PATTERN = /cached|registerfor|getlaunch|getgameaction|appdetails|appdata|appoverview|appachievement/i;
 const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide|workshop|market|navigate|openurl|executesteamurl|browser|web|overlay|showstore|link/i;
 const NAVIGATION_TRACE_CLICK_PATTERN = /store|community|hub|discuss|guide|market|support/i;
@@ -4963,6 +5059,7 @@ export const installSteamPatches = (): Unpatch => {
   }
 
   installSteamNavigationRedirect(unpatchers);
+  installMainWindowHistoryRedirect(unpatchers);
   installNavigationTrace(unpatchers);
   installHistoryInstanceTrace(unpatchers);
   installClickTrace(unpatchers);
