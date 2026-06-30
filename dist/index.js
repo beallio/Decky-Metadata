@@ -517,6 +517,20 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
+const steamAppLinks = (steamAppId) => {
+    if (!Number.isFinite(steamAppId) || !Number.isInteger(steamAppId) || steamAppId <= 0) {
+        return null;
+    }
+    const storeBase = `https://store.steampowered.com/app/${steamAppId}`;
+    const communityBase = `https://steamcommunity.com/app/${steamAppId}`;
+    return {
+        store: storeBase,
+        community: communityBase,
+        discussions: `${communityBase}/discussions/`,
+        guides: `${communityBase}/guides/`,
+    };
+};
+
 const patchInstallStatus = {
     achievements: "pending",
     activity: "pending",
@@ -2092,6 +2106,16 @@ const deepQuerySelectorAll = (selector, root = document) => {
     visit(root);
     return results;
 };
+const deepVisibleElements = (selector) => deepQuerySelectorAll(selector).filter((element) => visibleElement(element));
+const findVisibleTextElement = (label) => {
+    const wanted = label.toLocaleLowerCase("it-IT");
+    const candidates = deepQuerySelectorAll("button, [role='tab'], [role='button'], a, div, span");
+    return candidates.find((element) => {
+        if (!visibleElement(element))
+            return false;
+        return textOf(element).toLocaleLowerCase("it-IT") === wanted;
+    });
+};
 const knownDetailsTabLabels = ["Attività", "Activity", "I tuoi articoli", "Your Stuff", "Comunità", "Community", "Informazioni sul gioco", "Game Info"];
 const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
 const canonicalDetailsTabLabel = (label) => {
@@ -2254,6 +2278,33 @@ const findDetailsTabCandidates = () => {
         return [];
     return rows.sort((a, b) => scoreTabRow(b) - scoreTabRow(a))[0];
 };
+const findDetailsTabRow = () => {
+    const tabs = findDetailsTabCandidates();
+    if (tabs.length >= 3) {
+        let current = tabs[0].parentElement;
+        for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
+            const rect = current.getBoundingClientRect();
+            const contains = tabs.filter((tab) => current?.contains(tab)).length;
+            if (contains >= Math.min(3, tabs.length) && rect.width > 260 && rect.height < 180)
+                return current;
+            current = current.parentElement;
+        }
+        return tabs[0];
+    }
+    const activity = findVisibleTextElement("Attività") || findVisibleTextElement("Activity");
+    if (!activity)
+        return null;
+    let current = activity;
+    for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
+        const text = textOf(current);
+        const hits = knownDetailsTabLabels.filter((label) => text.includes(label)).length;
+        const rect = current.getBoundingClientRect();
+        if (hits >= 3 && rect.width > 300 && rect.height < 160)
+            return current;
+        current = current.parentElement;
+    }
+    return activity.parentElement;
+};
 const detailsTabIndexFromPoint = (x, y) => {
     const tabs = findDetailsTabCandidates();
     return tabs.findIndex((tab) => {
@@ -2285,6 +2336,257 @@ const elementLooksSelected = (element) => {
         current = current.parentElement;
     }
     return false;
+};
+const ACTIVITY_EMPTY_STATE_TEXTS = [
+    "nessuna attività recente",
+    "attività recente dagli sviluppatori",
+    "dai tuoi amici",
+    "no recent activity",
+    "recent activity from developers",
+    "from developers or your friends",
+    "from the developers of this title or your friends",
+];
+const textLooksLikeActivityEmptyState = (value) => {
+    const text = normalizedTabText(value);
+    if (!text)
+        return false;
+    return ACTIVITY_EMPTY_STATE_TEXTS.some((needle) => text.includes(normalizedTabText(needle)));
+};
+const findActivityEmptyStateElement = () => {
+    const body = document.body;
+    if (!body)
+        return null;
+    try {
+        const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+            acceptNode: (node) => {
+                const text = String(node.textContent || "");
+                return textLooksLikeActivityEmptyState(text) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+            },
+        });
+        let node = walker.nextNode();
+        while (node) {
+            let element = (node.parentNode instanceof HTMLElement ? node.parentNode : null);
+            while (element && element !== body) {
+                if (visibleElement(element))
+                    return element;
+                element = element.parentElement;
+            }
+            node = walker.nextNode();
+        }
+    }
+    catch (_error) {
+        // Fall back below.
+    }
+    const candidates = deepQuerySelectorAll("div, span, p, button, [role='tab'], [role='button']");
+    return candidates.find((element) => visibleElement(element) && textLooksLikeActivityEmptyState(textOf(element))) || null;
+};
+const findActivityEmptyStateContainer = () => {
+    const leaf = findActivityEmptyStateElement();
+    if (!leaf)
+        return null;
+    let current = leaf;
+    let best = leaf;
+    for (let depth = 0; current && current !== document.body && depth < 10; depth += 1) {
+        const rect = current.getBoundingClientRect();
+        const text = textOf(current);
+        if (rect.width >= 260 && rect.height >= 28 && textLooksLikeActivityEmptyState(text) && text.length < 700) {
+            best = current;
+        }
+        // Stop before swallowing the whole detail page / tab row.
+        if (rect.width > window.innerWidth * 0.75 && rect.height > window.innerHeight * 0.55)
+            break;
+        current = current.parentElement;
+    }
+    return best;
+};
+const findActivityEmptyDropZone = (includeHidden = true) => {
+    const tabRowBottom = findDetailsTabRow()?.getBoundingClientRect()?.bottom || Math.max(210, window.innerHeight * 0.27);
+    const hiddenCandidates = includeHidden
+        ? deepQuerySelectorAll("[data-playhub-activity-empty-hidden='1']")
+            .filter((element) => element instanceof HTMLElement)
+        : [];
+    if (hiddenCandidates.length) {
+        hiddenCandidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+        return hiddenCandidates[0];
+    }
+    const candidates = deepVisibleElements("div, section, article").filter((element) => {
+        if (isPlayhubActivityNewsElement(element))
+            return false;
+        const rect = element.getBoundingClientRect();
+        if (rect.width < Math.min(520, window.innerWidth * 0.35))
+            return false;
+        if (rect.height < 34 || rect.height > 240)
+            return false;
+        if (rect.top < tabRowBottom + 12 || rect.top > window.innerHeight * 0.82)
+            return false;
+        if (rect.left > window.innerWidth * 0.2 || rect.right < window.innerWidth * 0.55)
+            return false;
+        const style = window.getComputedStyle(element);
+        const borderStyles = [
+            style.borderTopStyle,
+            style.borderRightStyle,
+            style.borderBottomStyle,
+            style.borderLeftStyle,
+            style.outlineStyle,
+        ].join(" ").toLowerCase();
+        const borderWidths = [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth,
+            style.outlineWidth,
+        ].map((value) => parseFloat(value || "0") || 0);
+        const hasDashedBorder = /(dashed|dotted)/.test(borderStyles) && borderWidths.some((width) => width >= 1);
+        if (!hasDashedBorder)
+            return false;
+        // Steam's Activity empty composer/state is a wide dashed panel directly under the tab row.
+        // This is language-independent and works even when the localized text is not known.
+        return true;
+    });
+    candidates.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    return candidates[0] || null;
+};
+const STEAM_ACTIVITY_NATIVE_CLASSES = {
+    innerContainer: "_2EEApFUXB7aWXBtitgV5dk",
+    noActivity: "_2-kDc3UDR-GN6V1lBpSupb",
+};
+const classSelector = (className) => `.${String(className)}`;
+const closestByClass = (element, className) => {
+    let current = element;
+    while (current && current !== document.body) {
+        if (current.classList?.contains(className))
+            return current;
+        current = current.parentElement;
+    }
+    return null;
+};
+const findSteamNativeActivityMountInfo = () => {
+    const noActivity = deepVisibleElements(classSelector(STEAM_ACTIVITY_NATIVE_CLASSES.noActivity))
+        .find((element) => element instanceof HTMLElement && element.getBoundingClientRect().width > 260);
+    if (!noActivity)
+        return null;
+    const inner = closestByClass(noActivity, STEAM_ACTIVITY_NATIVE_CLASSES.innerContainer) || noActivity.parentElement;
+    if (!inner)
+        return null;
+    return { target: inner, anchor: noActivity, mode: "native" };
+};
+const findActivityNewsMountInfo = () => {
+    // Best path: use Steam's own empty Activity panel as an anchor. This is
+    // language-independent and keeps the cards in the real scrolling Activity
+    // layout instead of floating over the hero/header.
+    const emptyAnchor = findActivityEmptyDropZone() || findActivityEmptyStateContainer();
+    if (emptyAnchor?.parentElement) {
+        return { target: emptyAnchor.parentElement, anchor: emptyAnchor, mode: "native" };
+    }
+    const native = findSteamNativeActivityMountInfo();
+    if (native)
+        return native;
+    return { target: document.body, anchor: null, mode: "fixed" };
+};
+const ensurePlayhubSteamLinksStyle = () => {
+    if (document.getElementById("playhub-steam-links-style"))
+        return;
+    const style = document.createElement("style");
+    style.id = "playhub-steam-links-style";
+    style.textContent = `
+    .playhub-steam-links-root {
+      width: 100%;
+      margin: 0 0 16px;
+      padding: 10px 0 18px;
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      color: rgba(255,255,255,0.92);
+    }
+    .playhub-steam-links-button {
+      min-width: 154px;
+      min-height: 38px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 3px;
+      background: rgba(103, 112, 123, 0.68);
+      color: rgba(255,255,255,0.94);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      font: inherit;
+      font-size: 15px;
+      line-height: 38px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .playhub-steam-links-button:hover,
+    .playhub-steam-links-button:focus {
+      background: rgba(124, 139, 153, 0.92);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.38), inset 0 0 0 1px rgba(255,255,255,0.16);
+      outline: none;
+    }
+  `;
+    document.head.appendChild(style);
+};
+const removeSteamLinksRow = () => {
+    document.getElementById("playhub-steam-links-root")?.remove();
+};
+const removeSteamLinksArtifacts = () => {
+    removeSteamLinksRow();
+    document.getElementById("playhub-steam-links-style")?.remove();
+};
+const mountSteamLinksRow = (appId) => {
+    try {
+        const currentAppId = currentGameDetailAppId();
+        if (currentAppId && currentAppId !== appId) {
+            removeSteamLinksRow();
+            return;
+        }
+        const overview = getOverview(appId);
+        const links = steamAppLinks(steamAppIdForApp(appId));
+        if (!links || !isNonSteamApp(overview)) {
+            removeSteamLinksRow();
+            return;
+        }
+        const mount = findActivityNewsMountInfo();
+        if (mount.mode !== "native" || !mount.anchor || mount.anchor.parentElement !== mount.target) {
+            removeSteamLinksRow();
+            return;
+        }
+        ensurePlayhubSteamLinksStyle();
+        const root = document.getElementById("playhub-steam-links-root") || document.createElement("div");
+        root.id = "playhub-steam-links-root";
+        root.className = "playhub-steam-links-root";
+        root.setAttribute("data-playhub-steam-links", "1");
+        root.setAttribute("data-playhub-appid", String(appId));
+        root.innerHTML = "";
+        const buttons = [
+            { key: "store", label: t("steamStorePage") },
+            { key: "community", label: t("steamCommunityHub") },
+            { key: "discussions", label: t("steamDiscussions") },
+            { key: "guides", label: t("steamGuides") },
+        ];
+        buttons.forEach(({ key, label }) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "playhub-steam-links-button DialogButton";
+            button.textContent = label;
+            button.setAttribute("data-focusable", "true");
+            button.setAttribute("data-playhub-steam-link", key);
+            button.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                openExternalUrl(links[key]);
+            };
+            root.appendChild(button);
+        });
+        if (root.parentElement !== mount.target || root.nextElementSibling !== mount.anchor) {
+            mount.target.insertBefore(root, mount.anchor);
+        }
+    }
+    catch (error) {
+        warn("patch", "Steam links row skipped", error);
+        removeSteamLinksRow();
+    }
 };
 const communityPayloadForApp = async (appId) => {
     const overview = getOverview(appId);
@@ -3230,6 +3532,7 @@ const backSteamHistory = (steamHistory) => {
 };
 const installSteamPatches = () => {
     const unpatchers = [];
+    unpatchers.push(removeSteamLinksArtifacts);
     installAchievementImageCoverPatch(unpatchers);
     // Activity news now use Steam's own AppActivityStore and native Activity
     // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
@@ -3685,6 +3988,7 @@ const installSteamPatches = () => {
                         bypassBypass = 11;
                         void ensureMetadataCache().then(() => {
                             applyMetadata(appId);
+                            mountSteamLinksRow(appId);
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
                         });
@@ -3692,6 +3996,7 @@ const installSteamPatches = () => {
                         void refreshPlayhubNativeActivityForApp(appId);
                         return ret;
                     }
+                    removeSteamLinksRow();
                     return ret;
                 });
                 unpatchers.push(renderPatch.unpatch);
@@ -4600,33 +4905,9 @@ const MetadataPage = () => {
                                                             : "", result.gamerscore != null ? ` - ${result.gamerscore}G` : "", ` - ${result.source || "TrueAchievements"} - ${result.id}`] })] }) }, result.id)))] }) })] })] }) }));
 };
 
-const steamAppLinks = (steamAppId) => {
-    if (!Number.isFinite(steamAppId) || !Number.isInteger(steamAppId) || steamAppId <= 0) {
-        return null;
-    }
-    const storeBase = `https://store.steampowered.com/app/${steamAppId}`;
-    const communityBase = `https://steamcommunity.com/app/${steamAppId}`;
-    return {
-        store: storeBase,
-        community: communityBase,
-        discussions: `${communityBase}/discussions/`,
-        guides: `${communityBase}/guides/`,
-    };
-};
-
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "playhub-metadata-edit";
-const STEAM_STORE_KEY = "playhub-steam-store";
-const STEAM_COMMUNITY_KEY = "playhub-steam-community";
-const STEAM_DISCUSSIONS_KEY = "playhub-steam-discussions";
-const STEAM_GUIDES_KEY = "playhub-steam-guides";
-const ENTRY_KEYS = new Set([
-    ENTRY_KEY,
-    STEAM_STORE_KEY,
-    STEAM_COMMUNITY_KEY,
-    STEAM_DISCUSSIONS_KEY,
-    STEAM_GUIDES_KEY,
-]);
+const ENTRY_KEYS = new Set([ENTRY_KEY]);
 /**
  * Resolve Steam's internal LibraryContextMenu class at runtime.
  *
@@ -4683,11 +4964,7 @@ const insertOurEntry = (items, appId) => {
         return;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    const links = steamAppLinks(steamAppIdForApp(appId));
     items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/playhub-metadata/${appId}`), children: t("editMetadata") }, ENTRY_KEY));
-    if (!links)
-        return;
-    items.splice(insertAt + 1, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openExternalUrl(links.store), children: t("steamStorePage") }, STEAM_STORE_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openExternalUrl(links.community), children: t("steamCommunityHub") }, STEAM_COMMUNITY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openExternalUrl(links.discussions), children: t("steamDiscussions") }, STEAM_DISCUSSIONS_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openExternalUrl(links.guides), children: t("steamGuides") }, STEAM_GUIDES_KEY));
 };
 /** De-duplicate, then (re)insert the entry against the best-known appid. */
 const syncOurEntry = (items, appId) => {
