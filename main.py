@@ -913,6 +913,15 @@ class Plugin:
         _plog("cache", "metadata cache cleared", count=cleared)
         return {"ok": True, "cleared": cleared}
 
+    async def frontend_log(
+        self, area: str = "ui", message: str = "", fields: dict[str, Any] | None = None
+    ) -> bool:
+        try:
+            _plog(str(area or "ui"), str(message or ""), **(fields or {}))
+        except Exception:
+            pass
+        return True
+
     async def search_metadata(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._search_metadata_sync, query, limit)
 
@@ -1321,6 +1330,12 @@ class Plugin:
                 self._scan_progress["message"] = f"Fetching metadata for {title}"
                 metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
                 if metadata:
+                    metadata = await asyncio.to_thread(
+                        self._metadata_with_steam_news_sync,
+                        metadata,
+                        title,
+                        10,
+                    )
                     await self.save_metadata(app_id, metadata)
                     self._scan_progress["assigned"] += 1
                     self._scan_progress["message"] = f"Saved metadata for {title}"
