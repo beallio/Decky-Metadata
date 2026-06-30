@@ -24,11 +24,17 @@ map already exists: `steamAppIdForApp(appId)` (steam.ts:174) returns the matched
 numbers and never collide with real Steam appids, so rewriting is safe and only affects our
 matched shortcuts.
 
-Separately, the QAM **"Clear cache" button clears but does not re-populate** — games only
-re-match when re-opened, so after clearing, matches are empty until the user navigates to
-each game (confirmed in `playhub-metadata.log`: cache cleared, no subsequent `storesearch`).
-This plan makes Clear cache also kick off `start_scan_missing` so matches rebuild
-immediately.
+Separately — and this is the **root cause** of every title currently showing
+`steam_appid: None` — the **scan/refresh path does not resolve the Steam appid at all.**
+`_scan_missing` (main.py:1306) calls `_auto_fetch_metadata_sync` (main.py:1440), which only
+fetches IGN/RAWG base metadata and **never calls `_resolve_steam_appid_for_title` /
+`_metadata_with_steam_news_sync`**. The ONLY backend path that resolves `steam_appid` is
+`_refresh_steam_activities` (main.py:1360). Confirmed on-device: after a QAM refresh, all 13
+titles are `None` and the log shows **zero `storesearch` calls** (only IGN/RAWG/YouTube
+fetches). So the matches the user saw earlier were resolved by an older game-view enrichment
+and did not survive the cache clear. This plan makes the scan resolve the Steam appid, and
+makes **"Clear cache" also kick off the scan** so matches (with `steam_appid`, deck compat,
+and news) rebuild immediately.
 
 Also add a small **frontend→backend log bridge** (`frontend_log`) so frontend navigation can
 be traced in `playhub-metadata.log` — this both confirms which buttons the redirect catches
@@ -208,21 +214,45 @@ one. Reuse `steamAppIdForApp`, `metadataCache`.
    Keep `src/steamLinks.ts`, `steamAppIdForApp`, and `src/openExternalUrl.ts` (still used
    elsewhere / harmless). Confirm no remaining references (`grep -n "SteamLinksRow\|playhub-steam-links" src/steam.ts`).
 
-5. **Clear cache also rescans** in `src/components.tsx` `clearCache` (components.tsx:515):
+5. **Make the scan resolve the Steam appid (root-cause fix)** in `main.py` `_scan_missing`
+   (main.py:1306). After `metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync,
+   title)` and before `save_metadata`, when `metadata` is truthy, run it through the Steam
+   resolution+enrichment used by the activities path:
+   ```python
+   metadata = await asyncio.to_thread(
+       self._metadata_with_steam_news_sync, metadata, title, 10
+   )
+   ```
+   `_metadata_with_steam_news_sync` (main.py:1639) resolves `steam_appid` via
+   `_resolve_steam_appid_for_title` (storesearch), fetches deck compatibility, and attaches
+   steam news — exactly what was missing. Keep it inside the existing try/except so a
+   network failure for one game does not abort the scan (it already catches per-game). Do not
+   change `_auto_fetch_metadata_sync` itself (other callers rely on its current behaviour);
+   only the scan path composes the extra step.
+
+6. **Clear cache also rescans** _(after task 5 lands)_ in `src/components.tsx` `clearCache` (components.tsx:515):
    after `clearMetadataCache()` + `refreshMetadataCache()`, call `startScanMissing(games)`
    (import from `./backend`; `games` is available in `Content` via `useNonSteamGames`) so
-   matches rebuild immediately. Keep the existing toast; optionally mention a rescan started.
-   Guard against an empty `games` list (no-op). Do not block the UI on scan completion.
+   matches rebuild immediately (now with `steam_appid` thanks to task 5). Keep the existing
+   toast; optionally mention a rescan started. Guard against an empty `games` list (no-op).
+   Do not block the UI on scan completion.
 
-6. **Scope discipline:** only the redirect + redundant-button removal + clear-cache rescan +
-   the log bridge. Do not change matching, the `BIsModOrShortcut` patch, `applyMetadata`, or
-   the Community-tab tile content. No npm deps; no `from __future__ import annotations` change.
+7. **Scope discipline:** only the redirect + redundant-button removal + clear-cache rescan +
+   the scan Steam-appid fix + the log bridge. Do not change matching scoring, the
+   `BIsModOrShortcut` patch, `applyMetadata`, or the Community-tab tile content. No npm deps;
+   no `from __future__ import annotations` change.
 
-7. **Tests** `tests/test_frontend_log.py` (harness): `await frontend_log("nav", "x", {"a":1})`
-   returns `True` and does not raise; calling with `fields=None` and with a non-dict is safe.
-   (The TS rewrite has no runner — rely on `tsc`; keep it obviously correct.)
+8. **Tests**:
+   - `tests/test_frontend_log.py` (harness): `await frontend_log("nav", "x", {"a":1})`
+     returns `True` and does not raise; calling with `fields=None` and with a non-dict is
+     safe. (The TS rewrite has no runner — rely on `tsc`; keep it obviously correct.)
+   - `tests/test_scan_resolves_steam_appid.py` (harness): drive `_scan_missing` (or assert at
+     the composition level) with `_auto_fetch_metadata_sync` and `_metadata_with_steam_news_sync`
+     stubbed, and verify the scan calls `_metadata_with_steam_news_sync` for a fetched game so
+     the saved metadata carries the resolved `steam_appid` (stub it to return a dict with a
+     `steam_appid`), and that a per-game failure does not abort the loop. Avoid real network.
 
-8. Record a session log under `docs/agent_conversations/` per `AGENTS.md` §9.
+9. Record a session log under `docs/agent_conversations/` per `AGENTS.md` §9.
 
 ---
 
@@ -270,8 +300,10 @@ human/orchestrator):
 
 1. Rebuild the installer from `dev` and sideload on a real Steam Deck.
 2. In the QAM panel tap **Clear cache** and confirm `playhub-metadata.log` now shows fresh
-   `storesearch` for the games (rescan ran) and matches repopulate (e.g. Force Unleashed II →
-   32500, Space Marine → 55150/2183900).
+   **`storesearch`** calls for the games (scan now resolves the Steam appid — the missing
+   step) and the persisted `playhub_metadata.json` repopulates `steam_appid` (e.g. Force
+   Unleashed II → 32500, Wobbly Life → 1211020, Space Marine → 55150/2183900) instead of
+   `None`.
 3. On a matched game, click the native **Community Hub / Discussions / Guides** buttons (page
    and context menu) and confirm they open the **matched app's** real Steam pages; check the
    log for `[playhub:nav] steam link` lines showing `original`→`rewritten`.
