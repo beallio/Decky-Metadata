@@ -724,6 +724,48 @@ const rewriteSteamLinkToMatchedApp = (url) => {
         return { url: String(url || ""), rewrote: false };
     }
 };
+const rewriteSteamwebNavState = (state) => {
+    try {
+        if (!state || typeof state !== "object")
+            return { state, rewrote: false };
+        let clone;
+        try {
+            clone = structuredClone(state);
+        }
+        catch (_error) {
+            return { state, rewrote: false };
+        }
+        let rewrote = false;
+        const seen = new WeakSet();
+        const walk = (value, depth) => {
+            if (!value || typeof value !== "object" || depth < 0)
+                return;
+            if (seen.has(value))
+                return;
+            seen.add(value);
+            const keys = Array.isArray(value) ? value.keys() : Object.keys(value);
+            for (const key of keys) {
+                const item = value[key];
+                if (typeof item === "string") {
+                    const rewritten = rewriteSteamLinkToMatchedApp(item);
+                    if (rewritten.rewrote) {
+                        value[key] = rewritten.url;
+                        rewrote = true;
+                    }
+                    continue;
+                }
+                if (item && typeof item === "object") {
+                    walk(item, depth - 1);
+                }
+            }
+        };
+        walk(clone, 6);
+        return { state: clone, rewrote };
+    }
+    catch (_error) {
+        return { state, rewrote: false };
+    }
+};
 const shortcutAppIdForSteamAppId = (steamAppId) => {
     if (!Number.isFinite(steamAppId) || steamAppId <= 0)
         return null;
@@ -3008,6 +3050,32 @@ const truncateTraceValue = (value, limit = 80) => {
     const normalized = String(value || "").replace(/\s+/g, " ").trim();
     return normalized.length > limit ? `${normalized.slice(0, Math.max(0, limit - 3))}...` : normalized;
 };
+const safeStringifyTrace = (value, max = 500) => {
+    try {
+        const seen = new WeakSet();
+        const serialized = JSON.stringify(value, (_key, item) => {
+            if (typeof item === "function")
+                return "[fn]";
+            if (typeof item === "bigint")
+                return String(item);
+            if (item && typeof item === "object") {
+                if (seen.has(item))
+                    return "[Circular]";
+                seen.add(item);
+            }
+            return item;
+        });
+        return truncateTraceValue(serialized === undefined ? String(value) : serialized, max);
+    }
+    catch (_error) {
+        try {
+            return truncateTraceValue(String(value), max);
+        }
+        catch (_innerError) {
+            return "[unserializable]";
+        }
+    }
+};
 const navigationTraceArg = (value) => {
     if (typeof value === "number")
         return Number.isFinite(value) ? value : String(value);
@@ -3210,10 +3278,23 @@ const installNavigationTrace = (unpatchers) => {
                 continue;
             const patched = function playhubHistoryTrace(...args) {
                 try {
+                    const url = String(args[2] ?? "");
                     void frontendLog("trace", "history", {
                         method: methodName,
-                        url: truncateTraceValue(String(args[2] ?? ""), 120),
+                        url: truncateTraceValue(url, 120),
                     }).catch(() => undefined);
+                    if (url.toLowerCase().includes("steamweb")) {
+                        void frontendLog("trace", "history-state", {
+                            method: methodName,
+                            url: truncateTraceValue(url, 120),
+                            state: safeStringifyTrace(args[0]),
+                        }).catch(() => undefined);
+                        const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
+                        if (rewrote) {
+                            void frontendLog("nav", "steamweb rewrite", { method: methodName }).catch(() => undefined);
+                            return original.apply(this, [newState, args[1], args[2]]);
+                        }
+                    }
                 }
                 catch (_error) {
                     // Diagnostic tracing must never affect Steam navigation.
