@@ -3856,37 +3856,36 @@ const logSteamLinkNavigation = (kind: string, original: string, rewritten: strin
 const PLAYHUB_HIDE_APP_LINKS_CLASS = "playhub-hide-applinks";
 const PLAYHUB_HIDE_APP_LINKS_STYLE_ID = "playhub-hide-applinks-style";
 
-const isAppDetailsLinkRowModule = (candidate: any) =>
+const isAppDetailsQuickLinksModule = (candidate: any) =>
   !!candidate &&
   typeof candidate === "object" &&
-  typeof candidate.LinkRow === "string" &&
-  typeof candidate.LinkRowText === "string" &&
-  typeof candidate.LinkRowIcon === "string";
+  typeof candidate.GameInfoQuickLinks === "string" &&
+  typeof candidate.GameInfoContainer === "string";
 
-const appDetailsLinkRowModuleFromExports = (module: any) => {
-  if (isAppDetailsLinkRowModule(module)) return module;
+const appDetailsQuickLinksModuleFromExports = (module: any) => {
+  if (isAppDetailsQuickLinksModule(module)) return module;
   if (!module || typeof module !== "object") return undefined;
   for (const candidate of Object.values(module)) {
-    if (isAppDetailsLinkRowModule(candidate)) return candidate;
+    if (isAppDetailsQuickLinksModule(candidate)) return candidate;
   }
   return undefined;
 };
 
-const resolveAppDetailsLinkRowClasses = (): string[] => {
+const resolveAppDetailsQuickLinksClasses = (): string[] => {
   try {
-    let discovered = findModuleChild(appDetailsLinkRowModuleFromExports);
+    let discovered = findModuleChild(appDetailsQuickLinksModuleFromExports);
     if (!discovered) {
       discovered = findModuleChild((module: any) => {
         if (!module || typeof module !== "object") return undefined;
         for (const candidate of Object.values(module)) {
-          const nested = appDetailsLinkRowModuleFromExports(candidate);
+          const nested = appDetailsQuickLinksModuleFromExports(candidate);
           if (nested) return nested;
         }
         return undefined;
       });
     }
-    const linkRow = discovered?.LinkRow;
-    return typeof linkRow === "string" && linkRow.trim() ? [linkRow.trim()] : [];
+    const quickLinks = discovered?.GameInfoQuickLinks;
+    return typeof quickLinks === "string" && quickLinks.trim() ? [quickLinks.trim()] : [];
   } catch (_error) {
     return [];
   }
@@ -3908,9 +3907,10 @@ const buildUnmatchedAppLinksHiderStyle = (linkRowClasses: string[]) => {
     .map(appLinksHiderClassSelector)
     .filter(Boolean)
     .map((selector) => `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} ${selector}`);
-  const targetSelector = selectors.length
-    ? selectors.join(",\n")
-    : `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} [class*="LinkRow"]`;
+  if (!selectors.length) {
+    return "/* playhub: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
+  }
+  const targetSelector = selectors.join(",\n");
   return `
 ${targetSelector} {
   display: none !important;
@@ -3993,17 +3993,17 @@ const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
     document.head.appendChild(style);
   }
 
-  let resolvedLinkRowClasses: string[] = [];
-  let appliedLinkRowClasses = "";
+  let resolvedQuickLinksClasses: string[] = [];
+  let appliedQuickLinksClasses = "";
   let lastDecisionLogSignature = "";
   const updateStyle = () => {
-    if (resolvedLinkRowClasses.length === 0) {
-      resolvedLinkRowClasses = resolveAppDetailsLinkRowClasses();
+    if (resolvedQuickLinksClasses.length === 0) {
+      resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
     }
-    const nextAppliedLinkRowClasses = resolvedLinkRowClasses.join(" ");
-    if (style.textContent && nextAppliedLinkRowClasses === appliedLinkRowClasses) return;
-    style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedLinkRowClasses);
-    appliedLinkRowClasses = nextAppliedLinkRowClasses;
+    const nextAppliedQuickLinksClasses = resolvedQuickLinksClasses.join(" ");
+    if (style.textContent && nextAppliedQuickLinksClasses === appliedQuickLinksClasses) return;
+    style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedQuickLinksClasses);
+    appliedQuickLinksClasses = nextAppliedQuickLinksClasses;
   };
 
   const update = () => {
@@ -4012,7 +4012,7 @@ const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
       const decision = shouldHideUnmatchedAppLinks();
       lastDecisionLogSignature = logUnmatchedAppLinksDecision(
         decision,
-        resolvedLinkRowClasses,
+        resolvedQuickLinksClasses,
         lastDecisionLogSignature
       );
       document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, decision);
