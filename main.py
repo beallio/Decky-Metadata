@@ -209,6 +209,10 @@ STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
 STEAM_EVENTS_URL = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/"
 STEAM_DECK_COMPAT_URL = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport"
 STEAM_STORE_APP_URL = "https://store.steampowered.com/app/{appid}/"
+STEAM_TRACKER_DELISTED_URL = "https://steam-tracker.com/apps/delisted"
+DELISTED_INDEX_TTL_SECONDS = 7 * 24 * 3600
+DELISTED_INDEX_MAX_BYTES = 30 * 1024 * 1024
+DELISTED_INDEX_FILENAME = "delisted_index.json"
 NON_PRIMARY_STEAM_TITLE_PATTERNS = (
     r"\bdemo\b",
     r"\bbeta\b",
@@ -358,6 +362,7 @@ class Plugin:
         self._xbox_card_proxy_dir = self._settings_dir / "xbox_card_proxy_icons"
         self._steamui_icon_dir: Path | None = None
         self._steamui_icon_dir_checked = False
+        self._delisted_index: dict[str, Any] | None = None
         self._openxbl_memory_cache: dict[str, tuple[int, Any]] = {}
         self._openxbl_rate_limited_until = 0.0
         self._last_trueachievements_image_map_diagnostics: dict[str, Any] = {}
@@ -949,6 +954,25 @@ class Plugin:
         )
         return await self.save_metadata(app_id, enriched)
 
+    async def refresh_delisted_index(self) -> dict[str, Any]:
+        index = await asyncio.to_thread(self._ensure_delisted_index_sync, True)
+        return {
+            "ok": index is not None,
+            "count": len(index.get("apps", [])) if isinstance(index, dict) else 0,
+            "fetched_at": index.get("fetched_at", 0) if isinstance(index, dict) else 0,
+        }
+
+    async def get_delisted_index_status(self) -> dict[str, Any]:
+        index = getattr(self, "_delisted_index", None)
+        if not isinstance(index, dict):
+            index = await asyncio.to_thread(self._load_delisted_index_sync)
+            if isinstance(index, dict):
+                self._delisted_index = index
+        return {
+            "count": len(index.get("apps", [])) if isinstance(index, dict) else 0,
+            "fetched_at": index.get("fetched_at", 0) if isinstance(index, dict) else 0,
+        }
+
     async def enrich_community_media(
         self, app_id: int, title: str = "", source_url: str = ""
     ) -> dict[str, Any] | None:
@@ -1354,6 +1378,28 @@ class Plugin:
                     self._scan_progress["assigned"] += 1
                     self._scan_progress["message"] = f"Matched Steam for {title}"
                 else:
+                    delisted_appid = await asyncio.to_thread(
+                        self._resolve_delisted_appid_for_title,
+                        title,
+                    )
+                    if delisted_appid:
+                        pinned = {
+                            "title": title,
+                            "source": "Manual",
+                            "id": title,
+                            "steam_appid": delisted_appid,
+                        }
+                        steam_record = await asyncio.to_thread(
+                            self._metadata_with_steam_news_sync,
+                            pinned,
+                            title,
+                            10,
+                        )
+                        if self._safe_int(steam_record.get("steam_appid")):
+                            await self.save_metadata(app_id, steam_record)
+                            self._scan_progress["assigned"] += 1
+                            self._scan_progress["message"] = f"Matched delisted Steam app for {title}"
+                            continue
                     self._scan_progress["message"] = f"Fetching metadata for {title}"
                     metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
                     if metadata:
@@ -2243,6 +2289,163 @@ class Plugin:
         if not best or best[0] < 300:
             return None, ""
         return best[1], best[2]
+
+    def _parse_delisted_html(self, html_text: str) -> list[list[Any]]:
+        pattern = re.compile(
+            r"href='https://steam-tracker\.com/app/(\d+)/'[^>]*>\s*([^<]+?)\s*</a>",
+            re.I,
+        )
+        rows: list[list[Any]] = []
+        seen: set[int] = set()
+        for match in pattern.finditer(str(html_text or "")):
+            appid = self._safe_int(match.group(1))
+            name = html.unescape(match.group(2)).strip()
+            if not appid or not name or appid in seen:
+                continue
+            seen.add(appid)
+            rows.append([appid, name])
+        return rows
+
+    def _delisted_index_path(self) -> str:
+        settings_dir = Path(getattr(self, "_settings_dir", Path(decky.DECKY_PLUGIN_SETTINGS_DIR)))
+        return str(settings_dir / DELISTED_INDEX_FILENAME)
+
+    def _download_delisted_index_sync(self) -> dict[str, Any] | None:
+        try:
+            text = self._http_text(STEAM_TRACKER_DELISTED_URL, timeout=30)
+            if len(text.encode("utf-8", errors="ignore")) > DELISTED_INDEX_MAX_BYTES:
+                _plog(
+                    "steam",
+                    "delisted index download exceeded size cap",
+                    level=logging.WARNING,
+                    bytes=len(text),
+                    max_bytes=DELISTED_INDEX_MAX_BYTES,
+                )
+                return None
+            apps = self._parse_delisted_html(text)
+            if len(apps) < 100:
+                _plog(
+                    "steam",
+                    "delisted index parse returned implausible count",
+                    level=logging.WARNING,
+                    count=len(apps),
+                )
+                return None
+            return {
+                "fetched_at": now(),
+                "source": STEAM_TRACKER_DELISTED_URL,
+                "apps": apps,
+            }
+        except Exception as error:
+            _plog("steam", "failed to download delisted index", level=logging.WARNING, error=error)
+            return None
+
+    def _save_delisted_index_sync(self, index: dict[str, Any]) -> None:
+        path = Path(self._delisted_index_path())
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = path.with_name(f"{path.name}.tmp")
+            temp_path.write_text(json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
+            os.replace(temp_path, path)
+        except Exception as error:
+            _plog("steam", "failed to save delisted index", level=logging.WARNING, path=path, error=error)
+
+    def _load_delisted_index_sync(self) -> dict[str, Any] | None:
+        path = Path(self._delisted_index_path())
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        apps = payload.get("apps")
+        if not isinstance(apps, list):
+            return None
+        cleaned_apps: list[list[Any]] = []
+        for row in apps:
+            if not isinstance(row, (list, tuple)) or len(row) < 2:
+                continue
+            appid = self._safe_int(row[0])
+            name = self._clean_game_title(str(row[1] or ""))
+            if appid and name:
+                cleaned_apps.append([appid, name])
+        if not cleaned_apps:
+            return None
+        return {
+            "fetched_at": self._safe_int(payload.get("fetched_at")) or 0,
+            "source": str(payload.get("source") or STEAM_TRACKER_DELISTED_URL),
+            "apps": cleaned_apps,
+        }
+
+    def _delisted_index_is_fresh(self, index: dict[str, Any] | None) -> bool:
+        if not isinstance(index, dict):
+            return False
+        fetched_at = self._safe_int(index.get("fetched_at")) or 0
+        return bool(fetched_at and now() - fetched_at < DELISTED_INDEX_TTL_SECONDS)
+
+    def _ensure_delisted_index_sync(self, force: bool = False) -> dict[str, Any] | None:
+        memory_index = getattr(self, "_delisted_index", None)
+        if isinstance(memory_index, dict) and not force and self._delisted_index_is_fresh(memory_index):
+            return memory_index
+
+        disk_index = self._load_delisted_index_sync()
+        if isinstance(disk_index, dict) and not force and self._delisted_index_is_fresh(disk_index):
+            self._delisted_index = disk_index
+            return disk_index
+
+        downloaded = self._download_delisted_index_sync()
+        if isinstance(downloaded, dict):
+            self._save_delisted_index_sync(downloaded)
+            self._delisted_index = downloaded
+            return downloaded
+
+        fallback = disk_index if isinstance(disk_index, dict) else memory_index
+        if isinstance(fallback, dict):
+            self._delisted_index = fallback
+            return fallback
+        return None
+
+    def _resolve_delisted_appid_for_title(self, title: str) -> int:
+        index = self._ensure_delisted_index_sync(False)
+        apps = index.get("apps") if isinstance(index, dict) else None
+        if not isinstance(apps, list) or not apps:
+            return 0
+        clean = self._clean_game_title(title)
+        if not clean:
+            return 0
+        query = self._normalise_match_title(clean)
+        if not query:
+            return 0
+        best: tuple[int, int, str] | None = None
+        query_numbers = set(re.findall(r"\d+", query))
+        for row in apps:
+            if not isinstance(row, (list, tuple)) or len(row) < 2:
+                continue
+            appid = self._safe_int(row[0])
+            name = self._clean_game_title(str(row[1] or ""))
+            if not appid or not name:
+                continue
+            candidate = self._normalise_match_title(name)
+            if not candidate or not self._distinctive_tokens_present(query, candidate):
+                continue
+            if candidate == query:
+                score = 1000
+            else:
+                ratio = difflib.SequenceMatcher(None, query, candidate).ratio()
+                if ratio < 0.72:
+                    continue
+                score = int(ratio * 500)
+            if self._is_non_primary_steam_title(name):
+                score -= 800
+            candidate_numbers = set(re.findall(r"\d+", candidate))
+            if candidate_numbers - query_numbers:
+                score -= 120
+            row_score = (score, appid, name)
+            if not best or row_score[0] > best[0]:
+                best = row_score
+        if not best or best[0] < 300:
+            return 0
+        return best[1]
 
     def _steam_news_for_appid(self, steam_appid: int, title: str = "", limit: int = 6) -> list[dict[str, Any]]:
         partner_events = self._steam_partner_events_for_appid(steam_appid, limit=max(limit or 6, 10))
