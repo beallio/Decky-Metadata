@@ -2948,12 +2948,33 @@ const patchMethod = (target, methodName, replacement) => {
         return () => undefined;
     const original = target[methodName];
     target[methodName] = function patchedMethod(...args) {
-        return replacement(this, original.bind(this), args);
+        const boundOriginal = original.bind(this);
+        try {
+            return replacement(this, boundOriginal, args);
+        }
+        catch (_error) {
+            // A patch replacement must never break the Steam method it wraps.
+            try {
+                return boundOriginal(...args);
+            }
+            catch (_originalError) {
+                return undefined;
+            }
+        }
     };
     return () => {
         target[methodName] = original;
     };
 };
+const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
+    try {
+        return handler.call(this, args, ret);
+    }
+    catch (_error) {
+        // An afterPatch handler must never break the Steam method it augments.
+        return ret;
+    }
+});
 const firstUrlishArgIndex = (args, firstOnly = false) => {
     const limit = firstOnly ? Math.min(args.length, 1) : args.length;
     for (let index = 0; index < limit; index += 1) {
@@ -4214,14 +4235,22 @@ const backSteamHistory = (steamHistory) => {
 };
 const installSteamPatches = () => {
     const unpatchers = [];
-    installAchievementImageCoverPatch(unpatchers);
-    installUnmatchedAppLinksHider(unpatchers);
+    const safeInstallStep = (label, run) => {
+        try {
+            run();
+        }
+        catch (error) {
+            warn("patch", `install step failed: ${label}`, error);
+        }
+    };
+    safeInstallStep("achievementImageCoverPatch", () => installAchievementImageCoverPatch(unpatchers));
+    safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
     // Activity news now use Steam's own AppActivityStore and native Activity
     // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
     // source only as old fallbacks, but the integration attempt for this build is
     // intentionally native-only.
-    installNativeActivityStorePatch(unpatchers);
-    installNativePartnerEventStorePatch(unpatchers);
+    safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
+    safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
     const activityRefreshedListener = () => {
         playhubNativeActivityCache().clear();
         playhubNativePartnerEventCache().clear();
@@ -4258,11 +4287,11 @@ const installSteamPatches = () => {
             delayedUnpatch?.();
         };
     }
-    installSteamNavigationRedirect(unpatchers);
-    installMainWindowHistoryRedirect(unpatchers);
-    installNavigationTrace(unpatchers);
-    installHistoryInstanceTrace(unpatchers);
-    installClickTrace(unpatchers);
+    safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
+    safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
+    safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
+    safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
+    safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
     const redirectAchievementTarget = (target) => {
         const raw = String(target || "");
         if (raw.includes("/playhub-metadata/achievements/"))
@@ -4507,7 +4536,7 @@ const installSteamPatches = () => {
         return original(...args);
     }));
     if (overviewProto?.BIsModOrShortcut) {
-        unpatchers.push(DFL.afterPatch(overviewProto, "BIsModOrShortcut", function (_args, ret) {
+        unpatchers.push(safeAfterPatch(overviewProto, "BIsModOrShortcut", function (_args, ret) {
             if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true)
                 return ret;
             if (bypassBypass > 0) {
@@ -4523,7 +4552,7 @@ const installSteamPatches = () => {
         }).unpatch);
     }
     if (detailsProto?.BHasRecentlyLaunched) {
-        unpatchers.push(DFL.afterPatch(detailsProto, "BHasRecentlyLaunched", (_args, ret) => {
+        unpatchers.push(safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args, ret) => {
             bypassCounter = 4;
             return ret;
         }).unpatch);
@@ -4548,7 +4577,7 @@ const installSteamPatches = () => {
         }));
     }
     if (overviewProto?.GetPerClientData) {
-        unpatchers.push(DFL.afterPatch(overviewProto, "GetPerClientData", (_args, ret) => {
+        unpatchers.push(safeAfterPatch(overviewProto, "GetPerClientData", (_args, ret) => {
             bypassCounter = 4;
             return ret;
         }).unpatch);
@@ -4570,7 +4599,7 @@ const installSteamPatches = () => {
             return undefined;
         });
         if (appDetailsSections?.prototype?.GetSections) {
-            unpatchers.push(DFL.afterPatch(appDetailsSections.prototype, "GetSections", function (_args, ret) {
+            unpatchers.push(safeAfterPatch(appDetailsSections.prototype, "GetSections", function (_args, ret) {
                 const overview = this?.props?.overview;
                 const appId = Number(overview?.appid);
                 if (appId && isNonSteamApp(overview))
@@ -4682,7 +4711,7 @@ const installSteamPatches = () => {
         const patch = routerHook.addPatch(route, (tree) => {
             const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
             if (routeProps?.renderFunc) {
-                const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, ret) => {
+                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
                     const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
                     const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
                     const appOverview = overview || getOverview(appId);
@@ -4710,7 +4739,7 @@ const installSteamPatches = () => {
         const patch = routerHook.addPatch(route, (tree) => {
             const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
             if (routeProps?.renderFunc) {
-                const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, ret) => {
+                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
                     const treeAppId = appIdFromReactTree(ret);
                     const appId = currentGameDetailAppId() || treeAppId;
                     const overview = overviewFromReactTree(ret) || getOverview(appId);
@@ -5811,7 +5840,13 @@ var index = DFL.definePlugin(() => {
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
     void refreshRaSettings();
-    const unpatchSteam = installSteamPatches();
+    let unpatchSteam;
+    try {
+        unpatchSteam = installSteamPatches();
+    }
+    catch (error) {
+        warn("bridge", "installSteamPatches failed", error);
+    }
     const stopMetadataBootstrap = startMetadataBootstrap();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
