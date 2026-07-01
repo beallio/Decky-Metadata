@@ -24,7 +24,12 @@ export default definePlugin(() => {
   void refreshMetadataCache();
   void refreshRaSettings();
 
-  const unpatchSteam = installSteamPatches();
+  let unpatchSteam: (() => void) | undefined;
+  try {
+    unpatchSteam = installSteamPatches();
+  } catch (error) {
+    log.warn("bridge", "installSteamPatches failed", error);
+  }
   const stopMetadataBootstrap = startMetadataBootstrap();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 

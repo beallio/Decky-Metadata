@@ -3832,12 +3832,36 @@ const patchMethod = (
   if (!target?.[methodName]) return () => undefined;
   const original = target[methodName];
   target[methodName] = function patchedMethod(...args: any[]) {
-    return replacement(this, original.bind(this), args);
+    const boundOriginal = original.bind(this);
+    try {
+      return replacement(this, boundOriginal, args);
+    } catch (_error) {
+      // A patch replacement must never break the Steam method it wraps.
+      try {
+        return boundOriginal(...args);
+      } catch (_originalError) {
+        return undefined;
+      }
+    }
   };
   return () => {
     target[methodName] = original;
   };
 };
+
+const safeAfterPatch = (
+  target: any,
+  methodName: string,
+  handler: (args: any[], ret: any) => any
+) =>
+  afterPatch(target, methodName, function patchedAfter(this: any, args: any[], ret: any) {
+    try {
+      return handler.call(this, args, ret);
+    } catch (_error) {
+      // An afterPatch handler must never break the Steam method it augments.
+      return ret;
+    }
+  });
 
 const firstUrlishArgIndex = (args: any[], firstOnly = false): number => {
   const limit = firstOnly ? Math.min(args.length, 1) : args.length;
@@ -5226,14 +5250,21 @@ const backSteamHistory = (steamHistory: any) => {
 
 export const installSteamPatches = (): Unpatch => {
   const unpatchers: Unpatch[] = [];
-  installAchievementImageCoverPatch(unpatchers);
-  installUnmatchedAppLinksHider(unpatchers);
+  const safeInstallStep = (label: string, run: () => void) => {
+    try {
+      run();
+    } catch (error) {
+      log.warn("patch", `install step failed: ${label}`, error);
+    }
+  };
+  safeInstallStep("achievementImageCoverPatch", () => installAchievementImageCoverPatch(unpatchers));
+  safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
   // Activity news now use Steam's own AppActivityStore and native Activity
   // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
   // source only as old fallbacks, but the integration attempt for this build is
   // intentionally native-only.
-  installNativeActivityStorePatch(unpatchers);
-  installNativePartnerEventStorePatch(unpatchers);
+  safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
+  safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
   const activityRefreshedListener = () => {
     playhubNativeActivityCache().clear();
     playhubNativePartnerEventCache().clear();
@@ -5269,11 +5300,11 @@ export const installSteamPatches = (): Unpatch => {
     };
   }
 
-  installSteamNavigationRedirect(unpatchers);
-  installMainWindowHistoryRedirect(unpatchers);
-  installNavigationTrace(unpatchers);
-  installHistoryInstanceTrace(unpatchers);
-  installClickTrace(unpatchers);
+  safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
+  safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
+  safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
+  safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
+  safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
 
   const redirectAchievementTarget = (target: any): string => {
     const raw = String(target || "");
@@ -5533,7 +5564,7 @@ export const installSteamPatches = (): Unpatch => {
 
   if (overviewProto?.BIsModOrShortcut) {
     unpatchers.push(
-      afterPatch(overviewProto, "BIsModOrShortcut", function (this: any, _args: any[], ret: any) {
+      safeAfterPatch(overviewProto, "BIsModOrShortcut", function (this: any, _args: any[], ret: any) {
         if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true) return ret;
         if (bypassBypass > 0) {
           bypassBypass -= 1;
@@ -5549,7 +5580,7 @@ export const installSteamPatches = (): Unpatch => {
 
   if (detailsProto?.BHasRecentlyLaunched) {
     unpatchers.push(
-      afterPatch(detailsProto, "BHasRecentlyLaunched", (_args: any[], ret: any) => {
+      safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args: any[], ret: any) => {
         bypassCounter = 4;
         return ret;
       }).unpatch
@@ -5582,7 +5613,7 @@ export const installSteamPatches = (): Unpatch => {
 
   if (overviewProto?.GetPerClientData) {
     unpatchers.push(
-      afterPatch(overviewProto, "GetPerClientData", (_args: any[], ret: any) => {
+      safeAfterPatch(overviewProto, "GetPerClientData", (_args: any[], ret: any) => {
         bypassCounter = 4;
         return ret;
       }).unpatch
@@ -5605,7 +5636,7 @@ export const installSteamPatches = (): Unpatch => {
     });
     if (appDetailsSections?.prototype?.GetSections) {
       unpatchers.push(
-        afterPatch(
+        safeAfterPatch(
           appDetailsSections.prototype,
           "GetSections",
           function (this: any, _args: any[], ret: Set<string>) {
@@ -5732,7 +5763,7 @@ export const installSteamPatches = (): Unpatch => {
     const patch = routerHook.addPatch(route, (tree: any) => {
       const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
       if (routeProps?.renderFunc) {
-        const renderPatch = afterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
+        const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
           const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
           const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
           const appOverview = overview || getOverview(appId);
@@ -5761,7 +5792,7 @@ export const installSteamPatches = (): Unpatch => {
     const patch = routerHook.addPatch(route, (tree: any) => {
       const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
       if (routeProps?.renderFunc) {
-        const renderPatch = afterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
+        const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
           const treeAppId = appIdFromReactTree(ret);
           const appId = currentGameDetailAppId() || treeAppId;
           const overview = overviewFromReactTree(ret) || getOverview(appId);
