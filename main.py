@@ -1340,21 +1340,35 @@ class Plugin:
             title = self._clean_game_title(str(game.get("name") or ""))
             self._scan_progress["current"] = f"{self._scan_progress['completed'] + 1}/{len(missing)} - {title}" if title else f"{self._scan_progress['completed'] + 1}/{len(missing)}"
             try:
-                self._scan_progress["message"] = f"Fetching metadata for {title}"
-                metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
-                if metadata:
-                    metadata = await asyncio.to_thread(
-                        self._metadata_with_steam_news_sync,
-                        metadata,
-                        title,
-                        10,
-                    )
-                    await self.save_metadata(app_id, metadata)
+                self._scan_progress["message"] = f"Matching Steam for {title}"
+                steam_shell = {"title": title, "source": "Manual", "id": title}
+                steam_record = await asyncio.to_thread(
+                    self._metadata_with_steam_news_sync,
+                    steam_shell,
+                    title,
+                    10,
+                )
+                matched_steam = bool(self._safe_int(steam_record.get("steam_appid")))
+                if matched_steam:
+                    await self.save_metadata(app_id, steam_record)
                     self._scan_progress["assigned"] += 1
-                    self._scan_progress["message"] = f"Saved metadata for {title}"
+                    self._scan_progress["message"] = f"Matched Steam for {title}"
                 else:
-                    self._scan_progress["failed"] += 1
-                    self._scan_progress["message"] = f"No metadata match for {title}"
+                    self._scan_progress["message"] = f"Fetching metadata for {title}"
+                    metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
+                    if metadata:
+                        metadata = await asyncio.to_thread(
+                            self._metadata_with_steam_news_sync,
+                            metadata,
+                            title,
+                            10,
+                        )
+                        await self.save_metadata(app_id, metadata)
+                        self._scan_progress["assigned"] += 1
+                        self._scan_progress["message"] = f"Saved metadata for {title}"
+                    else:
+                        self._scan_progress["failed"] += 1
+                        self._scan_progress["message"] = f"No metadata match for {title}"
             except Exception as error:
                 self._scan_progress["failed"] += 1
                 self._scan_progress["message"] = f"Failed: {title}"
