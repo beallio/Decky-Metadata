@@ -8,7 +8,7 @@ def make_plugin(tmp_path, monkeypatch):
     return main.Plugin()
 
 
-def test_scan_missing_enriches_fetched_metadata_with_steam_appid(tmp_path, monkeypatch):
+def test_scan_missing_enriches_fallback_metadata_with_steam_appid(tmp_path, monkeypatch):
     plugin = make_plugin(tmp_path, monkeypatch)
     calls = []
 
@@ -21,8 +21,9 @@ def test_scan_missing_enriches_fetched_metadata_with_steam_appid(tmp_path, monke
     def enrich(metadata, title, limit=6):
         calls.append((metadata, title, limit))
         enriched = dict(metadata)
-        enriched["steam_appid"] = 32500
-        enriched["steam_store_url"] = "https://store.steampowered.com/app/32500"
+        if enriched.get("source") != "Manual":
+            enriched["steam_appid"] = 32500
+            enriched["steam_store_url"] = "https://store.steampowered.com/app/32500"
         return enriched
 
     monkeypatch.setattr(plugin, "_metadata_with_steam_news_sync", enrich)
@@ -30,6 +31,15 @@ def test_scan_missing_enriches_fetched_metadata_with_steam_appid(tmp_path, monke
     asyncio.run(plugin._scan_missing([{"appid": 101, "name": "The Force Unleashed II"}]))
 
     assert calls == [
+        (
+            {
+                "title": "The Force Unleashed II",
+                "source": "Manual",
+                "id": "The Force Unleashed II",
+            },
+            "The Force Unleashed II",
+            10,
+        ),
         (
             {"title": "The Force Unleashed II", "source": "IGDB", "description": "Fetched"},
             "The Force Unleashed II",
