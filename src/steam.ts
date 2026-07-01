@@ -3918,7 +3918,20 @@ ${targetSelector} {
 `;
 };
 
-const appLinksDomClassPresent = (className: string) => {
+const appLinksHiderTargetDocument = (): Document | null => {
+  try {
+    const doc = (window as any)?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_BrowserWindow
+      ?.document;
+    if (doc && typeof doc.createElement === "function" && doc.head && doc.body) {
+      return doc as Document;
+    }
+  } catch (_error) {
+    // fall through
+  }
+  return null;
+};
+
+const appLinksDomClassPresent = (className: string, doc: Document) => {
   const trimmed = className.trim();
   if (!trimmed) return false;
   try {
@@ -3926,7 +3939,7 @@ const appLinksDomClassPresent = (className: string) => {
       typeof CSS !== "undefined" && typeof CSS.escape === "function"
         ? CSS.escape(trimmed)
         : trimmed.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-    return !!document.querySelector(`.${escaped}`);
+    return !!doc.querySelector(`.${escaped}`);
   } catch (_error) {
     return false;
   }
@@ -3943,7 +3956,8 @@ const unmatchedAppLinksDecisionDetails = () => {
 const logUnmatchedAppLinksDecision = (
   decision: boolean,
   resolvedLinkRowClasses: string[],
-  lastSignature: string
+  lastSignature: string,
+  doc: Document | null
 ) => {
   const details = unmatchedAppLinksDecisionDetails();
   const signature = `${decision}|${resolvedLinkRowClasses.join(",")}|${details.appId}`;
@@ -3956,7 +3970,7 @@ const logUnmatchedAppLinksDecision = (
       steamAppId: details.steamAppId,
       resolvedClasses: resolvedLinkRowClasses,
       classPresentInDom: resolvedLinkRowClasses[0]
-        ? appLinksDomClassPresent(resolvedLinkRowClasses[0])
+        ? !!doc && appLinksDomClassPresent(resolvedLinkRowClasses[0], doc)
         : false,
     }).catch(() => undefined);
   } catch (_error) {
@@ -3986,36 +4000,48 @@ const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
 
   globalState.__playhubAppLinksHider = { installed: true };
 
-  const existingStyle = document.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID);
-  const style = existingStyle || document.createElement("style");
-  if (!existingStyle) {
-    style.id = PLAYHUB_HIDE_APP_LINKS_STYLE_ID;
-    document.head.appendChild(style);
-  }
-
   let resolvedQuickLinksClasses: string[] = [];
   let appliedQuickLinksClasses = "";
   let lastDecisionLogSignature = "";
-  const updateStyle = () => {
-    if (resolvedQuickLinksClasses.length === 0) {
-      resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
-    }
-    const nextAppliedQuickLinksClasses = resolvedQuickLinksClasses.join(" ");
-    if (style.textContent && nextAppliedQuickLinksClasses === appliedQuickLinksClasses) return;
-    style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedQuickLinksClasses);
-    appliedQuickLinksClasses = nextAppliedQuickLinksClasses;
-  };
+  let injectedDoc: Document | null = null;
 
   const update = () => {
     try {
-      updateStyle();
+      const doc = appLinksHiderTargetDocument();
+      if (!doc) return;
+
+      if (resolvedQuickLinksClasses.length === 0) {
+        resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
+      }
+
+      let style = doc.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID);
+      let forceStyleRefresh = injectedDoc !== doc;
+      if (!style) {
+        style = doc.createElement("style");
+        style.id = PLAYHUB_HIDE_APP_LINKS_STYLE_ID;
+        doc.head.appendChild(style);
+        forceStyleRefresh = true;
+      }
+      injectedDoc = doc;
+
+      const nextAppliedQuickLinksClasses = resolvedQuickLinksClasses.join(" ");
+      if (
+        forceStyleRefresh ||
+        !style.textContent ||
+        nextAppliedQuickLinksClasses !== appliedQuickLinksClasses
+      ) {
+        style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedQuickLinksClasses);
+        appliedQuickLinksClasses = nextAppliedQuickLinksClasses;
+      }
+
       const decision = shouldHideUnmatchedAppLinks();
       lastDecisionLogSignature = logUnmatchedAppLinksDecision(
         decision,
         resolvedQuickLinksClasses,
-        lastDecisionLogSignature
+        lastDecisionLogSignature,
+        doc
       );
-      document.body?.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, decision);
+      doc.body.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, decision);
     } catch (_error) {
       // Passive UI polish must never affect Steam navigation or rendering.
     }
@@ -4026,8 +4052,10 @@ const installUnmatchedAppLinksHider = (unpatchers: Unpatch[]) => {
   unpatchers.push(() => {
     try {
       window.clearInterval(timer);
-      document.body?.classList.remove(PLAYHUB_HIDE_APP_LINKS_CLASS);
-      style.remove();
+      if (injectedDoc) {
+        injectedDoc.body.classList.remove(PLAYHUB_HIDE_APP_LINKS_CLASS);
+        injectedDoc.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID)?.remove();
+      }
     } catch (_error) {
       // Best effort teardown.
     }
