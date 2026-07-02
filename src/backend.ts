@@ -33,6 +33,14 @@ export const removeMetadata = callable<
 export const clearMetadataCache = callable<[], { ok: boolean; cleared?: number }>(
   "clear_metadata_cache"
 );
+export const refreshDelistedIndex = callable<
+  [],
+  { ok: boolean; count: number; fetched_at: number }
+>("refresh_delisted_index");
+export const getDelistedIndexStatus = callable<
+  [],
+  { count: number; fetched_at: number }
+>("get_delisted_index_status");
 export const frontendLog = callable<
   [area: string, message: string, fields?: Record<string, unknown> | null],
   boolean
