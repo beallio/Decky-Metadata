@@ -12,19 +12,19 @@ class BrokenRepr:
         raise RuntimeError("repr failed")
 
 
-def test_redact_masks_retroachievements_and_openxbl_secrets() -> None:
+def test_redact_masks_api_and_authorization_secrets() -> None:
     text = (
-        "https://retroachievements.org/API/API_GetGame.php?z=user&y=ra-secret "
-        "X-Authorization: openxbl-secret Authorization: Bearer bearer-secret "
-        "apikey=openxbl-query-secret"
+        "https://example.invalid/API?z=user&y=api-secret "
+        "X-Authorization: x-secret Authorization: Bearer bearer-secret "
+        "apikey=query-secret"
     )
 
     redacted = main._redact(text)
 
-    assert "ra-secret" not in redacted
-    assert "openxbl-secret" not in redacted
+    assert "api-secret" not in redacted
+    assert "x-secret" not in redacted
     assert "bearer-secret" not in redacted
-    assert "openxbl-query-secret" not in redacted
+    assert "query-secret" not in redacted
     assert "y=***" in redacted
     assert "Authorization: ***" in redacted
 

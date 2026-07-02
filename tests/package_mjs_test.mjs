@@ -12,7 +12,7 @@ const packageJson = JSON.parse(
 );
 const zipPath = path.join(
   repoRoot,
-  `Playhub-Metadata_${packageJson.version}_Installer.zip`,
+  `Decky-Metadata_${packageJson.version}_Installer.zip`,
 );
 const stagingRoot = path.join(repoRoot, "build-package");
 
@@ -31,18 +31,18 @@ test("package script creates a Decky installer zip with the expected payload", (
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Playhub-Metadata_.*_Installer\.zip/);
+  assert.match(result.stdout, /Decky-Metadata_.*_Installer\.zip/);
   assert.ok(fs.existsSync(zipPath), "installer zip should exist");
 
   const entries = zipEntries(zipPath);
   assert.deepEqual(
     [
-      "Playhub Metadata/main.py",
-      "Playhub Metadata/package.json",
-      "Playhub Metadata/plugin.json",
-      "Playhub Metadata/LICENSE",
-      "Playhub Metadata/NOTICE",
-      "Playhub Metadata/dist/index.js",
+      "Decky Metadata/main.py",
+      "Decky Metadata/package.json",
+      "Decky Metadata/plugin.json",
+      "Decky Metadata/LICENSE",
+      "Decky Metadata/NOTICE",
+      "Decky Metadata/dist/index.js",
     ].filter((entry) => !entries.has(entry)),
     [],
   );

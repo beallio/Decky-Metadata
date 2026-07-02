@@ -3,22 +3,14 @@ import { afterPatch, findInReactTree, findModuleChild, Navigation, Spinner, Dial
 import { routerHook, toaster } from "@decky/api";
 import {
   autoFetchMetadata,
-  fetchAchievements,
   fetchMetadata,
   frontendLog,
-  getAchievementSettings,
   getAllMetadata,
-  resolveRetroAchievementsFromPath,
   saveMetadata,
-  syncTrueAchievementsProgress,
-  getPlatformCapabilities,
 } from "./backend";
 import { rewriteCommunityFeedUrlForSteamApp } from "./communityFeed";
 import {
-  AchievementSettings,
-  AchievementsResponse,
   MetadataData,
-  SteamAchievement,
   StoreCategory,
 } from "./types";
 import * as log from "./log";
@@ -26,11 +18,9 @@ import * as log from "./log";
 declare const appStore: any;
 declare const appDetailsStore: any;
 declare const appDetailsCache: any;
-declare const appAchievementProgressCache: any;
 declare const SteamClient: any;
 
 export const patchInstallStatus = {
-  achievements: "pending",
   activity: "pending",
   partnerEvents: "pending",
   contextMenu: "pending",
@@ -38,28 +28,18 @@ export const patchInstallStatus = {
 };
 
 export const hasSteamInternals = () => !!(globalThis as any).SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
-export const hasAchievementProgressCache = () => typeof appAchievementProgressCache !== "undefined" && !!appAchievementProgressCache;
 export const hasActivityStore = () => !!(globalThis as any).appActivityStore;
 export const hasAppDetailsStore = () => typeof appDetailsStore !== "undefined" && !!appDetailsStore;
 
 type Unpatch = () => void;
 
 export const metadataCache: Record<string, MetadataData> = {};
-export const achievementsCache: Record<string, AchievementsResponse> = {};
 
 const NON_STEAM_APP_TYPE = 1073741824;
 const GAME_DETAIL_ROUTES = [
   "/library/app/:appid",
   "/library/details/:appid",
   "/library/:collection/app/:appid",
-];
-const GAME_ACHIEVEMENT_ROUTES = [
-  "/library/app/:appid/achievements",
-  "/library/app/:appid/achievements/:rest",
-  "/library/details/:appid/achievements",
-  "/library/details/:appid/achievements/:rest",
-  "/library/:collection/app/:appid/achievements",
-  "/library/:collection/app/:appid/achievements/:rest",
 ];
 const GAME_ACTIVITY_ROUTES = [
   "/library/app/:appid/activity",
@@ -69,50 +49,17 @@ const GAME_ACTIVITY_ROUTES = [
   "/library/:collection/app/:appid/activity",
   "/library/:collection/app/:appid/activity/:rest",
 ];
-export const PLAYHUB_ACHIEVEMENTS_ROUTE = "/playhub-metadata/achievements/:appid";
-
-
-let achievementSettingsCache: AchievementSettings | null = null;
 let bypassCounter = 0;
 let bypassBypass = 0;
 let metadataLoaded = false;
 let metadataLoadPromise: Promise<void> | null = null;
 const loadingMetadata = new Set<number>();
-const loadingAchievements = new Set<number>();
 const loadingScreenshots = new Set<number>();
-let steamAchievementStoreRef: any = null;
 let lastObservedGameDetailAppId = 0;
 let selectedDetailsTabHint = "";
 let selectedDetailsTabHintAt = 0;
 let selectedDetailsTabIndexHint: number | null = null;
 let selectedDetailsTabIndexHintAt = 0;
-
-let backgroundAchievementSyncTimer: number | undefined;
-let backgroundAchievementSyncRunning = false;
-
-const BACKGROUND_SYNC_CHECK_MS = 60 * 1000;
-const BACKGROUND_SYNC_INITIAL_DELAY_MS = 20 * 1000;
-const BACKGROUND_SYNC_LOCAL_PREFIX = "playhub-metadata:bg-achievement-sync:last";
-const BACKGROUND_SYNC_SESSION_KEY = "playhub-metadata:bg-achievement-sync:pc-session";
-
-
-const shouldShowAchievements = (appId: number) => {
-  const key = String(appId);
-  if (achievementsCache[key]?.steam?.nTotal) return true;
-  if (achievementSettingsCache?.retroachievements?.game_ids?.[key]) return true;
-  if (achievementSettingsCache?.xbox?.title_ids?.[key]) return true;
-
-  const source = achievementSettingsCache?.achievement_sources?.[key] ?? "auto";
-  if (source === "disabled") return false;
-  if (source === "xbox") return !!achievementSettingsCache?.xbox?.enabled;
-  if (source === "retroachievements") return !!achievementSettingsCache?.retroachievements?.enabled;
-
-  // Auto mode must be allowed to show the section before a title id exists,
-  // otherwise Xbox/UWPHook auto-detection never gets a chance to run. The backend
-  // still refuses non-UWPHook Xbox calls and avoids RetroAchievements network
-  // calls unless a RA id/hash was resolved.
-  return !!achievementSettingsCache?.xbox?.enabled || !!achievementSettingsCache?.retroachievements?.enabled;
-};
 
 export const cleanTitle = (value: string) =>
   String(value || "")
@@ -407,16 +354,9 @@ export const startMetadataBootstrap = (): Unpatch => {
     }
   };
   void tick();
-  const stopAchievementSync = startBackgroundAchievementSync();
   return () => {
     cancelled = true;
-    stopAchievementSync?.();
   };
-};
-
-export const refreshRaSettings = async () => {
-  achievementSettingsCache = await getAchievementSettings();
-  return achievementSettingsCache;
 };
 
 export const applyMetadata = (appId: number) => {
@@ -2529,7 +2469,7 @@ const appendActivityDiagnostic = (root: HTMLElement, appId: number, diagnostic: 
   box.className = "playhub-activity-news-debug";
 
   const title = document.createElement("strong");
-  title.textContent = "Playhub Metadata · Activity diagnostic";
+  title.textContent = "Decky Metadata · Activity diagnostic";
   box.appendChild(title);
 
   const intro = document.createElement("div");
@@ -3170,351 +3110,6 @@ const installActivityEmptyStateReactPatch = (unpatchers: Unpatch[]) => {
   });
 };
 
-const achievementSortTimestamp = (item: SteamAchievement | any) => Number(item?.rtUnlocked || 0);
-
-const achievementDisplayName = (item: SteamAchievement | any) => String(item?.strName || item?.name || "");
-
-const sortAchievementsForMyAchievements = (items: SteamAchievement[]) =>
-  items.slice().sort((a, b) => {
-    const achievedDiff = Number(Boolean(b?.bAchieved)) - Number(Boolean(a?.bAchieved));
-    if (achievedDiff) return achievedDiff;
-    const dateDiff = achievementSortTimestamp(b) - achievementSortTimestamp(a);
-    if (dateDiff) return dateDiff;
-    return achievementDisplayName(a).localeCompare(achievementDisplayName(b));
-  });
-
-const orderedAchievementRecord = (record: Record<string, SteamAchievement> | undefined) => {
-  const out: Record<string, SteamAchievement> = {};
-  sortAchievementsForMyAchievements(Object.values(record || {})).forEach((item) => {
-    const key = String(item?.strID || item?.strName || "");
-    if (key) out[key] = item;
-  });
-  return out;
-};
-
-const sortedAchievementPayloadForNative = (payload: AchievementsResponse): AchievementsResponse => {
-  const userData = payload.user?.data;
-  const sortedAchieved = orderedAchievementRecord(userData?.achieved as any);
-  const sortedHidden = orderedAchievementRecord(userData?.hidden as any);
-  const sortedUnachieved = orderedAchievementRecord(userData?.unachieved as any);
-  const achievedList = Object.values(sortedAchieved);
-  const hiddenList = Object.values(sortedHidden);
-  const unachievedList = Object.values(sortedUnachieved);
-  return {
-    ...payload,
-    user: payload.user
-      ? {
-          ...payload.user,
-          data: {
-            achieved: sortedAchieved,
-            hidden: sortedHidden,
-            unachieved: sortedUnachieved,
-          },
-        }
-      : payload.user,
-    steam: payload.steam
-      ? {
-          ...payload.steam,
-          vecHighlight: sortAchievementsForMyAchievements([
-            ...(payload.steam.vecHighlight || []),
-            ...achievedList,
-          ]).filter((item, index, list) =>
-            list.findIndex((candidate) => candidate.strID === item.strID) === index
-          ).slice(0, Math.max(3, Math.min(12, achievedList.length || 3))),
-          vecAchievedHidden: sortAchievementsForMyAchievements(hiddenList),
-          vecUnachieved: sortAchievementsForMyAchievements(unachievedList),
-        }
-      : payload.steam,
-  };
-};
-
-const backgroundPolicyIntervalMs = (policy?: string) => {
-  switch (policy) {
-    case "hourly":
-      return 60 * 60 * 1000;
-    case "daily":
-      return 24 * 60 * 60 * 1000;
-    case "weekly":
-      return 7 * 24 * 60 * 60 * 1000;
-    default:
-      return 0;
-  }
-};
-
-const backgroundSyncLastKey = (policy: string) => `${BACKGROUND_SYNC_LOCAL_PREFIX}:${policy}`;
-
-const backgroundAchievementSyncIsDue = (policy: string) => {
-  if (policy === "manual") return false;
-  if (policy === "pc_session") {
-    try {
-      return sessionStorage.getItem(BACKGROUND_SYNC_SESSION_KEY) !== "done";
-    } catch (_error) {
-      return true;
-    }
-  }
-  const interval = backgroundPolicyIntervalMs(policy);
-  if (!interval) return false;
-  try {
-    const last = Number(localStorage.getItem(backgroundSyncLastKey(policy)) || 0);
-    return !last || Date.now() - last >= interval;
-  } catch (_error) {
-    return true;
-  }
-};
-
-const markBackgroundAchievementSyncDone = (policy: string) => {
-  try {
-    if (policy === "pc_session") sessionStorage.setItem(BACKGROUND_SYNC_SESSION_KEY, "done");
-    else localStorage.setItem(backgroundSyncLastKey(policy), String(Date.now()));
-  } catch (_error) {
-    // Storage can be unavailable in some embedded Steam contexts.
-  }
-};
-
-const scheduledAchievementTargets = async (settings: AchievementSettings) => {
-  const games = await allNonSteamGames();
-  const targets: { appid: number; name: string; provider: "xbox" | "retroachievements" }[] = [];
-  const sources = settings.achievement_sources || {};
-  const raIds = settings.retroachievements?.game_ids || {};
-  const xboxIds = settings.xbox?.title_ids || {};
-  for (const game of games) {
-    const key = String(game.appid);
-    const source = sources[key] || "auto";
-    if (source === "disabled") continue;
-    const hasXbox = Boolean(xboxIds[key]);
-    const hasRa = Boolean(raIds[key]);
-    if ((source === "xbox" || (source === "auto" && hasXbox)) && hasXbox && isUwphookGameOption(game)) {
-      targets.push({ appid: game.appid, name: game.name, provider: "xbox" });
-      continue;
-    }
-    if ((source === "retroachievements" || (source === "auto" && !hasXbox && hasRa)) && hasRa) {
-      targets.push({ appid: game.appid, name: game.name, provider: "retroachievements" });
-    }
-  }
-  return targets;
-};
-
-const runBackgroundAchievementSync = async (reason = "scheduled") => {
-  if (backgroundAchievementSyncRunning) return;
-  backgroundAchievementSyncRunning = true;
-  let policy = "daily";
-  let updated = 0;
-  let skipped = 0;
-  try {
-    const settings = await refreshRaSettings();
-    policy = settings?.achievement_cache?.policy || "daily";
-    if (!backgroundAchievementSyncIsDue(policy)) return;
-    const targets = await scheduledAchievementTargets(settings);
-    toaster.toast({
-      title: "Playhub Metadata",
-      body: `${"Progress sync started"}: ${targets.length}`,
-    });
-    for (const target of targets) {
-      try {
-        const payload = target.provider === "xbox"
-          ? ((await syncTrueAchievementsProgress(target.appid)) || (await fetchAchievements(target.appid)))
-          : await fetchAchievements(target.appid);
-        if (payload?.steam?.nTotal) {
-          applyAchievementPayload(target.appid, payload);
-          updated += 1;
-        } else {
-          skipped += 1;
-        }
-      } catch (error) {
-        skipped += 1;
-        log.warn("achievements", "background achievement sync failed", target.name, error);
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 350));
-    }
-    markBackgroundAchievementSyncDone(policy);
-    toaster.toast({
-      title: "Playhub Metadata",
-      body: `${"Progress sync finished"}: ${updated} ${"updated"}, ${skipped} ${"skipped"}`,
-    });
-  } catch (error) {
-    toaster.toast({ title: "Playhub Metadata", body: `${"Progress sync failed"}: ${String(error)}` });
-  } finally {
-    backgroundAchievementSyncRunning = false;
-  }
-};
-
-export const startBackgroundAchievementSync = (): Unpatch => {
-  if (backgroundAchievementSyncTimer) window.clearInterval(backgroundAchievementSyncTimer);
-  const run = () => void runBackgroundAchievementSync("timer");
-  const initial = window.setTimeout(run, BACKGROUND_SYNC_INITIAL_DELAY_MS);
-  backgroundAchievementSyncTimer = window.setInterval(run, BACKGROUND_SYNC_CHECK_MS);
-  return () => {
-    window.clearTimeout(initial);
-    if (backgroundAchievementSyncTimer) window.clearInterval(backgroundAchievementSyncTimer);
-    backgroundAchievementSyncTimer = undefined;
-  };
-};
-
-export const applyAchievementPayload = (
-  appId: number,
-  payload: AchievementsResponse | null
-) => {
-  if (!payload?.steam?.nTotal) return;
-  const sortedPayload = sortedAchievementPayloadForNative(payload);
-  clearAchievementStoreMapsForApp(appId);
-  achievementsCache[String(appId)] = sortedPayload;
-  if (steamAchievementStoreRef) primeAchievementStore(steamAchievementStoreRef, appId, sortedPayload);
-  const appData = appDetailsStore?.GetAppData?.(appId);
-  if (appData?.details) {
-    appData.details.achievements = sortedPayload.steam;
-    appData.bLoadingAchievments = false;
-  }
-  try {
-    appDetailsCache?.SetCachedDataForApp?.(
-      appId,
-      "achievements",
-      2,
-      sortedPayload.steam
-    );
-  } catch (_error) {
-    // Best effort, same cache route used by Steam.
-  }
-  try {
-    if (appAchievementProgressCache?.m_achievementProgress) {
-      appAchievementProgressCache.m_achievementProgress.mapCache.set(appId, {
-        all_unlocked: sortedPayload.progress.achieved === sortedPayload.progress.total,
-        appid: appId,
-        cache_time: Date.now(),
-        percentage: sortedPayload.progress.percentage,
-        total: sortedPayload.progress.total,
-        unlocked: sortedPayload.progress.achieved,
-      });
-      appAchievementProgressCache.SaveCacheFile?.();
-    }
-  } catch (_error) {
-    // Progress cache is optional across Steam client versions.
-  }
-  try {
-    appDetailsStore?.GetAchievements?.(appId);
-  } catch (_error) {
-    // Touching the getter nudges Steam into re-reading the cached achievement data.
-  }
-  window.dispatchEvent(new Event("playhub-metadata:achievements-updated"));
-};
-
-const emptySteamAchievementsPayload = () => ({
-  nAchieved: 0,
-  nTotal: 0,
-  vecAchievedHidden: [],
-  vecHighlight: [],
-  vecUnachieved: [],
-});
-
-const clearAchievementStoreMapsForApp = (appId: number) => {
-  const keys = [appId, String(appId)];
-  const store = steamAchievementStoreRef;
-  if (!store) return;
-  try {
-    for (const key of keys) {
-      for (const mapName of [
-        "m_mapMyAchievements",
-        "m_mapAchievements",
-        "m_mapGlobalAchievements",
-        "m_mapGlobalAchievementPercentages",
-        "m_mapAchievementPercentages",
-      ]) {
-        const map = store?.[mapName];
-        map?.delete?.(key);
-        if (map?.set && (mapName.includes("Global") || mapName.includes("Percent"))) {
-          map.set(key, { loading: false, data: {} });
-        }
-        if (map?.set && (mapName === "m_mapMyAchievements" || mapName === "m_mapAchievements")) {
-          map.set(key, emptyAchievementUserPayload());
-        }
-      }
-    }
-  } catch (error) {
-    log.warn("achievements", "failed to clear achievement store maps", error);
-  }
-};
-
-export const clearAchievementsForApp = (appId: number) => {
-  const key = String(appId);
-  delete achievementsCache[key];
-  const empty = emptySteamAchievementsPayload();
-  clearAchievementStoreMapsForApp(appId);
-  try {
-    const appData = appDetailsStore?.GetAppData?.(appId);
-    if (appData?.details) {
-      appData.details.achievements = empty;
-      appData.bLoadingAchievments = false;
-    }
-  } catch (_error) {
-    // Best effort.
-  }
-  try {
-    appDetailsCache?.SetCachedDataForApp?.(appId, "achievements", 2, empty);
-  } catch (_error) {
-    // Best effort.
-  }
-  try {
-    appAchievementProgressCache?.m_achievementProgress?.mapCache?.delete?.(appId);
-    appAchievementProgressCache?.m_achievementProgress?.mapCache?.delete?.(String(appId));
-    appAchievementProgressCache?.SaveCacheFile?.();
-  } catch (_error) {
-    // Best effort.
-  }
-  window.dispatchEvent(new Event("playhub-metadata:achievements-updated"));
-};
-
-export const clearAchievementsForApps = (appIds: number[]) => {
-  for (const appId of appIds) {
-    if (Number.isFinite(appId) && appId > 0) clearAchievementsForApp(appId);
-  }
-};
-
-export const isUwphookGameOption = (game: { exe?: string; start_dir?: string; launch_options?: string; shortcut_path?: string; name?: string }) => {
-  const text = `${game?.exe || ""} ${game?.start_dir || ""} ${game?.launch_options || ""} ${game?.shortcut_path || ""} ${game?.name || ""}`.toLowerCase().replace(/\\/g, "/");
-  return text.includes("uwphook.exe") || text.includes("/uwphook/uwphook.exe") || text.includes("briano/uwphook");
-};
-
-const flushTrueAchievementsNativeCache = async () => {
-  try {
-    const settings = achievementSettingsCache ?? (await refreshRaSettings());
-    const ids = settings?.xbox?.title_ids || {};
-    Object.keys(ids).forEach((key) => {
-      const appId = Number(key);
-      if (appId) clearAchievementsForApp(appId);
-    });
-  } catch (error) {
-    log.warn("achievements", "failed to flush stale achievement cache", error);
-  }
-};
-
-const primeAchievementStore = (store: any, appId: number, payload: AchievementsResponse | null) => {
-  if (!payload) return;
-  const sortedPayload = sortedAchievementPayloadForNative(payload);
-  try {
-    const keys = [appId, String(appId)];
-    for (const key of keys) {
-      if (sortedPayload.global) {
-        store?.m_mapGlobalAchievements?.set?.(key, sortedPayload.global);
-        store?.m_mapGlobalAchievementPercentages?.set?.(key, sortedPayload.global);
-        store?.m_mapAchievementPercentages?.set?.(key, sortedPayload.global);
-      }
-      if (sortedPayload.user) {
-        store?.m_mapMyAchievements?.set?.(key, sortedPayload.user);
-        store?.m_mapAchievements?.set?.(key, sortedPayload.user);
-      }
-    }
-  } catch (error) {
-    log.warn("achievements", "failed to prime achievement store", error);
-  }
-};
-
-const emptyAchievementUserPayload = () => ({
-  loading: false,
-  data: {
-    achieved: {},
-    hidden: {},
-    unachieved: {},
-  },
-});
 
 export const tryFetchMetadataForApp = async (appId: number) => {
   await ensureMetadataCache();
@@ -3566,88 +3161,6 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   }
 };
 
-export const getAppDetails = async (appId: number): Promise<any | null> =>
-  new Promise((resolve) => {
-    let timeoutId: number | undefined;
-    try {
-      const { unregister } = SteamClient.Apps.RegisterForAppDetails(
-        appId,
-        (details: any) => {
-          window.clearTimeout(timeoutId);
-          unregister();
-          resolve(details);
-        }
-      );
-      timeoutId = window.setTimeout(() => {
-        unregister();
-        resolve(null);
-      }, 1000);
-    } catch (_error) {
-      window.clearTimeout(timeoutId);
-      resolve(null);
-    }
-  });
-
-const loadAchievementsForApp = async (appId: number) => {
-  if (achievementsCache[String(appId)] || loadingAchievements.has(appId)) {
-    return achievementsCache[String(appId)];
-  }
-  const overview = getOverview(appId);
-  if (!isNonSteamApp(overview)) return null;
-  const settings = achievementSettingsCache ?? (await refreshRaSettings());
-  const hasAnyProvider =
-    !!settings?.retroachievements?.enabled || !!settings?.xbox?.enabled;
-  if (!hasAnyProvider) return null;
-
-  const appKey = String(appId);
-  const source = settings?.achievement_sources?.[appKey] ?? "auto";
-  const hasXboxMatch = !!settings?.xbox?.title_ids?.[appKey];
-  const shouldClearStaleXbox = hasXboxMatch || source === "xbox";
-  if (shouldClearStaleXbox) {
-    // Steam can keep old native achievement data around even after the plugin
-    // data folders are deleted. Clear the native cache before loading TA data
-    // so old OpenXBL payloads cannot leak into the page.
-    clearAchievementsForApp(appId);
-  }
-
-  const capabilities = await getPlatformCapabilities();
-  const isXboxAutoDetect = !hasXboxMatch && (source === "xbox" || source === "auto");
-  if (isXboxAutoDetect && !capabilities?.supports_xbox_uwphook_auto && !settings?.retroachievements?.enabled) {
-    return null;
-  }
-
-  loadingAchievements.add(appId);
-  try {
-    let payload = await fetchAchievements(appId);
-    if (!payload && shouldClearStaleXbox) {
-      clearAchievementsForApp(appId);
-      return null;
-    }
-    if (!payload) {
-      const details = await getAppDetails(appId);
-      const launchPath = `${details?.strShortcutExe || ""} ${
-        details?.strShortcutLaunchOptions || ""
-      }`;
-      if (launchPath.trim()) {
-        const resolvedPayload = await resolveRetroAchievementsFromPath(
-          appId,
-          launchPath,
-          appName(appId)
-        );
-        if (resolvedPayload?.steam) {
-          payload = resolvedPayload as AchievementsResponse;
-        }
-      }
-    }
-    if (payload) applyAchievementPayload(appId, payload);
-    return payload || achievementsCache[String(appId)] || null;
-  } catch (error) {
-    log.error("achievements", "achievements fetch failed", error);
-    return achievementsCache[String(appId)] || null;
-  } finally {
-    loadingAchievements.delete(appId);
-  }
-};
 
 const patchMethod = (
   target: any,
@@ -4560,403 +4073,6 @@ const installHistoryInstanceTrace = (unpatchers: Unpatch[]) => {
   });
 };
 
-let achievementStorePatchInstalled = false;
-
-const tryInstallAchievementStorePatch = (unpatchers: Unpatch[]): boolean => {
-  if (achievementStorePatchInstalled) return true;
-  if (!hasAchievementProgressCache()) {
-    if (patchInstallStatus.achievements === "pending") {
-      patchInstallStatus.achievements = "skipped-missing-internal";
-      log.warn("patch", "achievement UI patch skipped", { status: patchInstallStatus.achievements });
-    }
-    return true;
-  }
-  try {
-    const achievementsStore = findModuleChild((module: any) => {
-      if (!module || typeof module !== "object") return undefined;
-      for (const prop in module) {
-        const candidate = module[prop];
-        if (candidate?.m_mapMyAchievements || candidate?.m_mapGlobalAchievements) return candidate;
-      }
-      return undefined;
-    });
-    if (!achievementsStore) return false;
-    steamAchievementStoreRef = achievementsStore;
-
-    const proto = achievementsStore.__proto__ ?? achievementsStore;
-    if (achievementsStore?.LoadMyAchievements || proto?.LoadMyAchievements) {
-      unpatchers.push(
-        patchMethod(
-          proto,
-          "LoadMyAchievements",
-          (thisValue, original, args) => {
-            const appId = Number(args[0]);
-            if (!isNonSteamApp(getOverview(appId))) {
-              return original(...args);
-            }
-            const cached = achievementsCache[String(appId)];
-            if (cached) {
-              primeAchievementStore(thisValue, appId, cached);
-              return Promise.resolve(cached.user ?? emptyAchievementUserPayload());
-            }
-            return loadAchievementsForApp(appId)
-              .then((payload) => {
-                primeAchievementStore(thisValue, appId, payload);
-                return payload?.user ?? emptyAchievementUserPayload();
-              })
-              .catch((error) => {
-                log.error("achievements", "LoadMyAchievements failed", error);
-                return emptyAchievementUserPayload();
-              });
-          }
-        )
-      );
-    }
-
-    for (const methodName of [
-      "LoadGlobalAchievements",
-      "LoadGlobalAchievementPercentages",
-      "LoadAchievementPercentages",
-    ]) {
-      if (!(achievementsStore?.[methodName] || proto?.[methodName])) continue;
-      unpatchers.push(
-        patchMethod(proto, methodName, (thisValue, original, args) => {
-          const appId = Number(args[0]);
-          if (!isNonSteamApp(getOverview(appId))) {
-            return original(...args);
-          }
-          const cached = achievementsCache[String(appId)];
-          if (cached) {
-            primeAchievementStore(thisValue, appId, cached);
-            return Promise.resolve(cached.global ?? { loading: false, data: {} });
-          }
-          return loadAchievementsForApp(appId).then((payload) => {
-            primeAchievementStore(thisValue, appId, payload);
-            return payload?.global ?? { loading: false, data: {} };
-          });
-        })
-      );
-    }
-
-    achievementStorePatchInstalled = true;
-    patchInstallStatus.achievements = "installed";
-    log.info("patch", "achievement store patch installed", { status: patchInstallStatus.achievements });
-    return true;
-  } catch (error) {
-    patchInstallStatus.achievements = "failed";
-    log.warn("patch", "achievement store patch failed", { status: patchInstallStatus.achievements }, error);
-    return true;
-  }
-};
-
-
-const routeAchievementAppId = () => achievementAppIdFromPath(currentRoutePath());
-
-const achievementAppIdFromPath = (path: string) => {
-  const match = String(path || "").match(/\/library\/(?:app|details|[^/]+\/app)\/(\d+)\/achievements(?:[/?#].*)?/)
-    || String(path || "").match(/\/playhub-metadata\/achievements\/(\d+)(?:[/?#].*)?/);
-  return Number(match?.[1] || 0);
-};
-
-const playhubAchievementsPath = (appId: number) => `/playhub-metadata/achievements/${appId}`;
-
-const achievementDate = (value: number) => {
-  if (!value) return "";
-  try {
-    return new Date(value * 1000).toLocaleDateString();
-  } catch (_error) {
-    return "";
-  }
-};
-
-const allAchievementsFromPayload = (payload: AchievementsResponse | null): SteamAchievement[] => {
-  const data = payload?.user?.data;
-  if (!data) return [];
-  return [
-    ...Object.values(data.achieved || {}),
-    ...Object.values(data.unachieved || {}),
-    ...Object.values(data.hidden || {}),
-  ];
-};
-
-const achievementImageUrl = (achievement: SteamAchievement) => {
-  const candidates = [
-    achievement.playhubImage,
-    achievement.strImageURL,
-    achievement.strImageUrl,
-    achievement.strImage,
-    achievement.strIconURL,
-    achievement.strIcon,
-    achievement.iconUrl,
-    achievement.imageUrl,
-  ].filter(Boolean) as string[];
-  return candidates[0] || "";
-};
-
-const imageElement = (achievement: SteamAchievement, size = 96) => {
-  const src = achievementImageUrl(achievement);
-  const wrapperStyle: React.CSSProperties = {
-    width: size,
-    height: size,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    flex: "0 0 auto",
-    overflow: "hidden",
-  };
-  const imgStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain",
-    objectPosition: "center center",
-    display: "block",
-  };
-  return React.createElement(
-    "div",
-    { className: "playhub-achievement-art", style: wrapperStyle },
-    src ? React.createElement("img", { src, style: imgStyle, referrerPolicy: "no-referrer" }) : null
-  );
-};
-
-const XBOX_IMAGE_URL_RE = /(trueachievements|imagestore|xboxlive|xboxservices|microsoft|akamaized|store-images|dlassets)/i;
-const isLikelyAchievementArtBox = (element: Element) => {
-  const rect = (element as HTMLElement).getBoundingClientRect?.();
-  if (!rect || rect.width < 18 || rect.height < 18) return false;
-  // Steam can render achievement art into square tiles, wide cards, or small
-  // strips depending on the page. Keep this bounded so large metadata artwork
-  // is not touched, but do not require a square ratio.
-  return rect.width <= 520 && rect.height <= 360;
-};
-
-const fixNativeAchievementImageStretch = (root: ParentNode = document) => {
-  try {
-    root.querySelectorAll?.("img").forEach((node) => {
-      const img = node as HTMLImageElement;
-      const src = img.currentSrc || img.src || img.srcset || img.getAttribute("src") || img.getAttribute("srcset") || "";
-      const parent = img.parentElement as HTMLElement | null;
-      const achievementArtTarget = isLikelyAchievementArtBox(img) || (!!parent && isLikelyAchievementArtBox(parent));
-      if (!XBOX_IMAGE_URL_RE.test(src) || !achievementArtTarget) return;
-      if (parent) {
-        parent.style.setProperty("overflow", "hidden", "important");
-        if (!parent.style.position) parent.style.setProperty("position", "relative", "important");
-        parent.style.setProperty("background-color", "rgba(0,0,0,0.18)", "important");
-      }
-      img.style.setProperty("object-fit", "contain", "important");
-      img.style.setProperty("object-position", "center center", "important");
-      img.style.setProperty("width", "100%", "important");
-      img.style.setProperty("height", "100%", "important");
-      img.style.setProperty("max-width", "none", "important");
-      img.style.setProperty("max-height", "none", "important");
-      img.style.setProperty("display", "block", "important");
-    });
-
-    root.querySelectorAll?.("*").forEach((node) => {
-      const el = node as HTMLElement;
-      const bg = el.style?.backgroundImage || "";
-      if (!bg || !XBOX_IMAGE_URL_RE.test(bg) || !isLikelyAchievementArtBox(el)) return;
-      el.style.setProperty("background-size", "contain", "important");
-      el.style.setProperty("background-position", "center center", "important");
-      el.style.setProperty("background-repeat", "no-repeat", "important");
-      el.style.setProperty("background-color", "rgba(0,0,0,0.18)", "important");
-    });
-  } catch (_error) {
-    // Best effort: Steam changes this DOM often.
-  }
-};
-
-const installAchievementImageCoverPatch = (unpatchers: Unpatch[]) => {
-  const style = document.createElement("style");
-  style.id = "playhub-achievement-cover-style";
-  style.textContent = `
-    .playhub-achievement-art {
-      background-size: contain !important;
-      background-position: center center !important;
-      background-repeat: no-repeat !important;
-    }
-    .playhub-achievement-art > img {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: contain !important;
-      object-position: center center !important;
-      display: block !important;
-    }
-    [style*="trueachievements"][style*="background-image"],
-    [style*="imagestore"][style*="background-image"],
-    [style*="xboxlive"][style*="background-image"],
-    [style*="xboxservices"][style*="background-image"],
-    [style*="store-images"][style*="background-image"],
-    [style*="dlassets"][style*="background-image"],
-    [style*="akamaized"][style*="background-image"] {
-      background-size: contain !important;
-      background-position: center center !important;
-      background-repeat: no-repeat !important;
-    }
-    img[src*="trueachievements"],
-    img[src*="imagestore"],
-    img[src*="xboxlive"],
-    img[src*="xboxservices"],
-    img[src*="store-images"],
-    img[src*="dlassets"],
-    img[src*="akamaized"] {
-      object-fit: contain !important;
-      object-position: center center !important;
-    }
-  `;
-  document.head.appendChild(style);
-  unpatchers.push(() => style.remove());
-
-  const run = () => fixNativeAchievementImageStretch(document);
-  run();
-  const interval = window.setInterval(run, 750);
-  unpatchers.push(() => window.clearInterval(interval));
-
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      mutation.addedNodes.forEach((node) => {
-        if (node instanceof Element) fixNativeAchievementImageStretch(node);
-      });
-    }
-    run();
-  });
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "style", "class"] });
-  unpatchers.push(() => observer.disconnect());
-
-  window.addEventListener("playhub-metadata:achievements-updated", run);
-  unpatchers.push(() => window.removeEventListener("playhub-metadata:achievements-updated", run));
-};
-
-const PlayhubAchievementsPage = ({ appId }: { appId: number }) => {
-  const [payload, setPayload] = React.useState<AchievementsResponse | null>(
-    achievementsCache[String(appId)] || null
-  );
-  const [loading, setLoading] = React.useState(!achievementsCache[String(appId)]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    setLoading(!achievementsCache[String(appId)]);
-    loadAchievementsForApp(appId).then((next) => {
-      if (!cancelled) {
-        setPayload(next || achievementsCache[String(appId)] || null);
-        setLoading(false);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [appId]);
-
-  const achievements = allAchievementsFromPayload(payload)
-    .slice()
-    .sort((a, b) => (b.rtUnlocked || 0) - (a.rtUnlocked || 0));
-  const unlocked = achievements.filter((item) => item.bAchieved).length;
-  const total = achievements.length || payload?.progress?.total || 0;
-  const percent = total ? Math.round((unlocked / total) * 100) : 0;
-  const title = payload?.title || appName(appId);
-  const provider = payload?.provider === "xbox" ? "Xbox" : "RetroAchievements";
-
-  const content = loading
-    ? React.createElement("div", { style: { padding: 24 } }, React.createElement(Spinner, null))
-    : !achievements.length
-      ? React.createElement("div", { style: { opacity: 0.72, padding: 24 } }, "No achievements loaded for this game.")
-      : React.createElement(
-          "div",
-          {
-            style: {
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-              gap: 16,
-            },
-          },
-          achievements.map((achievement) =>
-            React.createElement(
-              "div",
-              {
-                key: achievement.strID,
-                style: {
-                  display: "flex",
-                  gap: 16,
-                  padding: 16,
-                  borderRadius: 12,
-                  background: achievement.bAchieved
-                    ? "rgba(255,255,255,0.10)"
-                    : "rgba(255,255,255,0.055)",
-                  opacity: achievement.bAchieved ? 1 : 0.68,
-                },
-              },
-              imageElement(achievement, 96),
-              React.createElement(
-                "div",
-                { style: { minWidth: 0 } },
-                React.createElement(
-                  "div",
-                  { style: { fontWeight: 700, fontSize: 18, marginBottom: 6 } },
-                  achievement.strName || "Secret achievement"
-                ),
-                React.createElement(
-                  "div",
-                  { style: { opacity: 0.76, lineHeight: 1.35 } },
-                  achievement.strDescription || ""
-                ),
-                achievement.bAchieved
-                  ? React.createElement(
-                      "div",
-                      { style: { opacity: 0.65, marginTop: 12 } },
-                      achievementDate(achievement.rtUnlocked)
-                        ? `Unlocked on ${achievementDate(achievement.rtUnlocked)}`
-                        : "Unlocked"
-                    )
-                  : React.createElement(
-                      "div",
-                      { style: { opacity: 0.58, marginTop: 12 } },
-                      achievement.bHidden ? "Hidden" : "Locked"
-                    )
-              )
-            )
-          )
-        );
-
-  return React.createElement(
-    "div",
-    { style: { padding: 32, paddingBottom: 120, minHeight: "100vh", boxSizing: "border-box", overflowY: "auto" } },
-      React.createElement(
-        "div",
-        { style: { display: "flex", alignItems: "center", gap: 16, marginBottom: 22 } },
-        React.createElement(
-          DialogButton,
-          { focusable: true, onClick: () => Navigation.NavigateBack(), style: { width: "auto" } },
-          "Back"
-        ),
-        React.createElement(
-          "div",
-          null,
-          React.createElement("div", { style: { fontSize: 32, fontWeight: 800 } }, "Achievements"),
-          React.createElement(
-            "div",
-            { style: { opacity: 0.72, marginTop: 4 } },
-            `${title} · ${provider} · ${unlocked}/${total} (${percent}%)`
-          )
-        )
-      ),
-      React.createElement(
-        "div",
-        { style: { height: 8, borderRadius: 999, background: "rgba(255,255,255,0.16)", overflow: "hidden", marginBottom: 24 } },
-        React.createElement("div", {
-          style: {
-            width: `${Math.max(0, Math.min(100, percent))}%`,
-            height: "100%",
-            borderRadius: 999,
-            background: "linear-gradient(90deg, #a67cff, #ff2d6f)",
-          },
-        })
-      ),
-      content
-  );
-};
-
-
-export const PlayhubAchievementsRoute = () => {
-  const appId = routeAchievementAppId();
-  return React.createElement(PlayhubAchievementsPage, { appId });
-};
 
 const overviewFromReactTree = (tree: any): any | null => {
   try {
@@ -5082,7 +4198,6 @@ export const installSteamPatches = (): Unpatch => {
       log.warn("patch", `install step failed: ${label}`, error);
     }
   };
-  safeInstallStep("achievementImageCoverPatch", () => installAchievementImageCoverPatch(unpatchers));
   safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
   // Activity news now use Steam's own AppActivityStore and native Activity
   // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
@@ -5100,8 +4215,6 @@ export const installSteamPatches = (): Unpatch => {
   };
   window.addEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener);
   unpatchers.push(() => window.removeEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener));
-  void flushTrueAchievementsNativeCache();
-  window.setTimeout(() => void flushTrueAchievementsNativeCache(), 2500);
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
   const detailsProto = appDetailsStore?.__proto__;
 
@@ -5131,27 +4244,6 @@ export const installSteamPatches = (): Unpatch => {
   safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
   safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
 
-  const redirectAchievementTarget = (target: any): string => {
-    const raw = String(target || "");
-    if (raw.includes("/playhub-metadata/achievements/")) return "";
-    const appId = achievementAppIdFromPath(raw);
-    if (appId && isNonSteamApp(getOverview(appId)) && shouldShowAchievements(appId)) {
-      return playhubAchievementsPath(appId);
-    }
-    return "";
-  };
-
-  try {
-    if ((Navigation as any)?.Navigate) {
-    unpatchers.push(
-      patchMethod(Navigation as any, "Navigate", (_thisValue, original, args) => {
-        const redirected = redirectAchievementTarget(args[0]);
-        if (redirected) return original(redirected);
-        return original(...args);
-      })
-    );
-  }
-
   try {
     const steamHistory = (globalThis as any).Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
     for (const methodName of ["push", "replace"]) {
@@ -5159,8 +4251,6 @@ export const installSteamPatches = (): Unpatch => {
         unpatchers.push(
           patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
             const target = historyPathFromArgs(args);
-            const redirected = redirectAchievementTarget(target);
-            if (redirected) return original(redirected);
             const state = historyStateFromArgs(args);
             if (methodName === "push" && shouldReplacePlayhubNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
               (globalThis as any).__playhubNativeNewsOpenedWithReplaceAt = Date.now();
@@ -5197,7 +4287,7 @@ export const installSteamPatches = (): Unpatch => {
       }
     }
   } catch (error) {
-    log.warn("patch", "history achievement redirect patch skipped", error);
+    log.warn("patch", "history patch skipped", error);
   }
 
   try {
@@ -5206,10 +4296,6 @@ export const installSteamPatches = (): Unpatch => {
       if (typeof original !== "function") continue;
       const patched = function (this: History, ...args: any[]) {
         const target = String(args[2] || "");
-        const redirected = redirectAchievementTarget(target || args[0]);
-        if (redirected) {
-          args[2] = redirected;
-        }
         const state = historyStateFromArgs(args);
         if (methodName === "pushState" && shouldReplacePlayhubNativeNewsPush(target, state)) {
           (globalThis as any).__playhubNativeNewsOpenedWithReplaceAt = Date.now();
@@ -5236,22 +4322,6 @@ export const installSteamPatches = (): Unpatch => {
     log.warn("patch", "window history redirect patch skipped", error);
   }
 
-  const clickAchievementRedirect = (event: MouseEvent) => {
-    try {
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest?.("a[href]") as HTMLAnchorElement | null;
-      const redirected = redirectAchievementTarget(anchor?.getAttribute?.("href") || anchor?.href || "");
-      if (redirected) {
-        event.preventDefault();
-        event.stopPropagation();
-        (Navigation as any)?.Navigate?.(redirected);
-      }
-    } catch (_error) {
-      // Best effort only.
-    }
-  };
-  document.addEventListener("click", clickAchievementRedirect, true);
-  unpatchers.push(() => document.removeEventListener("click", clickAchievementRedirect, true));
 
   const clickDetailsTabTracker = (event: MouseEvent) => {
     const target = event.target as Element | null;
@@ -5267,25 +4337,6 @@ export const installSteamPatches = (): Unpatch => {
   document.addEventListener("click", clickDetailsTabTracker, true);
   unpatchers.push(() => document.removeEventListener("click", clickDetailsTabTracker, true));
 
-  const routeGuard = () => {
-    const path = currentRoutePath();
-    const redirected = redirectAchievementTarget(path);
-    if (redirected) {
-      try {
-        (Navigation as any)?.Navigate?.(redirected);
-      } catch (_error) {
-        // If the router is mid-transition, the route patch below will still catch.
-      }
-    }
-  };
-  const routeGuardTimer = window.setInterval(routeGuard, 250);
-  unpatchers.push(() => window.clearInterval(routeGuardTimer));
-  patchInstallStatus.router = "installed";
-  log.info("patch", "router patch installed", { status: patchInstallStatus.router });
-  } catch (error) {
-    patchInstallStatus.router = "failed";
-    log.warn("patch", "router patch failed", { status: patchInstallStatus.router }, error);
-  }
 
   if (appStore?.GetAppOverviewByAppID) {
     unpatchers.push(
@@ -5358,17 +4409,6 @@ export const installSteamPatches = (): Unpatch => {
     })
   );
 
-  unpatchers.push(
-    patchMethod(detailsProto, "GetAchievements", (_thisValue, original, args) => {
-      const appId = Number(args[0]);
-      if (isNonSteamApp(getOverview(appId))) {
-        const payload = achievementsCache[String(appId)];
-        if (payload?.steam) return payload.steam;
-        void loadAchievementsForApp(appId);
-      }
-      return original(...args);
-    })
-  );
 
   unpatchers.push(
     patchMethod(overviewProto, "BHasStoreCategory", (thisValue, original, args) => {
@@ -5376,12 +4416,6 @@ export const installSteamPatches = (): Unpatch => {
         const category = Number(args[0]);
         const metadata = metadataCache[String(thisValue.appid)];
         if (metadata?.store_categories?.includes(category)) return true;
-        if (
-          category === StoreCategory.Achievements &&
-          shouldShowAchievements(Number(thisValue.appid))
-        ) {
-          return true;
-        }
       }
       return original(...args);
     })
@@ -5468,10 +4502,6 @@ export const installSteamPatches = (): Unpatch => {
             const overview = this?.props?.overview;
             const appId = Number(overview?.appid);
             if (appId && isNonSteamApp(overview)) ensureDetailsOverviewSafeFields(appId);
-            if (appId && isNonSteamApp(overview) && shouldShowAchievements(appId)) {
-              ret.add("achievements");
-              void loadAchievementsForApp(appId);
-            }
             if (appId && isNonSteamApp(overview) && metadataCache[String(appId)]) {
               lastObservedGameDetailAppId = appId;
               const metadata = metadataCache[String(appId)];
@@ -5600,20 +4630,6 @@ export const installSteamPatches = (): Unpatch => {
     log.warn("patch", "community vote patch skipped", error);
   }
 
-  tryInstallAchievementStorePatch(unpatchers);
-  let achievementPatchAttempts = 0;
-  const achievementPatchTimer = window.setInterval(() => {
-    achievementPatchAttempts += 1;
-    if (tryInstallAchievementStorePatch(unpatchers) || achievementPatchAttempts >= 30) {
-      window.clearInterval(achievementPatchTimer);
-    }
-  }, 1000);
-  unpatchers.push(() => window.clearInterval(achievementPatchTimer));
-
-  // Do not routerHook.addPatch Steam's native achievement routes. In recent
-  // Decky dev builds that can crash RouterHook.processList before our custom
-  // page renders. Redirect navigation/history/clicks instead and let the
-  // native route fall back safely if Steam opens it by another internal path.
 
   GAME_DETAIL_ROUTES.forEach((route) => {
     const patch = routerHook.addPatch(route, (tree: any) => {
@@ -5631,7 +4647,6 @@ export const installSteamPatches = (): Unpatch => {
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
             });
-            void loadAchievementsForApp(appId);
             void refreshPlayhubNativeActivityForApp(appId);
             return ret;
           }

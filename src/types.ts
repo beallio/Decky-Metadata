@@ -83,16 +83,8 @@ export type PlatformCapabilities = {
   is_steamos: boolean;
   steam_root: string;
   steam_roots: string[];
-  has_pillow: boolean;
   supports_metadata: boolean;
   supports_steam_activity: boolean;
-  supports_retroachievements: boolean;
-  supports_retroachievements_auto: boolean;
-  supports_xbox_manual: boolean;
-  supports_xbox_uwphook_auto: boolean;
-  supports_xbox_app_scan: boolean;
-  supports_loopback_icons: boolean;
-  supports_localhost_icon_proxy: boolean;
 };
 
 export type ScanProgress = {
@@ -105,135 +97,6 @@ export type ScanProgress = {
   current: string;
   message: string;
   error?: string;
-};
-
-export type RetroAchievementsSettings = {
-  enabled: boolean;
-  username: string;
-  api_key: string;
-  game_ids: Record<string, number>;
-};
-
-export type XboxSettings = {
-  enabled: boolean;
-  api_key: string;
-  xuid: string;
-  gamertag: string;
-  ta_logged_in?: boolean;
-  title_ids: Record<string, string>;
-};
-
-export type AchievementSource = "auto" | "retroachievements" | "xbox" | "disabled";
-export type AchievementCachePolicy = "hourly" | "daily" | "weekly" | "pc_session" | "manual";
-
-export type AchievementSettings = {
-  retroachievements: RetroAchievementsSettings;
-  xbox: XboxSettings;
-  achievement_sources: Record<string, AchievementSource>;
-  achievement_cache: {
-    policy: AchievementCachePolicy;
-  };
-};
-
-export type RetroAchievementsLoginResult = {
-  ok: boolean;
-  message: string;
-};
-
-export type RetroAchievementsGameResult = {
-  id: number;
-  title: string;
-  console: string;
-  score: number;
-};
-
-export type RetroAchievementsResolutionReason =
-  | "no_candidate_path"
-  | "candidate_missing"
-  | "unsupported_extension"
-  | "hash_not_found"
-  | "api_credentials_missing"
-  | "api_error"
-  | "matched"
-  | "manual_mapping_exists";
-
-export type RetroAchievementsResolutionCandidate = {
-  path: string;
-  exists: boolean;
-  suffix: string;
-  source: "launch_options" | "exe" | "start_dir" | "shell_command";
-  score: number;
-};
-
-export type XboxTitleResult = {
-  id: string;
-  title: string;
-  source: string;
-  score: number;
-  unlocked?: number | null;
-  total?: number | null;
-  gamerscore?: number | null;
-};
-
-export type SteamAchievement = {
-  strID: string;
-  strName: string;
-  strDescription: string;
-  bAchieved: boolean;
-  rtUnlocked: number;
-  strImage: string;
-  strImageURL?: string;
-  strImageUrl?: string;
-  strIcon?: string;
-  strIconURL?: string;
-  iconUrl?: string;
-  imageUrl?: string;
-  playhubImage?: string;
-  bHidden: boolean;
-  flMinProgress: number;
-  flCurrentProgress: number;
-  flMaxProgress: number;
-  flAchieved: number;
-};
-
-export type SteamAchievementsPayload = {
-  nAchieved: number;
-  nTotal: number;
-  vecAchievedHidden: SteamAchievement[];
-  vecHighlight: SteamAchievement[];
-  vecUnachieved: SteamAchievement[];
-};
-
-export type AchievementsResponse = {
-  game_id: number;
-  provider?: "retroachievements" | "xbox";
-  reason?: RetroAchievementsResolutionReason;
-  candidate?: RetroAchievementsResolutionCandidate | null;
-  title: string;
-  steam: SteamAchievementsPayload;
-  user?: {
-    loading: boolean;
-    data?: {
-      achieved: Record<string, SteamAchievement>;
-      hidden: Record<string, SteamAchievement>;
-      unachieved: Record<string, SteamAchievement>;
-    };
-  };
-  global?: {
-    loading: boolean;
-    data?: Record<string, number>;
-  };
-  progress: {
-    achieved: number;
-    total: number;
-    percentage: number;
-  };
-};
-
-export type RetroAchievementsResolutionResult = Partial<AchievementsResponse> & {
-  provider: "retroachievements";
-  reason: RetroAchievementsResolutionReason;
-  candidate?: RetroAchievementsResolutionCandidate | null;
 };
 
 export enum StoreCategory {

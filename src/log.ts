@@ -4,7 +4,7 @@ export const setVerboseLogging = (enabled: boolean) => {
   verbose = !!enabled;
 };
 
-const prefix = (area: string) => `[Playhub Metadata][${area}]`;
+const prefix = (area: string) => `[Decky Metadata][${area}]`;
 
 export const debug = (area: string, message: string, ...args: unknown[]) => {
   if (verbose) console.debug(prefix(area), message, ...args);
