@@ -3,8 +3,8 @@
 ## Objective
 
 Implement `docs/plans/2026-07-02_decky-metadata-debrand.md`: remove the
-remaining `playhub` internal identifiers and persisted filenames, and replace
-the Decky `Spinner` button treatment with a Ludusavi-style rotating icon.
+remaining `playhub` internal identifiers and persisted filenames, and match
+the busy/status treatment used by `beallio/SDH-Ludusavi`.
 
 ## Files modified
 
@@ -30,10 +30,13 @@ the Decky `Spinner` button treatment with a Ludusavi-style rotating icon.
   `playhub_metadata.json` or `playhub-metadata.log`. Devices that ran the
   shipped 0.1.0 build will start with an empty `decky_metadata.json` until a
   fresh scan repopulates saved matches.
-- Replaced Decky's `Spinner` component in the Scan button, Refresh delisted
-  index button, and delisted status line with a `react-icons/fa`
-  `FaCircleNotch` icon using a `decky-spin` keyframe class. The button labels
-  remain flex rows with stable minimum width and disabled-while-busy behavior.
+- Updated the review-requested spinner reference to `beallio/SDH-Ludusavi`.
+  The busy treatment now uses Decky's `Spinner` component tinted Steam-blue
+  (`#1a9fff`) at 18px, in flex rows with a 10px gap, for the Scan button,
+  Refresh delisted index button, and delisted busy status line.
+- Added Steam-blue (`#1a9fff`) status-message text for the scan status row,
+  Activity refresh status row, and delisted status row while preserving the
+  surrounding font size and weight.
 
 ## Validation
 
@@ -48,11 +51,16 @@ the Decky `Spinner` button treatment with a Ludusavi-style rotating icon.
   passed.
 - Grep gates: `grep -rniI "playhub" src/ main.py` found zero matches, and
   `grep -c "playhub" dist/index.js` returned `0`.
+- Review round 01 follow-up: rebuilt after replacing the rejected rotating-icon
+  implementation with Decky's blue `Spinner`; confirmed `decky-spin` is absent
+  from the source and bundle.
 
 ## Deferred on-device checks
 
-- Confirm Scan metadata and Refresh delisted index buttons show a smoothly
-  rotating Ludusavi-style icon while busy.
+- Confirm Scan metadata and Refresh delisted index buttons show the blue
+  Ludusavi-style Decky spinner while busy.
+- Confirm scan, Activity refresh, and delisted status-message text uses the
+  Steam-blue accent without disrupting layout.
 - Confirm the Steam Activity/community-feed passthrough still renders and
   refreshes after the paired CSS/DOM/window-key renames.
 - Confirm a fresh scan writes `decky_metadata.json`.

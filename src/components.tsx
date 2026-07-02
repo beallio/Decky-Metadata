@@ -5,13 +5,13 @@ import {
   PanelSection,
   PanelSectionRow,
   ScrollPanel,
+  Spinner,
   TextField,
   ToggleField,
   useParams,
 } from "@decky/ui";
 import { toaster } from "@decky/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FaCircleNotch } from "react-icons/fa";
 import {
   fetchMetadata,
   getDebugLogging,
@@ -50,6 +50,8 @@ import {
 
 // Keep in sync with package.json and plugin.json.
 export const PLUGIN_VERSION = "0.1.0";
+
+const STATUS_BLUE = "#1a9fff";
 
 export const parseSteamAppId = (input: string): number => {
   const s = String(input || "").trim();
@@ -135,51 +137,29 @@ const compactTextStyle = {
   lineHeight: 1.35,
 } as const;
 
+const statusTextStyle = {
+  ...compactTextStyle,
+  color: STATUS_BLUE,
+} as const;
+
 const inlineStatusStyle = {
   display: "flex",
   alignItems: "center",
-  gap: "0.5rem",
-  ...compactTextStyle,
+  gap: "10px",
+  ...statusTextStyle,
 } as const;
 
-const spinStyleId = "decky-metadata-spin-style";
-
-const ensureSpinStyle = () => {
-  if (typeof document === "undefined" || document.getElementById(spinStyleId)) return;
-  const style = document.createElement("style");
-  style.id = spinStyleId;
-  style.textContent = `
-    .decky-spin {
-      animation: decky-spin 1s infinite cubic-bezier(0.46, 0.03, 0.52, 0.96);
-    }
-
-    @keyframes decky-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(359deg); }
-    }
-  `;
-  document.head.appendChild(style);
-};
-
-const actionIconStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 16,
-  height: 16,
-  flex: "0 0 16px",
-} as const;
-
-const iconStyle = {
-  width: "100%",
-  height: "100%",
+const busySpinnerStyle = {
+  width: "18px",
+  height: "18px",
+  color: STATUS_BLUE,
 } as const;
 
 const buttonLabelStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  gap: "0.5em",
+  gap: "10px",
   minWidth: "8.5rem",
 } as const;
 
@@ -221,15 +201,13 @@ const focusableBlockStyle = {
   minWidth: 0,
 } as const;
 
-const RotatingIcon = ({ busy = true }: { busy?: boolean }) => (
-  <span style={actionIconStyle}>
-    <FaCircleNotch className={busy ? "decky-spin" : undefined} style={iconStyle} aria-hidden={true} />
-  </span>
+const BusySpinner = () => (
+  <Spinner style={busySpinnerStyle} />
 );
 
-const ButtonLabel = ({ children, busy = false, icon = false }: { children: string; busy?: boolean; icon?: boolean }) => (
+const ButtonLabel = ({ children, busy = false }: { children: string; busy?: boolean }) => (
   <span style={buttonLabelStyle}>
-    {busy || icon ? <RotatingIcon busy={busy} /> : null}
+    {busy ? <BusySpinner /> : null}
     {children}
   </span>
 );
@@ -332,10 +310,6 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
 
   const missing = Math.max(games.length - metadataCount, 0);
-
-  useEffect(() => {
-    ensureSpinStyle();
-  }, []);
 
   const refresh = useCallback(async () => {
     await refreshMetadataCache();
@@ -546,7 +520,7 @@ export const Content = () => {
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
           <div style={inlineStatusStyle}>
             {delistedBusy ? (
-              <RotatingIcon />
+              <BusySpinner />
             ) : null}
             <span>{delistedStatusText}</span>
           </div>
