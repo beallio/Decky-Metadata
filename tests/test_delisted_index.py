@@ -31,6 +31,41 @@ def test_parse_delisted_html_extracts_name_anchors_and_dedupes(tmp_path, monkeyp
     ]
 
 
+def test_download_delisted_index_uses_generic_http_text(tmp_path, monkeypatch):
+    plugin = make_plugin(tmp_path, monkeypatch)
+    rows = [
+        "<tr><td><a href='https://steam-tracker.com/app/338930/'>TRANSFORMERS: Devastation</a></td></tr>",
+        "<tr><td><a href='https://steam-tracker.com/app/224060/'>Deadpool &amp; Friends</a></td></tr>",
+    ]
+    rows.extend(
+        f"<tr><td><a href='https://steam-tracker.com/app/{500000 + index}/'>Fixture Game {index}</a></td></tr>"
+        for index in range(98)
+    )
+    html = "\n".join(rows)
+    calls = []
+
+    def fake_http_text(url, timeout=20):
+        calls.append((url, timeout))
+        return html
+
+    def fail_trueachievements_http_text(url, timeout=18):
+        raise AssertionError("delisted download must not use TrueAchievements fetcher")
+
+    monkeypatch.setattr(plugin, "_http_text", fake_http_text)
+    monkeypatch.setattr(plugin, "_trueachievements_http_text", fail_trueachievements_http_text)
+
+    index = plugin._download_delisted_index_sync()
+
+    assert calls == [(main.STEAM_TRACKER_DELISTED_URL, 30)]
+    assert index is not None
+    assert index["source"] == main.STEAM_TRACKER_DELISTED_URL
+    assert index["apps"][:2] == [
+        [338930, "TRANSFORMERS: Devastation"],
+        [224060, "Deadpool & Friends"],
+    ]
+    assert len(index["apps"]) == 100
+
+
 def test_resolve_delisted_appid_matches_fuzzy_title_without_network(tmp_path, monkeypatch):
     plugin = make_plugin(tmp_path, monkeypatch)
     monkeypatch.setattr(

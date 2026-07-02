@@ -1965,10 +1965,6 @@ class Plugin:
                 ordered.append(url)
         return ordered
 
-    def _steam_news_image(self, contents: str, steam_appid: int = 0) -> str:
-        images = self._steam_news_image_candidates(contents, steam_appid)
-        return images[0] if images else ""
-
     def _steam_partner_event_images(self, event: dict[str, Any], steam_appid: int) -> list[str]:
         jsondata = self._steam_event_json(event.get("jsondata"))
         clan_id = self._steam_event_clan_id(event)
@@ -3971,7 +3967,7 @@ class Plugin:
             return False, "Inserisci il gamertag pubblico TrueAchievements."
         profile_url = self._trueachievements_profile_url(clean_gamertag)
         try:
-            profile_html = self._http_text(profile_url, timeout=18)
+            profile_html = self._trueachievements_http_text(profile_url, timeout=18)
         except Exception as error:
             return False, str(error)
         if self._looks_like_blocked_trueachievements_page(profile_html):
@@ -4002,7 +3998,7 @@ class Plugin:
         # Backward-compatible callable name kept for older frontend bundles.
         return self._test_openxbl_credentials_sync(gamertag or password)
 
-    def _http_text(self, url: str, timeout: int = 18) -> str:
+    def _trueachievements_http_text(self, url: str, timeout: int = 18) -> str:
         # Keep all network reads inside Python/urllib only: no curl, no PowerShell,
         # no flashing terminal windows on Windows. If TrueAchievements blocks the
         # direct request, try reader mirrors through urllib as plain HTTP reads.
@@ -4225,7 +4221,7 @@ class Plugin:
             fetch_failed = False
             if fetch and not page_html:
                 try:
-                    page_html = self._http_text(TRUEACHIEVEMENTS_BASE_URL + path, timeout=12)
+                    page_html = self._trueachievements_http_text(TRUEACHIEVEMENTS_BASE_URL + path, timeout=12)
                 except Exception as error:
                     fetch_failed = True
                     decky.logger.error(f"TrueAchievements candidate fetch failed for {path}: {error}")
@@ -4276,7 +4272,7 @@ class Plugin:
                 ]
                 for url in search_urls:
                     try:
-                        html_text = self._http_text(url, timeout=14)
+                        html_text = self._trueachievements_http_text(url, timeout=14)
                     except Exception as error:
                         decky.logger.error(f"TrueAchievements search failed for {url}: {error}")
                         continue
@@ -4386,7 +4382,7 @@ class Plugin:
         profile_html = ""
         try:
             if profile_url:
-                profile_html = self._http_text(profile_url, timeout=18)
+                profile_html = self._trueachievements_http_text(profile_url, timeout=18)
                 gamer_id = self._trueachievements_gamer_id_from_html(profile_html)
         except Exception as error:
             decky.logger.error(f"TrueAchievements profile fetch failed for {profile_url}: {error}")
@@ -4394,7 +4390,7 @@ class Plugin:
         best: dict[str, Any] = {}
         for url in candidates:
             try:
-                page_html = self._http_text(url, timeout=22)
+                page_html = self._trueachievements_http_text(url, timeout=22)
                 progress = self._parse_trueachievements_progress_page(page_html)
                 if progress.get("unlocked_names") or progress.get("unlocked_hrefs"):
                     progress["source_url"] = url
@@ -4839,7 +4835,7 @@ class Plugin:
         if not detail_url:
             return ""
         try:
-            detail_html = self._http_text(detail_url, timeout=7)
+            detail_html = self._trueachievements_http_text(detail_url, timeout=7)
             image = self._trueachievements_image_from_detail_page(detail_html, str(item.get("name") or ""))
             icon_cache[href_key] = {"url": image, "updated_at": now(), "source": detail_url}
             self._save_trueachievements_icon_cache(icon_cache)
@@ -4949,7 +4945,7 @@ class Plugin:
         expected_seen = 0
         for candidate_url in urls[:14]:
             try:
-                html_text = self._http_text(candidate_url, timeout=24)
+                html_text = self._trueachievements_http_text(candidate_url, timeout=24)
                 payload = self._parse_trueachievements_page(html_text, candidate_url, max_detail_fetches=max_detail_fetches)
                 expected = self._trueachievements_total_from_html(html_text) or 0
                 expected_seen = max(expected_seen, expected)
