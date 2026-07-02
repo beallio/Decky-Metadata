@@ -86,6 +86,8 @@ const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
 const clearMetadataCache = callable("clear_metadata_cache");
+const refreshDelistedIndex = callable("refresh_delisted_index");
+const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
 const searchMetadata = callable("search_metadata");
 const fetchMetadata = callable("fetch_metadata");
@@ -134,6 +136,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
     getDebugLogging: getDebugLogging,
+    getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
     getPlatformCapabilities: getPlatformCapabilities,
@@ -141,6 +144,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getScanProgress: getScanProgress,
     getXboxSettings: getXboxSettings,
     loginTrueAchievements: loginTrueAchievements,
+    refreshDelistedIndex: refreshDelistedIndex,
     removeMetadata: removeMetadata,
     resolveRetroAchievementsFromPath: resolveRetroAchievementsFromPath,
     resolveXboxFromShortcut: resolveXboxFromShortcut,
@@ -4620,6 +4624,20 @@ const inlineStatusStyle = {
     gap: "0.5rem",
     ...compactTextStyle,
 };
+const scanSpinnerStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "1rem",
+    height: "1rem",
+    flex: "0 0 1rem",
+    overflow: "hidden",
+};
+const scanSpinnerInnerStyle = {
+    display: "inline-flex",
+    transform: "scale(0.5)",
+    transformOrigin: "center",
+};
 const sectionHeadingStyle = {
     width: "100%",
     paddingTop: "0.75rem",
@@ -4732,6 +4750,8 @@ const Content = () => {
     const [activityBusy, setActivityBusy] = SP_REACT.useState(false);
     const [activityMessage, setActivityMessage] = SP_REACT.useState("");
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
+    const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
+    const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
     const [xboxBulkBusy, setXboxBulkBusy] = SP_REACT.useState(false);
     const [xboxBulkMessage, setXboxBulkMessage] = SP_REACT.useState("");
     const [ra, setRa] = SP_REACT.useState({
@@ -4765,6 +4785,17 @@ const Content = () => {
     SP_REACT.useEffect(() => {
         void refresh();
     }, [refresh]);
+    const loadDelistedStatus = SP_REACT.useCallback(async () => {
+        try {
+            setDelistedStatus(await getDelistedIndexStatus());
+        }
+        catch (error) {
+            warn("bridge", "delisted index status load failed", error);
+        }
+    }, []);
+    SP_REACT.useEffect(() => {
+        void loadDelistedStatus();
+    }, [loadDelistedStatus]);
     SP_REACT.useEffect(() => {
         let cancelled = false;
         void getDebugLogging()
@@ -4906,6 +4937,29 @@ const Content = () => {
             setCacheBusy(false);
         }
     };
+    const refreshDelisted = async () => {
+        if (delistedBusy)
+            return;
+        setDelistedBusy(true);
+        try {
+            const result = await refreshDelistedIndex();
+            if (!result.ok) {
+                throw new Error("Delisted index refresh failed");
+            }
+            toaster.toast({ title: "Playhub Metadata", body: "Delisted index updated" });
+            await loadDelistedStatus();
+        }
+        catch (error) {
+            warn("bridge", "delisted index refresh failed", error);
+            toaster.toast({ title: "Playhub Metadata", body: "Delisted index refresh failed" });
+        }
+        finally {
+            setDelistedBusy(false);
+        }
+    };
+    const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
+        ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
+        : "Delisted index not downloaded yet";
     const testXboxLogin = async () => {
         if (!xbox.api_key.trim()) {
             const saved = await setXboxSettings(true, xbox.api_key || "");
@@ -5048,7 +5102,7 @@ const Content = () => {
     return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? "Scanning..." : "Scan metadata" }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Achievements" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable achievements", checked: ra.enabled, onChange: (checked) => void saveRaSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Use your RetroAchievements web API key. You can find it in your RetroAchievements control panel." }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "RetroAchievements username" }), SP_JSX.jsx(DFL.TextField, { value: ra.username, onChange: (e) => setRa((prev) => ({ ...prev, username: e.target.value })), onBlur: () => void saveRaSettings({ username: ra.username }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "RetroAchievements API key" }), SP_JSX.jsx(DFL.TextField, { value: ra.api_key, onChange: (e) => setRa((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveRaSettings({ api_key: ra.api_key }), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testRaLogin, children: "Login" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openRetroAchievements, children: "Open RetroAchievements" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Xbox achievements / OpenXBL" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable Xbox achievements", checked: xbox.enabled, onChange: (checked) => void saveXboxSettings({ enabled: checked }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "OpenXBL API key" }), SP_JSX.jsx(DFL.TextField, { value: xbox.api_key, onChange: (e) => setXbox((prev) => ({ ...prev, api_key: e.target.value })), onBlur: () => void saveXboxSettings({ api_key: xbox.api_key }), style: fieldStyle }), xbox.ta_logged_in ? (SP_JSX.jsx("div", { style: compactTextStyle, children: xbox.gamertag ? `${"OpenXBL account connected"}: ${xbox.gamertag}` : "OpenXBL account connected" })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: testXboxLogin, children: "Login" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: openOpenXbl, children: "Open OpenXBL" }), platformCapabilities?.supports_xbox_uwphook_auto ? (SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: bulkApplyXboxAchievements, children: xboxBulkBusy ? "Scanning Xbox achievements" : "Scan Xbox achievements" })) : (SP_JSX.jsx("div", { style: compactTextStyle, children: "Xbox automatic scanning is Windows-only because it depends on UWPHook/Xbox App shortcuts. Manual OpenXBL title mapping is still available." })), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length || !xbox.api_key.trim(), onClick: syncMatchedTrueAchievementsProgress, children: "Sync progress" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || xboxBulkBusy || !games.length, onClick: clearAllXboxMatches, children: "Clear Xbox associations" }), xboxBulkBusy || xboxBulkMessage ? (SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [xboxBulkBusy ? SP_JSX.jsx(DFL.Spinner, {}) : null, SP_JSX.jsx("span", { children: xboxBulkMessage })] })) : null] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Achievement cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Choose when Playhub refreshes Xbox and RetroAchievements data." }), SP_JSX.jsx("div", { style: buttonRowStyle, children: achievementCachePolicies.map((policy) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void saveAchievementCachePolicy(policy), style: {
                                     opacity: achievementCachePolicy === policy ? 1 : 0.72,
                                     fontWeight: achievementCachePolicy === policy ? 700 : 400,
-                                }, children: ACHIEVEMENT_CACHE_LABELS[policy] ?? policy }, policy))) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), platformCapabilities ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => setShowPlatformDiagnostics((visible) => !visible), children: showPlatformDiagnostics
+                                }, children: ACHIEVEMENT_CACHE_LABELS[policy] ?? policy }, policy))) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx("span", { style: scanSpinnerStyle, children: SP_JSX.jsx("span", { style: scanSpinnerInnerStyle, children: SP_JSX.jsx(DFL.Spinner, {}) }) })) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? "Refreshing delisted index..." : "Refresh delisted index" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), platformCapabilities ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => setShowPlatformDiagnostics((visible) => !visible), children: showPlatformDiagnostics
                                         ? "Hide platform"
                                         : "Platform" }), showPlatformDiagnostics ? (SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Platform" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.platform })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "SteamOS" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: platformCapabilities.is_steamos
                                                         ? "Yes"

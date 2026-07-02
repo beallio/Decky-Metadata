@@ -42,7 +42,9 @@ import {
   testOpenXblCredentials,
   clearXboxAssociations,
   clearMetadataCache,
+  getDelistedIndexStatus,
   enrichSteamApp,
+  refreshDelistedIndex,
   syncTrueAchievementsProgress,
 } from "./backend";
 import * as log from "./log";
@@ -365,6 +367,11 @@ export const Content = () => {
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const [cacheBusy, setCacheBusy] = useState(false);
+  const [delistedStatus, setDelistedStatus] = useState<{
+    count: number;
+    fetched_at: number;
+  } | null>(null);
+  const [delistedBusy, setDelistedBusy] = useState(false);
   const [xboxBulkBusy, setXboxBulkBusy] = useState(false);
   const [xboxBulkMessage, setXboxBulkMessage] = useState("");
   const [ra, setRa] = useState<RetroAchievementsSettings>({
@@ -403,6 +410,18 @@ export const Content = () => {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loadDelistedStatus = useCallback(async () => {
+    try {
+      setDelistedStatus(await getDelistedIndexStatus());
+    } catch (error) {
+      log.warn("bridge", "delisted index status load failed", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDelistedStatus();
+  }, [loadDelistedStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -560,6 +579,29 @@ export const Content = () => {
       setCacheBusy(false);
     }
   };
+
+  const refreshDelisted = async () => {
+    if (delistedBusy) return;
+    setDelistedBusy(true);
+    try {
+      const result = await refreshDelistedIndex();
+      if (!result.ok) {
+        throw new Error("Delisted index refresh failed");
+      }
+      toaster.toast({ title: "Playhub Metadata", body: "Delisted index updated" });
+      await loadDelistedStatus();
+    } catch (error) {
+      log.warn("bridge", "delisted index refresh failed", error);
+      toaster.toast({ title: "Playhub Metadata", body: "Delisted index refresh failed" });
+    } finally {
+      setDelistedBusy(false);
+    }
+  };
+
+  const delistedStatusText =
+    delistedStatus?.count && delistedStatus.fetched_at
+      ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
+      : "Delisted index not downloaded yet";
 
   const testXboxLogin = async () => {
     if (!xbox.api_key.trim()) {
@@ -887,6 +929,23 @@ export const Content = () => {
       <PanelSectionRow>
         <div style={rowStackStyle}>
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
+          <div style={inlineStatusStyle}>
+            {delistedBusy ? (
+              <span style={scanSpinnerStyle}>
+                <span style={scanSpinnerInnerStyle}>
+                  <Spinner />
+                </span>
+              </span>
+            ) : null}
+            <span>{delistedStatusText}</span>
+          </div>
+          <FocusableButton
+            className="DialogButton"
+            disabled={delistedBusy}
+            onClick={refreshDelisted}
+          >
+            {delistedBusy ? "Refreshing delisted index..." : "Refresh delisted index"}
+          </FocusableButton>
           <FocusableButton
             className="DialogButton"
             disabled={cacheBusy || busy}

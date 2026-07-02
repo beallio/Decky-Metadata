@@ -115,6 +115,10 @@ Playhub Metadata lets you choose when achievement data should refresh:
 
 Manual mode is useful if you want fewer API calls and prefer refreshing only when you explicitly scan or sync.
 
+The settings panel also includes `Refresh delisted index` for downloading or
+updating the cached Steam delisted-app index on demand. The status line shows
+how many delisted apps are cached and when the index was last updated.
+
 ## Platform Diagnostics
 
 The Decky settings panel includes a compact diagnostics section that shows the
