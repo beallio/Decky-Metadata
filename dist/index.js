@@ -3468,9 +3468,23 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
+
 // Keep in sync with package.json and plugin.json.
 const PLUGIN_VERSION = "0.1.0";
-const STATUS_BLUE = "#1a9fff";
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
     if (!s)
@@ -3534,24 +3548,24 @@ const flexFieldStyle = {
     flex: "1 1 14rem",
 };
 const compactTextStyle = {
-    opacity: 0.72,
+    color: colors.textSecondary,
     fontSize: "0.82rem",
     lineHeight: 1.35,
 };
-const statusTextStyle = {
-    ...compactTextStyle,
-    color: STATUS_BLUE,
-};
-const inlineStatusStyle = {
+const inlineStatusBaseStyle = {
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    ...statusTextStyle,
+    ...compactTextStyle,
 };
+const inlineStatusStyle = (kind) => ({
+    ...inlineStatusBaseStyle,
+    color: statusColor(kind),
+});
 const busySpinnerStyle = {
     width: "18px",
     height: "18px",
-    color: STATUS_BLUE,
+    color: colors.accent,
 };
 const buttonLabelStyle = {
     display: "inline-flex",
@@ -3586,7 +3600,7 @@ const diagnosticsRowStyle = {
 const diagnosticsValueStyle = {
     minWidth: 0,
     overflowWrap: "anywhere",
-    opacity: 0.9,
+    color: colors.textSecondary,
 };
 const focusableBlockStyle = {
     display: "block",
@@ -3604,6 +3618,12 @@ const scanCompleteMessage = (progress) => {
     return failed
         ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
         : `Scan complete: ${assigned}/${total} saved`;
+};
+const scanCompleteStatusKind = (progress) => {
+    const total = Number(progress.total || 0);
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 const activityCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
@@ -3672,8 +3692,10 @@ const Content = () => {
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
+    const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
     const [activityBusy, setActivityBusy] = SP_REACT.useState(false);
     const [activityMessage, setActivityMessage] = SP_REACT.useState("");
+    const [activityStatusKind, setActivityStatusKind] = SP_REACT.useState("idle");
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
@@ -3730,10 +3752,12 @@ const Content = () => {
             return;
         setBusy(true);
         setScanMessage("");
+        setScanStatusKind("active");
         try {
             await startScanMissing(games);
             const interval = window.setInterval(async () => {
                 const progress = await getScanProgress();
+                setScanStatusKind("active");
                 setScanMessage(progress.current ||
                     progress.message ||
                     `${progress.completed}/${progress.total}`);
@@ -3741,6 +3765,7 @@ const Content = () => {
                     window.clearInterval(interval);
                     await refresh();
                     setBusy(false);
+                    setScanStatusKind(scanCompleteStatusKind(progress));
                     setScanMessage(scanCompleteMessage(progress));
                     toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
                 }
@@ -3748,6 +3773,8 @@ const Content = () => {
         }
         catch (error) {
             setBusy(false);
+            setScanStatusKind("error");
+            setScanMessage(String(error));
             toaster.toast({ title: "Decky Metadata", body: String(error) });
         }
     };
@@ -3755,11 +3782,13 @@ const Content = () => {
         if (activityBusy)
             return;
         setActivityBusy(true);
+        setActivityStatusKind("active");
         setActivityMessage("Refreshing Activity...");
         try {
             await startRefreshSteamActivities(games);
             const interval = window.setInterval(async () => {
                 const progress = await getActivityRefreshProgress();
+                setActivityStatusKind("active");
                 setActivityMessage(progress.current ||
                     progress.message ||
                     `${progress.completed}/${progress.total}`);
@@ -3768,6 +3797,7 @@ const Content = () => {
                     await refreshMetadataCache();
                     setMetadataCount(Object.keys(metadataCache).length);
                     setActivityBusy(false);
+                    setActivityStatusKind("success");
                     setActivityMessage(activityCompleteMessage(progress));
                     window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
                     window.dispatchEvent(new Event("decky-metadata:updated"));
@@ -3777,6 +3807,8 @@ const Content = () => {
         }
         catch (error) {
             setActivityBusy(false);
+            setActivityStatusKind("error");
+            setActivityMessage(String(error));
             toaster.toast({ title: "Decky Metadata", body: String(error) });
         }
     };
@@ -3825,7 +3857,7 @@ const Content = () => {
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx(BusySpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) })] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(activityStatusKind), children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle(delistedBusy ? "active" : "idle"), children: [delistedBusy ? (SP_JSX.jsx(BusySpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) })] }) })] }));
 };
 const MetadataPage = () => {
     const { appid } = DFL.useParams();

@@ -47,11 +47,10 @@ import {
   MetadataSearchResult,
   StoreCategory,
 } from "./types";
+import { colors, statusColor, type StatusKind } from "./tokens";
 
 // Keep in sync with package.json and plugin.json.
 export const PLUGIN_VERSION = "0.1.0";
-
-const STATUS_BLUE = "#1a9fff";
 
 export const parseSteamAppId = (input: string): number => {
   const s = String(input || "").trim();
@@ -132,27 +131,27 @@ const flexFieldStyle = {
 } as const;
 
 const compactTextStyle = {
-  opacity: 0.72,
+  color: colors.textSecondary,
   fontSize: "0.82rem",
   lineHeight: 1.35,
 } as const;
 
-const statusTextStyle = {
-  ...compactTextStyle,
-  color: STATUS_BLUE,
-} as const;
-
-const inlineStatusStyle = {
+const inlineStatusBaseStyle = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  ...statusTextStyle,
+  ...compactTextStyle,
 } as const;
+
+const inlineStatusStyle = (kind: StatusKind) => ({
+  ...inlineStatusBaseStyle,
+  color: statusColor(kind),
+});
 
 const busySpinnerStyle = {
   width: "18px",
   height: "18px",
-  color: STATUS_BLUE,
+  color: colors.accent,
 } as const;
 
 const buttonLabelStyle = {
@@ -192,7 +191,7 @@ const diagnosticsRowStyle = {
 const diagnosticsValueStyle = {
   minWidth: 0,
   overflowWrap: "anywhere",
-  opacity: 0.9,
+  color: colors.textSecondary,
 } as const;
 
 const focusableBlockStyle = {
@@ -224,6 +223,17 @@ const scanCompleteMessage = (progress: {
   return failed
     ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
     : `Scan complete: ${assigned}/${total} saved`;
+};
+
+const scanCompleteStatusKind = (progress: {
+  total?: number;
+  assigned?: number;
+  failed?: number;
+}): StatusKind => {
+  const total = Number(progress.total || 0);
+  const assigned = Number(progress.assigned || 0);
+  const failed = Number(progress.failed || 0);
+  return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
 const activityCompleteMessage = (progress: {
@@ -299,8 +309,10 @@ export const Content = () => {
   const [metadataCount, setMetadataCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
   const [activityBusy, setActivityBusy] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
+  const [activityStatusKind, setActivityStatusKind] = useState<StatusKind>("idle");
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{
     count: number;
@@ -365,10 +377,12 @@ export const Content = () => {
     if (busy) return;
     setBusy(true);
     setScanMessage("");
+    setScanStatusKind("active");
     try {
       await startScanMissing(games);
       const interval = window.setInterval(async () => {
         const progress = await getScanProgress();
+        setScanStatusKind("active");
         setScanMessage(
           progress.current ||
             progress.message ||
@@ -378,12 +392,15 @@ export const Content = () => {
           window.clearInterval(interval);
           await refresh();
           setBusy(false);
+          setScanStatusKind(scanCompleteStatusKind(progress));
           setScanMessage(scanCompleteMessage(progress));
           toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
         }
       }, 800);
     } catch (error) {
       setBusy(false);
+      setScanStatusKind("error");
+      setScanMessage(String(error));
       toaster.toast({ title: "Decky Metadata", body: String(error) });
     }
   };
@@ -391,11 +408,13 @@ export const Content = () => {
   const refreshActivities = async () => {
     if (activityBusy) return;
     setActivityBusy(true);
+    setActivityStatusKind("active");
     setActivityMessage("Refreshing Activity...");
     try {
       await startRefreshSteamActivities(games);
       const interval = window.setInterval(async () => {
         const progress = await getActivityRefreshProgress();
+        setActivityStatusKind("active");
         setActivityMessage(
           progress.current ||
             progress.message ||
@@ -406,6 +425,7 @@ export const Content = () => {
           await refreshMetadataCache();
           setMetadataCount(Object.keys(metadataCache).length);
           setActivityBusy(false);
+          setActivityStatusKind("success");
           setActivityMessage(activityCompleteMessage(progress));
           window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
           window.dispatchEvent(new Event("decky-metadata:updated"));
@@ -414,6 +434,8 @@ export const Content = () => {
       }, 800);
     } catch (error) {
       setActivityBusy(false);
+      setActivityStatusKind("error");
+      setActivityMessage(String(error));
       toaster.toast({ title: "Decky Metadata", body: String(error) });
     }
   };
@@ -495,7 +517,7 @@ export const Content = () => {
               )}
             </FocusableButton>
             {busy || scanMessage ? (
-              <div style={inlineStatusStyle}>{scanMessage || "Scanning..."}</div>
+              <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage || "Scanning..."}</div>
             ) : null}
           </div>
           <div style={actionButtonStackStyle}>
@@ -507,7 +529,7 @@ export const Content = () => {
               {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
             </FocusableButton>
             {activityBusy || activityMessage ? (
-              <div style={inlineStatusStyle}>{activityMessage || "Refreshing Activity..."}</div>
+              <div style={inlineStatusStyle(activityStatusKind)}>{activityMessage || "Refreshing Activity..."}</div>
             ) : null}
           </div>
         </div>
@@ -518,7 +540,7 @@ export const Content = () => {
       <PanelSectionRow>
         <div style={rowStackStyle}>
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
-          <div style={inlineStatusStyle}>
+          <div style={inlineStatusStyle(delistedBusy ? "active" : "idle")}>
             {delistedBusy ? (
               <BusySpinner />
             ) : null}
