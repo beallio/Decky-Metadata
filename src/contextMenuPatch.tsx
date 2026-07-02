@@ -40,7 +40,6 @@ import {
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam";
-import { t } from "./i18n";
 import * as log from "./log";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
@@ -134,7 +133,7 @@ const insertOurEntry = (items: any[], appId: number): void => {
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/playhub-metadata/${appId}`)}
     >
-      {t("editMetadata")}
+      {"Playhub metadata..."}
     </MenuItem>
   );
 };
