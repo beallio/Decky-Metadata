@@ -3261,12 +3261,21 @@ const installActivityEmptyStateReactPatch = (unpatchers: Unpatch[]) => {
 
 const communityHubPageForApp = async (appId: number, page = 1) => {
   const overview = getOverview(appId);
-  if (!appId || !isNonSteamApp(overview)) return null;
+  if (!appId || !isNonSteamApp(overview)) {
+    void frontendLog("community", "hub bail: not non-steam app", { appId, hasOverview: Boolean(overview) }).catch(() => undefined);
+    return null;
+  }
   await ensureMetadataCache();
   const cleanPage = Math.max(1, Number(page || 1) || 1);
   let metadata = metadataCache[String(appId)];
-  if (!metadata) return null;
-  if (!metadata.steam_appid) return { hub: [] };
+  if (!metadata) {
+    void frontendLog("community", "hub bail: no metadata in cache", { appId }).catch(() => undefined);
+    return null;
+  }
+  if (!metadata.steam_appid) {
+    void frontendLog("community", "hub bail: no steam_appid", { appId }).catch(() => undefined);
+    return { hub: [] };
+  }
   if (cleanPage === 1 && !metadata.community_enriched_at) {
     await tryEnrichCommunityMediaForApp(appId);
     metadata = metadataCache[String(appId)];
@@ -5651,6 +5660,11 @@ export const installSteamPatches = (): Unpatch => {
       }
       return undefined;
     });
+    void frontendLog("community", "feed patch install", {
+      httpClientFound: Boolean(httpClient),
+      hasGet: typeof httpClient?.get === "function",
+      hasPost: typeof httpClient?.post === "function",
+    }).catch(() => undefined);
     const patchFeedMethod = (methodName: "get" | "post") => {
       if (!httpClient?.[methodName]) return;
       unpatchers.push(
@@ -5659,6 +5673,9 @@ export const installSteamPatches = (): Unpatch => {
           methodName,
           (_thisValue, original, args) => {
             const url = String(args[0] || "");
+            if (/communityfeed|community\/feed|appcommunity|activityfeed|library\/app/i.test(url)) {
+              void frontendLog("community", "feed url seen", { method: methodName, url }).catch(() => undefined);
+            }
             const activityAppId = activityAppIdFromUrl(url);
             if (activityAppId) {
               return steamActivityPayloadForApp(activityAppId).then((payload) => {
@@ -5669,12 +5686,35 @@ export const installSteamPatches = (): Unpatch => {
             const match = url.match(/library\/appcommunityfeed\/(\d+)/);
             if (match) {
               const appId = Number(match[1]);
-              const requestParams = (args[1] as any)?.params || {};
-              const requestedPage = Math.max(1, Number(requestParams.p || 1) || 1);
-              return communityHubPageForApp(appId, requestedPage).then((payload) => {
-                if (payload) return payload;
-                return original(...args);
-              });
+              const overview = getOverview(appId);
+              // Only touch non-Steam shortcuts; real Steam games keep their native feed.
+              if (isNonSteamApp(overview)) {
+                return ensureMetadataCache()
+                  .then(() => {
+                    const steamAppId = metadataCache[String(appId)]?.steam_appid;
+                    if (!steamAppId) return original(...args);
+                    // Rewrite the feed request to the matched Steam appid and pass it
+                    // straight through to the native client: identical shape, real
+                    // screenshots/guides/videos/artwork, and native pagination for free.
+                    const steamUrl = url.replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${steamAppId}`);
+                    const steamArgs = [steamUrl, ...args.slice(1)];
+                    return Promise.resolve(original(...steamArgs)).then((native: any) => {
+                      void frontendLog("community", "feed passthrough", {
+                        appId,
+                        steamAppId,
+                        hubLen: Array.isArray(native?.hub) ? native.hub.length : null,
+                      }).catch(() => undefined);
+                      return native;
+                    });
+                  })
+                  .catch((err) => {
+                    void frontendLog("community", "feed passthrough error", {
+                      appId,
+                      err: String(err),
+                    }).catch(() => undefined);
+                    return original(...args);
+                  });
+              }
             }
             return original(...args);
           }
