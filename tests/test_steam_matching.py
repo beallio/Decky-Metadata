@@ -93,6 +93,28 @@ def test_steam_appid_matching_ignores_generated_store_url_cache_but_trusts_sourc
     assert calls == []
 
 
+def test_steam_appid_matching_retries_transient_store_search(monkeypatch) -> None:
+    plugin = make_plugin()
+    calls = []
+    monkeypatch.setattr(main.time, "sleep", lambda _seconds: None)
+
+    def fake_http_json(url: str, timeout: int = 20):
+        calls.append((url, timeout))
+        if len(calls) == 1:
+            raise TimeoutError("temporary timeout")
+        assert "store.steampowered.com/api/storesearch/" in url
+        assert timeout == 12
+        return {"items": [{"id": 1211020, "name": "Wobbly Life"}]}
+
+    monkeypatch.setattr(plugin, "_http_json", fake_http_json)
+
+    appid, url = plugin._resolve_steam_appid_for_title("Wobbly Life")
+
+    assert appid == 1211020
+    assert url == "https://store.steampowered.com/app/1211020/"
+    assert len(calls) == 2
+
+
 def test_non_primary_steam_title_detector_flags_variants_only() -> None:
     assert main.Plugin._is_non_primary_steam_title("Example Demo") is True
     assert main.Plugin._is_non_primary_steam_title("Example Original Soundtrack") is True

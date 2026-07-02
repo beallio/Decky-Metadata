@@ -3,7 +3,7 @@
 # root. Exit non-zero to fail the gate. The engine separately enforces that
 # review notes are not deleted, so that is not repeated here.
 #
-# Playhub Metadata is a Decky Loader plugin:
+# Decky-Metadata is a Decky Loader plugin:
 #   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
 #   - a single-file Python backend (main.py)
 #
@@ -17,7 +17,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
 # Keep generated caches/installs outside Dropbox.
-export npm_config_cache="/tmp/Playhub-Metadata-local/.npm"
+export npm_config_cache="/tmp/Decky-Metadata/.npm"
 mkdir -p "$npm_config_cache"
 
 # --- frontend: type-check + build -------------------------------------------
@@ -43,7 +43,7 @@ fi
 
 # --- backend: Python tests ---------------------------------------------------
 if [[ -d tests ]]; then
-  export UV_CACHE_DIR="/tmp/Playhub-Metadata-local/.uv"
+  export UV_CACHE_DIR="/tmp/Decky-Metadata/.uv"
   mkdir -p "$UV_CACHE_DIR"
   uv run --with pytest -- pytest -q
 fi

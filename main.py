@@ -53,7 +53,7 @@ def _redact(text: Any) -> str:
 def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = False, **fields: Any) -> None:
     try:
         detail = "".join(f" {key}={_redact(value)!r}" for key, value in fields.items())
-        text = f"[playhub:{area}] {message}{detail}"
+        text = f"[decky:{area}] {message}{detail}"
         if exc:
             decky.logger.error(text, exc_info=True)
         else:
@@ -738,6 +738,8 @@ class Plugin:
             and self._metadata_needs_scan(int(game.get("appid")))
         ]
         self._scan_progress.update({"total": len(missing), "completed": 0})
+        if missing:
+            await asyncio.to_thread(self._ensure_delisted_index_sync, False)
         for game in missing:
             app_id = int(game.get("appid"))
             title = self._clean_game_title(str(game.get("name") or ""))
@@ -1571,7 +1573,19 @@ class Plugin:
             return None, ""
         try:
             params = urllib.parse.urlencode({"term": clean_title, "cc": "US", "l": "english"})
-            payload = self._http_json(f"{STEAM_STORE_SEARCH_URL}?{params}", timeout=12)
+            url = f"{STEAM_STORE_SEARCH_URL}?{params}"
+            last_error: Exception | None = None
+            for attempt in range(3):
+                try:
+                    payload = self._http_json(url, timeout=12)
+                    break
+                except Exception as error:
+                    last_error = error
+                    if attempt >= 2:
+                        raise
+                    time.sleep(0.2 * (attempt + 1))
+            else:
+                raise last_error or RuntimeError("Steam store search failed")
         except Exception as error:
             decky.logger.error(f"Failed Steam store search for {clean_title}: {error}")
             return None, ""

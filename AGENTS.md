@@ -1,4 +1,4 @@
-# Playhub Metadata — Agent Operating Contract
+# Decky-Metadata — Agent Operating Contract
 ## Self-Enforcing Agent Protocol
 
 Protocol Version: 2
@@ -8,7 +8,7 @@ directory or its subdirectories. It adapts the universal scripting standards fro
 `project_template` to this repository's actual stack, and it wires in the
 `agent-orchestration` plan → implement → review → finalize engine.
 
-Playhub Metadata is a **Decky Loader plugin** for Steam Big Picture on Windows:
+Decky-Metadata is a **Decky Loader plugin** for Steam Big Picture on Windows:
 
 - **Frontend:** TypeScript / React in `src/*.ts(x)`, bundled by **rollup** into
   `dist/index.js` (the committed plugin artifact). Tooling is **npm / pnpm**.
@@ -34,7 +34,7 @@ Project Root:
 Detected Language(s): TypeScript/React, Python
 Execution Mode: Project
 Git Repository Present: (Yes/No)
-Cache Root: /tmp/Playhub-Metadata-local
+Cache Root: /tmp/Decky-Metadata
 Protocol Version: 2
 Command Wrapper: ./run.sh
 
@@ -83,7 +83,7 @@ Never reference files that have not been confirmed through filesystem inspection
 All temp files, tool caches, and installs must live under:
 
 ```
-/tmp/Playhub-Metadata-local/
+/tmp/Decky-Metadata/
 ```
 
 Run project commands through the wrapper so the redirections apply:
@@ -162,7 +162,7 @@ A modifying task is complete only when:
 [ ] main.py byte-compiles
 [ ] pytest passes when tests/ exists
 [ ] README updated when behavior or usage changed
-[ ] caches/installs stayed under /tmp/Playhub-Metadata-local
+[ ] caches/installs stayed under /tmp/Decky-Metadata
 [ ] session log recorded in docs/agent_conversations/
 ```
 
@@ -202,7 +202,7 @@ and increment the `cacheBuster` parameter on README image URLs so they refresh.
 This repo is wired to the `agent-orchestration` engine via
 `scripts/orchestration` (symlink) and `orchestration.conf`
 (`ORCH_IMPLEMENTER="codex"`, `ORCH_BASE_BRANCH="main"`,
-`ORCH_TMP_ROOT="/tmp/Playhub-Metadata-local"`).
+`ORCH_TMP_ROOT="/tmp/Decky-Metadata"`).
 
 Two skills drive it:
 

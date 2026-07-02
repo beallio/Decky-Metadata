@@ -2744,7 +2744,7 @@ const installActivityNewsDomPatch = (unpatchers: Unpatch[]) => {
   const hashchangeListener = () => schedule(50);
   window.addEventListener("popstate", popstateListener);
   window.addEventListener("hashchange", hashchangeListener);
-  window.addEventListener("playhub-metadata:updated", popstateListener);
+  window.addEventListener("decky-metadata:updated", popstateListener);
   const interval = window.setInterval(() => schedule(0), 500);
   schedule(350);
   unpatchers.push(() => {
@@ -2758,7 +2758,7 @@ const installActivityNewsDomPatch = (unpatchers: Unpatch[]) => {
     document.removeEventListener("keyup", clickTracker as any, true);
     window.removeEventListener("popstate", popstateListener);
     window.removeEventListener("hashchange", hashchangeListener);
-    window.removeEventListener("playhub-metadata:updated", popstateListener);
+    window.removeEventListener("decky-metadata:updated", popstateListener);
     removePlayhubActivityNewsDom();
   });
 };
@@ -2837,7 +2837,7 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
       void refresh().catch((error) => log.warn("patch", "activity overlay click refresh failed", error));
     };
     const timer = window.setInterval(updateListener, 750);
-    window.addEventListener("playhub-metadata:updated", updateListener);
+    window.addEventListener("decky-metadata:updated", updateListener);
     document.addEventListener("click", clickListener, true);
     window.addEventListener("scroll", updateListener, true);
     document.addEventListener("wheel", updateListener, true);
@@ -2845,7 +2845,7 @@ const PlayhubActivityNewsOverlay = ({ appId, force = false, source = "route" }: 
     return () => {
       cancelled = true;
       window.clearInterval(timer);
-      window.removeEventListener("playhub-metadata:updated", updateListener);
+      window.removeEventListener("decky-metadata:updated", updateListener);
       document.removeEventListener("click", clickListener, true);
       window.removeEventListener("scroll", updateListener, true);
       document.removeEventListener("wheel", updateListener, true);
@@ -3122,7 +3122,7 @@ export const tryFetchMetadataForApp = async (appId: number) => {
     if (metadata) {
       metadataCache[String(appId)] = metadata;
       applyMetadata(appId);
-      window.dispatchEvent(new Event("playhub-metadata:updated"));
+      window.dispatchEvent(new Event("decky-metadata:updated"));
     }
   } finally {
     loadingMetadata.delete(appId);
@@ -3152,7 +3152,7 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
       });
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
-      window.dispatchEvent(new Event("playhub-metadata:updated"));
+      window.dispatchEvent(new Event("decky-metadata:updated"));
     }
   } catch (error) {
     log.warn("bridge", "screenshot enrichment failed", error);
@@ -3270,7 +3270,7 @@ const buildUnmatchedAppLinksHiderStyle = (linkRowClasses: string[]) => {
     .filter(Boolean)
     .map((selector) => `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} ${selector}`);
   if (!selectors.length) {
-    return "/* playhub: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
+    return "/* decky: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
   }
   const targetSelector = selectors.join(",\n");
   return `
@@ -4213,8 +4213,8 @@ export const installSteamPatches = (): Unpatch => {
       if (appId) void refreshPlayhubNativeActivityForApp(appId);
     });
   };
-  window.addEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener);
-  unpatchers.push(() => window.removeEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener));
+  window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
+  unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
   const detailsProto = appDetailsStore?.__proto__;
 

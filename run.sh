@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Command wrapper for Playhub Metadata.
+# Command wrapper for Decky-Metadata.
 #
 # Keeps every generated cache, temp file, and install footprint OUT of Dropbox by
-# redirecting them under /tmp/Playhub-Metadata-local. Run project tooling through
+# redirecting them under /tmp/Decky-Metadata. Run project tooling through
 # this wrapper so the redirections apply:
 #
 #   ./run.sh npm ci
 #   ./run.sh npm run build
 #   ./run.sh npx tsc --noEmit
 #   ./run.sh python3 -m py_compile main.py
-CACHE_ROOT=/tmp/Playhub-Metadata-local
+CACHE_ROOT=/tmp/Decky-Metadata
 
 export TMPDIR="$CACHE_ROOT"
 export XDG_CACHE_HOME="$CACHE_ROOT/.cache"

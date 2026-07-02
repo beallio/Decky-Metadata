@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 class FakeDecky(types.ModuleType):
     logger = logging.getLogger("tests.decky")
     DECKY_PLUGIN_DIR = str(REPO_ROOT)
-    DECKY_PLUGIN_SETTINGS_DIR = "/tmp/Playhub-Metadata-local/test-settings"
+    DECKY_PLUGIN_SETTINGS_DIR = "/tmp/Decky-Metadata/test-settings"
 
     def __getattr__(self, name: str) -> Mock:
         value = Mock(name=f"decky.{name}")
