@@ -304,9 +304,6 @@ const metadataTemplate = (title: string): MetadataData => ({
   genres: [],
   features: [],
   screenshots: [],
-  community_images: [],
-  community_videos: [],
-  community_enriched_at: 0,
 });
 
 const personsToText = (people?: { name: string }[]) =>
