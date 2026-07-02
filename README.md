@@ -1,97 +1,14 @@
-# Playhub Metadata
+# Decky Metadata
 
-Playhub Metadata is a Decky Loader plugin.
+Decky Metadata is a Decky Loader plugin for Steam Big Picture and Steam Gaming Mode.
 
-**Supported platforms**: Windows Steam Big Picture **and** SteamOS / Steam Deck via Decky Loader.
+**Supported platforms**: Windows Steam Big Picture and SteamOS / Steam Deck via Decky Loader.
 
-**SteamOS / Steam Deck limitations**: RetroAchievements are first-class; Xbox/OpenXBL is manual-only on SteamOS; UWPHook/Xbox-App auto scanning is Windows-only.
-
-This plugin is built for Steam Big Picture, especially for non-Steam
-PC games, Game Pass games, Xbox App games, and emulated games.
+The plugin helps non-Steam games look and behave more like native Steam library entries by adding editable metadata, Steam community media, store categories, matched Steam activity news, and a cached delisted-app index.
 
 ## Installation
 
-For manual installation, you can perform a Decky sideload install from the generated ZIP. See the [Building on Linux / SteamOS](#building-on-linux--steamos) section for how to generate this ZIP with `npm run package`.
-
-## Troubleshooting & Diagnostics
-
-If you experience issues or missing functionality, please check the settings diagnostics panel. It surfaces per-patch install status (installed / skipped-missing-internal / failed) and platform details.
-
-The goal is simple: make your Steam Big Picture library feel cleaner, richer,
-and more console-like, even when the games are not from Steam.
-
-It can add metadata, Steam community images, categories, and achievements to non-Steam games,
-including RetroAchievements and Xbox PC achievements.
-
-<img width="3840" height="2160" alt="Screenshot 2026-06-26 192605" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8" />
-<img width="3840" height="2160" alt="Screenshot 2026-06-26 192634" src="https://github.com/user-attachments/assets/1bb89158-1142-410e-9793-63492fbb55a3" />
-
-
-## Features
-
-- Finds missing game metadata automatically.
-- Adds descriptions, developers, publishers, release dates, ratings, and info fields.
-- Adds screenshots and Steam community images when a non-Steam game is matched to Steam.
-- Lets you edit metadata manually for each game.
-
-
-## Steam Activity News
-
-For non-Steam shortcuts that can be matched to a Steam Store app, Playhub Metadata can fetch Steam news and announcements and feed them into Steam Big Picture's normal Activity area.
-
-<img width="3840" height="2160" alt="Screenshot 2026-06-26 192356" src="https://github.com/user-attachments/assets/10184af8-2b4e-4d9a-ae41-870981fbdc1d" />
-
-## Achievements
-
-Playhub Metadata can show achievements for non-Steam games inside Steam Big Picture.
-
-It supports two achievement sources:
-
-- RetroAchievements for ROMs and emulator shortcuts.
-- Xbox / OpenXBL achievements for Xbox PC, Game Pass, Microsoft Store. (Important! You need to use UWPHook to import your games in Steam!).
-
-You can choose the achievement source per game:
-
-- Auto
-- RetroAchievements
-- Xbox
-- Disabled
-
-## Xbox PC Achievements
-
-Playhub Metadata can show Xbox PC / Game Pass achievements directly inside Steam Big Picture for matched UWPHook games.
-
-This means Xbox PC achievements can appear in Steam's interface for non-Steam shortcuts.
-
-To use Xbox achievements, you need an OpenXBL API key first.
-
-<img width="3840" height="2160" alt="Screenshot 2026-06-26 192515" src="https://github.com/user-attachments/assets/f7f7b41d-d07a-48a5-9102-d3f0294d90d0" />
-
-## OpenXBL Setup
-
-1. Create an account at `https://xbl.io`.
-2. Open your OpenXBL dashboard.
-3. Copy your API key.
-4. Open Playhub Metadata in Decky.
-5. Paste the API key in the OpenXBL field.
-6. Press `Login`.
-7. Press `Scan Xbox achievements`.
-
-OpenXBL API limits apply, so Playhub keeps scans conservative and uses cache settings to avoid unnecessary requests.
-
-## RetroAchievements Setup
-
-1. Create or open your RetroAchievements account.
-2. Copy your RetroAchievements web API key from your account settings.
-3. Open Playhub Metadata in Decky.
-4. Enter your RetroAchievements username and API key.
-5. Press `Login`.
-
-For individual ROMs, Playhub can try to detect the matching RetroAchievements game automatically. You can also search and select the correct game manually.
-
-## Building on Linux / SteamOS
-
-From a checkout with Node.js installed:
+For manual installation, generate a Decky sideload ZIP from this checkout:
 
 ```bash
 npm install
@@ -99,43 +16,49 @@ npm run build
 npm run package
 ```
 
-`npm run package` creates `Playhub-Metadata_<version>_Installer.zip` in the
-repository root for Decky Loader sideloading. The Windows PowerShell packaging
-path remains available as `npm run package:win`.
+`npm run package` creates `Decky-Metadata_<version>_Installer.zip` in the repository root. The current plugin version is `0.1.0`.
 
-## Cache Options
+## Features
 
-Playhub Metadata lets you choose when achievement data should refresh:
+- Finds missing game metadata automatically.
+- Adds descriptions, developers, publishers, release dates, ratings, screenshots, and Steam info fields.
+- Lets you edit metadata manually from each non-Steam game's context menu.
+- Matches non-Steam shortcuts to Steam app IDs for community images and Activity news.
+- Caches Steam's delisted-app index so removed store pages can still be matched by title.
 
-- Hourly
-- Daily
-- Weekly
-- PC session
-- Manually
+<img width="3840" height="2160" alt="Decky Metadata screenshot" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8?cacheBuster=20260702" />
+<img width="3840" height="2160" alt="Decky Metadata metadata editor" src="https://github.com/user-attachments/assets/1bb89158-1142-410e-9793-63492fbb55a3?cacheBuster=20260702" />
 
-Manual mode is useful if you want fewer API calls and prefer refreshing only when you explicitly scan or sync.
+## Steam Activity News
 
-The settings panel also includes `Refresh delisted index` for downloading or
-updating the cached Steam delisted-app index on demand. The status line shows
-how many delisted apps are cached and when the index was last updated.
+For non-Steam shortcuts that can be matched to a Steam Store app, Decky Metadata fetches Steam news and announcements and feeds them into Steam Big Picture's normal Activity area.
 
-## Platform Diagnostics
+<img width="3840" height="2160" alt="Decky Metadata activity news" src="https://github.com/user-attachments/assets/10184af8-2b4e-4d9a-ae41-870981fbdc1d?cacheBuster=20260702" />
 
-The Decky settings panel includes a compact diagnostics section that shows the
-detected platform, SteamOS status, local Steam root, and which Playhub capability
-flags are available on the current host. This readout stays local to the panel
-and does not include API keys or tokens.
+## Metadata Cache
+
+The settings panel includes:
+
+- `Scan metadata` to find missing metadata for detected non-Steam games.
+- `Refresh Activity` to refresh matched Steam activity/news data.
+- `Refresh delisted index` to download or update the cached Steam delisted-app index.
+- `Clear cache` to clear saved metadata and start fresh.
+
+The delisted-index status line shows how many delisted apps are cached and when the index was last updated.
+
+## Diagnostics
+
+The diagnostics section includes a debug logging toggle and a versions panel showing the plugin version, delisted-index status, and metadata count. This readout stays local to the panel and does not include API keys or tokens.
 
 ## Notes
 
-Keep in mind that Playhub Metadata does not turn non-Steam achievements into "real" Steam achievements. It just displays supported achievement data inside Steam Big Picture.
-Xbox achievement data comes from OpenXBL. RetroAchievements data comes from RetroAchievements.
+If you previously installed the old plugin, uninstall it before sideloading Decky Metadata. The plugin name changed, so Decky treats this as a separate plugin identity.
 
-## License & credits
+## License & Credits
 
-Playhub Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
+Decky Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
 
-Playhub Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
+Decky Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
 
 The library context-menu integration (`src/contextMenuPatch.tsx`) is derived from the
 [decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) plugin by the SteamGridDB

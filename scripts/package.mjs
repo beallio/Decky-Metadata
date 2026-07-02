@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 
-const PLUGIN_FOLDER_NAME = "Playhub Metadata";
+const PLUGIN_FOLDER_NAME = "Decky Metadata";
 const CRC_TABLE = makeCrcTable();
 
 function main() {
@@ -53,7 +53,7 @@ function main() {
       filePath: path.join(stagingPlugin, targetRelative),
     }));
 
-  const zipPath = path.join(repoRoot, `Playhub-Metadata_${version}_Installer.zip`);
+  const zipPath = path.join(repoRoot, `Decky-Metadata_${version}_Installer.zip`);
   fs.rmSync(zipPath, { force: true });
   writeZip(zipPath, entries);
   fs.rmSync(stagingRoot, { recursive: true, force: true });

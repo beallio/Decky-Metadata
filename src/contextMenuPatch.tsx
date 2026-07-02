@@ -1,14 +1,14 @@
 /*
- * Playhub Metadata - library context-menu integration.
+ * Decky Metadata - library context-menu integration.
  *
- * Adds a single "Playhub metadata..." entry to the per-game context menu in
+ * Adds a single "Decky metadata..." entry to the per-game context menu in
  * the Steam library, for non-Steam shortcuts.
  *
  * The technique used here to resolve and patch Steam's internal
  * LibraryContextMenu class is derived from the decky-steamgriddb plugin by the
  * SteamGridDB project (https://github.com/SteamGridDB/decky-steamgriddb),
  * which is licensed under the GNU General Public License v3. Because this file
- * is a derivative of that work, Playhub Metadata is distributed under the
+ * is a derivative of that work, Decky Metadata is distributed under the
  * GPL-3.0-or-later license. Full credit to the original authors.
  *
  * Copyright (C) 2026 ZazaMastro
@@ -133,7 +133,7 @@ const insertOurEntry = (items: any[], appId: number): void => {
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/playhub-metadata/${appId}`)}
     >
-      {"Playhub metadata..."}
+      {"Decky metadata..."}
     </MenuItem>
   );
 };

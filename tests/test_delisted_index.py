@@ -48,11 +48,7 @@ def test_download_delisted_index_uses_generic_http_text(tmp_path, monkeypatch):
         calls.append((url, timeout))
         return html
 
-    def fail_trueachievements_http_text(url, timeout=18):
-        raise AssertionError("delisted download must not use TrueAchievements fetcher")
-
     monkeypatch.setattr(plugin, "_http_text", fake_http_text)
-    monkeypatch.setattr(plugin, "_trueachievements_http_text", fail_trueachievements_http_text)
 
     index = plugin._download_delisted_index_sync()
 

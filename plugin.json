@@ -1,5 +1,5 @@
 {
-  "name": "Playhub Metadata",
+  "name": "Decky Metadata",
   "author": "ZazaMastro",
   "flags": [],
   "api_version": 1,
@@ -8,15 +8,11 @@
       "metadata",
       "library",
       "non-steam",
-      "achievements",
-      "openxbl",
-      "trueachievements",
-      "xbox",
       "news",
       "activity"
     ],
-    "description": "Add clean game metadata, Steam activity news, RetroAchievements and optional Xbox achievements to non-Steam games in Steam Gaming Mode.",
+    "description": "Add clean game metadata and Steam activity news to non-Steam games in Steam Gaming Mode.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   },
-  "version": "1.5.0"
+  "version": "0.1.0"
 }

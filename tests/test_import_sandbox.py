@@ -7,7 +7,7 @@ import types
 
 
 def test_main_execs_when_module_name_is_absent_from_sys_modules() -> None:
-    module_name = "Playhub Metadata.main"
+    module_name = "Decky Metadata.main"
     original_decky = sys.modules.get("decky")
     had_decky = "decky" in sys.modules
     source_path = Path(__file__).resolve().parents[1] / "main.py"

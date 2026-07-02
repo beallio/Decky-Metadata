@@ -8,10 +8,7 @@ import * as log from "./log";
 import {
   installSteamPatches,
   refreshMetadataCache,
-  refreshRaSettings,
   startMetadataBootstrap,
-  PLAYHUB_ACHIEVEMENTS_ROUTE,
-  PlayhubAchievementsRoute,
 } from "./steam";
 
 const METADATA_ROUTE = "/playhub-metadata/:appid";
@@ -21,7 +18,6 @@ export default definePlugin(() => {
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
   void refreshMetadataCache();
-  void refreshRaSettings();
 
   let unpatchSteam: (() => void) | undefined;
   try {
@@ -33,11 +29,10 @@ export default definePlugin(() => {
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
-  routerHook.addRoute(PLAYHUB_ACHIEVEMENTS_ROUTE, () => <PlayhubAchievementsRoute />, { exact: true });
 
   return {
-    name: "Playhub Metadata",
-    titleView: <div className={staticClasses.Title}>{"Playhub Metadata"}</div>,
+    name: "Decky Metadata",
+    titleView: <div className={staticClasses.Title}>{"Decky Metadata"}</div>,
     content: <Content />,
     icon: <FaDatabase />,
     onDismount() {
@@ -58,7 +53,6 @@ export default definePlugin(() => {
       }
       try {
         routerHook.removeRoute(METADATA_ROUTE);
-        routerHook.removeRoute(PLAYHUB_ACHIEVEMENTS_ROUTE);
       } catch (error) {
         log.error("patch", "route remove failed", error);
       }
