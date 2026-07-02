@@ -25,7 +25,6 @@ import urllib.parse
 import urllib.request
 import zipfile
 import zlib
-from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -74,80 +73,6 @@ def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = Fal
             decky.logger.log(level, text)
     except Exception:
         pass
-
-
-class _SteamCommunityCardParser(HTMLParser):
-    _VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.cards: list[dict[str, Any]] = []
-        self._card: dict[str, Any] | None = None
-        self._depth = 0
-        self._author_depth = 0
-        self._title_depth = 0
-
-    @staticmethod
-    def _classes(attrs: dict[str, str]) -> set[str]:
-        return {part.strip() for part in str(attrs.get("class") or "").split() if part.strip()}
-
-    def _record_attr_urls(self, attrs: dict[str, str]) -> None:
-        if self._card is None:
-            return
-        for key in ("href", "data-modal-content-url"):
-            value = attrs.get(key)
-            if value:
-                self._card["links"].append(value)
-        for value in attrs.values():
-            text = str(value or "")
-            if "images.steamusercontent.com/ugc/" in text:
-                self._card["images"].append(text)
-
-    def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
-        attrs = {key: value or "" for key, value in attrs_list}
-        classes = self._classes(attrs)
-        if self._card is None and "apphub_Card" in classes:
-            self._card = {"attrs": attrs, "links": [], "images": [], "author": [], "title": []}
-            self._depth = 1
-            self._record_attr_urls(attrs)
-            return
-        if self._card is None:
-            return
-        if tag.casefold() not in self._VOID_TAGS:
-            self._depth += 1
-        self._record_attr_urls(attrs)
-        if "apphub_CardContentAuthorName" in classes:
-            self._author_depth = self._depth
-        if "apphub_CardContentTitle" in classes:
-            self._title_depth = self._depth
-
-    def handle_startendtag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
-        attrs = {key: value or "" for key, value in attrs_list}
-        if self._card is not None:
-            self._record_attr_urls(attrs)
-
-    def handle_data(self, data: str) -> None:
-        if self._card is None:
-            return
-        if self._author_depth:
-            self._card["author"].append(data)
-        if self._title_depth:
-            self._card["title"].append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if self._card is None:
-            return
-        if self._depth == self._author_depth:
-            self._author_depth = 0
-        if self._depth == self._title_depth:
-            self._title_depth = 0
-        self._depth -= 1
-        if self._depth <= 0:
-            self.cards.append(self._card)
-            self._card = None
-            self._depth = 0
-            self._author_depth = 0
-            self._title_depth = 0
 
 
 def _resolve_log_dir() -> Path | None:
@@ -2671,41 +2596,80 @@ class Plugin:
     def _parse_steam_community_ugc(
         self, html_text: str, limit: int = 20
     ) -> list[dict[str, Any]]:
-        parser = _SteamCommunityCardParser()
         try:
-            parser.feed(str(html_text or ""))
+            text = str(html_text or "")
+            card_matches = list(
+                re.finditer(
+                    r"""class\s*=\s*["'][^"']*\bapphub_Card\b[^"']*["']""",
+                    text,
+                    flags=re.I,
+                )
+            )
+            rows: list[dict[str, Any]] = []
+            seen: set[str] = set()
+            cap = max(1, min(int(self._as_number(limit, 20)), 30))
+            for index, match in enumerate(card_matches):
+                end = card_matches[index + 1].start() if index + 1 < len(card_matches) else len(text)
+                block = text[match.start() : end][:50000]
+                image_url = ""
+                for raw_image in re.findall(
+                    r"""https://images\.steamusercontent\.com/ugc/[^"'\s<>]+""",
+                    block,
+                    flags=re.I,
+                ):
+                    image_url = self._steam_community_image_url(str(raw_image or "").rstrip("),.;"))
+                    if image_url:
+                        break
+                if not image_url or image_url in seen:
+                    continue
+                seen.add(image_url)
+
+                link = ""
+                link_patterns = (
+                    r"""data-modal-content-url\s*=\s*["']([^"']+)["']""",
+                    r"""href\s*=\s*["']([^"']*sharedfiles/filedetails/\?id=\d+[^"']*)["']""",
+                )
+                for pattern in link_patterns:
+                    for raw_link in re.findall(pattern, block, flags=re.I):
+                        link = self._steam_community_link_url(str(raw_link or ""))
+                        if link:
+                            break
+                    if link:
+                        break
+
+                author = ""
+                author_match = re.search(
+                    r"""apphub_CardContentAuthorName[^>]*>\s*<a[^>]*>([^<]+)</a>""",
+                    block,
+                    flags=re.I | re.S,
+                )
+                if author_match:
+                    author = self._clean_html_text(html.unescape(author_match.group(1)))
+
+                caption = ""
+                caption_match = re.search(
+                    r"""apphub_(?:CardContentTitle|CardTextContent)[^>]*>(.*?)</(?:div|a|span)>""",
+                    block,
+                    flags=re.I | re.S,
+                )
+                if caption_match:
+                    caption = self._clean_html_text(caption_match.group(1))
+
+                item_id = self._steam_sharedfile_id(link) or image_url
+                rows.append(
+                    {
+                        "id": item_id,
+                        "url": image_url,
+                        "caption": caption,
+                        "author": author,
+                        "link": link,
+                    }
+                )
+                if len(rows) >= cap:
+                    break
+            return self._sanitize_screenshots(rows)
         except Exception:
             return []
-        rows: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        cap = max(1, min(int(self._as_number(limit, 20)), 30))
-        for card in parser.cards:
-            image_url = ""
-            for raw_image in card.get("images") or []:
-                image_url = self._steam_community_image_url(str(raw_image or ""))
-                if image_url:
-                    break
-            if not image_url or image_url in seen:
-                continue
-            seen.add(image_url)
-            link = ""
-            for raw_link in [card.get("attrs", {}).get("data-modal-content-url"), *(card.get("links") or [])]:
-                link = self._steam_community_link_url(str(raw_link or ""))
-                if link:
-                    break
-            item_id = self._steam_sharedfile_id(link) or image_url
-            rows.append(
-                {
-                    "id": item_id,
-                    "url": image_url,
-                    "caption": self._clean_html_text(" ".join(card.get("title") or [])),
-                    "author": self._clean_html_text(" ".join(card.get("author") or [])),
-                    "link": link,
-                }
-            )
-            if len(rows) >= cap:
-                break
-        return self._sanitize_screenshots(rows)
 
     def _steam_community_ugc_for_appid(
         self, appid: int, page: int = 1, limit: int = 20
