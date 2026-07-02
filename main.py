@@ -25,6 +25,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 import zlib
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,80 @@ def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = Fal
             decky.logger.log(level, text)
     except Exception:
         pass
+
+
+class _SteamCommunityCardParser(HTMLParser):
+    _VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.cards: list[dict[str, Any]] = []
+        self._card: dict[str, Any] | None = None
+        self._depth = 0
+        self._author_depth = 0
+        self._title_depth = 0
+
+    @staticmethod
+    def _classes(attrs: dict[str, str]) -> set[str]:
+        return {part.strip() for part in str(attrs.get("class") or "").split() if part.strip()}
+
+    def _record_attr_urls(self, attrs: dict[str, str]) -> None:
+        if self._card is None:
+            return
+        for key in ("href", "data-modal-content-url"):
+            value = attrs.get(key)
+            if value:
+                self._card["links"].append(value)
+        for value in attrs.values():
+            text = str(value or "")
+            if "images.steamusercontent.com/ugc/" in text:
+                self._card["images"].append(text)
+
+    def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
+        attrs = {key: value or "" for key, value in attrs_list}
+        classes = self._classes(attrs)
+        if self._card is None and "apphub_Card" in classes:
+            self._card = {"attrs": attrs, "links": [], "images": [], "author": [], "title": []}
+            self._depth = 1
+            self._record_attr_urls(attrs)
+            return
+        if self._card is None:
+            return
+        if tag.casefold() not in self._VOID_TAGS:
+            self._depth += 1
+        self._record_attr_urls(attrs)
+        if "apphub_CardContentAuthorName" in classes:
+            self._author_depth = self._depth
+        if "apphub_CardContentTitle" in classes:
+            self._title_depth = self._depth
+
+    def handle_startendtag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
+        attrs = {key: value or "" for key, value in attrs_list}
+        if self._card is not None:
+            self._record_attr_urls(attrs)
+
+    def handle_data(self, data: str) -> None:
+        if self._card is None:
+            return
+        if self._author_depth:
+            self._card["author"].append(data)
+        if self._title_depth:
+            self._card["title"].append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._card is None:
+            return
+        if self._depth == self._author_depth:
+            self._author_depth = 0
+        if self._depth == self._title_depth:
+            self._title_depth = 0
+        self._depth -= 1
+        if self._depth <= 0:
+            self.cards.append(self._card)
+            self._card = None
+            self._depth = 0
+            self._author_depth = 0
+            self._title_depth = 0
 
 
 def _resolve_log_dir() -> Path | None:
@@ -980,6 +1055,28 @@ class Plugin:
             self._enrich_community_media_sync, app_id, title, source_url
         )
 
+    async def get_steam_community_page(
+        self, app_id: int, page: int = 1
+    ) -> dict[str, Any]:
+        try:
+            self._load_data()
+            metadata = self._data["metadata"].get(str(app_id))
+            if not isinstance(metadata, dict):
+                return {"items": []}
+            steam_appid = self._safe_int(metadata.get("steam_appid"))
+            if not steam_appid:
+                return {"items": []}
+            clean_page = max(1, int(self._as_number(page, 1)))
+            items = await asyncio.to_thread(
+                self._steam_community_ugc_for_appid,
+                steam_appid,
+                clean_page,
+                20,
+            )
+            return {"items": items, "page": clean_page}
+        except Exception:
+            return {"items": []}
+
     async def start_scan_missing(self, games: list[dict[str, Any]]) -> dict[str, Any]:
         if self._scan_task and not self._scan_task.done():
             return self._scan_progress
@@ -1778,22 +1875,16 @@ class Plugin:
         metadata = self._data["metadata"].get(key)
         if not isinstance(metadata, dict):
             return None
-        clean_title = self._clean_game_title(
-            title or str(metadata.get("title") or "")
-        )
-        if not clean_title:
-            return metadata
-
-        videos = self._youtube_videos_for_title(clean_title, limit=10)
-        images = self._rawg_images_for_title(
-            clean_title,
-            source_url or str(metadata.get("source_url") or ""),
-            limit=10,
-        )
+        steam_appid = self._safe_int(metadata.get("steam_appid"))
+        images: list[dict[str, Any]] = []
+        if steam_appid:
+            images = self._steam_community_ugc_for_appid(steam_appid, 1, 20)
+            if not images:
+                images = self._sanitize_screenshots(metadata.get("screenshots"))
         next_metadata = dict(metadata)
         next_metadata.update(
             {
-                "community_videos": videos,
+                "community_videos": [],
                 "community_images": images,
                 # Steam Activity/news are refreshed only by the explicit
                 # “Aggiorna attività” action. Keeping this enrichment limited to
@@ -2577,6 +2668,116 @@ class Plugin:
     def _steam_news_summary(self, contents: str) -> str:
         return self._clean_steam_news_text(contents)[:600]
 
+    def _parse_steam_community_ugc(
+        self, html_text: str, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        parser = _SteamCommunityCardParser()
+        try:
+            parser.feed(str(html_text or ""))
+        except Exception:
+            return []
+        rows: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        cap = max(1, min(int(self._as_number(limit, 20)), 30))
+        for card in parser.cards:
+            image_url = ""
+            for raw_image in card.get("images") or []:
+                image_url = self._steam_community_image_url(str(raw_image or ""))
+                if image_url:
+                    break
+            if not image_url or image_url in seen:
+                continue
+            seen.add(image_url)
+            link = ""
+            for raw_link in [card.get("attrs", {}).get("data-modal-content-url"), *(card.get("links") or [])]:
+                link = self._steam_community_link_url(str(raw_link or ""))
+                if link:
+                    break
+            item_id = self._steam_sharedfile_id(link) or image_url
+            rows.append(
+                {
+                    "id": item_id,
+                    "url": image_url,
+                    "caption": self._clean_html_text(" ".join(card.get("title") or [])),
+                    "author": self._clean_html_text(" ".join(card.get("author") or [])),
+                    "link": link,
+                }
+            )
+            if len(rows) >= cap:
+                break
+        return self._sanitize_screenshots(rows)
+
+    def _steam_community_ugc_for_appid(
+        self, appid: int, page: int = 1, limit: int = 20
+    ) -> list[dict[str, Any]]:
+        try:
+            clean_appid = int(self._as_number(appid, 0))
+            clean_page = max(1, int(self._as_number(page, 1)))
+            if clean_appid <= 0:
+                return []
+            params = {
+                "userreviewsoffset": 0,
+                "p": clean_page,
+                "workshopitemspage": clean_page,
+                "readytouseitemspage": clean_page,
+                "mtxitemspage": clean_page,
+                "itemspage": clean_page,
+                "screenshotspage": clean_page,
+                "videospage": clean_page,
+                "artpage": clean_page,
+                "allguidepage": clean_page,
+                "webguidepage": clean_page,
+                "integratedguidepage": clean_page,
+                "discussionspage": clean_page,
+                "numperpage": 20,
+                "browsefilter": "trend",
+                "appHubSubSection": 1,
+                "l": "english",
+                "filterLanguage": "default",
+                "searchText": "",
+                "forceanon": 1,
+            }
+            url = f"https://steamcommunity.com/app/{clean_appid}/homecontent/?{urllib.parse.urlencode(params)}"
+            text = self._http_text(url, timeout=15)
+            return self._parse_steam_community_ugc(text, limit)
+        except Exception:
+            return []
+
+    def _steam_community_image_url(self, value: str) -> str:
+        url = self._https_url(html.unescape(str(value or "").strip()))
+        if "images.steamusercontent.com/ugc/" not in url:
+            return ""
+        parsed = urllib.parse.urlsplit(url)
+        query = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        next_query: list[tuple[str, str]] = []
+        saw_width = False
+        for key, raw_value in query:
+            if key == "imw":
+                next_query.append((key, "512"))
+                saw_width = True
+            else:
+                next_query.append((key, raw_value))
+        if not saw_width:
+            next_query.append(("imw", "512"))
+        return urllib.parse.urlunsplit(
+            parsed._replace(query=urllib.parse.urlencode(next_query))
+        )
+
+    def _steam_community_link_url(self, value: str) -> str:
+        raw = html.unescape(str(value or "").strip())
+        if not raw:
+            return ""
+        url = urllib.parse.urljoin("https://steamcommunity.com/", raw)
+        url = self._https_url(url)
+        if self._steam_sharedfile_id(url):
+            return url
+        return ""
+
+    @staticmethod
+    def _steam_sharedfile_id(value: str) -> str:
+        match = re.search(r"(?:[?&]id=|/sharedfiles/filedetails/\?id=)(\d+)", str(value or ""))
+        return match.group(1) if match else ""
+
     def _ign_images_to_screenshots(self, game: dict[str, Any]) -> list[dict[str, Any]]:
         images: list[dict[str, Any]] = []
         primary_id = str((game.get("primaryImage") or {}).get("id") or "")
@@ -2622,15 +2823,20 @@ class Plugin:
             if not url or url in seen:
                 continue
             seen.add(url)
-            screenshots.append(
-                {
-                    "id": str(item.get("id") or url),
-                    "url": url,
-                    "caption": self._clean_html_text(str(item.get("caption") or "")),
-                    "width": int(self._as_number(item.get("width"), 0)),
-                    "height": int(self._as_number(item.get("height"), 0)),
-                }
-            )
+            row = {
+                "id": str(item.get("id") or url),
+                "url": url,
+                "caption": self._clean_html_text(str(item.get("caption") or "")),
+                "width": int(self._as_number(item.get("width"), 0)),
+                "height": int(self._as_number(item.get("height"), 0)),
+            }
+            author = self._clean_html_text(str(item.get("author") or ""))
+            if author:
+                row["author"] = author
+            link = self._https_url(str(item.get("link") or "").strip())
+            if link:
+                row["link"] = link
+            screenshots.append(row)
             if len(screenshots) >= 30:
                 break
         return screenshots

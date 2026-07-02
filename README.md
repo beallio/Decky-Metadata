@@ -20,7 +20,7 @@ If you experience issues or missing functionality, please check the settings dia
 The goal is simple: make your Steam Big Picture library feel cleaner, richer,
 and more console-like, even when the games are not from Steam.
 
-It can add metadata, community images and videos, categories, and achievements to non-Steam games,
+It can add metadata, Steam community images, categories, and achievements to non-Steam games,
 including RetroAchievements and Xbox PC achievements.
 
 <img width="3840" height="2160" alt="Screenshot 2026-06-26 192605" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8" />
@@ -31,7 +31,7 @@ including RetroAchievements and Xbox PC achievements.
 
 - Finds missing game metadata automatically.
 - Adds descriptions, developers, publishers, release dates, ratings, and info fields.
-- Adds screenshots and community media when available.
+- Adds screenshots and Steam community images when a non-Steam game is matched to Steam.
 - Lets you edit metadata manually for each game.
 
 

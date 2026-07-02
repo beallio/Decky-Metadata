@@ -35,6 +35,8 @@ export type MetadataScreenshot = {
   caption?: string;
   width?: number;
   height?: number;
+  author?: string;
+  link?: string;
 };
 
 export type MetadataSearchResult = {
