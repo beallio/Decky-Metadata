@@ -1909,7 +1909,7 @@ const tryFetchMetadataForApp = async (appId) => {
         if (metadata) {
             metadataCache[String(appId)] = metadata;
             applyMetadata(appId);
-            window.dispatchEvent(new Event("playhub-metadata:updated"));
+            window.dispatchEvent(new Event("decky-metadata:updated"));
         }
     }
     finally {
@@ -1938,7 +1938,7 @@ const tryEnrichScreenshotsForApp = async (appId) => {
             });
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
-            window.dispatchEvent(new Event("playhub-metadata:updated"));
+            window.dispatchEvent(new Event("decky-metadata:updated"));
         }
     }
     catch (error) {
@@ -2049,7 +2049,7 @@ const buildUnmatchedAppLinksHiderStyle = (linkRowClasses) => {
         .filter(Boolean)
         .map((selector) => `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} ${selector}`);
     if (!selectors.length) {
-        return "/* playhub: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
+        return "/* decky: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
     }
     const targetSelector = selectors.join(",\n");
     return `
@@ -2953,8 +2953,8 @@ const installSteamPatches = () => {
                 void refreshPlayhubNativeActivityForApp(appId);
         });
     };
-    window.addEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener);
-    unpatchers.push(() => window.removeEventListener("playhub-metadata:activity-refreshed", activityRefreshedListener));
+    window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
+    unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
     const overviewProto = appStore?.allApps?.[0]?.__proto__;
     const detailsProto = appDetailsStore?.__proto__;
     if (!hasSteamInternals() || !overviewProto || !detailsProto) {
@@ -3543,19 +3543,24 @@ const inlineStatusStyle = {
     gap: "0.5rem",
     ...compactTextStyle,
 };
-const scanSpinnerStyle = {
+const smallSpinnerStyle = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: "1rem",
-    height: "1rem",
-    flex: "0 0 1rem",
-    overflow: "hidden",
+    width: 14,
+    height: 14,
+    flex: "0 0 14px",
 };
-const scanSpinnerInnerStyle = {
+const spinnerIconStyle = {
+    width: "100%",
+    height: "100%",
+};
+const spinnerLabelStyle = {
     display: "inline-flex",
-    transform: "scale(0.5)",
-    transformOrigin: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.4rem",
+    minWidth: "8.5rem",
 };
 const sectionHeadingStyle = {
     width: "100%",
@@ -3566,7 +3571,7 @@ const sectionHeadingStyle = {
 const diagnosticsGridStyle = {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr)",
-    gap: "0.35rem",
+    gap: "0.65rem",
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
@@ -3574,15 +3579,40 @@ const diagnosticsGridStyle = {
 };
 const diagnosticsRowStyle = {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: "0.75rem",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: "0.2rem",
     alignItems: "start",
+    padding: "0.1rem 0",
     ...compactTextStyle,
 };
 const diagnosticsValueStyle = {
     minWidth: 0,
     overflowWrap: "anywhere",
-    textAlign: "right",
+    opacity: 0.9,
+};
+const focusableBlockStyle = {
+    display: "block",
+    width: "100%",
+    minWidth: 0,
+};
+const InlineSpinner = () => (SP_JSX.jsx("span", { style: smallSpinnerStyle, children: SP_JSX.jsx(DFL.Spinner, { style: spinnerIconStyle }) }));
+const SpinnerLabel = ({ children }) => (SP_JSX.jsxs("span", { style: spinnerLabelStyle, children: [SP_JSX.jsx(InlineSpinner, {}), children] }));
+const ButtonLabel = ({ children }) => (SP_JSX.jsx("span", { style: spinnerLabelStyle, children: children }));
+const scanCompleteMessage = (progress) => {
+    const total = Number(progress.total || 0);
+    if (!total)
+        return "Scan complete";
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed
+        ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
+        : `Scan complete: ${assigned}/${total} saved`;
+};
+const activityCompleteMessage = (progress) => {
+    const total = Number(progress.total || 0);
+    if (!total)
+        return "Activity refresh complete";
+    return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
 };
 const metadataTemplate = (title) => ({
     title,
@@ -3714,6 +3744,7 @@ const Content = () => {
                     window.clearInterval(interval);
                     await refresh();
                     setBusy(false);
+                    setScanMessage(scanCompleteMessage(progress));
                     toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
                 }
             }, 800);
@@ -3740,8 +3771,9 @@ const Content = () => {
                     await refreshMetadataCache();
                     setMetadataCount(Object.keys(metadataCache).length);
                     setActivityBusy(false);
-                    window.dispatchEvent(new Event("playhub-metadata:activity-refreshed"));
-                    window.dispatchEvent(new Event("playhub-metadata:updated"));
+                    setActivityMessage(activityCompleteMessage(progress));
+                    window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
+                    window.dispatchEvent(new Event("decky-metadata:updated"));
                     toaster.toast({ title: "Decky Metadata", body: "Activity refresh complete" });
                 }
             }, 800);
@@ -3796,7 +3828,7 @@ const Content = () => {
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsxs("span", { style: scanSpinnerStyle, children: [SP_JSX.jsx("span", { style: scanSpinnerInnerStyle, children: SP_JSX.jsx(DFL.Spinner, {}) }), "Scanning..."] })) : ("Scan metadata") }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx("span", { style: scanSpinnerStyle, children: SP_JSX.jsx("span", { style: scanSpinnerInnerStyle, children: SP_JSX.jsx(DFL.Spinner, {}) }) })) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsxs("span", { style: scanSpinnerStyle, children: [SP_JSX.jsx("span", { style: scanSpinnerInnerStyle, children: SP_JSX.jsx(DFL.Spinner, {}) }), "Refreshing..."] })) : ("Refresh delisted index") }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: `Metadata saved: ${metadataCount}` })] })] })] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(SpinnerLabel, { children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx(InlineSpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(SpinnerLabel, { children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) })] }) })] }));
 };
 const MetadataPage = () => {
     const { appid } = DFL.useParams();
@@ -3945,7 +3977,7 @@ const MetadataPage = () => {
 };
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
-const ENTRY_KEY = "playhub-metadata-edit";
+const ENTRY_KEY = "decky-metadata-edit";
 const ENTRY_KEYS = new Set([ENTRY_KEY]);
 /**
  * Resolve Steam's internal LibraryContextMenu class at runtime.
@@ -4003,7 +4035,7 @@ const insertOurEntry = (items, appId) => {
         return;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/playhub-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
 };
 /** De-duplicate, then (re)insert the entry against the best-known appid. */
 const syncOurEntry = (items, appId) => {
@@ -4011,7 +4043,7 @@ const syncOurEntry = (items, appId) => {
     insertOurEntry(items, resolveAppId(items, appId));
 };
 /**
- * Patch the library context menu so non-Steam games gain a Playhub entry.
+ * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
  * @param LibraryContextMenuClass The resolved menu class.
  * @returns An object exposing unpatch() for plugin teardown.
  */
@@ -4085,7 +4117,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     };
 };
 
-const METADATA_ROUTE = "/playhub-metadata/:appid";
+const METADATA_ROUTE = "/decky-metadata/:appid";
 var index = DFL.definePlugin(() => {
     void getDebugLogging()
         .then((enabled) => setVerboseLogging(enabled))

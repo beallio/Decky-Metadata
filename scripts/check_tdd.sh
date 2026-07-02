@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pre-commit sanity check for Playhub Metadata.
+# Pre-commit sanity check for Decky-Metadata.
 #
 # This repo is a Decky plugin: TS/React frontend + single-file Python backend.
 # Guard the checks that break a build silently:
@@ -35,7 +35,7 @@ fi
 # --- backend: pytest staged backend/tests -----------------------------------
 if [ -d tests ] && echo "$staged" | grep -Eq '^(main\.py|tests/)'; then
   if command -v uv >/dev/null 2>&1; then
-    export UV_CACHE_DIR="/tmp/Playhub-Metadata-local/.uv"
+    export UV_CACHE_DIR="/tmp/Decky-Metadata/.uv"
     mkdir -p "$UV_CACHE_DIR"
     uv run --with pytest -- pytest -q
   else

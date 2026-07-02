@@ -142,41 +142,26 @@ const inlineStatusStyle = {
   ...compactTextStyle,
 } as const;
 
-const scanSpinnerStyle = {
+const smallSpinnerStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: "1rem",
-  height: "1rem",
-  flex: "0 0 1rem",
-  overflow: "hidden",
+  width: 14,
+  height: 14,
+  flex: "0 0 14px",
 } as const;
 
-const scanSpinnerInnerStyle = {
-  display: "inline-flex",
-  transform: "scale(0.5)",
-  transformOrigin: "center",
+const spinnerIconStyle = {
+  width: "100%",
+  height: "100%",
 } as const;
 
-const activityStatusStyle = {
-  ...inlineStatusStyle,
-  minHeight: "3.35rem",
-} as const;
-
-const activitySpinnerStyle = {
+const spinnerLabelStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: "3.35rem",
-  height: "3.35rem",
-  flex: "0 0 3.35rem",
-  overflow: "hidden",
-} as const;
-
-const activitySpinnerInnerStyle = {
-  display: "inline-flex",
-  transform: "scale(0.72)",
-  transformOrigin: "center",
+  gap: "0.4rem",
+  minWidth: "8.5rem",
 } as const;
 
 const sectionHeadingStyle = {
@@ -189,7 +174,7 @@ const sectionHeadingStyle = {
 const diagnosticsGridStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr)",
-  gap: "0.35rem",
+  gap: "0.65rem",
   width: "100%",
   maxWidth: "100%",
   minWidth: 0,
@@ -198,17 +183,64 @@ const diagnosticsGridStyle = {
 
 const diagnosticsRowStyle = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto",
-  gap: "0.75rem",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: "0.2rem",
   alignItems: "start",
+  padding: "0.1rem 0",
   ...compactTextStyle,
 } as const;
 
 const diagnosticsValueStyle = {
   minWidth: 0,
   overflowWrap: "anywhere",
-  textAlign: "right",
+  opacity: 0.9,
 } as const;
+
+const focusableBlockStyle = {
+  display: "block",
+  width: "100%",
+  minWidth: 0,
+} as const;
+
+const InlineSpinner = () => (
+  <span style={smallSpinnerStyle}>
+    <Spinner style={spinnerIconStyle} />
+  </span>
+);
+
+const SpinnerLabel = ({ children }: { children: string }) => (
+  <span style={spinnerLabelStyle}>
+    <InlineSpinner />
+    {children}
+  </span>
+);
+
+const ButtonLabel = ({ children }: { children: string }) => (
+  <span style={spinnerLabelStyle}>{children}</span>
+);
+
+const scanCompleteMessage = (progress: {
+  total?: number;
+  assigned?: number;
+  failed?: number;
+}) => {
+  const total = Number(progress.total || 0);
+  if (!total) return "Scan complete";
+  const assigned = Number(progress.assigned || 0);
+  const failed = Number(progress.failed || 0);
+  return failed
+    ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
+    : `Scan complete: ${assigned}/${total} saved`;
+};
+
+const activityCompleteMessage = (progress: {
+  total?: number;
+  assigned?: number;
+}) => {
+  const total = Number(progress.total || 0);
+  if (!total) return "Activity refresh complete";
+  return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
+};
 
 const metadataTemplate = (title: string): MetadataData => ({
   title,
@@ -353,6 +385,7 @@ export const Content = () => {
           window.clearInterval(interval);
           await refresh();
           setBusy(false);
+          setScanMessage(scanCompleteMessage(progress));
           toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
         }
       }, 800);
@@ -380,8 +413,9 @@ export const Content = () => {
           await refreshMetadataCache();
           setMetadataCount(Object.keys(metadataCache).length);
           setActivityBusy(false);
-          window.dispatchEvent(new Event("playhub-metadata:activity-refreshed"));
-          window.dispatchEvent(new Event("playhub-metadata:updated"));
+          setActivityMessage(activityCompleteMessage(progress));
+          window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
+          window.dispatchEvent(new Event("decky-metadata:updated"));
           toaster.toast({ title: "Decky Metadata", body: "Activity refresh complete" });
         }
       }, 800);
@@ -439,17 +473,19 @@ export const Content = () => {
   return (
     <PanelSection>
       <PanelSectionRow>
-        <div style={rowStackStyle}>
-          <div>
-            <b>{"Detected non-Steam games"}:</b> {games.length}
+        <Focusable style={focusableBlockStyle}>
+          <div style={rowStackStyle}>
+            <div>
+              <b>{"Detected non-Steam games"}:</b> {games.length}
+            </div>
+            <div>
+              <b>{"Metadata saved"}:</b> {metadataCount}
+            </div>
+            <div>
+              <b>{"Missing metadata"}:</b> {missing}
+            </div>
           </div>
-          <div>
-            <b>{"Metadata saved"}:</b> {metadataCount}
-          </div>
-          <div>
-            <b>{"Missing metadata"}:</b> {missing}
-          </div>
-        </div>
+        </Focusable>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={spacedButtonRowStyle}>
@@ -460,14 +496,9 @@ export const Content = () => {
               onClick={scanMissing}
             >
               {busy ? (
-                <span style={scanSpinnerStyle}>
-                  <span style={scanSpinnerInnerStyle}>
-                    <Spinner />
-                  </span>
-                  {"Scanning..."}
-                </span>
+                <SpinnerLabel>{"Scanning..."}</SpinnerLabel>
               ) : (
-                "Scan metadata"
+                <ButtonLabel>{"Scan metadata"}</ButtonLabel>
               )}
             </FocusableButton>
             {busy || scanMessage ? (
@@ -496,11 +527,7 @@ export const Content = () => {
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
           <div style={inlineStatusStyle}>
             {delistedBusy ? (
-              <span style={scanSpinnerStyle}>
-                <span style={scanSpinnerInnerStyle}>
-                  <Spinner />
-                </span>
-              </span>
+              <InlineSpinner />
             ) : null}
             <span>{delistedStatusText}</span>
           </div>
@@ -510,14 +537,9 @@ export const Content = () => {
             onClick={refreshDelisted}
           >
             {delistedBusy ? (
-              <span style={scanSpinnerStyle}>
-                <span style={scanSpinnerInnerStyle}>
-                  <Spinner />
-                </span>
-                {"Refreshing..."}
-              </span>
+              <SpinnerLabel>{"Refreshing..."}</SpinnerLabel>
             ) : (
-              "Refresh delisted index"
+              <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
             )}
           </FocusableButton>
           <FocusableButton
@@ -539,20 +561,22 @@ export const Content = () => {
             checked={debugLogging}
             onChange={(checked) => void saveDebugLogging(checked)}
           />
-          <div style={diagnosticsGridStyle}>
-            <div style={diagnosticsRowStyle}>
-              <span>{"Plugin"}</span>
-              <span style={diagnosticsValueStyle}>{PLUGIN_VERSION}</span>
+          <Focusable style={focusableBlockStyle}>
+            <div style={diagnosticsGridStyle}>
+              <div style={diagnosticsRowStyle}>
+                <span>{"Plugin"}</span>
+                <span style={diagnosticsValueStyle}>{PLUGIN_VERSION}</span>
+              </div>
+              <div style={diagnosticsRowStyle}>
+                <span>{"Delisted index"}</span>
+                <span style={diagnosticsValueStyle}>{delistedStatusText}</span>
+              </div>
+              <div style={diagnosticsRowStyle}>
+                <span>{"Metadata"}</span>
+                <span style={diagnosticsValueStyle}>{metadataCount}</span>
+              </div>
             </div>
-            <div style={diagnosticsRowStyle}>
-              <span>{"Delisted index"}</span>
-              <span style={diagnosticsValueStyle}>{delistedStatusText}</span>
-            </div>
-            <div style={diagnosticsRowStyle}>
-              <span>{"Metadata"}</span>
-              <span style={diagnosticsValueStyle}>{`Metadata saved: ${metadataCount}`}</span>
-            </div>
-          </div>
+          </Focusable>
         </div>
       </PanelSectionRow>
     </PanelSection>

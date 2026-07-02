@@ -112,6 +112,33 @@ def test_scan_missing_uses_delisted_tier_before_ign(tmp_path, monkeypatch):
     assert plugin._scan_progress["failed"] == 0
 
 
+def test_scan_missing_prewarms_delisted_index_before_matching(tmp_path, monkeypatch):
+    plugin = make_plugin(tmp_path, monkeypatch)
+    calls = []
+
+    def ensure_index(force=False):
+        calls.append(force)
+        if len(calls) == 1:
+            return None
+        return {"apps": [[338930, "TRANSFORMERS: Devastation"]]}
+
+    def steam_enrich(metadata, title, limit=10):
+        if metadata.get("steam_appid") == 338930:
+            return {"title": title, "steam_appid": 338930, "source": "Steam"}
+        return dict(metadata)
+
+    monkeypatch.setattr(plugin, "_ensure_delisted_index_sync", ensure_index)
+    monkeypatch.setattr(plugin, "_metadata_with_steam_news_sync", steam_enrich)
+    monkeypatch.setattr(plugin, "_auto_fetch_metadata_sync", lambda title: None)
+
+    asyncio.run(plugin._scan_missing([{"appid": 1, "name": "Transformers Devastation"}]))
+
+    assert calls == [False, False]
+    assert plugin._data["metadata"]["1"]["steam_appid"] == 338930
+    assert plugin._scan_progress["assigned"] == 1
+    assert plugin._scan_progress["failed"] == 0
+
+
 def test_scan_missing_falls_back_to_ign_when_delisted_tier_misses(tmp_path, monkeypatch):
     plugin = make_plugin(tmp_path, monkeypatch)
     ign_calls = []

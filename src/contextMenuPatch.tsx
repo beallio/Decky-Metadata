@@ -43,7 +43,7 @@ import {
 import * as log from "./log";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
-const ENTRY_KEY = "playhub-metadata-edit";
+const ENTRY_KEY = "decky-metadata-edit";
 const ENTRY_KEYS = new Set([ENTRY_KEY]);
 
 /**
@@ -131,7 +131,7 @@ const insertOurEntry = (items: any[], appId: number): void => {
     0,
     <MenuItem
       key={ENTRY_KEY}
-      onSelected={() => Navigation.Navigate(`/playhub-metadata/${appId}`)}
+      onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
       {"Decky metadata..."}
     </MenuItem>
@@ -145,7 +145,7 @@ const syncOurEntry = (items: any[], appId: number): void => {
 };
 
 /**
- * Patch the library context menu so non-Steam games gain a Playhub entry.
+ * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
  * @param LibraryContextMenuClass The resolved menu class.
  * @returns An object exposing unpatch() for plugin teardown.
  */

@@ -11,7 +11,7 @@ import {
   startMetadataBootstrap,
 } from "./steam";
 
-const METADATA_ROUTE = "/playhub-metadata/:appid";
+const METADATA_ROUTE = "/decky-metadata/:appid";
 
 export default definePlugin(() => {
   void getDebugLogging()

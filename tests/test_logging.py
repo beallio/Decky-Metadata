@@ -43,7 +43,7 @@ def test_plog_never_raises_and_respects_logger_level(caplog) -> None:
 
     messages = [record.getMessage() for record in caplog.records]
     assert not any("hidden debug" in message for message in messages)
-    assert any("[playhub:load] visible info" in message for message in messages)
+    assert any("[decky:load] visible info" in message for message in messages)
 
 
 def test_set_debug_logging_flips_decky_logger_level() -> None:

@@ -14,9 +14,9 @@ def test_main_execs_when_module_name_is_absent_from_sys_modules() -> None:
 
     decky = types.ModuleType("decky")
     decky.logger = logging.getLogger("tests.decky.sandbox")
-    decky.DECKY_PLUGIN_LOG_DIR = "/tmp/Playhub-Metadata-local/test-logs"
-    decky.DECKY_PLUGIN_RUNTIME_DIR = "/tmp/Playhub-Metadata-local/test-runtime"
-    decky.DECKY_PLUGIN_SETTINGS_DIR = "/tmp/Playhub-Metadata-local/test-settings"
+    decky.DECKY_PLUGIN_LOG_DIR = "/tmp/Decky-Metadata/test-logs"
+    decky.DECKY_PLUGIN_RUNTIME_DIR = "/tmp/Decky-Metadata/test-runtime"
+    decky.DECKY_PLUGIN_SETTINGS_DIR = "/tmp/Decky-Metadata/test-settings"
     decky.DECKY_PLUGIN_DIR = str(source_path.parent)
 
     assert module_name not in sys.modules
