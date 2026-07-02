@@ -93,8 +93,6 @@ const searchMetadata = callable("search_metadata");
 const fetchMetadata = callable("fetch_metadata");
 const autoFetchMetadata = callable("auto_fetch_metadata");
 const enrichSteamApp = callable("enrich_steam_app");
-const enrichCommunityMedia = callable("enrich_community_media");
-const getSteamCommunityPage = callable("get_steam_community_page");
 const startScanMissing = callable("start_scan_missing");
 const getScanProgress = callable("get_scan_progress");
 const startRefreshSteamActivities = callable("start_refresh_steam_activities");
@@ -128,7 +126,6 @@ var backend = /*#__PURE__*/Object.freeze({
     autoFetchMetadata: autoFetchMetadata,
     clearMetadataCache: clearMetadataCache,
     clearXboxAssociations: clearXboxAssociations,
-    enrichCommunityMedia: enrichCommunityMedia,
     enrichSteamApp: enrichSteamApp,
     fetchAchievements: fetchAchievements,
     fetchMetadata: fetchMetadata,
@@ -143,7 +140,6 @@ var backend = /*#__PURE__*/Object.freeze({
     getPlatformCapabilities: getPlatformCapabilities,
     getRetroAchievementsSettings: getRetroAchievementsSettings,
     getScanProgress: getScanProgress,
-    getSteamCommunityPage: getSteamCommunityPage,
     getXboxSettings: getXboxSettings,
     loginTrueAchievements: loginTrueAchievements,
     refreshDelistedIndex: refreshDelistedIndex,
@@ -200,6 +196,15 @@ const openExternalUrl = (url) => {
         // Fall back to the browser below.
     }
     window.open(url, "_blank", "noopener,noreferrer");
+};
+
+const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
+    const cleanSteamAppId = Number(steamAppId || 0);
+    if (!cleanSteamAppId)
+        return null;
+    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
+        return null;
+    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
 };
 
 var StoreCategory;
@@ -4195,9 +4200,6 @@ const installSteamPatches = () => {
                 return;
             unpatchers.push(patchMethod(httpClient, methodName, (_thisValue, original, args) => {
                 const url = String(args[0] || "");
-                if (/communityfeed|community\/feed|appcommunity|activityfeed|library\/app/i.test(url)) {
-                    void frontendLog("community", "feed url seen", { method: methodName, url }).catch(() => undefined);
-                }
                 const activityAppId = activityAppIdFromUrl(url);
                 if (activityAppId) {
                     return steamActivityPayloadForApp(activityAppId).then((payload) => {
@@ -4220,7 +4222,9 @@ const installSteamPatches = () => {
                             // Rewrite the feed request to the matched Steam appid and pass it
                             // straight through to the native client: identical shape, real
                             // screenshots/guides/videos/artwork, and native pagination for free.
-                            const steamUrl = url.replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${steamAppId}`);
+                            const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
+                            if (!steamUrl)
+                                return original(...args);
                             const steamArgs = [steamUrl, ...args.slice(1)];
                             return Promise.resolve(original(...steamArgs)).then((native) => {
                                 void frontendLog("community", "feed passthrough", {
@@ -4570,9 +4574,6 @@ const metadataTemplate = (title) => ({
     genres: [],
     features: [],
     screenshots: [],
-    community_images: [],
-    community_videos: [],
-    community_enriched_at: 0,
 });
 const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
 const textToPersons = (value) => value

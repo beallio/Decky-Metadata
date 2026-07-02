@@ -43,15 +43,6 @@ def test_enrich_steam_app_respects_pinned_appid(monkeypatch) -> None:
         called["details"].append(appid)
         return {
             "description": "Steam description",
-            "community_images": [
-                {
-                    "id": "shot",
-                    "url": "https://cdn.example/shot.jpg",
-                    "caption": "",
-                    "width": 0,
-                    "height": 0,
-                }
-            ],
         }
 
     monkeypatch.setattr(main, "now", lambda: 1234567890)

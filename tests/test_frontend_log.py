@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import main
 
@@ -16,7 +17,7 @@ def test_frontend_log_returns_true_and_logs_fields(tmp_path, monkeypatch):
     result = asyncio.run(plugin.frontend_log("nav", "x", {"a": 1}))
 
     assert result is True
-    assert calls == [("nav", "x", {"a": 1})]
+    assert calls == [("nav", "x", {"a": 1, "level": logging.DEBUG})]
 
 
 def test_frontend_log_is_safe_with_missing_or_invalid_fields(tmp_path, monkeypatch):

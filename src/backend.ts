@@ -59,14 +59,6 @@ export const autoFetchMetadata = callable<
 export const enrichSteamApp = callable<[appId: number], MetadataData | null>(
   "enrich_steam_app"
 );
-export const enrichCommunityMedia = callable<
-  [appId: number, title?: string, sourceUrl?: string],
-  MetadataData | null
->("enrich_community_media");
-export const getSteamCommunityPage = callable<
-  [appId: number, page: number],
-  { items: any[]; page?: number }
->("get_steam_community_page");
 export const startScanMissing = callable<
   [games: GameOption[]],
   ScanProgress

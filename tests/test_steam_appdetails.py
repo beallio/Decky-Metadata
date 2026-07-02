@@ -72,15 +72,6 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
                 "height": 0,
             }
         ],
-        "community_images": [
-            {
-                "id": "1",
-                "url": "https://cdn.example/full.jpg",
-                "caption": "",
-                "width": 0,
-                "height": 0,
-            }
-        ],
     }
 
 

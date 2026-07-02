@@ -18,14 +18,11 @@ export type MetadataData = {
   genres?: string[];
   features?: string[];
   screenshots?: MetadataScreenshot[];
-  community_images?: MetadataScreenshot[];
-  community_videos?: MetadataVideo[];
   steam_appid?: number | null;
   deck_compat_category?: number | null;
   steam_store_url?: string;
   steam_news?: MetadataNews[];
   steam_news_enriched_at?: number;
-  community_enriched_at?: number;
   updated_at?: number;
 };
 
@@ -46,14 +43,6 @@ export type MetadataSearchResult = {
   title: string;
   description: string;
   rating?: number | null;
-};
-
-export type MetadataVideo = {
-  id: string;
-  title?: string;
-  url?: string;
-  thumbnail?: string;
-  source?: string;
 };
 
 export type MetadataNews = {

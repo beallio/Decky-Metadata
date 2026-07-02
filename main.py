@@ -923,7 +923,8 @@ class Plugin:
         self, area: str = "ui", message: str = "", fields: dict[str, Any] | None = None
     ) -> bool:
         try:
-            _plog(str(area or "ui"), str(message or ""), **(fields or {}))
+            clean_fields = fields if isinstance(fields, dict) else {}
+            _plog(str(area or "ui"), str(message or ""), **clean_fields, level=logging.DEBUG)
         except Exception:
             pass
         return True
@@ -972,35 +973,6 @@ class Plugin:
             "count": len(index.get("apps", [])) if isinstance(index, dict) else 0,
             "fetched_at": index.get("fetched_at", 0) if isinstance(index, dict) else 0,
         }
-
-    async def enrich_community_media(
-        self, app_id: int, title: str = "", source_url: str = ""
-    ) -> dict[str, Any] | None:
-        return await asyncio.to_thread(
-            self._enrich_community_media_sync, app_id, title, source_url
-        )
-
-    async def get_steam_community_page(
-        self, app_id: int, page: int = 1
-    ) -> dict[str, Any]:
-        try:
-            self._load_data()
-            metadata = self._data["metadata"].get(str(app_id))
-            if not isinstance(metadata, dict):
-                return {"items": []}
-            steam_appid = self._safe_int(metadata.get("steam_appid"))
-            if not steam_appid:
-                return {"items": []}
-            clean_page = max(1, int(self._as_number(page, 1)))
-            items = await asyncio.to_thread(
-                self._steam_community_ugc_for_appid,
-                steam_appid,
-                clean_page,
-                20,
-            )
-            return {"items": items, "page": clean_page}
-        except Exception:
-            return {"items": []}
 
     async def start_scan_missing(self, games: list[dict[str, Any]]) -> dict[str, Any]:
         if self._scan_task and not self._scan_task.done():
@@ -1736,20 +1708,11 @@ class Plugin:
                 if str(value).strip()
             ],
             "screenshots": self._sanitize_screenshots(metadata.get("screenshots")),
-            "community_images": self._sanitize_screenshots(
-                metadata.get("community_images")
-            ),
-            "community_videos": self._sanitize_videos(
-                metadata.get("community_videos")
-            ),
             "steam_appid": self._safe_int(metadata.get("steam_appid")),
             "steam_store_url": self._https_url(str(metadata.get("steam_store_url") or "")),
             "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
             "steam_news_enriched_at": int(
                 self._as_number(metadata.get("steam_news_enriched_at"), 0)
-            ),
-            "community_enriched_at": int(
-                self._as_number(metadata.get("community_enriched_at"), 0)
             ),
         }
 
@@ -1778,8 +1741,6 @@ class Plugin:
                     if value:
                         next_metadata[key] = value
                 next_metadata["source"] = "Steam"
-                next_metadata["community_videos"] = []
-                next_metadata["community_enriched_at"] = now()
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -1791,40 +1752,6 @@ class Plugin:
                 self._as_number(next_metadata.get("steam_news_enriched_at"), 0)
             )
         return self._sanitize_metadata(next_metadata)
-
-    def _enrich_community_media_sync(
-        self, app_id: int, title: str = "", source_url: str = ""
-    ) -> dict[str, Any] | None:
-        self._load_data()
-        key = str(app_id)
-        metadata = self._data["metadata"].get(key)
-        if not isinstance(metadata, dict):
-            return None
-        steam_appid = self._safe_int(metadata.get("steam_appid"))
-        images: list[dict[str, Any]] = []
-        if steam_appid:
-            images = self._steam_community_ugc_for_appid(steam_appid, 1, 20)
-            if not images:
-                images = self._sanitize_screenshots(metadata.get("screenshots"))
-        next_metadata = dict(metadata)
-        next_metadata.update(
-            {
-                "community_videos": [],
-                "community_images": images,
-                # Steam Activity/news are refreshed only by the explicit
-                # “Aggiorna attività” action. Keeping this enrichment limited to
-                # community media prevents Activity refreshes from running in the
-                # background while the Steam UI is being opened.
-                "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
-                "steam_news_enriched_at": int(self._as_number(metadata.get("steam_news_enriched_at"), 0)),
-                "community_enriched_at": now(),
-                "updated_at": now(),
-            }
-        )
-        saved = self._sanitize_metadata(next_metadata)
-        self._data["metadata"][key] = saved
-        self._save_data()
-        return saved
 
     def _steam_news_for_metadata(
         self,
@@ -2158,7 +2085,6 @@ class Plugin:
             )
             if screenshots:
                 details["screenshots"] = screenshots
-                details["community_images"] = screenshots
 
             _plog(
                 "steam",
@@ -2588,155 +2514,6 @@ class Plugin:
 
     def _steam_news_summary(self, contents: str) -> str:
         return self._clean_steam_news_text(contents)[:600]
-
-    def _parse_steam_community_ugc(
-        self, html_text: str, limit: int = 20
-    ) -> list[dict[str, Any]]:
-        try:
-            text = str(html_text or "")
-            card_matches = list(
-                re.finditer(
-                    r"""class\s*=\s*["'][^"']*\bapphub_Card\b[^"']*["']""",
-                    text,
-                    flags=re.I,
-                )
-            )
-            rows: list[dict[str, Any]] = []
-            seen: set[str] = set()
-            cap = max(1, min(int(self._as_number(limit, 20)), 30))
-            for index, match in enumerate(card_matches):
-                end = card_matches[index + 1].start() if index + 1 < len(card_matches) else len(text)
-                block = text[match.start() : end][:50000]
-                image_url = ""
-                for raw_image in re.findall(
-                    r"""https://images\.steamusercontent\.com/ugc/[^"'\s<>]+""",
-                    block,
-                    flags=re.I,
-                ):
-                    image_url = self._steam_community_image_url(str(raw_image or "").rstrip("),.;"))
-                    if image_url:
-                        break
-                if not image_url or image_url in seen:
-                    continue
-                seen.add(image_url)
-
-                link = ""
-                link_patterns = (
-                    r"""data-modal-content-url\s*=\s*["']([^"']+)["']""",
-                    r"""href\s*=\s*["']([^"']*sharedfiles/filedetails/\?id=\d+[^"']*)["']""",
-                )
-                for pattern in link_patterns:
-                    for raw_link in re.findall(pattern, block, flags=re.I):
-                        link = self._steam_community_link_url(str(raw_link or ""))
-                        if link:
-                            break
-                    if link:
-                        break
-
-                author = ""
-                author_match = re.search(
-                    r"""apphub_CardContentAuthorName[^>]*>\s*<a[^>]*>([^<]+)</a>""",
-                    block,
-                    flags=re.I | re.S,
-                )
-                if author_match:
-                    author = self._clean_html_text(html.unescape(author_match.group(1)))
-
-                caption = ""
-                caption_match = re.search(
-                    r"""apphub_(?:CardContentTitle|CardTextContent)[^>]*>(.*?)</(?:div|a|span)>""",
-                    block,
-                    flags=re.I | re.S,
-                )
-                if caption_match:
-                    caption = self._clean_html_text(caption_match.group(1))
-
-                item_id = self._steam_sharedfile_id(link) or image_url
-                rows.append(
-                    {
-                        "id": item_id,
-                        "url": image_url,
-                        "caption": caption,
-                        "author": author,
-                        "link": link,
-                    }
-                )
-                if len(rows) >= cap:
-                    break
-            return self._sanitize_screenshots(rows)
-        except Exception:
-            return []
-
-    def _steam_community_ugc_for_appid(
-        self, appid: int, page: int = 1, limit: int = 20
-    ) -> list[dict[str, Any]]:
-        try:
-            clean_appid = int(self._as_number(appid, 0))
-            clean_page = max(1, int(self._as_number(page, 1)))
-            if clean_appid <= 0:
-                return []
-            params = {
-                "userreviewsoffset": 0,
-                "p": clean_page,
-                "workshopitemspage": clean_page,
-                "readytouseitemspage": clean_page,
-                "mtxitemspage": clean_page,
-                "itemspage": clean_page,
-                "screenshotspage": clean_page,
-                "videospage": clean_page,
-                "artpage": clean_page,
-                "allguidepage": clean_page,
-                "webguidepage": clean_page,
-                "integratedguidepage": clean_page,
-                "discussionspage": clean_page,
-                "numperpage": 20,
-                "browsefilter": "trend",
-                "appHubSubSection": 1,
-                "l": "english",
-                "filterLanguage": "default",
-                "searchText": "",
-                "forceanon": 1,
-            }
-            url = f"https://steamcommunity.com/app/{clean_appid}/homecontent/?{urllib.parse.urlencode(params)}"
-            text = self._http_text(url, timeout=15)
-            return self._parse_steam_community_ugc(text, limit)
-        except Exception:
-            return []
-
-    def _steam_community_image_url(self, value: str) -> str:
-        url = self._https_url(html.unescape(str(value or "").strip()))
-        if "images.steamusercontent.com/ugc/" not in url:
-            return ""
-        parsed = urllib.parse.urlsplit(url)
-        query = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
-        next_query: list[tuple[str, str]] = []
-        saw_width = False
-        for key, raw_value in query:
-            if key == "imw":
-                next_query.append((key, "512"))
-                saw_width = True
-            else:
-                next_query.append((key, raw_value))
-        if not saw_width:
-            next_query.append(("imw", "512"))
-        return urllib.parse.urlunsplit(
-            parsed._replace(query=urllib.parse.urlencode(next_query))
-        )
-
-    def _steam_community_link_url(self, value: str) -> str:
-        raw = html.unescape(str(value or "").strip())
-        if not raw:
-            return ""
-        url = urllib.parse.urljoin("https://steamcommunity.com/", raw)
-        url = self._https_url(url)
-        if self._steam_sharedfile_id(url):
-            return url
-        return ""
-
-    @staticmethod
-    def _steam_sharedfile_id(value: str) -> str:
-        match = re.search(r"(?:[?&]id=|/sharedfiles/filedetails/\?id=)(\d+)", str(value or ""))
-        return match.group(1) if match else ""
 
     def _ign_images_to_screenshots(self, game: dict[str, Any]) -> list[dict[str, Any]]:
         images: list[dict[str, Any]] = []
