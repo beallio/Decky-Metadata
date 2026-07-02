@@ -51,6 +51,8 @@ import {
 // Keep in sync with package.json and plugin.json.
 export const PLUGIN_VERSION = "0.1.0";
 
+const STATUS_BLUE = "#1a9fff";
+
 export const parseSteamAppId = (input: string): number => {
   const s = String(input || "").trim();
   if (!s) return 0;
@@ -135,32 +137,29 @@ const compactTextStyle = {
   lineHeight: 1.35,
 } as const;
 
+const statusTextStyle = {
+  ...compactTextStyle,
+  color: STATUS_BLUE,
+} as const;
+
 const inlineStatusStyle = {
   display: "flex",
   alignItems: "center",
-  gap: "0.5rem",
-  ...compactTextStyle,
+  gap: "10px",
+  ...statusTextStyle,
 } as const;
 
-const smallSpinnerStyle = {
+const busySpinnerStyle = {
+  width: "18px",
+  height: "18px",
+  color: STATUS_BLUE,
+} as const;
+
+const buttonLabelStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 14,
-  height: 14,
-  flex: "0 0 14px",
-} as const;
-
-const spinnerIconStyle = {
-  width: "100%",
-  height: "100%",
-} as const;
-
-const spinnerLabelStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "0.4rem",
+  gap: "10px",
   minWidth: "8.5rem",
 } as const;
 
@@ -202,21 +201,15 @@ const focusableBlockStyle = {
   minWidth: 0,
 } as const;
 
-const InlineSpinner = () => (
-  <span style={smallSpinnerStyle}>
-    <Spinner style={spinnerIconStyle} />
-  </span>
+const BusySpinner = () => (
+  <Spinner style={busySpinnerStyle} />
 );
 
-const SpinnerLabel = ({ children }: { children: string }) => (
-  <span style={spinnerLabelStyle}>
-    <InlineSpinner />
+const ButtonLabel = ({ children, busy = false }: { children: string; busy?: boolean }) => (
+  <span style={buttonLabelStyle}>
+    {busy ? <BusySpinner /> : null}
     {children}
   </span>
-);
-
-const ButtonLabel = ({ children }: { children: string }) => (
-  <span style={spinnerLabelStyle}>{children}</span>
 );
 
 const scanCompleteMessage = (progress: {
@@ -496,7 +489,7 @@ export const Content = () => {
               onClick={scanMissing}
             >
               {busy ? (
-                <SpinnerLabel>{"Scanning..."}</SpinnerLabel>
+                <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
               ) : (
                 <ButtonLabel>{"Scan metadata"}</ButtonLabel>
               )}
@@ -527,7 +520,7 @@ export const Content = () => {
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
           <div style={inlineStatusStyle}>
             {delistedBusy ? (
-              <InlineSpinner />
+              <BusySpinner />
             ) : null}
             <span>{delistedStatusText}</span>
           </div>
@@ -537,7 +530,7 @@ export const Content = () => {
             onClick={refreshDelisted}
           >
             {delistedBusy ? (
-              <SpinnerLabel>{"Refreshing..."}</SpinnerLabel>
+              <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
             ) : (
               <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
             )}

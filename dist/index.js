@@ -562,8 +562,8 @@ const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots 
     height: image.height || 720,
     bSpoiler: false,
 }));
-const isPlayhubCommunityId = (value) => typeof value === "string" && value.startsWith("90909");
-const playhubActivityId = (appId, index, date) => `playhub-activity-${appId}-${date || 0}-${index}`;
+const isDeckyCommunityId = (value) => typeof value === "string" && value.startsWith("90909");
+const deckyActivityId = (appId, index, date) => `decky-activity-${appId}-${date || 0}-${index}`;
 const numericSteamNewsGid = (value) => {
     const text = String(value || "");
     const direct = text.match(/^\d{8,}$/);
@@ -634,14 +634,14 @@ const steamActivityNewsItemsFromMetadata = (appId, metadata) => uniqueSteamNewsF
     const imageUrl = imageCandidates[0] || "";
     const fallbackImageUrl = steamAppHeaderImage(metadata.steam_appid);
     const displayImageUrl = imageUrl || fallbackImageUrl;
-    const eventType = normalizePlayhubSteamActivityType(news.event_type || news.type);
-    const eventTags = playhubSteamActivityTypeTags(eventType);
-    const eventLabel = playhubSteamActivityTypeLabel(eventType);
+    const eventType = normalizeDeckySteamActivityType(news.event_type || news.type);
+    const eventTags = deckySteamActivityTypeTags(eventType);
+    const eventLabel = deckySteamActivityTypeLabel(eventType);
     const rawBody = steamNewsRawBodyForModal(news.raw_body || news.body || news.summary || "");
     const summary = eventType === 12 ? "" : cleanSteamNewsDisplayText(news.summary || news.title || "");
     const title = cleanSteamNewsDisplayText(news.title || metadata.title || "Steam news");
     const url = news.url || metadata.steam_store_url || "";
-    const id = playhubActivityId(appId, index, date);
+    const id = deckyActivityId(appId, index, date);
     const steamGid = numericSteamNewsGid(news.gid || news.news_id || news.announcement_gid || news.event_gid || news.id || news.url);
     const eventGid = numericSteamNewsGid(news.event_gid || news.gid || news.news_id || news.announcement_gid || news.id || news.url);
     const jsondata = JSON.stringify({
@@ -746,8 +746,8 @@ const steamActivityPayloadForApp = async (appId) => {
 };
 const STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE = 1002;
 const STEAM_PARTNER_EVENT_TYPE_NEWS = 28;
-const PLAYHUB_SUPPORTED_STEAM_ACTIVITY_TYPES = new Set([12, 13, 14, 15, 23, 24, 25, 28, 35]);
-const PLAYHUB_STEAM_ACTIVITY_TYPE_LABELS = {
+const DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES = new Set([12, 13, 14, 15, 23, 24, 25, 28, 35]);
+const DECKY_STEAM_ACTIVITY_TYPE_LABELS = {
     12: "Aggiornamento minore / Note della patch",
     13: "Aggiornamento standard",
     14: "Aggiornamento importante",
@@ -758,26 +758,26 @@ const PLAYHUB_STEAM_ACTIVITY_TYPE_LABELS = {
     28: "Notizie",
     35: "Evento nel gioco",
 };
-const PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS = {
-    12: ["patchnotes", "update", "playhub_metadata"],
-    13: ["update", "playhub_metadata"],
-    14: ["majorupdate", "update", "playhub_metadata"],
-    15: ["dlc", "release", "playhub_metadata"],
-    23: ["loot", "event", "playhub_metadata"],
-    24: ["perks", "event", "playhub_metadata"],
-    25: ["challenge", "event", "playhub_metadata"],
-    28: ["news", "playhub_metadata"],
-    35: ["ingame", "event", "playhub_metadata"],
+const DECKY_STEAM_ACTIVITY_TYPE_TAGS = {
+    12: ["patchnotes", "update", "decky_metadata"],
+    13: ["update", "decky_metadata"],
+    14: ["majorupdate", "update", "decky_metadata"],
+    15: ["dlc", "release", "decky_metadata"],
+    23: ["loot", "event", "decky_metadata"],
+    24: ["perks", "event", "decky_metadata"],
+    25: ["challenge", "event", "decky_metadata"],
+    28: ["news", "decky_metadata"],
+    35: ["ingame", "event", "decky_metadata"],
 };
-const normalizePlayhubSteamActivityType = (value) => {
+const normalizeDeckySteamActivityType = (value) => {
     const type = Number(value || 0) || STEAM_PARTNER_EVENT_TYPE_NEWS;
-    return PLAYHUB_SUPPORTED_STEAM_ACTIVITY_TYPES.has(type) ? type : STEAM_PARTNER_EVENT_TYPE_NEWS;
+    return DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES.has(type) ? type : STEAM_PARTNER_EVENT_TYPE_NEWS;
 };
-const playhubSteamActivityTypeLabel = (type) => PLAYHUB_STEAM_ACTIVITY_TYPE_LABELS[type] || "Notizie";
-const playhubSteamActivityTypeTags = (type) => PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS[type] || PLAYHUB_STEAM_ACTIVITY_TYPE_TAGS[28];
-const PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY = "__playhubNativeActivityCache";
-const PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__playhubNativePartnerEvents";
-const PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY = "__playhubNativePartnerEventStore";
+const deckySteamActivityTypeLabel = (type) => DECKY_STEAM_ACTIVITY_TYPE_LABELS[type] || "Notizie";
+const deckySteamActivityTypeTags = (type) => DECKY_STEAM_ACTIVITY_TYPE_TAGS[type] || DECKY_STEAM_ACTIVITY_TYPE_TAGS[28];
+const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
+const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
+const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
 const fakeSteamId = (accountId = 0, steamId64 = "76561197960287930") => ({
     GetAccountID: () => accountId,
     ConvertTo64BitString: () => steamId64,
@@ -829,20 +829,20 @@ const collectSteamNewsImages = (steamAppId, item) => {
     // still show the game header, but embedded/event-specific images stay first.
     return Array.from(new Set(values.map(cleanSteamImageUrl).filter(Boolean)));
 };
-const playhubNativeActivityCache = () => {
+const deckyNativeActivityCache = () => {
     const host = globalThis;
-    if (!host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY])
-        host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
-    return host[PLAYHUB_NATIVE_ACTIVITY_WINDOW_KEY];
+    if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
+        host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
 };
-const playhubNativePartnerEventCache = () => {
+const deckyNativePartnerEventCache = () => {
     const host = globalThis;
-    if (!host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
-        host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
-    return host[PLAYHUB_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
+    if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
+        host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
 };
 const uniqueNonEmptyStrings = (values) => Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
-const playhubNativePartnerEventKeys = (event) => {
+const deckyNativePartnerEventKeys = (event) => {
     const gid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.announcementGID || event?.gid || event?.GID || event?.url);
     const oldAnnouncementGid = gid ? `old_announce_${gid}` : "";
     return uniqueNonEmptyStrings([
@@ -856,7 +856,7 @@ const playhubNativePartnerEventKeys = (event) => {
         oldAnnouncementGid,
     ]);
 };
-const playhubNativePartnerEventStore = () => globalThis[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+const deckyNativePartnerEventStore = () => globalThis[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 const collectNativePartnerEventStores = () => {
     const host = globalThis;
     const stores = [];
@@ -877,7 +877,7 @@ const collectNativePartnerEventStores = () => {
     add(host.partnerEventStore);
     add(host.g_PartnerEventStore);
     add(host.g_PartnerEventSummaryStore);
-    add(host[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY]);
+    add(host[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY]);
     try {
         const discovered = DFL.findModuleChild((module) => {
             if (!module || typeof module !== "object")
@@ -900,14 +900,14 @@ const collectNativePartnerEventStores = () => {
         // Decky may not expose the module yet. The interval installer retries.
     }
     if (stores[0])
-        host[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] = stores[0];
+        host[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] = stores[0];
     return stores;
 };
-const registerPlayhubNativePartnerEventInSteamStore = (event, partnerStore) => {
-    const store = partnerStore || playhubNativePartnerEventStore();
+const registerDeckyNativePartnerEventInSteamStore = (event, partnerStore) => {
+    const store = partnerStore || deckyNativePartnerEventStore();
     if (!store || !event)
         return;
-    const keys = playhubNativePartnerEventKeys(event);
+    const keys = deckyNativePartnerEventKeys(event);
     const numericGid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.GID || event?.gid);
     const canonicalEventGid = String(event?.GID || (numericGid ? `old_announce_${numericGid}` : "")).trim();
     try {
@@ -941,16 +941,16 @@ const registerPlayhubNativePartnerEventInSteamStore = (event, partnerStore) => {
         warn("patch", "unable to register native PartnerEvent", error);
     }
 };
-const rememberPlayhubNativePartnerEvent = (event) => {
-    const cache = playhubNativePartnerEventCache();
-    playhubNativePartnerEventKeys(event).forEach((key) => cache.set(String(key), event));
+const rememberDeckyNativePartnerEvent = (event) => {
+    const cache = deckyNativePartnerEventCache();
+    deckyNativePartnerEventKeys(event).forEach((key) => cache.set(String(key), event));
     const stores = collectNativePartnerEventStores();
     if (stores.length)
-        stores.forEach((store) => registerPlayhubNativePartnerEventInSteamStore(event, store));
+        stores.forEach((store) => registerDeckyNativePartnerEventInSteamStore(event, store));
     else
-        registerPlayhubNativePartnerEventInSteamStore(event);
+        registerDeckyNativePartnerEventInSteamStore(event);
 };
-const clonePlayhubNativePartnerEventForRoute = (event, requestedKey) => {
+const cloneDeckyNativePartnerEventForRoute = (event, requestedKey) => {
     if (!event)
         return null;
     const raw = String(requestedKey || "").trim();
@@ -972,14 +972,14 @@ const clonePlayhubNativePartnerEventForRoute = (event, requestedKey) => {
         GetAnnouncementGID: () => numericGid || event?.AnnouncementGID || event?.announcement_gid || "0",
     };
 };
-const playhubNativePartnerEventForGid = (value, cloneForRoute = false) => {
+const deckyNativePartnerEventForGid = (value, cloneForRoute = false) => {
     const raw = String(value || "").trim();
     const gid = numericSteamNewsGid(raw);
-    const cache = playhubNativePartnerEventCache();
+    const cache = deckyNativePartnerEventCache();
     const event = (raw && cache.get(raw)) || (gid && (cache.get(String(gid)) || cache.get(`old_announce_${gid}`))) || null;
-    return cloneForRoute ? clonePlayhubNativePartnerEventForRoute(event, raw || gid) : event;
+    return cloneForRoute ? cloneDeckyNativePartnerEventForRoute(event, raw || gid) : event;
 };
-const makePlayhubNativePartnerEvent = (appId, steamAppId, item, index) => {
+const makeDeckyNativePartnerEvent = (appId, steamAppId, item, index) => {
     const date = Number(item.date || item.posttime || item.published || 0) || Math.floor(Date.now() / 1000) - index * 60;
     const announcementGid = numericSteamNewsGid(item.announcement_gid || item.news_id || item.gid || item.id || item.url);
     const eventGid = numericSteamNewsGid(item.event_gid || "");
@@ -992,10 +992,10 @@ const makePlayhubNativePartnerEvent = (appId, steamAppId, item, index) => {
     const images = collectSteamNewsImages(steamAppId, item);
     const primaryImage = images[0] || "";
     const clanSteamID = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
-    const type = normalizePlayhubSteamActivityType(item.event_type || item.type);
+    const type = normalizeDeckySteamActivityType(item.event_type || item.type);
     const isPatchNote = type === 12;
-    const eventLabel = playhubSteamActivityTypeLabel(type);
-    const eventTags = playhubSteamActivityTypeTags(type);
+    const eventLabel = deckySteamActivityTypeLabel(type);
+    const eventTags = deckySteamActivityTypeTags(type);
     const modalBody = steamNewsRawBodyForModal(item.raw_body || item.rawBody || item.body_html || item.body_raw || item.body || body || summary);
     const activitySummary = isPatchNote ? "" : summary;
     const announcementUrl = item.url || item.external_url || item.link || (steamAppId && announcementGid ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${announcementGid}` : steamAppId && eventGid ? `https://store.steampowered.com/news/app/${steamAppId}/view/${eventGid}` : "");
@@ -1013,7 +1013,7 @@ const makePlayhubNativePartnerEvent = (appId, steamAppId, item, index) => {
         referenced_appids: steamAppId ? [steamAppId] : [],
     };
     const partnerEvent = {
-        __playhubNativePartnerEvent: true,
+        __deckyNativePartnerEvent: true,
         GID: nativeEventGid,
         gid: nativeEventGid,
         event_gid: nativeEventGid,
@@ -1176,17 +1176,17 @@ const makePlayhubNativePartnerEvent = (appId, steamAppId, item, index) => {
         GetStoreNewsURL: () => steamAppId && (announcementGid || eventGid || gid) ? `https://store.steampowered.com/news/app/${steamAppId}/view/${announcementGid || eventGid || gid}` : announcementUrl,
         url: announcementUrl,
     };
-    rememberPlayhubNativePartnerEvent(partnerEvent);
+    rememberDeckyNativePartnerEvent(partnerEvent);
     return partnerEvent;
 };
-const makePlayhubNativeActivityEvent = (appId, metadata, item, index) => {
+const makeDeckyNativeActivityEvent = (appId, metadata, item, index) => {
     const steamAppId = Number(metadata.steam_appid || item.appid || appId) || appId;
-    const partnerEvent = makePlayhubNativePartnerEvent(appId, steamAppId, item, index);
+    const partnerEvent = makeDeckyNativePartnerEvent(appId, steamAppId, item, index);
     const date = Number(partnerEvent.postTime || 0) || Math.floor(Date.now() / 1000) - index * 60;
     const gid = numericSteamNewsGid(partnerEvent.GID || item.url) || String(date);
     const actor = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
     return {
-        __playhubNativeActivityEvent: true,
+        __deckyNativeActivityEvent: true,
         gameid: String(appId),
         unUniqueID: Number(`${String(gid).slice(-8)}${index}`.slice(-9)) || date + index,
         rtEventTime: date,
@@ -1236,13 +1236,13 @@ const makePlayhubNativeActivityEvent = (appId, metadata, item, index) => {
         SetActiveCommentThread: () => undefined,
     };
 };
-const makePlayhubNativeActivity = (appId, metadata) => {
+const makeDeckyNativeActivity = (appId, metadata) => {
     const items = steamActivityNewsItemsFromMetadata(appId, metadata)
         .filter((item) => numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url));
     if (!items.length)
         return null;
     const events = items
-        .map((item, index) => makePlayhubNativeActivityEvent(appId, metadata, item, index))
+        .map((item, index) => makeDeckyNativeActivityEvent(appId, metadata, item, index))
         .sort((a, b) => Number(b.rtEventTime || 0) - Number(a.rtEventTime || 0));
     const grouped = new Map();
     for (const event of events) {
@@ -1263,7 +1263,7 @@ const makePlayhubNativeActivity = (appId, metadata) => {
     const latest = events[0]?.rtEventTime || 0;
     const earliest = events[events.length - 1]?.rtEventTime || latest;
     return {
-        __playhubNativeActivity: true,
+        __deckyNativeActivity: true,
         appid: appId,
         m_bNoMoreHistoryAvailable: true,
         lastAddedEventType: STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE,
@@ -1293,22 +1293,22 @@ const makePlayhubNativeActivity = (appId, metadata) => {
         GetGameActivityCache: () => [],
     };
 };
-const getPlayhubNativeActivityForApp = (appId) => {
+const getDeckyNativeActivityForApp = (appId) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
-    const cached = playhubNativeActivityCache().get(appId);
+    const cached = deckyNativeActivityCache().get(appId);
     if (cached)
         return cached;
     const metadata = metadataCache[String(appId)];
     if (!metadata)
         return null;
-    const native = makePlayhubNativeActivity(appId, metadata);
+    const native = makeDeckyNativeActivity(appId, metadata);
     if (native)
-        playhubNativeActivityCache().set(appId, native);
+        deckyNativeActivityCache().set(appId, native);
     return native;
 };
-const refreshPlayhubNativeActivityForApp = async (appId, store) => {
+const refreshDeckyNativeActivityForApp = async (appId, store) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
@@ -1316,10 +1316,10 @@ const refreshPlayhubNativeActivityForApp = async (appId, store) => {
     let metadata = metadataCache[String(appId)];
     if (!metadata)
         return null;
-    const native = metadata ? makePlayhubNativeActivity(appId, metadata) : null;
+    const native = metadata ? makeDeckyNativeActivity(appId, metadata) : null;
     if (!native)
         return null;
-    playhubNativeActivityCache().set(appId, native);
+    deckyNativeActivityCache().set(appId, native);
     const appActivityStore = store || globalThis.appActivityStore;
     try {
         if (appActivityStore?.m_mapAppActivity?.set)
@@ -1341,17 +1341,17 @@ const installNativeActivityStorePatch = (unpatchers) => {
             return true;
         }
         const store = globalThis.appActivityStore;
-        if (!store || store.__playhubNativeActivityPatched)
-            return !!store?.__playhubNativeActivityPatched;
+        if (!store || store.__deckyNativeActivityPatched)
+            return !!store?.__deckyNativeActivityPatched;
         try {
-            store.__playhubNativeActivityPatched = true;
+            store.__deckyNativeActivityPatched = true;
             unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
                 const appId = Number(args[0]);
-                const native = getPlayhubNativeActivityForApp(appId);
+                const native = getDeckyNativeActivityForApp(appId);
                 if (native)
                     return native;
                 if (appId && isNonSteamApp(getOverview(appId))) {
-                    void refreshPlayhubNativeActivityForApp(appId, store);
+                    void refreshDeckyNativeActivityForApp(appId, store);
                 }
                 return original(...args);
             }));
@@ -1360,11 +1360,11 @@ const installNativeActivityStorePatch = (unpatchers) => {
                     continue;
                 unpatchers.push(patchMethod(store, methodName, (_thisValue, original, args) => {
                     const appId = Number(args[0]);
-                    const native = getPlayhubNativeActivityForApp(appId);
+                    const native = getDeckyNativeActivityForApp(appId);
                     if (native)
                         return methodName.includes("History") || methodName.includes("Server") || methodName.includes("Restore") ? Promise.resolve(native) : undefined;
                     if (appId && isNonSteamApp(getOverview(appId))) {
-                        void refreshPlayhubNativeActivityForApp(appId, store);
+                        void refreshDeckyNativeActivityForApp(appId, store);
                     }
                     return original(...args);
                 }));
@@ -1394,12 +1394,12 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
     const patchOneStore = (partnerStore) => {
         if (!partnerStore || typeof partnerStore !== "object")
             return false;
-        globalThis[PLAYHUB_NATIVE_PARTNER_STORE_WINDOW_KEY] = partnerStore;
-        for (const event of playhubNativePartnerEventCache().values())
-            registerPlayhubNativePartnerEventInSteamStore(event, partnerStore);
-        if (partnerStore.__playhubNativePartnerEventsPatched || patchedStores.has(partnerStore))
+        globalThis[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] = partnerStore;
+        for (const event of deckyNativePartnerEventCache().values())
+            registerDeckyNativePartnerEventInSteamStore(event, partnerStore);
+        if (partnerStore.__deckyNativePartnerEventsPatched || patchedStores.has(partnerStore))
             return true;
-        partnerStore.__playhubNativePartnerEventsPatched = true;
+        partnerStore.__deckyNativePartnerEventsPatched = true;
         patchedStores.add(partnerStore);
         const maybePatch = (methodName, handler) => {
             if (typeof partnerStore[methodName] !== "function")
@@ -1407,96 +1407,96 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
             unpatchers.push(patchMethod(partnerStore, methodName, (_thisValue, original, args) => handler(original, args)));
         };
         maybePatch("GetClanEventFromAnnouncementGID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], false);
+            const event = deckyNativePartnerEventForGid(args[0], false);
             return event || original(...args);
         });
         maybePatch("BHasClanAnnouncementGID", (original, args) => {
-            if (playhubNativePartnerEventForGid(args[0]))
+            if (deckyNativePartnerEventForGid(args[0]))
                 return true;
             return original(...args);
         });
         maybePatch("GetClanEventGIDFromAnnouncementGID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], false);
+            const event = deckyNativePartnerEventForGid(args[0], false);
             return event?.GID || original(...args);
         });
         maybePatch("GetClanEventModel", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], true);
+            const event = deckyNativePartnerEventForGid(args[0], true);
             return event || original(...args);
         });
         maybePatch("BHasClanEventModel", (original, args) => {
-            if (playhubNativePartnerEventForGid(args[0]))
+            if (deckyNativePartnerEventForGid(args[0]))
                 return true;
             return original(...args);
         });
         maybePatch("GetClanEventGIDs", (original, args) => {
             const originalResult = original(...args) || [];
             const accountId = args[0]?.GetAccountID?.();
-            const playhubGids = Array.from(playhubNativePartnerEventCache().values())
+            const deckyGids = Array.from(deckyNativePartnerEventCache().values())
                 .filter((event) => !accountId || event?.clanSteamID?.GetAccountID?.() === accountId)
                 .map((event) => event?.GID)
                 .filter(Boolean);
-            return Array.from(new Set([...originalResult, ...playhubGids]));
+            return Array.from(new Set([...originalResult, ...deckyGids]));
         });
         maybePatch("GetClanEventGIDsForApp", (original, args) => {
             const appId = Number(args[0]);
             const originalResult = original(...args) || [];
-            const playhubGids = Array.from(playhubNativePartnerEventCache().values())
+            const deckyGids = Array.from(deckyNativePartnerEventCache().values())
                 .filter((event) => Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId)
                 .map((event) => event?.GID)
                 .filter(Boolean);
-            return Array.from(new Set([...originalResult, ...playhubGids]));
+            return Array.from(new Set([...originalResult, ...deckyGids]));
         });
         maybePatch("GetRankedClanEvents", (original, args) => {
             const originalResult = original(...args) || [];
             const clanAccountId = args[0]?.GetAccountID?.();
             const appId = Number(args[1] || 0);
-            const playhubEvents = Array.from(playhubNativePartnerEventCache().values()).filter((event) => {
+            const deckyEvents = Array.from(deckyNativePartnerEventCache().values()).filter((event) => {
                 const clanMatches = !clanAccountId || event?.clanSteamID?.GetAccountID?.() === clanAccountId;
                 const appMatches = !appId || Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId;
                 return clanMatches && appMatches;
             });
-            return Array.from(new Map([...originalResult, ...playhubEvents].map((event) => [String(event?.GID || event?.AnnouncementGID), event])).values());
+            return Array.from(new Map([...originalResult, ...deckyEvents].map((event) => [String(event?.GID || event?.AnnouncementGID), event])).values());
         });
         maybePatch("LoadPartnerEventFromAnnoucementGID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], false);
+            const event = deckyNativePartnerEventForGid(args[0], false);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadPartnerEventFromAnnoucementGIDAndClanSteamID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[1] || args[0], false);
+            const event = deckyNativePartnerEventForGid(args[1] || args[0], false);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadPartnerEventFromClanEventGID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], true);
+            const event = deckyNativePartnerEventForGid(args[0], true);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadPartnerEventFromClanEventGIDAndClanSteamID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[1] || args[0], true);
+            const event = deckyNativePartnerEventForGid(args[1] || args[0], true);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadPartnerEventGeneric", (original, args) => {
             // Real Steam signature is (clanSteamID, appid, eventGID, announcementGID, ...).
-            const requestKey = args.find((arg) => playhubNativePartnerEventForGid(arg));
-            const event = playhubNativePartnerEventForGid(requestKey, !!args[2]);
+            const requestKey = args.find((arg) => deckyNativePartnerEventForGid(arg));
+            const event = deckyNativePartnerEventForGid(requestKey, !!args[2]);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadHiddenPartnerEvent", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], true);
+            const event = deckyNativePartnerEventForGid(args[0], true);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
         });
         maybePatch("LoadHiddenPartnerEventByAnnouncementGID", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[0], false);
+            const event = deckyNativePartnerEventForGid(args[0], false);
             if (event)
                 return Promise.resolve(event);
             return original(...args);
@@ -1504,10 +1504,10 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
         maybePatch("LoadAdjacentPartnerEvents", (original, args) => {
             const requestedId = args[0];
             const appId = Number(args[2] || 0);
-            const direct = playhubNativePartnerEventForGid(requestedId, true);
+            const direct = deckyNativePartnerEventForGid(requestedId, true);
             if (direct)
                 return Promise.resolve([direct]);
-            const appEvents = Array.from(playhubNativePartnerEventCache().values()).filter((event) => {
+            const appEvents = Array.from(deckyNativePartnerEventCache().values()).filter((event) => {
                 return appId && (Number(event?.appid) === appId || Number(event?.reference_appid || event?.steam_appid) === appId);
             });
             if (appEvents.length)
@@ -1521,14 +1521,14 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
             const missingEventGids = [];
             const missingAnnouncementGids = [];
             eventGids.forEach((gid) => {
-                const event = playhubNativePartnerEventForGid(gid, true);
+                const event = deckyNativePartnerEventForGid(gid, true);
                 if (event)
                     hits.push(event);
                 else
                     missingEventGids.push(gid);
             });
             announcementGids.forEach((gid) => {
-                const event = playhubNativePartnerEventForGid(gid, false);
+                const event = deckyNativePartnerEventForGid(gid, false);
                 if (event)
                     hits.push(event);
                 else
@@ -1541,7 +1541,7 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
             return Promise.resolve(original(missingEventGids, missingAnnouncementGids, args[2])).then((rest) => [...hits, ...((Array.isArray(rest) && rest) || [])]);
         });
         maybePatch("FlushEventFromCache", (original, args) => {
-            const event = playhubNativePartnerEventForGid(args[1] || args[0]);
+            const event = deckyNativePartnerEventForGid(args[1] || args[0]);
             if (event)
                 return undefined;
             return original(...args);
@@ -1677,7 +1677,7 @@ const visibleElement = (element) => {
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
 };
 const textOf = (element) => String(element?.textContent || "").replace(/\s+/g, " ").trim();
-const isPlayhubActivityNewsElement = (element) => !!(element instanceof HTMLElement && element.closest("#playhub-activity-news-root, #playhub-activity-news-overlay, [data-playhub-activity-news='1']"));
+const isDeckyActivityNewsElement = (element) => !!(element instanceof HTMLElement && element.closest("#decky-activity-news-root, #decky-activity-news-overlay, [data-decky-activity-news='1']"));
 const deepQuerySelectorAll = (selector, root = document) => {
     const results = [];
     const seen = new Set();
@@ -1776,7 +1776,7 @@ const uniqueVisibleElements = (elements) => {
     return out;
 };
 const tabLikeElement = (element) => {
-    if (isPlayhubActivityNewsElement(element))
+    if (isDeckyActivityNewsElement(element))
         return false;
     const rect = element.getBoundingClientRect();
     const text = tabCandidateText(element);
@@ -1994,8 +1994,8 @@ const firstUrlishArgIndex = (args, firstOnly = false) => {
 const logSteamLinkNavigation = (kind, original, rewritten) => {
     void frontendLog("nav", "steam link", { kind, original, rewritten }).catch(() => undefined);
 };
-const PLAYHUB_HIDE_APP_LINKS_CLASS = "playhub-hide-applinks";
-const PLAYHUB_HIDE_APP_LINKS_STYLE_ID = "playhub-hide-applinks-style";
+const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
+const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
 const isAppDetailsQuickLinksModule = (candidate) => !!candidate &&
     typeof candidate === "object" &&
     typeof candidate.GameInfoQuickLinks === "string" &&
@@ -2047,7 +2047,7 @@ const buildUnmatchedAppLinksHiderStyle = (linkRowClasses) => {
     const selectors = Array.from(new Set(linkRowClasses))
         .map(appLinksHiderClassSelector)
         .filter(Boolean)
-        .map((selector) => `body.${PLAYHUB_HIDE_APP_LINKS_CLASS} ${selector}`);
+        .map((selector) => `body.${DECKY_HIDE_APP_LINKS_CLASS} ${selector}`);
     if (!selectors.length) {
         return "/* decky: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
     }
@@ -2125,7 +2125,7 @@ const shouldHideUnmatchedAppLinks = () => {
 };
 const installUnmatchedAppLinksHider = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubAppLinksHider) {
+    if (globalState.__deckyAppLinksHider) {
         unpatchers.push(() => undefined);
         return;
     }
@@ -2133,7 +2133,7 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
         unpatchers.push(() => undefined);
         return;
     }
-    globalState.__playhubAppLinksHider = { installed: true };
+    globalState.__deckyAppLinksHider = { installed: true };
     let resolvedQuickLinksClasses = [];
     let appliedQuickLinksClasses = "";
     let lastDecisionLogSignature = "";
@@ -2146,11 +2146,11 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
             if (resolvedQuickLinksClasses.length === 0) {
                 resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
             }
-            let style = doc.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID);
+            let style = doc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID);
             let forceStyleRefresh = injectedDoc !== doc;
             if (!style) {
                 style = doc.createElement("style");
-                style.id = PLAYHUB_HIDE_APP_LINKS_STYLE_ID;
+                style.id = DECKY_HIDE_APP_LINKS_STYLE_ID;
                 doc.head.appendChild(style);
                 forceStyleRefresh = true;
             }
@@ -2164,7 +2164,7 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
             }
             const decision = shouldHideUnmatchedAppLinks();
             lastDecisionLogSignature = logUnmatchedAppLinksDecision(decision, resolvedQuickLinksClasses, lastDecisionLogSignature, doc);
-            doc.body.classList.toggle(PLAYHUB_HIDE_APP_LINKS_CLASS, decision);
+            doc.body.classList.toggle(DECKY_HIDE_APP_LINKS_CLASS, decision);
         }
         catch (_error) {
             // Passive UI polish must never affect Steam navigation or rendering.
@@ -2176,29 +2176,29 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
         try {
             window.clearInterval(timer);
             if (injectedDoc) {
-                injectedDoc.body.classList.remove(PLAYHUB_HIDE_APP_LINKS_CLASS);
-                injectedDoc.getElementById(PLAYHUB_HIDE_APP_LINKS_STYLE_ID)?.remove();
+                injectedDoc.body.classList.remove(DECKY_HIDE_APP_LINKS_CLASS);
+                injectedDoc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID)?.remove();
             }
         }
         catch (_error) {
             // Best effort teardown.
         }
-        delete globalState.__playhubAppLinksHider;
+        delete globalState.__deckyAppLinksHider;
     });
 };
 const installSteamNavigationRedirect = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubNavRedirect) {
+    if (globalState.__deckyNavRedirect) {
         unpatchers.push(() => undefined);
         return;
     }
     const redirectUnpatchers = [];
-    globalState.__playhubNavRedirect = { installed: true };
+    globalState.__deckyNavRedirect = { installed: true };
     const patchUrlOpener = (target, methodName, firstOnly = false) => {
         if (typeof target?.[methodName] !== "function")
             return;
         const original = target[methodName];
-        const patched = function playhubSteamNavigationRedirect(...args) {
+        const patched = function deckySteamNavigationRedirect(...args) {
             try {
                 const index = firstUrlishArgIndex(args, firstOnly);
                 if (index < 0)
@@ -2230,7 +2230,7 @@ const installSteamNavigationRedirect = (unpatchers) => {
         if (typeof target?.[methodName] !== "function")
             return;
         const original = target[methodName];
-        const patched = function playhubSteamAppIdNavigationRedirect(...args) {
+        const patched = function deckySteamAppIdNavigationRedirect(...args) {
             try {
                 const originalAppId = Number(args[argIndex]);
                 const mapped = steamAppIdForApp(originalAppId);
@@ -2268,12 +2268,12 @@ const installSteamNavigationRedirect = (unpatchers) => {
                 // Best effort teardown.
             }
         });
-        delete globalState.__playhubNavRedirect;
+        delete globalState.__deckyNavRedirect;
     });
 };
 const installMainWindowHistoryRedirect = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubMainWindowHistoryRedirect) {
+    if (globalState.__deckyMainWindowHistoryRedirect) {
         unpatchers.push(() => undefined);
         return;
     }
@@ -2281,7 +2281,7 @@ const installMainWindowHistoryRedirect = (unpatchers) => {
     let cancelled = false;
     let retryId;
     let attempts = 0;
-    globalState.__playhubMainWindowHistoryRedirect = { installed: true };
+    globalState.__deckyMainWindowHistoryRedirect = { installed: true };
     const clearRetry = () => {
         if (retryId !== undefined) {
             window.clearTimeout(retryId);
@@ -2354,7 +2354,7 @@ const installMainWindowHistoryRedirect = (unpatchers) => {
                 // Best effort teardown.
             }
         });
-        delete globalState.__playhubMainWindowHistoryRedirect;
+        delete globalState.__deckyMainWindowHistoryRedirect;
     });
 };
 const NAVIGATION_TRACE_NOISE_PATTERN = /cached|registerfor|getlaunch|getgameaction|appdetails|appdata|appoverview|appachievement/i;
@@ -2418,7 +2418,7 @@ const shouldTraceNavigationCall = (methodName, args) => {
 };
 const installClickTrace = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubClickTrace) {
+    if (globalState.__deckyClickTrace) {
         unpatchers.push(() => undefined);
         return;
     }
@@ -2426,7 +2426,7 @@ const installClickTrace = (unpatchers) => {
         unpatchers.push(() => undefined);
         return;
     }
-    globalState.__playhubClickTrace = { installed: true };
+    globalState.__deckyClickTrace = { installed: true };
     const isActionableTraceElement = (element) => {
         const tag = element.tagName.toLowerCase();
         return (tag === "button" ||
@@ -2483,7 +2483,7 @@ const installClickTrace = (unpatchers) => {
         document.addEventListener("click", handler, true);
     }
     catch (_error) {
-        delete globalState.__playhubClickTrace;
+        delete globalState.__deckyClickTrace;
         unpatchers.push(() => undefined);
         return;
     }
@@ -2494,18 +2494,18 @@ const installClickTrace = (unpatchers) => {
         catch (_error) {
             // Best effort teardown.
         }
-        delete globalState.__playhubClickTrace;
+        delete globalState.__deckyClickTrace;
     });
 };
 const installNavigationTrace = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubNavTrace) {
+    if (globalState.__deckyNavTrace) {
         unpatchers.push(() => undefined);
         return;
     }
     const traceUnpatchers = [];
     const seenTargets = new Set();
-    globalState.__playhubNavTrace = { installed: true };
+    globalState.__deckyNavTrace = { installed: true };
     const collectMethodNames = (obj) => {
         const names = new Set();
         let cur = obj;
@@ -2538,7 +2538,7 @@ const installNavigationTrace = (unpatchers) => {
                 const original = target[name];
                 if (typeof original !== "function")
                     continue;
-                const patched = function playhubNavigationTrace(...args) {
+                const patched = function deckyNavigationTrace(...args) {
                     try {
                         if (shouldTraceNavigationCall(name, args)) {
                             void frontendLog("trace", `${objLabel}.${name}`, { args: args.map(navigationTraceArg) }).catch(() => undefined);
@@ -2590,7 +2590,7 @@ const installNavigationTrace = (unpatchers) => {
             const original = history?.[methodName];
             if (typeof original !== "function")
                 continue;
-            const patched = function playhubHistoryTrace(...args) {
+            const patched = function deckyHistoryTrace(...args) {
                 try {
                     const url = String(args[2] ?? "");
                     void frontendLog("trace", "history", {
@@ -2646,7 +2646,7 @@ const installNavigationTrace = (unpatchers) => {
                 // Best effort teardown.
             }
         });
-        delete globalState.__playhubNavTrace;
+        delete globalState.__deckyNavTrace;
     });
 };
 const HISTORY_INSTANCE_TRACE_KEY_PATTERN = /window|instance|store|history|nav|main|browser|gamepad|overlay/i;
@@ -2742,13 +2742,13 @@ const collectHistoryInstanceTraceTargets = () => {
 };
 const installHistoryInstanceTrace = (unpatchers) => {
     const globalState = globalThis;
-    if (globalState.__playhubHistoryInstanceTrace) {
+    if (globalState.__deckyHistoryInstanceTrace) {
         unpatchers.push(() => undefined);
         return;
     }
     const traceUnpatchers = [];
     const wrappedHistories = new WeakSet();
-    globalState.__playhubHistoryInstanceTrace = { installed: true };
+    globalState.__deckyHistoryInstanceTrace = { installed: true };
     const instances = collectHistoryInstanceTraceTargets();
     try {
         void frontendLog("trace", "history instances", {
@@ -2774,7 +2774,7 @@ const installHistoryInstanceTrace = (unpatchers) => {
                 const original = history[methodName];
                 if (typeof original !== "function")
                     continue;
-                const patched = function playhubHistoryInstanceTrace(...args) {
+                const patched = function deckyHistoryInstanceTrace(...args) {
                     try {
                         const path = historyPathFromArgs(args);
                         const state = historyStateFromArgs(args);
@@ -2823,7 +2823,7 @@ const installHistoryInstanceTrace = (unpatchers) => {
                 // Best effort teardown.
             }
         });
-        delete globalState.__playhubHistoryInstanceTrace;
+        delete globalState.__deckyHistoryInstanceTrace;
     });
 };
 const overviewFromReactTree = (tree) => {
@@ -2878,28 +2878,28 @@ const historyStateFromArgs = (args) => {
     }
     return second;
 };
-const isPlayhubNativeNewsRouteState = (state) => {
+const isDeckyNativeNewsRouteState = (state) => {
     const eventToShow = state?.event_to_show;
     if (!eventToShow)
         return false;
     const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
-    return !!eventId && !!playhubNativePartnerEventForGid(eventId);
+    return !!eventId && !!deckyNativePartnerEventForGid(eventId);
 };
-const playhubNativeNewsRouteAppId = (state, fallbackPath = "") => {
+const deckyNativeNewsRouteAppId = (state, fallbackPath = "") => {
     const eventToShow = state?.event_to_show || {};
     const appId = Number(eventToShow.appid || gameDetailAppIdFromPath(fallbackPath));
     return Number.isFinite(appId) && appId > 0 ? appId : 0;
 };
-const shouldReplacePlayhubNativeNewsPush = (targetPath, state) => {
-    if (!isPlayhubNativeNewsRouteState(state))
+const shouldReplaceDeckyNativeNewsPush = (targetPath, state) => {
+    if (!isDeckyNativeNewsRouteState(state))
         return false;
-    const targetAppId = playhubNativeNewsRouteAppId(state, targetPath);
+    const targetAppId = deckyNativeNewsRouteAppId(state, targetPath);
     const currentAppId = gameDetailAppIdFromPath(currentRoutePath());
     // Steam's native Activity click normally pushes the same game-detail route with
     // only `event_to_show` added. Its close handler then replaces the current route
     // to remove `event_to_show`, leaving a duplicate game-detail entry behind. That
     // is why Andrea had to press B/Esc once for every news he had opened. For
-    // Playhub native news, make that event navigation replace the current game route
+    // Decky native news, make that event navigation replace the current game route
     // instead of pushing a new history entry. The modal still opens natively, but
     // closing it returns to the original route without polluting the back stack.
     return !!targetAppId && (!currentAppId || currentAppId === targetAppId);
@@ -2908,13 +2908,13 @@ const currentSteamHistoryState = (steamHistory) => {
     const location = steamHistory?.location || globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
     return location?.state || null;
 };
-const shouldBackOutOfPlayhubNativeNewsClose = (steamHistory, targetPath, nextState) => {
+const shouldBackOutOfDeckyNativeNewsClose = (steamHistory, targetPath, nextState) => {
     const currentState = currentSteamHistoryState(steamHistory);
-    if (!isPlayhubNativeNewsRouteState(currentState))
+    if (!isDeckyNativeNewsRouteState(currentState))
         return false;
-    if (isPlayhubNativeNewsRouteState(nextState))
+    if (isDeckyNativeNewsRouteState(nextState))
         return false;
-    const currentAppId = playhubNativeNewsRouteAppId(currentState, currentRoutePath());
+    const currentAppId = deckyNativeNewsRouteAppId(currentState, currentRoutePath());
     const targetAppId = Number(gameDetailAppIdFromPath(targetPath) || currentAppId);
     return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
 };
@@ -2939,18 +2939,18 @@ const installSteamPatches = () => {
     };
     safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
     // Activity news now use Steam's own AppActivityStore and native Activity
-    // renderer. Do not mount Playhub overlay/DOM UI here: those paths are kept in
+    // renderer. Do not mount Decky overlay/DOM UI here: those paths are kept in
     // source only as old fallbacks, but the integration attempt for this build is
     // intentionally native-only.
     safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
     safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
     const activityRefreshedListener = () => {
-        playhubNativeActivityCache().clear();
-        playhubNativePartnerEventCache().clear();
+        deckyNativeActivityCache().clear();
+        deckyNativePartnerEventCache().clear();
         const appId = currentGameDetailAppId();
         void ensureMetadataCache().then(() => {
             if (appId)
-                void refreshPlayhubNativeActivityForApp(appId);
+                void refreshDeckyNativeActivityForApp(appId);
         });
     };
     window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
@@ -2990,12 +2990,12 @@ const installSteamPatches = () => {
                 unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
                     const target = historyPathFromArgs(args);
                     const state = historyStateFromArgs(args);
-                    if (methodName === "push" && shouldReplacePlayhubNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
-                        globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                    if (methodName === "push" && shouldReplaceDeckyNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
+                        globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
                         return steamHistory.replace(...args);
                     }
-                    if (methodName === "replace" && shouldBackOutOfPlayhubNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
-                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                    if (methodName === "replace" && shouldBackOutOfDeckyNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
+                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
                         // If our push->replace interception ran, closing the modal should keep using
                         // Steam's replace. If Steam opened via a path we did not intercept, use Back
                         // for the close action so the event entry is removed instead of replaced by a
@@ -3036,14 +3036,14 @@ const installSteamPatches = () => {
             const patched = function (...args) {
                 const target = String(args[2] || "");
                 const state = historyStateFromArgs(args);
-                if (methodName === "pushState" && shouldReplacePlayhubNativeNewsPush(target, state)) {
-                    globalThis.__playhubNativeNewsOpenedWithReplaceAt = Date.now();
+                if (methodName === "pushState" && shouldReplaceDeckyNativeNewsPush(target, state)) {
+                    globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
                     return window.history.replaceState(args[0], args[1], args[2]);
                 }
                 if (methodName === "replaceState") {
                     const currentState = window.history?.state;
-                    if (isPlayhubNativeNewsRouteState(currentState) && !isPlayhubNativeNewsRouteState(state)) {
-                        const replacedAt = Number(globalThis.__playhubNativeNewsOpenedWithReplaceAt || 0);
+                    if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
+                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
                         if (!replacedAt || Date.now() - replacedAt > 15000) {
                             window.history.back();
                             return undefined;
@@ -3102,7 +3102,7 @@ const installSteamPatches = () => {
             if (metadata) {
                 applyMetadata(appId);
                 const appData = appDetailsStore?.GetAppData?.(appId);
-                // Keep Steam's first-run detail bootstrap intact. Returning Playhub data
+                // Keep Steam's first-run detail bootstrap intact. Returning Decky data
                 // before Steam has created the native details object can make SteamUI
                 // render the play bar with an invalid/null AppOverview and crash on
                 // BIsApplicationOrTool during the first page open.
@@ -3321,7 +3321,7 @@ const installSteamPatches = () => {
         if (communityVoteModule?.dK) {
             unpatchers.push(patchMethod(communityVoteModule, "dK", (_thisValue, original, args) => {
                 const ids = Array.isArray(args[0]) ? args[0] : [];
-                if (ids.length && ids.every(isPlayhubCommunityId)) {
+                if (ids.length && ids.every(isDeckyCommunityId)) {
                     const voteNone = communityVoteModule.bJ?.None ?? 0;
                     return Promise.resolve(new Map(ids.map((id) => [
                         id,
@@ -3351,7 +3351,7 @@ const installSteamPatches = () => {
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
                         });
-                        void refreshPlayhubNativeActivityForApp(appId);
+                        void refreshDeckyNativeActivityForApp(appId);
                         return ret;
                     }
                     return ret;
@@ -3375,7 +3375,7 @@ const installSteamPatches = () => {
                         void ensureMetadataCache().then(() => {
                             applyMetadata(appId);
                         });
-                        void refreshPlayhubNativeActivityForApp(appId);
+                        void refreshDeckyNativeActivityForApp(appId);
                         return ret;
                     }
                     return ret;
@@ -3470,6 +3470,7 @@ const CATEGORY_LABELS = {
 
 // Keep in sync with package.json and plugin.json.
 const PLUGIN_VERSION = "0.1.0";
+const STATUS_BLUE = "#1a9fff";
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
     if (!s)
@@ -3537,29 +3538,26 @@ const compactTextStyle = {
     fontSize: "0.82rem",
     lineHeight: 1.35,
 };
+const statusTextStyle = {
+    ...compactTextStyle,
+    color: STATUS_BLUE,
+};
 const inlineStatusStyle = {
     display: "flex",
     alignItems: "center",
-    gap: "0.5rem",
-    ...compactTextStyle,
+    gap: "10px",
+    ...statusTextStyle,
 };
-const smallSpinnerStyle = {
+const busySpinnerStyle = {
+    width: "18px",
+    height: "18px",
+    color: STATUS_BLUE,
+};
+const buttonLabelStyle = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 14,
-    height: 14,
-    flex: "0 0 14px",
-};
-const spinnerIconStyle = {
-    width: "100%",
-    height: "100%",
-};
-const spinnerLabelStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "0.4rem",
+    gap: "10px",
     minWidth: "8.5rem",
 };
 const sectionHeadingStyle = {
@@ -3595,9 +3593,8 @@ const focusableBlockStyle = {
     width: "100%",
     minWidth: 0,
 };
-const InlineSpinner = () => (SP_JSX.jsx("span", { style: smallSpinnerStyle, children: SP_JSX.jsx(DFL.Spinner, { style: spinnerIconStyle }) }));
-const SpinnerLabel = ({ children }) => (SP_JSX.jsxs("span", { style: spinnerLabelStyle, children: [SP_JSX.jsx(InlineSpinner, {}), children] }));
-const ButtonLabel = ({ children }) => (SP_JSX.jsx("span", { style: spinnerLabelStyle, children: children }));
+const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
+const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
 const scanCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
     if (!total)
@@ -3828,7 +3825,7 @@ const Content = () => {
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(SpinnerLabel, { children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx(InlineSpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(SpinnerLabel, { children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) })] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle, children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle, children: [delistedBusy ? (SP_JSX.jsx(BusySpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }), SP_JSX.jsx(DFL.Focusable, { style: focusableBlockStyle, children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: PLUGIN_VERSION })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) })] }) })] }));
 };
 const MetadataPage = () => {
     const { appid } = DFL.useParams();
