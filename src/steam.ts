@@ -21,7 +21,6 @@ import {
   SteamAchievement,
   StoreCategory,
 } from "./types";
-import { t } from "./i18n";
 import * as log from "./log";
 
 declare const appStore: any;
@@ -3449,8 +3448,8 @@ const runBackgroundAchievementSync = async (reason = "scheduled") => {
     if (!backgroundAchievementSyncIsDue(policy)) return;
     const targets = await scheduledAchievementTargets(settings);
     toaster.toast({
-      title: t("pluginName"),
-      body: `${t("backgroundSyncStarted")}: ${targets.length}`,
+      title: "Playhub Metadata",
+      body: `${"Progress sync started"}: ${targets.length}`,
     });
     for (const target of targets) {
       try {
@@ -3471,11 +3470,11 @@ const runBackgroundAchievementSync = async (reason = "scheduled") => {
     }
     markBackgroundAchievementSyncDone(policy);
     toaster.toast({
-      title: t("pluginName"),
-      body: `${t("backgroundSyncFinished")}: ${updated} ${t("backgroundSyncUpdated")}, ${skipped} ${t("backgroundSyncSkipped")}`,
+      title: "Playhub Metadata",
+      body: `${"Progress sync finished"}: ${updated} ${"updated"}, ${skipped} ${"skipped"}`,
     });
   } catch (error) {
-    toaster.toast({ title: t("pluginName"), body: `${t("backgroundSyncFailed")}: ${String(error)}` });
+    toaster.toast({ title: "Playhub Metadata", body: `${"Progress sync failed"}: ${String(error)}` });
   } finally {
     backgroundAchievementSyncRunning = false;
   }

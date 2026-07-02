@@ -3,7 +3,6 @@ import { definePlugin, staticClasses } from "@decky/ui";
 import { FaDatabase } from "react-icons/fa";
 import { Content, MetadataPage } from "./components";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
-import { t } from "./i18n";
 import { getDebugLogging } from "./backend";
 import * as log from "./log";
 import {
@@ -37,8 +36,8 @@ export default definePlugin(() => {
   routerHook.addRoute(PLAYHUB_ACHIEVEMENTS_ROUTE, () => <PlayhubAchievementsRoute />, { exact: true });
 
   return {
-    name: t("pluginName"),
-    titleView: <div className={staticClasses.Title}>{t("pluginName")}</div>,
+    name: "Playhub Metadata",
+    titleView: <div className={staticClasses.Title}>{"Playhub Metadata"}</div>,
     content: <Content />,
     icon: <FaDatabase />,
     onDismount() {

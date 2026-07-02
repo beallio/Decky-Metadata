@@ -45,7 +45,6 @@ import {
   enrichSteamApp,
   syncTrueAchievementsProgress,
 } from "./backend";
-import { t } from "./i18n";
 import * as log from "./log";
 import { openExternalUrl } from "./openExternalUrl";
 import {
@@ -84,22 +83,37 @@ import {
 const retroResolutionMessageKey = (reason?: string) => {
   switch (reason) {
     case "no_candidate_path":
-      return "retroDetectNoCandidate";
+      return "No ROM path was detected from this Steam shortcut. Use manual RetroAchievements search or check the launch options.";
     case "candidate_missing":
-      return "retroDetectCandidateMissing";
+      return "The detected ROM path does not exist. Check the shortcut launch options or pick the game manually.";
     case "unsupported_extension":
-      return "retroDetectUnsupportedExtension";
+      return "The detected path is not a supported ROM file. Use manual RetroAchievements search or check the shortcut target.";
     case "hash_not_found":
-      return "retroDetectHashNotFound";
+      return "No RetroAchievements game matched the detected ROM. Search manually and pick the closest entry.";
     case "api_credentials_missing":
-      return "retroDetectCredentialsMissing";
+      return "Add your RetroAchievements username and API key before auto-detecting achievements.";
     case "api_error":
-      return "retroDetectApiError";
+      return "RetroAchievements lookup failed. Try again later or search manually.";
     case "manual_mapping_exists":
-      return "retroDetectManualMapping";
+      return "This game already has a RetroAchievements game ID. Manual selection was kept.";
     default:
-      return "retroDetectFailed";
+      return "No RetroAchievements match found from this game's shortcut path.";
   }
+};
+
+const ACHIEVEMENT_CACHE_LABELS: Record<string, string> = {
+  hourly: "Hourly",
+  daily: "Daily",
+  weekly: "Weekly",
+  pc_session: "PC session",
+  manual: "Manually",
+};
+
+const ACHIEVEMENT_SOURCE_LABELS: Record<string, string> = {
+  auto: "Auto",
+  retroachievements: "RetroAchievements",
+  xbox: "Xbox",
+  disabled: "Disabled",
 };
 
 export const parseSteamAppId = (input: string): number => {
@@ -443,19 +457,19 @@ export const Content = () => {
           window.clearInterval(interval);
           await refresh();
           setBusy(false);
-          toaster.toast({ title: t("pluginName"), body: t("scanComplete") });
+          toaster.toast({ title: "Playhub Metadata", body: "Scan complete" });
         }
       }, 800);
     } catch (error) {
       setBusy(false);
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     }
   };
 
   const refreshActivities = async () => {
     if (activityBusy) return;
     setActivityBusy(true);
-    setActivityMessage(t("refreshingActivities"));
+    setActivityMessage("Refreshing Activity...");
     try {
       await startRefreshSteamActivities(games);
       const interval = window.setInterval(async () => {
@@ -472,12 +486,12 @@ export const Content = () => {
           setActivityBusy(false);
           window.dispatchEvent(new Event("playhub-metadata:activity-refreshed"));
           window.dispatchEvent(new Event("playhub-metadata:updated"));
-          toaster.toast({ title: t("pluginName"), body: t("activityRefreshComplete") });
+          toaster.toast({ title: "Playhub Metadata", body: "Activity refresh complete" });
         }
       }, 800);
     } catch (error) {
       setActivityBusy(false);
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     }
   };
 
@@ -506,8 +520,8 @@ export const Content = () => {
       saved.api_key
     );
     toaster.toast({
-      title: t("pluginName"),
-      body: result.ok ? t("retroLoginOk") : result.message || t("retroLoginFailed"),
+      title: "Playhub Metadata",
+      body: result.ok ? "RetroAchievements login OK" : result.message || "RetroAchievements login failed",
     });
   };
 
@@ -539,9 +553,9 @@ export const Content = () => {
         });
       }
       setMetadataCount(Object.keys(metadataCache).length);
-      toaster.toast({ title: t("pluginName"), body: t("clearCacheDone") });
+      toaster.toast({ title: "Playhub Metadata", body: "Metadata cache cleared" });
     } catch (error) {
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     } finally {
       setCacheBusy(false);
     }
@@ -552,14 +566,14 @@ export const Content = () => {
       const saved = await setXboxSettings(true, xbox.api_key || "");
       setXbox(saved);
       await refreshRaSettings();
-      toaster.toast({ title: t("pluginName"), body: t("xboxLoginNeedsProfile") });
+      toaster.toast({ title: "Playhub Metadata", body: "Enter your OpenXBL API key, then press Login." });
       return;
     }
     const result = await testOpenXblCredentials(xbox.api_key || "");
     const refreshed = await getAchievementSettings();
     setXbox(refreshed.xbox);
     await refreshRaSettings();
-    toaster.toast({ title: t("pluginName"), body: result.ok ? t("xboxLoginOk") : result.message || t("xboxLoginFailed") });
+    toaster.toast({ title: "Playhub Metadata", body: result.ok ? "OpenXBL verified" : result.message || "OpenXBL not verified" });
   };
 
   const openRetroAchievements = () => openExternalUrl("https://retroachievements.org/");
@@ -573,8 +587,8 @@ export const Content = () => {
       setXbox(saved);
       clearAchievementsForApps(games.map((game) => game.appid));
       await refreshRaSettings();
-      setXboxBulkMessage(t("xboxClearAllDone"));
-      toaster.toast({ title: t("pluginName"), body: t("xboxClearAllDone") });
+      setXboxBulkMessage("Xbox associations cleared");
+      toaster.toast({ title: "Playhub Metadata", body: "Xbox associations cleared" });
     } finally {
       setXboxBulkBusy(false);
     }
@@ -583,32 +597,32 @@ export const Content = () => {
   const bulkApplyXboxAchievements = async () => {
     if (xboxBulkBusy || busy) return;
     if (!xbox.enabled) {
-      toaster.toast({ title: t("pluginName"), body: t("xboxLoginFailed") });
+      toaster.toast({ title: "Playhub Metadata", body: "OpenXBL not verified" });
       return;
     }
     const targets = games.filter((game) => isUwphookGameOption(game) && !xbox.title_ids[String(game.appid)]);
     if (!targets.length) {
-      toaster.toast({ title: t("pluginName"), body: t("xboxBulkNothing") });
+      toaster.toast({ title: "Playhub Metadata", body: "No games without Xbox achievements to scan." });
       return;
     }
     setXboxBulkBusy(true);
-    setXboxBulkMessage(`${t("xboxBulkScanning")}: 0/${targets.length}`);
+    setXboxBulkMessage(`${"Scanning Xbox achievements"}: 0/${targets.length}`);
     let assigned = 0;
     let skipped = 0;
     try {
       for (let index = 0; index < targets.length; index += 1) {
         const game = targets[index];
         const prefix = `${index + 1}/${targets.length} - ${game.name}`;
-        setXboxBulkMessage(`${prefix}: ${t("xboxBulkSearching")}`);
+        setXboxBulkMessage(`${prefix}: ${"searching OpenXBL match"}`);
         try {
           const results = await searchXboxTitles(game.name, 5, game.appid, false);
           const best = results.find((item) => item.total == null || item.total > 0) || results[0];
           if (!best || best.score < 0.82) {
             skipped += 1;
-            setXboxBulkMessage(`${prefix}: ${t("xboxBulkSkippedOne")}`);
+            setXboxBulkMessage(`${prefix}: ${"skipped"}`);
             continue;
           }
-          setXboxBulkMessage(`${prefix}: ${t("xboxBulkApplying")}`);
+          setXboxBulkMessage(`${prefix}: ${"loading achievement list"}`);
           await setXboxTitleId(game.appid, best.id);
           await setAchievementSource(game.appid, "xbox");
           clearAchievementsForApp(game.appid);
@@ -616,23 +630,23 @@ export const Content = () => {
           if (payload?.steam?.nTotal) {
             applyAchievementPayload(game.appid, payload);
             assigned += 1;
-            setXboxBulkMessage(`${prefix}: ${t("xboxBulkAppliedOne")}`);
+            setXboxBulkMessage(`${prefix}: ${"achievements applied"}`);
           } else {
             skipped += 1;
-            setXboxBulkMessage(`${prefix}: ${t("xboxBulkSkippedOne")}`);
+            setXboxBulkMessage(`${prefix}: ${"skipped"}`);
           }
         } catch (_error) {
           skipped += 1;
-          setXboxBulkMessage(`${prefix}: ${t("xboxBulkSkippedOne")}`);
+          setXboxBulkMessage(`${prefix}: ${"skipped"}`);
         }
       }
       const refreshed = await getAchievementSettings();
       setXbox(refreshed.xbox);
       await refreshRaSettings();
-      setXboxBulkMessage(`${t("xboxBulkDone")}: ${assigned} ${t("xboxBulkApplied")}, ${skipped} ${t("xboxBulkSkipped")}`);
+      setXboxBulkMessage(`${"Xbox scan complete"}: ${assigned} ${"applied"}, ${skipped} ${"skipped"}`);
       toaster.toast({
-        title: t("pluginName"),
-        body: `${t("xboxBulkDone")}: ${assigned} ${t("xboxBulkApplied")}, ${skipped} ${t("xboxBulkSkipped")}`,
+        title: "Playhub Metadata",
+        body: `${"Xbox scan complete"}: ${assigned} ${"applied"}, ${skipped} ${"skipped"}`,
       });
     } finally {
       setXboxBulkBusy(false);
@@ -642,12 +656,12 @@ export const Content = () => {
   const syncMatchedTrueAchievementsProgress = async () => {
     if (xboxBulkBusy || busy) return;
     if (!xbox.enabled || !xbox.api_key.trim()) {
-      toaster.toast({ title: t("pluginName"), body: t("xboxSyncProgressFailed") });
+      toaster.toast({ title: "Playhub Metadata", body: "No progress found. Check the selected Xbox match." });
       return;
     }
     const targets = games.filter((game) => isUwphookGameOption(game) && !!xbox.title_ids[String(game.appid)]);
     if (!targets.length) {
-      toaster.toast({ title: t("pluginName"), body: t("xboxBulkNothing") });
+      toaster.toast({ title: "Playhub Metadata", body: "No games without Xbox achievements to scan." });
       return;
     }
     setXboxBulkBusy(true);
@@ -657,25 +671,25 @@ export const Content = () => {
       for (let index = 0; index < targets.length; index += 1) {
         const game = targets[index];
         const prefix = `${index + 1}/${targets.length} - ${game.name}`;
-        setXboxBulkMessage(`${prefix}: ${t("xboxSyncingProgress")}`);
+        setXboxBulkMessage(`${prefix}: ${"syncing progress"}`);
         try {
           const payload = await syncTrueAchievementsProgress(game.appid);
           if (payload?.steam?.nTotal) {
             applyAchievementPayload(game.appid, payload);
             synced += 1;
-            setXboxBulkMessage(`${prefix}: ${t("xboxBulkAppliedOne")}`);
+            setXboxBulkMessage(`${prefix}: ${"achievements applied"}`);
           } else {
             skipped += 1;
-            setXboxBulkMessage(`${prefix}: ${t("xboxBulkSkippedOne")}`);
+            setXboxBulkMessage(`${prefix}: ${"skipped"}`);
           }
         } catch (_error) {
           skipped += 1;
-          setXboxBulkMessage(`${prefix}: ${t("xboxBulkSkippedOne")}`);
+          setXboxBulkMessage(`${prefix}: ${"skipped"}`);
         }
       }
       await refreshRaSettings();
-      setXboxBulkMessage(`${t("xboxSyncProgressOk")}: ${synced}, ${t("xboxBulkSkipped")}: ${skipped}`);
-      toaster.toast({ title: t("pluginName"), body: `${t("xboxSyncProgressOk")}: ${synced}` });
+      setXboxBulkMessage(`${"Progress synced"}: ${synced}, ${"skipped"}: ${skipped}`);
+      toaster.toast({ title: "Playhub Metadata", body: `${"Progress synced"}: ${synced}` });
     } finally {
       setXboxBulkBusy(false);
     }
@@ -686,13 +700,13 @@ export const Content = () => {
       <PanelSectionRow>
         <div style={rowStackStyle}>
           <div>
-            <b>{t("detected")}:</b> {games.length}
+            <b>{"Detected non-Steam games"}:</b> {games.length}
           </div>
           <div>
-            <b>{t("saved")}:</b> {metadataCount}
+            <b>{"Metadata saved"}:</b> {metadataCount}
           </div>
           <div>
-            <b>{t("missing")}:</b> {missing}
+            <b>{"Missing metadata"}:</b> {missing}
           </div>
         </div>
       </PanelSectionRow>
@@ -704,10 +718,10 @@ export const Content = () => {
               disabled={busy || !games.length}
               onClick={scanMissing}
             >
-              {busy ? t("scanning") : t("scanMissing")}
+              {busy ? "Scanning..." : "Scan metadata"}
             </FocusableButton>
             {busy || scanMessage ? (
-              <div style={inlineStatusStyle}>{scanMessage || t("scanning")}</div>
+              <div style={inlineStatusStyle}>{scanMessage || "Scanning..."}</div>
             ) : null}
           </div>
           <div style={actionButtonStackStyle}>
@@ -716,30 +730,30 @@ export const Content = () => {
               disabled={activityBusy || busy || !games.length}
               onClick={refreshActivities}
             >
-              {activityBusy ? t("refreshingActivities") : t("refreshActivities")}
+              {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
             </FocusableButton>
             {activityBusy || activityMessage ? (
-              <div style={inlineStatusStyle}>{activityMessage || t("refreshingActivities")}</div>
+              <div style={inlineStatusStyle}>{activityMessage || "Refreshing Activity..."}</div>
             ) : null}
           </div>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("retroTitle")}</div>
+        <div style={sectionHeadingStyle}>{"Achievements"}</div>
       </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label={t("retroEnabled")}
+            label={"Enable achievements"}
             checked={ra.enabled}
             onChange={(checked) => void saveRaSettings({ enabled: checked })}
           />
         </PanelSectionRow>
         <PanelSectionRow>
-          <div style={compactTextStyle}>{t("retroLoginHint")}</div>
+          <div style={compactTextStyle}>{"Use your RetroAchievements web API key. You can find it in your RetroAchievements control panel."}</div>
         </PanelSectionRow>
         <PanelSectionRow>
           <div style={rowStackStyle}>
-            <label>{t("retroUser")}</label>
+            <label>{"RetroAchievements username"}</label>
             <TextField
               value={ra.username}
               onChange={(e) =>
@@ -752,7 +766,7 @@ export const Content = () => {
         </PanelSectionRow>
         <PanelSectionRow>
           <div style={rowStackStyle}>
-            <label>{t("retroKey")}</label>
+            <label>{"RetroAchievements API key"}</label>
             <TextField
               value={ra.api_key}
               onChange={(e) =>
@@ -766,26 +780,26 @@ export const Content = () => {
         <PanelSectionRow>
           <div style={spacedButtonRowStyle}>
             <FocusableButton className="DialogButton" onClick={testRaLogin}>
-              {t("retroLogin")}
+              {"Login"}
             </FocusableButton>
             <FocusableButton className="DialogButton" onClick={openRetroAchievements}>
-              {t("retroCreateAccount")}
+              {"Open RetroAchievements"}
             </FocusableButton>
           </div>
         </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("xboxTitle")}</div>
+        <div style={sectionHeadingStyle}>{"Xbox achievements / OpenXBL"}</div>
       </PanelSectionRow>
         <PanelSectionRow>
           <ToggleField
-            label={t("xboxEnabled")}
+            label={"Enable Xbox achievements"}
             checked={xbox.enabled}
             onChange={(checked) => void saveXboxSettings({ enabled: checked })}
           />
         </PanelSectionRow>
         <PanelSectionRow>
           <div style={rowStackStyle}>
-            <label>{t("xboxProfile")}</label>
+            <label>{"OpenXBL API key"}</label>
             <TextField
               value={xbox.api_key}
               onChange={(e) =>
@@ -796,7 +810,7 @@ export const Content = () => {
             />
             {xbox.ta_logged_in ? (
               <div style={compactTextStyle}>
-                {xbox.gamertag ? `${t("xboxLoggedIn")}: ${xbox.gamertag}` : t("xboxLoggedIn")}
+                {xbox.gamertag ? `${"OpenXBL account connected"}: ${xbox.gamertag}` : "OpenXBL account connected"}
               </div>
             ) : null}
           </div>
@@ -804,10 +818,10 @@ export const Content = () => {
         <PanelSectionRow>
           <div style={rowStackStyle}>
             <FocusableButton className="DialogButton" onClick={testXboxLogin}>
-              {t("xboxLogin")}
+              {"Login"}
             </FocusableButton>
             <FocusableButton className="DialogButton" onClick={openOpenXbl}>
-              {t("xboxOpenOpenXbl")}
+              {"Open OpenXBL"}
             </FocusableButton>
             {platformCapabilities?.supports_xbox_uwphook_auto ? (
               <FocusableButton
@@ -815,11 +829,11 @@ export const Content = () => {
                 disabled={busy || xboxBulkBusy || !games.length}
                 onClick={bulkApplyXboxAchievements}
               >
-                {xboxBulkBusy ? t("xboxBulkScanning") : t("xboxBulkScan")}
+                {xboxBulkBusy ? "Scanning Xbox achievements" : "Scan Xbox achievements"}
               </FocusableButton>
             ) : (
               <div style={compactTextStyle}>
-                {t("xboxAutoScanUnsupported")}
+                {"Xbox automatic scanning is Windows-only because it depends on UWPHook/Xbox App shortcuts. Manual OpenXBL title mapping is still available."}
               </div>
             )}
             <FocusableButton
@@ -827,14 +841,14 @@ export const Content = () => {
               disabled={busy || xboxBulkBusy || !games.length || !xbox.api_key.trim()}
               onClick={syncMatchedTrueAchievementsProgress}
             >
-              {t("xboxSyncAllProgress")}
+              {"Sync progress"}
             </FocusableButton>
             <FocusableButton
               className="DialogButton"
               disabled={busy || xboxBulkBusy || !games.length}
               onClick={clearAllXboxMatches}
             >
-              {t("xboxClearAll")}
+              {"Clear Xbox associations"}
             </FocusableButton>
             {xboxBulkBusy || xboxBulkMessage ? (
               <div style={inlineStatusStyle}>
@@ -845,11 +859,11 @@ export const Content = () => {
           </div>
         </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("achievementCacheTitle")}</div>
+        <div style={sectionHeadingStyle}>{"Achievement cache"}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={rowStackStyle}>
-          <div style={compactTextStyle}>{t("achievementCacheHint")}</div>
+          <div style={compactTextStyle}>{"Choose when Playhub refreshes Xbox and RetroAchievements data."}</div>
           <div style={buttonRowStyle}>
             {achievementCachePolicies.map((policy) => (
               <FocusableButton
@@ -861,31 +875,31 @@ export const Content = () => {
                   fontWeight: achievementCachePolicy === policy ? 700 : 400,
                 }}
               >
-                {t(`achievementCache_${policy}` as any)}
+                {ACHIEVEMENT_CACHE_LABELS[policy] ?? policy}
               </FocusableButton>
             ))}
           </div>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("cacheTitle")}</div>
+        <div style={sectionHeadingStyle}>{"Metadata cache"}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={rowStackStyle}>
-          <div style={compactTextStyle}>{t("cacheHint")}</div>
+          <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
           <FocusableButton
             className="DialogButton"
             disabled={cacheBusy || busy}
             onClick={clearCache}
           >
-            {t("clearCache")}
+            {"Clear cache"}
           </FocusableButton>
         </div>
       </PanelSectionRow>
       {platformCapabilities ? (
         <>
           <PanelSectionRow>
-            <div style={sectionHeadingStyle}>{t("diagnosticsTitle")}</div>
+            <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
@@ -899,31 +913,31 @@ export const Content = () => {
                 onClick={() => setShowPlatformDiagnostics((visible) => !visible)}
               >
                 {showPlatformDiagnostics
-                  ? t("diagnosticsHidePlatform")
-                  : t("diagnosticsShowPlatform")}
+                  ? "Hide platform"
+                  : "Platform"}
               </FocusableButton>
               {showPlatformDiagnostics ? (
                 <div style={diagnosticsGridStyle}>
                   <div style={diagnosticsRowStyle}>
-                    <span>{t("platformLabel")}</span>
+                    <span>{"Platform"}</span>
                     <span style={diagnosticsValueStyle}>{platformCapabilities.platform}</span>
                   </div>
                   <div style={diagnosticsRowStyle}>
-                    <span>{t("platformSteamOS")}</span>
+                    <span>{"SteamOS"}</span>
                     <span style={diagnosticsValueStyle}>
                       {platformCapabilities.is_steamos
-                        ? t("diagnosticsYes")
-                        : t("diagnosticsNo")}
+                        ? "Yes"
+                        : "No"}
                     </span>
                   </div>
                   <div style={diagnosticsRowStyle}>
-                    <span>{t("platformSteamRoot")}</span>
+                    <span>{"Steam root"}</span>
                     <span style={diagnosticsValueStyle}>
-                      {platformCapabilities.steam_root || t("none")}
+                      {platformCapabilities.steam_root || "None"}
                     </span>
                   </div>
                   <div style={diagnosticsRowStyle}>
-                    <span>{t("platformSupports")}</span>
+                    <span>{"Capabilities"}</span>
                     <span />
                   </div>
                   {platformSupportKeys.map((key) => (
@@ -931,8 +945,8 @@ export const Content = () => {
                       <span>{key}</span>
                       <span style={diagnosticsValueStyle}>
                         {platformCapabilities[key]
-                          ? t("diagnosticsYes")
-                          : t("diagnosticsNo")}
+                          ? "Yes"
+                          : "No"}
                       </span>
                     </div>
                   ))}
@@ -1025,18 +1039,18 @@ export const MetadataPage = () => {
   );
   const saveCurrent = async () => {
     if (!nonSteam) {
-      toaster.toast({ title: t("pluginName"), body: t("notNonSteam") });
+      toaster.toast({ title: "Playhub Metadata", body: "This plugin only changes non-Steam games." });
       return;
     }
     const saved = await saveMetadata(appId, normalizedMetadata);
     metadataCache[String(appId)] = saved;
     applyMetadata(appId);
-    toaster.toast({ title: t("pluginName"), body: t("saved") });
+    toaster.toast({ title: "Playhub Metadata", body: "Metadata saved" });
   };
 
   const applySteamAppId = async () => {
     if (!nonSteam) {
-      toaster.toast({ title: t("pluginName"), body: t("notNonSteam") });
+      toaster.toast({ title: "Playhub Metadata", body: "This plugin only changes non-Steam games." });
       return;
     }
     setBusy(true);
@@ -1063,9 +1077,9 @@ export const MetadataPage = () => {
         setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
       }
       applyMetadata(appId);
-      toaster.toast({ title: t("pluginName"), body: t("saved") });
+      toaster.toast({ title: "Playhub Metadata", body: "Metadata saved" });
     } catch (error) {
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     } finally {
       setBusy(false);
     }
@@ -1076,7 +1090,7 @@ export const MetadataPage = () => {
     try {
       setResults(await searchMetadata(query, 8));
     } catch (error) {
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     } finally {
       setBusy(false);
     }
@@ -1091,7 +1105,7 @@ export const MetadataPage = () => {
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
       setFormMetadata(saved);
-      toaster.toast({ title: t("pluginName"), body: t("saved") });
+      toaster.toast({ title: "Playhub Metadata", body: "Metadata saved" });
     } finally {
       setBusy(false);
     }
@@ -1101,7 +1115,7 @@ export const MetadataPage = () => {
     await removeMetadata(appId);
     delete metadataCache[String(appId)];
     setFormMetadata(metadataTemplate(appName(appId)));
-    toaster.toast({ title: t("pluginName"), body: t("removeToast") });
+    toaster.toast({ title: "Playhub Metadata", body: "Metadata removed" });
   };
 
   const saveAchievementSource = async (source: AchievementSource) => {
@@ -1120,13 +1134,13 @@ export const MetadataPage = () => {
       await saveAchievementSource("retroachievements");
     }
     setRaSettings((prev) => (prev ? { ...prev, game_ids: ids } : prev));
-    toaster.toast({ title: t("pluginName"), body: t("saved") });
+    toaster.toast({ title: "Playhub Metadata", body: "Metadata saved" });
   };
 
   const testAchievements = async () => {
     const parsed = Number.parseInt(raGameId, 10);
     if (!Number.isFinite(parsed) || parsed <= 0) {
-      toaster.toast({ title: t("pluginName"), body: t("retroGameFailed") });
+      toaster.toast({ title: "Playhub Metadata", body: "No achievements loaded. Check the RetroAchievements game ID." });
       return;
     }
     await setRetroAchievementsGameId(appId, parsed);
@@ -1135,10 +1149,10 @@ export const MetadataPage = () => {
     const payload = await fetchAchievements(appId);
     applyAchievementPayload(appId, payload);
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("retroGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("retroGameFailed"),
+        ? `${"Achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "No achievements loaded. Check the RetroAchievements game ID.",
     });
   };
 
@@ -1148,7 +1162,7 @@ export const MetadataPage = () => {
       details?.strShortcutLaunchOptions || ""
     }`;
     if (!launchPath.trim()) {
-      toaster.toast({ title: t("pluginName"), body: t("retroDetectFailed") });
+      toaster.toast({ title: "Playhub Metadata", body: "No RetroAchievements match found from this game's shortcut path." });
       return;
     }
     const payload = await resolveRetroAchievementsFromPath(
@@ -1164,10 +1178,10 @@ export const MetadataPage = () => {
       await refreshRaSettings();
     }
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("retroGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t(retroResolutionMessageKey(payload?.reason) as any),
+        ? `${"Achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : retroResolutionMessageKey(payload?.reason),
     });
   };
 
@@ -1178,7 +1192,7 @@ export const MetadataPage = () => {
         await searchRetroAchievementsGames(raQuery || appName(appId), 8, appId)
       );
     } catch (error) {
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     } finally {
       setRaSearching(false);
     }
@@ -1193,10 +1207,10 @@ export const MetadataPage = () => {
     const payload = await fetchAchievements(appId);
     applyAchievementPayload(appId, payload);
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("retroGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("saved"),
+        ? `${"Achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "Metadata saved",
     });
   };
 
@@ -1216,10 +1230,10 @@ export const MetadataPage = () => {
     const payload = await fetchAchievements(appId);
     applyAchievementPayload(appId, payload);
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("xboxGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("xboxGameFailed"),
+        ? `${"Xbox achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "No Xbox achievements loaded. Try scanning again or paste the Xbox title ID manually.",
     });
   };
 
@@ -1245,10 +1259,10 @@ export const MetadataPage = () => {
       await refreshRaSettings();
     }
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("xboxGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("xboxDetectFailed"),
+        ? `${"Xbox achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "No Xbox match found from this UWPHook shortcut.",
     });
   };
 
@@ -1260,7 +1274,7 @@ export const MetadataPage = () => {
       await saveAchievementSource("auto");
     }
     await refreshRaSettings();
-    toaster.toast({ title: t("pluginName"), body: t("saved") });
+    toaster.toast({ title: "Playhub Metadata", body: "Metadata saved" });
   };
 
   const searchXbox = async () => {
@@ -1269,7 +1283,7 @@ export const MetadataPage = () => {
       const results = await searchXboxTitles(xboxQuery || appName(appId), 12, appId, true);
       setXboxResults(results);
     } catch (error) {
-      toaster.toast({ title: t("pluginName"), body: String(error) });
+      toaster.toast({ title: "Playhub Metadata", body: String(error) });
     } finally {
       setXboxSearching(false);
     }
@@ -1290,10 +1304,10 @@ export const MetadataPage = () => {
       await saveAchievementSource("auto");
     }
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("xboxGameOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("xboxGameFailed"),
+        ? `${"Xbox achievements loaded"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "No Xbox achievements loaded. Try scanning again or paste the Xbox title ID manually.",
     });
   };
 
@@ -1301,10 +1315,10 @@ export const MetadataPage = () => {
     const payload = await syncTrueAchievementsProgress(appId);
     applyAchievementPayload(appId, payload);
     toaster.toast({
-      title: t("pluginName"),
+      title: "Playhub Metadata",
       body: payload?.steam?.nTotal
-        ? `${t("xboxSyncProgressOk")}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
-        : t("xboxSyncProgressFailed"),
+        ? `${"Progress synced"}: ${payload.steam.nAchieved}/${payload.steam.nTotal}`
+        : "No progress found. Check the selected Xbox match.",
     });
   };
 
@@ -1320,31 +1334,31 @@ export const MetadataPage = () => {
   return (
     <ScrollPanel>
       <div style={pageStyle}>
-        <PanelSection title={`${t("pluginName")} - ${appName(appId)}`}>
+        <PanelSection title={`${"Playhub Metadata"} - ${appName(appId)}`}>
           {!nonSteam ? (
             <PanelSectionRow>
-              <div style={compactTextStyle}>{t("notNonSteam")}</div>
+              <div style={compactTextStyle}>{"This plugin only changes non-Steam games."}</div>
             </PanelSectionRow>
           ) : null}
           <PanelSectionRow>
             <div style={buttonRowStyle}>
               <FocusableButton className="DialogButton" onClick={saveCurrent}>
-                {t("save")}
+                {"Save"}
               </FocusableButton>
               <FocusableButton className="DialogButton" onClick={removeCurrent}>
-                {t("remove")}
+                {"Remove metadata"}
               </FocusableButton>
               <FocusableButton
                 className="DialogButton"
                 onClick={() => Navigation.NavigateBack()}
               >
-                {t("done")}
+                {"Done"}
               </FocusableButton>
             </div>
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("searchTitle")}>
+        <PanelSection title={"Search IGN metadata"}>
           <PanelSectionRow>
             <div style={buttonRowStyle}>
               <TextField
@@ -1357,17 +1371,17 @@ export const MetadataPage = () => {
                 disabled={busy}
                 onClick={search}
               >
-                {busy ? t("searching") : t("search")}
+                {busy ? "Searching..." : "Search"}
               </FocusableButton>
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
               {busy ? (
-                <div style={compactTextStyle}>{t("searching")}</div>
+                <div style={compactTextStyle}>{"Searching..."}</div>
               ) : null}
               {!busy && !results.length ? (
-                <div style={compactTextStyle}>{t("noResults")}</div>
+                <div style={compactTextStyle}>{"No results yet."}</div>
               ) : null}
               {results.map((result) => (
                 <FocusableButton
@@ -1386,10 +1400,10 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("source")}>
+        <PanelSection title={"Source"}>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <label>{t("title")}</label>
+              <label>{"Title"}</label>
               <TextField
                 value={metadata.title}
                 onChange={(e) =>
@@ -1401,7 +1415,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <label>{t("description")}</label>
+              <label>{"Description"}</label>
               <Focusable style={{ width: "100%" }}>
                 <textarea
                   value={metadata.description}
@@ -1429,7 +1443,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <label>{t("developers")}</label>
+              <label>{"Developers"}</label>
               <TextField
                 value={developerText}
                 onChange={(e) => setDeveloperText(e.target.value)}
@@ -1439,7 +1453,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <label>{t("publishers")}</label>
+              <label>{"Publishers"}</label>
               <TextField
                 value={publisherText}
                 onChange={(e) => setPublisherText(e.target.value)}
@@ -1450,7 +1464,7 @@ export const MetadataPage = () => {
           <PanelSectionRow>
             <div style={buttonRowStyle}>
               <div style={{ ...flexFieldStyle, minWidth: "8rem" }}>
-                <label>{t("releaseDate")}</label>
+                <label>{"Release date"}</label>
                 <TextField
                   value={releaseText}
                   onChange={(e) => setReleaseText(e.target.value)}
@@ -1458,7 +1472,7 @@ export const MetadataPage = () => {
                 />
               </div>
               <div style={{ ...flexFieldStyle, minWidth: "7rem" }}>
-                <label>{t("rating")}</label>
+                <label>{"Rating"}</label>
                 <TextField
                   value={ratingText}
                   onChange={(e) => setRatingText(e.target.value)}
@@ -1469,7 +1483,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("categories")}>
+        <PanelSection title={"Steam info fields"}>
           {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
             <PanelSectionRow key={category}>
               <ToggleField
@@ -1481,9 +1495,9 @@ export const MetadataPage = () => {
           ))}
         </PanelSection>
 
-        <PanelSection title={t("achievementSourceTitle")}>
+        <PanelSection title={"Achievement source"}>
           <PanelSectionRow>
-            <div style={compactTextStyle}>{t("achievementSourceHint")}</div>
+            <div style={compactTextStyle}>{"Auto keeps RetroAchievements for ROM/emulator shortcuts and uses OpenXBL only for likely Xbox/UWPHook shortcuts."}</div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={buttonRowStyle}>
@@ -1497,17 +1511,17 @@ export const MetadataPage = () => {
                     fontWeight: achievementSource === source ? 700 : 400,
                   }}
                 >
-                  {t(`achievementSource_${source}` as any)}
+                  {ACHIEVEMENT_SOURCE_LABELS[source] ?? source}
                 </FocusableButton>
               ))}
             </div>
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("steamAppIdLabel")}>
+        <PanelSection title={"Steam App ID"}>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <div style={compactTextStyle}>{t("steamAppIdDescription")}</div>
+              <div style={compactTextStyle}>{"Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match."}</div>
               <div style={buttonRowStyle}>
                 <TextField
                   value={steamAppIdText}
@@ -1519,16 +1533,16 @@ export const MetadataPage = () => {
                   disabled={busy}
                   onClick={applySteamAppId}
                 >
-                  {t("steamAppIdApply")}
+                  {"Apply Steam App ID"}
                 </FocusableButton>
               </div>
             </div>
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("retroTitle")}>
+        <PanelSection title={"Achievements"}>
           <PanelSectionRow>
-            <div style={compactTextStyle}>{t("retroHint")}</div>
+            <div style={compactTextStyle}>{"Paste the numeric RetroAchievements game ID from the game page URL. Leave empty to hide achievements for this game."}</div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={buttonRowStyle}>
@@ -1538,27 +1552,27 @@ export const MetadataPage = () => {
                 style={{ ...flexFieldStyle, minWidth: "8rem" }}
               />
               <FocusableButton className="DialogButton" onClick={saveRaGameId}>
-                {t("save")}
+                {"Save"}
               </FocusableButton>
               <FocusableButton
                 className="DialogButton"
                 onClick={autoDetectAchievements}
               >
-                {t("retroGameDetect")}
+                {"Auto-detect achievements"}
               </FocusableButton>
               <FocusableButton className="DialogButton" onClick={testAchievements}>
-                {t("retroGameTest")}
+                {"Test achievements"}
               </FocusableButton>
             </div>
           </PanelSectionRow>
           {raSettings && !raSettings.enabled ? (
             <PanelSectionRow>
-              <div style={compactTextStyle}>{t("retroEnabled")}: Off</div>
+              <div style={compactTextStyle}>{"Enable achievements"}: Off</div>
             </PanelSectionRow>
           ) : null}
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <div style={compactTextStyle}>{t("retroGameSearchHint")}</div>
+              <div style={compactTextStyle}>{"If auto-detect misses the game, search by title and pick the closest RetroAchievements entry."}</div>
               <div style={buttonRowStyle}>
                 <TextField
                   value={raQuery}
@@ -1570,7 +1584,7 @@ export const MetadataPage = () => {
                   disabled={raSearching}
                   onClick={searchAchievements}
                 >
-                  {raSearching ? t("searching") : t("retroGameSearch")}
+                  {raSearching ? "Searching..." : "Search RetroAchievements"}
                 </FocusableButton>
               </div>
             </div>
@@ -1579,7 +1593,7 @@ export const MetadataPage = () => {
             <div style={rowStackStyle}>
               {raSearching ? <Spinner /> : null}
               {!raSearching && !raResults.length ? (
-                <div style={compactTextStyle}>{t("retroGameNoMatches")}</div>
+                <div style={compactTextStyle}>{"No RetroAchievements results yet."}</div>
               ) : null}
               {raResults.map((result) => (
                 <FocusableButton
@@ -1601,13 +1615,13 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={t("xboxPerGameTitle")}>
+        <PanelSection title={"Xbox achievements"}>
           <PanelSectionRow>
-            <div style={compactTextStyle}>{t("xboxHint")}</div>
+            <div style={compactTextStyle}>{"Playhub matches Xbox title IDs through OpenXBL. Use the selector if the automatic match is wrong."}</div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <div style={compactTextStyle}>{t("xboxCurrentMatch")}</div>
+              <div style={compactTextStyle}>{"Current Xbox title ID"}</div>
               <div style={buttonRowStyle}>
                 <TextField
                   value={xboxTitleId}
@@ -1615,7 +1629,7 @@ export const MetadataPage = () => {
                   style={{ ...flexFieldStyle, minWidth: "18rem" }}
                 />
                 <FocusableButton className="DialogButton" onClick={saveXboxMatchManual}>
-                  {t("save")}
+                  {"Save"}
                 </FocusableButton>
               </div>
               <div style={buttonRowStyle}>
@@ -1623,24 +1637,24 @@ export const MetadataPage = () => {
                   className="DialogButton"
                   onClick={autoDetectXboxAchievements}
                 >
-                  {t("xboxGameDetect")}
+                  {"Auto-detect with OpenXBL"}
                 </FocusableButton>
                 <FocusableButton
                   className="DialogButton"
                   disabled={!xboxTitleId}
                   onClick={syncXboxProgress}
                 >
-                  {t("xboxSyncProgress")}
+                  {"Sync progress"}
                 </FocusableButton>
                 <FocusableButton className="DialogButton" onClick={clearXboxMatch}>
-                  {t("xboxClearMatch")}
+                  {"Clear Xbox match"}
                 </FocusableButton>
               </div>
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <div style={compactTextStyle}>{t("xboxGameSearchHint")}</div>
+              <div style={compactTextStyle}>{"Search OpenXBL account history and Microsoft Store for the correct Xbox title."}</div>
               <div style={buttonRowStyle}>
                 <TextField
                   value={xboxQuery}
@@ -1652,7 +1666,7 @@ export const MetadataPage = () => {
                   disabled={xboxSearching}
                   onClick={searchXbox}
                 >
-                  {xboxSearching ? t("searching") : t("xboxGameSearch")}
+                  {xboxSearching ? "Searching..." : "Search Xbox titles"}
                 </FocusableButton>
               </div>
             </div>
@@ -1661,7 +1675,7 @@ export const MetadataPage = () => {
             <div style={resultsStackStyle}>
               {xboxSearching ? <Spinner /> : null}
               {!xboxSearching && !xboxResults.length ? (
-                <div style={compactTextStyle}>{t("xboxGameNoMatches")}</div>
+                <div style={compactTextStyle}>{"No Xbox results yet."}</div>
               ) : null}
               {xboxResults.map((result) => (
                 <FocusableButton
