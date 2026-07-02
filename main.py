@@ -84,7 +84,7 @@ def _install_file_logging() -> str:
         if log_dir is None:
             return ""
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / "playhub-metadata.log"
+        log_path = log_dir / "decky-metadata.log"
 
         from logging.handlers import RotatingFileHandler
 
@@ -300,7 +300,7 @@ def now() -> int:
 class Plugin:
     def __init__(self) -> None:
         self._settings_dir = Path(decky.DECKY_PLUGIN_SETTINGS_DIR)
-        self._data_file = self._settings_dir / "playhub_metadata.json"
+        self._data_file = self._settings_dir / "decky_metadata.json"
         self._scan_task: asyncio.Task[Any] | None = None
         self._scan_progress = self._new_scan_progress("idle")
         self._activity_refresh_task: asyncio.Task[Any] | None = None
@@ -2188,7 +2188,7 @@ class Plugin:
                 "Accept": "application/json",
                 "Origin": IGN_BASE_URL,
                 "Referer": f"{IGN_BASE_URL}/",
-                "User-Agent": "PlayhubMetadata/0.1 (+Decky Loader)",
+                "User-Agent": "DeckyMetadata/0.1 (+Decky Loader)",
             },
         )
         context = _build_https_context()

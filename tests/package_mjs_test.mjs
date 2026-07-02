@@ -54,7 +54,7 @@ test("package script creates a Decky installer zip with the expected payload", (
 });
 
 test("package script exits clearly when the frontend bundle is missing", () => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "playhub-package-test-"));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "decky-package-test-"));
   try {
     fs.mkdirSync(path.join(tempRoot, "scripts"));
     fs.copyFileSync(

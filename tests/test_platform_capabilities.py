@@ -91,7 +91,7 @@ def test_get_platform_capabilities_returns_required_keys_and_types(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     plugin = make_plugin()
-    steam_root = Path("/tmp/playhub-test-steam")
+    steam_root = Path("/tmp/decky-test-steam")
     monkeypatch.setattr(plugin, "_is_steamos", lambda: False)
     monkeypatch.setattr(plugin, "_detect_steam_roots", lambda: [steam_root])
 

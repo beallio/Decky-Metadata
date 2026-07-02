@@ -5,13 +5,13 @@ import {
   PanelSection,
   PanelSectionRow,
   ScrollPanel,
-  Spinner,
   TextField,
   ToggleField,
   useParams,
 } from "@decky/ui";
 import { toaster } from "@decky/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FaCircleNotch } from "react-icons/fa";
 import {
   fetchMetadata,
   getDebugLogging,
@@ -142,25 +142,44 @@ const inlineStatusStyle = {
   ...compactTextStyle,
 } as const;
 
-const smallSpinnerStyle = {
+const spinStyleId = "decky-metadata-spin-style";
+
+const ensureSpinStyle = () => {
+  if (typeof document === "undefined" || document.getElementById(spinStyleId)) return;
+  const style = document.createElement("style");
+  style.id = spinStyleId;
+  style.textContent = `
+    .decky-spin {
+      animation: decky-spin 1s infinite cubic-bezier(0.46, 0.03, 0.52, 0.96);
+    }
+
+    @keyframes decky-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(359deg); }
+    }
+  `;
+  document.head.appendChild(style);
+};
+
+const actionIconStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 14,
-  height: 14,
-  flex: "0 0 14px",
+  width: 16,
+  height: 16,
+  flex: "0 0 16px",
 } as const;
 
-const spinnerIconStyle = {
+const iconStyle = {
   width: "100%",
   height: "100%",
 } as const;
 
-const spinnerLabelStyle = {
+const buttonLabelStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  gap: "0.4rem",
+  gap: "0.5em",
   minWidth: "8.5rem",
 } as const;
 
@@ -202,21 +221,17 @@ const focusableBlockStyle = {
   minWidth: 0,
 } as const;
 
-const InlineSpinner = () => (
-  <span style={smallSpinnerStyle}>
-    <Spinner style={spinnerIconStyle} />
+const RotatingIcon = ({ busy = true }: { busy?: boolean }) => (
+  <span style={actionIconStyle}>
+    <FaCircleNotch className={busy ? "decky-spin" : undefined} style={iconStyle} aria-hidden={true} />
   </span>
 );
 
-const SpinnerLabel = ({ children }: { children: string }) => (
-  <span style={spinnerLabelStyle}>
-    <InlineSpinner />
+const ButtonLabel = ({ children, busy = false, icon = false }: { children: string; busy?: boolean; icon?: boolean }) => (
+  <span style={buttonLabelStyle}>
+    {busy || icon ? <RotatingIcon busy={busy} /> : null}
     {children}
   </span>
-);
-
-const ButtonLabel = ({ children }: { children: string }) => (
-  <span style={spinnerLabelStyle}>{children}</span>
 );
 
 const scanCompleteMessage = (progress: {
@@ -317,6 +332,10 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
 
   const missing = Math.max(games.length - metadataCount, 0);
+
+  useEffect(() => {
+    ensureSpinStyle();
+  }, []);
 
   const refresh = useCallback(async () => {
     await refreshMetadataCache();
@@ -496,7 +515,7 @@ export const Content = () => {
               onClick={scanMissing}
             >
               {busy ? (
-                <SpinnerLabel>{"Scanning..."}</SpinnerLabel>
+                <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
               ) : (
                 <ButtonLabel>{"Scan metadata"}</ButtonLabel>
               )}
@@ -527,7 +546,7 @@ export const Content = () => {
           <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
           <div style={inlineStatusStyle}>
             {delistedBusy ? (
-              <InlineSpinner />
+              <RotatingIcon />
             ) : null}
             <span>{delistedStatusText}</span>
           </div>
@@ -537,7 +556,7 @@ export const Content = () => {
             onClick={refreshDelisted}
           >
             {delistedBusy ? (
-              <SpinnerLabel>{"Refreshing..."}</SpinnerLabel>
+              <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
             ) : (
               <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
             )}

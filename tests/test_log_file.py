@@ -42,8 +42,8 @@ def test_install_file_logging_writes_to_decky_log_dir(tmp_path, monkeypatch) -> 
         main.decky.logger.setLevel(original_level)
         _reset_file_logging()
 
-    assert log_path == str(tmp_path / "playhub-metadata.log")
-    assert (tmp_path / "playhub-metadata.log").read_text(encoding="utf-8").find(
+    assert log_path == str(tmp_path / "decky-metadata.log")
+    assert (tmp_path / "decky-metadata.log").read_text(encoding="utf-8").find(
         "file logging smoke"
     ) >= 0
 
@@ -61,7 +61,7 @@ def test_install_file_logging_is_idempotent(tmp_path, monkeypatch) -> None:
     finally:
         _reset_file_logging()
 
-    assert first_path == str(tmp_path / "playhub-metadata.log")
+    assert first_path == str(tmp_path / "decky-metadata.log")
     assert second_path == first_path
     assert first_count == 1
     assert second_count == 1
@@ -91,3 +91,11 @@ def test_install_file_logging_returns_empty_when_directory_unusable(tmp_path, mo
         assert _rotating_handlers() == []
     finally:
         _reset_file_logging()
+
+
+def test_plugin_uses_decky_metadata_data_file(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(main.decky, "DECKY_PLUGIN_SETTINGS_DIR", str(tmp_path), raising=False)
+
+    plugin = main.Plugin()
+
+    assert plugin._data_file == tmp_path / "decky_metadata.json"
