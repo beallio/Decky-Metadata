@@ -48,4 +48,11 @@ if [[ -d tests ]]; then
   uv run --with pytest -- pytest -q
 fi
 
+# --- release version drift guard --------------------------------------------
+if [[ -f package.json && -f scripts/version_guard.py ]]; then
+  python_bin="$(command -v python3 || command -v python)"
+  base_version="$("$python_bin" -c 'import json; print(json.load(open("package.json", encoding="utf-8"))["version"])')"
+  "$python_bin" scripts/version_guard.py check-drift "$base_version"
+fi
+
 echo "quality-gates: OK"

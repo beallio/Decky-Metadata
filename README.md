@@ -18,6 +18,18 @@ npm run package
 
 `npm run package` creates `Decky-Metadata_<version>_Installer.zip` in the repository root. Local builds include the current git short hash in the packaged version and filename, for example `Decky-Metadata_0.1.0+a1b2c3d_Installer.zip`. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash.
 
+For a local stable release, bump both metadata files together, tag the release,
+build the hash-free package, then move the development base to the next patch so
+the release drift guard stays green:
+
+```bash
+scripts/set_release_version.py 0.1.1
+git commit -am "release: v0.1.1"
+git tag v0.1.1
+node scripts/package.mjs --release
+scripts/bump_next_patch.sh
+```
+
 ## Features
 
 - Finds missing game metadata automatically.

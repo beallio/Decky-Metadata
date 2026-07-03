@@ -201,8 +201,20 @@ Prefer small, atomic commits (one coherent change each). Commit the passing
 current change before starting an unrelated one. Generated artifacts (caches,
 `node_modules`, zips) must never be committed.
 
-When cutting a release tag, bump `version` in `package.json` and `plugin.json`,
-and increment the `cacheBuster` parameter on README image URLs so they refresh.
+When cutting a release tag, bump `version` in `package.json` and `plugin.json`
+with `scripts/set_release_version.py`, package the hash-free release build, then
+move the dev base to the next patch so the drift guard stays green:
+
+```
+scripts/set_release_version.py 0.1.1
+git commit -am "release: v0.1.1"
+git tag v0.1.1
+node scripts/package.mjs --release
+scripts/bump_next_patch.sh
+```
+
+Also increment the `cacheBuster` parameter on README image URLs when release
+screenshots change so they refresh.
 
 ---
 
