@@ -1,5 +1,6 @@
 import {
   DialogButton,
+  Field,
   Focusable,
   Navigation,
   PanelSection,
@@ -857,8 +858,7 @@ export const MetadataPage = () => {
 
         <PanelSection title={"Source"}>
           <PanelSectionRow>
-            <div style={rowStackStyle}>
-              <label>{"Title"}</label>
+            <Field label={"Title"}>
               <TextField
                 value={metadata.title}
                 onChange={(e) =>
@@ -866,7 +866,7 @@ export const MetadataPage = () => {
                 }
                 style={fieldStyle}
               />
-            </div>
+            </Field>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={rowStackStyle}>
@@ -897,24 +897,22 @@ export const MetadataPage = () => {
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
-            <div style={rowStackStyle}>
-              <label>{"Developers"}</label>
+            <Field label={"Developers"}>
               <TextField
                 value={developerText}
                 onChange={(e) => setDeveloperText(e.target.value)}
                 style={fieldStyle}
               />
-            </div>
+            </Field>
           </PanelSectionRow>
           <PanelSectionRow>
-            <div style={rowStackStyle}>
-              <label>{"Publishers"}</label>
+            <Field label={"Publishers"}>
               <TextField
                 value={publisherText}
                 onChange={(e) => setPublisherText(e.target.value)}
                 style={fieldStyle}
               />
-            </div>
+            </Field>
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={buttonRowStyle}>

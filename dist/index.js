@@ -153,6 +153,35 @@ const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
     return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
 };
 
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    xxs: 2,
+    xs: 4,
+    sm: 8,
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16};
+const fontWeight = {
+    bold: 700};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
+
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -3470,35 +3499,6 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
-const colors = {
-    accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    xxs: 2,
-    xs: 4,
-    sm: 8,
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16};
-const fontWeight = {
-    bold: 700};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
-
 // Keep in sync with package.json and plugin.json.
 const PLUGIN_VERSION = "0.1.0";
 const parseSteamAppId = (input) => {
@@ -4036,7 +4036,7 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { style: pageStyle, children: [SP_JSX.jsxs(DFL.PanelSection, { title: `${"Decky Metadata"} - ${appName(appId)}`, children: [!nonSteam ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: saveCurrent, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: removeCurrent, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), children: "Done" })] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: query, onChange: (e) => setQuery(e.target.value), style: { ...flexFieldStyle, minWidth: 160 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: search, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Source", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Title" }), SP_JSX.jsx(DFL.TextField, { value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Description" }), SP_JSX.jsx(DFL.Focusable, { style: { width: "100%" }, children: SP_JSX.jsx("textarea", { value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { style: pageStyle, children: [SP_JSX.jsxs(DFL.PanelSection, { title: `${"Decky Metadata"} - ${appName(appId)}`, children: [!nonSteam ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: saveCurrent, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: removeCurrent, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), children: "Done" })] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: query, onChange: (e) => setQuery(e.target.value), style: { ...flexFieldStyle, minWidth: 160 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: search, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Source", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Title", children: SP_JSX.jsx(DFL.TextField, { value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Description" }), SP_JSX.jsx(DFL.Focusable, { style: { width: "100%" }, children: SP_JSX.jsx("textarea", { value: metadata.description, onChange: (e) => setMetadata((prev) => ({
                                                 ...prev,
                                                 description: e.target.value,
                                                 short_description: e.target.value,
@@ -4050,7 +4050,7 @@ const MetadataPage = () => {
                                                 color: "white",
                                                 background: "rgba(0,0,0,0.28)",
                                                 border: "1px solid rgba(255,255,255,0.18)",
-                                            } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Developers" }), SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 128 }, children: [SP_JSX.jsx("label", { children: "Release date" }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 112 }, children: [SP_JSX.jsx("label", { children: "Rating" }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }) }, category))) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: { ...flexFieldStyle, minWidth: 288 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: applySteamAppId, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+                                            } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Developers", children: SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Publishers", children: SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 128 }, children: [SP_JSX.jsx("label", { children: "Release date" }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 112 }, children: [SP_JSX.jsx("label", { children: "Rating" }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }) }, category))) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: { ...flexFieldStyle, minWidth: 288 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: applySteamAppId, children: "Apply Steam App ID" })] })] }) }) })] }) }));
 };
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
