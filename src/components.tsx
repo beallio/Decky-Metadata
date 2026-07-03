@@ -24,6 +24,7 @@ import {
   setDebugLogging,
   startRefreshSteamActivities,
   startScanMissing,
+  getMissingMetadataCount,
   getScanProgress,
   clearMetadataCache,
   getDelistedIndexStatus,
@@ -325,7 +326,9 @@ const parseRating = (value: string) => {
 const useNonSteamGames = () => {
   const [games, setGames] = useState<GameOption[]>([]);
   const loadGames = useCallback(async () => {
-    setGames(await allNonSteamGames());
+    const loadedGames = await allNonSteamGames();
+    setGames(loadedGames);
+    return loadedGames;
   }, []);
   useEffect(() => {
     void loadGames();
@@ -336,6 +339,7 @@ const useNonSteamGames = () => {
 export const Content = () => {
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
+  const [missing, setMissing] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
@@ -351,14 +355,20 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
 
-  const missing = Math.max(games.length - metadataCount, 0);
   const parsedPluginVersion = splitVersion(pluginVersion);
+
+  const updateMissingCount = useCallback((currentGames: GameOption[]) => {
+    void getMissingMetadataCount(currentGames)
+      .then(setMissing)
+      .catch((error) => log.warn("bridge", "missing metadata count load failed", error));
+  }, []);
 
   const refresh = useCallback(async () => {
     await refreshMetadataCache();
-    await loadGames();
+    const loadedGames = await loadGames();
     setMetadataCount(Object.keys(metadataCache).length);
-  }, [loadGames]);
+    updateMissingCount(loadedGames);
+  }, [loadGames, updateMissingCount]);
 
   useEffect(() => {
     void refresh();
@@ -469,6 +479,7 @@ export const Content = () => {
           window.clearInterval(interval);
           await refreshMetadataCache();
           setMetadataCount(Object.keys(metadataCache).length);
+          updateMissingCount(games);
           setActivityBusy(false);
           setActivityStatusKind("success");
           setActivityMessage(activityCompleteMessage(progress));
@@ -498,6 +509,7 @@ export const Content = () => {
         });
       }
       setMetadataCount(Object.keys(metadataCache).length);
+      updateMissingCount(games);
       toaster.toast({ title: "Decky Metadata", body: "Metadata cache cleared" });
     } catch (error) {
       toaster.toast({ title: "Decky Metadata", body: String(error) });
