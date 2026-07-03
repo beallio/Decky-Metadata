@@ -16,7 +16,7 @@ npm run build
 npm run package
 ```
 
-`npm run package` creates `Decky-Metadata-v<version>.zip` in the repository root (containing a `Decky-Metadata/` plugin folder). Local builds include the current git short hash in the packaged version and filename, for example `Decky-Metadata-v0.1.0+a1b2c3d.zip`. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash (`Decky-Metadata-v0.1.0.zip`).
+`npm run package` creates `Decky-Metadata.zip` in the repository root (containing a `Decky-Metadata/` plugin folder). The filename is always fixed; the version — including the current git short hash for local builds, e.g. `0.1.0+a1b2c3d` — is written into the packaged `plugin.json`/`package.json` and shown in the QAM Versions panel. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash.
 
 For a local stable release, bump both metadata files together, tag the release,
 build the hash-free package, then move the development base to the next patch so
