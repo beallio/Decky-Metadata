@@ -169,6 +169,15 @@ A modifying task is complete only when:
 The `scripts/check_tdd.sh` pre-commit hook runs the lighter staged-file subset of
 these checks.
 
+`scripts/post_commit.sh` is an optional **post-commit** hook (install it as
+`.git/hooks/post-commit`, execing the script — same pattern as `pre-commit`) that
+builds + packages the plugin (`npm run package`, which stamps the short git hash into
+the versioned zip) and `scp`s the newest `Decky-Metadata_*_Installer.zip` to the Steam
+Deck for the Developer-Mode sideload loop. It runs only on `dev`/`main` by default (set
+`DECKY_POST_COMMIT_ALL=1` to force any branch), skips the push when the Deck is
+unreachable, and never blocks a commit. Config: `DECKY_DECK_HOST` (default `steamdeck`),
+`DECKY_DECK_DEST` (default `/home/deck/Downloads/`).
+
 ---
 
 # 7. Git Policy
