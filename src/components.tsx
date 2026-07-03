@@ -11,7 +11,6 @@ import {
   ToggleField,
   useParams,
 } from "@decky/ui";
-import { toaster } from "@decky/api";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchMetadata,
@@ -50,6 +49,7 @@ import {
   MetadataSearchResult,
   StoreCategory,
 } from "./types";
+import { toastError, toastSuccess, toastWarn } from "./toast";
 import {
   colors,
   fontFamily,
@@ -467,14 +467,14 @@ export const Content = () => {
           setBusy(false);
           setScanStatusKind(scanCompleteStatusKind(progress));
           setScanMessage(scanCompleteMessage(progress));
-          toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
+          toastSuccess("Scan", "Scan complete");
         }
       }, 800);
     } catch (error) {
       setBusy(false);
       setScanStatusKind("error");
       setScanMessage(String(error));
-      toaster.toast({ title: "Decky Metadata", body: String(error) });
+      toastError("Scan failed", String(error));
     }
   };
 
@@ -503,14 +503,14 @@ export const Content = () => {
           setActivityMessage(activityCompleteMessage(progress));
           window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
           window.dispatchEvent(new Event("decky-metadata:updated"));
-          toaster.toast({ title: "Decky Metadata", body: "Activity refresh complete" });
+          toastSuccess("Activity", activityCompleteMessage(progress));
         }
       }, 800);
     } catch (error) {
       setActivityBusy(false);
       setActivityStatusKind("error");
       setActivityMessage(String(error));
-      toaster.toast({ title: "Decky Metadata", body: String(error) });
+      toastError("Activity failed", String(error));
     }
   };
 
@@ -528,9 +528,9 @@ export const Content = () => {
       }
       setMetadataCount(Object.keys(metadataCache).length);
       updateMissingCount(games);
-      toaster.toast({ title: "Decky Metadata", body: "Metadata cache cleared" });
+      toastSuccess("Cache", "Metadata cache cleared");
     } catch (error) {
-      toaster.toast({ title: "Decky Metadata", body: String(error) });
+      toastError("Cache clear failed", String(error));
     } finally {
       setCacheBusy(false);
     }
@@ -544,11 +544,11 @@ export const Content = () => {
       if (!result.ok) {
         throw new Error("Delisted index refresh failed");
       }
-      toaster.toast({ title: "Decky Metadata", body: "Delisted index updated" });
+      toastSuccess("Delisted index", "Delisted index updated");
       await loadDelistedStatus();
     } catch (error) {
       log.warn("bridge", "delisted index refresh failed", error);
-      toaster.toast({ title: "Decky Metadata", body: "Delisted index refresh failed" });
+      toastError("Delisted index", "Delisted index refresh failed");
     } finally {
       setDelistedBusy(false);
     }
@@ -733,18 +733,18 @@ export const MetadataPage = () => {
   );
   const saveCurrent = async () => {
     if (!nonSteam) {
-      toaster.toast({ title: "Decky Metadata", body: "This plugin only changes non-Steam games." });
+      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
     }
     const saved = await saveMetadata(appId, normalizedMetadata);
     metadataCache[String(appId)] = saved;
     applyMetadata(appId);
-    toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+    toastSuccess("Saved", "Metadata saved");
   };
 
   const applySteamAppId = async () => {
     if (!nonSteam) {
-      toaster.toast({ title: "Decky Metadata", body: "This plugin only changes non-Steam games." });
+      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
     }
     setBusy(true);
@@ -771,9 +771,9 @@ export const MetadataPage = () => {
         setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
       }
       applyMetadata(appId);
-      toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+      toastSuccess("Saved", "Metadata saved");
     } catch (error) {
-      toaster.toast({ title: "Decky Metadata", body: String(error) });
+      toastError("Save failed", String(error));
     } finally {
       setBusy(false);
     }
@@ -784,7 +784,7 @@ export const MetadataPage = () => {
     try {
       setResults(await searchMetadata(query, 8));
     } catch (error) {
-      toaster.toast({ title: "Decky Metadata", body: String(error) });
+      toastError("Save failed", String(error));
     } finally {
       setBusy(false);
     }
@@ -799,7 +799,7 @@ export const MetadataPage = () => {
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
       setFormMetadata(saved);
-      toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+      toastSuccess("Saved", "Metadata saved");
     } finally {
       setBusy(false);
     }
@@ -809,7 +809,7 @@ export const MetadataPage = () => {
     await removeMetadata(appId);
     delete metadataCache[String(appId)];
     setFormMetadata(metadataTemplate(appName(appId)));
-    toaster.toast({ title: "Decky Metadata", body: "Metadata removed" });
+    toastSuccess("Removed", "Metadata removed");
   };
 
 
