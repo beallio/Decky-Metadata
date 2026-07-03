@@ -48,7 +48,15 @@ import {
   MetadataSearchResult,
   StoreCategory,
 } from "./types";
-import { colors, statusColor, type StatusKind } from "./tokens";
+import {
+  colors,
+  fontFamily,
+  fontSize,
+  fontWeight,
+  space,
+  statusColor,
+  type StatusKind,
+} from "./tokens";
 
 // Keep in sync with package.json and plugin.json.
 export const PLUGIN_VERSION = "0.1.0";
@@ -90,6 +98,7 @@ const pageStyle = {
   paddingBottom: 120,
   minHeight: "100vh",
   boxSizing: "border-box",
+  fontFamily,
 } as const;
 
 const rowStackStyle = {
@@ -99,7 +108,7 @@ const rowStackStyle = {
   maxWidth: "100%",
   minWidth: 0,
   boxSizing: "border-box",
-  gap: "0.65rem",
+  gap: space.md,
 } as const;
 
 const buttonRowStyle = {
@@ -108,28 +117,28 @@ const buttonRowStyle = {
   maxWidth: "100%",
   minWidth: 0,
   boxSizing: "border-box",
-  gap: "0.5rem",
+  gap: space.sm,
   alignItems: "center",
   flexWrap: "wrap",
 } as const;
 
 const spacedButtonRowStyle = {
   ...buttonRowStyle,
-  marginTop: "0.35rem",
+  marginTop: space.sm,
 } as const;
 
 const actionButtonStackStyle = {
   display: "flex",
   flexDirection: "column",
   alignItems: "stretch",
-  gap: "0.35rem",
-  flex: "1 1 13rem",
+  gap: space.sm,
+  flex: "1 1 208px",
   minWidth: 0,
 } as const;
 
 const resultsStackStyle = {
   ...rowStackStyle,
-  marginTop: "1.25rem",
+  marginTop: 20,
 } as const;
 
 const fieldStyle = {
@@ -141,12 +150,12 @@ const fieldStyle = {
 
 const flexFieldStyle = {
   ...fieldStyle,
-  flex: "1 1 14rem",
+  flex: "1 1 224px",
 } as const;
 
 const compactTextStyle = {
   color: colors.textSecondary,
-  fontSize: "0.82rem",
+  fontSize: fontSize.sm,
   lineHeight: 1.35,
 } as const;
 
@@ -173,20 +182,20 @@ const buttonLabelStyle = {
   alignItems: "center",
   justifyContent: "center",
   gap: "10px",
-  minWidth: "8.5rem",
+  minWidth: 136,
 } as const;
 
 const sectionHeadingStyle = {
   width: "100%",
-  paddingTop: "0.75rem",
-  fontWeight: 700,
-  fontSize: "0.95rem",
+  paddingTop: space.md,
+  fontWeight: fontWeight.bold,
+  fontSize: fontSize.lg,
 } as const;
 
 const diagnosticsGridStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr)",
-  gap: "0.65rem",
+  gap: space.md,
   width: "100%",
   maxWidth: "100%",
   minWidth: 0,
@@ -196,9 +205,9 @@ const diagnosticsGridStyle = {
 const diagnosticsRowStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr)",
-  gap: "0.2rem",
+  gap: space.xs,
   alignItems: "start",
-  padding: "0.1rem 0",
+  padding: `${space.xxs}px 0`,
   ...compactTextStyle,
 } as const;
 
@@ -803,7 +812,7 @@ export const MetadataPage = () => {
               <TextField
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ ...flexFieldStyle, minWidth: "10rem" }}
+                style={{ ...flexFieldStyle, minWidth: 160 }}
               />
               <FocusableButton
                 className="DialogButton"
@@ -867,7 +876,7 @@ export const MetadataPage = () => {
                   }
                   style={{
                     width: "100%",
-                    minHeight: "9rem",
+                    minHeight: 144,
                     boxSizing: "border-box",
                     resize: "vertical",
                     borderRadius: 4,
@@ -902,7 +911,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
           <PanelSectionRow>
             <div style={buttonRowStyle}>
-              <div style={{ ...flexFieldStyle, minWidth: "8rem" }}>
+              <div style={{ ...flexFieldStyle, minWidth: 128 }}>
                 <label>{"Release date"}</label>
                 <TextField
                   value={releaseText}
@@ -910,7 +919,7 @@ export const MetadataPage = () => {
                   style={fieldStyle}
                 />
               </div>
-              <div style={{ ...flexFieldStyle, minWidth: "7rem" }}>
+              <div style={{ ...flexFieldStyle, minWidth: 112 }}>
                 <label>{"Rating"}</label>
                 <TextField
                   value={ratingText}
@@ -943,7 +952,7 @@ export const MetadataPage = () => {
                 <TextField
                   value={steamAppIdText}
                   onChange={(e) => setSteamAppIdText(e.target.value)}
-                  style={{ ...flexFieldStyle, minWidth: "18rem" }}
+                  style={{ ...flexFieldStyle, minWidth: 288 }}
                 />
                 <FocusableButton
                   className="DialogButton"
