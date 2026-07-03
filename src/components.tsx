@@ -101,6 +101,11 @@ const pageStyle = {
   fontFamily,
 } as const;
 
+const qamPanelStyle = {
+  width: "100%",
+  fontFamily,
+} as const;
+
 const rowStackStyle = {
   display: "flex",
   flexDirection: "column",
@@ -525,7 +530,8 @@ export const Content = () => {
 
 
   return (
-    <PanelSection>
+    <div style={qamPanelStyle}>
+      <PanelSection>
       <PanelSectionRow>
         <Focusable style={focusableBlockStyle}>
           <div style={rowStackStyle}>
@@ -637,7 +643,8 @@ export const Content = () => {
           </Focusable>
         </div>
       </PanelSectionRow>
-    </PanelSection>
+      </PanelSection>
+    </div>
   );
 };
 

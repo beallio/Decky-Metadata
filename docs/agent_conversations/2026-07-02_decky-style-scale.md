@@ -19,8 +19,9 @@ font stack to the QAM panel, and rebuild the committed frontend bundle.
 - Added `space`, `fontSize`, `fontWeight`, and `fontFamily` exports in
   `src/tokens.ts` without changing the existing color tokens or status-color
   mapping.
-- Applied `fontFamily` once through the QAM page wrapper style so descendants
-  inherit the Motiva Sans stack without repeated inline declarations.
+- Applied `fontFamily` once through the QAM `Content` wrapper style so the
+  QAM panel inherits the Motiva Sans stack without repeated inline declarations;
+  the edit route keeps its existing page-level wrapper.
 - Converted QAM rhythm values to numeric px token values where the plan called
   for tokenized spacing/type.
 - Converted fixed component dimensions and flex-basis values to exact px values
@@ -55,3 +56,11 @@ font stack to the QAM panel, and rebuild the committed frontend bundle.
 - No TypeScript/JavaScript test runner exists for this frontend surface; the
   automated frontend verification remains TypeScript type-check plus rollup
   build, with final visual confirmation deferred to on-device QAM testing.
+
+## Review Round 01 Follow-up
+
+- Resolved R1 by adding a single `qamPanelStyle` wrapper around the QAM
+  `Content` `PanelSection`, so the actual QAM surface explicitly inherits
+  `fontFamily`.
+- Corrected the earlier session-log wording that incorrectly described the
+  edit-page wrapper as the QAM application point.
