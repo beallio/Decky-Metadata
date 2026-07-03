@@ -634,15 +634,16 @@ export const Content = () => {
         <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={rowStackStyle}>
-          <ToggleField
-            highlightOnFocus={false}
-            label="Debug Logging"
-            checked={debugLogging}
-            onChange={(checked) => void saveDebugLogging(checked)}
-          />
-          <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
-            <div style={diagnosticsGridStyle}>
+        <ToggleField
+          highlightOnFocus={false}
+          label="Debug Logging"
+          checked={debugLogging}
+          onChange={(checked) => void saveDebugLogging(checked)}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
+          <div style={diagnosticsGridStyle}>
               <div style={diagnosticsRowStyle}>
                 <span>{"Plugin"}</span>
                 <span style={diagnosticsValueStyle}>{parsedPluginVersion.base}</span>
@@ -660,8 +661,7 @@ export const Content = () => {
                 <span style={diagnosticsValueStyle}>{metadataCount}</span>
               </div>
             </div>
-          </Field>
-        </div>
+        </Field>
       </PanelSectionRow>
       </PanelSection>
     </div>

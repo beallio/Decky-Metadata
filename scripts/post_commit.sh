@@ -32,9 +32,9 @@ if ! npm run package; then
   exit 0
 fi
 
-# Newest zip produced by the packager (name carries the version+hash).
-zip="$(ls -t "$repo_root"/Decky-Metadata-v*.zip 2>/dev/null | head -n1 || true)"
-if [[ -z "$zip" ]]; then
+# Fixed-name zip produced by the packager (version+hash lives inside plugin.json).
+zip="$repo_root/Decky-Metadata.zip"
+if [[ ! -f "$zip" ]]; then
   echo "post-commit: WARNING no installer zip found; nothing to push." >&2
   exit 0
 fi

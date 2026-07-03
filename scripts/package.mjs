@@ -61,7 +61,8 @@ function main() {
       filePath: path.join(stagingPlugin, targetRelative),
     }));
 
-  const zipPath = path.join(repoRoot, `Decky-Metadata-v${version}.zip`);
+  // Fixed output filename; the version+hash lives inside plugin.json/package.json.
+  const zipPath = path.join(repoRoot, "Decky-Metadata.zip");
   fs.rmSync(zipPath, { force: true });
   writeZip(zipPath, entries);
   fs.rmSync(stagingRoot, { recursive: true, force: true });
