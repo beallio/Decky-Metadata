@@ -102,6 +102,24 @@ const pageStyle = {
   fontFamily,
 } as const;
 
+const pageTitleStyle = {
+  width: "100%",
+  fontSize: fontSize.xl,
+  fontWeight: fontWeight.bold,
+  paddingBottom: space.md,
+  outline: "none",
+  // Keep the title clear of the SteamOS top bar when the controller scrolls to it.
+  scrollMarginTop: 90,
+} as const;
+
+const toggleGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  columnGap: space.md,
+  width: "100%",
+  minWidth: 0,
+} as const;
+
 const qamPanelStyle = {
   width: "100%",
   fontFamily,
@@ -534,7 +552,7 @@ export const Content = () => {
     <div style={qamPanelStyle}>
       <PanelSection>
       <PanelSectionRow>
-        <Focusable style={focusableBlockStyle}>
+        <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
           <div style={rowStackStyle}>
             <div>
               <b>{"Detected non-Steam games"}:</b> {games.length}
@@ -546,7 +564,7 @@ export const Content = () => {
               <b>{"Missing metadata"}:</b> {missing}
             </div>
           </div>
-        </Focusable>
+        </Field>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={spacedButtonRowStyle}>
@@ -618,11 +636,12 @@ export const Content = () => {
       <PanelSectionRow>
         <div style={rowStackStyle}>
           <ToggleField
+            highlightOnFocus={false}
             label="Debug Logging"
             checked={debugLogging}
             onChange={(checked) => void saveDebugLogging(checked)}
           />
-          <Focusable style={focusableBlockStyle}>
+          <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
             <div style={diagnosticsGridStyle}>
               <div style={diagnosticsRowStyle}>
                 <span>{"Plugin"}</span>
@@ -641,7 +660,7 @@ export const Content = () => {
                 <span style={diagnosticsValueStyle}>{metadataCount}</span>
               </div>
             </div>
-          </Focusable>
+          </Field>
         </div>
       </PanelSectionRow>
       </PanelSection>
@@ -790,7 +809,10 @@ export const MetadataPage = () => {
   return (
     <ScrollPanel>
       <div style={pageStyle}>
-        <PanelSection title={`${"Decky Metadata"} - ${appName(appId)}`}>
+        <Focusable onActivate={() => {}} style={pageTitleStyle}>
+          {`${"Decky Metadata"} - ${appName(appId)}`}
+        </Focusable>
+        <PanelSection>
           {!nonSteam ? (
             <PanelSectionRow>
               <div style={compactTextStyle}>{"This plugin only changes non-Steam games."}</div>
@@ -820,7 +842,7 @@ export const MetadataPage = () => {
               <TextField
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ ...flexFieldStyle, minWidth: 160 }}
+                style={{ ...fieldStyle, flex: "1 1 auto", minWidth: 220 }}
               />
               <FocusableButton
                 className="DialogButton"
@@ -858,7 +880,7 @@ export const MetadataPage = () => {
 
         <PanelSection title={"Source"}>
           <PanelSectionRow>
-            <Field label={"Title"}>
+            <Field label={"Title"} childrenLayout="below">
               <TextField
                 value={metadata.title}
                 onChange={(e) =>
@@ -897,7 +919,7 @@ export const MetadataPage = () => {
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
-            <Field label={"Developers"}>
+            <Field label={"Developers"} childrenLayout="below">
               <TextField
                 value={developerText}
                 onChange={(e) => setDeveloperText(e.target.value)}
@@ -906,7 +928,7 @@ export const MetadataPage = () => {
             </Field>
           </PanelSectionRow>
           <PanelSectionRow>
-            <Field label={"Publishers"}>
+            <Field label={"Publishers"} childrenLayout="below">
               <TextField
                 value={publisherText}
                 onChange={(e) => setPublisherText(e.target.value)}
@@ -937,15 +959,20 @@ export const MetadataPage = () => {
         </PanelSection>
 
         <PanelSection title={"Steam info fields"}>
-          {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
-            <PanelSectionRow key={category}>
-              <ToggleField
-                label={label}
-                checked={(metadata.store_categories || []).includes(Number(category))}
-                onChange={(checked) => toggleCategory(Number(category), checked)}
-              />
-            </PanelSectionRow>
-          ))}
+          <PanelSectionRow>
+            <div style={toggleGridStyle}>
+              {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
+                <ToggleField
+                  key={category}
+                  highlightOnFocus={false}
+                  bottomSeparator="none"
+                  label={label}
+                  checked={(metadata.store_categories || []).includes(Number(category))}
+                  onChange={(checked) => toggleCategory(Number(category), checked)}
+                />
+              ))}
+            </div>
+          </PanelSectionRow>
         </PanelSection>
 
 
@@ -953,11 +980,11 @@ export const MetadataPage = () => {
           <PanelSectionRow>
             <div style={rowStackStyle}>
               <div style={compactTextStyle}>{"Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match."}</div>
-              <div style={buttonRowStyle}>
+              <div style={{ ...buttonRowStyle, flexWrap: "nowrap" }}>
                 <TextField
                   value={steamAppIdText}
                   onChange={(e) => setSteamAppIdText(e.target.value)}
-                  style={{ ...flexFieldStyle, minWidth: 288 }}
+                  style={{ ...fieldStyle, flex: "1 1 auto", minWidth: 120 }}
                 />
                 <FocusableButton
                   className="DialogButton"
