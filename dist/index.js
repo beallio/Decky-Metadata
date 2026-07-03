@@ -94,6 +94,7 @@ const fetchMetadata = callable("fetch_metadata");
 const autoFetchMetadata = callable("auto_fetch_metadata");
 const enrichSteamApp = callable("enrich_steam_app");
 const startScanMissing = callable("start_scan_missing");
+const getMissingMetadataCount = callable("get_missing_metadata_count");
 const getScanProgress = callable("get_scan_progress");
 const startRefreshSteamActivities = callable("start_refresh_steam_activities");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
@@ -116,6 +117,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
+    getMissingMetadataCount: getMissingMetadataCount,
     getPlatformCapabilities: getPlatformCapabilities,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
@@ -3713,7 +3715,9 @@ const parseRating = (value) => {
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState([]);
     const loadGames = SP_REACT.useCallback(async () => {
-        setGames(await allNonSteamGames());
+        const loadedGames = await allNonSteamGames();
+        setGames(loadedGames);
+        return loadedGames;
     }, []);
     SP_REACT.useEffect(() => {
         void loadGames();
@@ -3723,6 +3727,7 @@ const useNonSteamGames = () => {
 const Content = () => {
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
+    const [missing, setMissing] = SP_REACT.useState(0);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
     const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
@@ -3734,13 +3739,18 @@ const Content = () => {
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
-    const missing = Math.max(games.length - metadataCount, 0);
     const parsedPluginVersion = splitVersion(pluginVersion);
+    const updateMissingCount = SP_REACT.useCallback((currentGames) => {
+        void getMissingMetadataCount(currentGames)
+            .then(setMissing)
+            .catch((error) => warn("bridge", "missing metadata count load failed", error));
+    }, []);
     const refresh = SP_REACT.useCallback(async () => {
         await refreshMetadataCache();
-        await loadGames();
+        const loadedGames = await loadGames();
         setMetadataCount(Object.keys(metadataCache).length);
-    }, [loadGames]);
+        updateMissingCount(loadedGames);
+    }, [loadGames, updateMissingCount]);
     SP_REACT.useEffect(() => {
         void refresh();
     }, [refresh]);
@@ -3844,6 +3854,7 @@ const Content = () => {
                     window.clearInterval(interval);
                     await refreshMetadataCache();
                     setMetadataCount(Object.keys(metadataCache).length);
+                    updateMissingCount(games);
                     setActivityBusy(false);
                     setActivityStatusKind("success");
                     setActivityMessage(activityCompleteMessage(progress));
@@ -3873,6 +3884,7 @@ const Content = () => {
                 });
             }
             setMetadataCount(Object.keys(metadataCache).length);
+            updateMissingCount(games);
             toaster.toast({ title: "Decky Metadata", body: "Metadata cache cleared" });
         }
         catch (error) {

@@ -701,6 +701,23 @@ class Plugin:
     async def get_scan_progress(self) -> dict[str, Any]:
         return self._scan_progress
 
+    async def get_missing_metadata_count(self, games: list[dict[str, Any]]) -> int:
+        self._load_data()
+        count = 0
+        for game in games or []:
+            if not isinstance(game, dict):
+                continue
+            raw_appid = str(game.get("appid", "")).strip()
+            if not raw_appid:
+                continue
+            try:
+                app_id = int(raw_appid)
+            except (TypeError, ValueError):
+                continue
+            if self._metadata_needs_scan(app_id):
+                count += 1
+        return count
+
     async def start_refresh_steam_activities(self, games: list[dict[str, Any]]) -> dict[str, Any]:
         if self._activity_refresh_task and not self._activity_refresh_task.done():
             return self._activity_refresh_progress

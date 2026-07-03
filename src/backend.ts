@@ -54,6 +54,10 @@ export const startScanMissing = callable<
   [games: GameOption[]],
   ScanProgress
 >("start_scan_missing");
+export const getMissingMetadataCount = callable<
+  [games: GameOption[]],
+  number
+>("get_missing_metadata_count");
 export const getScanProgress = callable<[], ScanProgress>(
   "get_scan_progress"
 );
