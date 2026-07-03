@@ -11,6 +11,10 @@ export const colors = {
   surfaceKnockout: "#0b151f",
 } as const;
 
+// #1a9fff as rgb components, for CSS that needs alpha (e.g. the overlay).
+export const accentRgb = "26, 159, 255";
+export const accentRgba = (alpha: number): string => `rgba(${accentRgb}, ${alpha})`;
+
 // Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
 export const space = {
   xxs: 2,

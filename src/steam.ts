@@ -14,6 +14,7 @@ import {
   StoreCategory,
 } from "./types";
 import * as log from "./log";
+import { accentRgba } from "./tokens";
 
 declare const appStore: any;
 declare const appDetailsStore: any;
@@ -2380,7 +2381,7 @@ const ensureDeckyActivityStyle = () => {
       padding: 18px 20px;
       border-radius: 10px;
       background: rgba(18,22,28,0.98);
-      border: 2px solid rgba(90, 170, 255, 0.85);
+      border: 2px solid ${accentRgba(0.85)};
       box-shadow: 0 12px 42px rgba(0,0,0,0.45);
       color: rgba(255,255,255,0.88);
       font-size: 15px;
