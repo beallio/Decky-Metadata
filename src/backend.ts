@@ -70,6 +70,7 @@ export const getLocalShortcuts = callable<[], GameOption[]>(
 export const getPlatformCapabilities = callable<[], PlatformCapabilities>(
   "get_platform_capabilities"
 );
+export const getPluginVersion = callable<[], string>("get_plugin_version");
 export const getDebugLogging = callable<[], boolean>("get_debug_logging");
 export const setDebugLogging = callable<[enabled: boolean], boolean>(
   "set_debug_logging"

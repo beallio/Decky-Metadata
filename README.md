@@ -16,7 +16,7 @@ npm run build
 npm run package
 ```
 
-`npm run package` creates `Decky-Metadata_<version>_Installer.zip` in the repository root. The current plugin version is `0.1.0`.
+`npm run package` creates `Decky-Metadata_<version>_Installer.zip` in the repository root. Local builds include the current git short hash in the packaged version and filename, for example `Decky-Metadata_0.1.0+a1b2c3d_Installer.zip`. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash.
 
 ## Features
 
@@ -48,7 +48,7 @@ The delisted-index status line shows how many delisted apps are cached and when 
 
 ## Diagnostics
 
-The diagnostics section includes a debug logging toggle and a versions panel showing the plugin version, delisted-index status, and metadata count. This readout stays local to the panel and does not include API keys or tokens.
+The diagnostics section includes a debug logging toggle and a versions panel showing the plugin base version, packaged commit, delisted-index status, and metadata count. Unpackaged checkouts and release builds show `local` for the commit row. This readout stays local to the panel and does not include API keys or tokens.
 
 ## Notes
 
