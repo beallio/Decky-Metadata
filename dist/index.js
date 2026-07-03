@@ -77,8 +77,12 @@ function IconBase(props) {
 }
 
 // THIS FILE IS AUTO GENERATED
-function FaDatabase (props) {
+function FaExclamationTriangle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaDatabase (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M448 73.143v45.714C448 159.143 347.667 192 224 192S0 159.143 0 118.857V73.143C0 32.857 100.333 0 224 0s224 32.857 224 73.143zM448 176v102.857C448 319.143 347.667 352 224 352S0 319.143 0 278.857V176c48.125 33.143 136.208 48.572 224 48.572S399.874 209.143 448 176zm0 160v102.857C448 479.143 347.667 512 224 512S0 479.143 0 438.857V336c48.125 33.143 136.208 48.572 224 48.572S399.874 369.143 448 336z"},"child":[]}]})(props);
+}function FaCheckCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
 }
 
 const getAllMetadata = callable("get_all_metadata");
@@ -3503,6 +3507,21 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
+const TITLE = "Decky Metadata";
+const DURATION = 3000;
+function notify(kind, heading, body) {
+    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
+    try {
+        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
+    }
+    catch {
+        // The Decky toaster may be unavailable outside the runtime.
+    }
+}
+const toastSuccess = (heading, body) => notify("success", heading, body);
+const toastWarn = (heading, body) => notify("warning", heading, body);
+const toastError = (heading, body) => notify("error", heading, body);
+
 // Keep in sync with package.json and plugin.json.
 const PLUGIN_VERSION = "0.1.0";
 const parseSteamAppId = (input) => {
@@ -3838,7 +3857,7 @@ const Content = () => {
                     setBusy(false);
                     setScanStatusKind(scanCompleteStatusKind(progress));
                     setScanMessage(scanCompleteMessage(progress));
-                    toaster.toast({ title: "Decky Metadata", body: "Scan complete" });
+                    toastSuccess("Scan", "Scan complete");
                 }
             }, 800);
         }
@@ -3846,7 +3865,7 @@ const Content = () => {
             setBusy(false);
             setScanStatusKind("error");
             setScanMessage(String(error));
-            toaster.toast({ title: "Decky Metadata", body: String(error) });
+            toastError("Scan failed", String(error));
         }
     };
     const refreshActivities = async () => {
@@ -3873,7 +3892,7 @@ const Content = () => {
                     setActivityMessage(activityCompleteMessage(progress));
                     window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
                     window.dispatchEvent(new Event("decky-metadata:updated"));
-                    toaster.toast({ title: "Decky Metadata", body: "Activity refresh complete" });
+                    toastSuccess("Activity", activityCompleteMessage(progress));
                 }
             }, 800);
         }
@@ -3881,7 +3900,7 @@ const Content = () => {
             setActivityBusy(false);
             setActivityStatusKind("error");
             setActivityMessage(String(error));
-            toaster.toast({ title: "Decky Metadata", body: String(error) });
+            toastError("Activity failed", String(error));
         }
     };
     const clearCache = async () => {
@@ -3898,10 +3917,10 @@ const Content = () => {
             }
             setMetadataCount(Object.keys(metadataCache).length);
             updateMissingCount(games);
-            toaster.toast({ title: "Decky Metadata", body: "Metadata cache cleared" });
+            toastSuccess("Cache", "Metadata cache cleared");
         }
         catch (error) {
-            toaster.toast({ title: "Decky Metadata", body: String(error) });
+            toastError("Cache clear failed", String(error));
         }
         finally {
             setCacheBusy(false);
@@ -3916,12 +3935,12 @@ const Content = () => {
             if (!result.ok) {
                 throw new Error("Delisted index refresh failed");
             }
-            toaster.toast({ title: "Decky Metadata", body: "Delisted index updated" });
+            toastSuccess("Delisted index", "Delisted index updated");
             await loadDelistedStatus();
         }
         catch (error) {
             warn("bridge", "delisted index refresh failed", error);
-            toaster.toast({ title: "Decky Metadata", body: "Delisted index refresh failed" });
+            toastError("Delisted index", "Delisted index refresh failed");
         }
         finally {
             setDelistedBusy(false);
@@ -3972,17 +3991,17 @@ const MetadataPage = () => {
     }), [developerText, metadata, publisherText, ratingText, releaseText]);
     const saveCurrent = async () => {
         if (!nonSteam) {
-            toaster.toast({ title: "Decky Metadata", body: "This plugin only changes non-Steam games." });
+            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
         const saved = await saveMetadata(appId, normalizedMetadata);
         metadataCache[String(appId)] = saved;
         applyMetadata(appId);
-        toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+        toastSuccess("Saved", "Metadata saved");
     };
     const applySteamAppId = async () => {
         if (!nonSteam) {
-            toaster.toast({ title: "Decky Metadata", body: "This plugin only changes non-Steam games." });
+            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
         setBusy(true);
@@ -4008,10 +4027,10 @@ const MetadataPage = () => {
                 setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
             }
             applyMetadata(appId);
-            toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+            toastSuccess("Saved", "Metadata saved");
         }
         catch (error) {
-            toaster.toast({ title: "Decky Metadata", body: String(error) });
+            toastError("Save failed", String(error));
         }
         finally {
             setBusy(false);
@@ -4023,7 +4042,7 @@ const MetadataPage = () => {
             setResults(await searchMetadata(query, 8));
         }
         catch (error) {
-            toaster.toast({ title: "Decky Metadata", body: String(error) });
+            toastError("Save failed", String(error));
         }
         finally {
             setBusy(false);
@@ -4039,7 +4058,7 @@ const MetadataPage = () => {
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
             setFormMetadata(saved);
-            toaster.toast({ title: "Decky Metadata", body: "Metadata saved" });
+            toastSuccess("Saved", "Metadata saved");
         }
         finally {
             setBusy(false);
@@ -4049,7 +4068,7 @@ const MetadataPage = () => {
         await removeMetadata(appId);
         delete metadataCache[String(appId)];
         setFormMetadata(metadataTemplate(appName(appId)));
-        toaster.toast({ title: "Decky Metadata", body: "Metadata removed" });
+        toastSuccess("Removed", "Metadata removed");
     };
     const toggleCategory = (category, checked) => {
         setMetadata((prev) => {
