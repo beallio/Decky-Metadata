@@ -563,99 +563,103 @@ export const Content = () => {
   return (
     <div style={qamPanelStyle}>
       <PanelSection>
-      <PanelSectionRow>
-        <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
-          <div style={rowStackStyle}>
-            <div>
-              <b>{"Detected non-Steam games"}:</b> {games.length}
+        <PanelSectionRow>
+          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
+            <div style={rowStackStyle}>
+              <div>
+                <b>{"Detected non-Steam games"}:</b> {games.length}
+              </div>
+              <div>
+                <b>{"Metadata saved"}:</b> {metadataCount}
+              </div>
+              <div>
+                <b>{"Missing metadata"}:</b> {missing}
+              </div>
             </div>
-            <div>
-              <b>{"Metadata saved"}:</b> {metadataCount}
+          </Field>
+        </PanelSectionRow>
+      </PanelSection>
+      <PanelSection>
+        <PanelSectionRow>
+          <div style={spacedButtonRowStyle}>
+            <div style={actionButtonStackStyle}>
+              <FocusableButton
+                className="DialogButton"
+                disabled={busy || !games.length}
+                onClick={scanMissing}
+              >
+                {busy ? (
+                  <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
+                ) : (
+                  <ButtonLabel>{"Scan metadata"}</ButtonLabel>
+                )}
+              </FocusableButton>
+              {busy || scanMessage ? (
+                <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage || "Scanning..."}</div>
+              ) : null}
             </div>
-            <div>
-              <b>{"Missing metadata"}:</b> {missing}
+            <div style={actionButtonStackStyle}>
+              <FocusableButton
+                className="DialogButton"
+                disabled={activityBusy || busy || !games.length}
+                onClick={refreshActivities}
+              >
+                {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
+              </FocusableButton>
+              {activityBusy || activityMessage ? (
+                <div style={inlineStatusStyle(activityStatusKind)}>{activityMessage || "Refreshing Activity..."}</div>
+              ) : null}
             </div>
           </div>
-        </Field>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={spacedButtonRowStyle}>
-          <div style={actionButtonStackStyle}>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <div style={sectionHeadingStyle}>{"Metadata cache"}</div>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <div style={rowStackStyle}>
+            <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
+            <div style={inlineStatusStyle(delistedBusy ? "active" : "idle")}>
+              {delistedBusy ? (
+                <BusySpinner />
+              ) : null}
+              <span>{delistedStatusText}</span>
+            </div>
             <FocusableButton
               className="DialogButton"
-              disabled={busy || !games.length}
-              onClick={scanMissing}
+              disabled={delistedBusy}
+              onClick={refreshDelisted}
             >
-              {busy ? (
-                <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
+              {delistedBusy ? (
+                <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
               ) : (
-                <ButtonLabel>{"Scan metadata"}</ButtonLabel>
+                <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
               )}
             </FocusableButton>
-            {busy || scanMessage ? (
-              <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage || "Scanning..."}</div>
-            ) : null}
-          </div>
-          <div style={actionButtonStackStyle}>
             <FocusableButton
               className="DialogButton"
-              disabled={activityBusy || busy || !games.length}
-              onClick={refreshActivities}
+              disabled={cacheBusy || busy}
+              onClick={clearCache}
             >
-              {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
+              {"Clear cache"}
             </FocusableButton>
-            {activityBusy || activityMessage ? (
-              <div style={inlineStatusStyle(activityStatusKind)}>{activityMessage || "Refreshing Activity..."}</div>
-            ) : null}
           </div>
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{"Metadata cache"}</div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={rowStackStyle}>
-          <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
-          <div style={inlineStatusStyle(delistedBusy ? "active" : "idle")}>
-            {delistedBusy ? (
-              <BusySpinner />
-            ) : null}
-            <span>{delistedStatusText}</span>
-          </div>
-          <FocusableButton
-            className="DialogButton"
-            disabled={delistedBusy}
-            onClick={refreshDelisted}
-          >
-            {delistedBusy ? (
-              <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
-            ) : (
-              <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
-            )}
-          </FocusableButton>
-          <FocusableButton
-            className="DialogButton"
-            disabled={cacheBusy || busy}
-            onClick={clearCache}
-          >
-            {"Clear cache"}
-          </FocusableButton>
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          highlightOnFocus={false}
-          label="Debug Logging"
-          checked={debugLogging}
-          onChange={(checked) => void saveDebugLogging(checked)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <Field focusable={true} bottomSeparator="none" childrenLayout="below" highlightOnFocus={false}>
-          <div style={diagnosticsGridStyle}>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
+            highlightOnFocus={false}
+            label="Debug Logging"
+            checked={debugLogging}
+            onChange={(checked) => void saveDebugLogging(checked)}
+          />
+        </PanelSectionRow>
+      </PanelSection>
+      <PanelSection title="Versions">
+        <PanelSectionRow>
+          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
+            <div style={diagnosticsGridStyle}>
               <div style={diagnosticsRowStyle}>
                 <span>{"Plugin"}</span>
                 <span style={diagnosticsValueStyle}>{parsedPluginVersion.base}</span>
@@ -673,8 +677,8 @@ export const Content = () => {
                 <span style={diagnosticsValueStyle}>{metadataCount}</span>
               </div>
             </div>
-        </Field>
-      </PanelSectionRow>
+          </Field>
+        </PanelSectionRow>
       </PanelSection>
     </div>
   );
