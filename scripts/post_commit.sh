@@ -33,7 +33,7 @@ if ! npm run package; then
 fi
 
 # Newest zip produced by the packager (name carries the version+hash).
-zip="$(ls -t "$repo_root"/Decky-Metadata_*_Installer.zip 2>/dev/null | head -n1 || true)"
+zip="$(ls -t "$repo_root"/Decky-Metadata-v*.zip 2>/dev/null | head -n1 || true)"
 if [[ -z "$zip" ]]; then
   echo "post-commit: WARNING no installer zip found; nothing to push." >&2
   exit 0

@@ -12,7 +12,7 @@ const packageJson = JSON.parse(
 );
 const zipPath = path.join(
   repoRoot,
-  `Decky-Metadata_${packageJson.version}_Installer.zip`,
+  `Decky-Metadata-v${packageJson.version}.zip`,
 );
 const stagingRoot = path.join(repoRoot, "build-package");
 
@@ -31,18 +31,18 @@ test("package script creates a Decky installer zip with the expected payload", (
   });
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /Decky-Metadata_.*_Installer\.zip/);
+  assert.match(result.stdout, /Decky-Metadata-v.*\.zip/);
   assert.ok(fs.existsSync(zipPath), "installer zip should exist");
 
   const entries = zipEntries(zipPath);
   assert.deepEqual(
     [
-      "Decky Metadata/main.py",
-      "Decky Metadata/package.json",
-      "Decky Metadata/plugin.json",
-      "Decky Metadata/LICENSE",
-      "Decky Metadata/NOTICE",
-      "Decky Metadata/dist/index.js",
+      "Decky-Metadata/main.py",
+      "Decky-Metadata/package.json",
+      "Decky-Metadata/plugin.json",
+      "Decky-Metadata/LICENSE",
+      "Decky-Metadata/NOTICE",
+      "Decky-Metadata/dist/index.js",
     ].filter((entry) => !entries.has(entry)),
     [],
   );

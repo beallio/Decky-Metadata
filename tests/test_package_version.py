@@ -10,7 +10,7 @@ import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-PLUGIN_FOLDER_NAME = "Decky Metadata"
+PLUGIN_FOLDER_NAME = "Decky-Metadata"
 
 
 def _require_tool(name: str) -> None:
@@ -70,7 +70,7 @@ def test_dev_package_injects_short_hash_version_and_preserves_sources() -> None:
     original_plugin = plugin_path.read_text(encoding="utf-8")
     base_version = str(_read_json(package_path)["version"])
     expected_version = f"{base_version}+{_git_short_hash()}"
-    zip_path = REPO_ROOT / f"Decky-Metadata_{expected_version}_Installer.zip"
+    zip_path = REPO_ROOT / f"Decky-Metadata-v{expected_version}.zip"
     preserved_zip = _PreserveFile(zip_path)
 
     try:
@@ -93,7 +93,7 @@ def test_release_package_uses_base_version_and_preserves_sources(flag: str) -> N
     original_package = package_path.read_text(encoding="utf-8")
     original_plugin = plugin_path.read_text(encoding="utf-8")
     base_version = str(_read_json(package_path)["version"])
-    zip_path = REPO_ROOT / f"Decky-Metadata_{base_version}_Installer.zip"
+    zip_path = REPO_ROOT / f"Decky-Metadata-v{base_version}.zip"
     preserved_zip = _PreserveFile(zip_path)
 
     try:

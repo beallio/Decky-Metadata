@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 
-const PLUGIN_FOLDER_NAME = "Decky Metadata";
+const PLUGIN_FOLDER_NAME = "Decky-Metadata";
 const CRC_TABLE = makeCrcTable();
 
 function main() {
@@ -61,7 +61,7 @@ function main() {
       filePath: path.join(stagingPlugin, targetRelative),
     }));
 
-  const zipPath = path.join(repoRoot, `Decky-Metadata_${version}_Installer.zip`);
+  const zipPath = path.join(repoRoot, `Decky-Metadata-v${version}.zip`);
   fs.rmSync(zipPath, { force: true });
   writeZip(zipPath, entries);
   fs.rmSync(stagingRoot, { recursive: true, force: true });
