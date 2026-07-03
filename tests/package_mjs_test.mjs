@@ -25,7 +25,7 @@ test("package script creates a Decky installer zip with the expected payload", (
   fs.rmSync(zipPath, { force: true });
   fs.rmSync(stagingRoot, { recursive: true, force: true });
 
-  const result = spawnSync(process.execPath, ["scripts/package.mjs"], {
+  const result = spawnSync(process.execPath, ["scripts/package.mjs", "--release"], {
     cwd: repoRoot,
     encoding: "utf8",
   });

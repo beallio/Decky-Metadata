@@ -26,6 +26,7 @@ import {
   getScanProgress,
   clearMetadataCache,
   getDelistedIndexStatus,
+  getPluginVersion,
   enrichSteamApp,
   refreshDelistedIndex,
 } from "./backend";
@@ -64,6 +65,19 @@ export const parseSteamAppId = (input: string): number => {
   return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
     ? parsed
     : 0;
+};
+
+export const splitVersion = (version: string): { base: string; commit: string | null } => {
+  const fallback = PLUGIN_VERSION;
+  const trimmed = String(version || "").trim();
+  const value = trimmed || fallback;
+  const separator = value.indexOf("+");
+  if (separator < 0) {
+    return { base: value, commit: null };
+  }
+  const base = value.slice(0, separator).trim() || fallback;
+  const commit = value.slice(separator + 1).trim();
+  return { base, commit: commit || null };
 };
 
 const FocusableButton = (props: any) => (
@@ -320,8 +334,10 @@ export const Content = () => {
   } | null>(null);
   const [delistedBusy, setDelistedBusy] = useState(false);
   const [debugLogging, setDebugLoggingState] = useState(false);
+  const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
 
   const missing = Math.max(games.length - metadataCount, 0);
+  const parsedPluginVersion = splitVersion(pluginVersion);
 
   const refresh = useCallback(async () => {
     await refreshMetadataCache();
@@ -344,6 +360,20 @@ export const Content = () => {
   useEffect(() => {
     void loadDelistedStatus();
   }, [loadDelistedStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getPluginVersion()
+      .then((version) => {
+        if (!cancelled && version) {
+          setPluginVersion(version);
+        }
+      })
+      .catch((error) => log.warn("bridge", "plugin version load failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -580,7 +610,11 @@ export const Content = () => {
             <div style={diagnosticsGridStyle}>
               <div style={diagnosticsRowStyle}>
                 <span>{"Plugin"}</span>
-                <span style={diagnosticsValueStyle}>{PLUGIN_VERSION}</span>
+                <span style={diagnosticsValueStyle}>{parsedPluginVersion.base}</span>
+              </div>
+              <div style={diagnosticsRowStyle}>
+                <span>{"Commit"}</span>
+                <span style={diagnosticsValueStyle}>{parsedPluginVersion.commit || "local"}</span>
               </div>
               <div style={diagnosticsRowStyle}>
                 <span>{"Delisted index"}</span>

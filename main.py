@@ -28,6 +28,7 @@ import decky
 MAX_SHORTCUTS_VDF_BYTES = 2 * 1024 * 1024
 MAX_SHORTCUTS_VDF_DEPTH = 32
 MAX_SHORTCUTS_VDF_ENTRIES = 2048
+PLUGIN_BASE_VERSION = "0.1.0"
 _LOG_FILE_HANDLER: logging.Handler | None = None
 
 
@@ -109,6 +110,44 @@ def _install_file_logging() -> str:
         return str(log_path)
     except Exception:
         return ""
+
+
+def _read_version_file(path: Path) -> str:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8")).get("version")
+        return value.strip() if isinstance(value, str) and value.strip() else ""
+    except Exception as error:
+        _plog("version", "version file unreadable", level=logging.DEBUG, path=path, error=error)
+        return ""
+
+
+def _resolve_plugin_root() -> Path | None:
+    try:
+        current = Path(__file__).resolve().parent
+    except Exception as error:
+        _plog("version", "plugin root resolution failed", level=logging.DEBUG, error=error)
+        return None
+
+    for _ in range(6):
+        if (current / "plugin.json").is_file() or (current / "package.json").is_file():
+            return current
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return None
+
+
+def _resolve_plugin_version() -> str:
+    root = _resolve_plugin_root()
+    if root is None:
+        return PLUGIN_BASE_VERSION
+
+    for filename in ("plugin.json", "package.json"):
+        version = _read_version_file(root / filename)
+        if version:
+            return version
+    return PLUGIN_BASE_VERSION
 
 
 class SteamInstall:
@@ -538,6 +577,9 @@ class Plugin:
         except Exception:
             pass
         return capabilities
+
+    async def get_plugin_version(self) -> str:
+        return _resolve_plugin_version()
 
     async def get_state(self) -> dict[str, Any]:
         self._load_data()

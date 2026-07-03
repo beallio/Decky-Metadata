@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 
@@ -9,8 +10,15 @@ const CRC_TABLE = makeCrcTable();
 function main() {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const packageJsonPath = path.join(repoRoot, "package.json");
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-  const version = packageJson.version;
+  const pluginJsonPath = path.join(repoRoot, "plugin.json");
+  const packageJson = readJson(packageJsonPath);
+  const pluginJson = readJson(pluginJsonPath);
+  validatePackageVersions(packageJson, pluginJson);
+  const baseVersion = packageJson.version;
+  const releaseBuild =
+    process.argv.includes("--release") || process.argv.includes("--no-hash");
+  const gitHash = releaseBuild ? "" : getGitShortHash(repoRoot);
+  const version = gitHash ? `${baseVersion}+${gitHash}` : baseVersion;
   const bundlePath = path.join(repoRoot, "dist", "index.js");
 
   if (!fs.existsSync(bundlePath)) {
@@ -37,12 +45,12 @@ function main() {
   ];
 
   for (const [sourceRelative, targetRelative] of files) {
-    copyIntoStaging(repoRoot, stagingPlugin, sourceRelative, targetRelative);
+    stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version);
   }
 
   for (const [sourceRelative, targetRelative] of optionalFiles) {
     if (fs.existsSync(path.join(repoRoot, sourceRelative))) {
-      copyIntoStaging(repoRoot, stagingPlugin, sourceRelative, targetRelative);
+      stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version);
     }
   }
 
@@ -58,13 +66,44 @@ function main() {
   writeZip(zipPath, entries);
   fs.rmSync(stagingRoot, { recursive: true, force: true });
 
+  console.log(`Packaged version: ${version}`);
   console.log(zipPath);
 }
 
-function copyIntoStaging(repoRoot, stagingPlugin, sourceRelative, targetRelative) {
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function validatePackageVersions(packageJson, pluginJson) {
+  if (!packageJson.version || packageJson.version !== pluginJson.version) {
+    throw new Error(
+      `package.json version (${packageJson.version || "<missing>"}) must match plugin.json version (${pluginJson.version || "<missing>"})`,
+    );
+  }
+}
+
+function getGitShortHash(repoRoot) {
+  try {
+    return execSync("git rev-parse --short HEAD", {
+      cwd: repoRoot,
+      encoding: "ascii",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version) {
   const sourcePath = path.join(repoRoot, sourceRelative);
   const targetPath = path.join(stagingPlugin, targetRelative);
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  if (sourceRelative === "package.json" || sourceRelative === "plugin.json") {
+    const data = readJson(sourcePath);
+    data.version = version;
+    fs.writeFileSync(targetPath, `${JSON.stringify(data, null, 2)}\n`);
+    return;
+  }
   fs.copyFileSync(sourcePath, targetPath);
 }
 
