@@ -79,7 +79,6 @@ export type PlatformCapabilities = {
   platform: string;
   os_name: string;
   is_linux: boolean;
-  is_windows: boolean;
   is_steamos: boolean;
   steam_root: string;
   steam_roots: string[];
