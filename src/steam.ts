@@ -6,6 +6,7 @@ import {
   fetchMetadata,
   frontendLog,
   getAllMetadata,
+  getDebugLogging,
   saveMetadata,
 } from "./backend";
 import { rewriteCommunityFeedUrlForSteamApp } from "./communityFeed";
@@ -2676,6 +2677,7 @@ const backSteamHistory = (steamHistory: any) => {
 
 export const installSteamPatches = (): Unpatch => {
   const unpatchers: Unpatch[] = [];
+  let patchesCancelled = false;
   const safeInstallStep = (label: string, run: () => void) => {
     try {
       run();
@@ -2722,9 +2724,17 @@ export const installSteamPatches = (): Unpatch => {
 
   safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
   safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
-  safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
-  safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
-  safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
+  void getDebugLogging()
+    .then((debugLoggingEnabled) => {
+      if (!debugLoggingEnabled) return;
+      if (patchesCancelled) return;
+      safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
+      safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
+      safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
+    })
+    .catch((error) => {
+      log.warn("patch", "debug logging setting load failed; diagnostic traces disabled", error);
+    });
 
   try {
     const steamHistory = (globalThis as any).Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
@@ -3151,6 +3161,7 @@ export const installSteamPatches = (): Unpatch => {
   });
 
   return () => {
+    patchesCancelled = true;
     unpatchers.splice(0).reverse().forEach((unpatch) => {
       try {
         unpatch();

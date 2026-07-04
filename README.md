@@ -60,7 +60,7 @@ The delisted-index status line shows how many delisted apps are cached and when 
 
 ## Diagnostics
 
-The diagnostics section includes a debug logging toggle and a versions panel showing the plugin base version, packaged commit, delisted-index status, and metadata count. Unpackaged checkouts and release builds show `local` for the commit row. This readout stays local to the panel and does not include API keys or tokens.
+The diagnostics section includes a debug logging toggle and a versions panel showing the plugin base version, packaged commit, delisted-index status, and metadata count. Debug logging also enables Steam navigation/history/click diagnostic traces after the next plugin reload. Unpackaged checkouts and release builds show `local` for the commit row. This readout stays local to the panel and does not include API keys or tokens.
 
 ## Notes
 
