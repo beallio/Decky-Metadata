@@ -390,7 +390,7 @@ export const deepQuerySelectorAll = (selector: string, root: Document | ShadowRo
 };
 
 export const normalizedTabText = (value: string) =>
-  String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
+  String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
 
 export const patchMethod = (
   target: any,
