@@ -8,7 +8,7 @@ directory or its subdirectories. It adapts the universal scripting standards fro
 `project_template` to this repository's actual stack, and it wires in the
 `agent-orchestration` plan → implement → review → finalize engine.
 
-Decky-Metadata is a **Decky Loader plugin** for Steam Big Picture on Windows:
+Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gaming Mode):
 
 - **Frontend:** TypeScript / React in `src/*.ts(x)`, bundled by **rollup** into
   `dist/index.js` (the committed plugin artifact). Tooling is **npm / pnpm**.

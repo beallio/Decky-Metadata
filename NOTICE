@@ -6,6 +6,17 @@ standard Decky plugin build/runtime scaffolding.
     Licensed under the BSD 3-Clause License.
     https://github.com/SteamDeckHomebrew/decky-plugin-template
 
+Fork acknowledgment
+-------------------
+Decky Metadata is a fork of the Playhub Metadata plugin. Full credit and thanks to
+the original author (ZazaMastro) and contributors of the upstream project:
+
+    Playhub Metadata
+    https://github.com/LoZazaMastro/Playhub-Metadata
+
+This fork is maintained by David Beall. It remains distributed under the GNU General
+Public License v3.0 or later; the upstream project's license terms are preserved.
+
 Library context menu integration
 --------------------------------
 src/contextMenuPatch.tsx adds a single entry to the Steam library context menu.
@@ -18,7 +29,7 @@ which is licensed under the GNU General Public License v3.
     Licensed under the GNU General Public License v3.0
     https://github.com/SteamGridDB/decky-steamgriddb
 
-Because that file is a derivative work, the entire Playhub Metadata project is
+Because that file is a derivative work, the entire Decky Metadata project is
 distributed under the GNU General Public License v3.0 or later, as stated in the
 accompanying LICENSE file. The BSD 3-Clause attribution above is retained for
 the Decky Plugin Template; the GPL terms govern this project as a whole.
