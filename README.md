@@ -2,7 +2,7 @@
 
 Decky Metadata is a Decky Loader plugin for Steam Big Picture and Steam Gaming Mode.
 
-**Supported platforms**: Windows Steam Big Picture and SteamOS / Steam Deck via Decky Loader.
+**Supported platforms**: SteamOS / Steam Deck via Decky Loader.
 
 The plugin helps non-Steam games look and behave more like native Steam library entries by adding editable metadata, Steam community media, store categories, matched Steam activity news, and a cached delisted-app index.
 
@@ -69,6 +69,10 @@ If you previously installed the old plugin, uninstall it before sideloading Deck
 ## License & Credits
 
 Decky Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
+
+Decky Metadata is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata)
+by ZazaMastro, and is maintained by David Beall. Full credit and thanks to the original
+author and contributors.
 
 Decky Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
 
