@@ -3288,34 +3288,6 @@ const installSteamPatches = () => {
     };
 };
 
-var StoreCategory;
-(function (StoreCategory) {
-    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
-    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
-    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
-    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
-    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
-    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
-    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
-    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
-    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
-    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
-    StoreCategory[StoreCategory["LocalCoOp"] = 392] = "LocalCoOp";
-})(StoreCategory || (StoreCategory = {}));
-const CATEGORY_LABELS = {
-    [StoreCategory.SinglePlayer]: "Single-player",
-    [StoreCategory.MultiPlayer]: "Multiplayer",
-    [StoreCategory.CoOp]: "Co-op",
-    [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
-    [StoreCategory.OnlineCoOp]: "Online co-op",
-    [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
-    [StoreCategory.LocalCoOp]: "Local co-op",
-    [StoreCategory.SplitScreen]: "Split screen",
-    [StoreCategory.FullController]: "Full controller support",
-    [StoreCategory.MMO]: "MMO",
-    [StoreCategory.Achievements]: "Achievements",
-};
-
 // Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
 const colors = {
     accent: "#1a9fff",
@@ -3362,33 +3334,6 @@ const toastSuccess = (heading, body) => notify("success", heading, body);
 const toastWarn = (heading, body) => notify("warning", heading, body);
 const toastError = (heading, body) => notify("error", heading, body);
 
-// Keep in sync with package.json and plugin.json.
-const PLUGIN_VERSION = "0.1.0";
-const parseSteamAppId = (input) => {
-    const s = String(input || "").trim();
-    if (!s)
-        return 0;
-    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
-        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
-        s.match(/[?&]appid=(\d+)/i) ||
-        s.match(/\bapp\/(\d+)\b/i);
-    const parsed = Number(match?.[1] || 0);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-        ? parsed
-        : 0;
-};
-const splitVersion = (version) => {
-    const fallback = PLUGIN_VERSION;
-    const trimmed = String(version || "").trim();
-    const value = trimmed || fallback;
-    const separator = value.indexOf("+");
-    if (separator < 0) {
-        return { base: value, commit: null };
-    }
-    const base = value.slice(0, separator).trim() || fallback;
-    const commit = value.slice(separator + 1).trim();
-    return { base, commit: commit || null };
-};
 const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
 const pageStyle = {
     padding: 24,
@@ -3516,6 +3461,34 @@ const diagnosticsValueStyle = {
 };
 const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
 const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
+
+const useNonSteamGames = () => {
+    const [games, setGames] = SP_REACT.useState([]);
+    const loadGames = SP_REACT.useCallback(async () => {
+        const loadedGames = await allNonSteamGames();
+        setGames(loadedGames);
+        return loadedGames;
+    }, []);
+    SP_REACT.useEffect(() => {
+        void loadGames();
+    }, [loadGames]);
+    return { games, loadGames };
+};
+
+// Keep in sync with package.json and plugin.json.
+const PLUGIN_VERSION = "0.1.0";
+const splitVersion = (version) => {
+    const fallback = PLUGIN_VERSION;
+    const trimmed = String(version || "").trim();
+    const value = trimmed || fallback;
+    const separator = value.indexOf("+");
+    if (separator < 0) {
+        return { base: value, commit: null };
+    }
+    const base = value.slice(0, separator).trim() || fallback;
+    const commit = value.slice(separator + 1).trim();
+    return { base, commit: commit || null };
+};
 const scanCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
     if (!total)
@@ -3538,63 +3511,13 @@ const activityCompleteMessage = (progress) => {
         return "Activity refresh complete";
     return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
 };
-const metadataTemplate = (title) => ({
-    title,
-    id: title,
-    source: "Manual",
-    source_url: "",
-    description: "",
-    short_description: "",
-    developers: [],
-    publishers: [],
-    release_date: null,
-    rating: null,
-    store_categories: [StoreCategory.SinglePlayer],
-    genres: [],
-    features: [],
-    screenshots: [],
-});
-const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
-const textToPersons = (value) => value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({ name, url: "" }));
-const epochToDate = (value) => {
+const epochToDate$1 = (value) => {
     if (!value)
         return "";
     const date = new Date(value * 1000);
     if (Number.isNaN(date.getTime()))
         return "";
     return date.toISOString().slice(0, 10);
-};
-const dateToEpoch = (value) => {
-    if (!value.trim())
-        return null;
-    const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
-    if (Number.isNaN(timestamp))
-        return null;
-    return Math.floor(timestamp / 1000);
-};
-const parseRating = (value) => {
-    if (!value.trim())
-        return null;
-    const number = Number(value);
-    if (!Number.isFinite(number))
-        return null;
-    return Math.max(0, Math.min(100, Math.round(number)));
-};
-const useNonSteamGames = () => {
-    const [games, setGames] = SP_REACT.useState([]);
-    const loadGames = SP_REACT.useCallback(async () => {
-        const loadedGames = await allNonSteamGames();
-        setGames(loadedGames);
-        return loadedGames;
-    }, []);
-    SP_REACT.useEffect(() => {
-        void loadGames();
-    }, [loadGames]);
-    return { games, loadGames };
 };
 const Content = () => {
     const { games, loadGames } = useNonSteamGames();
@@ -3787,10 +3710,99 @@ const Content = () => {
         }
     };
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
-        ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
+        ? `${delistedStatus.count} delisted apps · updated ${epochToDate$1(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
     return (SP_JSX.jsxs("div", { style: qamPanelStyle, children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }) }), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(activityStatusKind), children: activityMessage || "Refreshing Activity..." })) : null] })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsxs("div", { style: inlineStatusStyle(delistedBusy ? "active" : "idle"), children: [delistedBusy ? (SP_JSX.jsx(BusySpinner, {})) : null, SP_JSX.jsx("span", { children: delistedStatusText })] }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: parsedPluginVersion.base })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Commit" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: parsedPluginVersion.commit || "local" })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) }) }) })] }));
 };
+
+var StoreCategory;
+(function (StoreCategory) {
+    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
+    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
+    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
+    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
+    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
+    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
+    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
+    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
+    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
+    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
+    StoreCategory[StoreCategory["LocalCoOp"] = 392] = "LocalCoOp";
+})(StoreCategory || (StoreCategory = {}));
+const CATEGORY_LABELS = {
+    [StoreCategory.SinglePlayer]: "Single-player",
+    [StoreCategory.MultiPlayer]: "Multiplayer",
+    [StoreCategory.CoOp]: "Co-op",
+    [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
+    [StoreCategory.OnlineCoOp]: "Online co-op",
+    [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
+    [StoreCategory.LocalCoOp]: "Local co-op",
+    [StoreCategory.SplitScreen]: "Split screen",
+    [StoreCategory.FullController]: "Full controller support",
+    [StoreCategory.MMO]: "MMO",
+    [StoreCategory.Achievements]: "Achievements",
+};
+
+const parseSteamAppId = (input) => {
+    const s = String(input || "").trim();
+    if (!s)
+        return 0;
+    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
+        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
+        s.match(/[?&]appid=(\d+)/i) ||
+        s.match(/\bapp\/(\d+)\b/i);
+    const parsed = Number(match?.[1] || 0);
+    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
+        ? parsed
+        : 0;
+};
+const metadataTemplate = (title) => ({
+    title,
+    id: title,
+    source: "Manual",
+    source_url: "",
+    description: "",
+    short_description: "",
+    developers: [],
+    publishers: [],
+    release_date: null,
+    rating: null,
+    store_categories: [StoreCategory.SinglePlayer],
+    genres: [],
+    features: [],
+    screenshots: [],
+});
+const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
+const textToPersons = (value) => value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, url: "" }));
+const epochToDate = (value) => {
+    if (!value)
+        return "";
+    const date = new Date(value * 1000);
+    if (Number.isNaN(date.getTime()))
+        return "";
+    return date.toISOString().slice(0, 10);
+};
+const dateToEpoch = (value) => {
+    if (!value.trim())
+        return null;
+    const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
+    if (Number.isNaN(timestamp))
+        return null;
+    return Math.floor(timestamp / 1000);
+};
+const parseRating = (value) => {
+    if (!value.trim())
+        return null;
+    const number = Number(value);
+    if (!Number.isFinite(number))
+        return null;
+    return Math.max(0, Math.min(100, Math.round(number)));
+};
+
 const MetadataPage = () => {
     const { appid } = DFL.useParams();
     const appId = Number(appid);

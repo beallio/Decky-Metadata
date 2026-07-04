@@ -1,7 +1,8 @@
 import { routerHook } from "@decky/api";
 import { definePlugin, staticClasses } from "@decky/ui";
 import { FaDatabase } from "react-icons/fa";
-import { Content, MetadataPage } from "./components";
+import { Content } from "./ContentPanel";
+import { MetadataPage } from "./MetadataPage";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { getDebugLogging } from "./backend";
 import * as log from "./log";
