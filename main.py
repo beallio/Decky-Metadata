@@ -20,7 +20,7 @@ import urllib.parse
 import urllib.request
 import zlib
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import decky
 
@@ -252,6 +252,18 @@ STORE_CATEGORY = {
 
 def now() -> int:
     return int(time.time())
+
+
+class ScanPipelineResult(TypedDict):
+    status: str
+    metadata: dict[str, Any] | None
+    source: str
+
+
+class ScanPipelineTarget(TypedDict):
+    app_id: int
+    title: str
+    metadata: dict[str, Any] | None
 
 
 class Plugin:
@@ -681,130 +693,185 @@ class Plugin:
         has_description = bool(self._clean_html_text(str(metadata.get("description") or metadata.get("short_description") or "")))
         return not title or (source in {"", "manual"} and not has_description)
 
+    def _steam_scan_match_sync(self, title: str) -> ScanPipelineResult:
+        steam_shell = {"title": title, "source": "Manual", "id": title}
+        metadata = self._metadata_with_steam_news_sync(steam_shell, title, 10)
+        if self._safe_int(metadata.get("steam_appid")):
+            return {"status": "matched", "metadata": metadata, "source": "steam"}
+        return {"status": "miss", "metadata": None, "source": "steam"}
+
+    def _delisted_scan_match_sync(self, title: str) -> ScanPipelineResult:
+        delisted_appid = self._resolve_delisted_appid_for_title(title)
+        if not delisted_appid:
+            return {"status": "miss", "metadata": None, "source": "delisted"}
+        pinned = {
+            "title": title,
+            "source": "Manual",
+            "id": title,
+            "steam_appid": delisted_appid,
+        }
+        metadata = self._metadata_with_steam_news_sync(pinned, title, 10)
+        if self._safe_int(metadata.get("steam_appid")):
+            return {"status": "matched", "metadata": metadata, "source": "delisted"}
+        return {"status": "miss", "metadata": None, "source": "delisted"}
+
+    def _ign_scan_match_sync(self, title: str) -> ScanPipelineResult:
+        metadata = self._auto_fetch_metadata_sync(title)
+        if not metadata:
+            return {"status": "miss", "metadata": None, "source": "ign"}
+        enriched = self._metadata_with_steam_news_sync(metadata, title, 10)
+        return {"status": "matched", "metadata": enriched, "source": "ign"}
+
+    def _metadata_scan_match_sync(self, target: ScanPipelineTarget) -> ScanPipelineResult:
+        for resolver in (
+            self._steam_scan_match_sync,
+            self._delisted_scan_match_sync,
+            self._ign_scan_match_sync,
+        ):
+            result = resolver(target["title"])
+            if result["status"] == "matched":
+                return result
+        return {"status": "miss", "metadata": None, "source": "metadata"}
+
+    def _activity_refresh_match_sync(self, target: ScanPipelineTarget) -> ScanPipelineResult:
+        metadata = dict(target["metadata"] or {})
+        refreshed = self._metadata_with_steam_news_sync(
+            metadata,
+            target["title"],
+            10,
+            include_details=False,
+        )
+        if refreshed and self._sanitize_steam_news(refreshed.get("steam_news")):
+            return {"status": "matched", "metadata": refreshed, "source": "steam_activity"}
+        if refreshed:
+            return {"status": "miss", "metadata": refreshed, "source": "steam_activity"}
+        return {"status": "miss", "metadata": None, "source": "steam_activity"}
+
+    async def _save_scan_pipeline_metadata(
+        self, app_id: int, metadata: dict[str, Any]
+    ) -> None:
+        await self.save_metadata(app_id, metadata)
+
+    async def _save_activity_pipeline_metadata(
+        self, app_id: int, metadata: dict[str, Any]
+    ) -> None:
+        self._data["metadata"][str(app_id)] = metadata
+        self._save_data()
+
+    def _scan_pipeline_message(
+        self,
+        result: ScanPipelineResult,
+        title: str,
+        matched_messages: dict[str, str],
+        miss_message: str,
+    ) -> str:
+        if result["status"] == "matched":
+            template = matched_messages.get(result["source"], matched_messages.get("", "Saved metadata for {title}"))
+            return template.format(title=title)
+        return miss_message.format(title=title)
+
+    async def _run_scan_pipeline(
+        self,
+        targets: list[ScanPipelineTarget],
+        progress: dict[str, Any],
+        resolver: Any,
+        saver: Any,
+        *,
+        initial_message: str,
+        matched_messages: dict[str, str],
+        miss_message: str,
+        error_message: str,
+        log_message: str,
+    ) -> None:
+        progress.update({"total": len(targets), "completed": 0})
+        for target in targets:
+            title = target["title"]
+            app_id = target["app_id"]
+            current = f"{progress['completed'] + 1}/{len(targets)} - {title}" if title else f"{progress['completed'] + 1}/{len(targets)}"
+            progress["current"] = current
+            progress["message"] = initial_message.format(title=title)
+            try:
+                result = await asyncio.to_thread(resolver, target)
+                if result["metadata"] is not None:
+                    await saver(app_id, result["metadata"])
+                if result["status"] == "matched":
+                    progress["assigned"] += 1
+                else:
+                    progress["failed"] += 1
+                progress["message"] = self._scan_pipeline_message(
+                    result,
+                    title,
+                    matched_messages,
+                    miss_message,
+                )
+            except Exception as error:
+                progress["failed"] += 1
+                progress["message"] = error_message.format(title=title)
+                progress["error"] = str(error)
+                _plog("load", log_message, level=logging.ERROR, exc=True, title=title, app_id=app_id, error=error)
+            finally:
+                progress["completed"] += 1
+        progress["running"] = False
+        progress["status"] = "completed"
+        progress["current"] = ""
+
     async def _scan_missing(self, games: list[dict[str, Any]]) -> None:
         self._load_data()
         missing = [
-            game
+            {
+                "app_id": int(game.get("appid")),
+                "title": self._clean_game_title(str(game.get("name") or "")),
+                "metadata": None,
+            }
             for game in games
             if isinstance(game, dict)
             and str(game.get("appid", "")).strip()
             and self._metadata_needs_scan(int(game.get("appid")))
         ]
-        self._scan_progress.update({"total": len(missing), "completed": 0})
         if missing:
             await asyncio.to_thread(self._ensure_delisted_index_sync, False)
-        for game in missing:
-            app_id = int(game.get("appid"))
-            title = self._clean_game_title(str(game.get("name") or ""))
-            self._scan_progress["current"] = f"{self._scan_progress['completed'] + 1}/{len(missing)} - {title}" if title else f"{self._scan_progress['completed'] + 1}/{len(missing)}"
-            try:
-                self._scan_progress["message"] = f"Matching Steam for {title}"
-                steam_shell = {"title": title, "source": "Manual", "id": title}
-                steam_record = await asyncio.to_thread(
-                    self._metadata_with_steam_news_sync,
-                    steam_shell,
-                    title,
-                    10,
-                )
-                matched_steam = bool(self._safe_int(steam_record.get("steam_appid")))
-                if matched_steam:
-                    await self.save_metadata(app_id, steam_record)
-                    self._scan_progress["assigned"] += 1
-                    self._scan_progress["message"] = f"Matched Steam for {title}"
-                else:
-                    delisted_appid = await asyncio.to_thread(
-                        self._resolve_delisted_appid_for_title,
-                        title,
-                    )
-                    if delisted_appid:
-                        pinned = {
-                            "title": title,
-                            "source": "Manual",
-                            "id": title,
-                            "steam_appid": delisted_appid,
-                        }
-                        steam_record = await asyncio.to_thread(
-                            self._metadata_with_steam_news_sync,
-                            pinned,
-                            title,
-                            10,
-                        )
-                        if self._safe_int(steam_record.get("steam_appid")):
-                            await self.save_metadata(app_id, steam_record)
-                            self._scan_progress["assigned"] += 1
-                            self._scan_progress["message"] = f"Matched delisted Steam app for {title}"
-                            continue
-                    self._scan_progress["message"] = f"Fetching metadata for {title}"
-                    metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
-                    if metadata:
-                        metadata = await asyncio.to_thread(
-                            self._metadata_with_steam_news_sync,
-                            metadata,
-                            title,
-                            10,
-                        )
-                        await self.save_metadata(app_id, metadata)
-                        self._scan_progress["assigned"] += 1
-                        self._scan_progress["message"] = f"Saved metadata for {title}"
-                    else:
-                        self._scan_progress["failed"] += 1
-                        self._scan_progress["message"] = f"No metadata match for {title}"
-            except Exception as error:
-                self._scan_progress["failed"] += 1
-                self._scan_progress["message"] = f"Failed: {title}"
-                self._scan_progress["error"] = str(error)
-                _plog("load", "metadata scan failed", level=logging.ERROR, exc=True, title=title, app_id=app_id, error=error)
-            finally:
-                self._scan_progress["completed"] += 1
-        self._scan_progress["running"] = False
-        self._scan_progress["status"] = "completed"
-        self._scan_progress["current"] = ""
+        await self._run_scan_pipeline(
+            missing,
+            self._scan_progress,
+            self._metadata_scan_match_sync,
+            self._save_scan_pipeline_metadata,
+            initial_message="Matching metadata for {title}",
+            matched_messages={
+                "steam": "Matched Steam for {title}",
+                "delisted": "Matched delisted Steam app for {title}",
+                "ign": "Saved metadata for {title}",
+            },
+            miss_message="No metadata match for {title}",
+            error_message="Failed: {title}",
+            log_message="metadata scan failed",
+        )
 
     async def _refresh_steam_activities(self, games: list[dict[str, Any]]) -> None:
         self._load_data()
-        targets: list[dict[str, Any]] = []
+        targets: list[ScanPipelineTarget] = []
         for game in games:
             if not isinstance(game, dict) or not str(game.get("appid", "")).strip():
                 continue
             metadata = self._data["metadata"].get(str(int(game.get("appid"))))
             if isinstance(metadata, dict):
-                targets.append(game)
-        self._activity_refresh_progress.update({"total": len(targets), "completed": 0})
-        for game in targets:
-            app_id = int(game.get("appid"))
-            metadata = self._data["metadata"].get(str(app_id))
-            title = self._clean_game_title(str(game.get("name") or (metadata or {}).get("title") or ""))
-            current = f"{self._activity_refresh_progress['completed'] + 1}/{len(targets)} - {title}" if title else f"{self._activity_refresh_progress['completed'] + 1}/{len(targets)}"
-            self._activity_refresh_progress["current"] = current
-            self._activity_refresh_progress["message"] = f"Refreshing Steam Activity for {title}"
-            try:
-                refreshed = await asyncio.to_thread(
-                    self._metadata_with_steam_news_sync,
-                    dict(metadata or {}),
-                    title,
-                    10,
+                targets.append(
+                    {
+                        "app_id": int(game.get("appid")),
+                        "title": self._clean_game_title(str(game.get("name") or metadata.get("title") or "")),
+                        "metadata": dict(metadata),
+                    }
                 )
-                if refreshed and self._sanitize_steam_news(refreshed.get("steam_news")):
-                    self._data["metadata"][str(app_id)] = refreshed
-                    self._save_data()
-                    self._activity_refresh_progress["assigned"] += 1
-                    self._activity_refresh_progress["message"] = f"Updated Steam Activity for {title}"
-                else:
-                    if refreshed:
-                        self._data["metadata"][str(app_id)] = refreshed
-                        self._save_data()
-                    self._activity_refresh_progress["failed"] += 1
-                    self._activity_refresh_progress["message"] = f"No Steam Activity found for {title}"
-            except Exception as error:
-                self._activity_refresh_progress["failed"] += 1
-                self._activity_refresh_progress["message"] = f"Failed: {title}"
-                self._activity_refresh_progress["error"] = str(error)
-                _plog("load", "Steam Activity refresh failed", level=logging.ERROR, exc=True, title=title, app_id=app_id, error=error)
-            finally:
-                self._activity_refresh_progress["completed"] += 1
-        self._activity_refresh_progress["running"] = False
-        self._activity_refresh_progress["status"] = "completed"
-        self._activity_refresh_progress["current"] = ""
+        await self._run_scan_pipeline(
+            targets,
+            self._activity_refresh_progress,
+            self._activity_refresh_match_sync,
+            self._save_activity_pipeline_metadata,
+            initial_message="Refreshing Steam Activity for {title}",
+            matched_messages={"steam_activity": "Updated Steam Activity for {title}"},
+            miss_message="No Steam Activity found for {title}",
+            error_message="Failed: {title}",
+            log_message="Steam Activity refresh failed",
+        )
 
     def _search_metadata_sync(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
         cleaned = self._clean_game_title(query)
@@ -1057,7 +1124,12 @@ class Plugin:
         }
 
     def _metadata_with_steam_news_sync(
-        self, metadata: dict[str, Any], title: str, limit: int = 6
+        self,
+        metadata: dict[str, Any],
+        title: str,
+        limit: int = 6,
+        *,
+        include_details: bool = True,
     ) -> dict[str, Any]:
         if not isinstance(metadata, dict):
             return metadata
@@ -1072,15 +1144,16 @@ class Plugin:
         next_metadata = dict(metadata)
         if steam_appid:
             next_metadata["steam_appid"] = steam_appid
-            deck_compat_category = self._steam_deck_compat_for_appid(steam_appid)
-            if deck_compat_category is not None:
-                next_metadata["deck_compat_category"] = deck_compat_category
-            steam_details = self._steam_appdetails_for_appid(steam_appid)
-            if steam_details:
-                for key, value in steam_details.items():
-                    if value:
-                        next_metadata[key] = value
-                next_metadata["source"] = "Steam"
+            if include_details:
+                deck_compat_category = self._steam_deck_compat_for_appid(steam_appid)
+                if deck_compat_category is not None:
+                    next_metadata["deck_compat_category"] = deck_compat_category
+                steam_details = self._steam_appdetails_for_appid(steam_appid)
+                if steam_details:
+                    for key, value in steam_details.items():
+                        if value:
+                            next_metadata[key] = value
+                    next_metadata["source"] = "Steam"
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -1930,6 +2003,15 @@ class Plugin:
                 break
         return screenshots
 
+    def _collected_steam_news_image_sources(self, item: dict[str, Any]) -> list[str]:
+        raw_sources = item.get("image_sources") if isinstance(item.get("image_sources"), list) else []
+        image_sources: list[str] = []
+        for candidate in [*raw_sources, item.get("image"), item.get("image_url"), item.get("preview_image_url")]:
+            image = self._steam_partner_asset_url(str(candidate or "")) or self._https_url(str(candidate or "").strip())
+            if image and image not in image_sources:
+                image_sources.append(image)
+        return image_sources
+
     def _sanitize_steam_news(self, values: Any) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         if not isinstance(values, list):
@@ -1956,14 +2038,7 @@ class Plugin:
             if key in seen:
                 continue
             seen.add(key)
-            raw_sources = item.get("image_sources") if isinstance(item.get("image_sources"), list) else []
-            image_sources: list[str] = []
-            for candidate in [*raw_sources, item.get("image"), item.get("image_url"), item.get("preview_image_url")]:
-                for image in self._steam_news_image_candidates(str(candidate or ""), 0) or [self._https_url(str(candidate or "").strip())]:
-                    if image and image not in image_sources:
-                        image_sources.append(image)
-            if not image_sources:
-                image_sources = self._steam_news_image_candidates(raw_body_source, 0)
+            image_sources = self._collected_steam_news_image_sources(item)
             rows.append(
                 {
                     "id": raw_id or url,
