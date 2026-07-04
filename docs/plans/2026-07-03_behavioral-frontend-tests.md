@@ -167,6 +167,18 @@ git status --short
 - No test greps a frontend source file's text.
 - Remaining tests still provide meaningful coverage; removed ones have a documented on-device check.
 
+### On-device verification replacing the removed source-regex test
+
+The removed `tests/test_qam_controller_scroll.py` test asserted on JSX source text for the QAM
+stats and Versions panels. There is no TS/React test runner in this repository, so the behavioral
+check remains on-device:
+
+1. Sideload or reload the plugin on Steam Deck Gaming Mode.
+2. Open the Decky Metadata QAM page.
+3. Use controller directional navigation to move to the top stats block and bottom Versions block.
+4. Confirm focus lands on both display blocks and the panel scrolls to keep the focused block
+   visible.
+
 
 ---
 
