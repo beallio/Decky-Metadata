@@ -150,15 +150,6 @@ const error = (area, message, ...args) => {
     console.error(prefix(area), message, ...args);
 };
 
-const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
-    const cleanSteamAppId = Number(steamAppId || 0);
-    if (!cleanSteamAppId)
-        return null;
-    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
-        return null;
-    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
-};
-
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -180,13 +171,15 @@ const GAME_ACTIVITY_ROUTES = [
     "/library/:collection/app/:appid/activity",
     "/library/:collection/app/:appid/activity/:rest",
 ];
-let bypassCounter = 0;
-let bypassBypass = 0;
-let metadataLoaded = false;
-let metadataLoadPromise = null;
-const loadingMetadata = new Set();
-const loadingScreenshots = new Set();
-let lastObservedGameDetailAppId = 0;
+const metadataState = {
+    bypassCounter: 0,
+    bypassBypass: 0,
+    metadataLoaded: false,
+    metadataLoadPromise: null,
+    loadingMetadata: new Set(),
+    loadingScreenshots: new Set(),
+    lastObservedGameDetailAppId: 0,
+};
 const cleanTitle = (value) => String(value || "")
     .replace(/[\u2122\u00ae\u00a9]/g, "")
     .replace(/\s+/g, " ")
@@ -371,6 +364,229 @@ const rewriteSteamwebNavState = (state) => {
         return { state, rewrote: false };
     }
 };
+const appName = (appId) => {
+    const overview = getOverview(appId);
+    return cleanTitle(overview?.display_name ||
+        overview?.localized_name ||
+        overview?.name ||
+        `App ${appId}`);
+};
+const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
+const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
+const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
+const deckyNativeActivityCache = () => {
+    const host = globalThis;
+    if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
+        host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
+};
+const deckyNativePartnerEventCache = () => {
+    const host = globalThis;
+    if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
+        host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
+};
+const deckyNativePartnerEventStore = () => globalThis[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+const activityAppIdFromUrl = (url) => {
+    const decoded = decodeURIComponent(String(url || ""));
+    const patterns = [
+        /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
+        /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
+        /(?:appid|app_id|appId)=(\d+).*?(?:appactivity|activity|appnews|appupdates)/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1]);
+    }
+    return 0;
+};
+const gameDetailAppIdFromPath = (path) => {
+    const decoded = decodeURIComponent(String(path || ""));
+    const patterns = [
+        /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
+        /(?:^|[?#&\s])appid=(\d+)/i,
+        /(?:^|[?#&\s])app_id=(\d+)/i,
+        /\bapp\/(\d+)\b/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1] || 0);
+    }
+    return 0;
+};
+const appIdFromDom = () => {
+    const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
+    const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
+    for (const element of candidates) {
+        if (!visibleElement(element))
+            continue;
+        for (const attribute of attributes) {
+            const value = element.getAttribute(attribute) || "";
+            const appId = gameDetailAppIdFromPath(value);
+            if (appId)
+                return appId;
+        }
+    }
+    return 0;
+};
+const appIdFromVisibleMetadataTitle = () => {
+    try {
+        const pageText = normalizedTabText(document.body?.textContent || "");
+        if (!pageText || !metadataCache)
+            return 0;
+        const candidates = Object.entries(metadataCache)
+            .map(([key, metadata]) => {
+            const appId = Number(key);
+            const title = normalizedTabText(metadata?.title || appName(appId));
+            return { appId, title };
+        })
+            .filter((candidate) => candidate.appId && candidate.title && candidate.title.length >= 3)
+            .sort((a, b) => b.title.length - a.title.length);
+        for (const candidate of candidates) {
+            if (pageText.includes(candidate.title))
+                return candidate.appId;
+        }
+    }
+    catch (_error) {
+        // Best-effort fallback only.
+    }
+    return 0;
+};
+const currentGameDetailAppId = () => {
+    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
+    if (routeAppId)
+        return routeAppId;
+    if (metadataState.lastObservedGameDetailAppId)
+        return metadataState.lastObservedGameDetailAppId;
+    const titleAppId = appIdFromVisibleMetadataTitle();
+    if (titleAppId)
+        return titleAppId;
+    const domAppId = appIdFromDom();
+    if (domAppId && (metadataCache[String(domAppId)] || isNonSteamAppWithoutPatchedMethod(getOverview(domAppId))))
+        return domAppId;
+    return domAppId || 0;
+};
+const visibleElement = (element) => {
+    if (!(element instanceof HTMLElement))
+        return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2)
+        return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
+};
+const deepQuerySelectorAll = (selector, root = document) => {
+    const results = [];
+    const seen = new Set();
+    const visit = (scope) => {
+        let elements = [];
+        try {
+            elements = Array.from(scope.querySelectorAll?.(selector) || []);
+        }
+        catch (_error) {
+            elements = [];
+        }
+        elements.forEach((element) => {
+            if (!seen.has(element)) {
+                seen.add(element);
+                results.push(element);
+            }
+            const shadowRoot = element.shadowRoot;
+            if (shadowRoot)
+                visit(shadowRoot);
+        });
+    };
+    visit(root);
+    return results;
+};
+const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
+const patchMethod = (target, methodName, replacement) => {
+    if (!target?.[methodName])
+        return () => undefined;
+    const original = target[methodName];
+    target[methodName] = function patchedMethod(...args) {
+        const boundOriginal = original.bind(this);
+        try {
+            return replacement(this, boundOriginal, args);
+        }
+        catch (_error) {
+            // A patch replacement must never break the Steam method it wraps.
+            try {
+                return boundOriginal(...args);
+            }
+            catch (_originalError) {
+                return undefined;
+            }
+        }
+    };
+    return () => {
+        target[methodName] = original;
+    };
+};
+const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
+    try {
+        return handler.call(this, args, ret);
+    }
+    catch (_error) {
+        // An afterPatch handler must never break the Steam method it augments.
+        return ret;
+    }
+});
+const overviewFromReactTree = (tree) => {
+    try {
+        const holder = DFL.findInReactTree(tree, (node) => {
+            const overview = node?.props?.overview || node?.overview;
+            return overview?.appid ? true : undefined;
+        });
+        return holder?.props?.overview || holder?.overview || null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const appIdFromReactTree = (tree) => {
+    const overview = overviewFromReactTree(tree);
+    const appId = Number(overview?.appid || 0);
+    return Number.isFinite(appId) ? appId : 0;
+};
+const historyPathFromArgs = (args) => {
+    const first = args?.[0];
+    if (typeof first === "string")
+        return first;
+    if (first && typeof first === "object") {
+        return String(first.pathname || first.path || first.href || first.url || "");
+    }
+    return "";
+};
+const historyStateFromArgs = (args) => {
+    const first = args?.[0];
+    const second = args?.[1];
+    // React Router / Steam history may call push(path, { state }), push(path, state),
+    // push({ pathname, state }), replace(location, state), or the raw browser
+    // history API with the state as first argument. The previous build only handled
+    // the direct state shapes, so Steam's Navigator.App(appid, { gidPartnerEvent })
+    // slipped through as args[1].state and kept polluting the back stack.
+    if (first && typeof first === "object") {
+        if (first.state?.event_to_show)
+            return first.state;
+        if (first.event_to_show)
+            return first;
+        if ("state" in first && first.state)
+            return first.state;
+    }
+    if (second && typeof second === "object") {
+        if (second.state?.event_to_show)
+            return second.state;
+        if (second.event_to_show)
+            return second;
+        if ("state" in second && second.state)
+            return second.state;
+    }
+    return second;
+};
+
 const shortcutAppIdForSteamAppId = (steamAppId) => {
     if (!Number.isFinite(steamAppId) || steamAppId <= 0)
         return null;
@@ -419,29 +635,22 @@ const ensureDetailsOverviewSafeFields = (appId) => {
         // Best-effort guard only; never block Steam's native bootstrap.
     }
 };
-const appName = (appId) => {
-    const overview = getOverview(appId);
-    return cleanTitle(overview?.display_name ||
-        overview?.localized_name ||
-        overview?.name ||
-        `App ${appId}`);
-};
 const refreshMetadataCache = async () => {
     const all = await getAllMetadata();
     Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
     Object.assign(metadataCache, all || {});
-    metadataLoaded = true;
+    metadataState.metadataLoaded = true;
     Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
 };
 const ensureMetadataCache = async () => {
-    if (metadataLoaded)
+    if (metadataState.metadataLoaded)
         return;
-    if (!metadataLoadPromise) {
-        metadataLoadPromise = refreshMetadataCache().finally(() => {
-            metadataLoadPromise = null;
+    if (!metadataState.metadataLoadPromise) {
+        metadataState.metadataLoadPromise = refreshMetadataCache().finally(() => {
+            metadataState.metadataLoadPromise = null;
         });
     }
-    await metadataLoadPromise;
+    await metadataState.metadataLoadPromise;
 };
 const startMetadataBootstrap = () => {
     let cancelled = false;
@@ -570,6 +779,480 @@ const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots 
     height: image.height || 720,
     bSpoiler: false,
 }));
+const tryFetchMetadataForApp = async (appId) => {
+    await ensureMetadataCache();
+    if (metadataCache[String(appId)] || metadataState.loadingMetadata.has(appId))
+        return;
+    const overview = getOverview(appId);
+    if (!isNonSteamApp(overview))
+        return;
+    metadataState.loadingMetadata.add(appId);
+    try {
+        const metadata = await autoFetchMetadata(appId, appName(appId));
+        if (metadata) {
+            metadataCache[String(appId)] = metadata;
+            applyMetadata(appId);
+            window.dispatchEvent(new Event("decky-metadata:updated"));
+        }
+    }
+    finally {
+        metadataState.loadingMetadata.delete(appId);
+    }
+};
+const tryEnrichScreenshotsForApp = async (appId) => {
+    await ensureMetadataCache();
+    const metadata = metadataCache[String(appId)];
+    if (!metadata ||
+        metadata.screenshots?.length ||
+        metadataState.loadingScreenshots.has(appId) ||
+        String(metadata.source || "").toUpperCase() !== "IGN") {
+        return;
+    }
+    const source = metadata.source_url || String(metadata.id || "");
+    if (!source)
+        return;
+    metadataState.loadingScreenshots.add(appId);
+    try {
+        const refreshed = await fetchMetadata(source);
+        if (refreshed?.screenshots?.length) {
+            const saved = await saveMetadata(appId, {
+                ...metadata,
+                screenshots: refreshed.screenshots,
+            });
+            metadataCache[String(appId)] = saved;
+            applyMetadata(appId);
+            window.dispatchEvent(new Event("decky-metadata:updated"));
+        }
+    }
+    catch (error) {
+        warn("bridge", "screenshot enrichment failed", error);
+    }
+    finally {
+        metadataState.loadingScreenshots.delete(appId);
+    }
+};
+const installMetadataPatches = (unpatchers) => {
+    const overviewProto = appStore?.allApps?.[0]?.__proto__;
+    const detailsProto = appDetailsStore?.__proto__;
+    if (!overviewProto || !detailsProto)
+        return;
+    if (appStore?.GetAppOverviewByAppID) {
+        unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
+            const requestedAppId = Number(args[0]);
+            const result = original(...args);
+            if (result || !Number.isFinite(requestedAppId) || requestedAppId <= 0) {
+                return result;
+            }
+            const shortcutAppId = shortcutAppIdForSteamAppId(requestedAppId);
+            if (!shortcutAppId || shortcutAppId === requestedAppId)
+                return result;
+            try {
+                const shortcutOverview = original(shortcutAppId);
+                if (isNonSteamAppWithoutPatchedMethod(shortcutOverview))
+                    return shortcutOverview;
+            }
+            catch (_error) {
+                // Fall through to Steam's native null result.
+            }
+            return result;
+        }));
+    }
+    unpatchers.push(patchMethod(detailsProto, "GetDescriptions", (_thisValue, original, args) => {
+        const appId = Number(args[0]);
+        const overview = getOverview(appId);
+        const originalResult = original(...args);
+        if (isNonSteamApp(overview)) {
+            ensureDetailsOverviewSafeFields(appId);
+            const metadata = metadataCache[String(appId)];
+            if (metadata) {
+                applyMetadata(appId);
+                const appData = appDetailsStore?.GetAppData?.(appId);
+                // Keep Steam's first-run detail bootstrap intact. Returning Decky data
+                // before Steam has created the native details object can make SteamUI
+                // render the play bar with an invalid/null AppOverview and crash on
+                // BIsApplicationOrTool during the first page open.
+                if (appData?.details && appData?.descriptionsData) {
+                    return appData.descriptionsData;
+                }
+            }
+            else {
+                void ensureMetadataCache().then(() => {
+                    if (metadataCache[String(appId)]) {
+                        applyMetadata(appId);
+                        void tryEnrichScreenshotsForApp(appId);
+                    }
+                    else {
+                        void tryFetchMetadataForApp(appId);
+                    }
+                });
+            }
+        }
+        return originalResult;
+    }));
+    unpatchers.push(patchMethod(detailsProto, "GetAssociations", (_thisValue, original, args) => {
+        const appId = Number(args[0]);
+        const originalResult = original(...args);
+        const overview = getOverview(appId);
+        if (isNonSteamApp(overview))
+            ensureDetailsOverviewSafeFields(appId);
+        if (isNonSteamApp(overview) && metadataCache[String(appId)]) {
+            applyMetadata(appId);
+            const appData = appDetailsStore?.GetAppData?.(appId);
+            if (appData?.details && appData?.associationData) {
+                return appData.associationData;
+            }
+        }
+        return originalResult;
+    }));
+    unpatchers.push(patchMethod(overviewProto, "BHasStoreCategory", (thisValue, original, args) => {
+        if (isNonSteamApp(thisValue)) {
+            const category = Number(args[0]);
+            const metadata = metadataCache[String(thisValue.appid)];
+            if (metadata?.store_categories?.includes(category))
+                return true;
+        }
+        return original(...args);
+    }));
+    if (overviewProto?.BIsModOrShortcut) {
+        unpatchers.push(safeAfterPatch(overviewProto, "BIsModOrShortcut", function (_args, ret) {
+            if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true)
+                return ret;
+            if (metadataState.bypassBypass > 0) {
+                metadataState.bypassBypass -= 1;
+                return false;
+            }
+            const path = currentRoutePath();
+            if (path === "/library/home")
+                return false;
+            if (metadataState.bypassCounter > 0)
+                metadataState.bypassCounter -= 1;
+            return metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
+        }).unpatch);
+    }
+    if (detailsProto?.BHasRecentlyLaunched) {
+        unpatchers.push(safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args, ret) => {
+            metadataState.bypassCounter = 4;
+            return ret;
+        }).unpatch);
+    }
+    ["GetGameID", "GetPrimaryAppID"].forEach((methodName) => {
+        if (!overviewProto?.[methodName])
+            return;
+        unpatchers.push(patchMethod(overviewProto, methodName, (_thisValue, original, args) => {
+            metadataState.bypassCounter = -1;
+            const ret = original(...args);
+            metadataState.bypassCounter = 0;
+            return ret;
+        }));
+    });
+    if (overviewProto?.GetCanonicalReleaseDate) {
+        unpatchers.push(patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
+            const metadata = metadataCache[String(thisValue?.appid)];
+            if (isNonSteamApp(thisValue) && metadata?.release_date) {
+                return metadata.release_date;
+            }
+            return original(...args);
+        }));
+    }
+    if (overviewProto?.GetPerClientData) {
+        unpatchers.push(safeAfterPatch(overviewProto, "GetPerClientData", (_args, ret) => {
+            metadataState.bypassCounter = 4;
+            return ret;
+        }).unpatch);
+    }
+    try {
+        const appDetailsSections = DFL.findModuleChild((module) => {
+            if (typeof module !== "object")
+                return undefined;
+            for (const prop in module) {
+                try {
+                    if (typeof module[prop]?.prototype?.GetSections === "function") {
+                        return module[prop];
+                    }
+                }
+                catch (_error) {
+                    continue;
+                }
+            }
+            return undefined;
+        });
+        if (appDetailsSections?.prototype?.GetSections) {
+            unpatchers.push(safeAfterPatch(appDetailsSections.prototype, "GetSections", function (_args, ret) {
+                const overview = this?.props?.overview;
+                const appId = Number(overview?.appid);
+                if (appId && isNonSteamApp(overview))
+                    ensureDetailsOverviewSafeFields(appId);
+                if (appId && isNonSteamApp(overview) && metadataCache[String(appId)]) {
+                    metadataState.lastObservedGameDetailAppId = appId;
+                    const metadata = metadataCache[String(appId)];
+                    if (metadata?.screenshots?.length) {
+                        ret.add("screenshots");
+                    }
+                    else {
+                        void tryEnrichScreenshotsForApp(appId);
+                    }
+                    ret.add("community");
+                    // Add the real Steam Activity section too. News are deliberately
+                    // served through the Activity feed patch, not the Community feed.
+                    ret.add("activity");
+                }
+                return ret;
+            }).unpatch);
+        }
+    }
+    catch (error) {
+        warn("patch", "app details sections patch skipped", error);
+    }
+};
+const allNonSteamGames = async () => {
+    const byId = new Map();
+    const addEntry = (entry) => {
+        const appid = Number(entry?.appid ?? entry?.app_id ?? entry?.unAppID ?? entry?.nAppID ?? entry);
+        if (!Number.isFinite(appid) || appid <= 0)
+            return;
+        const overview = getOverview(appid);
+        const nonSteam = entry?.isNonSteam === true || isNonSteamApp(overview);
+        if (!nonSteam)
+            return;
+        const previous = byId.get(appid) || {};
+        byId.set(appid, {
+            ...previous,
+            appid,
+            name: cleanTitle(overview?.display_name ||
+                overview?.localized_name ||
+                entry?.name ||
+                entry?.title ||
+                previous.name ||
+                `App ${appid}`),
+            exe: entry?.exe || previous.exe || "",
+            start_dir: entry?.start_dir || previous.start_dir || "",
+            launch_options: entry?.launch_options || previous.launch_options || "",
+            shortcut_path: entry?.shortcut_path || previous.shortcut_path || "",
+        });
+    };
+    try {
+        appStore?.allApps?.forEach?.(addEntry);
+        appStore?.m_mapAppOverview?.forEach?.(addEntry);
+    }
+    catch (_error) {
+        // Continue with backend fallback.
+    }
+    try {
+        const localShortcuts = await Promise.resolve().then(function () { return backend; }).then((m) => m.getLocalShortcuts());
+        localShortcuts.forEach(addEntry);
+    }
+    catch (_error) {
+        // Optional fallback.
+    }
+    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
+const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
+const isAppDetailsQuickLinksModule = (candidate) => !!candidate &&
+    typeof candidate === "object" &&
+    typeof candidate.GameInfoQuickLinks === "string" &&
+    typeof candidate.GameInfoContainer === "string";
+const appDetailsQuickLinksModuleFromExports = (module) => {
+    if (isAppDetailsQuickLinksModule(module))
+        return module;
+    if (!module || typeof module !== "object")
+        return undefined;
+    for (const candidate of Object.values(module)) {
+        if (isAppDetailsQuickLinksModule(candidate))
+            return candidate;
+    }
+    return undefined;
+};
+const resolveAppDetailsQuickLinksClasses = () => {
+    try {
+        let discovered = DFL.findModuleChild(appDetailsQuickLinksModuleFromExports);
+        if (!discovered) {
+            discovered = DFL.findModuleChild((module) => {
+                if (!module || typeof module !== "object")
+                    return undefined;
+                for (const candidate of Object.values(module)) {
+                    const nested = appDetailsQuickLinksModuleFromExports(candidate);
+                    if (nested)
+                        return nested;
+                }
+                return undefined;
+            });
+        }
+        const quickLinks = discovered?.GameInfoQuickLinks;
+        return typeof quickLinks === "string" && quickLinks.trim() ? [quickLinks.trim()] : [];
+    }
+    catch (_error) {
+        return [];
+    }
+};
+const onGameDetailRoute = (path) => {
+    const decoded = safeDecodeURIComponent(String(path || ""));
+    if (/\/achievements(\b|\/)/i.test(decoded))
+        return false;
+    return gameDetailAppIdFromPath(decoded) > 0 || /\/library\/(app|details)\//i.test(decoded);
+};
+const appLinksHiderClassSelector = (className) => {
+    const trimmed = className.trim();
+    return /^[A-Za-z_-][A-Za-z0-9_-]*$/.test(trimmed) ? `.${trimmed}` : "";
+};
+const buildUnmatchedAppLinksHiderStyle = (linkRowClasses) => {
+    const selectors = Array.from(new Set(linkRowClasses))
+        .map(appLinksHiderClassSelector)
+        .filter(Boolean)
+        .map((selector) => `body.${DECKY_HIDE_APP_LINKS_CLASS} ${selector}`);
+    if (!selectors.length) {
+        return "/* decky: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
+    }
+    const targetSelector = selectors.join(",\n");
+    return `
+${targetSelector} {
+  display: none !important;
+}
+`;
+};
+const appLinksHiderTargetDocument = () => {
+    try {
+        const doc = window?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_BrowserWindow
+            ?.document;
+        if (doc && typeof doc.createElement === "function" && doc.head && doc.body) {
+            return doc;
+        }
+    }
+    catch (_error) {
+        // fall through
+    }
+    return null;
+};
+const appLinksDomClassPresent = (className, doc) => {
+    const trimmed = className.trim();
+    if (!trimmed)
+        return false;
+    try {
+        const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(trimmed)
+            : trimmed.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        return !!doc.querySelector(`.${escaped}`);
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const unmatchedAppLinksDecisionDetails = () => {
+    const appId = currentGameDetailAppId();
+    const overview = appId ? getOverview(appId) : null;
+    const isNonSteam = !!(appId && isNonSteamApp(overview));
+    const steamAppId = appId ? steamAppIdForApp(appId) : 0;
+    return { appId, isNonSteam, steamAppId };
+};
+const logUnmatchedAppLinksDecision = (decision, resolvedLinkRowClasses, lastSignature, doc) => {
+    const details = unmatchedAppLinksDecisionDetails();
+    const signature = `${decision}|${resolvedLinkRowClasses.join(",")}|${details.appId}`;
+    if (signature === lastSignature)
+        return lastSignature;
+    try {
+        void frontendLog("applinks", "hider decision", {
+            decision,
+            appId: details.appId,
+            isNonSteam: details.isNonSteam,
+            steamAppId: details.steamAppId,
+            resolvedClasses: resolvedLinkRowClasses,
+            classPresentInDom: resolvedLinkRowClasses[0]
+                ? !!doc && appLinksDomClassPresent(resolvedLinkRowClasses[0], doc)
+                : false,
+        }).catch(() => undefined);
+    }
+    catch (_error) {
+        // Diagnostic logging must never affect the passive hider.
+    }
+    return signature;
+};
+const shouldHideUnmatchedAppLinks = () => {
+    const path = currentRoutePath();
+    if (!onGameDetailRoute(path))
+        return false;
+    const appId = currentGameDetailAppId();
+    if (!appId)
+        return false;
+    return isNonSteamApp(getOverview(appId)) && steamAppIdForApp(appId) === 0;
+};
+const installUnmatchedAppLinksHider = (unpatchers) => {
+    const globalState = globalThis;
+    if (globalState.__deckyAppLinksHider) {
+        unpatchers.push(() => undefined);
+        return;
+    }
+    if (typeof document === "undefined" || !document.body || !document.head) {
+        unpatchers.push(() => undefined);
+        return;
+    }
+    globalState.__deckyAppLinksHider = { installed: true };
+    let resolvedQuickLinksClasses = [];
+    let appliedQuickLinksClasses = "";
+    let lastDecisionLogSignature = "";
+    let injectedDoc = null;
+    const update = () => {
+        try {
+            const doc = appLinksHiderTargetDocument();
+            if (!doc)
+                return;
+            if (resolvedQuickLinksClasses.length === 0) {
+                resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
+            }
+            let style = doc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID);
+            let forceStyleRefresh = injectedDoc !== doc;
+            if (!style) {
+                style = doc.createElement("style");
+                style.id = DECKY_HIDE_APP_LINKS_STYLE_ID;
+                doc.head.appendChild(style);
+                forceStyleRefresh = true;
+            }
+            injectedDoc = doc;
+            const nextAppliedQuickLinksClasses = resolvedQuickLinksClasses.join(" ");
+            if (forceStyleRefresh ||
+                !style.textContent ||
+                nextAppliedQuickLinksClasses !== appliedQuickLinksClasses) {
+                style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedQuickLinksClasses);
+                appliedQuickLinksClasses = nextAppliedQuickLinksClasses;
+            }
+            const decision = shouldHideUnmatchedAppLinks();
+            lastDecisionLogSignature = logUnmatchedAppLinksDecision(decision, resolvedQuickLinksClasses, lastDecisionLogSignature, doc);
+            doc.body.classList.toggle(DECKY_HIDE_APP_LINKS_CLASS, decision);
+        }
+        catch (_error) {
+            // Passive UI polish must never affect Steam navigation or rendering.
+        }
+    };
+    update();
+    const timer = window.setInterval(update, 400);
+    unpatchers.push(() => {
+        try {
+            window.clearInterval(timer);
+            if (injectedDoc) {
+                injectedDoc.body.classList.remove(DECKY_HIDE_APP_LINKS_CLASS);
+                injectedDoc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID)?.remove();
+            }
+        }
+        catch (_error) {
+            // Best effort teardown.
+        }
+        delete globalState.__deckyAppLinksHider;
+    });
+};
+
+const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
+    const cleanSteamAppId = Number(steamAppId || 0);
+    if (!cleanSteamAppId)
+        return null;
+    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
+        return null;
+    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
+};
+
+let ensureMetadataCacheFn = async () => undefined;
+const configureActivityMetadataLoader = (ensureMetadataCache) => {
+    ensureMetadataCacheFn = ensureMetadataCache;
+};
 const isDeckyCommunityId = (value) => typeof value === "string" && value.startsWith("90909");
 const deckyActivityId = (appId, index, date) => `decky-activity-${appId}-${date || 0}-${index}`;
 const numericSteamNewsGid = (value) => {
@@ -726,7 +1409,7 @@ const steamActivityPayloadForApp = async (appId) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
-    await ensureMetadataCache();
+    await ensureMetadataCacheFn();
     let metadata = metadataCache[String(appId)];
     if (!metadata)
         return null;
@@ -783,9 +1466,6 @@ const normalizeDeckySteamActivityType = (value) => {
 };
 const deckySteamActivityTypeLabel = (type) => DECKY_STEAM_ACTIVITY_TYPE_LABELS[type] || "Notizie";
 const deckySteamActivityTypeTags = (type) => DECKY_STEAM_ACTIVITY_TYPE_TAGS[type] || DECKY_STEAM_ACTIVITY_TYPE_TAGS[28];
-const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
-const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
-const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
 const fakeSteamId = (accountId = 0, steamId64 = "76561197960287930") => ({
     GetAccountID: () => accountId,
     ConvertTo64BitString: () => steamId64,
@@ -837,18 +1517,6 @@ const collectSteamNewsImages = (steamAppId, item) => {
     // still show the game header, but embedded/event-specific images stay first.
     return Array.from(new Set(values.map(cleanSteamImageUrl).filter(Boolean)));
 };
-const deckyNativeActivityCache = () => {
-    const host = globalThis;
-    if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
-        host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
-    return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
-};
-const deckyNativePartnerEventCache = () => {
-    const host = globalThis;
-    if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
-        host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
-    return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
-};
 const uniqueNonEmptyStrings = (values) => Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
 const deckyNativePartnerEventKeys = (event) => {
     const gid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.announcementGID || event?.gid || event?.GID || event?.url);
@@ -864,7 +1532,6 @@ const deckyNativePartnerEventKeys = (event) => {
         oldAnnouncementGid,
     ]);
 };
-const deckyNativePartnerEventStore = () => globalThis[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 const collectNativePartnerEventStores = () => {
     const host = globalThis;
     const stores = [];
@@ -1320,7 +1987,7 @@ const refreshDeckyNativeActivityForApp = async (appId, store) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
-    await ensureMetadataCache();
+    await ensureMetadataCacheFn();
     let metadata = metadataCache[String(appId)];
     if (!metadata)
         return null;
@@ -1590,205 +2257,248 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
     }, 500);
     unpatchers.push(() => window.clearInterval(timer));
 };
-const activityAppIdFromUrl = (url) => {
-    const decoded = decodeURIComponent(String(url || ""));
-    const patterns = [
-        /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
-        /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
-        /(?:appid|app_id|appId)=(\d+).*?(?:appactivity|activity|appnews|appupdates)/i,
-    ];
-    for (const pattern of patterns) {
-        const match = decoded.match(pattern);
-        if (match)
-            return Number(match[1]);
-    }
-    return 0;
+const isDeckyNativeNewsRouteState = (state) => {
+    const eventToShow = state?.event_to_show;
+    if (!eventToShow)
+        return false;
+    const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
+    return !!eventId && !!deckyNativePartnerEventForGid(eventId);
 };
-const gameDetailAppIdFromPath = (path) => {
-    const decoded = decodeURIComponent(String(path || ""));
-    const patterns = [
-        /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
-        /(?:^|[?#&\s])appid=(\d+)/i,
-        /(?:^|[?#&\s])app_id=(\d+)/i,
-        /\bapp\/(\d+)\b/i,
-    ];
-    for (const pattern of patterns) {
-        const match = decoded.match(pattern);
-        if (match)
-            return Number(match[1] || 0);
-    }
-    return 0;
+const deckyNativeNewsRouteAppId = (state, fallbackPath = "") => {
+    const eventToShow = state?.event_to_show || {};
+    const appId = Number(eventToShow.appid || gameDetailAppIdFromPath(fallbackPath));
+    return Number.isFinite(appId) && appId > 0 ? appId : 0;
 };
-const appIdFromDom = () => {
-    const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
-    const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
-    for (const element of candidates) {
-        if (!visibleElement(element))
-            continue;
-        for (const attribute of attributes) {
-            const value = element.getAttribute(attribute) || "";
-            const appId = gameDetailAppIdFromPath(value);
-            if (appId)
-                return appId;
-        }
-    }
-    return 0;
+const shouldReplaceDeckyNativeNewsPush = (targetPath, state) => {
+    if (!isDeckyNativeNewsRouteState(state))
+        return false;
+    const targetAppId = deckyNativeNewsRouteAppId(state, targetPath);
+    const currentAppId = gameDetailAppIdFromPath(currentRoutePath());
+    // Steam's native Activity click normally pushes the same game-detail route with
+    // only `event_to_show` added. Its close handler then replaces the current route
+    // to remove `event_to_show`, leaving a duplicate game-detail entry behind. That
+    // is why Andrea had to press B/Esc once for every news he had opened. For
+    // Decky native news, make that event navigation replace the current game route
+    // instead of pushing a new history entry. The modal still opens natively, but
+    // closing it returns to the original route without polluting the back stack.
+    return !!targetAppId && (!currentAppId || currentAppId === targetAppId);
 };
-const appIdFromVisibleMetadataTitle = () => {
+const currentSteamHistoryState = (steamHistory) => {
+    const location = steamHistory?.location || globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
+    return location?.state || null;
+};
+const shouldBackOutOfDeckyNativeNewsClose = (steamHistory, targetPath, nextState) => {
+    const currentState = currentSteamHistoryState(steamHistory);
+    if (!isDeckyNativeNewsRouteState(currentState))
+        return false;
+    if (isDeckyNativeNewsRouteState(nextState))
+        return false;
+    const currentAppId = deckyNativeNewsRouteAppId(currentState, currentRoutePath());
+    const targetAppId = Number(gameDetailAppIdFromPath(targetPath) || currentAppId);
+    return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
+};
+const backSteamHistory = (steamHistory) => {
+    if (typeof steamHistory?.goBack === "function")
+        return steamHistory.goBack();
+    if (typeof steamHistory?.back === "function")
+        return steamHistory.back();
+    if (typeof steamHistory?.go === "function")
+        return steamHistory.go(-1);
+    return undefined;
+};
+const installNativeNewsHistoryRedirects = (unpatchers) => {
     try {
-        const pageText = normalizedTabText(document.body?.textContent || "");
-        if (!pageText || !metadataCache)
-            return 0;
-        const candidates = Object.entries(metadataCache)
-            .map(([key, metadata]) => {
-            const appId = Number(key);
-            const title = normalizedTabText(metadata?.title || appName(appId));
-            return { appId, title };
-        })
-            .filter((candidate) => candidate.appId && candidate.title && candidate.title.length >= 3)
-            .sort((a, b) => b.title.length - a.title.length);
-        for (const candidate of candidates) {
-            if (pageText.includes(candidate.title))
-                return candidate.appId;
-        }
-    }
-    catch (_error) {
-        // Best-effort fallback only.
-    }
-    return 0;
-};
-const currentGameDetailAppId = () => {
-    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
-    if (routeAppId)
-        return routeAppId;
-    if (lastObservedGameDetailAppId)
-        return lastObservedGameDetailAppId;
-    const titleAppId = appIdFromVisibleMetadataTitle();
-    if (titleAppId)
-        return titleAppId;
-    const domAppId = appIdFromDom();
-    if (domAppId && (metadataCache[String(domAppId)] || isNonSteamAppWithoutPatchedMethod(getOverview(domAppId))))
-        return domAppId;
-    return domAppId || 0;
-};
-const visibleElement = (element) => {
-    if (!(element instanceof HTMLElement))
-        return false;
-    const rect = element.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2)
-        return false;
-    const style = window.getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
-};
-const deepQuerySelectorAll = (selector, root = document) => {
-    const results = [];
-    const seen = new Set();
-    const visit = (scope) => {
-        let elements = [];
-        try {
-            elements = Array.from(scope.querySelectorAll?.(selector) || []);
-        }
-        catch (_error) {
-            elements = [];
-        }
-        elements.forEach((element) => {
-            if (!seen.has(element)) {
-                seen.add(element);
-                results.push(element);
+        const steamHistory = globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+        for (const methodName of ["push", "replace"]) {
+            if (steamHistory?.[methodName]) {
+                unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
+                    const target = historyPathFromArgs(args);
+                    const state = historyStateFromArgs(args);
+                    if (methodName === "push" && shouldReplaceDeckyNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
+                        globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
+                        return steamHistory.replace(...args);
+                    }
+                    if (methodName === "replace" && shouldBackOutOfDeckyNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
+                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
+                        // If our push->replace interception ran, closing the modal should keep using
+                        // Steam's replace. If Steam opened via a path we did not intercept, use Back
+                        // for the close action so the event entry is removed instead of replaced by a
+                        // duplicate app-detail entry.
+                        if (!replacedAt || Date.now() - replacedAt > 15000) {
+                            return backSteamHistory(steamHistory) ?? original(...args);
+                        }
+                    }
+                    try {
+                        const path = String(target || "").toLowerCase();
+                        if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
+                            const rewritten = rewriteSteamLinkToMatchedApp(state.url);
+                            if (rewritten.rewrote) {
+                                state.url = rewritten.url;
+                                void frontendLog("nav", "steamweb router rewrite", {
+                                    from: rewritten.fromAppId,
+                                    to: rewritten.toAppId,
+                                }).catch(() => undefined);
+                            }
+                        }
+                    }
+                    catch (_error) {
+                        // Steam navigation must continue even if the redirect probe fails.
+                    }
+                    return original(...args);
+                }));
             }
-            const shadowRoot = element.shadowRoot;
-            if (shadowRoot)
-                visit(shadowRoot);
-        });
-    };
-    visit(root);
-    return results;
-};
-const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
-const tryFetchMetadataForApp = async (appId) => {
-    await ensureMetadataCache();
-    if (metadataCache[String(appId)] || loadingMetadata.has(appId))
-        return;
-    const overview = getOverview(appId);
-    if (!isNonSteamApp(overview))
-        return;
-    loadingMetadata.add(appId);
-    try {
-        const metadata = await autoFetchMetadata(appId, appName(appId));
-        if (metadata) {
-            metadataCache[String(appId)] = metadata;
-            applyMetadata(appId);
-            window.dispatchEvent(new Event("decky-metadata:updated"));
-        }
-    }
-    finally {
-        loadingMetadata.delete(appId);
-    }
-};
-const tryEnrichScreenshotsForApp = async (appId) => {
-    await ensureMetadataCache();
-    const metadata = metadataCache[String(appId)];
-    if (!metadata ||
-        metadata.screenshots?.length ||
-        loadingScreenshots.has(appId) ||
-        String(metadata.source || "").toUpperCase() !== "IGN") {
-        return;
-    }
-    const source = metadata.source_url || String(metadata.id || "");
-    if (!source)
-        return;
-    loadingScreenshots.add(appId);
-    try {
-        const refreshed = await fetchMetadata(source);
-        if (refreshed?.screenshots?.length) {
-            const saved = await saveMetadata(appId, {
-                ...metadata,
-                screenshots: refreshed.screenshots,
-            });
-            metadataCache[String(appId)] = saved;
-            applyMetadata(appId);
-            window.dispatchEvent(new Event("decky-metadata:updated"));
         }
     }
     catch (error) {
-        warn("bridge", "screenshot enrichment failed", error);
+        warn("patch", "history patch skipped", error);
     }
-    finally {
-        loadingScreenshots.delete(appId);
-    }
-};
-const patchMethod = (target, methodName, replacement) => {
-    if (!target?.[methodName])
-        return () => undefined;
-    const original = target[methodName];
-    target[methodName] = function patchedMethod(...args) {
-        const boundOriginal = original.bind(this);
-        try {
-            return replacement(this, boundOriginal, args);
-        }
-        catch (_error) {
-            // A patch replacement must never break the Steam method it wraps.
-            try {
-                return boundOriginal(...args);
-            }
-            catch (_originalError) {
-                return undefined;
-            }
-        }
-    };
-    return () => {
-        target[methodName] = original;
-    };
-};
-const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
     try {
-        return handler.call(this, args, ret);
+        for (const methodName of ["pushState", "replaceState"]) {
+            const original = window.history?.[methodName];
+            if (typeof original !== "function")
+                continue;
+            const patched = function (...args) {
+                const target = String(args[2] || "");
+                const state = historyStateFromArgs(args);
+                if (methodName === "pushState" && shouldReplaceDeckyNativeNewsPush(target, state)) {
+                    globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
+                    return window.history.replaceState(args[0], args[1], args[2]);
+                }
+                if (methodName === "replaceState") {
+                    const currentState = window.history?.state;
+                    if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
+                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
+                        if (!replacedAt || Date.now() - replacedAt > 15000) {
+                            window.history.back();
+                            return undefined;
+                        }
+                    }
+                }
+                return original.apply(this, args);
+            };
+            window.history[methodName] = patched;
+            unpatchers.push(() => {
+                window.history[methodName] = original;
+            });
+        }
     }
-    catch (_error) {
-        // An afterPatch handler must never break the Steam method it augments.
-        return ret;
+    catch (error) {
+        warn("patch", "window history redirect patch skipped", error);
     }
-});
+};
+const installActivityRefreshedListener = (unpatchers) => {
+    const activityRefreshedListener = () => {
+        deckyNativeActivityCache().clear();
+        deckyNativePartnerEventCache().clear();
+        const appId = currentGameDetailAppId();
+        void ensureMetadataCacheFn().then(() => {
+            if (appId)
+                void refreshDeckyNativeActivityForApp(appId);
+        });
+    };
+    window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
+    unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
+};
+const installCommunityFeedPatch = (unpatchers) => {
+    try {
+        const httpClient = DFL.findModuleChild((module) => {
+            if (!module || typeof module !== "object")
+                return undefined;
+            if (typeof module.g?.get === "function" && typeof module.g?.post === "function") {
+                return module.g;
+            }
+            return undefined;
+        });
+        void frontendLog("community", "feed patch install", {
+            httpClientFound: Boolean(httpClient),
+            hasGet: typeof httpClient?.get === "function",
+            hasPost: typeof httpClient?.post === "function",
+        }).catch(() => undefined);
+        const patchFeedMethod = (methodName) => {
+            if (!httpClient?.[methodName])
+                return;
+            unpatchers.push(patchMethod(httpClient, methodName, (_thisValue, original, args) => {
+                const url = String(args[0] || "");
+                const activityAppId = activityAppIdFromUrl(url);
+                if (activityAppId) {
+                    return steamActivityPayloadForApp(activityAppId).then((payload) => {
+                        if (payload)
+                            return payload;
+                        return original(...args);
+                    });
+                }
+                const match = url.match(/library\/appcommunityfeed\/(\d+)/);
+                if (match) {
+                    const appId = Number(match[1]);
+                    const overview = getOverview(appId);
+                    // Only touch non-Steam shortcuts; real Steam games keep their native feed.
+                    if (isNonSteamApp(overview)) {
+                        return ensureMetadataCacheFn()
+                            .then(() => {
+                            const steamAppId = metadataCache[String(appId)]?.steam_appid;
+                            if (!steamAppId)
+                                return original(...args);
+                            // Rewrite the feed request to the matched Steam appid and pass it
+                            // straight through to the native client: identical shape, real
+                            // screenshots/guides/videos/artwork, and native pagination for free.
+                            const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
+                            if (!steamUrl)
+                                return original(...args);
+                            const steamArgs = [steamUrl, ...args.slice(1)];
+                            return Promise.resolve(original(...steamArgs)).then((native) => {
+                                void frontendLog("community", "feed passthrough", {
+                                    appId,
+                                    steamAppId,
+                                    hubLen: Array.isArray(native?.hub) ? native.hub.length : null,
+                                }).catch(() => undefined);
+                                return native;
+                            });
+                        })
+                            .catch((err) => {
+                            void frontendLog("community", "feed passthrough error", {
+                                appId,
+                                err: String(err),
+                            }).catch(() => undefined);
+                            return original(...args);
+                        });
+                    }
+                }
+                return original(...args);
+            }));
+        };
+        patchFeedMethod("get");
+        patchFeedMethod("post");
+    }
+    catch (error) {
+        warn("patch", "community feed patch skipped", error);
+    }
+    try {
+        const communityVoteModule = DFL.findModuleChild((module) => {
+            if (!module || typeof module !== "object")
+                return undefined;
+            if (module.bJ && typeof module.dK === "function")
+                return module;
+            return undefined;
+        });
+        if (communityVoteModule?.dK) {
+            unpatchers.push(patchMethod(communityVoteModule, "dK", (_thisValue, original, args) => {
+                const ids = Array.isArray(args[0]) ? args[0] : [];
+                if (ids.length && ids.every(isDeckyCommunityId)) {
+                    const voteNone = communityVoteModule.bJ?.None ?? 0;
+                    return Promise.resolve(new Map(ids.map((id) => [
+                        id,
+                        { vote: voteNone, bReported: false },
+                    ])));
+                }
+                return original(...args);
+            }));
+        }
+    }
+    catch (error) {
+        warn("patch", "community vote patch skipped", error);
+    }
+};
+
 const firstUrlishArgIndex = (args, firstOnly = false) => {
     const limit = firstOnly ? Math.min(args.length, 1) : args.length;
     for (let index = 0; index < limit; index += 1) {
@@ -1802,198 +2512,6 @@ const firstUrlishArgIndex = (args, firstOnly = false) => {
 };
 const logSteamLinkNavigation = (kind, original, rewritten) => {
     void frontendLog("nav", "steam link", { kind, original, rewritten }).catch(() => undefined);
-};
-const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
-const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
-const isAppDetailsQuickLinksModule = (candidate) => !!candidate &&
-    typeof candidate === "object" &&
-    typeof candidate.GameInfoQuickLinks === "string" &&
-    typeof candidate.GameInfoContainer === "string";
-const appDetailsQuickLinksModuleFromExports = (module) => {
-    if (isAppDetailsQuickLinksModule(module))
-        return module;
-    if (!module || typeof module !== "object")
-        return undefined;
-    for (const candidate of Object.values(module)) {
-        if (isAppDetailsQuickLinksModule(candidate))
-            return candidate;
-    }
-    return undefined;
-};
-const resolveAppDetailsQuickLinksClasses = () => {
-    try {
-        let discovered = DFL.findModuleChild(appDetailsQuickLinksModuleFromExports);
-        if (!discovered) {
-            discovered = DFL.findModuleChild((module) => {
-                if (!module || typeof module !== "object")
-                    return undefined;
-                for (const candidate of Object.values(module)) {
-                    const nested = appDetailsQuickLinksModuleFromExports(candidate);
-                    if (nested)
-                        return nested;
-                }
-                return undefined;
-            });
-        }
-        const quickLinks = discovered?.GameInfoQuickLinks;
-        return typeof quickLinks === "string" && quickLinks.trim() ? [quickLinks.trim()] : [];
-    }
-    catch (_error) {
-        return [];
-    }
-};
-const onGameDetailRoute = (path) => {
-    const decoded = safeDecodeURIComponent(String(path || ""));
-    if (/\/achievements(\b|\/)/i.test(decoded))
-        return false;
-    return gameDetailAppIdFromPath(decoded) > 0 || /\/library\/(app|details)\//i.test(decoded);
-};
-const appLinksHiderClassSelector = (className) => {
-    const trimmed = className.trim();
-    return /^[A-Za-z_-][A-Za-z0-9_-]*$/.test(trimmed) ? `.${trimmed}` : "";
-};
-const buildUnmatchedAppLinksHiderStyle = (linkRowClasses) => {
-    const selectors = Array.from(new Set(linkRowClasses))
-        .map(appLinksHiderClassSelector)
-        .filter(Boolean)
-        .map((selector) => `body.${DECKY_HIDE_APP_LINKS_CLASS} ${selector}`);
-    if (!selectors.length) {
-        return "/* decky: AppDetails GameInfoQuickLinks class unresolved; no fallback rule. */";
-    }
-    const targetSelector = selectors.join(",\n");
-    return `
-${targetSelector} {
-  display: none !important;
-}
-`;
-};
-const appLinksHiderTargetDocument = () => {
-    try {
-        const doc = window?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_BrowserWindow
-            ?.document;
-        if (doc && typeof doc.createElement === "function" && doc.head && doc.body) {
-            return doc;
-        }
-    }
-    catch (_error) {
-        // fall through
-    }
-    return null;
-};
-const appLinksDomClassPresent = (className, doc) => {
-    const trimmed = className.trim();
-    if (!trimmed)
-        return false;
-    try {
-        const escaped = typeof CSS !== "undefined" && typeof CSS.escape === "function"
-            ? CSS.escape(trimmed)
-            : trimmed.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-        return !!doc.querySelector(`.${escaped}`);
-    }
-    catch (_error) {
-        return false;
-    }
-};
-const unmatchedAppLinksDecisionDetails = () => {
-    const appId = currentGameDetailAppId();
-    const overview = appId ? getOverview(appId) : null;
-    const isNonSteam = !!(appId && isNonSteamApp(overview));
-    const steamAppId = appId ? steamAppIdForApp(appId) : 0;
-    return { appId, isNonSteam, steamAppId };
-};
-const logUnmatchedAppLinksDecision = (decision, resolvedLinkRowClasses, lastSignature, doc) => {
-    const details = unmatchedAppLinksDecisionDetails();
-    const signature = `${decision}|${resolvedLinkRowClasses.join(",")}|${details.appId}`;
-    if (signature === lastSignature)
-        return lastSignature;
-    try {
-        void frontendLog("applinks", "hider decision", {
-            decision,
-            appId: details.appId,
-            isNonSteam: details.isNonSteam,
-            steamAppId: details.steamAppId,
-            resolvedClasses: resolvedLinkRowClasses,
-            classPresentInDom: resolvedLinkRowClasses[0]
-                ? !!doc && appLinksDomClassPresent(resolvedLinkRowClasses[0], doc)
-                : false,
-        }).catch(() => undefined);
-    }
-    catch (_error) {
-        // Diagnostic logging must never affect the passive hider.
-    }
-    return signature;
-};
-const shouldHideUnmatchedAppLinks = () => {
-    const path = currentRoutePath();
-    if (!onGameDetailRoute(path))
-        return false;
-    const appId = currentGameDetailAppId();
-    if (!appId)
-        return false;
-    return isNonSteamApp(getOverview(appId)) && steamAppIdForApp(appId) === 0;
-};
-const installUnmatchedAppLinksHider = (unpatchers) => {
-    const globalState = globalThis;
-    if (globalState.__deckyAppLinksHider) {
-        unpatchers.push(() => undefined);
-        return;
-    }
-    if (typeof document === "undefined" || !document.body || !document.head) {
-        unpatchers.push(() => undefined);
-        return;
-    }
-    globalState.__deckyAppLinksHider = { installed: true };
-    let resolvedQuickLinksClasses = [];
-    let appliedQuickLinksClasses = "";
-    let lastDecisionLogSignature = "";
-    let injectedDoc = null;
-    const update = () => {
-        try {
-            const doc = appLinksHiderTargetDocument();
-            if (!doc)
-                return;
-            if (resolvedQuickLinksClasses.length === 0) {
-                resolvedQuickLinksClasses = resolveAppDetailsQuickLinksClasses();
-            }
-            let style = doc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID);
-            let forceStyleRefresh = injectedDoc !== doc;
-            if (!style) {
-                style = doc.createElement("style");
-                style.id = DECKY_HIDE_APP_LINKS_STYLE_ID;
-                doc.head.appendChild(style);
-                forceStyleRefresh = true;
-            }
-            injectedDoc = doc;
-            const nextAppliedQuickLinksClasses = resolvedQuickLinksClasses.join(" ");
-            if (forceStyleRefresh ||
-                !style.textContent ||
-                nextAppliedQuickLinksClasses !== appliedQuickLinksClasses) {
-                style.textContent = buildUnmatchedAppLinksHiderStyle(resolvedQuickLinksClasses);
-                appliedQuickLinksClasses = nextAppliedQuickLinksClasses;
-            }
-            const decision = shouldHideUnmatchedAppLinks();
-            lastDecisionLogSignature = logUnmatchedAppLinksDecision(decision, resolvedQuickLinksClasses, lastDecisionLogSignature, doc);
-            doc.body.classList.toggle(DECKY_HIDE_APP_LINKS_CLASS, decision);
-        }
-        catch (_error) {
-            // Passive UI polish must never affect Steam navigation or rendering.
-        }
-    };
-    update();
-    const timer = window.setInterval(update, 400);
-    unpatchers.push(() => {
-        try {
-            window.clearInterval(timer);
-            if (injectedDoc) {
-                injectedDoc.body.classList.remove(DECKY_HIDE_APP_LINKS_CLASS);
-                injectedDoc.getElementById(DECKY_HIDE_APP_LINKS_STYLE_ID)?.remove();
-            }
-        }
-        catch (_error) {
-            // Best effort teardown.
-        }
-        delete globalState.__deckyAppLinksHider;
-    });
 };
 const installSteamNavigationRedirect = (unpatchers) => {
     const globalState = globalThis;
@@ -2166,6 +2684,7 @@ const installMainWindowHistoryRedirect = (unpatchers) => {
         delete globalState.__deckyMainWindowHistoryRedirect;
     });
 };
+
 const NAVIGATION_TRACE_NOISE_PATTERN = /cached|registerfor|getlaunch|getgameaction|appdetails|appdata|appoverview|appachievement/i;
 const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide|workshop|market|navigate|openurl|executesteamurl|browser|web|overlay|showstore|link/i;
 const NAVIGATION_TRACE_CLICK_PATTERN = /store|community|hub|discuss|guide|market|support/i;
@@ -2635,108 +3154,64 @@ const installHistoryInstanceTrace = (unpatchers) => {
         delete globalState.__deckyHistoryInstanceTrace;
     });
 };
-const overviewFromReactTree = (tree) => {
-    try {
-        const holder = DFL.findInReactTree(tree, (node) => {
-            const overview = node?.props?.overview || node?.overview;
-            return overview?.appid ? true : undefined;
+
+const installRouterRenderPatches = (unpatchers, deps) => {
+    const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
+    GAME_DETAIL_ROUTES.forEach((route) => {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
+            if (routeProps?.renderFunc) {
+                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
+                    const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
+                    const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
+                    const appOverview = overview || getOverview(appId);
+                    if (appId && isNonSteamApp(appOverview)) {
+                        metadataState.lastObservedGameDetailAppId = appId;
+                        metadataState.bypassBypass = 11;
+                        void ensureMetadataCache().then(() => {
+                            applyMetadata(appId);
+                            void tryEnrichScreenshotsForApp(appId);
+                            void tryFetchMetadataForApp(appId);
+                        });
+                        void refreshDeckyNativeActivityForApp(appId);
+                        return ret;
+                    }
+                    return ret;
+                });
+                unpatchers.push(renderPatch.unpatch);
+            }
+            return tree;
         });
-        return holder?.props?.overview || holder?.overview || null;
-    }
-    catch (_error) {
-        return null;
-    }
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    });
+    GAME_ACTIVITY_ROUTES.forEach((route) => {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
+            if (routeProps?.renderFunc) {
+                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
+                    const treeAppId = appIdFromReactTree(ret);
+                    const appId = currentGameDetailAppId() || treeAppId;
+                    const overview = overviewFromReactTree(ret) || getOverview(appId);
+                    if (appId && isNonSteamApp(overview)) {
+                        metadataState.lastObservedGameDetailAppId = appId;
+                        void ensureMetadataCache().then(() => {
+                            applyMetadata(appId);
+                        });
+                        void refreshDeckyNativeActivityForApp(appId);
+                        return ret;
+                    }
+                    return ret;
+                });
+                unpatchers.push(renderPatch.unpatch);
+            }
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    });
 };
-const appIdFromReactTree = (tree) => {
-    const overview = overviewFromReactTree(tree);
-    const appId = Number(overview?.appid || 0);
-    return Number.isFinite(appId) ? appId : 0;
-};
-const historyPathFromArgs = (args) => {
-    const first = args?.[0];
-    if (typeof first === "string")
-        return first;
-    if (first && typeof first === "object") {
-        return String(first.pathname || first.path || first.href || first.url || "");
-    }
-    return "";
-};
-const historyStateFromArgs = (args) => {
-    const first = args?.[0];
-    const second = args?.[1];
-    // React Router / Steam history may call push(path, { state }), push(path, state),
-    // push({ pathname, state }), replace(location, state), or the raw browser
-    // history API with the state as first argument. The previous build only handled
-    // the direct state shapes, so Steam's Navigator.App(appid, { gidPartnerEvent })
-    // slipped through as args[1].state and kept polluting the back stack.
-    if (first && typeof first === "object") {
-        if (first.state?.event_to_show)
-            return first.state;
-        if (first.event_to_show)
-            return first;
-        if ("state" in first && first.state)
-            return first.state;
-    }
-    if (second && typeof second === "object") {
-        if (second.state?.event_to_show)
-            return second.state;
-        if (second.event_to_show)
-            return second;
-        if ("state" in second && second.state)
-            return second.state;
-    }
-    return second;
-};
-const isDeckyNativeNewsRouteState = (state) => {
-    const eventToShow = state?.event_to_show;
-    if (!eventToShow)
-        return false;
-    const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
-    return !!eventId && !!deckyNativePartnerEventForGid(eventId);
-};
-const deckyNativeNewsRouteAppId = (state, fallbackPath = "") => {
-    const eventToShow = state?.event_to_show || {};
-    const appId = Number(eventToShow.appid || gameDetailAppIdFromPath(fallbackPath));
-    return Number.isFinite(appId) && appId > 0 ? appId : 0;
-};
-const shouldReplaceDeckyNativeNewsPush = (targetPath, state) => {
-    if (!isDeckyNativeNewsRouteState(state))
-        return false;
-    const targetAppId = deckyNativeNewsRouteAppId(state, targetPath);
-    const currentAppId = gameDetailAppIdFromPath(currentRoutePath());
-    // Steam's native Activity click normally pushes the same game-detail route with
-    // only `event_to_show` added. Its close handler then replaces the current route
-    // to remove `event_to_show`, leaving a duplicate game-detail entry behind. That
-    // is why Andrea had to press B/Esc once for every news he had opened. For
-    // Decky native news, make that event navigation replace the current game route
-    // instead of pushing a new history entry. The modal still opens natively, but
-    // closing it returns to the original route without polluting the back stack.
-    return !!targetAppId && (!currentAppId || currentAppId === targetAppId);
-};
-const currentSteamHistoryState = (steamHistory) => {
-    const location = steamHistory?.location || globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
-    return location?.state || null;
-};
-const shouldBackOutOfDeckyNativeNewsClose = (steamHistory, targetPath, nextState) => {
-    const currentState = currentSteamHistoryState(steamHistory);
-    if (!isDeckyNativeNewsRouteState(currentState))
-        return false;
-    if (isDeckyNativeNewsRouteState(nextState))
-        return false;
-    const currentAppId = deckyNativeNewsRouteAppId(currentState, currentRoutePath());
-    const targetAppId = Number(gameDetailAppIdFromPath(targetPath) || currentAppId);
-    return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
-};
-const backSteamHistory = (steamHistory) => {
-    if (typeof steamHistory?.goBack === "function")
-        return steamHistory.goBack();
-    if (typeof steamHistory?.back === "function")
-        return steamHistory.back();
-    if (typeof steamHistory?.go === "function")
-        return steamHistory.go(-1);
-    return undefined;
-};
+
 const installSteamPatches = () => {
+    configureActivityMetadataLoader(ensureMetadataCache);
     const unpatchers = [];
     let patchesCancelled = false;
     const safeInstallStep = (label, run) => {
@@ -2751,17 +3226,7 @@ const installSteamPatches = () => {
     // Activity news use Steam's own AppActivityStore and native Activity renderer.
     safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
     safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
-    const activityRefreshedListener = () => {
-        deckyNativeActivityCache().clear();
-        deckyNativePartnerEventCache().clear();
-        const appId = currentGameDetailAppId();
-        void ensureMetadataCache().then(() => {
-            if (appId)
-                void refreshDeckyNativeActivityForApp(appId);
-        });
-    };
-    window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
-    unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
+    installActivityRefreshedListener(unpatchers);
     const overviewProto = appStore?.allApps?.[0]?.__proto__;
     const detailsProto = appDetailsStore?.__proto__;
     if (!hasSteamInternals() || !overviewProto || !detailsProto) {
@@ -2800,398 +3265,15 @@ const installSteamPatches = () => {
         .catch((error) => {
         warn("patch", "debug logging setting load failed; diagnostic traces disabled", error);
     });
-    try {
-        const steamHistory = globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
-        for (const methodName of ["push", "replace"]) {
-            if (steamHistory?.[methodName]) {
-                unpatchers.push(patchMethod(steamHistory, methodName, (_thisValue, original, args) => {
-                    const target = historyPathFromArgs(args);
-                    const state = historyStateFromArgs(args);
-                    if (methodName === "push" && shouldReplaceDeckyNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
-                        globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-                        return steamHistory.replace(...args);
-                    }
-                    if (methodName === "replace" && shouldBackOutOfDeckyNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
-                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
-                        // If our push->replace interception ran, closing the modal should keep using
-                        // Steam's replace. If Steam opened via a path we did not intercept, use Back
-                        // for the close action so the event entry is removed instead of replaced by a
-                        // duplicate app-detail entry.
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            return backSteamHistory(steamHistory) ?? original(...args);
-                        }
-                    }
-                    try {
-                        const path = String(target || "").toLowerCase();
-                        if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
-                            const rewritten = rewriteSteamLinkToMatchedApp(state.url);
-                            if (rewritten.rewrote) {
-                                state.url = rewritten.url;
-                                void frontendLog("nav", "steamweb router rewrite", {
-                                    from: rewritten.fromAppId,
-                                    to: rewritten.toAppId,
-                                }).catch(() => undefined);
-                            }
-                        }
-                    }
-                    catch (_error) {
-                        // Steam navigation must continue even if the redirect probe fails.
-                    }
-                    return original(...args);
-                }));
-            }
-        }
-    }
-    catch (error) {
-        warn("patch", "history patch skipped", error);
-    }
-    try {
-        for (const methodName of ["pushState", "replaceState"]) {
-            const original = window.history?.[methodName];
-            if (typeof original !== "function")
-                continue;
-            const patched = function (...args) {
-                const target = String(args[2] || "");
-                const state = historyStateFromArgs(args);
-                if (methodName === "pushState" && shouldReplaceDeckyNativeNewsPush(target, state)) {
-                    globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-                    return window.history.replaceState(args[0], args[1], args[2]);
-                }
-                if (methodName === "replaceState") {
-                    const currentState = window.history?.state;
-                    if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
-                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            window.history.back();
-                            return undefined;
-                        }
-                    }
-                }
-                return original.apply(this, args);
-            };
-            window.history[methodName] = patched;
-            unpatchers.push(() => {
-                window.history[methodName] = original;
-            });
-        }
-    }
-    catch (error) {
-        warn("patch", "window history redirect patch skipped", error);
-    }
-    if (appStore?.GetAppOverviewByAppID) {
-        unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
-            const requestedAppId = Number(args[0]);
-            const result = original(...args);
-            if (result || !Number.isFinite(requestedAppId) || requestedAppId <= 0) {
-                return result;
-            }
-            const shortcutAppId = shortcutAppIdForSteamAppId(requestedAppId);
-            if (!shortcutAppId || shortcutAppId === requestedAppId)
-                return result;
-            try {
-                const shortcutOverview = original(shortcutAppId);
-                if (isNonSteamAppWithoutPatchedMethod(shortcutOverview))
-                    return shortcutOverview;
-            }
-            catch (_error) {
-                // Fall through to Steam's native null result.
-            }
-            return result;
-        }));
-    }
-    unpatchers.push(patchMethod(detailsProto, "GetDescriptions", (_thisValue, original, args) => {
-        const appId = Number(args[0]);
-        const overview = getOverview(appId);
-        const originalResult = original(...args);
-        if (isNonSteamApp(overview)) {
-            ensureDetailsOverviewSafeFields(appId);
-            const metadata = metadataCache[String(appId)];
-            if (metadata) {
-                applyMetadata(appId);
-                const appData = appDetailsStore?.GetAppData?.(appId);
-                // Keep Steam's first-run detail bootstrap intact. Returning Decky data
-                // before Steam has created the native details object can make SteamUI
-                // render the play bar with an invalid/null AppOverview and crash on
-                // BIsApplicationOrTool during the first page open.
-                if (appData?.details && appData?.descriptionsData) {
-                    return appData.descriptionsData;
-                }
-            }
-            else {
-                void ensureMetadataCache().then(() => {
-                    if (metadataCache[String(appId)]) {
-                        applyMetadata(appId);
-                        void tryEnrichScreenshotsForApp(appId);
-                    }
-                    else {
-                        void tryFetchMetadataForApp(appId);
-                    }
-                });
-            }
-        }
-        return originalResult;
-    }));
-    unpatchers.push(patchMethod(detailsProto, "GetAssociations", (_thisValue, original, args) => {
-        const appId = Number(args[0]);
-        const originalResult = original(...args);
-        const overview = getOverview(appId);
-        if (isNonSteamApp(overview))
-            ensureDetailsOverviewSafeFields(appId);
-        if (isNonSteamApp(overview) && metadataCache[String(appId)]) {
-            applyMetadata(appId);
-            const appData = appDetailsStore?.GetAppData?.(appId);
-            if (appData?.details && appData?.associationData) {
-                return appData.associationData;
-            }
-        }
-        return originalResult;
-    }));
-    unpatchers.push(patchMethod(overviewProto, "BHasStoreCategory", (thisValue, original, args) => {
-        if (isNonSteamApp(thisValue)) {
-            const category = Number(args[0]);
-            const metadata = metadataCache[String(thisValue.appid)];
-            if (metadata?.store_categories?.includes(category))
-                return true;
-        }
-        return original(...args);
-    }));
-    if (overviewProto?.BIsModOrShortcut) {
-        unpatchers.push(safeAfterPatch(overviewProto, "BIsModOrShortcut", function (_args, ret) {
-            if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true)
-                return ret;
-            if (bypassBypass > 0) {
-                bypassBypass -= 1;
-                return false;
-            }
-            const path = currentRoutePath();
-            if (path === "/library/home")
-                return false;
-            if (bypassCounter > 0)
-                bypassCounter -= 1;
-            return bypassCounter === -1 || bypassCounter > 0;
-        }).unpatch);
-    }
-    if (detailsProto?.BHasRecentlyLaunched) {
-        unpatchers.push(safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args, ret) => {
-            bypassCounter = 4;
-            return ret;
-        }).unpatch);
-    }
-    ["GetGameID", "GetPrimaryAppID"].forEach((methodName) => {
-        if (!overviewProto?.[methodName])
-            return;
-        unpatchers.push(patchMethod(overviewProto, methodName, (_thisValue, original, args) => {
-            bypassCounter = -1;
-            const ret = original(...args);
-            bypassCounter = 0;
-            return ret;
-        }));
-    });
-    if (overviewProto?.GetCanonicalReleaseDate) {
-        unpatchers.push(patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
-            const metadata = metadataCache[String(thisValue?.appid)];
-            if (isNonSteamApp(thisValue) && metadata?.release_date) {
-                return metadata.release_date;
-            }
-            return original(...args);
-        }));
-    }
-    if (overviewProto?.GetPerClientData) {
-        unpatchers.push(safeAfterPatch(overviewProto, "GetPerClientData", (_args, ret) => {
-            bypassCounter = 4;
-            return ret;
-        }).unpatch);
-    }
-    try {
-        const appDetailsSections = DFL.findModuleChild((module) => {
-            if (typeof module !== "object")
-                return undefined;
-            for (const prop in module) {
-                try {
-                    if (typeof module[prop]?.prototype?.GetSections === "function") {
-                        return module[prop];
-                    }
-                }
-                catch (_error) {
-                    continue;
-                }
-            }
-            return undefined;
-        });
-        if (appDetailsSections?.prototype?.GetSections) {
-            unpatchers.push(safeAfterPatch(appDetailsSections.prototype, "GetSections", function (_args, ret) {
-                const overview = this?.props?.overview;
-                const appId = Number(overview?.appid);
-                if (appId && isNonSteamApp(overview))
-                    ensureDetailsOverviewSafeFields(appId);
-                if (appId && isNonSteamApp(overview) && metadataCache[String(appId)]) {
-                    lastObservedGameDetailAppId = appId;
-                    const metadata = metadataCache[String(appId)];
-                    if (metadata?.screenshots?.length) {
-                        ret.add("screenshots");
-                    }
-                    else {
-                        void tryEnrichScreenshotsForApp(appId);
-                    }
-                    ret.add("community");
-                    // Add the real Steam Activity section too. News are deliberately
-                    // served through the Activity feed patch, not the Community feed.
-                    ret.add("activity");
-                }
-                return ret;
-            }).unpatch);
-        }
-    }
-    catch (error) {
-        warn("patch", "app details sections patch skipped", error);
-    }
-    try {
-        const httpClient = DFL.findModuleChild((module) => {
-            if (!module || typeof module !== "object")
-                return undefined;
-            if (typeof module.g?.get === "function" && typeof module.g?.post === "function") {
-                return module.g;
-            }
-            return undefined;
-        });
-        void frontendLog("community", "feed patch install", {
-            httpClientFound: Boolean(httpClient),
-            hasGet: typeof httpClient?.get === "function",
-            hasPost: typeof httpClient?.post === "function",
-        }).catch(() => undefined);
-        const patchFeedMethod = (methodName) => {
-            if (!httpClient?.[methodName])
-                return;
-            unpatchers.push(patchMethod(httpClient, methodName, (_thisValue, original, args) => {
-                const url = String(args[0] || "");
-                const activityAppId = activityAppIdFromUrl(url);
-                if (activityAppId) {
-                    return steamActivityPayloadForApp(activityAppId).then((payload) => {
-                        if (payload)
-                            return payload;
-                        return original(...args);
-                    });
-                }
-                const match = url.match(/library\/appcommunityfeed\/(\d+)/);
-                if (match) {
-                    const appId = Number(match[1]);
-                    const overview = getOverview(appId);
-                    // Only touch non-Steam shortcuts; real Steam games keep their native feed.
-                    if (isNonSteamApp(overview)) {
-                        return ensureMetadataCache()
-                            .then(() => {
-                            const steamAppId = metadataCache[String(appId)]?.steam_appid;
-                            if (!steamAppId)
-                                return original(...args);
-                            // Rewrite the feed request to the matched Steam appid and pass it
-                            // straight through to the native client: identical shape, real
-                            // screenshots/guides/videos/artwork, and native pagination for free.
-                            const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
-                            if (!steamUrl)
-                                return original(...args);
-                            const steamArgs = [steamUrl, ...args.slice(1)];
-                            return Promise.resolve(original(...steamArgs)).then((native) => {
-                                void frontendLog("community", "feed passthrough", {
-                                    appId,
-                                    steamAppId,
-                                    hubLen: Array.isArray(native?.hub) ? native.hub.length : null,
-                                }).catch(() => undefined);
-                                return native;
-                            });
-                        })
-                            .catch((err) => {
-                            void frontendLog("community", "feed passthrough error", {
-                                appId,
-                                err: String(err),
-                            }).catch(() => undefined);
-                            return original(...args);
-                        });
-                    }
-                }
-                return original(...args);
-            }));
-        };
-        patchFeedMethod("get");
-        patchFeedMethod("post");
-    }
-    catch (error) {
-        warn("patch", "community feed patch skipped", error);
-    }
-    try {
-        const communityVoteModule = DFL.findModuleChild((module) => {
-            if (!module || typeof module !== "object")
-                return undefined;
-            if (module.bJ && typeof module.dK === "function")
-                return module;
-            return undefined;
-        });
-        if (communityVoteModule?.dK) {
-            unpatchers.push(patchMethod(communityVoteModule, "dK", (_thisValue, original, args) => {
-                const ids = Array.isArray(args[0]) ? args[0] : [];
-                if (ids.length && ids.every(isDeckyCommunityId)) {
-                    const voteNone = communityVoteModule.bJ?.None ?? 0;
-                    return Promise.resolve(new Map(ids.map((id) => [
-                        id,
-                        { vote: voteNone, bReported: false },
-                    ])));
-                }
-                return original(...args);
-            }));
-        }
-    }
-    catch (error) {
-        warn("patch", "community vote patch skipped", error);
-    }
-    GAME_DETAIL_ROUTES.forEach((route) => {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (routeProps?.renderFunc) {
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
-                    const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
-                    const appOverview = overview || getOverview(appId);
-                    if (appId && isNonSteamApp(appOverview)) {
-                        lastObservedGameDetailAppId = appId;
-                        bypassBypass = 11;
-                        void ensureMetadataCache().then(() => {
-                            applyMetadata(appId);
-                            void tryEnrichScreenshotsForApp(appId);
-                            void tryFetchMetadataForApp(appId);
-                        });
-                        void refreshDeckyNativeActivityForApp(appId);
-                        return ret;
-                    }
-                    return ret;
-                });
-                unpatchers.push(renderPatch.unpatch);
-            }
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
-    });
-    GAME_ACTIVITY_ROUTES.forEach((route) => {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (routeProps?.renderFunc) {
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const treeAppId = appIdFromReactTree(ret);
-                    const appId = currentGameDetailAppId() || treeAppId;
-                    const overview = overviewFromReactTree(ret) || getOverview(appId);
-                    if (appId && isNonSteamApp(overview)) {
-                        lastObservedGameDetailAppId = appId;
-                        void ensureMetadataCache().then(() => {
-                            applyMetadata(appId);
-                        });
-                        void refreshDeckyNativeActivityForApp(appId);
-                        return ret;
-                    }
-                    return ret;
-                });
-                unpatchers.push(renderPatch.unpatch);
-            }
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
+    installNativeNewsHistoryRedirects(unpatchers);
+    installMetadataPatches(unpatchers);
+    installCommunityFeedPatch(unpatchers);
+    installRouterRenderPatches(unpatchers, {
+        ensureMetadataCache,
+        applyMetadata,
+        tryEnrichScreenshotsForApp,
+        tryFetchMetadataForApp,
+        refreshDeckyNativeActivityForApp,
     });
     return () => {
         patchesCancelled = true;
@@ -3204,48 +3286,6 @@ const installSteamPatches = () => {
             }
         });
     };
-};
-const allNonSteamGames = async () => {
-    const byId = new Map();
-    const addEntry = (entry) => {
-        const appid = Number(entry?.appid ?? entry?.app_id ?? entry?.unAppID ?? entry?.nAppID ?? entry);
-        if (!Number.isFinite(appid) || appid <= 0)
-            return;
-        const overview = getOverview(appid);
-        const nonSteam = entry?.isNonSteam === true || isNonSteamApp(overview);
-        if (!nonSteam)
-            return;
-        const previous = byId.get(appid) || {};
-        byId.set(appid, {
-            ...previous,
-            appid,
-            name: cleanTitle(overview?.display_name ||
-                overview?.localized_name ||
-                entry?.name ||
-                entry?.title ||
-                previous.name ||
-                `App ${appid}`),
-            exe: entry?.exe || previous.exe || "",
-            start_dir: entry?.start_dir || previous.start_dir || "",
-            launch_options: entry?.launch_options || previous.launch_options || "",
-            shortcut_path: entry?.shortcut_path || previous.shortcut_path || "",
-        });
-    };
-    try {
-        appStore?.allApps?.forEach?.(addEntry);
-        appStore?.m_mapAppOverview?.forEach?.(addEntry);
-    }
-    catch (_error) {
-        // Continue with backend fallback.
-    }
-    try {
-        const localShortcuts = await Promise.resolve().then(function () { return backend; }).then((m) => m.getLocalShortcuts());
-        localShortcuts.forEach(addEntry);
-    }
-    catch (_error) {
-        // Optional fallback.
-    }
-    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
 
 var StoreCategory;
