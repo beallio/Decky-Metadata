@@ -38,6 +38,7 @@ function main() {
     ["plugin.json", "plugin.json"],
     ["LICENSE", "LICENSE"],
     ["dist/index.js", "dist/index.js"],
+    ...findPythonModules(repoRoot, "backend").map((relative) => [relative, relative]),
   ];
   const optionalFiles = [
     ["NOTICE", "NOTICE"],
@@ -69,6 +70,23 @@ function main() {
 
   console.log(`Packaged version: ${version}`);
   console.log(zipPath);
+}
+
+function findPythonModules(repoRoot, dirRelative) {
+  const results = [];
+  const walk = (currentRelative) => {
+    const currentAbsolute = path.join(repoRoot, currentRelative);
+    for (const entry of fs.readdirSync(currentAbsolute, { withFileTypes: true })) {
+      const entryRelative = path.join(currentRelative, entry.name);
+      if (entry.isDirectory()) {
+        walk(entryRelative);
+      } else if (entry.isFile() && entry.name.endsWith(".py")) {
+        results.push(entryRelative);
+      }
+    }
+  };
+  walk(dirRelative);
+  return results.sort();
 }
 
 function readJson(filePath) {

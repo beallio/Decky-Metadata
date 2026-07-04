@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-import main
+from backend import shortcuts_vdf
 from tests._plugin import make_plugin
 
 
@@ -120,6 +120,6 @@ def test_oversized_shortcuts_vdf_is_ignored(tmp_path: Path, monkeypatch: pytest.
     plugin = make_plugin()
     shortcut_file = tmp_path / "shortcuts.vdf"
     shortcut_file.write_bytes(b"0123456789")
-    monkeypatch.setattr(main, "MAX_SHORTCUTS_VDF_BYTES", 4)
+    monkeypatch.setattr(shortcuts_vdf, "MAX_SHORTCUTS_VDF_BYTES", 4)
 
     assert plugin._extract_shortcuts_from_vdf(shortcut_file) == []

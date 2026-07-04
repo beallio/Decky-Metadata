@@ -5,11 +5,11 @@
 #
 # Decky-Metadata is a Decky Loader plugin:
 #   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
-#   - a single-file Python backend (main.py)
+#   - a Python backend: main.py (thin RPC facade) plus backend/*.py services
 #
 # The gate is a build + static check + Python unit test pass:
 #   1. TypeScript type-check (tsc --noEmit) and rollup production build
-#   2. Python backend byte-compile (syntax check) of main.py
+#   2. Python backend byte-compile (syntax check) of main.py and backend/*.py
 #   3. Python tests when tests/ exists
 set -euo pipefail
 
@@ -39,6 +39,9 @@ fi
 if [[ -f main.py ]]; then
   python_bin="$(command -v python3 || command -v python)"
   "$python_bin" -m py_compile main.py
+  if [[ -d backend ]]; then
+    find backend -name "*.py" -print0 | xargs -0 "$python_bin" -m py_compile
+  fi
 fi
 
 # --- backend: Python tests ---------------------------------------------------
