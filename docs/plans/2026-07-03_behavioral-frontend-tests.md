@@ -179,7 +179,6 @@ check remains on-device:
 4. Confirm focus lands on both display blocks and the panel scrolls to keep the focused block
    visible.
 
-
 ---
 
 ## Mark Round Complete
