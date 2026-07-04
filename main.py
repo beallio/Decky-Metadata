@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import difflib
 import functools
 import io
-import difflib
 import hashlib
 import html
 import json
@@ -262,6 +263,8 @@ class Plugin:
         self._activity_refresh_task: asyncio.Task[Any] | None = None
         self._activity_refresh_progress = self._new_scan_progress("idle")
         self._data = self._default_data()
+        self._data_cache: dict[str, Any] | None = None
+        self._data_cache_mtime_ns: int | None = None
         self._delisted_index: dict[str, Any] | None = None
 
     async def _main(self) -> None:
@@ -623,6 +626,14 @@ class Plugin:
             self._save_data()
             return
         try:
+            mtime_ns = self._data_file.stat().st_mtime_ns
+        except OSError as error:
+            _plog("load", "failed stat metadata settings", level=logging.ERROR, exc=True, path=self._data_file, error=error)
+            return
+        if self._data_cache is not None and self._data_cache_mtime_ns == mtime_ns:
+            self._data = copy.deepcopy(self._data_cache)
+            return
+        try:
             payload = json.loads(self._data_file.read_text(encoding="utf-8"))
         except Exception as error:
             _plog("load", "failed reading metadata settings", level=logging.ERROR, exc=True, path=self._data_file, error=error)
@@ -634,6 +645,8 @@ class Plugin:
         default["settings"].update(payload.get("settings") or {})
         default["settings"]["debug_logging"] = bool(default["settings"].get("debug_logging", False))
         self._data = default
+        self._data_cache = copy.deepcopy(default)
+        self._data_cache_mtime_ns = mtime_ns
 
     def _save_data(self) -> None:
         self._settings_dir.mkdir(parents=True, exist_ok=True)
@@ -641,6 +654,8 @@ class Plugin:
             json.dumps(self._data, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        self._data_cache = copy.deepcopy(self._data)
+        self._data_cache_mtime_ns = self._data_file.stat().st_mtime_ns
 
     def _new_scan_progress(self, status: str) -> dict[str, Any]:
         return {
