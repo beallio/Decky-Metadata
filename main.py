@@ -12,7 +12,6 @@ import os
 import re
 import shlex
 import ssl
-import subprocess
 import sys
 import time
 import urllib.error
@@ -206,8 +205,6 @@ def _log_tls_verification_failure(request_or_url: Any, error: BaseException) -> 
 
 IGN_GRAPHQL_URL = "https://mollusk.apis.ign.com/graphql"
 IGN_BASE_URL = "https://www.ign.com"
-RAWG_BASE_URL = "https://rawg.io"
-YOUTUBE_SEARCH_URL = "https://www.youtube.com/results"
 STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
 STEAM_APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
 STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/"
@@ -249,85 +246,6 @@ STORE_CATEGORY = {
     "local_multiplayer": 37,
     "online_co_op": 38,
     "local_co_op": 392,
-}
-ROM_EXTENSIONS = {
-    ".zip",
-    ".7z",
-    ".iso",
-    ".bin",
-    ".chd",
-    ".cue",
-    ".img",
-    ".a26",
-    ".lnx",
-    ".ngp",
-    ".ngc",
-    ".elf",
-    ".n64",
-    ".ndd",
-    ".u1",
-    ".v64",
-    ".z64",
-    ".nds",
-    ".dmg",
-    ".gbc",
-    ".gba",
-    ".gb",
-    ".ciso",
-    ".cso",
-    ".rom",
-    ".nes",
-    ".fds",
-    ".unif",
-    ".unf",
-    ".32x",
-    ".cdi",
-    ".gdi",
-    ".m3u",
-    ".gg",
-    ".gen",
-    ".smd",
-    ".sms",
-    ".ecm",
-    ".mds",
-    ".pbp",
-    ".dump",
-    ".gz",
-    ".mdf",
-    ".mrg",
-    ".prx",
-    ".bs",
-    ".fig",
-    ".sfc",
-    ".smc",
-    ".swx",
-    ".pc2",
-    ".wsc",
-    ".ws",
-    ".md",
-    ".gcm",
-    ".gcz",
-    ".rvz",
-    ".wad",
-    ".wia",
-    ".wbfs",
-    ".3ds",
-    ".3dsx",
-    ".app",
-    ".axf",
-    ".cci",
-    ".cxi",
-    ".dol",
-    ".nkit.iso",
-    ".nca",
-    ".nro",
-    ".nso",
-    ".nsp",
-    ".wua",
-    ".wud",
-    ".wux",
-    ".xci",
-    ".rpx",
 }
 
 
@@ -1997,34 +1915,6 @@ class Plugin:
                 break
         return screenshots
 
-    def _sanitize_videos(self, values: Any) -> list[dict[str, Any]]:
-        videos: list[dict[str, Any]] = []
-        if not isinstance(values, list):
-            return videos
-        seen: set[str] = set()
-        for item in values:
-            if not isinstance(item, dict):
-                continue
-            video_id = str(item.get("id") or item.get("youtube_id") or "").strip()
-            if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id) or video_id in seen:
-                continue
-            seen.add(video_id)
-            videos.append(
-                {
-                    "id": video_id,
-                    "title": self._clean_html_text(str(item.get("title") or "")),
-                    "url": f"https://www.youtube.com/watch?v={video_id}",
-                    "thumbnail": self._https_url(
-                        str(item.get("thumbnail") or "").strip()
-                    )
-                    or f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
-                    "source": str(item.get("source") or "YouTube"),
-                }
-            )
-            if len(videos) >= 10:
-                break
-        return videos
-
     def _sanitize_steam_news(self, values: Any) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         if not isinstance(values, list):
@@ -2083,74 +1973,6 @@ class Plugin:
             if len(rows) >= 12:
                 break
         return rows
-
-    def _youtube_videos_for_title(
-        self, title: str, limit: int = 10
-    ) -> list[dict[str, Any]]:
-        query = f"{self._clean_game_title(title)} game trailer gameplay"
-        url = f"{YOUTUBE_SEARCH_URL}?{urllib.parse.urlencode({'search_query': query})}"
-        try:
-            text = self._http_text(url, timeout=20)
-        except Exception as error:
-            decky.logger.error(f"Failed loading YouTube videos for {title}: {error}")
-            return []
-        videos: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for match in re.finditer(r'"videoId":"([A-Za-z0-9_-]{11})"', text):
-            video_id = match.group(1)
-            if video_id in seen:
-                continue
-            seen.add(video_id)
-            window = text[match.start() : match.start() + 1600]
-            title_match = re.search(
-                r'"title":\{"runs":\[\{"text":"([^"]+)"', window
-            ) or re.search(r'"title":\{"simpleText":"([^"]+)"', window)
-            video_title = self._jsonish_unescape(title_match.group(1)) if title_match else ""
-            videos.append(
-                {
-                    "id": video_id,
-                    "title": self._clean_html_text(video_title)
-                    or f"{self._clean_game_title(title)} video",
-                    "url": f"https://www.youtube.com/watch?v={video_id}",
-                    "thumbnail": f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
-                    "source": "YouTube",
-                }
-            )
-            if len(videos) >= max(1, min(limit, 10)):
-                break
-        return self._sanitize_videos(videos)
-
-    def _rawg_images_for_title(
-        self, title: str, source_url: str = "", limit: int = 10
-    ) -> list[dict[str, Any]]:
-        images: list[dict[str, Any]] = []
-        for slug in self._rawg_slug_candidates(title, source_url):
-            url = f"{RAWG_BASE_URL}/games/{slug}"
-            try:
-                text = self._http_text(url, timeout=20)
-            except Exception:
-                continue
-            for raw in re.findall(
-                r"https://media\.rawg\.io/media/(?:resize/[^\"'<>\s]+/-/)?screenshots/[^\"'<>\\\s]+?\.(?:jpg|png|webp)",
-                text,
-                flags=re.IGNORECASE,
-            ):
-                image_url = html.unescape(raw).split("&#x27;", 1)[0].split("&quot;", 1)[0]
-                image_url = self._https_url(image_url)
-                if not image_url:
-                    continue
-                images.append(
-                    {
-                        "id": image_url,
-                        "url": image_url,
-                        "caption": f"{self._clean_game_title(title)} screenshot",
-                        "width": 1280,
-                        "height": 720,
-                    }
-                )
-                if len(self._sanitize_screenshots(images)) >= max(1, min(limit, 10)):
-                    return self._sanitize_screenshots(images)[: max(1, min(limit, 10))]
-        return self._sanitize_screenshots(images)[: max(1, min(limit, 10))]
 
     def _rawg_slug_candidates(self, title: str, source_url: str = "") -> list[str]:
         candidates: list[str] = []
@@ -2228,60 +2050,6 @@ class Plugin:
     @staticmethod
     def _field_is_empty(value: Any) -> bool:
         return value in (None, "", [], {})
-
-    def _http_request_headers(self, include_auth: bool = False) -> dict[str, str]:
-        headers = {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9,it;q=0.7",
-            "Accept-Encoding": "identity",
-            "Cache-Control": "no-cache",
-            "Pragma": "no-cache",
-            "Referer": "https://store.steampowered.com/",
-            "Upgrade-Insecure-Requests": "1",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        }
-        return headers
-
-    def _http_text_urllib(self, url: str, timeout: int = 18) -> str:
-        request = urllib.request.Request(url, headers=self._http_request_headers())
-        context = _build_https_context()
-        _plog("http", "urllib request", level=logging.DEBUG, url=url, headers=self._http_request_headers())
-        try:
-            with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-                return response.read().decode("utf-8", errors="ignore")
-        except Exception as error:
-            _log_tls_verification_failure(request, error)
-            _plog("http", "urllib request failed", level=logging.WARNING, url=url, error=error)
-            raise
-
-    def _http_text_curl(self, url: str, timeout: int = 18) -> str:
-        headers = self._http_request_headers()
-        command = [
-            "curl",
-            "-L",
-            "--http1.1",
-            "--compressed",
-            "--silent",
-            "--show-error",
-            "--max-time",
-            str(max(8, int(timeout or 18))),
-            "--connect-timeout",
-            str(max(5, min(int(timeout or 18), 12))),
-            "-A",
-            headers["User-Agent"],
-        ]
-        for key, value in headers.items():
-            if key.casefold() == "user-agent":
-                continue
-            command.extend(["-H", f"{key}: {value}"])
-        command.append(url)
-        _plog("http", "curl request", level=logging.DEBUG, url=url, headers=headers)
-        completed = subprocess.run(command, capture_output=True, timeout=max(10, int(timeout or 18) + 5))
-        if completed.returncode != 0:
-            stderr = completed.stderr.decode("utf-8", errors="ignore").strip()
-            _plog("http", "curl request failed", level=logging.WARNING, url=url, returncode=completed.returncode, stderr=stderr)
-            raise RuntimeError(stderr or f"curl exited {completed.returncode}")
-        return completed.stdout.decode("utf-8", errors="ignore")
 
     def _http_json(
         self,
@@ -2363,28 +2131,6 @@ class Plugin:
             if len(token) >= 3 or re.fullmatch(r"\d+", token)
         }
         return distinctive.issubset(candidate_tokens)
-
-    @staticmethod
-    def _title_match_score(target: str, candidate: str) -> float:
-        if target == candidate:
-            return 1.0
-        target_tokens = set(target.split())
-        candidate_tokens = set(candidate.split())
-        if not target_tokens or not candidate_tokens:
-            return 0.0
-        intersection = target_tokens.intersection(candidate_tokens)
-        query_coverage = len(intersection) / len(target_tokens)
-        candidate_coverage = len(intersection) / len(candidate_tokens)
-        token_score = query_coverage * 0.72 + candidate_coverage * 0.28
-        sequence_score = difflib.SequenceMatcher(None, target, candidate).ratio()
-        score = max(sequence_score, token_score)
-        target_numbers = set(re.findall(r"\d+", target))
-        candidate_numbers = set(re.findall(r"\d+", candidate))
-        if target_numbers and candidate_numbers and not target_numbers.intersection(candidate_numbers):
-            score -= 0.2
-        elif target_numbers and not candidate_numbers:
-            score -= 0.08
-        return max(0.0, min(score, 1.0))
 
     def _read_steam_shortcuts(self) -> list[dict[str, Any]]:
         shortcuts: list[dict[str, Any]] = []

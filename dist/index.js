@@ -159,37 +159,6 @@ const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
     return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
 };
 
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
-const colors = {
-    accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    xxs: 2,
-    xs: 4,
-    sm: 8,
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16,
-    xl: 20,
-};
-const fontWeight = {
-    bold: 700};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
-
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -1702,10 +1671,6 @@ const currentGameDetailAppId = () => {
         return domAppId;
     return domAppId || 0;
 };
-const isTransparentColor = (value) => {
-    const color = String(value || "").trim().toLowerCase();
-    return !color || color === "transparent" || color === "rgba(0, 0, 0, 0)" || color === "rgba(0,0,0,0)";
-};
 const visibleElement = (element) => {
     if (!(element instanceof HTMLElement))
         return false;
@@ -1715,8 +1680,6 @@ const visibleElement = (element) => {
     const style = window.getComputedStyle(element);
     return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
 };
-const textOf = (element) => String(element?.textContent || "").replace(/\s+/g, " ").trim();
-const isDeckyActivityNewsElement = (element) => !!(element instanceof HTMLElement && element.closest("#decky-activity-news-root, #decky-activity-news-overlay, [data-decky-activity-news='1']"));
 const deepQuerySelectorAll = (selector, root = document) => {
     const results = [];
     const seen = new Set();
@@ -1741,200 +1704,7 @@ const deepQuerySelectorAll = (selector, root = document) => {
     visit(root);
     return results;
 };
-const knownDetailsTabLabels = ["Attività", "Activity", "I tuoi articoli", "Your Stuff", "Comunità", "Community", "Informazioni sul gioco", "Game Info"];
 const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
-const canonicalDetailsTabLabel = (label) => {
-    const normalized = normalizedTabText(label);
-    if (normalized === normalizedTabText("Activity"))
-        return "Attività";
-    if (normalized === normalizedTabText("Your Stuff"))
-        return "I tuoi articoli";
-    if (normalized === normalizedTabText("Community"))
-        return "Comunità";
-    if (normalized === normalizedTabText("Game Info"))
-        return "Informazioni sul gioco";
-    return label;
-};
-const detailsTabLabelFromText = (value) => {
-    const text = normalizedTabText(value);
-    if (!text)
-        return "";
-    for (const label of knownDetailsTabLabels) {
-        if (text === normalizedTabText(label))
-            return canonicalDetailsTabLabel(label);
-    }
-    // Steam sometimes wraps the label with focus helpers / counters. Accept a
-    // short containing text, but avoid the full tab row because it contains every
-    // label and would otherwise always resolve to Activity.
-    for (const label of knownDetailsTabLabels) {
-        const wanted = normalizedTabText(label);
-        if (text.includes(wanted) && text.length <= wanted.length + 28)
-            return canonicalDetailsTabLabel(label);
-    }
-    return "";
-};
-const detailsTabLabelFromElement = (element) => {
-    let current = element;
-    for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
-        const directLabel = detailsTabLabelFromText(textOf(current));
-        if (directLabel)
-            return directLabel;
-        const ariaLabel = detailsTabLabelFromText(current.getAttribute("aria-label") || current.getAttribute("title") || "");
-        if (ariaLabel)
-            return ariaLabel;
-        current = current.parentElement;
-    }
-    return "";
-};
-const tabCandidateText = (element) => {
-    const text = textOf(element);
-    // Steam sometimes puts helper text/counters inside focus wrappers. We only need
-    // short visible labels for geometry grouping, not the localized wording.
-    if (text.length > 96)
-        return "";
-    return text;
-};
-const elementDepth = (element) => {
-    let depth = 0;
-    let current = element?.parentElement || null;
-    while (current && current !== document.body) {
-        depth += 1;
-        current = current.parentElement;
-    }
-    return depth;
-};
-const uniqueVisibleElements = (elements) => {
-    const out = [];
-    for (const element of elements) {
-        if (!(element instanceof HTMLElement) || !visibleElement(element))
-            continue;
-        if (out.some((existing) => existing === element))
-            continue;
-        out.push(element);
-    }
-    return out;
-};
-const tabLikeElement = (element) => {
-    if (isDeckyActivityNewsElement(element))
-        return false;
-    const rect = element.getBoundingClientRect();
-    const text = tabCandidateText(element);
-    if (!text)
-        return false;
-    if (rect.width < 34 || rect.width > Math.min(420, window.innerWidth * 0.45))
-        return false;
-    if (rect.height < 18 || rect.height > 82)
-        return false;
-    if (rect.top < window.innerHeight * 0.18 || rect.top > window.innerHeight * 0.58)
-        return false;
-    if (rect.left < 0 || rect.right > window.innerWidth + 8)
-        return false;
-    // Avoid the big Play button / header stats row. The details tab strip is below
-    // the hero/header controls and is usually centered around the page content.
-    if (rect.top < 220 && window.innerHeight > 850)
-        return false;
-    return true;
-};
-const dedupeNestedTabCandidates = (elements) => {
-    const sorted = elements.slice().sort((a, b) => elementDepth(b) - elementDepth(a));
-    const kept = [];
-    for (const element of sorted) {
-        const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const duplicate = kept.some((other) => {
-            const otherRect = other.getBoundingClientRect();
-            const otherCenterX = otherRect.left + otherRect.width / 2;
-            const otherCenterY = otherRect.top + otherRect.height / 2;
-            return Math.abs(centerX - otherCenterX) < 18 && Math.abs(centerY - otherCenterY) < 14;
-        });
-        if (!duplicate)
-            kept.push(element);
-    }
-    return kept;
-};
-const groupTabCandidatesByRow = (elements) => {
-    const rows = [];
-    const sorted = elements.slice().sort((a, b) => {
-        const ar = a.getBoundingClientRect();
-        const br = b.getBoundingClientRect();
-        return ar.top - br.top || ar.left - br.left;
-    });
-    for (const element of sorted) {
-        const rect = element.getBoundingClientRect();
-        const centerY = rect.top + rect.height / 2;
-        const row = rows.find((candidate) => {
-            const firstRect = candidate[0].getBoundingClientRect();
-            const firstCenterY = firstRect.top + firstRect.height / 2;
-            return Math.abs(centerY - firstCenterY) <= 18;
-        });
-        if (row)
-            row.push(element);
-        else
-            rows.push([element]);
-    }
-    return rows
-        .map((row) => row.slice().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left))
-        .filter((row) => row.length >= 3);
-};
-const scoreTabRow = (row) => {
-    const rects = row.map((element) => element.getBoundingClientRect());
-    const left = Math.min(...rects.map((rect) => rect.left));
-    const right = Math.max(...rects.map((rect) => rect.right));
-    const top = Math.min(...rects.map((rect) => rect.top));
-    const bottom = Math.max(...rects.map((rect) => rect.bottom));
-    const width = right - left;
-    const height = bottom - top;
-    const selectedBonus = row.some((element) => elementLooksSelected(element)) ? 500 : 0;
-    const countBonus = Math.min(row.length, 6) * 60;
-    const contentWidthBonus = width > window.innerWidth * 0.22 && width < window.innerWidth * 0.78 ? 120 : 0;
-    const compactBonus = height < 92 ? 120 : 0;
-    const verticalPreference = Math.max(0, 160 - Math.abs(top - window.innerHeight * 0.31));
-    return selectedBonus + countBonus + contentWidthBonus + compactBonus + verticalPreference;
-};
-const findDetailsTabCandidates = () => {
-    const roleTabs = uniqueVisibleElements(deepQuerySelectorAll("[role='tab']"));
-    const roleRows = groupTabCandidatesByRow(dedupeNestedTabCandidates(roleTabs.filter(tabLikeElement)));
-    if (roleRows.length)
-        return roleRows.sort((a, b) => scoreTabRow(b) - scoreTabRow(a))[0];
-    const raw = uniqueVisibleElements(deepQuerySelectorAll("button, [role='button'], [tabindex], a, div, span")).filter(tabLikeElement);
-    const rows = groupTabCandidatesByRow(dedupeNestedTabCandidates(raw));
-    if (!rows.length)
-        return [];
-    return rows.sort((a, b) => scoreTabRow(b) - scoreTabRow(a))[0];
-};
-const detailsTabIndexFromPoint = (x, y) => {
-    const tabs = findDetailsTabCandidates();
-    return tabs.findIndex((tab) => {
-        const rect = tab.getBoundingClientRect();
-        return x >= rect.left - 10 && x <= rect.right + 10 && y >= rect.top - 10 && y <= rect.bottom + 10;
-    });
-};
-const detailsTabIndexFromElement = (element) => {
-    if (!element)
-        return -1;
-    const tabs = findDetailsTabCandidates();
-    return tabs.findIndex((tab) => tab === element || tab.contains(element) || element.contains(tab));
-};
-const elementLooksSelected = (element) => {
-    let current = element;
-    for (let depth = 0; current && current !== document.body && depth < 5; depth += 1) {
-        const ariaSelected = current.getAttribute("aria-selected") || current.getAttribute("aria-current");
-        if (ariaSelected === "true" || ariaSelected === "page")
-            return true;
-        const className = String(current.className || "").toLowerCase();
-        if (/(active|selected|current)/.test(className))
-            return true;
-        const style = window.getComputedStyle(current);
-        const rect = current.getBoundingClientRect();
-        const radius = Math.max(parseFloat(style.borderTopLeftRadius || "0") || 0, parseFloat(style.borderTopRightRadius || "0") || 0, parseFloat(style.borderBottomLeftRadius || "0") || 0, parseFloat(style.borderBottomRightRadius || "0") || 0);
-        if (rect.width >= 48 && rect.height >= 24 && radius >= 8 && !isTransparentColor(style.backgroundColor)) {
-            return true;
-        }
-        current = current.parentElement;
-    }
-    return false;
-};
 const tryFetchMetadataForApp = async (appId) => {
     await ensureMetadataCache();
     if (metadataCache[String(appId)] || loadingMetadata.has(appId))
@@ -2977,10 +2747,7 @@ const installSteamPatches = () => {
         }
     };
     safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
-    // Activity news now use Steam's own AppActivityStore and native Activity
-    // renderer. Do not mount Decky overlay/DOM UI here: those paths are kept in
-    // source only as old fallbacks, but the integration attempt for this build is
-    // intentionally native-only.
+    // Activity news use Steam's own AppActivityStore and native Activity renderer.
     safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
     safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
     const activityRefreshedListener = () => {
@@ -3100,16 +2867,6 @@ const installSteamPatches = () => {
     catch (error) {
         warn("patch", "window history redirect patch skipped", error);
     }
-    const clickDetailsTabTracker = (event) => {
-        const target = event.target;
-        detailsTabLabelFromElement(target);
-        Number.isFinite(event.clientX) && Number.isFinite(event.clientY)
-            ? detailsTabIndexFromPoint(event.clientX, event.clientY)
-            : -1;
-        detailsTabIndexFromElement(target);
-    };
-    document.addEventListener("click", clickDetailsTabTracker, true);
-    unpatchers.push(() => document.removeEventListener("click", clickDetailsTabTracker, true));
     if (appStore?.GetAppOverviewByAppID) {
         unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
             const requestedAppId = Number(args[0]);
@@ -3506,6 +3263,37 @@ const CATEGORY_LABELS = {
     [StoreCategory.MMO]: "MMO",
     [StoreCategory.Achievements]: "Achievements",
 };
+
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    xxs: 2,
+    xs: 4,
+    sm: 8,
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16,
+    xl: 20,
+};
+const fontWeight = {
+    bold: 700};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
 
 const TITLE = "Decky Metadata";
 const DURATION = 3000;
