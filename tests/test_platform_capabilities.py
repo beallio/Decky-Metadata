@@ -79,7 +79,6 @@ def test_detect_steam_roots_keeps_existing_unique_roots(
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("STEAM_COMPAT_CLIENT_INSTALL_PATH", str(compat))
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setattr(plugin, "_read_windows_steam_path", lambda: compat)
 
     roots = plugin._detect_steam_roots()
 
@@ -101,7 +100,6 @@ def test_get_platform_capabilities_returns_required_keys_and_types(
         "platform",
         "os_name",
         "is_linux",
-        "is_windows",
         "is_steamos",
         "steam_root",
         "steam_roots",

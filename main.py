@@ -11,7 +11,6 @@ import logging
 import os
 import re
 import shlex
-import shutil
 import ssl
 import subprocess
 import sys
@@ -373,35 +372,6 @@ class Plugin:
             self._activity_refresh_task.cancel()
         _plog("load", "backend unloaded")
 
-    @staticmethod
-    def _windows_powershell_executable() -> str:
-        if os.name != "nt":
-            return ""
-        for exe in ("powershell.exe", "powershell", "pwsh.exe", "pwsh"):
-            resolved = shutil.which(exe)
-            if resolved:
-                return resolved
-        system_root = os.environ.get("SystemRoot") or r"C:\Windows"
-        fallback = Path(system_root) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
-        return str(fallback) if fallback.exists() else ""
-
-    @staticmethod
-    def _hidden_subprocess_kwargs() -> dict[str, Any]:
-        if os.name != "nt":
-            return {}
-        kwargs: dict[str, Any] = {}
-        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        if creationflags:
-            kwargs["creationflags"] = creationflags
-        try:
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = 0
-            kwargs["startupinfo"] = startupinfo
-        except Exception:
-            pass
-        return kwargs
-
     def _is_steamos(self) -> bool:
         if not sys.platform.startswith("linux"):
             return False
@@ -449,14 +419,6 @@ class Plugin:
                 candidates.extend(path.parent for path in Path("/run/media").glob("*/steamapps"))
             except Exception:
                 pass
-            if os.name == "nt":
-                steam_path = self._read_windows_steam_path()
-                if steam_path:
-                    candidates.append(steam_path)
-                for env_name in ("PROGRAMFILES(X86)", "PROGRAMFILES"):
-                    value = os.environ.get(env_name)
-                    if value:
-                        candidates.append(Path(value) / "Steam")
         except Exception:
             return []
 
@@ -465,7 +427,7 @@ class Plugin:
         for candidate in candidates:
             try:
                 resolved = candidate.resolve()
-                key = str(resolved).casefold() if os.name == "nt" else str(resolved)
+                key = str(resolved)
                 _plog("discovery", "steam root candidate", level=logging.DEBUG, path=resolved, exists=resolved.exists())
                 if key in seen or not resolved.exists():
                     continue
@@ -559,7 +521,6 @@ class Plugin:
             "platform": str(sys.platform),
             "os_name": str(os.name),
             "is_linux": sys.platform.startswith("linux"),
-            "is_windows": os.name == "nt",
             "is_steamos": False,
             "steam_root": "",
             "steam_roots": [],
@@ -2322,32 +2283,6 @@ class Plugin:
             raise RuntimeError(stderr or f"curl exited {completed.returncode}")
         return completed.stdout.decode("utf-8", errors="ignore")
 
-    def _http_text_powershell(self, url: str, timeout: int = 18) -> str:
-        # Windows fallback for Decky-on-Windows. On Linux this simply fails fast
-        # and the caller tries the next strategy.
-        headers = self._http_request_headers()
-        ps_headers = "@{" + ";".join(
-            f"'{key}'='{str(value).replace(chr(39), chr(39)+chr(39))}'" for key, value in headers.items()
-        ) + "}"
-        script = (
-            "$ProgressPreference='SilentlyContinue';"
-            "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;"
-            f"$headers={ps_headers};"
-            f"(Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -TimeoutSec {max(8, int(timeout or 18))} -Headers $headers -Uri '{str(url).replace(chr(39), chr(39)+chr(39))}').Content"
-        )
-        _plog("http", "PowerShell request", level=logging.DEBUG, url=url, headers=headers)
-        completed = subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
-            capture_output=True,
-            timeout=max(12, int(timeout or 18) + 8),
-        )
-        if completed.returncode != 0:
-            stderr = completed.stderr.decode("utf-8", errors="ignore").strip()
-            _plog("http", "PowerShell request failed", level=logging.WARNING, url=url, returncode=completed.returncode, stderr=stderr)
-            raise RuntimeError(stderr or f"PowerShell exited {completed.returncode}")
-        return completed.stdout.decode("utf-8", errors="ignore")
-
-
     def _http_json(
         self,
         url: str,
@@ -2507,28 +2442,14 @@ class Plugin:
         return shortcuts
 
     def _steam_userdata_roots(self) -> list[Path]:
-        if os.name == "nt":
-            windows_candidates: list[Path] = []
-            for env_name in ("PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA"):
-                value = os.environ.get(env_name)
-                if value:
-                    windows_candidates.append(Path(value) / "Steam" / "userdata")
-            steam_path = self._read_windows_steam_path()
-            if steam_path:
-                windows_candidates.append(steam_path / "userdata")
-            candidates = windows_candidates + [
-                Path.home() / ".local" / "share" / "Steam" / "userdata",
-                Path.home() / ".steam" / "steam" / "userdata",
-            ]
-        else:
-            candidates = [root / "userdata" for root in self._detect_steam_roots()]
+        candidates = [root / "userdata" for root in self._detect_steam_roots()]
 
         roots: list[Path] = []
         seen: set[str] = set()
         for candidate in candidates:
             try:
                 resolved = candidate.resolve()
-                key = str(resolved).casefold() if os.name == "nt" else str(resolved)
+                key = str(resolved)
                 if key in seen or not resolved.is_dir():
                     continue
                 roots.append(resolved)
@@ -2536,22 +2457,6 @@ class Plugin:
             except Exception as error:
                 _plog("shortcuts", "skipping unreadable Steam userdata root", level=logging.DEBUG, candidate=candidate, error=error)
         return roots
-
-    def _read_windows_steam_path(self) -> Path | None:
-        try:
-            import winreg
-
-            for root in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
-                try:
-                    with winreg.OpenKey(root, r"Software\Valve\Steam") as key:
-                        value, _ = winreg.QueryValueEx(key, "SteamPath")
-                        if value:
-                            return Path(str(value))
-                except OSError:
-                    continue
-        except Exception:
-            return None
-        return None
 
     def _extract_shortcuts_from_vdf(self, path: Path) -> list[dict[str, Any]]:
         try:
