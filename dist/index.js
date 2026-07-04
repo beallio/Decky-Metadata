@@ -501,7 +501,7 @@ const deepQuerySelectorAll = (selector, root = document) => {
     visit(root);
     return results;
 };
-const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("it-IT");
+const normalizedTabText = (value) => String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
 const patchMethod = (target, methodName, replacement) => {
     if (!target?.[methodName])
         return () => undefined;
