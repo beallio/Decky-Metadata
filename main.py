@@ -14,7 +14,39 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
+
+
+class MetadataRecord(TypedDict, total=False):
+    """Typed shape of a single metadata record stored in decky_metadata.json.
+
+    The ``total=False`` flag makes all keys optional so that both fully
+    populated records and sparse "shell" records (e.g. freshly created
+    manual entries) are valid.  In practice, ``title``, ``id``,
+    ``description``, and ``store_categories`` are always present after
+    ``_sanitize_metadata`` runs.
+    """
+
+    title: str
+    id: str | int
+    source: str
+    source_url: str
+    description: str
+    short_description: str
+    developers: list[dict[str, str]]
+    publishers: list[dict[str, str]]
+    release_date: int | None
+    rating: int | None
+    deck_compat_category: int | None
+    store_categories: list[int]
+    genres: list[str]
+    features: list[str]
+    screenshots: list[dict[str, Any]]
+    steam_appid: int | None
+    steam_store_url: str
+    steam_news: list[dict[str, Any]]
+    steam_news_enriched_at: int
+    updated_at: int
 
 import decky
 
@@ -296,7 +328,7 @@ class Plugin:
         _plog("load", "debug logging updated", level=logging.INFO, enabled=value)
         return value
 
-    async def get_metadata(self, app_id: int) -> dict[str, Any] | None:
+    async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))
 
@@ -306,7 +338,7 @@ class Plugin:
 
     async def save_metadata(
         self, app_id: int, metadata: dict[str, Any]
-    ) -> dict[str, Any]:
+    ) -> MetadataRecord:
         self._load_data()
         cleaned = self._sanitize_metadata(metadata)
         cleaned["updated_at"] = now()
@@ -626,7 +658,7 @@ class Plugin:
     def _game_to_metadata(self, game: dict[str, Any]) -> dict[str, Any]:
         return self._sanitize_metadata(ign_provider.game_to_metadata(game))
 
-    def _sanitize_metadata(self, metadata: dict[str, Any]) -> dict[str, Any]:
+    def _sanitize_metadata(self, metadata: dict[str, Any]) -> MetadataRecord:
         def clean_people(values: Any) -> list[dict[str, str]]:
             people: list[dict[str, str]] = []
             if not isinstance(values, list):
@@ -721,7 +753,7 @@ class Plugin:
         limit: int = 6,
         *,
         include_details: bool = True,
-    ) -> dict[str, Any]:
+    ) -> MetadataRecord:
         if not isinstance(metadata, dict):
             return metadata
         clean_title = self._clean_game_title(title or str(metadata.get("title") or ""))

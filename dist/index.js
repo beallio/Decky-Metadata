@@ -154,8 +154,10 @@ const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
     contextMenu: "pending"};
-const hasSteamInternals = () => !!globalThis.SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
-const hasActivityStore = () => !!globalThis.appActivityStore;
+/** Typed accessor for the Steam internals exposed on `globalThis`. */
+const steamInternals = () => globalThis;
+const hasSteamInternals = () => !!steamInternals().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+const hasActivityStore = () => !!steamInternals().appActivityStore;
 const metadataCache = {};
 const NON_STEAM_APP_TYPE = 1073741824;
 const GAME_DETAIL_ROUTES = [
@@ -200,9 +202,9 @@ const isNonSteamAppWithoutPatchedMethod = (overview) => {
     return Number.isFinite(appId) && !!metadataCache[String(appId)];
 };
 const currentRoutePath = () => {
-    const steamRouter = globalThis.Router ?? globalThis.window?.Router;
+    const steamRouter = steamInternals().Router;
     const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
-    const windowLocation = globalThis.window?.location;
+    const windowLocation = steamInternals().window;
     return [
         location?.pathname,
         location?.search,
@@ -375,18 +377,18 @@ const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
 const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
 const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
 const deckyNativeActivityCache = () => {
-    const host = globalThis;
+    const host = steamInternals();
     if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
         host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
     return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
 };
 const deckyNativePartnerEventCache = () => {
-    const host = globalThis;
+    const host = steamInternals();
     if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
         host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
     return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
 };
-const deckyNativePartnerEventStore = () => globalThis[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+const deckyNativePartnerEventStore = () => steamInternals()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 const activityAppIdFromUrl = (url) => {
     const decoded = decodeURIComponent(String(url || ""));
     const patterns = [
@@ -1533,22 +1535,19 @@ const deckyNativePartnerEventKeys = (event) => {
     ]);
 };
 const collectNativePartnerEventStores = () => {
-    const host = globalThis;
+    const host = steamInternals();
     const stores = [];
     const add = (candidate) => {
         if (!candidate || typeof candidate !== "object")
             return;
-        const looksLikeStore = typeof candidate.GetClanEventModel === "function" ||
-            typeof candidate.GetClanEventFromAnnouncementGID === "function" ||
-            typeof candidate.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
-            candidate.m_mapExistingEvents?.set;
-        if (looksLikeStore && !stores.includes(candidate))
-            stores.push(candidate);
+        const c = candidate;
+        const looksLikeStore = typeof c.GetClanEventModel === "function" ||
+            typeof c.GetClanEventFromAnnouncementGID === "function" ||
+            typeof c.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
+            c.m_mapExistingEvents?.set;
+        if (looksLikeStore && !stores.includes(c))
+            stores.push(c);
     };
-    // Steam currently exposes multiple PartnerEvent stores. The Activity cards can
-    // render from our custom event object, but the modal uses the native
-    // window.partnerEventStore (`r(57016).IB`). Earlier builds sometimes patched the
-    // base/summary store instead, which made the modal open but stay blurred/empty.
     add(host.partnerEventStore);
     add(host.g_PartnerEventStore);
     add(host.g_PartnerEventSummaryStore);
