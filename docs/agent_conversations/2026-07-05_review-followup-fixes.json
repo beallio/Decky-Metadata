@@ -1,0 +1,63 @@
+{
+  "date": "2026-07-05",
+  "task_objective": "Fix confirmed defects from retroactive agy thermo-nuclear reviews (review-followup-fixes)",
+  "branch": "feat/review-followup-fixes",
+  "slug": "review-followup-fixes",
+  "files_modified": [
+    "src/MetadataPage.tsx",
+    "main.py",
+    "backend/scan_runner.py",
+    "dist/index.js",
+    "dist/index.js.map"
+  ],
+  "tests_added": [
+    "tests/test_steam_news_image_fallback.py"
+  ],
+  "findings_fixed": [
+    {
+      "id": 1,
+      "source": "retroactive agy review (2026-07-05) — components-tsx-decomposition",
+      "description": "saveCurrent's error handling (try/catch + toastError) was dropped during the components-tsx-decomposition move. removeCurrent was also unguarded (pre-existing). applyResult had try/finally but no catch, so errors were swallowed.",
+      "fix": "saveCurrent: added if(busy) return; setBusy(true); wrapped body in try/catch(toastError('Save failed'))/finally{setBusy(false)}. applyResult: added catch clause with toastError('Fetch failed'). removeCurrent: same full busy+try/catch/finally pattern with toastError('Remove failed').",
+      "file": "src/MetadataPage.tsx",
+      "success_paths_unchanged": true
+    },
+    {
+      "id": 2,
+      "source": "retroactive agy review (2026-07-05) — scan-pipeline-refactor",
+      "description": "_sanitize_steam_news: the inline fallback `if not image_sources: image_sources = self._steam_news_image_candidates(raw_body_source, 0)` was dropped when _collected_steam_news_image_sources() was introduced. News items whose images live only in the raw body now return no images.",
+      "fix": "Restored the two-line fallback immediately after image_sources = self._collected_steam_news_image_sources(item). raw_body_source already in scope.",
+      "tdd": "tests/test_steam_news_image_fallback.py: item with empty image/image_url/image_sources/preview_image_url but body containing [img]...[/img]. Asserted red before fix, green after.",
+      "file": "main.py"
+    },
+    {
+      "id": 3,
+      "source": "retroactive agy review (2026-07-05) — type-boundary-hardening / scan-pipeline",
+      "description": "Plugin._run_scan_pipeline had resolver: Any / saver: Any; ScanPipelineResult.status was str.",
+      "fix": "resolver -> Callable[[ScanPipelineTarget], ScanPipelineResult]; saver -> Callable[[int, dict[str, Any]], Awaitable[None]]. ScanPipelineResult.status -> Literal['matched', 'miss']. Added Callable, Awaitable to main.py typing imports; Literal to backend/scan_runner.py. Annotation-only.",
+      "files": ["main.py", "backend/scan_runner.py"]
+    }
+  ],
+  "deferred_items": [
+    "epochToDate duplication (subjective quality nit, out of scope)",
+    "_plog callback duplication across backend/ modules (subjective, out of scope)",
+    "FocusableButton: any (subjective, out of scope)",
+    "_save_scan_pipeline_metadata thin wrapper (subjective, out of scope)",
+    "status/source further Literal on source (out of scope per plan)",
+    "all file-size/decomposition-depth notes"
+  ],
+  "commits": [
+    "test(steam-news): add red regression test for body-fallback image sources",
+    "fix(frontend): restore busy guard + try/catch/finally to saveCurrent, removeCurrent, applyResult",
+    "fix(backend): restore Steam-news body-fallback for image_sources",
+    "fix(types): tighten scan-pipeline type annotations",
+    "build: rebuild dist after frontend error-handling restoration"
+  ],
+  "quality_gates": {
+    "py_compile": "PASS",
+    "tsc_noEmit": "PASS",
+    "npm_run_build": "PASS",
+    "pytest": "PASS (all 116 tests including new regression test)"
+  },
+  "results": "All three confirmed defects fixed. Test red->green confirmed for the body-fallback. Type annotations are annotation-only with no runtime changes. dist rebuilt. Working tree clean."
+}

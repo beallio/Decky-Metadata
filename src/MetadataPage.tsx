@@ -105,10 +105,18 @@ export const MetadataPage = () => {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
     }
-    const saved = await saveMetadata(appId, normalizedMetadata);
-    metadataCache[String(appId)] = saved;
-    applyMetadata(appId);
-    toastSuccess("Saved", "Metadata saved");
+    if (busy) return;
+    setBusy(true);
+    try {
+      const saved = await saveMetadata(appId, normalizedMetadata);
+      metadataCache[String(appId)] = saved;
+      applyMetadata(appId);
+      toastSuccess("Saved", "Metadata saved");
+    } catch (error) {
+      toastError("Save failed", String(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const applySteamAppId = async () => {
@@ -169,16 +177,26 @@ export const MetadataPage = () => {
       applyMetadata(appId);
       setFormMetadata(saved);
       toastSuccess("Saved", "Metadata saved");
+    } catch (error) {
+      toastError("Fetch failed", String(error));
     } finally {
       setBusy(false);
     }
   };
 
   const removeCurrent = async () => {
-    await removeMetadata(appId);
-    delete metadataCache[String(appId)];
-    setFormMetadata(metadataTemplate(appName(appId)));
-    toastSuccess("Removed", "Metadata removed");
+    if (busy) return;
+    setBusy(true);
+    try {
+      await removeMetadata(appId);
+      delete metadataCache[String(appId)];
+      setFormMetadata(metadataTemplate(appName(appId)));
+      toastSuccess("Removed", "Metadata removed");
+    } catch (error) {
+      toastError("Remove failed", String(error));
+    } finally {
+      setBusy(false);
+    }
   };
 
 

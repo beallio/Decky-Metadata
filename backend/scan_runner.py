@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Awaitable, Callable, TypedDict
+from typing import Any, Awaitable, Callable, Literal, TypedDict
 
 PlogFn = Callable[..., None]
 
 
 class ScanPipelineResult(TypedDict):
-    status: str
+    status: Literal["matched", "miss"]
     metadata: dict[str, Any] | None
     source: str
 

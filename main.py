@@ -14,7 +14,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, Awaitable, Callable, TypedDict
 
 
 class MetadataRecord(TypedDict, total=False):
@@ -563,8 +563,8 @@ class Plugin:
         self,
         targets: list[ScanPipelineTarget],
         progress: dict[str, Any],
-        resolver: Any,
-        saver: Any,
+        resolver: Callable[[ScanPipelineTarget], ScanPipelineResult],
+        saver: Callable[[int, dict[str, Any]], Awaitable[None]],
         *,
         initial_message: str,
         matched_messages: dict[str, str],
@@ -1027,6 +1027,8 @@ class Plugin:
                 continue
             seen.add(key)
             image_sources = self._collected_steam_news_image_sources(item)
+            if not image_sources:
+                image_sources = self._steam_news_image_candidates(raw_body_source, 0)
             rows.append(
                 {
                     "id": raw_id or url,
