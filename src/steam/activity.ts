@@ -1,7 +1,7 @@
 import { findModuleChild } from "@decky/ui";
 import { frontendLog } from "../backend";
 import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeed";
-import { MetadataData } from "../types";
+import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
 import {
   DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY,
@@ -23,6 +23,7 @@ import {
   patchInstallStatus,
   patchMethod,
   rewriteSteamLinkToMatchedApp,
+  steamInternals,
 } from "./core";
 
 let ensureMetadataCacheFn: () => Promise<void> = async () => undefined;
@@ -71,11 +72,11 @@ const steamAppHeaderImage = (steamAppId?: number | null) =>
   steamAppId ? `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : "";
 
 const steamNewsImageCandidatesForMetadata = (_metadata: MetadataData, news: NonNullable<MetadataData["steam_news"]>[number]) => {
-  const rawSources = Array.isArray((news as any).image_sources) ? (news as any).image_sources : [];
+  const rawSources = Array.isArray(news.image_sources) ? news.image_sources : [];
   return Array.from(new Set([
     news.image,
-    (news as any).image_url,
-    (news as any).preview_image_url,
+    news.image_url,
+    news.preview_image_url,
     ...rawSources,
   ].map(cleanSteamImageUrl).filter(Boolean)));
 };
@@ -117,16 +118,16 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
       const imageUrl = imageCandidates[0] || "";
       const fallbackImageUrl = steamAppHeaderImage(metadata.steam_appid);
       const displayImageUrl = imageUrl || fallbackImageUrl;
-      const eventType = normalizeDeckySteamActivityType((news as any).event_type || (news as any).type);
+      const eventType = normalizeDeckySteamActivityType(news.event_type || news.type);
       const eventTags = deckySteamActivityTypeTags(eventType);
       const eventLabel = deckySteamActivityTypeLabel(eventType);
-      const rawBody = steamNewsRawBodyForModal((news as any).raw_body || (news as any).body || news.summary || "");
+      const rawBody = steamNewsRawBodyForModal(news.raw_body || news.body || news.summary || "");
       const summary = eventType === 12 ? "" : cleanSteamNewsDisplayText(news.summary || news.title || "");
       const title = cleanSteamNewsDisplayText(news.title || metadata.title || "Steam news");
       const url = news.url || metadata.steam_store_url || "";
       const id = deckyActivityId(appId, index, date);
-      const steamGid = numericSteamNewsGid((news as any).gid || (news as any).news_id || (news as any).announcement_gid || (news as any).event_gid || news.id || news.url);
-      const eventGid = numericSteamNewsGid((news as any).event_gid || (news as any).gid || (news as any).news_id || (news as any).announcement_gid || news.id || news.url);
+      const steamGid = numericSteamNewsGid(news.gid || news.news_id || news.announcement_gid || news.event_gid || news.id || news.url);
+      const eventGid = numericSteamNewsGid(news.event_gid || news.gid || news.news_id || news.announcement_gid || news.id || news.url);
       const jsondata = JSON.stringify({
         localized_title_image: displayImageUrl,
         localized_capsule_image: displayImageUrl,
@@ -149,7 +150,7 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
         headline: title,
         description: summary,
         summary,
-        body: cleanSteamNewsDisplayText((news as any).body || summary),
+        body: cleanSteamNewsDisplayText(news.body || summary),
         raw_body: rawBody,
         contents: summary,
         url,
@@ -336,23 +337,20 @@ const deckyNativePartnerEventKeys = (event: any) => {
   ]);
 };
 
-const collectNativePartnerEventStores = () => {
-  const host = globalThis as any;
-  const stores: any[] = [];
-  const add = (candidate: any) => {
+const collectNativePartnerEventStores = (): NativePartnerEventStore[] => {
+  const host = steamInternals();
+  const stores: NativePartnerEventStore[] = [];
+  const add = (candidate: unknown) => {
     if (!candidate || typeof candidate !== "object") return;
+    const c = candidate as NativePartnerEventStore;
     const looksLikeStore =
-      typeof candidate.GetClanEventModel === "function" ||
-      typeof candidate.GetClanEventFromAnnouncementGID === "function" ||
-      typeof candidate.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
-      candidate.m_mapExistingEvents?.set;
-    if (looksLikeStore && !stores.includes(candidate)) stores.push(candidate);
+      typeof c.GetClanEventModel === "function" ||
+      typeof c.GetClanEventFromAnnouncementGID === "function" ||
+      typeof c.LoadPartnerEventFromAnnoucementGIDAndClanSteamID === "function" ||
+      c.m_mapExistingEvents?.set;
+    if (looksLikeStore && !stores.includes(c)) stores.push(c);
   };
 
-  // Steam currently exposes multiple PartnerEvent stores. The Activity cards can
-  // render from our custom event object, but the modal uses the native
-  // window.partnerEventStore (`r(57016).IB`). Earlier builds sometimes patched the
-  // base/summary store instead, which made the modal open but stay blurred/empty.
   add(host.partnerEventStore);
   add(host.g_PartnerEventStore);
   add(host.g_PartnerEventSummaryStore);
@@ -491,7 +489,7 @@ const makeDeckyNativePartnerEvent = (appId: number, steamAppId: number, item: an
     library_spotlight_text: true,
     referenced_appids: steamAppId ? [steamAppId] : [],
   };
-  const partnerEvent: any = {
+  const partnerEvent: NativePartnerEvent = {
     __deckyNativePartnerEvent: true,
     GID: nativeEventGid,
     gid: nativeEventGid,

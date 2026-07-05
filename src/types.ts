@@ -51,6 +51,12 @@ export type MetadataNews = {
   url: string;
   summary?: string;
   image?: string;
+  /** Full-resolution image URL returned by the Steam news API. */
+  image_url?: string;
+  /** Preview/thumbnail image URL returned by the Steam news API. */
+  preview_image_url?: string;
+  /** Array of additional image URLs associated with this news item. */
+  image_sources?: string[];
   author?: string;
   feedLabel?: string;
   event_type?: number;
@@ -62,6 +68,189 @@ export type MetadataNews = {
   body?: string;
   raw_body?: string;
   date?: number;
+};
+
+/**
+ * Minimal contract for the Steam internals object exposed on `globalThis`.
+ * Only the subset needed by this plugin is declared; new fields may be added
+ * as the plugin discovers them at the type boundary.
+ */
+export type SteamInternals = {
+  SteamClient: object;
+  appStore: {
+    GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
+  };
+  appDetailsStore: object;
+  appActivityStore?: object;
+  Router?: {
+    WindowStore?: {
+      GamepadUIMainWindowInstance?: {
+        m_history?: {
+          location?: { pathname?: string; search?: string; hash?: string };
+        };
+      };
+    };
+  };
+  partnerEventStore?: NativePartnerEventStore;
+  g_PartnerEventStore?: NativePartnerEventStore;
+  g_PartnerEventSummaryStore?: NativePartnerEventStore;
+  [key: string]: unknown;
+};
+
+/**
+ * Minimal contract for a Steam app overview object returned by
+ * `appStore.GetAppOverviewByAppID`.
+ */
+export type SteamOverview = {
+  appid?: number;
+  app_type?: number;
+  display_name?: string;
+  localized_name?: string;
+  name?: string;
+  BIsShortcut?: () => boolean;
+  BIsModOrShortcut?: () => boolean;
+  /** Metacritic / user rating applied by the plugin. */
+  metacritic_score?: number;
+  /**
+   * Packed Deck compatibility bits written by the plugin.
+   * bits 0-1 = deck compat category; bits 2-3 = verified-filter copy.
+   */
+  steam_hw_compat_category_packed?: number;
+  /** Set of numeric store category IDs. */
+  m_setStoreCategories?: Set<number>;
+  /** Unix timestamp of the original release date. */
+  rt_original_release_date?: number;
+  /** Unix timestamp of the Steam release date. */
+  rt_steam_release_date?: number;
+};
+
+/** Minimal contract for a native Steam PartnerEvent store. */
+export type NativePartnerEventStore = {
+  GetClanEventModel?: (...args: unknown[]) => unknown;
+  GetClanEventFromAnnouncementGID?: (...args: unknown[]) => unknown;
+  LoadPartnerEventFromAnnoucementGIDAndClanSteamID?: (...args: unknown[]) => unknown;
+  GetPartnerEventChangeCallback?: (gid: string) => { Dispatch?: (event: unknown) => void } | null | undefined;
+  m_mapExistingEvents?: Map<string, unknown>;
+  m_mapAnnouncementBodyToEvent?: Map<string, string>;
+  m_mapAppIDToGIDs?: Map<number, string[]>;
+  m_mapClanToGIDs?: Map<number, string[]>;
+};
+
+/**
+ * Minimal contract for the synthetic PartnerEvent objects that this plugin
+ * injects into the native Steam Activity store.
+ */
+export type NativePartnerEvent = {
+  __deckyNativePartnerEvent: true;
+  GID: string;
+  gid: string;
+  event_gid: string;
+  AnnouncementGID: string;
+  announcement_gid: string;
+  announcementGID: string;
+  appid: number;
+  reference_appid: number;
+  steam_appid: number;
+  type: number;
+  event_type: number;
+  bOldAnnouncement: boolean;
+  bLoaded: boolean;
+  loadedAllLanguages: boolean;
+  visibility_state: number;
+  postTime: number;
+  createTime: number;
+  startTime: number;
+  endTime: number;
+  visibilityStartTime: number;
+  visibilityEndTime: number;
+  rtime32_moderator_reviewed: number;
+  rtime32_start_time: number;
+  rtime32_end_time: number;
+  rtime32_last_modified: number;
+  nVotesUp: number;
+  nVotesDown: number;
+  nCommentCount: number;
+  forumTopicGID: string;
+  clanSteamID: { GetAccountID: () => number; ConvertTo64BitString: () => string; toString: () => string };
+  announcementClanSteamID: { GetAccountID: () => number; ConvertTo64BitString: () => string; toString: () => string };
+  jsondata: {
+    localized_summary: string[];
+    localized_subtitle: string[];
+    localized_body: string[];
+    localized_title_image: string[];
+    localized_capsule_image: string[];
+    localized_spotlight_image: string[];
+    library_spotlight: boolean;
+    library_spotlight_text: boolean;
+    referenced_appids: number[];
+  };
+  name: Map<number, string>;
+  description: Map<number, string>;
+  timestamp_loc_updated: Map<number, number>;
+  vecTags: string[];
+  tags: string[];
+  BHasTag: (tag: string) => boolean;
+  BHasTagStartingWith: (prefix: string) => boolean;
+  GetAllTags: () => string[];
+  BMatchesAllTags: (tags?: string[]) => boolean;
+  BInRealmGlobal: () => boolean;
+  BInRealmChina: () => boolean;
+  BIsLanguageValidForRealms: () => boolean;
+  GetNameWithFallback: () => string;
+  GetGameTitle: () => string;
+  GetDescriptionWithFallback: () => string;
+  GetSummaryWithFallback: () => string;
+  GetSummary: () => string;
+  BHasSummary: () => boolean;
+  GetSubTitle: () => string;
+  BHasSubTitle: () => boolean;
+  GetSubTitleWithLanguageFallback: () => string;
+  GetSubTitleWithSummaryFallback: () => string;
+  GetCategoryAsString: () => string;
+  GetEventTypeAsString: () => string;
+  GetImgArray: () => string[];
+  GetImageHash: () => null;
+  GetImageHashAndExt: () => null;
+  GetImageFromBeginningOfDescription: () => string;
+  GetImageURL: () => string;
+  GetImageURLWithFallback: () => string;
+  GetImageForSizeAsArrayWithFallback: (_size?: string, _language?: string, _format?: string, skipFallback?: boolean) => string[];
+  BImageNeedScreenshotFallback: () => boolean;
+  BHasSomeImage: () => boolean;
+  BHasImage: () => boolean;
+  GetFallbackArtworkScreenshot: () => string;
+  GetStartTimeAndDateUnixSeconds: () => number;
+  GetEndTimeAndDateUnixSeconds: () => number;
+  GetPostTimeAndDateUnixSeconds: () => number;
+  GetAnnouncementGID: () => string;
+  BHasAnnouncementGID: () => boolean;
+  GetAppID: () => number;
+  GetReferenceAppID: () => number;
+  GetStoreAppID: () => number;
+  BIsPartnerEvent: () => boolean;
+  BIsOGGEvent: () => boolean;
+  BIsEventInFuture: () => boolean;
+  BHasEventEnded: () => boolean;
+  BIsEventActionEnabled: () => boolean;
+  BShowLibrarySpotlight: () => boolean;
+  BShowLibrarySpotlightText: () => boolean;
+  BIsImageSafeForAllAges: () => boolean;
+  BHasBroadcastEnabled: () => boolean;
+  BEventCanShowBroadcastWidget: () => boolean;
+  BHasBroadcastForceBanner: () => boolean;
+  BSaleShowBroadcastAtTopOfPage: () => boolean;
+  GetVisibilityStartTimeAndDateUnixSeconds: () => number;
+  BHasForumTopicGID: () => boolean;
+  GetForumTopicURL: () => string;
+  GetAppIDOrReferenceAppID: () => number;
+  GetEventType: () => number;
+  BIsVisibleEvent: () => boolean;
+  BIsStagedEvent: () => boolean;
+  BIsUnlistedEvent: () => boolean;
+  BHasEmailEnabled: () => boolean;
+  BHasSaleEnabled: () => boolean;
+  BHasSaleVanity: () => boolean;
+  [key: string]: unknown;
 };
 
 export type GameOption = {

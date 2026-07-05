@@ -1,8 +1,8 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { MetadataData } from "../types";
+import { MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
-declare const appStore: any;
-declare const appDetailsStore: any;
+declare const appStore: SteamInternals["appStore"];
+declare const appDetailsStore: SteamInternals["appDetailsStore"];
 
 export type Unpatch = () => void;
 
@@ -13,8 +13,11 @@ export const patchInstallStatus = {
   router: "pending"
 };
 
-export const hasSteamInternals = () => !!(globalThis as any).SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
-export const hasActivityStore = () => !!(globalThis as any).appActivityStore;
+/** Typed accessor for the Steam internals exposed on `globalThis`. */
+export const steamInternals = () => globalThis as unknown as SteamInternals;
+
+export const hasSteamInternals = () => !!steamInternals().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+export const hasActivityStore = () => !!steamInternals().appActivityStore;
 export const hasAppDetailsStore = () => typeof appDetailsStore !== "undefined" && !!appDetailsStore;
 
 export const metadataCache: Record<string, MetadataData> = {};
@@ -71,10 +74,9 @@ export const isNonSteamAppWithoutPatchedMethod = (overview: any): boolean => {
 };
 
 export const currentRoutePath = () => {
-  const steamRouter =
-    (globalThis as any).Router ?? (globalThis as any).window?.Router;
+  const steamRouter = steamInternals().Router;
   const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
-  const windowLocation = (globalThis as any).window?.location;
+  const windowLocation = steamInternals().window as { pathname?: string; search?: string; hash?: string; href?: string } | undefined;
   return [
     location?.pathname,
     location?.search,
@@ -98,7 +100,7 @@ export const isNonSteamApp = (overview: any): boolean => {
   return false;
 };
 
-export const getOverview = (appId: number): any | null => {
+export const getOverview = (appId: number): SteamOverview | null => {
   try {
     return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
   } catch (_error) {
@@ -268,18 +270,18 @@ export const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvent
 export const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
 
 export const deckyNativeActivityCache = () => {
-  const host = globalThis as any;
-  if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY]) host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map<number, any>();
-  return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] as Map<number, any>;
+  const host = steamInternals();
+  if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY]) host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map<number, unknown>();
+  return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] as Map<number, unknown>;
 };
 
 export const deckyNativePartnerEventCache = () => {
-  const host = globalThis as any;
-  if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY]) host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map<string, any>();
-  return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] as Map<string, any>;
+  const host = steamInternals();
+  if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY]) host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map<string, NativePartnerEvent>();
+  return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] as Map<string, NativePartnerEvent>;
 };
 
-export const deckyNativePartnerEventStore = () => (globalThis as any)[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+export const deckyNativePartnerEventStore = () => steamInternals()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 
 export const activityAppIdFromUrl = (url: string) => {
   const decoded = decodeURIComponent(String(url || ""));
