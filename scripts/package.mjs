@@ -25,9 +25,10 @@ function main() {
     throw new Error("Missing dist/index.js. Run npm run build before packaging.");
   }
 
-  const stagingRoot = path.join(repoRoot, "build-package");
+  const stagingBase = "/tmp/Decky-Metadata";
+  const stagingRoot = path.join(stagingBase, "build-package");
   const stagingPlugin = path.join(stagingRoot, PLUGIN_FOLDER_NAME);
-  assertPathInside(repoRoot, stagingRoot);
+  assertPathInside(stagingBase, stagingRoot);
 
   fs.rmSync(stagingRoot, { recursive: true, force: true });
   fs.mkdirSync(path.join(stagingPlugin, "dist"), { recursive: true });

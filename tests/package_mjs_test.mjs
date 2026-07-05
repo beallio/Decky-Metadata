@@ -14,7 +14,7 @@ const zipPath = path.join(
   repoRoot,
   "Decky-Metadata.zip",
 );
-const stagingRoot = path.join(repoRoot, "build-package");
+const stagingRoot = "/tmp/Decky-Metadata/build-package";
 
 afterEach(() => {
   fs.rmSync(zipPath, { force: true });
