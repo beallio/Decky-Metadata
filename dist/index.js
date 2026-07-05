@@ -3475,18 +3475,16 @@ const useNonSteamGames = () => {
     return { games, loadGames };
 };
 
-// Keep in sync with package.json and plugin.json.
-const PLUGIN_VERSION = "0.1.0";
+// Version is fetched from the backend on mount; "" means not yet loaded.
+const PLUGIN_VERSION = "";
 const splitVersion = (version) => {
-    const fallback = PLUGIN_VERSION;
     const trimmed = String(version || "").trim();
-    const value = trimmed || fallback;
-    const separator = value.indexOf("+");
+    const separator = trimmed.indexOf("+");
     if (separator < 0) {
-        return { base: value, commit: null };
+        return { base: trimmed, commit: null };
     }
-    const base = value.slice(0, separator).trim() || fallback;
-    const commit = value.slice(separator + 1).trim();
+    const base = trimmed.slice(0, separator).trim();
+    const commit = trimmed.slice(separator + 1).trim();
     return { base, commit: commit || null };
 };
 const scanCompleteMessage = (progress) => {
