@@ -550,15 +550,6 @@ class Plugin:
         self._data["metadata"][str(app_id)] = metadata
         self._save_data()
 
-    def _scan_pipeline_message(
-        self,
-        result: ScanPipelineResult,
-        title: str,
-        matched_messages: dict[str, str],
-        miss_message: str,
-    ) -> str:
-        return scan_runner.scan_pipeline_message(result, title, matched_messages, miss_message)
-
     async def _run_scan_pipeline(
         self,
         targets: list[ScanPipelineTarget],
@@ -804,26 +795,11 @@ class Plugin:
         news = self._steam_news_for_appid(steam_appid, title, limit=limit)
         return steam_appid, steam_store_url or steam_provider.STEAM_STORE_APP_URL.format(appid=steam_appid), news
 
-    def _steam_event_json(self, value: Any) -> dict[str, Any]:
-        return steam_provider.steam_event_json(value)
-
-    def _steam_localized_value(self, value: Any) -> str:
-        return steam_provider.steam_localized_value(value)
-
-    def _steam_event_clan_id(self, event: dict[str, Any]) -> str:
-        return steam_provider.steam_event_clan_id(event)
-
     def _steam_partner_asset_url(self, raw: str, clan_id: str = "") -> str:
         return steam_provider.steam_partner_asset_url(raw, clan_id)
 
     def _steam_news_image_candidates(self, contents: str, steam_appid: int = 0) -> list[str]:
         return steam_provider.steam_news_image_candidates(contents, steam_appid)
-
-    def _steam_partner_event_images(self, event: dict[str, Any], steam_appid: int) -> list[str]:
-        return steam_provider.steam_partner_event_images(event, steam_appid)
-
-    def _steam_partner_event_image(self, event: dict[str, Any], steam_appid: int) -> str:
-        return steam_provider.steam_partner_event_image(event, steam_appid)
 
     def _steam_deck_compat_for_appid(self, steam_appid: int) -> int | None:
         return steam_provider.steam_deck_compat_for_appid(steam_appid, self._http_json, _plog)
@@ -857,14 +833,8 @@ class Plugin:
     def _download_delisted_index_sync(self) -> dict[str, Any] | None:
         return delisted_provider.download_delisted_index(self._http_text, _plog)
 
-    def _save_delisted_index_sync(self, index: dict[str, Any]) -> None:
-        delisted_provider.save_delisted_index(self._delisted_index_path(), index, _plog)
-
     def _load_delisted_index_sync(self) -> dict[str, Any] | None:
         return delisted_provider.load_delisted_index(self._delisted_index_path())
-
-    def _delisted_index_is_fresh(self, index: dict[str, Any] | None) -> bool:
-        return delisted_provider.index_is_fresh(index)
 
     def _ensure_delisted_index_sync(self, force: bool = False) -> dict[str, Any] | None:
         result = delisted_provider.ensure_delisted_index(
@@ -943,9 +913,6 @@ class Plugin:
             )
         return self._sanitize_steam_news(rows)
 
-    def _steam_news_image(self, contents: str, steam_appid: int = 0) -> str:
-        return steam_provider.steam_news_image(contents, steam_appid)
-
     def _steam_announcement_page_image(self, url: str) -> str:
         return steam_provider.steam_announcement_page_image(url, self._http_text)
 
@@ -957,9 +924,6 @@ class Plugin:
 
     def _steam_news_summary(self, contents: str) -> str:
         return steam_provider.steam_news_summary(contents)
-
-    def _ign_images_to_screenshots(self, game: dict[str, Any]) -> list[dict[str, Any]]:
-        return ign_provider.ign_images_to_screenshots(game)
 
     def _sanitize_screenshots(self, values: Any) -> list[dict[str, Any]]:
         screenshots: list[dict[str, Any]] = []
@@ -1054,9 +1018,6 @@ class Plugin:
                 break
         return rows
 
-    def _rawg_slug_candidates(self, title: str, source_url: str = "") -> list[str]:
-        return ign_provider.rawg_slug_candidates(title, source_url)
-
     def _http_text(self, url: str, timeout: int = 20) -> str:
         request = urllib.request.Request(
             url,
@@ -1072,13 +1033,6 @@ class Plugin:
         except Exception as error:
             _log_tls_verification_failure(request, error)
             raise
-
-    @staticmethod
-    def _jsonish_unescape(value: str) -> str:
-        try:
-            return json.loads(f'"{value}"')
-        except Exception:
-            return html.unescape(value.replace("\\u0026", "&"))
 
     @staticmethod
     def _https_url(value: str) -> str:
@@ -1111,10 +1065,6 @@ class Plugin:
         if payload.get("errors"):
             raise RuntimeError(f"IGN GraphQL error: {payload['errors']}")
         return payload
-
-    @staticmethod
-    def _field_is_empty(value: Any) -> bool:
-        return value in (None, "", [], {})
 
     def _http_json(
         self,
@@ -1155,18 +1105,6 @@ class Plugin:
             _log_tls_verification_failure(request, error)
             _plog("http", "json request failed", level=logging.WARNING, method=request.get_method(), url=url, error=error)
             raise
-
-    def _shortcut_for_app(self, app_id: int) -> dict[str, Any] | None:
-        target = int(app_id) & 0xFFFFFFFF
-        for shortcut in self._read_steam_shortcuts():
-            shortcut_id = int(shortcut.get("appid") or 0) & 0xFFFFFFFF
-            if shortcut_id == target:
-                return shortcut
-        return None
-
-    @staticmethod
-    def _normalise_match_title(title: str) -> str:
-        return matching.normalise_match_title(title)
 
     @staticmethod
     def _is_non_primary_steam_title(name: str) -> bool:
@@ -1237,58 +1175,11 @@ class Plugin:
     def _extract_shortcuts_from_vdf(self, path: Path) -> list[dict[str, Any]]:
         return shortcuts_vdf.extract_shortcuts_from_vdf(path, _plog)
 
-    @staticmethod
-    def _vdf_get(values: dict[str, Any], *names: str) -> Any:
-        return shortcuts_vdf.vdf_get(values, *names)
-
-    @staticmethod
-    def _strip_surrounding_quotes(value: str) -> str:
-        return shortcuts_vdf.strip_surrounding_quotes(value)
-
-    @staticmethod
-    def _steam_user_id_from_shortcut_path(path: Path) -> str:
-        return shortcuts_vdf.steam_user_id_from_shortcut_path(path)
-
     def _normalize_shortcut_app_id(self, value: Any, exe: str, name: str) -> int:
         return shortcuts_vdf.normalize_shortcut_app_id(value, exe, name)
 
-    def _parse_binary_vdf_object(
-        self, data: bytes, pos: int, depth: int = 0
-    ) -> tuple[dict[str, Any], int]:
-        return shortcuts_vdf.parse_binary_vdf_object(data, pos, depth)
-
-    @staticmethod
-    def _read_vdf_cstring(data: bytes, pos: int) -> tuple[str, int]:
-        return shortcuts_vdf.read_vdf_cstring(data, pos)
-
-    @staticmethod
-    def _shortcut_app_id(exe: str, name: str) -> int:
-        return shortcuts_vdf.shortcut_app_id(exe, name)
-
     def _slug_candidates(self, title: str) -> list[str]:
         return ign_provider.slug_candidates(title)
-
-    def _slug_from_ign_value(self, value: str) -> str:
-        return ign_provider.slug_from_ign_value(value)
-
-    def _absolute_ign_url(self, value: str | None) -> str:
-        return ign_provider.absolute_ign_url(value)
-
-    def _attributes_to_people(self, values: list[Any]) -> list[dict[str, str]]:
-        return ign_provider.attributes_to_people(values)
-
-    def _attributes_to_names(self, values: list[Any]) -> list[str]:
-        return ign_provider.attributes_to_names(values)
-
-    def _first_release_date(self, regions: list[Any]) -> int | None:
-        return ign_provider.first_release_date(regions)
-
-    def _infer_store_categories(self, text: str) -> list[int]:
-        return ign_provider.infer_store_categories(text)
-
-    @staticmethod
-    def _reasonable_match(query: str, title: str) -> bool:
-        return matching.reasonable_match(query, title)
 
     @staticmethod
     def _clean_html_text(value: str) -> str:
@@ -1297,10 +1188,6 @@ class Plugin:
     @staticmethod
     def _clean_game_title(name: str) -> str:
         return matching.clean_game_title(name)
-
-    @staticmethod
-    def _rating_to_percent(value: Any) -> int | None:
-        return matching.rating_to_percent(value)
 
     @staticmethod
     def _date_to_epoch(value: Any) -> int:

@@ -205,11 +205,6 @@ def steam_partner_event_images(event: dict[str, Any], steam_appid: int) -> list[
     return images
 
 
-def steam_partner_event_image(event: dict[str, Any], steam_appid: int) -> str:
-    images = steam_partner_event_images(event, steam_appid)
-    return images[0] if images else ""
-
-
 def clean_steam_news_text(value: str) -> str:
     text = urllib.parse.unquote(html.unescape(str(value or ""))).replace("\\/", "/")
     text = re.sub(r"\[previewyoutube=[A-Za-z0-9_-]{11}(?:;[^\]]*)?\]\s*\[/previewyoutube\]", " ", text, flags=re.I)
@@ -246,11 +241,6 @@ def steam_news_raw_body(value: str) -> str:
 
 def steam_news_summary(contents: str) -> str:
     return clean_steam_news_text(contents)[:600]
-
-
-def steam_news_image(contents: str, steam_appid: int = 0) -> str:
-    images = steam_news_image_candidates(contents, steam_appid)
-    return images[0] if images else ""
 
 
 def steam_announcement_page_image(url: str, http_text: HttpTextFn) -> str:

@@ -75,20 +75,6 @@ def slug_candidates(title: str) -> list[str]:
     return [candidate for candidate in dict.fromkeys(candidates) if candidate]
 
 
-def rawg_slug_candidates(title: str, source_url: str = "") -> list[str]:
-    candidates: list[str] = []
-    for value in slug_candidates(title):
-        if value:
-            candidates.append(value)
-    ign_slug = slug_from_ign_value(source_url)
-    if ign_slug:
-        candidates.append(ign_slug)
-    cleaned = matching.clean_game_title(title)
-    if cleaned.casefold().startswith("007"):
-        candidates.append("james-bond-" + slug_candidates(cleaned)[0])
-    return [candidate for candidate in dict.fromkeys(candidates) if candidate]
-
-
 def attributes_to_people(values: list[Any]) -> list[dict[str, str]]:
     people: list[dict[str, str]] = []
     for value in values:
