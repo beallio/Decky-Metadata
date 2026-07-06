@@ -541,7 +541,9 @@ class Plugin:
             ign_metadata = self._auto_fetch_metadata_sync(title)
             if ign_metadata:
                 merged = dict(best_partial)
-                merged.update(ign_metadata)
+                for key, value in ign_metadata.items():
+                    if value or key not in merged:
+                        merged[key] = value
                 enriched = self._metadata_with_steam_news_sync(merged, title, 10)
                 if self._metadata_is_complete(enriched):
                     return {"status": "matched", "metadata": enriched, "source": "ign"}

@@ -70,7 +70,7 @@ def test_ign_backfill_completes_appid_only(tmp_path, monkeypatch):
         return m
         
     def ign_match(title):
-        return {"title": title, "source": "IGN", "description": "IGN Desc"}
+        return plugin._sanitize_metadata({"title": title, "source": "IGN", "description": "IGN Desc"})
         
     monkeypatch.setattr(plugin, "_metadata_with_steam_news_sync", steam_match_appid_only)
     monkeypatch.setattr(plugin, "_auto_fetch_metadata_sync", ign_match)
@@ -86,6 +86,30 @@ def test_ign_backfill_completes_appid_only(tmp_path, monkeypatch):
     assert plugin._scan_progress["assigned"] == 1
     assert plugin._scan_progress["failed"] == 0
     assert asyncio.run(plugin.get_missing_metadata_count(games)) == 0
+
+def test_ign_backfill_delisted_recovers_appid(tmp_path, monkeypatch):
+    plugin = make_plugin(tmp_path, monkeypatch)
+    
+    def mock_resolve_delisted(title):
+        return 456
+        
+    def steam_match_delisted(metadata, title, limit=10):
+        return dict(metadata)
+        
+    def ign_match(title):
+        return plugin._sanitize_metadata({"title": title, "source": "IGN", "description": "IGN Desc"})
+        
+    monkeypatch.setattr(plugin, "_resolve_delisted_appid_for_title", mock_resolve_delisted)
+    monkeypatch.setattr(plugin, "_metadata_with_steam_news_sync", steam_match_delisted)
+    monkeypatch.setattr(plugin, "_auto_fetch_metadata_sync", ign_match)
+    
+    games = [{"appid": 1, "name": "Delisted Backfill Game"}]
+    asyncio.run(plugin._scan_missing(games))
+    
+    m = plugin._data["metadata"]["1"]
+    assert m["steam_appid"] == 456
+    assert m["description"] == "IGN Desc"
+    assert m["source"] == "IGN"
 
 def test_full_reconciliation_invariant(tmp_path, monkeypatch):
     plugin = make_plugin(tmp_path, monkeypatch)
