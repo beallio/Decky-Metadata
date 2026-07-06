@@ -20,7 +20,6 @@ import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
 import {
   actionButtonStackStyle,
-  BusySpinner,
   ButtonLabel,
   compactTextStyle,
   diagnosticsGridStyle,
@@ -317,6 +316,7 @@ export const Content = () => {
       </PanelSection>
       <PanelSection>
         <PanelSectionRow>
+          <div style={compactTextStyle}>{"Refresh Activity re-fetches the Steam Activity feed for games that already have metadata. It does not find new matches or update store details — use Scan metadata for that."}</div>
           <div style={spacedButtonRowStyle}>
             <div style={actionButtonStackStyle}>
               <FocusableButton
@@ -354,10 +354,7 @@ export const Content = () => {
         <PanelSectionRow>
           <div style={rowStackStyle}>
             <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
-            <div style={inlineStatusStyle(delistedBusy ? "active" : "idle")}>
-              {delistedBusy ? (
-                <BusySpinner />
-              ) : null}
+            <div style={inlineStatusStyle("idle")}>
               <span>{delistedStatusText}</span>
             </div>
             <FocusableButton

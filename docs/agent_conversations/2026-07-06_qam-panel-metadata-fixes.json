@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-06",
+  "task_objective": "Fix QAM panel metadata counters, Refresh Activity explainer, and redundant status spinner",
+  "files_modified": [
+    "main.py",
+    "src/ContentPanel.tsx",
+    "tests/test_scan_counter_reconciliation.py",
+    "tests/test_scan_resolves_steam_appid.py"
+  ],
+  "tests_added": [
+    "test_appid_only_steam_match_is_missing",
+    "test_delisted_appid_only_match_is_missing",
+    "test_ign_backfill_completes_appid_only",
+    "test_ign_backfill_delisted_recovers_appid",
+    "test_full_reconciliation_invariant",
+    "test_predicate_delegation"
+  ],
+  "design_decisions": [
+    "Extracted completeness predicate to _metadata_is_complete.",
+    "Resolvers now only return 'matched' if the record is fully complete, otherwise they pass partial records forward for merging.",
+    "Added a guard in _steam_scan_match_sync so it only returns a partial 'miss' with metadata if something was actually resolved (steam_appid or steam_news), preserving prior total-miss persistence behavior.",
+    "Updated enriched_titles expectation in tests/test_scan_resolves_steam_appid.py to ['Wobbly Life', 'Wobbly Life', 'Wobbly Life'] because the plan requires re-running _metadata_with_steam_news_sync on an IGN backfill, resulting in an extra call.",
+    "Fixed IGN merge to only overlay IGN's non-empty fields or re-pin the Steam fields from best_partial so that steam_appid and steam_news survive the IGN backfill."
+  ],
+  "results": "Implemented required fixes, updated tests to use realistic IGN return value, passed quality gates and functional testing."
+}
