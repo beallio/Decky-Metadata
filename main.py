@@ -50,6 +50,12 @@ class MetadataRecord(TypedDict, total=False):
 
 import decky
 
+# Decky exec's main.py via importlib without adding the plugin directory to
+# sys.path, so the local ``backend`` package is not importable by default on
+# device (unlike pytest, which runs from the repo root). Ensure our own
+# directory is importable before pulling in the backend package.
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
 from backend import matching, scan_runner, shortcuts_vdf, storage, steam_paths
 from backend.providers import delisted as delisted_provider
 from backend.providers import ign as ign_provider
