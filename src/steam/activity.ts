@@ -23,6 +23,7 @@ import {
   patchInstallStatus,
   patchMethod,
   rewriteSteamLinkToMatchedApp,
+  rewriteSteamwebNavState,
   steamInternals,
 } from "./core";
 
@@ -1148,6 +1149,16 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
               return undefined;
             }
           }
+        }
+        try {
+          if (target.toLowerCase().includes("steamweb")) {
+            const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
+            if (rewrote) {
+              return original.apply(this, [newState, args[1], args[2]] as any);
+            }
+          }
+        } catch (_error) {
+          // Steam navigation must continue even if the redirect probe fails.
         }
         return original.apply(this, args as any);
       };

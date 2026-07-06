@@ -2371,6 +2371,17 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
                         }
                     }
                 }
+                try {
+                    if (target.toLowerCase().includes("steamweb")) {
+                        const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
+                        if (rewrote) {
+                            return original.apply(this, [newState, args[1], args[2]]);
+                        }
+                    }
+                }
+                catch (_error) {
+                    // Steam navigation must continue even if the redirect probe fails.
+                }
                 return original.apply(this, args);
             };
             window.history[methodName] = patched;
@@ -2928,11 +2939,6 @@ const installNavigationTrace = (unpatchers) => {
                             url: truncateTraceValue(url, 120),
                             state: safeStringifyTrace(args[0]),
                         }).catch(() => undefined);
-                        const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
-                        if (rewrote) {
-                            void frontendLog("nav", "steamweb rewrite", { method: methodName }).catch(() => undefined);
-                            return original.apply(this, [newState, args[1], args[2]]);
-                        }
                     }
                 }
                 catch (_error) {

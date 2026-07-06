@@ -5,7 +5,6 @@ import {
   historyPathFromArgs,
   historyStateFromArgs,
   patchMethod,
-  rewriteSteamwebNavState,
   steamAppIdForApp,
   steamLinkTarget,
 } from "./core";
@@ -254,11 +253,6 @@ export const installNavigationTrace = (unpatchers: Unpatch[]) => {
               url: truncateTraceValue(url, 120),
               state: safeStringifyTrace(args[0]),
             }).catch(() => undefined);
-            const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
-            if (rewrote) {
-              void frontendLog("nav", "steamweb rewrite", { method: methodName }).catch(() => undefined);
-              return original.apply(this, [newState, args[1], args[2]] as any);
-            }
           }
         } catch (_error) {
           // Diagnostic tracing must never affect Steam navigation.
