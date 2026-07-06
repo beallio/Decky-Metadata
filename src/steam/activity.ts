@@ -232,15 +232,15 @@ const STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE = 1002;
 const STEAM_PARTNER_EVENT_TYPE_NEWS = 28;
 const DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES = new Set([12, 13, 14, 15, 23, 24, 25, 28, 35]);
 const DECKY_STEAM_ACTIVITY_TYPE_LABELS: Record<number, string> = {
-  12: "Aggiornamento minore / Note della patch",
-  13: "Aggiornamento standard",
-  14: "Aggiornamento importante",
-  15: "Pubblicazione contenuti scaricabili",
-  23: "Evento: bottino",
-  24: "Evento: vantaggi",
-  25: "Evento: sfida",
-  28: "Notizie",
-  35: "Evento nel gioco",
+  12: "Minor update / Patch notes",
+  13: "Update",
+  14: "Major update",
+  15: "Downloadable content",
+  23: "Event: Loot",
+  24: "Event: Perks",
+  25: "Event: Challenge",
+  28: "News",
+  35: "In-game event",
 };
 const DECKY_STEAM_ACTIVITY_TYPE_TAGS: Record<number, string[]> = {
   12: ["patchnotes", "update", "decky_metadata"],
@@ -257,7 +257,7 @@ const normalizeDeckySteamActivityType = (value: unknown) => {
   const type = Number(value || 0) || STEAM_PARTNER_EVENT_TYPE_NEWS;
   return DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES.has(type) ? type : STEAM_PARTNER_EVENT_TYPE_NEWS;
 };
-const deckySteamActivityTypeLabel = (type: number) => DECKY_STEAM_ACTIVITY_TYPE_LABELS[type] || "Notizie";
+const deckySteamActivityTypeLabel = (type: number) => DECKY_STEAM_ACTIVITY_TYPE_LABELS[type] || "News";
 const deckySteamActivityTypeTags = (type: number) => DECKY_STEAM_ACTIVITY_TYPE_TAGS[type] || DECKY_STEAM_ACTIVITY_TYPE_TAGS[28];
 const isDeckyPatchNoteActivity = (item: any) => normalizeDeckySteamActivityType(item?.event_type || item?.type) === 12;
 type DeckyNativeActivityDay = {
