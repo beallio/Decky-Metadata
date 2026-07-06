@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable
 
@@ -46,8 +47,11 @@ def load_data(
 
 
 def save_data(data_file: Path, data: dict[str, Any]) -> tuple[dict[str, Any], int]:
-    data_file.write_text(
+    data_file.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = data_file.with_name(f"{data_file.name}.tmp")
+    temp_path.write_text(
         json.dumps(data, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    os.replace(temp_path, data_file)
     return copy.deepcopy(data), data_file.stat().st_mtime_ns
