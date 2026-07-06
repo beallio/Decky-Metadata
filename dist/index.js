@@ -103,7 +103,6 @@ const getScanProgress = callable("get_scan_progress");
 const startRefreshSteamActivities = callable("start_refresh_steam_activities");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
-const getPlatformCapabilities = callable("get_platform_capabilities");
 const getPluginVersion = callable("get_plugin_version");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
@@ -122,7 +121,6 @@ var backend = /*#__PURE__*/Object.freeze({
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
     getMissingMetadataCount: getMissingMetadataCount,
-    getPlatformCapabilities: getPlatformCapabilities,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
     refreshDelistedIndex: refreshDelistedIndex,

@@ -12,7 +12,6 @@ export {
   cleanTitle,
   getOverview,
   hasActivityStore,
-  hasAppDetailsStore,
   hasSteamInternals,
   isNonSteamApp,
   metadataCache,

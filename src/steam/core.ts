@@ -18,7 +18,6 @@ export const steamInternals = () => globalThis as unknown as SteamInternals;
 
 export const hasSteamInternals = () => !!steamInternals().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
-export const hasAppDetailsStore = () => typeof appDetailsStore !== "undefined" && !!appDetailsStore;
 
 export const metadataCache: Record<string, MetadataData> = {};
 

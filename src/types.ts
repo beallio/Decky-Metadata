@@ -264,17 +264,6 @@ export type GameOption = {
   isNonSteam?: boolean;
 };
 
-export type PlatformCapabilities = {
-  platform: string;
-  os_name: string;
-  is_linux: boolean;
-  is_steamos: boolean;
-  steam_root: string;
-  steam_roots: string[];
-  supports_metadata: boolean;
-  supports_steam_activity: boolean;
-};
-
 export type ScanProgress = {
   running: boolean;
   status: string;

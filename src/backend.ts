@@ -3,7 +3,6 @@ import {
   GameOption,
   MetadataData,
   MetadataSearchResult,
-  PlatformCapabilities,
   ScanProgress,
 } from "./types";
 
@@ -70,9 +69,6 @@ export const getActivityRefreshProgress = callable<[], ScanProgress>(
 );
 export const getLocalShortcuts = callable<[], GameOption[]>(
   "get_local_shortcuts"
-);
-export const getPlatformCapabilities = callable<[], PlatformCapabilities>(
-  "get_platform_capabilities"
 );
 export const getPluginVersion = callable<[], string>("get_plugin_version");
 export const getDebugLogging = callable<[], boolean>("get_debug_logging");
