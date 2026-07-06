@@ -480,22 +480,27 @@ class Plugin:
     def _new_scan_progress(self, status: str) -> dict[str, Any]:
         return scan_runner.new_scan_progress(status)
 
-    def _metadata_needs_scan(self, app_id: int) -> bool:
-        metadata = self._data["metadata"].get(str(app_id))
+    def _metadata_is_complete(self, metadata: dict[str, Any] | None) -> bool:
         if not isinstance(metadata, dict):
-            return True
-        # Treat empty/manual shells as missing so the metadata scan can repair them,
-        # but do not use missing Steam Activity/news as a reason to scan metadata.
+            return False
         title = self._clean_game_title(str(metadata.get("title") or ""))
         source = str(metadata.get("source") or "").strip().casefold()
         has_description = bool(self._clean_html_text(str(metadata.get("description") or metadata.get("short_description") or "")))
-        return not title or (source in {"", "manual"} and not has_description)
+        return bool(title and (source not in {"", "manual"} or has_description))
+
+    def _metadata_needs_scan(self, app_id: int) -> bool:
+        metadata = self._data["metadata"].get(str(app_id))
+        # Treat empty/manual shells as missing so the metadata scan can repair them,
+        # but do not use missing Steam Activity/news as a reason to scan metadata.
+        return not self._metadata_is_complete(metadata)
 
     def _steam_scan_match_sync(self, title: str) -> ScanPipelineResult:
         steam_shell = {"title": title, "source": "Manual", "id": title}
         metadata = self._metadata_with_steam_news_sync(steam_shell, title, 10)
-        if self._safe_int(metadata.get("steam_appid")):
+        if self._metadata_is_complete(metadata):
             return {"status": "matched", "metadata": metadata, "source": "steam"}
+        if self._safe_int(metadata.get("steam_appid")) or metadata.get("steam_news"):
+            return {"status": "miss", "metadata": metadata, "source": "steam"}
         return {"status": "miss", "metadata": None, "source": "steam"}
 
     def _delisted_scan_match_sync(self, title: str) -> ScanPipelineResult:
@@ -509,9 +514,9 @@ class Plugin:
             "steam_appid": delisted_appid,
         }
         metadata = self._metadata_with_steam_news_sync(pinned, title, 10)
-        if self._safe_int(metadata.get("steam_appid")):
+        if self._metadata_is_complete(metadata):
             return {"status": "matched", "metadata": metadata, "source": "delisted"}
-        return {"status": "miss", "metadata": None, "source": "delisted"}
+        return {"status": "miss", "metadata": metadata, "source": "delisted"}
 
     def _ign_scan_match_sync(self, title: str) -> ScanPipelineResult:
         metadata = self._auto_fetch_metadata_sync(title)
@@ -521,15 +526,34 @@ class Plugin:
         return {"status": "matched", "metadata": enriched, "source": "ign"}
 
     def _metadata_scan_match_sync(self, target: ScanPipelineTarget) -> ScanPipelineResult:
-        for resolver in (
-            self._steam_scan_match_sync,
-            self._delisted_scan_match_sync,
-            self._ign_scan_match_sync,
-        ):
-            result = resolver(target["title"])
+        best_partial = None
+        title = target["title"]
+
+        for resolver in (self._steam_scan_match_sync, self._delisted_scan_match_sync):
+            result = resolver(title)
             if result["status"] == "matched":
                 return result
-        return {"status": "miss", "metadata": None, "source": "metadata"}
+            if result["metadata"]:
+                if not best_partial or self._safe_int(result["metadata"].get("steam_appid")):
+                    best_partial = result["metadata"]
+
+        if best_partial:
+            ign_metadata = self._auto_fetch_metadata_sync(title)
+            if ign_metadata:
+                merged = dict(best_partial)
+                merged.update(ign_metadata)
+                enriched = self._metadata_with_steam_news_sync(merged, title, 10)
+                if self._metadata_is_complete(enriched):
+                    return {"status": "matched", "metadata": enriched, "source": "ign"}
+                best_partial = enriched
+        else:
+            result = self._ign_scan_match_sync(title)
+            if result["status"] == "matched":
+                return result
+            if result["metadata"]:
+                best_partial = result["metadata"]
+
+        return {"status": "miss", "metadata": best_partial, "source": "metadata"}
 
     def _activity_refresh_match_sync(self, target: ScanPipelineTarget) -> ScanPipelineResult:
         metadata = dict(target["metadata"] or {})

@@ -32,19 +32,19 @@ def test_scan_missing_enriches_fallback_metadata_with_steam_appid(tmp_path, monk
 
     assert calls == [
         (
-            {
-                "title": "The Force Unleashed II",
-                "source": "Manual",
-                "id": "The Force Unleashed II",
-            },
+            {"title": "The Force Unleashed II", "source": "Manual", "id": "The Force Unleashed II"},
             "The Force Unleashed II",
             10,
         ),
         (
-            {"title": "The Force Unleashed II", "source": "IGDB", "description": "Fetched"},
+            {
+                "title": "The Force Unleashed II",
+                "source": "IGDB",
+                "description": "Fetched",
+            },
             "The Force Unleashed II",
             10,
-        )
+        ),
     ]
     assert plugin._data["metadata"]["101"]["steam_appid"] == 32500
     assert plugin._scan_progress["assigned"] == 1
@@ -80,7 +80,7 @@ def test_scan_missing_continues_after_per_game_enrichment_failure(tmp_path, monk
         )
     )
 
-    assert enriched_titles == ["Broken Game", "Wobbly Life"]
+    assert enriched_titles == ["Broken Game", "Wobbly Life", "Wobbly Life"]
     assert "101" not in plugin._data["metadata"]
     assert plugin._data["metadata"]["202"]["steam_appid"] == 1211020
     assert plugin._scan_progress["completed"] == 2
