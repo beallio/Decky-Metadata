@@ -440,7 +440,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const path = currentRoutePath();
         const hasCache = !!metadataCache[String(appId)];
         const bypassCounterBefore = metadataState.bypassCounter;
-        
+
         const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
         const shieldHit = consumeRouteShield(appId);
         const shieldAfter = metadataState.routeShield ? { ...metadataState.routeShield } : null;
