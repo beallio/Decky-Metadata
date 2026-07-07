@@ -15,12 +15,13 @@ import {
   applyMetadata,
   ensureMetadataCache,
   installMetadataPatches,
+  setBypassTraceEnabled,
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
 } from "./metadataPatch";
 import { installMainWindowHistoryRedirect, installSteamNavigationRedirect } from "./navigationRedirect";
 import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace } from "./diagnostics";
-import { installRouterRenderPatches } from "./routerPatches";
+import { installGameDetailReentryShield, installRouterRenderPatches } from "./routerPatches";
 
 declare const appStore: any;
 declare const appDetailsStore: any;
@@ -68,8 +69,9 @@ export const installSteamPatches = (): Unpatch => {
   safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
   void getDebugLogging()
     .then((debugLoggingEnabled) => {
-      if (!debugLoggingEnabled) return;
       if (patchesCancelled) return;
+      setBypassTraceEnabled(debugLoggingEnabled);
+      if (!debugLoggingEnabled) return;
       safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
       safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
       safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
@@ -88,9 +90,11 @@ export const installSteamPatches = (): Unpatch => {
     tryFetchMetadataForApp,
     refreshDeckyNativeActivityForApp,
   });
+  safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
 
   return () => {
     patchesCancelled = true;
+    setBypassTraceEnabled(false);
     unpatchers.splice(0).reverse().forEach((unpatch) => {
       try {
         unpatch();

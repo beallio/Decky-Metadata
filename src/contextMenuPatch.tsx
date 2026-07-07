@@ -198,7 +198,7 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
             ([nextProps]: any[], shouldUpdate: boolean) => {
               try {
                 removeOurEntry(nextProps.children);
-                if (shouldUpdate === true) {
+                if (shouldUpdate === true && isGameContextMenu(nextProps.children)) {
                   syncOurEntry(nextProps.children, appId);
                 }
               } catch (_error) {
@@ -212,7 +212,10 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
         });
       } else if (Array.isArray(menu?.props?.children)) {
         try {
-          syncOurEntry(menu.props.children, appId);
+          removeOurEntry(menu.props.children);
+          if (isGameContextMenu(menu.props.children)) {
+            syncOurEntry(menu.props.children, appId);
+          }
         } catch (_error) {
           // Ignore non-matching menus.
         }
