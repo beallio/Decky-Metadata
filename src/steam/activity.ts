@@ -1,8 +1,9 @@
 import { findModuleChild } from "@decky/ui";
-import { frontendLog } from "../backend";
+import { frontendLog, refreshSteamActivityForApp } from "../backend";
 import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeed";
 import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
+import { createActivityRefreshGate } from "./activityRefreshGate";
 import {
   DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY,
   Unpatch,
@@ -30,6 +31,32 @@ import {
 let ensureMetadataCacheFn: () => Promise<void> = async () => undefined;
 export const configureActivityMetadataLoader = (ensureMetadataCache: () => Promise<void>) => {
   ensureMetadataCacheFn = ensureMetadataCache;
+};
+
+const activityRefreshGate = createActivityRefreshGate();
+
+const maybeRefreshSteamNewsForApp = (appId: number) => {
+  if (!appId || !isNonSteamApp(getOverview(appId))) return;
+  const enrichedAt = Number(metadataCache[String(appId)]?.steam_news_enriched_at || 0);
+  const nowMs = Date.now();
+  if (!activityRefreshGate.shouldAttempt(appId, nowMs, enrichedAt)) return;
+  activityRefreshGate.markAttempt(appId, nowMs);
+  void (async () => {
+    try {
+      const previous = metadataCache[String(appId)];
+      const refreshed = await refreshSteamActivityForApp(appId);
+      if (!refreshed) return;
+      const newsKey = (metadata?: MetadataData | null) =>
+        JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
+      const changed = newsKey(previous) !== newsKey(refreshed);
+      metadataCache[String(appId)] = refreshed;
+      if (changed) await refreshDeckyNativeActivityForApp(appId);
+    } catch (error) {
+      log.info("activity", "per-app news refresh failed", error);
+    } finally {
+      activityRefreshGate.markSettled(appId);
+    }
+  })();
 };
 
 const isDeckyCommunityId = (value: unknown) =>
@@ -203,6 +230,7 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
 export const steamActivityPayloadForApp = async (appId: number) => {
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
+  void maybeRefreshSteamNewsForApp(appId);
   await ensureMetadataCacheFn();
   let metadata = metadataCache[String(appId)];
   if (!metadata) return null;
@@ -775,6 +803,7 @@ const makeDeckyNativeActivity = (appId: number, metadata: MetadataData) => {
 const getDeckyNativeActivityForApp = (appId: number) => {
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
+  void maybeRefreshSteamNewsForApp(appId);
   const cached = deckyNativeActivityCache().get(appId);
   if (cached) return cached;
   const metadata = metadataCache[String(appId)];

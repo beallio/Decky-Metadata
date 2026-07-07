@@ -64,6 +64,10 @@ export const startRefreshSteamActivities = callable<
   [games: GameOption[]],
   ScanProgress
 >("start_refresh_steam_activities");
+export const refreshSteamActivityForApp = callable<
+  [appId: number],
+  MetadataData | null
+>("refresh_steam_activity_for_app");
 export const getActivityRefreshProgress = callable<[], ScanProgress>(
   "get_activity_refresh_progress"
 );
