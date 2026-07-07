@@ -1,5 +1,5 @@
 import { findModuleChild } from "@decky/ui";
-import { autoFetchMetadata, fetchMetadata, getAllMetadata, saveMetadata } from "../backend";
+import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
 import { MetadataData } from "../types";
 import * as log from "../log";
 import {
@@ -7,6 +7,7 @@ import {
   appName,
   cleanTitle,
   currentRoutePath,
+  gameDetailAppIdFromPath,
   getOverview,
   isNonSteamApp,
   isNonSteamAppWithoutPatchedMethod,
@@ -19,6 +20,34 @@ import {
 declare const appStore: any;
 declare const appDetailsStore: any;
 declare const appDetailsCache: any;
+
+let bypassTraceEnabled = false;
+const bypassArmTraceAt: Record<string, number> = {};
+
+export const setBypassTraceEnabled = (enabled: boolean) => {
+  bypassTraceEnabled = !!enabled;
+  if (!bypassTraceEnabled) {
+    Object.keys(bypassArmTraceAt).forEach((key) => delete bypassArmTraceAt[key]);
+  }
+};
+
+export const isBypassTraceEnabled = () => bypassTraceEnabled;
+
+const traceBypassArm = (source: "GetPerClientData" | "BHasRecentlyLaunched") => {
+  if (!bypassTraceEnabled) return;
+  const now = Date.now();
+  if (now - (bypassArmTraceAt[source] || 0) < 1000) return;
+  bypassArmTraceAt[source] = now;
+  void frontendLog("trace", "bypass armed", { source }).catch(() => undefined);
+};
+
+const traceBypassTruthWindowHit = (appId: number, bypassCounter: number) => {
+  if (!bypassTraceEnabled) return;
+  if (!Number.isFinite(appId) || !metadataCache[String(appId)]) return;
+  const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
+  if (routeAppId !== appId) return;
+  void frontendLog("trace", "bypass truth window hit", { appId, bypassCounter }).catch(() => undefined);
+};
 
 const shortcutAppIdForSteamAppId = (steamAppId: number): number | null => {
   if (!Number.isFinite(steamAppId) || steamAppId <= 0) return null;
@@ -382,7 +411,9 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const path = currentRoutePath();
         if (path === "/library/home") return false;
         if (metadataState.bypassCounter > 0) metadataState.bypassCounter -= 1;
-        return metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
+        const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
+        if (shouldBypass) traceBypassTruthWindowHit(Number(this?.appid), metadataState.bypassCounter);
+        return shouldBypass;
       }).unpatch
     );
   }
@@ -390,7 +421,9 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   if (detailsProto?.BHasRecentlyLaunched) {
     unpatchers.push(
       safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args: any[], ret: any) => {
+        const wasIdle = metadataState.bypassCounter === 0;
         metadataState.bypassCounter = 4;
+        if (wasIdle) traceBypassArm("BHasRecentlyLaunched");
         return ret;
       }).unpatch
     );
@@ -423,7 +456,9 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   if (overviewProto?.GetPerClientData) {
     unpatchers.push(
       safeAfterPatch(overviewProto, "GetPerClientData", (_args: any[], ret: any) => {
+        const wasIdle = metadataState.bypassCounter === 0;
         metadataState.bypassCounter = 4;
+        if (wasIdle) traceBypassArm("GetPerClientData");
         return ret;
       }).unpatch
     );

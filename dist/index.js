@@ -589,6 +589,34 @@ const historyStateFromArgs = (args) => {
     return second;
 };
 
+let bypassTraceEnabled = false;
+const bypassArmTraceAt = {};
+const setBypassTraceEnabled = (enabled) => {
+    bypassTraceEnabled = !!enabled;
+    if (!bypassTraceEnabled) {
+        Object.keys(bypassArmTraceAt).forEach((key) => delete bypassArmTraceAt[key]);
+    }
+};
+const isBypassTraceEnabled = () => bypassTraceEnabled;
+const traceBypassArm = (source) => {
+    if (!bypassTraceEnabled)
+        return;
+    const now = Date.now();
+    if (now - (bypassArmTraceAt[source] || 0) < 1000)
+        return;
+    bypassArmTraceAt[source] = now;
+    void frontendLog("trace", "bypass armed", { source }).catch(() => undefined);
+};
+const traceBypassTruthWindowHit = (appId, bypassCounter) => {
+    if (!bypassTraceEnabled)
+        return;
+    if (!Number.isFinite(appId) || !metadataCache[String(appId)])
+        return;
+    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
+    if (routeAppId !== appId)
+        return;
+    void frontendLog("trace", "bypass truth window hit", { appId, bypassCounter }).catch(() => undefined);
+};
 const shortcutAppIdForSteamAppId = (steamAppId) => {
     if (!Number.isFinite(steamAppId) || steamAppId <= 0)
         return null;
@@ -928,12 +956,18 @@ const installMetadataPatches = (unpatchers) => {
                 return false;
             if (metadataState.bypassCounter > 0)
                 metadataState.bypassCounter -= 1;
-            return metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
+            const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
+            if (shouldBypass)
+                traceBypassTruthWindowHit(Number(this?.appid), metadataState.bypassCounter);
+            return shouldBypass;
         }).unpatch);
     }
     if (detailsProto?.BHasRecentlyLaunched) {
         unpatchers.push(safeAfterPatch(detailsProto, "BHasRecentlyLaunched", (_args, ret) => {
+            const wasIdle = metadataState.bypassCounter === 0;
             metadataState.bypassCounter = 4;
+            if (wasIdle)
+                traceBypassArm("BHasRecentlyLaunched");
             return ret;
         }).unpatch);
     }
@@ -958,7 +992,10 @@ const installMetadataPatches = (unpatchers) => {
     }
     if (overviewProto?.GetPerClientData) {
         unpatchers.push(safeAfterPatch(overviewProto, "GetPerClientData", (_args, ret) => {
+            const wasIdle = metadataState.bypassCounter === 0;
             metadataState.bypassCounter = 4;
+            if (wasIdle)
+                traceBypassArm("GetPerClientData");
             return ret;
         }).unpatch);
     }
@@ -3273,6 +3310,126 @@ const installRouterRenderPatches = (unpatchers, deps) => {
         unpatchers.push(() => routerHook.removePatch(route, patch));
     });
 };
+const installGameDetailReentryShield = (unpatchers) => {
+    const shieldUnpatchers = [];
+    let cancelled = false;
+    let retryId;
+    let attempts = 0;
+    const clearRetry = () => {
+        if (retryId !== undefined) {
+            window.clearTimeout(retryId);
+            retryId = undefined;
+        }
+    };
+    const mainWindowHistory = () => window?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_history ??
+        globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+    const armShieldForPath = (path, trigger) => {
+        try {
+            const appId = gameDetailAppIdFromPath(path);
+            if (appId <= 0)
+                return;
+            const overview = getOverview(appId);
+            if (!isNonSteamApp(overview) || !metadataCache[String(appId)])
+                return;
+            metadataState.bypassBypass = 11;
+            if (isBypassTraceEnabled()) {
+                void frontendLog("trace", "reentry shield armed", { appId, trigger }).catch(() => undefined);
+            }
+        }
+        catch (_error) {
+            // Steam navigation must continue even if the shield probe fails.
+        }
+    };
+    const destinationPath = (history, targetIndex) => {
+        if (!Array.isArray(history?.entries) || !Number.isInteger(history?.index))
+            return "";
+        if (targetIndex < 0 || targetIndex >= history.entries.length)
+            return "";
+        const entry = history.entries[targetIndex];
+        return String(entry?.pathname || entry?.location?.pathname || "");
+    };
+    const patchHistoryMethod = (history, methodName) => {
+        const unpatch = patchMethod(history, methodName, (_thisValue, original, args) => {
+            try {
+                const index = Number(history?.index);
+                const offset = methodName === "goBack" ? -1 : Number(args[0]);
+                if (Number.isInteger(index) && Number.isFinite(offset)) {
+                    armShieldForPath(destinationPath(history, index + offset), methodName);
+                }
+            }
+            catch (_error) {
+                // Fall through to native navigation.
+            }
+            return original(...args);
+        });
+        const patched = history?.[methodName];
+        shieldUnpatchers.push(() => {
+            try {
+                if (history?.[methodName] === patched) {
+                    unpatch();
+                }
+            }
+            catch (_error) {
+                // Best effort teardown.
+            }
+        });
+    };
+    const listenToHistory = (history) => {
+        try {
+            const unlisten = history.listen((location) => {
+                armShieldForPath(location?.pathname || "", "listen");
+            });
+            if (typeof unlisten === "function") {
+                shieldUnpatchers.push(() => {
+                    try {
+                        unlisten();
+                    }
+                    catch (_error) {
+                        // Best effort teardown.
+                    }
+                });
+            }
+        }
+        catch (_error) {
+            // Optional fallback only.
+        }
+    };
+    const tryInstall = () => {
+        if (cancelled)
+            return;
+        const history = mainWindowHistory();
+        if (history &&
+            (typeof history.goBack === "function" ||
+                typeof history.go === "function" ||
+                typeof history.listen === "function")) {
+            clearRetry();
+            if (typeof history.goBack === "function")
+                patchHistoryMethod(history, "goBack");
+            if (typeof history.go === "function")
+                patchHistoryMethod(history, "go");
+            if (typeof history.listen === "function")
+                listenToHistory(history);
+            return;
+        }
+        attempts += 1;
+        if (attempts < 30) {
+            retryId = window.setTimeout(tryInstall, 500);
+        }
+    };
+    tryInstall();
+    unpatchers.push(() => {
+        cancelled = true;
+        clearRetry();
+        shieldUnpatchers.splice(0).reverse().forEach((unpatch) => {
+            try {
+                unpatch();
+            }
+            catch (_error) {
+                // Best effort teardown.
+            }
+        });
+    });
+};
 
 const installSteamPatches = () => {
     configureActivityMetadataLoader(ensureMetadataCache);
@@ -3318,9 +3475,10 @@ const installSteamPatches = () => {
     safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
     void getDebugLogging()
         .then((debugLoggingEnabled) => {
-        if (!debugLoggingEnabled)
-            return;
         if (patchesCancelled)
+            return;
+        setBypassTraceEnabled(debugLoggingEnabled);
+        if (!debugLoggingEnabled)
             return;
         safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
         safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
@@ -3339,8 +3497,10 @@ const installSteamPatches = () => {
         tryFetchMetadataForApp,
         refreshDeckyNativeActivityForApp,
     });
+    safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
     return () => {
         patchesCancelled = true;
+        setBypassTraceEnabled(false);
         unpatchers.splice(0).reverse().forEach((unpatch) => {
             try {
                 unpatch();
@@ -4140,7 +4300,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                     DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
                             removeOurEntry(nextProps.children);
-                            if (shouldUpdate === true) {
+                            if (shouldUpdate === true && isGameContextMenu(nextProps.children)) {
                                 syncOurEntry(nextProps.children, appId);
                             }
                         }
@@ -4154,7 +4314,10 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             }
             else if (Array.isArray(menu?.props?.children)) {
                 try {
-                    syncOurEntry(menu.props.children, appId);
+                    removeOurEntry(menu.props.children);
+                    if (isGameContextMenu(menu.props.children)) {
+                        syncOurEntry(menu.props.children, appId);
+                    }
                 }
                 catch (_error) {
                     // Ignore non-matching menus.
