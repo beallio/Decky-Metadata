@@ -3329,7 +3329,7 @@ const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, has
             removedExisting,
             insertedOrSkipped,
             snippets,
-        });
+        }).catch(() => undefined);
     }
     catch (_e) { }
 };

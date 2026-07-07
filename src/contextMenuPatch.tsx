@@ -91,7 +91,7 @@ const traceMenu = (
       removedExisting,
       insertedOrSkipped,
       snippets,
-    });
+    }).catch(() => undefined);
   } catch (_e) {}
 };
 
@@ -203,7 +203,7 @@ const syncOurEntry = (
 ): void => {
   const removed = removeOurEntry(items);
   const isEligible = ownerAppId > 0 && isGameContextMenu(items);
-  
+
   let inserted: boolean | "skipped" = "skipped";
   let finalAppId = fallbackAppId;
 
@@ -211,7 +211,7 @@ const syncOurEntry = (
     finalAppId = ownerAppId || fallbackAppId;
     inserted = insertOurEntry(items, finalAppId);
   }
-  
+
   traceMenu(
     phase,
     ownerAppId,

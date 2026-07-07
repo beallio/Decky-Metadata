@@ -469,7 +469,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
 
         const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
         const reason = shouldBypass ? "truth-window" : "normal-shortcut";
-        
+
         traceBIsModDecision(appId, path, ret, shouldBypass, reason, bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
         if (shouldBypass) {
           traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
