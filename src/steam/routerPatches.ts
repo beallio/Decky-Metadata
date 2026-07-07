@@ -46,9 +46,15 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appOverview = overview || getOverview(appId);
           if (appId && isNonSteamApp(appOverview)) {
             metadataState.lastObservedGameDetailAppId = appId;
-            armRouteShield(appId, route, "route-render");
-            if (isBypassTraceEnabled()) {
-              void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+            if (metadataCache[String(appId)]) {
+              armRouteShield(appId, route, "route-render");
+              if (isBypassTraceEnabled()) {
+                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+              }
+            } else {
+              if (isBypassTraceEnabled()) {
+                void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
+              }
             }
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
