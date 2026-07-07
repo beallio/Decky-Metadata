@@ -455,6 +455,25 @@ class Plugin:
         self._activity_refresh_task = asyncio.create_task(self._refresh_steam_activities(games or []))
         return self._activity_refresh_progress
 
+    async def refresh_steam_activity_for_app(self, app_id: int) -> dict[str, Any] | None:
+        # Passive per-app stale-while-revalidate refresh. A running batch refresh
+        # already covers this data and uses the same persistence path.
+        if self._activity_refresh_task and not self._activity_refresh_task.done():
+            return None
+        self._load_data()
+        metadata = self._data["metadata"].get(str(app_id))
+        if not isinstance(metadata, dict):
+            return None
+        target: ScanPipelineTarget = {
+            "app_id": int(app_id),
+            "title": self._clean_game_title(str(metadata.get("title") or "")),
+            "metadata": dict(metadata),
+        }
+        result = await asyncio.to_thread(self._activity_refresh_match_sync, target)
+        if result["metadata"]:
+            await self._save_activity_pipeline_metadata(int(app_id), result["metadata"])
+        return result["metadata"] if result["status"] == "matched" else None
+
     async def get_activity_refresh_progress(self) -> dict[str, Any]:
         return self._activity_refresh_progress
 

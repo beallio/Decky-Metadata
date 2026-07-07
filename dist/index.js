@@ -101,6 +101,7 @@ const startScanMissing = callable("start_scan_missing");
 const getMissingMetadataCount = callable("get_missing_metadata_count");
 const getScanProgress = callable("get_scan_progress");
 const startRefreshSteamActivities = callable("start_refresh_steam_activities");
+const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
 const getPluginVersion = callable("get_plugin_version");
@@ -124,6 +125,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
     refreshDelistedIndex: refreshDelistedIndex,
+    refreshSteamActivityForApp: refreshSteamActivityForApp,
     removeMetadata: removeMetadata,
     saveMetadata: saveMetadata,
     searchMetadata: searchMetadata,
@@ -1249,9 +1251,66 @@ const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
     return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
 };
 
+const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) => {
+    const attempts = new Map();
+    const inFlight = new Set();
+    const isFresh = (timestampMs, nowMs) => typeof timestampMs === "number" && timestampMs > 0 && nowMs - timestampMs < intervalMs;
+    return {
+        shouldAttempt: (appId, nowMs, enrichedAtSeconds) => {
+            if (!appId || inFlight.has(appId))
+                return false;
+            if (isFresh(attempts.get(appId), nowMs))
+                return false;
+            const enrichedAtMs = Number(enrichedAtSeconds || 0) * 1000;
+            if (isFresh(enrichedAtMs, nowMs))
+                return false;
+            return true;
+        },
+        markAttempt: (appId, nowMs) => {
+            if (!appId)
+                return;
+            attempts.set(appId, nowMs);
+            inFlight.add(appId);
+        },
+        markSettled: (appId) => {
+            inFlight.delete(appId);
+        },
+    };
+};
+
 let ensureMetadataCacheFn = async () => undefined;
 const configureActivityMetadataLoader = (ensureMetadataCache) => {
     ensureMetadataCacheFn = ensureMetadataCache;
+};
+const activityRefreshGate = createActivityRefreshGate();
+const maybeRefreshSteamNewsForApp = (appId) => {
+    if (!appId || !isNonSteamApp(getOverview(appId)))
+        return;
+    const enrichedAt = Number(metadataCache[String(appId)]?.steam_news_enriched_at || 0);
+    const nowMs = Date.now();
+    if (!activityRefreshGate.shouldAttempt(appId, nowMs, enrichedAt))
+        return;
+    activityRefreshGate.markAttempt(appId, nowMs);
+    void (async () => {
+        try {
+            const previous = metadataCache[String(appId)];
+            const refreshed = await refreshSteamActivityForApp(appId);
+            if (!refreshed)
+                return;
+            const newsKey = (metadata) => JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
+            const changed = newsKey(previous) !== newsKey(refreshed);
+            metadataCache[String(appId)] = refreshed;
+            if (changed)
+                await refreshDeckyNativeActivityForApp(appId);
+        }
+        catch (error) {
+            info("activity", "per-app news refresh failed", error);
+        }
+        finally {
+            activityRefreshGate.markSettled(appId);
+        }
+    })();
 };
 const isDeckyCommunityId = (value) => typeof value === "string" && value.startsWith("90909");
 const deckyActivityId = (appId, index, date) => `decky-activity-${appId}-${date || 0}-${index}`;
@@ -1409,6 +1468,7 @@ const steamActivityPayloadForApp = async (appId) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
+    void maybeRefreshSteamNewsForApp(appId);
     await ensureMetadataCacheFn();
     let metadata = metadataCache[String(appId)];
     if (!metadata)
@@ -1969,6 +2029,7 @@ const getDeckyNativeActivityForApp = (appId) => {
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
+    void maybeRefreshSteamNewsForApp(appId);
     const cached = deckyNativeActivityCache().get(appId);
     if (cached)
         return cached;
