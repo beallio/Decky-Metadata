@@ -69,7 +69,7 @@ const traceMenu = (
   hasAppProperties: boolean,
   hasLaunchSource: boolean,
   removedExisting: boolean,
-  insertedOrSkipped: boolean | "skipped",
+  insertedOrSkipped: boolean | string,
   items: any[]
 ) => {
   if (!contextMenuTraceEnabled) return;
@@ -194,7 +194,6 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
   return true;
 };
 
-/** De-duplicate, then (re)insert the entry against the best-known appid. */
 const syncOurEntry = (
   phase: "first-render" | "should-update" | "outer-rerender",
   items: any[],
@@ -202,14 +201,33 @@ const syncOurEntry = (
   fallbackAppId: number
 ): void => {
   const removed = removeOurEntry(items);
-  const isEligible = ownerAppId > 0 && isGameContextMenu(items);
+  const isGameMenu = isGameContextMenu(items);
+  const hasAppProps = hasAppPropertiesHelper(items);
 
-  let inserted: boolean | "skipped" = "skipped";
-  let finalAppId = fallbackAppId;
+  let inserted: boolean | string = "skipped";
+  let finalAppId = 0;
 
-  if (isEligible) {
-    finalAppId = ownerAppId || fallbackAppId;
-    inserted = insertOurEntry(items, finalAppId);
+  if (!isGameMenu) {
+    inserted = "skipped-not-top-level";
+  } else if (ownerAppId > 0) {
+    finalAppId = ownerAppId;
+    inserted = "owner-app-id";
+  } else if (fallbackAppId > 0) {
+    if (hasAppProps) {
+      finalAppId = fallbackAppId;
+      inserted = "fallback-app-id";
+    } else {
+      inserted = "skipped-incomplete-shape";
+    }
+  } else {
+    inserted = "skipped-no-valid-appid";
+  }
+
+  if (finalAppId > 0) {
+    const actuallyInserted = insertOurEntry(items, finalAppId);
+    if (!actuallyInserted) {
+      inserted = "skipped-not-non-steam";
+    }
   }
 
   traceMenu(
@@ -217,9 +235,9 @@ const syncOurEntry = (
     ownerAppId,
     fallbackAppId,
     finalAppId,
-    isGameContextMenu(items),
-    hasAppPropertiesHelper(items),
-    isGameContextMenu(items),
+    isGameMenu,
+    hasAppProps,
+    isGameMenu,
     removed,
     inserted,
     items

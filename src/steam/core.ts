@@ -38,20 +38,27 @@ export const GAME_ACTIVITY_ROUTES = [
 
 export const metadataState: {
   bypassCounter: number;
-  bypassBypass: number;
   metadataLoaded: boolean;
   metadataLoadPromise: Promise<void> | null;
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   lastObservedGameDetailAppId: number;
+  routeShield: {
+    appId: number;
+    path: string;
+    trigger: string;
+    armedAt: number;
+    remaining: number;
+    seqId: number;
+  } | null;
 } = {
   bypassCounter: 0,
-  bypassBypass: 0,
   metadataLoaded: false,
   metadataLoadPromise: null,
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   lastObservedGameDetailAppId: 0,
+  routeShield: null,
 };
 
 export const cleanTitle = (value: string) =>
@@ -479,4 +486,35 @@ export const historyStateFromArgs = (args: any[]) => {
     if ("state" in second && second.state) return second.state;
   }
   return second;
+};
+
+let shieldSeq = 0;
+export const armRouteShield = (appId: number, path: string, trigger: string) => {
+  if (appId <= 0) return;
+  shieldSeq += 1;
+  metadataState.routeShield = {
+    appId,
+    path,
+    trigger,
+    armedAt: Date.now(),
+    remaining: 4,
+    seqId: shieldSeq,
+  };
+};
+
+export const consumeRouteShield = (appId: number): boolean => {
+  const shield = metadataState.routeShield;
+  if (!shield) return false;
+  if (shield.appId !== appId) return false;
+  const age = Date.now() - shield.armedAt;
+  if (age > 2000 || shield.remaining <= 0) {
+    metadataState.routeShield = null; // Stale or exhausted
+    return false;
+  }
+  shield.remaining -= 1;
+  return true;
+};
+
+export const clearRouteShield = () => {
+  metadataState.routeShield = null;
 };

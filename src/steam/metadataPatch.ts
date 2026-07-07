@@ -12,9 +12,10 @@ import {
   isNonSteamApp,
   isNonSteamAppWithoutPatchedMethod,
   metadataCache,
-  metadataState,
   patchMethod,
   safeAfterPatch,
+  consumeRouteShield,
+  metadataState,
 } from "./core";
 
 declare const appStore: any;
@@ -31,8 +32,7 @@ const traceBIsModDecision = (
   originalRet: any,
   finalRet: boolean,
   reason: string,
-  bypassBypassBefore: number,
-  bypassBypassAfter: number,
+  shieldState: any,
   bypassCounterBefore: number,
   bypassCounterAfter: number,
   hasCache: boolean
@@ -48,8 +48,7 @@ const traceBIsModDecision = (
     originalRet,
     finalRet,
     reason,
-    bypassBypassBefore,
-    bypassBypassAfter,
+    shieldState,
     bypassCounterBefore,
     bypassCounterAfter,
     hasCache,
@@ -440,26 +439,29 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const appId = Number(this?.appid);
         const path = currentRoutePath();
         const hasCache = !!metadataCache[String(appId)];
-        const bypassBypassBefore = metadataState.bypassBypass;
         const bypassCounterBefore = metadataState.bypassCounter;
 
+        const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
+        const shieldHit = consumeRouteShield(appId);
+        const shieldAfter = metadataState.routeShield ? { ...metadataState.routeShield } : null;
+        const shieldState = { before: shieldBefore, after: shieldAfter, hit: shieldHit };
+
         if (!isNonSteamAppWithoutPatchedMethod(this)) {
-          traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
           return ret;
         }
         if (ret !== true) {
-          traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
           return ret;
         }
 
-        if (metadataState.bypassBypass > 0) {
-          metadataState.bypassBypass -= 1;
-          traceBIsModDecision(appId, path, ret, false, "render-shield", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+        if (shieldHit) {
+          traceBIsModDecision(appId, path, ret, false, "render-shield", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
           return false;
         }
 
         if (path === "/library/home") {
-          traceBIsModDecision(appId, path, ret, false, "home-special-case", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          traceBIsModDecision(appId, path, ret, false, "home-special-case", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
           return false;
         }
 
@@ -470,7 +472,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
         const reason = shouldBypass ? "truth-window" : "normal-shortcut";
 
-        traceBIsModDecision(appId, path, ret, shouldBypass, reason, bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+        traceBIsModDecision(appId, path, ret, shouldBypass, reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
         if (shouldBypass) {
           traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
         }

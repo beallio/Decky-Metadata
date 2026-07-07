@@ -15,6 +15,8 @@ import {
   overviewFromReactTree,
   patchMethod,
   safeAfterPatch,
+  armRouteShield,
+  clearRouteShield,
 } from "./core";
 import { isBypassTraceEnabled } from "./metadataPatch";
 
@@ -44,9 +46,15 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appOverview = overview || getOverview(appId);
           if (appId && isNonSteamApp(appOverview)) {
             metadataState.lastObservedGameDetailAppId = appId;
-            metadataState.bypassBypass = 11;
-            if (isBypassTraceEnabled()) {
-              void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+            if (metadataCache[String(appId)]) {
+              armRouteShield(appId, route, "route-render");
+              if (isBypassTraceEnabled()) {
+                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+              }
+            } else {
+              if (isBypassTraceEnabled()) {
+                void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
+              }
             }
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
@@ -136,7 +144,7 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
         }
         return;
       }
-      metadataState.bypassBypass = 11;
+      armRouteShield(appId, path, trigger);
       if (isBypassTraceEnabled()) {
         void frontendLog("trace", "reentry shield armed", { appId, trigger, path, historySnapshot }).catch(() => undefined);
       }
@@ -222,6 +230,7 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
   unpatchers.push(() => {
     cancelled = true;
     clearRetry();
+    clearRouteShield();
     shieldUnpatchers.splice(0).reverse().forEach((unpatch) => {
       try {
         unpatch();
