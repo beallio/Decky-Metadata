@@ -41,10 +41,60 @@ import {
   hasSteamInternals,
 } from "./steam";
 import * as log from "./log";
+import { frontendLog } from "./backend";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "decky-metadata-edit";
 const ENTRY_KEYS = new Set([ENTRY_KEY]);
+
+let contextMenuTraceEnabled = false;
+export const setContextMenuTraceEnabled = (enabled: boolean) => {
+  contextMenuTraceEnabled = enabled;
+};
+
+const hasAppPropertiesHelper = (items: any[]): boolean => {
+  if (!Array.isArray(items) || items.length === 0) return false;
+  return !!findInReactTree(
+    items,
+    (node) => node?.onSelected?.toString?.().includes("AppProperties")
+  );
+};
+
+const traceMenu = (
+  phase: "first-render" | "should-update" | "outer-rerender",
+  ownerAppId: number,
+  fallbackAppId: number,
+  finalAppId: number,
+  isGameMenu: boolean,
+  hasAppProperties: boolean,
+  hasLaunchSource: boolean,
+  removedExisting: boolean,
+  insertedOrSkipped: boolean | "skipped",
+  items: any[]
+) => {
+  if (!contextMenuTraceEnabled) return;
+  try {
+    const snippets = (Array.isArray(items) ? items : [])
+      .slice(0, 5)
+      .map((node: any) => ({
+        key: node?.key,
+        text: typeof node?.props?.children === "string" ? node.props.children : undefined,
+      }));
+    frontendLog("trace", "context-menu", {
+      phase,
+      ownerAppId,
+      fallbackAppId,
+      finalAppId,
+      isGameContextMenu: isGameMenu,
+      hasAppProperties,
+      hasLaunchSource,
+      removedExisting,
+      insertedOrSkipped,
+      snippets,
+    });
+  } catch (_e) {}
+};
+
 
 /**
  * Resolve Steam's internal LibraryContextMenu class at runtime.
@@ -108,15 +158,20 @@ const isGameContextMenu = (items: any[]): boolean => {
 };
 
 /** Remove any previously injected entry so re-renders cannot stack copies. */
-const removeOurEntry = (items: any[]): void => {
+const removeOurEntry = (items: any[]): boolean => {
+  let removed = false;
   for (let index = items.length - 1; index >= 0; index -= 1) {
-    if (ENTRY_KEYS.has(items[index]?.key)) items.splice(index, 1);
+    if (ENTRY_KEYS.has(items[index]?.key)) {
+      items.splice(index, 1);
+      removed = true;
+    }
   }
+  return removed;
 };
 
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
-const insertOurEntry = (items: any[], appId: number): void => {
-  if (!isNonSteamApp(getOverview(appId))) return;
+const insertOurEntry = (items: any[], appId: number): boolean => {
+  if (!isNonSteamApp(getOverview(appId))) return false;
 
   const propertiesIndex = items.findIndex((node) =>
     findInReactTree(
@@ -136,12 +191,39 @@ const insertOurEntry = (items: any[], appId: number): void => {
       {"Decky metadata..."}
     </MenuItem>
   );
+  return true;
 };
 
 /** De-duplicate, then (re)insert the entry against the best-known appid. */
-const syncOurEntry = (items: any[], appId: number): void => {
-  removeOurEntry(items);
-  insertOurEntry(items, resolveAppId(items, appId));
+const syncOurEntry = (
+  phase: "first-render" | "should-update" | "outer-rerender",
+  items: any[],
+  ownerAppId: number,
+  fallbackAppId: number
+): void => {
+  const removed = removeOurEntry(items);
+  const isEligible = ownerAppId > 0 && isGameContextMenu(items);
+  
+  let inserted: boolean | "skipped" = "skipped";
+  let finalAppId = fallbackAppId;
+
+  if (isEligible) {
+    finalAppId = ownerAppId || fallbackAppId;
+    inserted = insertOurEntry(items, finalAppId);
+  }
+  
+  traceMenu(
+    phase,
+    ownerAppId,
+    fallbackAppId,
+    finalAppId,
+    isGameContextMenu(items),
+    hasAppPropertiesHelper(items),
+    isGameContextMenu(items),
+    removed,
+    inserted,
+    items
+  );
 };
 
 /**
@@ -169,8 +251,7 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
       const ownerAppId = Number(
         menu?._owner?.pendingProps?.overview?.appid ?? 0
       );
-      const appId =
-        ownerAppId || resolveAppId(menu?.props?.children ?? [], 0);
+      const fallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
 
       if (!innerPatch) {
         innerPatch = afterPatch(menu, "type", (_typeArgs: any[], rendered: any) => {
@@ -180,12 +261,10 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
             "render",
             (_args: any[], output: any) => {
               const items = output?.props?.children?.[0];
-              if (isGameContextMenu(items)) {
-                try {
-                  syncOurEntry(items, appId);
-                } catch (_error) {
-                  // Steam reshapes this tree often; skip on mismatch.
-                }
+              try {
+                syncOurEntry("first-render", items, ownerAppId, fallbackAppId);
+              } catch (_error) {
+                // Steam reshapes this tree often; skip on mismatch.
               }
               return output;
             }
@@ -197,9 +276,10 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
             "shouldComponentUpdate",
             ([nextProps]: any[], shouldUpdate: boolean) => {
               try {
-                removeOurEntry(nextProps.children);
-                if (shouldUpdate === true && isGameContextMenu(nextProps.children)) {
-                  syncOurEntry(nextProps.children, appId);
+                if (shouldUpdate === true) {
+                  syncOurEntry("should-update", nextProps.children, ownerAppId, fallbackAppId);
+                } else {
+                  removeOurEntry(nextProps.children);
                 }
               } catch (_error) {
                 // Not our menu; leave the decision untouched.
@@ -212,10 +292,7 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
         });
       } else if (Array.isArray(menu?.props?.children)) {
         try {
-          removeOurEntry(menu.props.children);
-          if (isGameContextMenu(menu.props.children)) {
-            syncOurEntry(menu.props.children, appId);
-          }
+          syncOurEntry("outer-rerender", menu.props.children, ownerAppId, fallbackAppId);
         } catch (_error) {
           // Ignore non-matching menus.
         }

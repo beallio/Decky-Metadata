@@ -45,6 +45,9 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           if (appId && isNonSteamApp(appOverview)) {
             metadataState.lastObservedGameDetailAppId = appId;
             metadataState.bypassBypass = 11;
+            if (isBypassTraceEnabled()) {
+              void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+            }
             void ensureMetadataCache().then(() => {
               applyMetadata(appId);
               void tryEnrichScreenshotsForApp(appId);
@@ -105,15 +108,37 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
     (window as any)?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_history ??
     (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
 
-  const armShieldForPath = (path: string, trigger: string) => {
+  const armShieldForPath = (path: string, trigger: string, history?: any) => {
     try {
       const appId = gameDetailAppIdFromPath(path);
-      if (appId <= 0) return;
+      const historySnapshot = history && Array.isArray(history.entries) ? {
+        index: history.index,
+        entriesLength: history.entries.length,
+        destination: path
+      } : undefined;
+
+      if (appId <= 0) {
+        if (isBypassTraceEnabled()) {
+          void frontendLog("trace", "reentry shield skip", { trigger, path, reason: "no-appid", historySnapshot }).catch(() => undefined);
+        }
+        return;
+      }
       const overview = getOverview(appId);
-      if (!isNonSteamApp(overview) || !metadataCache[String(appId)]) return;
+      if (!isNonSteamApp(overview)) {
+        if (isBypassTraceEnabled()) {
+          void frontendLog("trace", "reentry shield skip", { trigger, path, appId, reason: "not-nonsteam", historySnapshot }).catch(() => undefined);
+        }
+        return;
+      }
+      if (!metadataCache[String(appId)]) {
+        if (isBypassTraceEnabled()) {
+          void frontendLog("trace", "reentry shield skip", { trigger, path, appId, reason: "no-metadata-cache", historySnapshot }).catch(() => undefined);
+        }
+        return;
+      }
       metadataState.bypassBypass = 11;
       if (isBypassTraceEnabled()) {
-        void frontendLog("trace", "reentry shield armed", { appId, trigger }).catch(() => undefined);
+        void frontendLog("trace", "reentry shield armed", { appId, trigger, path, historySnapshot }).catch(() => undefined);
       }
     } catch (_error) {
       // Steam navigation must continue even if the shield probe fails.
@@ -133,7 +158,7 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
         const index = Number(history?.index);
         const offset = methodName === "goBack" ? -1 : Number(args[0]);
         if (Number.isInteger(index) && Number.isFinite(offset)) {
-          armShieldForPath(destinationPath(history, index + offset), methodName);
+          armShieldForPath(destinationPath(history, index + offset), methodName, history);
         }
       } catch (_error) {
         // Fall through to native navigation.
@@ -155,7 +180,7 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
   const listenToHistory = (history: any) => {
     try {
       const unlisten = history.listen((location: any) => {
-        armShieldForPath(location?.pathname || "", "listen");
+        armShieldForPath(location?.pathname || "", "listen", history);
       });
       if (typeof unlisten === "function") {
         shieldUnpatchers.push(() => {

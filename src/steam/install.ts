@@ -21,6 +21,7 @@ import {
 } from "./metadataPatch";
 import { installMainWindowHistoryRedirect, installSteamNavigationRedirect } from "./navigationRedirect";
 import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace } from "./diagnostics";
+import { setContextMenuTraceEnabled } from "../contextMenuPatch";
 import { installGameDetailReentryShield, installRouterRenderPatches } from "./routerPatches";
 
 declare const appStore: any;
@@ -71,6 +72,7 @@ export const installSteamPatches = (): Unpatch => {
     .then((debugLoggingEnabled) => {
       if (patchesCancelled) return;
       setBypassTraceEnabled(debugLoggingEnabled);
+      setContextMenuTraceEnabled(debugLoggingEnabled);
       if (!debugLoggingEnabled) return;
       safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
       safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
@@ -95,6 +97,7 @@ export const installSteamPatches = (): Unpatch => {
   return () => {
     patchesCancelled = true;
     setBypassTraceEnabled(false);
+    setContextMenuTraceEnabled(false);
     unpatchers.splice(0).reverse().forEach((unpatch) => {
       try {
         unpatch();

@@ -591,10 +591,33 @@ const historyStateFromArgs = (args) => {
 
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
+const bIsModTraceAt = {};
+const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, bypassBypassBefore, bypassBypassAfter, bypassCounterBefore, bypassCounterAfter, hasCache) => {
+    if (!bypassTraceEnabled)
+        return;
+    const now = Date.now();
+    const key = `${appId}-${reason}`;
+    if (now - (bIsModTraceAt[key] || 0) < 1000)
+        return;
+    bIsModTraceAt[key] = now;
+    void frontendLog("trace", "BIsModOrShortcut decision", {
+        appId,
+        path,
+        originalRet,
+        finalRet,
+        reason,
+        bypassBypassBefore,
+        bypassBypassAfter,
+        bypassCounterBefore,
+        bypassCounterAfter,
+        hasCache,
+    }).catch(() => undefined);
+};
 const setBypassTraceEnabled = (enabled) => {
     bypassTraceEnabled = !!enabled;
     if (!bypassTraceEnabled) {
         Object.keys(bypassArmTraceAt).forEach((key) => delete bypassArmTraceAt[key]);
+        Object.keys(bIsModTraceAt).forEach((key) => delete bIsModTraceAt[key]);
     }
 };
 const isBypassTraceEnabled = () => bypassTraceEnabled;
@@ -945,20 +968,37 @@ const installMetadataPatches = (unpatchers) => {
     }));
     if (overviewProto?.BIsModOrShortcut) {
         unpatchers.push(safeAfterPatch(overviewProto, "BIsModOrShortcut", function (_args, ret) {
-            if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true)
+            const appId = Number(this?.appid);
+            const path = currentRoutePath();
+            const hasCache = !!metadataCache[String(appId)];
+            const bypassBypassBefore = metadataState.bypassBypass;
+            const bypassCounterBefore = metadataState.bypassCounter;
+            if (!isNonSteamAppWithoutPatchedMethod(this)) {
+                traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return ret;
+            }
+            if (ret !== true) {
+                traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+                return ret;
+            }
             if (metadataState.bypassBypass > 0) {
                 metadataState.bypassBypass -= 1;
+                traceBIsModDecision(appId, path, ret, false, "render-shield", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return false;
             }
-            const path = currentRoutePath();
-            if (path === "/library/home")
+            if (path === "/library/home") {
+                traceBIsModDecision(appId, path, ret, false, "home-special-case", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return false;
-            if (metadataState.bypassCounter > 0)
+            }
+            if (metadataState.bypassCounter > 0) {
                 metadataState.bypassCounter -= 1;
+            }
             const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
-            if (shouldBypass)
-                traceBypassTruthWindowHit(Number(this?.appid), metadataState.bypassCounter);
+            const reason = shouldBypass ? "truth-window" : "normal-shortcut";
+            traceBIsModDecision(appId, path, ret, shouldBypass, reason, bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+            if (shouldBypass) {
+                traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
+            }
             return shouldBypass;
         }).unpatch);
     }
@@ -3256,6 +3296,193 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
+// Stable keys for the entries we inject, so we can find and de-duplicate them.
+const ENTRY_KEY = "decky-metadata-edit";
+const ENTRY_KEYS = new Set([ENTRY_KEY]);
+let contextMenuTraceEnabled = false;
+const setContextMenuTraceEnabled = (enabled) => {
+    contextMenuTraceEnabled = enabled;
+};
+const hasAppPropertiesHelper = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.onSelected?.toString?.().includes("AppProperties"));
+};
+const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProperties, hasLaunchSource, removedExisting, insertedOrSkipped, items) => {
+    if (!contextMenuTraceEnabled)
+        return;
+    try {
+        const snippets = (Array.isArray(items) ? items : [])
+            .slice(0, 5)
+            .map((node) => ({
+            key: node?.key,
+            text: typeof node?.props?.children === "string" ? node.props.children : undefined,
+        }));
+        frontendLog("trace", "context-menu", {
+            phase,
+            ownerAppId,
+            fallbackAppId,
+            finalAppId,
+            isGameContextMenu: isGameMenu,
+            hasAppProperties,
+            hasLaunchSource,
+            removedExisting,
+            insertedOrSkipped,
+            snippets,
+        });
+    }
+    catch (_e) { }
+};
+/**
+ * Resolve Steam's internal LibraryContextMenu class at runtime.
+ *
+ * The class is not exported, so we locate the webpack module that references
+ * it, pick the member whose source mentions "navigator:", and read the type
+ * back from a throwaway render.
+ */
+const resolveLibraryContextMenu = () => {
+    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
+        member.toString().includes("().LibraryContextMenu"));
+    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
+        member.toString().includes("navigator:"));
+    return DFL.fakeRenderComponent(menuComponent).type;
+};
+const LibraryContextMenu = resolveLibraryContextMenu();
+/**
+ * Work out which appid the menu is really for.
+ *
+ * Steam reuses context-menu instances, so the appid passed in can be stale.
+ * Prefer a fresh appid carried on the owning React node; otherwise scan the
+ * node tree for an `app.appid` (used by newer Steam clients).
+ */
+const resolveAppId = (nodes, fallbackAppId) => {
+    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
+        node._owner.pendingProps.overview.appid !== fallbackAppId);
+    if (fresherNode) {
+        return Number(fresherNode._owner.pendingProps.overview.appid);
+    }
+    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
+        walkable: ["props", "children"],
+    });
+    return Number(taggedNode?.app?.appid ?? fallbackAppId);
+};
+/**
+ * True only for the per-game context menu. Its launch action's handler
+ * references "launchSource"; menus like the screenshot menu do not, which
+ * lets us ignore them.
+ */
+const isGameContextMenu = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
+};
+/** Remove any previously injected entry so re-renders cannot stack copies. */
+const removeOurEntry = (items) => {
+    let removed = false;
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+        if (ENTRY_KEYS.has(items[index]?.key)) {
+            items.splice(index, 1);
+            removed = true;
+        }
+    }
+    return removed;
+};
+/** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
+const insertOurEntry = (items, appId) => {
+    if (!isNonSteamApp(getOverview(appId)))
+        return false;
+    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
+    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    return true;
+};
+/** De-duplicate, then (re)insert the entry against the best-known appid. */
+const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
+    const removed = removeOurEntry(items);
+    const isEligible = ownerAppId > 0 && isGameContextMenu(items);
+    let inserted = "skipped";
+    let finalAppId = fallbackAppId;
+    if (isEligible) {
+        finalAppId = ownerAppId || fallbackAppId;
+        inserted = insertOurEntry(items, finalAppId);
+    }
+    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameContextMenu(items), hasAppPropertiesHelper(items), isGameContextMenu(items), removed, inserted, items);
+};
+/**
+ * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
+ * @param LibraryContextMenuClass The resolved menu class.
+ * @returns An object exposing unpatch() for plugin teardown.
+ */
+const contextMenuPatch = (LibraryContextMenuClass) => {
+    if (!LibraryContextMenuClass || !hasSteamInternals()) {
+        if (patchInstallStatus.contextMenu === "pending") {
+            patchInstallStatus.contextMenu = "skipped-missing-internal";
+            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
+        }
+        return { unpatch: () => { } };
+    }
+    let innerPatch;
+    let outerPatch;
+    try {
+        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
+            const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            const fallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
+            if (!innerPatch) {
+                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    // First render of the menu body.
+                    DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
+                        const items = output?.props?.children?.[0];
+                        try {
+                            syncOurEntry("first-render", items, ownerAppId, fallbackAppId);
+                        }
+                        catch (_error) {
+                            // Steam reshapes this tree often; skip on mismatch.
+                        }
+                        return output;
+                    });
+                    // Subsequent updates when Steam refreshes the app overview.
+                    DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
+                        try {
+                            if (shouldUpdate === true) {
+                                syncOurEntry("should-update", nextProps.children, ownerAppId, fallbackAppId);
+                            }
+                            else {
+                                removeOurEntry(nextProps.children);
+                            }
+                        }
+                        catch (_error) {
+                            // Not our menu; leave the decision untouched.
+                        }
+                        return shouldUpdate;
+                    });
+                    return rendered;
+                });
+            }
+            else if (Array.isArray(menu?.props?.children)) {
+                try {
+                    syncOurEntry("outer-rerender", menu.props.children, ownerAppId, fallbackAppId);
+                }
+                catch (_error) {
+                    // Ignore non-matching menus.
+                }
+            }
+            return menu;
+        });
+        patchInstallStatus.contextMenu = "installed";
+        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
+    }
+    catch (error) {
+        patchInstallStatus.contextMenu = "failed";
+        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
+    }
+    return {
+        unpatch: () => {
+            outerPatch?.unpatch();
+            innerPatch?.unpatch();
+        },
+    };
+};
+
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
     GAME_DETAIL_ROUTES.forEach((route) => {
@@ -3269,6 +3496,9 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     if (appId && isNonSteamApp(appOverview)) {
                         metadataState.lastObservedGameDetailAppId = appId;
                         metadataState.bypassBypass = 11;
+                        if (isBypassTraceEnabled()) {
+                            void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+                        }
                         void ensureMetadataCache().then(() => {
                             applyMetadata(appId);
                             void tryEnrichScreenshotsForApp(appId);
@@ -3323,17 +3553,36 @@ const installGameDetailReentryShield = (unpatchers) => {
     };
     const mainWindowHistory = () => window?.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_history ??
         globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
-    const armShieldForPath = (path, trigger) => {
+    const armShieldForPath = (path, trigger, history) => {
         try {
             const appId = gameDetailAppIdFromPath(path);
-            if (appId <= 0)
+            const historySnapshot = history && Array.isArray(history.entries) ? {
+                index: history.index,
+                entriesLength: history.entries.length,
+                destination: path
+            } : undefined;
+            if (appId <= 0) {
+                if (isBypassTraceEnabled()) {
+                    void frontendLog("trace", "reentry shield skip", { trigger, path, reason: "no-appid", historySnapshot }).catch(() => undefined);
+                }
                 return;
+            }
             const overview = getOverview(appId);
-            if (!isNonSteamApp(overview) || !metadataCache[String(appId)])
+            if (!isNonSteamApp(overview)) {
+                if (isBypassTraceEnabled()) {
+                    void frontendLog("trace", "reentry shield skip", { trigger, path, appId, reason: "not-nonsteam", historySnapshot }).catch(() => undefined);
+                }
                 return;
+            }
+            if (!metadataCache[String(appId)]) {
+                if (isBypassTraceEnabled()) {
+                    void frontendLog("trace", "reentry shield skip", { trigger, path, appId, reason: "no-metadata-cache", historySnapshot }).catch(() => undefined);
+                }
+                return;
+            }
             metadataState.bypassBypass = 11;
             if (isBypassTraceEnabled()) {
-                void frontendLog("trace", "reentry shield armed", { appId, trigger }).catch(() => undefined);
+                void frontendLog("trace", "reentry shield armed", { appId, trigger, path, historySnapshot }).catch(() => undefined);
             }
         }
         catch (_error) {
@@ -3354,7 +3603,7 @@ const installGameDetailReentryShield = (unpatchers) => {
                 const index = Number(history?.index);
                 const offset = methodName === "goBack" ? -1 : Number(args[0]);
                 if (Number.isInteger(index) && Number.isFinite(offset)) {
-                    armShieldForPath(destinationPath(history, index + offset), methodName);
+                    armShieldForPath(destinationPath(history, index + offset), methodName, history);
                 }
             }
             catch (_error) {
@@ -3377,7 +3626,7 @@ const installGameDetailReentryShield = (unpatchers) => {
     const listenToHistory = (history) => {
         try {
             const unlisten = history.listen((location) => {
-                armShieldForPath(location?.pathname || "", "listen");
+                armShieldForPath(location?.pathname || "", "listen", history);
             });
             if (typeof unlisten === "function") {
                 shieldUnpatchers.push(() => {
@@ -3478,6 +3727,7 @@ const installSteamPatches = () => {
         if (patchesCancelled)
             return;
         setBypassTraceEnabled(debugLoggingEnabled);
+        setContextMenuTraceEnabled(debugLoggingEnabled);
         if (!debugLoggingEnabled)
             return;
         safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
@@ -3501,6 +3751,7 @@ const installSteamPatches = () => {
     return () => {
         patchesCancelled = true;
         setBypassTraceEnabled(false);
+        setContextMenuTraceEnabled(false);
         unpatchers.splice(0).reverse().forEach((unpatch) => {
             try {
                 unpatch();
@@ -4194,150 +4445,6 @@ const MetadataPage = () => {
                                                 background: "rgba(0,0,0,0.28)",
                                                 border: "1px solid rgba(255,255,255,0.18)",
                                             } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Developers", childrenLayout: "below", children: SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Publishers", childrenLayout: "below", children: SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 128 }, children: [SP_JSX.jsx("label", { children: "Release date" }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 112 }, children: [SP_JSX.jsx("label", { children: "Rating" }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: toggleGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: { ...buttonRowStyle, flexWrap: "nowrap" }, children: [SP_JSX.jsx(DFL.TextField, { value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: { ...fieldStyle, flex: "1 1 auto", minWidth: 120 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: applySteamAppId, children: "Apply Steam App ID" })] })] }) }) })] }) }));
-};
-
-// Stable keys for the entries we inject, so we can find and de-duplicate them.
-const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
-/**
- * Resolve Steam's internal LibraryContextMenu class at runtime.
- *
- * The class is not exported, so we locate the webpack module that references
- * it, pick the member whose source mentions "navigator:", and read the type
- * back from a throwaway render.
- */
-const resolveLibraryContextMenu = () => {
-    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
-        member.toString().includes("().LibraryContextMenu"));
-    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
-        member.toString().includes("navigator:"));
-    return DFL.fakeRenderComponent(menuComponent).type;
-};
-const LibraryContextMenu = resolveLibraryContextMenu();
-/**
- * Work out which appid the menu is really for.
- *
- * Steam reuses context-menu instances, so the appid passed in can be stale.
- * Prefer a fresh appid carried on the owning React node; otherwise scan the
- * node tree for an `app.appid` (used by newer Steam clients).
- */
-const resolveAppId = (nodes, fallbackAppId) => {
-    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
-        node._owner.pendingProps.overview.appid !== fallbackAppId);
-    if (fresherNode) {
-        return Number(fresherNode._owner.pendingProps.overview.appid);
-    }
-    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
-        walkable: ["props", "children"],
-    });
-    return Number(taggedNode?.app?.appid ?? fallbackAppId);
-};
-/**
- * True only for the per-game context menu. Its launch action's handler
- * references "launchSource"; menus like the screenshot menu do not, which
- * lets us ignore them.
- */
-const isGameContextMenu = (items) => {
-    if (!Array.isArray(items) || items.length === 0)
-        return false;
-    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
-};
-/** Remove any previously injected entry so re-renders cannot stack copies. */
-const removeOurEntry = (items) => {
-    for (let index = items.length - 1; index >= 0; index -= 1) {
-        if (ENTRY_KEYS.has(items[index]?.key))
-            items.splice(index, 1);
-    }
-};
-/** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
-const insertOurEntry = (items, appId) => {
-    if (!isNonSteamApp(getOverview(appId)))
-        return;
-    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
-    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
-};
-/** De-duplicate, then (re)insert the entry against the best-known appid. */
-const syncOurEntry = (items, appId) => {
-    removeOurEntry(items);
-    insertOurEntry(items, resolveAppId(items, appId));
-};
-/**
- * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
- * @param LibraryContextMenuClass The resolved menu class.
- * @returns An object exposing unpatch() for plugin teardown.
- */
-const contextMenuPatch = (LibraryContextMenuClass) => {
-    if (!LibraryContextMenuClass || !hasSteamInternals()) {
-        if (patchInstallStatus.contextMenu === "pending") {
-            patchInstallStatus.contextMenu = "skipped-missing-internal";
-            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
-        }
-        return { unpatch: () => { } };
-    }
-    let innerPatch;
-    let outerPatch;
-    try {
-        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-            const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-            const appId = ownerAppId || resolveAppId(menu?.props?.children ?? [], 0);
-            if (!innerPatch) {
-                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
-                    // First render of the menu body.
-                    DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
-                        const items = output?.props?.children?.[0];
-                        if (isGameContextMenu(items)) {
-                            try {
-                                syncOurEntry(items, appId);
-                            }
-                            catch (_error) {
-                                // Steam reshapes this tree often; skip on mismatch.
-                            }
-                        }
-                        return output;
-                    });
-                    // Subsequent updates when Steam refreshes the app overview.
-                    DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
-                        try {
-                            removeOurEntry(nextProps.children);
-                            if (shouldUpdate === true && isGameContextMenu(nextProps.children)) {
-                                syncOurEntry(nextProps.children, appId);
-                            }
-                        }
-                        catch (_error) {
-                            // Not our menu; leave the decision untouched.
-                        }
-                        return shouldUpdate;
-                    });
-                    return rendered;
-                });
-            }
-            else if (Array.isArray(menu?.props?.children)) {
-                try {
-                    removeOurEntry(menu.props.children);
-                    if (isGameContextMenu(menu.props.children)) {
-                        syncOurEntry(menu.props.children, appId);
-                    }
-                }
-                catch (_error) {
-                    // Ignore non-matching menus.
-                }
-            }
-            return menu;
-        });
-        patchInstallStatus.contextMenu = "installed";
-        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
-    }
-    catch (error) {
-        patchInstallStatus.contextMenu = "failed";
-        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
-    }
-    return {
-        unpatch: () => {
-            outerPatch?.unpatch();
-            innerPatch?.unpatch();
-        },
-    };
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
