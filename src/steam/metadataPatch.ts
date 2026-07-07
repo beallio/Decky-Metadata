@@ -24,10 +24,44 @@ declare const appDetailsCache: any;
 let bypassTraceEnabled = false;
 const bypassArmTraceAt: Record<string, number> = {};
 
+const bIsModTraceAt: Record<string, number> = {};
+const traceBIsModDecision = (
+  appId: number,
+  path: string,
+  originalRet: any,
+  finalRet: boolean,
+  reason: string,
+  bypassBypassBefore: number,
+  bypassBypassAfter: number,
+  bypassCounterBefore: number,
+  bypassCounterAfter: number,
+  hasCache: boolean
+) => {
+  if (!bypassTraceEnabled) return;
+  const now = Date.now();
+  const key = `${appId}-${reason}`;
+  if (now - (bIsModTraceAt[key] || 0) < 1000) return;
+  bIsModTraceAt[key] = now;
+  void frontendLog("trace", "BIsModOrShortcut decision", {
+    appId,
+    path,
+    originalRet,
+    finalRet,
+    reason,
+    bypassBypassBefore,
+    bypassBypassAfter,
+    bypassCounterBefore,
+    bypassCounterAfter,
+    hasCache,
+  }).catch(() => undefined);
+};
+
+
 export const setBypassTraceEnabled = (enabled: boolean) => {
   bypassTraceEnabled = !!enabled;
   if (!bypassTraceEnabled) {
     Object.keys(bypassArmTraceAt).forEach((key) => delete bypassArmTraceAt[key]);
+    Object.keys(bIsModTraceAt).forEach((key) => delete bIsModTraceAt[key]);
   }
 };
 
@@ -403,16 +437,43 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   if (overviewProto?.BIsModOrShortcut) {
     unpatchers.push(
       safeAfterPatch(overviewProto, "BIsModOrShortcut", function (this: any, _args: any[], ret: any) {
-        if (!isNonSteamAppWithoutPatchedMethod(this) || ret !== true) return ret;
+        const appId = Number(this?.appid);
+        const path = currentRoutePath();
+        const hasCache = !!metadataCache[String(appId)];
+        const bypassBypassBefore = metadataState.bypassBypass;
+        const bypassCounterBefore = metadataState.bypassCounter;
+
+        if (!isNonSteamAppWithoutPatchedMethod(this)) {
+          traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          return ret;
+        }
+        if (ret !== true) {
+          traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          return ret;
+        }
+
         if (metadataState.bypassBypass > 0) {
           metadataState.bypassBypass -= 1;
+          traceBIsModDecision(appId, path, ret, false, "render-shield", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
           return false;
         }
-        const path = currentRoutePath();
-        if (path === "/library/home") return false;
-        if (metadataState.bypassCounter > 0) metadataState.bypassCounter -= 1;
+
+        if (path === "/library/home") {
+          traceBIsModDecision(appId, path, ret, false, "home-special-case", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+          return false;
+        }
+
+        if (metadataState.bypassCounter > 0) {
+          metadataState.bypassCounter -= 1;
+        }
+
         const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
-        if (shouldBypass) traceBypassTruthWindowHit(Number(this?.appid), metadataState.bypassCounter);
+        const reason = shouldBypass ? "truth-window" : "normal-shortcut";
+
+        traceBIsModDecision(appId, path, ret, shouldBypass, reason, bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+        if (shouldBypass) {
+          traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
+        }
         return shouldBypass;
       }).unpatch
     );
