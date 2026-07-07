@@ -59,3 +59,28 @@ def test_set_debug_logging_flips_decky_logger_level() -> None:
     assert main.decky.logger.level == logging.INFO
     assert plugin._data["settings"]["debug_logging"] is False
     assert len(saved) == 2
+
+
+def test_plog_exc_respects_caller_level(caplog) -> None:
+    logger = main.decky.logger
+    caplog.set_level(logging.DEBUG, logger=logger.name)
+
+    try:
+        raise ValueError("boom-warning")
+    except ValueError:
+        main._plog("steam", "deck compat fetch failed", level=logging.WARNING, exc=True)
+
+    try:
+        raise ValueError("boom-error")
+    except ValueError:
+        main._plog("load", "backend startup failed", level=logging.ERROR, exc=True)
+
+    warning_records = [r for r in caplog.records if "deck compat fetch failed" in r.getMessage()]
+    assert len(warning_records) == 1
+    assert warning_records[0].levelno == logging.WARNING
+    assert warning_records[0].exc_info is not None  # traceback still attached
+
+    error_records = [r for r in caplog.records if "backend startup failed" in r.getMessage()]
+    assert len(error_records) == 1
+    assert error_records[0].levelno == logging.ERROR
+    assert error_records[0].exc_info is not None

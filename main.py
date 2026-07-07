@@ -92,7 +92,7 @@ def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = Fal
         detail = "".join(f" {key}={_redact(value)!r}" for key, value in fields.items())
         text = f"[decky:{area}] {message}{detail}"
         if exc:
-            decky.logger.error(text, exc_info=True)
+            decky.logger.log(level, text, exc_info=True)
         else:
             decky.logger.log(level, text)
     except Exception:
