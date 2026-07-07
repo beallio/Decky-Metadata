@@ -175,12 +175,12 @@ const GAME_ACTIVITY_ROUTES = [
 ];
 const metadataState = {
     bypassCounter: 0,
-    bypassBypass: 0,
     metadataLoaded: false,
     metadataLoadPromise: null,
     loadingMetadata: new Set(),
     loadingScreenshots: new Set(),
     lastObservedGameDetailAppId: 0,
+    routeShield: null,
 };
 const cleanTitle = (value) => String(value || "")
     .replace(/[\u2122\u00ae\u00a9]/g, "")
@@ -588,11 +588,42 @@ const historyStateFromArgs = (args) => {
     }
     return second;
 };
+let shieldSeq = 0;
+const armRouteShield = (appId, path, trigger) => {
+    if (appId <= 0)
+        return;
+    shieldSeq += 1;
+    metadataState.routeShield = {
+        appId,
+        path,
+        trigger,
+        armedAt: Date.now(),
+        remaining: 4,
+        seqId: shieldSeq,
+    };
+};
+const consumeRouteShield = (appId) => {
+    const shield = metadataState.routeShield;
+    if (!shield)
+        return false;
+    if (shield.appId !== appId)
+        return false;
+    const age = Date.now() - shield.armedAt;
+    if (age > 2000 || shield.remaining <= 0) {
+        metadataState.routeShield = null; // Stale or exhausted
+        return false;
+    }
+    shield.remaining -= 1;
+    return true;
+};
+const clearRouteShield = () => {
+    metadataState.routeShield = null;
+};
 
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
-const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, bypassBypassBefore, bypassBypassAfter, bypassCounterBefore, bypassCounterAfter, hasCache) => {
+const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache) => {
     if (!bypassTraceEnabled)
         return;
     const now = Date.now();
@@ -606,8 +637,7 @@ const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, bypassB
         originalRet,
         finalRet,
         reason,
-        bypassBypassBefore,
-        bypassBypassAfter,
+        shieldState,
         bypassCounterBefore,
         bypassCounterAfter,
         hasCache,
@@ -971,23 +1001,25 @@ const installMetadataPatches = (unpatchers) => {
             const appId = Number(this?.appid);
             const path = currentRoutePath();
             const hasCache = !!metadataCache[String(appId)];
-            const bypassBypassBefore = metadataState.bypassBypass;
             const bypassCounterBefore = metadataState.bypassCounter;
+            const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
+            const shieldHit = consumeRouteShield(appId);
+            const shieldAfter = metadataState.routeShield ? { ...metadataState.routeShield } : null;
+            const shieldState = { before: shieldBefore, after: shieldAfter, hit: shieldHit };
             if (!isNonSteamAppWithoutPatchedMethod(this)) {
-                traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+                traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return ret;
             }
             if (ret !== true) {
-                traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+                traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return ret;
             }
-            if (metadataState.bypassBypass > 0) {
-                metadataState.bypassBypass -= 1;
-                traceBIsModDecision(appId, path, ret, false, "render-shield", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+            if (shieldHit) {
+                traceBIsModDecision(appId, path, ret, false, "render-shield", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return false;
             }
             if (path === "/library/home") {
-                traceBIsModDecision(appId, path, ret, false, "home-special-case", bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+                traceBIsModDecision(appId, path, ret, false, "home-special-case", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
                 return false;
             }
             if (metadataState.bypassCounter > 0) {
@@ -995,7 +1027,7 @@ const installMetadataPatches = (unpatchers) => {
             }
             const shouldBypass = metadataState.bypassCounter === -1 || metadataState.bypassCounter > 0;
             const reason = shouldBypass ? "truth-window" : "normal-shortcut";
-            traceBIsModDecision(appId, path, ret, shouldBypass, reason, bypassBypassBefore, metadataState.bypassBypass, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+            traceBIsModDecision(appId, path, ret, shouldBypass, reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
             if (shouldBypass) {
                 traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
             }
@@ -3396,17 +3428,38 @@ const insertOurEntry = (items, appId) => {
     items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
     return true;
 };
-/** De-duplicate, then (re)insert the entry against the best-known appid. */
 const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
     const removed = removeOurEntry(items);
-    const isEligible = ownerAppId > 0 && isGameContextMenu(items);
+    const isGameMenu = isGameContextMenu(items);
+    const hasAppProps = hasAppPropertiesHelper(items);
     let inserted = "skipped";
-    let finalAppId = fallbackAppId;
-    if (isEligible) {
-        finalAppId = ownerAppId || fallbackAppId;
-        inserted = insertOurEntry(items, finalAppId);
+    let finalAppId = 0;
+    if (!isGameMenu) {
+        inserted = "skipped-not-top-level";
     }
-    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameContextMenu(items), hasAppPropertiesHelper(items), isGameContextMenu(items), removed, inserted, items);
+    else if (ownerAppId > 0) {
+        finalAppId = ownerAppId;
+        inserted = "owner-app-id";
+    }
+    else if (fallbackAppId > 0) {
+        if (hasAppProps) {
+            finalAppId = fallbackAppId;
+            inserted = "fallback-app-id";
+        }
+        else {
+            inserted = "skipped-incomplete-shape";
+        }
+    }
+    else {
+        inserted = "skipped-no-valid-appid";
+    }
+    if (finalAppId > 0) {
+        const actuallyInserted = insertOurEntry(items, finalAppId);
+        if (!actuallyInserted) {
+            inserted = "skipped-not-non-steam";
+        }
+    }
+    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProps, isGameMenu, removed, inserted, items);
 };
 /**
  * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
@@ -3495,7 +3548,7 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     const appOverview = overview || getOverview(appId);
                     if (appId && isNonSteamApp(appOverview)) {
                         metadataState.lastObservedGameDetailAppId = appId;
-                        metadataState.bypassBypass = 11;
+                        armRouteShield(appId, route, "route-render");
                         if (isBypassTraceEnabled()) {
                             void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
                         }
@@ -3580,7 +3633,7 @@ const installGameDetailReentryShield = (unpatchers) => {
                 }
                 return;
             }
-            metadataState.bypassBypass = 11;
+            armRouteShield(appId, path, trigger);
             if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield armed", { appId, trigger, path, historySnapshot }).catch(() => undefined);
             }
@@ -3669,6 +3722,7 @@ const installGameDetailReentryShield = (unpatchers) => {
     unpatchers.push(() => {
         cancelled = true;
         clearRetry();
+        clearRouteShield();
         shieldUnpatchers.splice(0).reverse().forEach((unpatch) => {
             try {
                 unpatch();
