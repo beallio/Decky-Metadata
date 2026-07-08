@@ -19,6 +19,7 @@ export type MetadataData = {
   features?: string[];
   screenshots?: MetadataScreenshot[];
   steam_appid?: number | null;
+  steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: number | null;
   steam_store_url?: string;
   steam_news?: MetadataNews[];

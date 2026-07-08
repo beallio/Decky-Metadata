@@ -105,6 +105,7 @@ def test_scan_missing_uses_delisted_tier_before_ign(tmp_path, monkeypatch):
             "source": "Manual",
             "id": "Transformers Devastation",
             "steam_appid": 338930,
+            "steam_store_state": "delisted",
         },
     ]
     assert plugin._data["metadata"]["1"]["steam_appid"] == 338930
