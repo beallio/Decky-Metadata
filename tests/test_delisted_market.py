@@ -38,7 +38,7 @@ def test_sanitization_does_not_call_ensure_delisted_index_sync(tmp_path, monkeyp
         return {"apps": [[338930, "Transformers"]]}
 
     monkeypatch.setattr(plugin, "_ensure_delisted_index_sync", fake_ensure)
-    
+
     plugin._sanitize_metadata({"steam_appid": 338930})
     assert not called
 
