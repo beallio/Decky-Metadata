@@ -764,7 +764,7 @@ class Plugin:
         if steam_store_state not in {"available", "delisted", "unknown"}:
             steam_store_state = "unknown"
         if steam_store_state == "unknown" and steam_appid:
-            if self._appid_is_delisted_sync(steam_appid):
+            if self._appid_is_delisted_cached(steam_appid):
                 steam_store_state = "delisted"
         return {
             "title": title,
@@ -917,6 +917,23 @@ class Plugin:
         apps = index.get("apps") if isinstance(index, dict) else None
         return delisted_provider.resolve_delisted_appid_for_title(title, apps)
 
+    def _appid_is_delisted_cached(self, appid: int) -> bool:
+        index = getattr(self, "_delisted_index", None)
+        if not isinstance(index, dict):
+            try:
+                index = self._load_delisted_index_sync()
+            except Exception:
+                pass
+            if isinstance(index, dict):
+                self._delisted_index = index
+        apps = index.get("apps") if isinstance(index, dict) else None
+        if not isinstance(apps, list):
+            return False
+        for row in apps:
+            if isinstance(row, (list, tuple)) and len(row) > 0 and self._safe_int(row[0]) == appid:
+                return True
+        return False
+
     def _appid_is_delisted_sync(self, appid: int) -> bool:
         try:
             index = self._ensure_delisted_index_sync(False)
@@ -926,7 +943,7 @@ class Plugin:
         if not isinstance(apps, list):
             return False
         for row in apps:
-            if isinstance(row, (list, tuple)) and len(row) > 0 and row[0] == appid:
+            if isinstance(row, (list, tuple)) and len(row) > 0 and self._safe_int(row[0]) == appid:
                 return True
         return False
 
