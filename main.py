@@ -37,6 +37,7 @@ class MetadataRecord(TypedDict, total=False):
     publishers: list[dict[str, str]]
     release_date: int | None
     rating: int | None
+    steam_store_state: str
     deck_compat_category: int | None
     store_categories: list[int]
     genres: list[str]
@@ -531,6 +532,7 @@ class Plugin:
             "source": "Manual",
             "id": title,
             "steam_appid": delisted_appid,
+            "steam_store_state": "delisted",
         }
         metadata = self._metadata_with_steam_news_sync(pinned, title, 10)
         if self._metadata_is_complete(metadata):
@@ -756,6 +758,14 @@ class Plugin:
         short_description = self._clean_html_text(
             str(metadata.get("short_description") or "")
         )
+
+        steam_appid = self._safe_int(metadata.get("steam_appid"))
+        steam_store_state = str(metadata.get("steam_store_state") or "").strip().lower()
+        if steam_store_state not in {"available", "delisted", "unknown"}:
+            steam_store_state = "unknown"
+        if steam_store_state == "unknown" and steam_appid:
+            if self._appid_is_delisted_sync(steam_appid):
+                steam_store_state = "delisted"
         return {
             "title": title,
             "id": metadata.get("id") or title,
@@ -780,7 +790,8 @@ class Plugin:
                 if str(value).strip()
             ],
             "screenshots": self._sanitize_screenshots(metadata.get("screenshots")),
-            "steam_appid": self._safe_int(metadata.get("steam_appid")),
+            "steam_appid": steam_appid,
+            "steam_store_state": steam_store_state,
             "steam_store_url": self._https_url(str(metadata.get("steam_store_url") or "")),
             "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
             "steam_news_enriched_at": int(
@@ -819,6 +830,8 @@ class Plugin:
                         if value:
                             next_metadata[key] = value
                     next_metadata["source"] = "Steam"
+                    if str(metadata.get("steam_store_state") or "").strip().lower() != "delisted":
+                        next_metadata["steam_store_state"] = "available"
         if steam_store_url:
             next_metadata["steam_store_url"] = steam_store_url
         if steam_news:
@@ -903,6 +916,19 @@ class Plugin:
         index = self._ensure_delisted_index_sync(False)
         apps = index.get("apps") if isinstance(index, dict) else None
         return delisted_provider.resolve_delisted_appid_for_title(title, apps)
+
+    def _appid_is_delisted_sync(self, appid: int) -> bool:
+        try:
+            index = self._ensure_delisted_index_sync(False)
+        except Exception:
+            return False
+        apps = index.get("apps") if isinstance(index, dict) else None
+        if not isinstance(apps, list):
+            return False
+        for row in apps:
+            if isinstance(row, (list, tuple)) and len(row) > 0 and row[0] == appid:
+                return True
+        return False
 
     def _steam_news_for_appid(self, steam_appid: int, title: str = "", limit: int = 6) -> list[dict[str, Any]]:
         partner_events = self._steam_partner_events_for_appid(steam_appid, limit=max(limit or 6, 10))

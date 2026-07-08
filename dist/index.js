@@ -830,6 +830,13 @@ const applyMetadata = (appId) => {
         if (appData.details) {
             appData.details.nScreenshots = screenshots.length;
             appData.details.vecScreenShots = screenshots;
+        }
+    }
+    if (appData.details) {
+        if (metadata.steam_store_state === "delisted") {
+            appData.details.bCommunityMarketPresence = false;
+        }
+        else if (screenshots.length) {
             appData.details.bCommunityMarketPresence = true;
         }
     }

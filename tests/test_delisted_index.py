@@ -105,6 +105,7 @@ def test_scan_missing_uses_delisted_tier_before_ign(tmp_path, monkeypatch):
             "source": "Manual",
             "id": "Transformers Devastation",
             "steam_appid": 338930,
+            "steam_store_state": "delisted",
         },
     ]
     assert plugin._data["metadata"]["1"]["steam_appid"] == 338930
@@ -133,7 +134,7 @@ def test_scan_missing_prewarms_delisted_index_before_matching(tmp_path, monkeypa
 
     asyncio.run(plugin._scan_missing([{"appid": 1, "name": "Transformers Devastation"}]))
 
-    assert calls == [False, False]
+    assert calls == [False, False, False]
     assert plugin._data["metadata"]["1"]["steam_appid"] == 338930
     assert plugin._scan_progress["assigned"] == 1
     assert plugin._scan_progress["failed"] == 0
