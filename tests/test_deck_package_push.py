@@ -50,10 +50,11 @@ case "$*" in
 esac
 """,
     )
-    _executable(fake_bin / "scp", "#!/usr/bin/env bash\nexit \"${SCP_STATUS:-0}\"\n")
+    _executable(fake_bin / "scp", "#!/usr/bin/env bash\n[[ -z \"${SCP_LOG:-}\" ]] || echo copy >>\"$SCP_LOG\"\nexit \"${SCP_STATUS:-0}\"\n")
     _executable(
         fake_bin / "npm",
         """#!/usr/bin/env bash
+echo "fake build chatter"
 if [[ -n "${LOCK_LOG:-}" ]]; then
   echo "start $$" >>"$LOCK_LOG"
   sleep 0.2
@@ -163,3 +164,28 @@ def test_concurrent_hook_builds_are_serialized_by_the_package_lock(tmp_path):
     assert [line.split()[0] for line in lines] == ["start", "end", "start", "end"]
     assert lines[0].split()[1] == lines[1].split()[1]
     assert lines[2].split()[1] == lines[3].split()[1]
+
+
+def test_sequential_delivery_revalidates_and_skips_duplicate_copy_unless_forced(tmp_path):
+    env, _, _ = _environment(tmp_path)
+    scp_log = tmp_path / "scp.log"
+    env = {**env, "SCP_LOG": str(scp_log)}
+
+    first = _invoke(env, "--push", "--json")
+    second = _invoke(env, "--push", "--json")
+    forced = _invoke(env, "--push", "--force", "--json")
+
+    assert first.returncode == second.returncode == forced.returncode == 0
+    assert json.loads(first.stdout)["DELIVERY"] == "PASS"
+    assert json.loads(second.stdout)["DELIVERY"] == "ALREADY_CURRENT"
+    assert json.loads(forced.stdout)["DELIVERY"] == "PASS"
+    assert scp_log.read_text().splitlines() == ["copy", "copy"]
+
+
+def test_json_build_routes_progress_away_from_stdout(tmp_path):
+    env, _, _ = _environment(tmp_path)
+    result = _invoke(env, "--build", "--json")
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["PACKAGE_CREATED"] == "PASS"
+    assert "fake build chatter" not in result.stdout
+    assert "fake build chatter" in result.stderr
