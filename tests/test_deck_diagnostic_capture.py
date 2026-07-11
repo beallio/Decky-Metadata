@@ -1,5 +1,6 @@
 import json
 import os
+import stat
 import subprocess
 from pathlib import Path
 
@@ -58,6 +59,9 @@ esac
     assert "secret" not in derived and "76561191234567890" not in derived
     assert "?token=" not in derived and "<HOME>" in derived
     assert "secret" in raw and "76561191234567890" in raw
+    assert stat.S_IMODE(output.stat().st_mode) == 0o700
+    assert stat.S_IMODE((output / "restricted-raw").stat().st_mode) == 0o700
+    assert stat.S_IMODE((output / "restricted-raw/console_log.txt").stat().st_mode) == 0o600
     assert json.loads((output / "metadata-summary.json").read_text()) == {
         "delisted_match": 1,
         "entry_count": 3,
@@ -77,4 +81,17 @@ esac
     assert "WARNING" in second.stderr
     settings = temp_root / "diagnostics/second/restricted-raw/settings.json"
     assert json.loads(settings.read_text())["token"] == "secret"
+    assert stat.S_IMODE(settings.stat().st_mode) == 0o600
     assert json.loads((settings.parents[1] / "manifest.json").read_text())["include_settings"] is True
+
+
+def test_capture_rejects_state_outside_tmp():
+    result = subprocess.run(
+        [str(ROOT / "scripts/deck/capture.sh")],
+        cwd=ROOT,
+        env={**os.environ, "DECKY_TMP_ROOT": str(ROOT / "unsafe-capture")},
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 2
+    assert "must resolve below /tmp" in result.stderr

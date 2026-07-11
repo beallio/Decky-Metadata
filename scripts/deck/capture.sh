@@ -14,9 +14,16 @@ while (($#)); do
 done
 stamp="${DECKY_CAPTURE_TIMESTAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
 tmp_base="${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}"
+tmp_base="$(realpath -m "$tmp_base")"
+[[ "$tmp_base" == /tmp || "$tmp_base" == /tmp/* ]] || {
+  echo "capture: DECKY_TMP_ROOT must resolve below /tmp" >&2
+  exit 2
+}
 root="$tmp_base/diagnostics/$stamp"
 restricted="$root/restricted-raw"
-mkdir -p "$root" "$restricted"
+umask 077
+mkdir -p -m 700 "$root" "$restricted"
+chmod 700 "$root" "$restricted"
 manifest="$root/manifest.jsonl"
 : >"$manifest"
 record() { python3 - "$manifest" "$1" "$2" "$3" <<'PY'
@@ -60,7 +67,11 @@ redact_json "$root/doctor.json"
 if DECKY_LOG_SYNC_DIR="$tmp_base/deck-logs" scripts/sync_deck_logs.sh >"$root/log-sync.txt" 2>&1; then
   record "scripts/sync_deck_logs.sh" 0 "$root/log-sync.txt"
   latest="$(find "$tmp_base/deck-logs" -type l -name latest -print | sort | tail -n 1)"
-  [[ -d "$latest" ]] && cp -a "$latest/." "$restricted/"
+  if [[ -d "$latest" ]]; then
+    cp -a "$latest/." "$restricted/"
+    find "$restricted" -type d -exec chmod 700 {} +
+    find "$restricted" -type f -exec chmod 600 {} +
+  fi
   audit_args=("$latest" --json); [[ -n "$since" ]] && audit_args+=(--since "$since")
   collect log-audit.json ./run.sh python3 scripts/deck/log_audit.py "${audit_args[@]}"
   redact_json "$root/log-audit.json"
@@ -96,6 +107,8 @@ if ((include_settings)); then
 else
   if ssh "${DECKY_DECK_HOST:-steamdeck}" "cat '$settings_remote'" 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); m=d.get("metadata",d); vals=[v for v in m.values() if isinstance(v,dict)]; matched=[v for v in vals if v.get("steam_appid")]; delisted=[v for v in matched if v.get("delisted") is True or str(v.get("steam_store_state") or v.get("store_state") or "").lower() in {"delisted","unavailable","removed"}]; print(json.dumps({"entry_count":len(m),"listed_match":len(matched)-len(delisted),"delisted_match":len(delisted),"never_on_steam":len(vals)-len(matched)},sort_keys=True))' >"$root/metadata-summary.json"; then record "read redacted metadata summary" 0 "$root/metadata-summary.json"; else record "read redacted metadata summary" 1 "$root/metadata-summary.json"; fi
 fi
+find "$restricted" -type d -exec chmod 700 {} +
+find "$restricted" -type f -exec chmod 600 {} +
 python3 - "$manifest" "$root/manifest.json" "$include_settings" <<'PY'
 import json,sys
 rows=[json.loads(line) for line in open(sys.argv[1])]
