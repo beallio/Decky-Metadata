@@ -15,6 +15,37 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 
+LEGACY_HOOK_BODIES = {
+    "pre-commit": (
+        "#!/usr/bin/env bash\n"
+        "# Playhub Metadata pre-commit gate (installed from AGENTS.md contract).\n"
+        "set -euo pipefail\n"
+        'repo_root="$(git rev-parse --show-toplevel)"\n'
+        'exec "$repo_root/scripts/check_tdd.sh"'
+    ),
+    "post-commit": (
+        "#!/usr/bin/env bash\n"
+        "# Decky-Metadata post-commit hook (installed from AGENTS.md contract).\n"
+        "# Delegates to the tracked scripts/post_commit.sh: build + package + push to Deck.\n"
+        'repo_root="$(git rev-parse --show-toplevel)"\n'
+        'exec "$repo_root/scripts/post_commit.sh"'
+    ),
+    "post-merge": (
+        "#!/usr/bin/env bash\n"
+        "# Decky-Metadata post-merge hook.\n"
+        "# git merge (and git pull) fire post-merge, NOT post-commit, so the orchestration\n"
+        "# flow that lands work on dev via `git merge --no-ff` needs this to trigger the\n"
+        "# same build + package + push-to-Deck step as post-commit.\n"
+        'repo_root="$(git rev-parse --show-toplevel)"\n'
+        'exec "$repo_root/scripts/post_commit.sh"'
+    ),
+}
+
+
+def hook_body_supported(name: str, delegate: str, body: str) -> bool:
+    canonical = f'#!/usr/bin/env bash\nexec "$(git rev-parse --show-toplevel)/{delegate}" "$@"'
+    return body.rstrip("\n") in {canonical, LEGACY_HOOK_BODIES[name]}
+
 
 def run(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=cwd, text=True, capture_output=True, check=False)
@@ -102,12 +133,7 @@ def local_checks(root: Path) -> list[dict[str, object]]:
     for name, delegate in expected.items():
         hook = git_dir / "hooks" / name
         body = hook.read_text(errors="replace") if hook.is_file() else ""
-        nonblank = [line for line in body.splitlines() if line.strip()]
-        expected_lines = {
-            f'exec "$(git rev-parse --show-toplevel)/{delegate}" "$@"',
-            f'exec "$repo_root/{delegate}"',
-        }
-        if not nonblank or nonblank[-1] not in expected_lines or not os.access(hook, os.X_OK):
+        if not hook_body_supported(name, delegate, body) or not os.access(hook, os.X_OK):
             drift[name] = "missing, non-executable, or wrong delegate"
     checks.append(check("git-hooks", "FAIL" if drift else "PASS", "Git hooks checked", drift=drift, delegates=expected))
     protocol = (root / ".protocol").read_text(errors="replace") if (root / ".protocol").exists() else ""

@@ -25,3 +25,11 @@ def test_check_default_and_explicit_install(tmp_path):
     drift = subprocess.run([str(ROOT / "scripts/install_hooks.sh")], cwd=ROOT, env=env, text=True, capture_output=True)
     assert drift.returncode == 1
     assert "post-merge: DRIFT" in drift.stdout
+
+    install = subprocess.run([str(ROOT / "scripts/install_hooks.sh"), "--install"], cwd=ROOT, env=env, text=True, capture_output=True)
+    assert install.returncode == 0
+    pre_commit = git_dir / "hooks/pre-commit"
+    pre_commit.write_text(pre_commit.read_text().replace("exec ", "echo inserted\nexec "))
+    inserted = subprocess.run([str(ROOT / "scripts/install_hooks.sh")], cwd=ROOT, env=env, text=True, capture_output=True)
+    assert inserted.returncode == 1
+    assert "pre-commit: DRIFT" in inserted.stdout
