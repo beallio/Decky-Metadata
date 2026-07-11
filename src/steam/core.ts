@@ -495,6 +495,10 @@ export const historyStateFromArgs = (args: any[]) => {
   return second;
 };
 
+// The hit budget is only a runaway backstop; the 2000 ms TTL is the real expiry required by launch flows.
+const ROUTE_SHIELD_MAX_HITS = 64;
+const ROUTE_SHIELD_TTL_MS = 2000;
+
 let shieldSeq = 0;
 export const armRouteShield = (appId: number, path: string, trigger: string) => {
   if (appId <= 0) return;
@@ -504,7 +508,7 @@ export const armRouteShield = (appId: number, path: string, trigger: string) => 
     path,
     trigger,
     armedAt: Date.now(),
-    remaining: 4,
+    remaining: ROUTE_SHIELD_MAX_HITS,
     seqId: shieldSeq,
   };
 };
@@ -514,7 +518,7 @@ export const consumeRouteShield = (appId: number): boolean => {
   if (!shield) return false;
   if (shield.appId !== appId) return false;
   const age = Date.now() - shield.armedAt;
-  if (age > 2000 || shield.remaining <= 0) {
+  if (age > ROUTE_SHIELD_TTL_MS || shield.remaining <= 0) {
     metadataState.routeShield = null; // Stale or exhausted
     return false;
   }
