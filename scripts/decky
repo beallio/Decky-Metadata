@@ -57,7 +57,9 @@ case "$cmd" in
     checks=(quality-gates)
     for path in "${paths[@]}"; do
       case "$path" in
-        src/steam/*|src/steam.ts|src/*Patch*|src/*patch*|src/*router*|src/*Router*) class=device; checks=(quick-links re-render launch) ;;
+        src/steam/*|src/steam.ts) class=device; checks=(quick-links re-render launch) ;;
+        src/*[Ss]poof*|src/*[Ll]aunch*) class=device; checks=(quick-links launch) ;;
+        src/*[Pp]atch*|src/*[Rr]outer*|src/*[Rr]ender*|src/*[Aa]ctivity*) class=device; checks=(quick-links re-render) ;;
         src/*) [[ "$class" == device ]] || { class=device; checks=(quick-links re-render); } ;;
         package.json|plugin.json|scripts/*|run.sh|AGENTS.md) [[ "$class" == device ]] || { class=tooling; checks=(quality-gates tooling-provenance); } ;;
       esac
