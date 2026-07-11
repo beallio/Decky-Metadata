@@ -256,29 +256,33 @@ export const applyMetadata = (appId: number) => {
     }
   }
 
-  try {
-    appDetailsCache?.SetCachedDataForApp?.(
-      appId,
-      "descriptions",
-      1,
-      appData.descriptionsData
-    );
-    appDetailsCache?.SetCachedDataForApp?.(
-      appId,
-      "associations",
-      1,
-      appData.associationData
-    );
-    if (screenshots.length) {
+  const metadataKey = String(appId);
+  if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
+    try {
       appDetailsCache?.SetCachedDataForApp?.(
         appId,
-        "screenshots",
+        "descriptions",
         1,
-        appData.screenshots
+        appData.descriptionsData
       );
+      appDetailsCache?.SetCachedDataForApp?.(
+        appId,
+        "associations",
+        1,
+        appData.associationData
+      );
+      if (screenshots.length) {
+        appDetailsCache?.SetCachedDataForApp?.(
+          appId,
+          "screenshots",
+          1,
+          appData.screenshots
+        );
+      }
+      metadataState.appliedMetadataRef[metadataKey] = metadata;
+    } catch (_error) {
+      // Cache writes can fail if the page has not finished creating app data.
     }
-  } catch (_error) {
-    // Cache writes can fail if the page has not finished creating app data.
   }
 };
 

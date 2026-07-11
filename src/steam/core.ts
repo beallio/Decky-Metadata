@@ -49,6 +49,7 @@ export const metadataState: {
   metadataLoadPromise: Promise<void> | null;
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
+  appliedMetadataRef: Record<string, MetadataData>;
   lastObservedGameDetailAppId: number;
   routeShield: {
     appId: number;
@@ -64,6 +65,7 @@ export const metadataState: {
   metadataLoadPromise: null,
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
+  appliedMetadataRef: {},
   lastObservedGameDetailAppId: 0,
   routeShield: null,
 };
