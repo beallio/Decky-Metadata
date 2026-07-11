@@ -150,6 +150,44 @@ const error = (area, message, ...args) => {
     console.error(prefix(area), message, ...args);
 };
 
+// Pure decision logic for the BIsModOrShortcut afterPatch. Extracted so the
+// precedence rules are unit-testable: the 2026-07-11 launch regression was an
+// ordering bug here (the render shield consumed before the in-call truth
+// window), which only surfaced on-device.
+const decideBIsModOrShortcut = (input) => {
+    const { isPatchedNonSteam, originalRet, bypassCounter, path, consumeShield } = input;
+    if (!isPatchedNonSteam) {
+        return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+    }
+    if (originalRet !== true) {
+        return { finalRet: originalRet, reason: "original-not-shortcut", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+    }
+    // In-call truth must outrank the render shield and the home special case:
+    // Steam's launch path derives the shortcut gameid via GetGameID /
+    // GetPrimaryAppID, and spoofing inside those calls makes RunGame receive a
+    // plain-appid gameid the client silently drops. The shield must not be
+    // consulted here at all — its hit budget belongs to render checks.
+    if (bypassCounter === -1) {
+        return { finalRet: originalRet, reason: "in-call-truth", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+    }
+    const shieldHit = consumeShield();
+    if (shieldHit) {
+        return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
+    }
+    if (path === "/library/home") {
+        return { finalRet: false, reason: "home-special-case", shieldConsulted: true, shieldHit: false, nextBypassCounter: bypassCounter };
+    }
+    const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
+    const shouldBypass = nextBypassCounter > 0;
+    return {
+        finalRet: shouldBypass,
+        reason: shouldBypass ? "truth-window" : "normal-shortcut",
+        shieldConsulted: true,
+        shieldHit: false,
+        nextBypassCounter,
+    };
+};
+
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -1026,46 +1064,25 @@ const installMetadataPatches = (unpatchers) => {
             const hasCache = !!metadataCache[String(appId)];
             const bypassCounterBefore = metadataState.bypassCounter;
             const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
-            if (!isNonSteamAppWithoutPatchedMethod(this)) {
-                const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-                traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-                return ret;
-            }
-            if (ret !== true) {
-                const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-                traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-                return ret;
-            }
-            // In-call truth must outrank the render shield and the home special
-            // case: Steam's launch path derives the shortcut gameid via
-            // GetGameID/GetPrimaryAppID, and spoofing inside those calls makes
-            // RunGame receive a plain-appid gameid the client silently drops.
-            if (metadataState.bypassCounter === -1) {
-                const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-                traceBIsModDecision(appId, path, ret, ret, "in-call-truth", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-                return ret;
-            }
-            const shieldHit = consumeRouteShield(appId);
-            const shieldAfter = metadataState.routeShield ? { ...metadataState.routeShield } : null;
-            const shieldState = { before: shieldBefore, after: shieldAfter, hit: shieldHit };
-            if (shieldHit) {
-                traceBIsModDecision(appId, path, ret, false, "render-shield", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-                return false;
-            }
-            if (path === "/library/home") {
-                traceBIsModDecision(appId, path, ret, false, "home-special-case", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-                return false;
-            }
-            if (metadataState.bypassCounter > 0) {
-                metadataState.bypassCounter -= 1;
-            }
-            const shouldBypass = metadataState.bypassCounter > 0;
-            const reason = shouldBypass ? "truth-window" : "normal-shortcut";
-            traceBIsModDecision(appId, path, ret, shouldBypass, reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-            if (shouldBypass) {
+            // The precedence rules live in decideBIsModOrShortcut (pure,
+            // unit-tested) — see src/steam/spoofDecision.ts.
+            const decision = decideBIsModOrShortcut({
+                isPatchedNonSteam: isNonSteamAppWithoutPatchedMethod(this),
+                originalRet: ret,
+                bypassCounter: metadataState.bypassCounter,
+                path,
+                consumeShield: () => consumeRouteShield(appId),
+            });
+            metadataState.bypassCounter = decision.nextBypassCounter;
+            const shieldAfter = decision.shieldConsulted
+                ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
+                : shieldBefore;
+            const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
+            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+            if (decision.reason === "truth-window") {
                 traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
             }
-            return shouldBypass;
+            return decision.finalRet;
         }).unpatch);
     }
     if (detailsProto?.BHasRecentlyLaunched) {
@@ -3570,33 +3587,19 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     };
 };
 
-const isNeverOnSteam = (appId) => {
-    try {
-        const metadata = metadataCache[String(appId)];
-        if (!metadata)
-            return false;
-        return !(Number(metadata.steam_appid) > 0);
-    }
-    catch (_error) {
-        return false;
-    }
-};
-// The quick-links row (Store Page / Community Hub / Discussions / …) only
-// renders because the BIsModOrShortcut spoof makes the app look like a real
-// Steam title; for never-on-Steam games every link is dead. The row's element
-// is not reachable from the route render tree — Steam's page host mounts the
-// Game Info content through several function-component boundaries — so the
-// suppression hooks the section wrapper class (the component that registers
-// sections via parent.RegisterSection(name, el)): its render output holds the
-// info-section content element, whose render in turn creates the links row.
+// Safe React element-tree traversal, extracted for unit testing.
+//
+// HAZARD (learned on-device 2026-07-11): a traversal that follows arbitrary
+// object-valued props will wander into MobX store instances (overview /
+// details / appStore). Enumerating an observable's keys inside an observer
+// render subscribes that render to every property touched — after which any
+// store change re-renders, re-walks, re-subscribes, and the renderer wedges.
+// This walker therefore descends ONLY into React elements and arrays via
+// props.children, with a node budget as a backstop.
 const isReactElement = (node) => !!node &&
     typeof node === "object" &&
     typeof node.$$typeof === "symbol" &&
     String(node.$$typeof).includes("react.");
-// Walks elements and arrays through children chains only. It must never
-// iterate class instances such as the MobX-backed overview/details stores:
-// touching their keys inside an observer render subscribes that render to
-// everything and can wedge the renderer.
 const findChildElements = (root, predicate, out) => {
     const stack = [root];
     let budget = 500;
@@ -3644,6 +3647,26 @@ const isInfoSectionBoundary = (node) => {
         !node.type.prototype?.isReactComponent &&
         !node.type.__dmQuickLinksWrapper);
 };
+
+const isNeverOnSteam = (appId) => {
+    try {
+        const metadata = metadataCache[String(appId)];
+        if (!metadata)
+            return false;
+        return !(Number(metadata.steam_appid) > 0);
+    }
+    catch (_error) {
+        return false;
+    }
+};
+// The quick-links row (Store Page / Community Hub / Discussions / …) only
+// renders because the BIsModOrShortcut spoof makes the app look like a real
+// Steam title; for never-on-Steam games every link is dead. The row's element
+// is not reachable from the route render tree — Steam's page host mounts the
+// Game Info content through several function-component boundaries — so the
+// suppression hooks the section wrapper class (the component that registers
+// sections via parent.RegisterSection(name, el)): its render output holds the
+// info-section content element, whose render in turn creates the links row.
 const NullQuickLinks = () => null;
 const quickLinksWrapperCache = new Map();
 const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {

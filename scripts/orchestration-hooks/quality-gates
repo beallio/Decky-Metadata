@@ -33,6 +33,11 @@ if [[ -f package.json ]]; then
   # Type-check without emitting, then run the real rollup build.
   npx tsc --noEmit
   npm run build
+
+  # Frontend unit tests (pure helpers: spoof decision ordering, tree walker).
+  if [[ -x node_modules/.bin/vitest ]]; then
+    npx vitest run
+  fi
 fi
 
 # --- backend: Python syntax check -------------------------------------------

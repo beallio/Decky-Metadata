@@ -1,5 +1,6 @@
 import { findModuleChild } from "@decky/ui";
 import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
+import { decideBIsModOrShortcut } from "./spoofDecision";
 import { MetadataData } from "../types";
 import * as log from "../log";
 import {
@@ -451,56 +452,28 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const path = currentRoutePath();
         const hasCache = !!metadataCache[String(appId)];
         const bypassCounterBefore = metadataState.bypassCounter;
-
         const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
 
-        if (!isNonSteamAppWithoutPatchedMethod(this)) {
-          const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-          traceBIsModDecision(appId, path, ret, ret, "not-nonsteam", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-          return ret;
-        }
-        if (ret !== true) {
-          const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-          traceBIsModDecision(appId, path, ret, ret, "original-not-shortcut", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-          return ret;
-        }
+        // The precedence rules live in decideBIsModOrShortcut (pure,
+        // unit-tested) — see src/steam/spoofDecision.ts.
+        const decision = decideBIsModOrShortcut({
+          isPatchedNonSteam: isNonSteamAppWithoutPatchedMethod(this),
+          originalRet: ret,
+          bypassCounter: metadataState.bypassCounter,
+          path,
+          consumeShield: () => consumeRouteShield(appId),
+        });
+        metadataState.bypassCounter = decision.nextBypassCounter;
 
-        // In-call truth must outrank the render shield and the home special
-        // case: Steam's launch path derives the shortcut gameid via
-        // GetGameID/GetPrimaryAppID, and spoofing inside those calls makes
-        // RunGame receive a plain-appid gameid the client silently drops.
-        if (metadataState.bypassCounter === -1) {
-          const shieldState = { before: shieldBefore, after: shieldBefore, hit: false };
-          traceBIsModDecision(appId, path, ret, ret, "in-call-truth", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-          return ret;
-        }
-
-        const shieldHit = consumeRouteShield(appId);
-        const shieldAfter = metadataState.routeShield ? { ...metadataState.routeShield } : null;
-        const shieldState = { before: shieldBefore, after: shieldAfter, hit: shieldHit };
-
-        if (shieldHit) {
-          traceBIsModDecision(appId, path, ret, false, "render-shield", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-          return false;
-        }
-
-        if (path === "/library/home") {
-          traceBIsModDecision(appId, path, ret, false, "home-special-case", shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-          return false;
-        }
-
-        if (metadataState.bypassCounter > 0) {
-          metadataState.bypassCounter -= 1;
-        }
-
-        const shouldBypass = metadataState.bypassCounter > 0;
-        const reason = shouldBypass ? "truth-window" : "normal-shortcut";
-
-        traceBIsModDecision(appId, path, ret, shouldBypass, reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
-        if (shouldBypass) {
+        const shieldAfter = decision.shieldConsulted
+          ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
+          : shieldBefore;
+        const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
+        traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+        if (decision.reason === "truth-window") {
           traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
         }
-        return shouldBypass;
+        return decision.finalRet;
       }).unpatch
     );
   }

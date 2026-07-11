@@ -159,12 +159,29 @@ A modifying task is complete only when:
 ```
 [ ] tsc --noEmit passes
 [ ] npm run build succeeds (dist/index.js regenerated when frontend changed)
+[ ] vitest passes (frontend unit tests: src/**/*.test.ts)
 [ ] main.py byte-compiles
 [ ] pytest passes when tests/ exists
 [ ] README updated when behavior or usage changed
 [ ] caches/installs stayed under /tmp/Decky-Metadata
 [ ] session log recorded in docs/agent_conversations/
+[ ] on-device checks run for src/steam/ changes (see below)
 ```
+
+**On-device verification.** Changes under `src/steam/` must additionally pass
+the live checks on the Deck — two shipped regressions were invisible to the
+static gates. Use the committed tooling in `scripts/deck/` (tunnel, CDP
+client, deploy loop, smoke suite) instead of recreating it ad hoc:
+
+```
+scripts/deck/deploy.sh            # build -> push -> hard reload -> wait
+scripts/deck/verify/run_all.sh    # launch / quick-links / re-render smokes
+```
+
+Which checks each change requires, plus debugging recipes and hazards
+(notably: NEVER enumerate MobX store instances — overview/details/appStore —
+inside a render-phase tree walk; it wedges the renderer), are documented in
+`docs/runbooks/on-device-verification.md`.
 
 The `scripts/check_tdd.sh` pre-commit hook runs the lighter staged-file subset of
 these checks.

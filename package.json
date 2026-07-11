@@ -7,7 +7,8 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "package": "npm run build && node ./scripts/package.mjs",
-    "package:linux": "npm run build && node ./scripts/package.mjs"
+    "package:linux": "npm run build && node ./scripts/package.mjs",
+    "test": "vitest run"
   },
   "keywords": [
     "decky",
@@ -25,7 +26,8 @@
     "@types/react-dom": "18.3.0",
     "@types/webpack": "^5.28.5",
     "rollup": "^4.22.5",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@decky/api": "^1.1.2",
