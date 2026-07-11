@@ -56,7 +56,9 @@ case "${1:-}" in
     done
     if [[ -z "$source_path" ]]; then
       "$(git rev-parse --show-toplevel)/scripts/sync_deck_logs.sh"
-      source_path="/tmp/Decky-Metadata/deck-logs/latest"
+      sync_root="${DECKY_LOG_SYNC_DIR:-/tmp/Decky-Metadata/deck-logs}"
+      source_path="$(find "$sync_root" -type l -name latest -print | sort | tail -n 1)"
+      [[ -n "$source_path" ]] || { echo "logs.sh audit: synced latest snapshot not found" >&2; exit 1; }
     fi
     exec "$(git rev-parse --show-toplevel)/run.sh" python3 "$(dirname -- "${BASH_SOURCE[0]}")/log_audit.py" "$source_path" "${args[@]}"
     ;;

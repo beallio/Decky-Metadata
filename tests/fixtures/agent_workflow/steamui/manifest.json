@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "build_id": "fixture-build",
+  "files": [
+    {
+      "path": "chunk.js",
+      "size": 24,
+      "sha256": "c03b5b0f12bdc5818d2b613f1ddc3b980f9fd624766b6c51b60d8d4610a2432e"
+    }
+  ]
+}
