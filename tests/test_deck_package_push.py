@@ -55,6 +55,29 @@ esac
         fake_bin / "npm",
         """#!/usr/bin/env bash
 echo "fake build chatter"
+if [[ "${REBUILD_ARCHIVE_CURRENT:-0}" == 1 ]]; then
+  python3 - "$DECKY_TEST_PACKAGE_ZIP" <<'PY'
+import json
+import os
+import sys
+import zipfile
+
+archive = sys.argv[1]
+replacement = f"{archive}.new"
+with zipfile.ZipFile(archive) as source, zipfile.ZipFile(replacement, "w") as output:
+    for info in source.infolist():
+        content = source.read(info.filename)
+        if info.filename in (
+            "Decky-Metadata/package.json",
+            "Decky-Metadata/plugin.json",
+        ):
+            manifest = json.loads(content)
+            manifest["version"] = "0.1.0+abc123"
+            content = json.dumps(manifest).encode()
+        output.writestr(info, content)
+os.replace(replacement, archive)
+PY
+fi
 if [[ -n "${LOCK_LOG:-}" ]]; then
   echo "start $$" >>"$LOCK_LOG"
   sleep 0.2
@@ -189,3 +212,32 @@ def test_json_build_routes_progress_away_from_stdout(tmp_path):
     assert json.loads(result.stdout)["PACKAGE_CREATED"] == "PASS"
     assert "fake build chatter" not in result.stdout
     assert "fake build chatter" in result.stderr
+
+
+def test_successful_rebuild_clears_superseded_stale_archive_error(tmp_path):
+    json_env, _, _ = _environment(tmp_path / "json", archive_version="0.1.0+old")
+    json_result = _invoke(
+        {**json_env, "REBUILD_ARCHIVE_CURRENT": "1"},
+        "--build",
+        "--json",
+    )
+
+    assert json_result.returncode == 0, json_result.stderr
+    assert json.loads(json_result.stdout) == {
+        "DELIVERY": "NOT_REQUESTED",
+        "INSTALLED_STATE": "UNKNOWN",
+        "LOCAL_VALIDATION": "PASS",
+        "PACKAGE_CREATED": "PASS",
+        "error": "",
+    }
+
+    human_env, _, _ = _environment(tmp_path / "human", archive_version="0.1.0+old")
+    human_result = _invoke(
+        {**human_env, "REBUILD_ARCHIVE_CURRENT": "1"},
+        "--build",
+    )
+
+    assert human_result.returncode == 0, human_result.stderr
+    assert "LOCAL_VALIDATION PASS" in human_result.stdout
+    assert "PACKAGE_CREATED PASS" in human_result.stdout
+    assert "archive is stale" not in human_result.stderr

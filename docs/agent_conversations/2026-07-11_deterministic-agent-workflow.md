@@ -66,3 +66,16 @@ Python compilation, exact hook checks, skill quick validation, `git diff
 --check`, 18 Vitest tests, and 222 pytest tests. The five pre-existing untracked
 JSON files remained untouched. Live Deck and physical-controller checks remain
 deferred under the plan's authorization gates.
+
+## Review round 03 package reporting
+
+- Cleared superseded archive-validation error state after a successful rebuild,
+  so a pre-build stale archive cannot contradict later passing package stages.
+- Added JSON and human-output regression coverage for rebuilding a stale archive
+  to the current stamped version. Real build and validation failures continue to
+  retain their independent stage statuses and diagnostics.
+
+Round 03 validation passed: the package suite, complete focused workflow suite,
+shell syntax checks, Python compilation, hook and skill checks, full project
+quality gate, review-note preservation, and diff hygiene. Live Deck and
+physical-controller checks remain deferred under the plan's authorization gates.

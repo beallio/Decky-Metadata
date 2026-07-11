@@ -33,6 +33,7 @@ PY
   read -r version digest bundle_digest <<<"$meta"
   head="$(git rev-parse --short HEAD)"
   [[ "$version" == *"+$head" ]] || { local_validation=FAIL; error="archive is stale"; return 1; }
+  error=""
   local_validation=PASS
   mkdir -p "$state_root/ledger"
   ledger="$state_root/ledger/$(git rev-parse HEAD)-$digest"
