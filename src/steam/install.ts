@@ -78,7 +78,7 @@ export const installSteamPatches = (): Unpatch => {
     void frontendLog("patch", "steam patches installed", {
       attempts,
       unpatcherCount: unpatchers.length,
-    }).catch(() => undefined);
+    }, "info").catch(() => undefined);
   };
 
   const tick = () => {
@@ -92,12 +92,12 @@ export const installSteamPatches = (): Unpatch => {
         log.warn("patch", "installSteamPatches failed", error);
         void frontendLog("patch", "installSteamPatches failed", {
           error: error instanceof Error ? error.stack || error.message : String(error),
-        }).catch(() => undefined);
+        }, "error").catch(() => undefined);
       }
       return;
     }
     if (attempts >= 240) {
-      void frontendLog("patch", "steam patches NOT installed", { attempts }).catch(() => undefined);
+      void frontendLog("patch", "steam patches NOT installed", { attempts }, "warning").catch(() => undefined);
       return;
     }
     retryId = window.setTimeout(tick, 500);

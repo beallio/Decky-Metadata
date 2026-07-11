@@ -27,7 +27,7 @@ export default definePlugin(() => {
     log.warn("bridge", "installSteamPatches failed", error);
     void frontendLog("patch", "installSteamPatches failed", {
       error: error instanceof Error ? error.stack || error.message : String(error),
-    }).catch(() => undefined);
+    }, "error").catch(() => undefined);
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
   const menuPatch = contextMenuPatch(LibraryContextMenu);

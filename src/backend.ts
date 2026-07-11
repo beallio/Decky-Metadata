@@ -32,7 +32,12 @@ export const getDelistedIndexStatus = callable<
   { count: number; fetched_at: number }
 >("get_delisted_index_status");
 export const frontendLog = callable<
-  [area: string, message: string, fields?: Record<string, unknown> | null],
+  [
+    area: string,
+    message: string,
+    fields?: Record<string, unknown> | null,
+    level?: "debug" | "info" | "warning" | "error",
+  ],
   boolean
 >("frontend_log");
 export const searchMetadata = callable<
