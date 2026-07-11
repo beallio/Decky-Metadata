@@ -94,11 +94,20 @@ def local_checks(root: Path) -> list[dict[str, object]]:
         "post-commit": "scripts/post_commit.sh",
         "post-merge": "scripts/post_commit.sh",
     }
+    git_dir_result = run("git", "rev-parse", "--git-dir", cwd=root)
+    git_dir = Path(git_dir_result.stdout.strip())
+    if not git_dir.is_absolute():
+        git_dir = root / git_dir
     drift: dict[str, str] = {}
     for name, delegate in expected.items():
-        hook = root / ".git" / "hooks" / name
+        hook = git_dir / "hooks" / name
         body = hook.read_text(errors="replace") if hook.is_file() else ""
-        if delegate not in body or not os.access(hook, os.X_OK):
+        nonblank = [line for line in body.splitlines() if line.strip()]
+        expected_lines = {
+            f'exec "$(git rev-parse --show-toplevel)/{delegate}" "$@"',
+            f'exec "$repo_root/{delegate}"',
+        }
+        if not nonblank or nonblank[-1] not in expected_lines or not os.access(hook, os.X_OK):
             drift[name] = "missing, non-executable, or wrong delegate"
     checks.append(check("git-hooks", "FAIL" if drift else "PASS", "Git hooks checked", drift=drift, delegates=expected))
     protocol = (root / ".protocol").read_text(errors="replace") if (root / ".protocol").exists() else ""
