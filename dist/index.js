@@ -3581,26 +3581,131 @@ const isNeverOnSteam = (appId) => {
         return false;
     }
 };
-const suppressNeverOnSteamQuickLinks = (tree, appId) => {
-    try {
-        if (!isNeverOnSteam(appId))
-            return;
-        const linksSection = DFL.findInReactTree(tree, (node) => {
-            const props = node?.props;
-            return !!props &&
-                typeof props === "object" &&
-                "overview" in props &&
-                "details" in props &&
-                "workshopVisible" in props &&
-                "marketPresence" in props;
-        });
-        if (linksSection?.props?.overview?.appid !== appId)
-            return;
-        linksSection.type = () => null;
+// The quick-links row (Store Page / Community Hub / Discussions / …) only
+// renders because the BIsModOrShortcut spoof makes the app look like a real
+// Steam title; for never-on-Steam games every link is dead. The row's element
+// is not reachable from the route render tree — Steam's page host mounts the
+// Game Info content through several function-component boundaries — so the
+// suppression hooks the section wrapper class (the component that registers
+// sections via parent.RegisterSection(name, el)): its render output holds the
+// info-section content element, whose render in turn creates the links row.
+const isReactElement = (node) => !!node &&
+    typeof node === "object" &&
+    typeof node.$$typeof === "symbol" &&
+    String(node.$$typeof).includes("react.");
+// Walks elements and arrays through children chains only. It must never
+// iterate class instances such as the MobX-backed overview/details stores:
+// touching their keys inside an observer render subscribes that render to
+// everything and can wedge the renderer.
+const findChildElements = (root, predicate, out) => {
+    const stack = [root];
+    let budget = 500;
+    while (stack.length && budget-- > 0 && out.length < 8) {
+        const node = stack.pop();
+        if (!node || typeof node !== "object")
+            continue;
+        if (Array.isArray(node)) {
+            for (const child of node)
+                stack.push(child);
+            continue;
+        }
+        if (!isReactElement(node))
+            continue;
+        try {
+            if (predicate(node)) {
+                out.push(node);
+                continue;
+            }
+        }
+        catch (_error) {
+            // Keep walking when a candidate's props are not inspectable.
+        }
+        const children = node.props?.children;
+        if (children && typeof children === "object")
+            stack.push(children);
     }
-    catch (_error) {
-        // Steam's native render tree must remain usable if its shape changes.
-    }
+};
+const isQuickLinksElement = (node) => {
+    const props = node?.props;
+    return (!!props &&
+        typeof props === "object" &&
+        "overview" in props &&
+        "details" in props &&
+        "workshopVisible" in props &&
+        "marketPresence" in props);
+};
+const isInfoSectionBoundary = (node) => {
+    const props = node?.props;
+    return (!!props &&
+        typeof props === "object" &&
+        "overview" in props &&
+        "details" in props &&
+        typeof node.type === "function" &&
+        !node.type.prototype?.isReactComponent &&
+        !node.type.__dmQuickLinksWrapper);
+};
+const NullQuickLinks = () => null;
+const quickLinksWrapperCache = new Map();
+const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
+    const sectionClass = DFL.findModuleChild((module) => {
+        if (typeof module !== "object")
+            return undefined;
+        for (const prop in module) {
+            try {
+                const candidate = module[prop];
+                if (typeof candidate === "function" &&
+                    candidate.prototype?.isReactComponent &&
+                    typeof candidate.prototype.render === "function" &&
+                    String(candidate.prototype.render).includes("RegisterSection")) {
+                    return candidate;
+                }
+            }
+            catch (_error) {
+                continue;
+            }
+        }
+        return undefined;
+    });
+    if (!sectionClass?.prototype?.render)
+        return;
+    unpatchers.push(safeAfterPatch(sectionClass.prototype, "render", function (_args, ret) {
+        try {
+            if (this?.props?.name !== "info")
+                return ret;
+            const boundaries = [];
+            findChildElements(ret, isInfoSectionBoundary, boundaries);
+            for (const element of boundaries) {
+                if (!isNeverOnSteam(Number(element.props?.overview?.appid)))
+                    continue;
+                const original = element.type;
+                let wrapper = quickLinksWrapperCache.get(original);
+                if (!wrapper) {
+                    wrapper = (props) => {
+                        const rendered = original(props);
+                        try {
+                            if (isNeverOnSteam(Number(props?.overview?.appid))) {
+                                const linkRows = [];
+                                findChildElements(rendered, isQuickLinksElement, linkRows);
+                                for (const row of linkRows)
+                                    row.type = NullQuickLinks;
+                            }
+                        }
+                        catch (_error) {
+                            // Leave the native output untouched on shape changes.
+                        }
+                        return rendered;
+                    };
+                    wrapper.__dmQuickLinksWrapper = true;
+                    quickLinksWrapperCache.set(original, wrapper);
+                }
+                element.type = wrapper;
+            }
+        }
+        catch (_error) {
+            // Steam's native render tree must remain usable if its shape changes.
+        }
+        return ret;
+    }).unpatch);
 };
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
@@ -3634,7 +3739,6 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                         if (previousAppId !== appId) {
                             void refreshDeckyNativeActivityForApp(appId);
                         }
-                        suppressNeverOnSteamQuickLinks(ret, appId);
                         return ret;
                     }
                     return ret;
@@ -3863,6 +3967,7 @@ const installSteamPatches = () => {
             refreshDeckyNativeActivityForApp,
         });
         safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
+        safeInstallStep("neverOnSteamQuickLinksSuppression", () => installNeverOnSteamQuickLinksSuppression(unpatchers));
         void frontendLog("patch", "steam patches installed", {
             attempts,
             unpatcherCount: unpatchers.length,
