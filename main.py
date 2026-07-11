@@ -492,6 +492,41 @@ class Plugin:
         if result is None:
             return
         self._data, self._data_cache, self._data_cache_mtime_ns = result
+        try:
+            if self._normalize_loaded_store_states():
+                self._save_data()
+        except Exception as error:
+            _plog(
+                "load",
+                "failed normalizing loaded Steam store states",
+                level=logging.ERROR,
+                exc=True,
+                error=error,
+            )
+
+    def _normalize_loaded_store_states(self) -> bool:
+        metadata = self._data.get("metadata")
+        if not isinstance(metadata, dict):
+            return False
+
+        changed = False
+        valid_states = {"available", "delisted", "unknown"}
+        for record in metadata.values():
+            if not isinstance(record, dict):
+                continue
+            raw_state = record.get("steam_store_state")
+            normalized_state = str(raw_state or "").strip().lower()
+            if normalized_state not in valid_states:
+                steam_appid = self._safe_int(record.get("steam_appid"))
+                normalized_state = (
+                    "delisted"
+                    if steam_appid and self._appid_is_delisted_cached(steam_appid)
+                    else "unknown"
+                )
+            if raw_state != normalized_state:
+                record["steam_store_state"] = normalized_state
+                changed = True
+        return changed
 
     def _save_data(self) -> None:
         self._settings_dir.mkdir(parents=True, exist_ok=True)
