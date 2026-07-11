@@ -19,6 +19,7 @@ import {
   clearRouteShield,
 } from "./core";
 import { isBypassTraceEnabled } from "./metadataPatch";
+import { findChildElements, isInfoSectionBoundary, isQuickLinksElement } from "./reactTreeWalk";
 
 type RouterPatchDeps = {
   ensureMetadataCache: () => Promise<void>;
@@ -46,69 +47,6 @@ const isNeverOnSteam = (appId: number): boolean => {
 // suppression hooks the section wrapper class (the component that registers
 // sections via parent.RegisterSection(name, el)): its render output holds the
 // info-section content element, whose render in turn creates the links row.
-
-const isReactElement = (node: any): boolean =>
-  !!node &&
-  typeof node === "object" &&
-  typeof node.$$typeof === "symbol" &&
-  String(node.$$typeof).includes("react.");
-
-// Walks elements and arrays through children chains only. It must never
-// iterate class instances such as the MobX-backed overview/details stores:
-// touching their keys inside an observer render subscribes that render to
-// everything and can wedge the renderer.
-const findChildElements = (
-  root: any,
-  predicate: (node: any) => boolean,
-  out: any[]
-): void => {
-  const stack = [root];
-  let budget = 500;
-  while (stack.length && budget-- > 0 && out.length < 8) {
-    const node = stack.pop();
-    if (!node || typeof node !== "object") continue;
-    if (Array.isArray(node)) {
-      for (const child of node) stack.push(child);
-      continue;
-    }
-    if (!isReactElement(node)) continue;
-    try {
-      if (predicate(node)) {
-        out.push(node);
-        continue;
-      }
-    } catch (_error) {
-      // Keep walking when a candidate's props are not inspectable.
-    }
-    const children = node.props?.children;
-    if (children && typeof children === "object") stack.push(children);
-  }
-};
-
-const isQuickLinksElement = (node: any): boolean => {
-  const props = node?.props;
-  return (
-    !!props &&
-    typeof props === "object" &&
-    "overview" in props &&
-    "details" in props &&
-    "workshopVisible" in props &&
-    "marketPresence" in props
-  );
-};
-
-const isInfoSectionBoundary = (node: any): boolean => {
-  const props = node?.props;
-  return (
-    !!props &&
-    typeof props === "object" &&
-    "overview" in props &&
-    "details" in props &&
-    typeof node.type === "function" &&
-    !node.type.prototype?.isReactComponent &&
-    !(node.type as any).__dmQuickLinksWrapper
-  );
-};
 
 const NullQuickLinks = () => null;
 const quickLinksWrapperCache = new Map<any, any>();
