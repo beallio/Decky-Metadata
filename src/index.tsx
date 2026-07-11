@@ -25,7 +25,7 @@ export default definePlugin(() => {
     unpatchSteam = installSteamPatches();
   } catch (error) {
     log.warn("bridge", "installSteamPatches failed", error);
-    void frontendLog("warn", "installSteamPatches failed", {
+    void frontendLog("patch", "installSteamPatches failed", {
       error: error instanceof Error ? error.stack || error.message : String(error),
     }).catch(() => undefined);
   }

@@ -36,11 +36,23 @@ the failure was absent from the backend file log.
 - Moved every patch installer behind the readiness gate and guarded the install
   body so it starts no more than once. The returned unpatch function cancels a
   pending timer and retains reverse-order cleanup of registered unpatchers.
-- Added unconditional backend bridge messages for successful installation,
-  poll exhaustion, and top-level or delayed installation failure while keeping
-  the existing console warning path.
+- Added backend bridge messages under the `patch` area for successful
+  installation, poll exhaustion, and top-level or delayed installation failure
+  while keeping the existing console warning path.
 - Kept the existing debug-setting promise and per-step `safeInstallStep`
   isolation behavior intact.
+
+## Known Limitation
+
+The backend `frontend_log` callable currently writes every bridged frontend
+message at `logging.DEBUG`, while the default on-device logger threshold is
+`INFO`. Consequently, the new patch-install status messages reach
+`decky-metadata.log` only when debug logging is enabled. Deferred cold-boot
+verification must enable debug logging before checking for the success line;
+without it, an absent line is expected and does not prove installation failed.
+A separate plan should add an INFO-capable backend logging channel or make the
+existing callable honor an explicit level so these status messages are visible
+under the default logger configuration.
 
 ## Validation
 
@@ -58,7 +70,7 @@ The existing rollup circular-dependency warning remains unchanged.
 ## Deferred On-Device Verification
 
 The Steam Deck cold-boot verification in the implementation plan remains a
-human/orchestrator gate before promotion from `dev` to `main`. It must confirm
-the backend file-log success line, patched Steam prototypes and history method
-over CDP, metadata rendering for a matched non-Steam game, and stability across
-two cold boots.
+human/orchestrator gate before promotion from `dev` to `main`. With debug
+logging enabled, it must confirm the backend file-log success line, patched
+Steam prototypes and history method over CDP, metadata rendering for a matched
+non-Steam game, and stability across two cold boots.

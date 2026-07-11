@@ -75,7 +75,7 @@ export const installSteamPatches = (): Unpatch => {
       refreshDeckyNativeActivityForApp,
     });
     safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
-    void frontendLog("info", "steam patches installed", {
+    void frontendLog("patch", "steam patches installed", {
       attempts,
       unpatcherCount: unpatchers.length,
     }).catch(() => undefined);
@@ -90,14 +90,14 @@ export const installSteamPatches = (): Unpatch => {
         install();
       } catch (error) {
         log.warn("patch", "installSteamPatches failed", error);
-        void frontendLog("warn", "installSteamPatches failed", {
+        void frontendLog("patch", "installSteamPatches failed", {
           error: error instanceof Error ? error.stack || error.message : String(error),
         }).catch(() => undefined);
       }
       return;
     }
     if (attempts >= 240) {
-      void frontendLog("warn", "steam patches NOT installed", { attempts }).catch(() => undefined);
+      void frontendLog("patch", "steam patches NOT installed", { attempts }).catch(() => undefined);
       return;
     }
     retryId = window.setTimeout(tick, 500);
