@@ -18,6 +18,23 @@ npm run package
 
 `npm run package` creates `Decky-Metadata.zip` in the repository root (containing a `Decky-Metadata/` plugin folder). The filename is always fixed; the version — including the current git short hash for local builds, e.g. `0.1.0+a1b2c3d` — is written into the packaged `plugin.json`/`package.json` and shown in the QAM Versions panel. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash.
 
+Run deterministic contributor checks from the repository root:
+
+```bash
+scripts/decky doctor
+scripts/decky verify-change dev --explain
+scripts/install_hooks.sh --check
+```
+
+The optional canonical agent workflow skill is tracked in
+`skills/decky-project-workflow`. Preview installation without changing an agent
+home, or explicitly install it:
+
+```bash
+scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
+scripts/install_project_skill.sh --agent codex --install
+```
+
 For a local stable release, bump both metadata files together, tag the release,
 build the hash-free package, then move the development base to the next patch so
 the release drift guard stays green:

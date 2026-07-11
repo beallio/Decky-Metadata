@@ -1,0 +1,2 @@
+2026-07-11 10:01:00 INFO session start pid=123
+2026-07-11 10:01:01 ERROR ModuleNotFoundError: backend appid=10 at 0xabc

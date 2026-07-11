@@ -1,0 +1,4 @@
+interface:
+  display_name: "Decky Project Workflow"
+  short_description: "Run safe Decky project and device workflows"
+  default_prompt: "Use $decky-project-workflow to implement, diagnose, or deliver this Decky-Metadata task safely."

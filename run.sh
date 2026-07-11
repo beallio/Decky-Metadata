@@ -18,5 +18,5 @@ export PYTHONPYCACHEPREFIX="$CACHE_ROOT/__pycache__"
 
 mkdir -p "$TMPDIR" "$XDG_CACHE_HOME" "$npm_config_cache" "$PYTHONPYCACHEPREFIX"
 
-echo "Using cache root: $CACHE_ROOT"
+echo "Using cache root: $CACHE_ROOT" >&2
 exec "$@"

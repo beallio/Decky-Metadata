@@ -8,6 +8,7 @@
     storePage: /Store Page/i.test(text),
     communityHub: /Community Hub/i.test(text),
     discussions: /Discussions/i.test(text),
+    market: /Community Market|Market/i.test(text),
     developerInfo: /Developer/i.test(text),
     hltbRows: /MAIN STORY/i.test(text),
     textLength: text.length,

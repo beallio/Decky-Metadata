@@ -16,9 +16,14 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-# Keep generated caches/installs outside Dropbox.
-export npm_config_cache="/tmp/Decky-Metadata/.npm"
-mkdir -p "$npm_config_cache"
+# Keep generated caches/installs outside Dropbox through the same environment
+# contract used by direct contributor commands.
+export TMPDIR="/tmp/Decky-Metadata"
+export XDG_CACHE_HOME="$TMPDIR/.cache"
+export npm_config_cache="$TMPDIR/.npm"
+export PYTHONPYCACHEPREFIX="$TMPDIR/__pycache__"
+export UV_CACHE_DIR="$TMPDIR/.uv"
+mkdir -p "$TMPDIR" "$XDG_CACHE_HOME" "$npm_config_cache" "$PYTHONPYCACHEPREFIX" "$UV_CACHE_DIR"
 
 # --- frontend: type-check + build -------------------------------------------
 if [[ -f package.json ]]; then
@@ -51,8 +56,6 @@ fi
 
 # --- backend: Python tests ---------------------------------------------------
 if [[ -d tests ]]; then
-  export UV_CACHE_DIR="/tmp/Decky-Metadata/.uv"
-  mkdir -p "$UV_CACHE_DIR"
   uv run --with pytest -- pytest -q
 fi
 

@@ -18,9 +18,13 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | `tunnel.sh up\|down\|status` | SSH tunnel `localhost:18081` → deck debugger |
 | `cdp.py list\|eval\|reload\|wait-ready` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
-| `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync` | canned log queries (plugin + Steam client logs) |
+| `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
 | `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate` |
-| `verify/run_all.sh [--no-launch]` | the whole suite; picks test appids from the device metadata store |
+| `verify/run_all.sh [--no-launch] [--extended]` | the suite using a persisted semantic fixture manifest; extended adds bounded idle sampling |
+
+Prefer `scripts/decky verify-change BASE --device` for change-aware routing. The
+dispatcher requires `--allow-launch` before the real launch smoke and captures a
+diagnostic bundle on behavioral failure. See [Agent Workflow](agent-workflow.md).
 
 Typical loop:
 

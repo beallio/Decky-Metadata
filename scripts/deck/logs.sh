@@ -8,6 +8,7 @@
 #   logs.sh launches               game process add/remove lines (gameprocess_log)
 #   logs.sh tail [n]               tail the live plugin log (default 50 lines)
 #   logs.sh sync                   snapshot plugin logs locally (sync_deck_logs.sh)
+#   logs.sh audit [options]        deterministic local audit of synced logs
 #
 # Environment:
 #   DECKY_DECK_HOST  ssh host/alias of the Deck (default: steamdeck)
@@ -39,6 +40,27 @@ case "${1:-}" in
     ;;
   sync)
     exec "$(git rev-parse --show-toplevel)/scripts/sync_deck_logs.sh"
+    ;;
+  audit)
+    shift
+    source_path=""
+    args=()
+    while (($#)); do
+      case "$1" in
+        --source) [[ $# -ge 2 ]] || { echo "logs.sh audit: --source requires PATH" >&2; exit 2; }; source_path="$2"; shift ;;
+        --since|--appid) [[ $# -ge 2 ]] || { echo "logs.sh audit: $1 requires a value" >&2; exit 2; }; args+=("$1" "$2"); shift ;;
+        --json) args+=("$1") ;;
+        *) echo "logs.sh audit: unknown option: $1" >&2; exit 2 ;;
+      esac
+      shift
+    done
+    if [[ -z "$source_path" ]]; then
+      "$(git rev-parse --show-toplevel)/scripts/sync_deck_logs.sh"
+      sync_root="${DECKY_LOG_SYNC_DIR:-/tmp/Decky-Metadata/deck-logs}"
+      source_path="$(find "$sync_root" -type l -name latest -print | sort | tail -n 1)"
+      [[ -n "$source_path" ]] || { echo "logs.sh audit: synced latest snapshot not found" >&2; exit 1; }
+    fi
+    exec "$(git rev-parse --show-toplevel)/run.sh" python3 "$(dirname -- "${BASH_SOURCE[0]}")/log_audit.py" "$source_path" "${args[@]}"
     ;;
   *)
     sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'

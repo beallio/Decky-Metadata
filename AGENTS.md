@@ -117,6 +117,20 @@ intentionally committed build output.)
 
 # 5. Execution Protocol
 
+### Mandatory workflow routing
+
+| Trigger | Required start | Mutation boundary |
+| --- | --- | --- |
+| Implement/change/refactor | `scripts/decky doctor`, then `scripts/decky verify-change [BASE] --explain` | `--device` deploys; `--allow-launch` permits a configured launch fixture |
+| Diagnose Deck/log behavior | `scripts/decky doctor --deck`, `scripts/deck/logs.sh audit --json`, `scripts/decky capture` | read-only unless the user requests changes |
+| Inspect SteamUI | `scripts/decky steamui snapshot` / `search PATTERN` | snapshots only below `/tmp/Decky-Metadata` |
+| Package/send/check | `scripts/decky status --deck`, then `scripts/decky package-push` | require explicit `--build` / `--push` outside an authorized hook |
+
+Use [docs/runbooks/agent-workflow.md](docs/runbooks/agent-workflow.md) for the
+detailed flow. Hook and skill installers default to checks/dry-runs and require
+`--install`. Device deployment, launch, package copying, and the `dev` to `main`
+promotion retain their explicit flags and human gates.
+
 Lifecycle for a modifying task:
 
 ```
