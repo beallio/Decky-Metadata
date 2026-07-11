@@ -28,6 +28,35 @@ type RouterPatchDeps = {
   refreshDeckyNativeActivityForApp: (appId: number) => Promise<any>;
 };
 
+const isNeverOnSteam = (appId: number): boolean => {
+  try {
+    const metadata = metadataCache[String(appId)];
+    if (!metadata) return false;
+    return !(Number(metadata.steam_appid) > 0);
+  } catch (_error) {
+    return false;
+  }
+};
+
+const suppressNeverOnSteamQuickLinks = (tree: any, appId: number): void => {
+  try {
+    if (!isNeverOnSteam(appId)) return;
+    const linksSection = findInReactTree(tree, (node: any) => {
+      const props = node?.props;
+      return !!props &&
+        typeof props === "object" &&
+        "overview" in props &&
+        "details" in props &&
+        "workshopVisible" in props &&
+        "marketPresence" in props;
+    });
+    if (linksSection?.props?.overview?.appid !== appId) return;
+    linksSection.type = () => null;
+  } catch (_error) {
+    // Steam's native render tree must remain usable if its shape changes.
+  }
+};
+
 export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPatchDeps) => {
   const {
     ensureMetadataCache,
@@ -62,6 +91,7 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
               void tryFetchMetadataForApp(appId);
             });
             void refreshDeckyNativeActivityForApp(appId);
+            suppressNeverOnSteamQuickLinks(ret, appId);
             return ret;
           }
           return ret;
