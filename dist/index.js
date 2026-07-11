@@ -187,6 +187,7 @@ const metadataState = {
     metadataLoadPromise: null,
     loadingMetadata: new Set(),
     loadingScreenshots: new Set(),
+    appliedMetadataRef: {},
     lastObservedGameDetailAppId: 0,
     routeShield: null,
 };
@@ -851,15 +852,19 @@ const applyMetadata = (appId) => {
             appData.details.bCommunityMarketPresence = true;
         }
     }
-    try {
-        appDetailsCache?.SetCachedDataForApp?.(appId, "descriptions", 1, appData.descriptionsData);
-        appDetailsCache?.SetCachedDataForApp?.(appId, "associations", 1, appData.associationData);
-        if (screenshots.length) {
-            appDetailsCache?.SetCachedDataForApp?.(appId, "screenshots", 1, appData.screenshots);
+    const metadataKey = String(appId);
+    if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
+        try {
+            appDetailsCache?.SetCachedDataForApp?.(appId, "descriptions", 1, appData.descriptionsData);
+            appDetailsCache?.SetCachedDataForApp?.(appId, "associations", 1, appData.associationData);
+            if (screenshots.length) {
+                appDetailsCache?.SetCachedDataForApp?.(appId, "screenshots", 1, appData.screenshots);
+            }
+            metadataState.appliedMetadataRef[metadataKey] = metadata;
         }
-    }
-    catch (_error) {
-        // Cache writes can fail if the page has not finished creating app data.
+        catch (_error) {
+            // Cache writes can fail if the page has not finished creating app data.
+        }
     }
 };
 const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots || [])
@@ -3597,6 +3602,7 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
                     const appOverview = overview || getOverview(appId);
                     if (appId && isNonSteamApp(appOverview)) {
+                        const previousAppId = metadataState.lastObservedGameDetailAppId;
                         metadataState.lastObservedGameDetailAppId = appId;
                         if (metadataCache[String(appId)]) {
                             armRouteShield(appId, route, "route-render");
@@ -3614,7 +3620,9 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
                         });
-                        void refreshDeckyNativeActivityForApp(appId);
+                        if (previousAppId !== appId) {
+                            void refreshDeckyNativeActivityForApp(appId);
+                        }
                         suppressNeverOnSteamQuickLinks(ret, appId);
                         return ret;
                     }
