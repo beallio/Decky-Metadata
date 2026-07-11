@@ -3554,6 +3554,38 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     };
 };
 
+const isNeverOnSteam = (appId) => {
+    try {
+        const metadata = metadataCache[String(appId)];
+        if (!metadata)
+            return false;
+        return !(Number(metadata.steam_appid) > 0);
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const suppressNeverOnSteamQuickLinks = (tree, appId) => {
+    try {
+        if (!isNeverOnSteam(appId))
+            return;
+        const linksSection = DFL.findInReactTree(tree, (node) => {
+            const props = node?.props;
+            return !!props &&
+                typeof props === "object" &&
+                "overview" in props &&
+                "details" in props &&
+                "workshopVisible" in props &&
+                "marketPresence" in props;
+        });
+        if (linksSection?.props?.overview?.appid !== appId)
+            return;
+        linksSection.type = () => null;
+    }
+    catch (_error) {
+        // Steam's native render tree must remain usable if its shape changes.
+    }
+};
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
     GAME_DETAIL_ROUTES.forEach((route) => {
@@ -3583,6 +3615,7 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             void tryFetchMetadataForApp(appId);
                         });
                         void refreshDeckyNativeActivityForApp(appId);
+                        suppressNeverOnSteamQuickLinks(ret, appId);
                         return ret;
                     }
                     return ret;
