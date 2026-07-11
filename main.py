@@ -100,6 +100,15 @@ def _plog(area: str, message: str, *, level: int = logging.INFO, exc: bool = Fal
         pass
 
 
+_FRONTEND_LOG_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "warn": logging.WARNING,
+    "error": logging.ERROR,
+}
+
+
 def _resolve_log_dir() -> Path | None:
     for attr in (
         "DECKY_PLUGIN_LOG_DIR",
@@ -367,12 +376,13 @@ class Plugin:
         _plog("cache", "metadata cache cleared", count=cleared)
         return {"ok": True, "cleared": cleared}
 
-    async def frontend_log(
-        self, area: str = "ui", message: str = "", fields: dict[str, Any] | None = None
-    ) -> bool:
+    async def frontend_log(self, area="ui", message="", fields=None, level="debug") -> bool:
         try:
             clean_fields = fields if isinstance(fields, dict) else {}
-            _plog(str(area or "ui"), str(message or ""), **clean_fields, level=logging.DEBUG)
+            resolved_level = _FRONTEND_LOG_LEVELS.get(
+                str(level or "").strip().lower(), logging.DEBUG
+            )
+            _plog(str(area or "ui"), str(message or ""), **clean_fields, level=resolved_level)
         except Exception:
             pass
         return True
