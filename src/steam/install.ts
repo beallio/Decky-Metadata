@@ -1,6 +1,6 @@
-import { getDebugLogging } from "../backend";
+import { frontendLog, getDebugLogging } from "../backend";
 import * as log from "../log";
-import { hasSteamInternals, Unpatch } from "./core";
+import { steamPatchTargetsReady, Unpatch } from "./core";
 import { installUnmatchedAppLinksHider } from "./appLinks";
 import {
   configureActivityMetadataLoader,
@@ -24,13 +24,13 @@ import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace 
 import { setContextMenuTraceEnabled } from "../contextMenuPatch";
 import { installGameDetailReentryShield, installRouterRenderPatches } from "./routerPatches";
 
-declare const appStore: any;
-declare const appDetailsStore: any;
-
 export const installSteamPatches = (): Unpatch => {
   configureActivityMetadataLoader(ensureMetadataCache);
   const unpatchers: Unpatch[] = [];
   let patchesCancelled = false;
+  let installStarted = false;
+  let attempts = 0;
+  let retryId: number | undefined;
   const safeInstallStep = (label: string, run: () => void) => {
     try {
       run();
@@ -38,64 +38,83 @@ export const installSteamPatches = (): Unpatch => {
       log.warn("patch", `install step failed: ${label}`, error);
     }
   };
-  safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
-  // Activity news use Steam's own AppActivityStore and native Activity renderer.
-  safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
-  safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
-  installActivityRefreshedListener(unpatchers);
-  const overviewProto = appStore?.allApps?.[0]?.__proto__;
-  const detailsProto = appDetailsStore?.__proto__;
+  const install = () => {
+    if (patchesCancelled || installStarted) return;
+    installStarted = true;
 
-  if (!hasSteamInternals() || !overviewProto || !detailsProto) {
-    let cancelled = false;
-    let delayedUnpatch: Unpatch | null = null;
-    let retryId: number | undefined;
-    const retry = () => {
-      if (cancelled) return;
-      if (hasSteamInternals()) {
-        delayedUnpatch = installSteamPatches();
-        return;
-      }
-      retryId = window.setTimeout(retry, 500);
-    };
-    retry();
-    return () => {
-      cancelled = true;
-      if (retryId) window.clearTimeout(retryId);
-      delayedUnpatch?.();
-    };
-  }
+    safeInstallStep("unmatchedAppLinksHider", () => installUnmatchedAppLinksHider(unpatchers));
+    // Activity news use Steam's own AppActivityStore and native Activity renderer.
+    safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
+    safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
+    installActivityRefreshedListener(unpatchers);
 
-  safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
-  safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
-  void getDebugLogging()
-    .then((debugLoggingEnabled) => {
-      if (patchesCancelled) return;
-      setBypassTraceEnabled(debugLoggingEnabled);
-      setContextMenuTraceEnabled(debugLoggingEnabled);
-      if (!debugLoggingEnabled) return;
-      safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
-      safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
-      safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
-    })
-    .catch((error) => {
-      log.warn("patch", "debug logging setting load failed; diagnostic traces disabled", error);
+    safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
+    safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
+    void getDebugLogging()
+      .then((debugLoggingEnabled) => {
+        if (patchesCancelled) return;
+        setBypassTraceEnabled(debugLoggingEnabled);
+        setContextMenuTraceEnabled(debugLoggingEnabled);
+        if (!debugLoggingEnabled) return;
+        safeInstallStep("navigationTrace", () => installNavigationTrace(unpatchers));
+        safeInstallStep("historyInstanceTrace", () => installHistoryInstanceTrace(unpatchers));
+        safeInstallStep("clickTrace", () => installClickTrace(unpatchers));
+      })
+      .catch((error) => {
+        log.warn("patch", "debug logging setting load failed; diagnostic traces disabled", error);
+      });
+
+    installNativeNewsHistoryRedirects(unpatchers);
+    installMetadataPatches(unpatchers);
+    installCommunityFeedPatch(unpatchers);
+    installRouterRenderPatches(unpatchers, {
+      ensureMetadataCache,
+      applyMetadata,
+      tryEnrichScreenshotsForApp,
+      tryFetchMetadataForApp,
+      refreshDeckyNativeActivityForApp,
     });
+    safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
+    void frontendLog("info", "steam patches installed", {
+      attempts,
+      unpatcherCount: unpatchers.length,
+    }).catch(() => undefined);
+  };
 
-  installNativeNewsHistoryRedirects(unpatchers);
-  installMetadataPatches(unpatchers);
-  installCommunityFeedPatch(unpatchers);
-  installRouterRenderPatches(unpatchers, {
-    ensureMetadataCache,
-    applyMetadata,
-    tryEnrichScreenshotsForApp,
-    tryFetchMetadataForApp,
-    refreshDeckyNativeActivityForApp,
-  });
-  safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
+  const tick = () => {
+    retryId = undefined;
+    if (patchesCancelled) return;
+    attempts += 1;
+    if (steamPatchTargetsReady()) {
+      try {
+        install();
+      } catch (error) {
+        log.warn("patch", "installSteamPatches failed", error);
+        void frontendLog("warn", "installSteamPatches failed", {
+          error: error instanceof Error ? error.stack || error.message : String(error),
+        }).catch(() => undefined);
+      }
+      return;
+    }
+    if (attempts >= 240) {
+      void frontendLog("warn", "steam patches NOT installed", { attempts }).catch(() => undefined);
+      return;
+    }
+    retryId = window.setTimeout(tick, 500);
+  };
+
+  if (steamPatchTargetsReady()) {
+    install();
+  } else {
+    retryId = window.setTimeout(tick, 500);
+  }
 
   return () => {
     patchesCancelled = true;
+    if (retryId !== undefined) {
+      window.clearTimeout(retryId);
+      retryId = undefined;
+    }
     setBypassTraceEnabled(false);
     setContextMenuTraceEnabled(false);
     unpatchers.splice(0).reverse().forEach((unpatch) => {

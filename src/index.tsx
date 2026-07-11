@@ -4,7 +4,7 @@ import { FaDatabase } from "react-icons/fa";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
-import { getDebugLogging } from "./backend";
+import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import {
   installSteamPatches,
@@ -25,6 +25,9 @@ export default definePlugin(() => {
     unpatchSteam = installSteamPatches();
   } catch (error) {
     log.warn("bridge", "installSteamPatches failed", error);
+    void frontendLog("warn", "installSteamPatches failed", {
+      error: error instanceof Error ? error.stack || error.message : String(error),
+    }).catch(() => undefined);
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
