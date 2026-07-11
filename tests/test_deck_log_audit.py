@@ -22,3 +22,17 @@ def test_normalization_only_replaces_volatile_fields():
 def test_appid_filter_preserves_structured_id():
     report = audit(FIXTURES, appid="20")
     assert report["appids"] == ["20"]
+
+
+def test_group_evidence_preserves_raw_first_and_last_occurrences(tmp_path):
+    source = tmp_path / "plugin.log"
+    source.write_text(
+        "2026-07-11 10:00:00 ERROR request pid=10 took 12ms\n"
+        "2026-07-11 10:01:00 ERROR request pid=20 took 34ms\n"
+    )
+    report = audit(source)
+    assert len(report["groups"]) == 1
+    group = report["groups"][0]
+    assert group["count"] == 2
+    assert group["first"] == {"source": str(source), "line": 1, "message": "2026-07-11 10:00:00 ERROR request pid=10 took 12ms"}
+    assert group["last"] == {"source": str(source), "line": 2, "message": "2026-07-11 10:01:00 ERROR request pid=20 took 34ms"}

@@ -51,6 +51,7 @@ def source_files(source: Path) -> list[Path]:
 def audit(source: Path, since: str | None = None, appid: str | None = None) -> dict[str, object]:
     files = source_files(source)
     groups: Counter[str] = Counter()
+    group_evidence: dict[str, dict[str, object]] = {}
     known: Counter[str] = Counter()
     levels: Counter[str] = Counter()
     unknown: list[dict[str, object]] = []
@@ -81,6 +82,9 @@ def audit(source: Path, since: str | None = None, appid: str | None = None) -> d
             for name in signatures: known[name] += 1
             if signatures or LEVEL.search(line) or "Traceback" in line:
                 groups[normalized] += 1
+                occurrence = {"source": str(path), "line": number, "message": line}
+                evidence = group_evidence.setdefault(normalized, {"first": occurrence, "last": occurrence})
+                evidence["last"] = occurrence
                 if not signatures:
                     unknown.append({"source": str(path), "line": number, "message": line})
         sources.append({"path": str(path), "line_count": len(lines), "selected_count": len(selected), "first_line": selected[0] if selected else "", "last_line": selected[-1] if selected else ""})
@@ -91,7 +95,15 @@ def audit(source: Path, since: str | None = None, appid: str | None = None) -> d
         "versions": sorted(set(versions)),
         "counts": {key: levels[key] for key in sorted(levels)},
         "known_signatures": {key: known[key] for key in sorted(known)},
-        "groups": [{"signature": key, "count": groups[key]} for key in sorted(groups)],
+        "groups": [
+            {
+                "signature": key,
+                "count": groups[key],
+                "first": group_evidence[key]["first"],
+                "last": group_evidence[key]["last"],
+            }
+            for key in sorted(groups)
+        ],
         "unknown_errors": unknown,
         "appids": sorted(appids, key=int),
         "urls": sorted(urls),
