@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "decky: not in a Git repository" >&2; exit 1; }
+cd "$repo_root"
+tmp_root="${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}"
+mkdir -p "$tmp_root"
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/decky COMMAND [OPTIONS]
+
+Commands:
+  doctor [--deck] [--json] [--quiet]
+  verify-change [BASE_REF] [--explain] [--device] [--allow-launch] [--extended]
+  capture [--since TIMESTAMP] [--include-settings]
+  package-push [--build] [--push] [--force] [--json]
+  status [--deck] [--json]
+  steamui snapshot
+  steamui search PATTERN [--build BUILD_ID]
+EOF
+}
+
+invalid() { echo "decky: $*" >&2; usage >&2; exit 2; }
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || { usage; exit 2; }
+shift
+case "$cmd" in
+  doctor) exec ./run.sh python3 scripts/decky_doctor.py "$@" ;;
+  status) exec ./run.sh python3 scripts/decky_doctor.py "$@" ;;
+  capture) exec scripts/deck/capture.sh "$@" ;;
+  package-push) exec scripts/deck/package_push.sh "$@" ;;
+  steamui) exec scripts/deck/steamui.sh "$@" ;;
+  verify-change)
+    base=""; explain=0; device=0; allow_launch=0; extended=0
+    while (($#)); do
+      case "$1" in
+        --explain) explain=1 ;;
+        --device) device=1 ;;
+        --allow-launch) allow_launch=1 ;;
+        --extended) extended=1 ;;
+        -*) invalid "unknown verify-change option: $1" ;;
+        *) [[ -z "$base" ]] || invalid "multiple base refs"; base="$1" ;;
+      esac
+      shift
+    done
+    if ((allow_launch && !device)); then invalid "--allow-launch requires --device"; fi
+    if [[ -z "$base" ]]; then
+      base="$(bash -c 'source orchestration.conf; [[ -f orchestration.conf.local ]] && source orchestration.conf.local; printf %s "${ORCH_BASE_BRANCH:-main}"')"
+    fi
+    merge_base="$(git merge-base "$base" HEAD 2>/dev/null)" || { echo "verify-change: cannot resolve merge base for $base" >&2; exit 1; }
+    mapfile -t paths < <(git diff --name-only "$merge_base"...HEAD)
+    printf 'MERGE_BASE %s\n' "$merge_base"
+    printf 'CHANGED_PATH %s\n' "${paths[@]:-<none>}"
+    class=local
+    checks=(quality-gates)
+    for path in "${paths[@]}"; do
+      case "$path" in
+        src/steam/*|src/steam.ts|src/*Patch*|src/*patch*|src/*router*|src/*Router*) class=device; checks=(quick-links re-render launch) ;;
+        src/*) [[ "$class" == device ]] || { class=device; checks=(quick-links re-render); } ;;
+        package.json|plugin.json|scripts/*|run.sh|AGENTS.md) [[ "$class" == device ]] || { class=tooling; checks=(quality-gates tooling-provenance); } ;;
+      esac
+    done
+    printf 'CLASSIFICATION %s\n' "$class"
+    printf 'CHECKS %s\n' "${checks[*]}"
+    ((explain)) && printf 'BASE_REF %s\n' "$base"
+    scripts/orchestration/run-quality-gates
+    if [[ "$class" == device ]]; then
+      if ((!device)); then
+        echo "STATUS DEFERRED"
+        echo "REQUIRED scripts/decky verify-change $base --device"
+        exit 0
+      fi
+      scripts/deck/deploy.sh
+      args=(--no-launch)
+      ((allow_launch)) && args=()
+      ((extended)) && args+=(--extended)
+      if ! scripts/deck/verify/run_all.sh "${args[@]}"; then
+        scripts/deck/capture.sh || true
+        exit 1
+      fi
+    fi
+    echo "STATUS PASS"
+    ;;
+  help|-h|--help) usage ;;
+  *) invalid "unknown command: $cmd" ;;
+esac
