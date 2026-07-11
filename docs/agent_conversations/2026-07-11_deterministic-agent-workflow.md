@@ -41,3 +41,28 @@ Implement the tracked deterministic-agent-workflow plan by composing existing De
 ## Deferred live checks
 
 Live Deck checks are intentionally deferred until the user authorizes device availability and mutation. Read-only doctor, log sync/audit, capture, SteamUI snapshot/search, semantic fixture confirmation, modifying deploy/reload checks, real launch smoke, and physical-controller Play/focus checks remain deferred as specified by the plan.
+
+## Review round 02 hardening
+
+- Changed `verify-change` classification to union requirements across every
+  changed path in stable order. A required launch smoke now remains `DEFERRED`
+  without launch consent, and consent is rejected unless `MATCHED_APPID` is
+  explicitly configured.
+- Made package delivery idempotent by treating the ledger as a hint and
+  revalidating the local archive plus remote checksum before skipping duplicate
+  build/copy work. `--force` bypasses the skip, and JSON-mode build/copy progress
+  is kept off stdout.
+- Restricted diagnostic roots to mode 0700 and raw evidence/settings to mode
+  0600, rejected state roots outside `/tmp`, and applied the same temp-root
+  boundary to the dispatcher, package state, and SteamUI snapshots.
+- Replaced last-line hook recognition with exact complete-body validation for
+  canonical delegates and the three explicitly supported installed legacy
+  delegates.
+- Added deterministic first/last raw source evidence to every normalized
+  log-audit group.
+
+Round 02 validation passed: 39 focused workflow tests, shell syntax checks,
+Python compilation, exact hook checks, skill quick validation, `git diff
+--check`, 18 Vitest tests, and 222 pytest tests. The five pre-existing untracked
+JSON files remained untouched. Live Deck and physical-controller checks remain
+deferred under the plan's authorization gates.
