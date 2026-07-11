@@ -1,8 +1,10 @@
 # Research: Non-Steam games fail to launch while the plugin is installed
 
-**Status:** OPEN — **release-blocking, top priority.** Hard hold on `dev → main`
-until fixed. Distinct from (but same root fragility as) the matched-game
-quick-links idle-decay — see `[[quicklinks-idle-decay-open]]` /
+**Status:** RESOLVED 2026-07-11 — root cause confirmed on-device and fixed by
+`nonsteam-launch-incall-truth` (see plan
+`docs/plans/2026-07-11_nonsteam-launch-incall-truth.md`). Resolution summary at
+the bottom of this doc. Related but separate: the matched-game quick-links
+idle-decay — see `[[quicklinks-idle-decay-open]]` /
 `docs/research/2026-07-10_matched-game-quicklinks-idle-decay.md`.
 
 **Date opened:** 2026-07-11. Diagnosed from device logs + user report.
@@ -158,3 +160,57 @@ debug logging so `BIsModOrShortcut decision` / `bypass armed` traces land in
 `~/homebrew/logs/Decky-Metadata/decky-metadata.log`. Tunnel:
 `ssh -f -N -L 18081:localhost:8080 steamdeck`; eval against `SharedJSContext`
 (stores) or `"Steam Big Picture Mode"` (DOM/fibers).
+
+---
+
+## Resolution (2026-07-11, on-device CDP trace)
+
+The original root-cause section above was close but had the mechanism slightly
+wrong: the failing check is not a *direct* launch-path `BIsModOrShortcut` call
+hitting the `normal-shortcut` default. The launch path consults the overview
+via **`GetGameID` / `GetPrimaryAppID`**, whose patches already force in-call
+truth (`bypassCounter = -1`). The actual defect was **precedence**: the
+render-shield (`consumeRouteShield`) and `/library/home` checks short-circuited
+**before** the `bypassCounter === -1` check. On a **matched** game's detail
+page the shield is armed on every route render + history `listen`, so it is
+effectively always live — `GetGameID`'s internal check got the spoofed `false`
+and `GetGameID` returned a **plain-appid gameid**. `RunGame("<appid>")` is
+silently dropped by the client (no GameAction is ever created — hence zero log
+evidence in `console_log.txt`).
+
+Proof (CDP tracer wrapping `SteamClient.Apps.RunGame`, Transformers FoC
+`3276984150`, matched):
+
+- Play press 2 ms after navigation (shield armed):
+  `RunGame("3276984150", "", -1, 100)` → nothing launches.
+- Play press after the 2000 ms shield TTL lapsed:
+  `RunGame("14074539753793912832", …)` → launches fine.
+- Ludusavi `2692567853` (unmatched → shield never arms, `routerPatches.ts`
+  gates arming on `metadataCache[appId]`): always launched. This is why only
+  matched games failed.
+- The user's own logs contain **150** `reason='render-shield'` decisions with
+  `bypassCounterBefore='-1'` — hijacked in-call truths from real sessions.
+
+Other findings from the trace:
+
+- `BHasRecentlyLaunched` **does exist and is called** — but on page *render*
+  (from the app-details component), not at launch. The doc's "0 occurrences"
+  came from sessions where the patches were dead pre-`cold-boot-patch-install`.
+  As a launch armer it is useless (fires after render, timing luck).
+- `home-special-case` never fires on-device (gamepad-UI route detection never
+  reports `/library/home`), so it was not a live launch surface.
+
+### Fix
+
+`src/steam/metadataPatch.ts` (`nonsteam-launch-incall-truth`): in the
+`BIsModOrShortcut` afterPatch, return the truth when
+`metadataState.bypassCounter === -1` **before** consuming the route shield and
+before the home special case (new trace reason `in-call-truth`); shield budget
+is no longer consumed by early-return paths. Render-time checks (`GetSections`
+etc.) call `BIsModOrShortcut` directly — never through `GetGameID` — so the
+spoof and the rich Game Info page are unaffected.
+
+Verified on-device post-deploy: launch-during-shield ✅ (correct 64-bit gameid),
+launch after >2 s idle ✅, rich Game Info page (HLTB rows + ACTIVITY/YOUR
+STUFF/COMMUNITY/GAME INFO sections) ✅, unmatched shortcut launch ✅,
+`in-call-truth` decisions now in the plugin log ✅.
