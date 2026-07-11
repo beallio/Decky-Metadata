@@ -17,6 +17,13 @@ export const patchInstallStatus = {
 export const steamInternals = () => globalThis as unknown as SteamInternals;
 
 export const hasSteamInternals = () => !!steamInternals().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+export const steamPatchTargetsReady = () => {
+  try {
+    return hasSteamInternals() && !!(appStore as any)?.allApps?.[0]?.__proto__ && !!(appDetailsStore as any)?.__proto__;
+  } catch (_error) {
+    return false;
+  }
+};
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
 
 export const metadataCache: Record<string, MetadataData> = {};
