@@ -24,6 +24,59 @@ NON_PRIMARY_STEAM_TITLE_PATTERNS = (
     r"\btest\b",
 )
 
+PC_PLATFORM_KEYWORDS = (
+    "pc",
+    "windows",
+    "linux",
+    "mac",
+    "macintosh",
+    "steamos",
+    "steam-deck",
+    "steam deck",
+)
+
+CONSOLE_TITLE_SUFFIXES = frozenset(
+    {
+        "ds",
+        "3ds",
+        "new nintendo 3ds",
+        "wii",
+        "wii u",
+        "switch",
+        "nintendo switch",
+        "xbox",
+        "xbox 360",
+        "xbox one",
+        "xbox series x",
+        "xbox series x/s",
+        "ps1",
+        "ps2",
+        "ps3",
+        "ps4",
+        "ps5",
+        "playstation",
+        "playstation 2",
+        "playstation 3",
+        "playstation 4",
+        "playstation 5",
+        "psp",
+        "ps vita",
+        "vita",
+        "gba",
+        "game boy",
+        "game boy color",
+        "game boy advance",
+        "gamecube",
+        "n64",
+        "nintendo 64",
+        "n-gage",
+        "dreamcast",
+        "sega saturn",
+        "genesis",
+        "mega drive",
+    }
+)
+
 
 def normalise_match_title(title: str) -> str:
     text = html.unescape(str(title or "")).casefold()
@@ -73,6 +126,23 @@ def ign_title_acceptable(query: str, candidate_title: str) -> bool:
     query_norm = normalise_match_title(query)
     candidate_norm = normalise_match_title(candidate_title)
     return distinctive_tokens_present(query_norm, candidate_norm)
+
+
+def has_pc_platform(platforms: list[str]) -> bool:
+    for platform in platforms:
+        normalized = re.sub(r"\s+", " ", str(platform or "").strip().casefold())
+        if any(keyword in normalized for keyword in PC_PLATFORM_KEYWORDS):
+            return True
+    return False
+
+
+def console_title_suffix(title: str) -> str | None:
+    match = re.search(r"(?:\[([^\]]+)\]|\(([^\)]+)\))\s*$", str(title or ""))
+    if not match:
+        return None
+    token = str(match.group(1) or match.group(2) or "").strip()
+    normalized = re.sub(r"\s+", " ", token.casefold())
+    return token if normalized in CONSOLE_TITLE_SUFFIXES else None
 
 
 def clean_html_text(value: str) -> str:
