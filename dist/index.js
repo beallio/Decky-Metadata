@@ -3602,6 +3602,7 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
                     const appOverview = overview || getOverview(appId);
                     if (appId && isNonSteamApp(appOverview)) {
+                        const previousAppId = metadataState.lastObservedGameDetailAppId;
                         metadataState.lastObservedGameDetailAppId = appId;
                         if (metadataCache[String(appId)]) {
                             armRouteShield(appId, route, "route-render");
@@ -3619,7 +3620,9 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
                         });
-                        void refreshDeckyNativeActivityForApp(appId);
+                        if (previousAppId !== appId) {
+                            void refreshDeckyNativeActivityForApp(appId);
+                        }
                         suppressNeverOnSteamQuickLinks(ret, appId);
                         return ret;
                     }
