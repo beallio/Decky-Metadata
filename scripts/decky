@@ -4,6 +4,11 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "decky: not in a Git repository" >&2; exit 1; }
 cd "$repo_root"
 tmp_root="${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}"
+tmp_root="$(realpath -m "$tmp_root")"
+[[ "$tmp_root" == /tmp || "$tmp_root" == /tmp/* ]] || {
+  echo "decky: DECKY_TMP_ROOT must resolve below /tmp" >&2
+  exit 2
+}
 mkdir -p "$tmp_root"
 
 usage() {
@@ -54,15 +59,26 @@ case "$cmd" in
     printf 'MERGE_BASE %s\n' "$merge_base"
     printf 'CHANGED_PATH %s\n' "${paths[@]:-<none>}"
     class=local
-    checks=(quality-gates)
+    declare -A required_checks=([quality-gates]=1)
+    add_checks() {
+      local item
+      for item in "$@"; do required_checks["$item"]=1; done
+    }
     for path in "${paths[@]}"; do
       case "$path" in
-        src/steam/*|src/steam.ts) class=device; checks=(quick-links re-render launch) ;;
-        src/*[Ss]poof*|src/*[Ll]aunch*) class=device; checks=(quick-links launch) ;;
-        src/*[Pp]atch*|src/*[Rr]outer*|src/*[Rr]ender*|src/*[Aa]ctivity*) class=device; checks=(quick-links re-render) ;;
-        src/*) [[ "$class" == device ]] || { class=device; checks=(quick-links re-render); } ;;
-        package.json|plugin.json|scripts/*|run.sh|AGENTS.md) [[ "$class" == device ]] || { class=tooling; checks=(quality-gates tooling-provenance); } ;;
+        src/steam/*|src/steam.ts) class=device; add_checks quick-links re-render launch ;;
+        src/*[Ss]poof*|src/*[Ll]aunch*) class=device; add_checks quick-links launch ;;
+        src/*[Pp]atch*|src/*[Rr]outer*|src/*[Rr]ender*|src/*[Aa]ctivity*) class=device; add_checks quick-links re-render ;;
+        src/*) class=device; add_checks quick-links re-render ;;
+        package.json|plugin.json|scripts/*|run.sh|AGENTS.md)
+          [[ "$class" == device ]] || class=tooling
+          add_checks tooling-provenance
+          ;;
       esac
+    done
+    checks=()
+    for check_name in quality-gates tooling-provenance quick-links re-render launch; do
+      [[ -n "${required_checks[$check_name]:-}" ]] && checks+=("$check_name")
     done
     printf 'CLASSIFICATION %s\n' "$class"
     printf 'CHECKS %s\n' "${checks[*]}"
@@ -74,6 +90,10 @@ case "$cmd" in
         echo "REQUIRED scripts/decky verify-change $base --device"
         exit 0
       fi
+      if [[ -n "${required_checks[launch]:-}" && "$allow_launch" == 1 && -z "${MATCHED_APPID:-}" ]]; then
+        echo "verify-change: --allow-launch requires an explicit MATCHED_APPID for this change" >&2
+        exit 2
+      fi
       scripts/deck/deploy.sh
       args=(--no-launch)
       ((allow_launch)) && args=()
@@ -81,6 +101,11 @@ case "$cmd" in
       if ! scripts/deck/verify/run_all.sh "${args[@]}"; then
         scripts/deck/capture.sh || true
         exit 1
+      fi
+      if [[ -n "${required_checks[launch]:-}" && "$allow_launch" == 0 ]]; then
+        echo "STATUS DEFERRED"
+        echo "OUTSTANDING launch (rerun with --device --allow-launch and explicit MATCHED_APPID)"
+        exit 0
       fi
     fi
     echo "STATUS PASS"
