@@ -22,7 +22,11 @@ import {
 import { installMainWindowHistoryRedirect, installSteamNavigationRedirect } from "./navigationRedirect";
 import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace } from "./diagnostics";
 import { setContextMenuTraceEnabled } from "../contextMenuPatch";
-import { installGameDetailReentryShield, installRouterRenderPatches } from "./routerPatches";
+import {
+  installGameDetailReentryShield,
+  installNeverOnSteamQuickLinksSuppression,
+  installRouterRenderPatches,
+} from "./routerPatches";
 
 export const installSteamPatches = (): Unpatch => {
   configureActivityMetadataLoader(ensureMetadataCache);
@@ -75,6 +79,9 @@ export const installSteamPatches = (): Unpatch => {
       refreshDeckyNativeActivityForApp,
     });
     safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
+    safeInstallStep("neverOnSteamQuickLinksSuppression", () =>
+      installNeverOnSteamQuickLinksSuppression(unpatchers)
+    );
     void frontendLog("patch", "steam patches installed", {
       attempts,
       unpatcherCount: unpatchers.length,
