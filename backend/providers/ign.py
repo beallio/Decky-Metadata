@@ -113,6 +113,24 @@ def first_release_date(regions: list[Any]) -> int | None:
     return matching.date_to_epoch(sorted(dates)[0])
 
 
+def ign_platforms(game: dict[str, Any]) -> list[str]:
+    platforms: list[str] = []
+    for region in game.get("objectRegions") or []:
+        if not isinstance(region, dict):
+            continue
+        for release in region.get("releases") or []:
+            if not isinstance(release, dict):
+                continue
+            for attribute in release.get("platformAttributes") or []:
+                if not isinstance(attribute, dict):
+                    continue
+                platform = str(attribute.get("slug") or attribute.get("name") or "")
+                platform = platform.strip().lower()
+                if platform and platform not in platforms:
+                    platforms.append(platform)
+    return platforms
+
+
 def infer_store_categories(text: str) -> list[int]:
     haystack = text.casefold()
     categories: list[int] = []
@@ -201,6 +219,7 @@ def game_to_metadata(game: dict[str, Any]) -> dict[str, Any]:
         "genres": genres,
         "features": features,
         "screenshots": screenshots,
+        "platforms": ign_platforms(game),
     }
 
 
@@ -315,18 +334,44 @@ def auto_fetch_metadata(
     if not cleaned:
         return None
 
+    fallback: dict[str, Any] | None = None
+
+    def consider(metadata: dict[str, Any] | None) -> dict[str, Any] | None:
+        nonlocal fallback
+        if not metadata or not matching.ign_title_acceptable(
+            cleaned, metadata.get("title", "")
+        ):
+            return None
+        platforms = metadata.get("platforms")
+        if not platforms or matching.has_pc_platform(platforms):
+            return metadata
+        if fallback is None:
+            fallback = metadata
+        return None
+
     for slug in slug_candidates(cleaned):
         try:
-            metadata = fetch_metadata_fn(slug)
-            if metadata and matching.ign_title_acceptable(cleaned, metadata.get("title", "")):
+            metadata = consider(fetch_metadata_fn(slug))
+            if metadata:
                 return metadata
         except Exception:
             continue
 
     results = search_metadata_fn(cleaned, 5)
-    if not results:
-        return None
-    best = results[0]
-    if not matching.ign_title_acceptable(cleaned, best.get("title", "")):
-        return None
-    return fetch_metadata_fn(best["slug"] or best["url"])
+    ranked = sorted(
+        results,
+        key=lambda candidate: matching.console_title_suffix(
+            candidate.get("title", "")
+        )
+        is not None,
+    )
+    for candidate in ranked[:4]:
+        try:
+            metadata = consider(
+                fetch_metadata_fn(candidate.get("slug") or candidate.get("url"))
+            )
+            if metadata:
+                return metadata
+        except Exception:
+            continue
+    return fallback
