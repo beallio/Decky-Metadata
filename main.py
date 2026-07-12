@@ -58,6 +58,7 @@ import decky
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 from backend import matching, scan_runner, shortcuts_vdf, storage, steam_paths
+from backend.providers import community as community_provider
 from backend.providers import delisted as delisted_provider
 from backend.providers import ign as ign_provider
 from backend.providers import steam as steam_provider
@@ -393,13 +394,125 @@ class Plugin:
     async def fetch_metadata(self, slug_or_url: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._fetch_metadata_sync, slug_or_url)
 
+    @staticmethod
+    def _merge_fetched_metadata(
+        existing: dict[str, Any] | None, fetched: dict[str, Any]
+    ) -> dict[str, Any]:
+        merged = dict(fetched)
+        existing_steam_appid = (
+            Plugin._safe_int(existing.get("steam_appid"))
+            if isinstance(existing, dict)
+            else None
+        )
+        if not existing_steam_appid or existing_steam_appid <= 0:
+            return merged
+        for key in (
+            "steam_appid",
+            "steam_store_url",
+            "steam_store_state",
+            "deck_compat_category",
+            "steam_news",
+            "steam_news_enriched_at",
+        ):
+            if key in existing:
+                merged[key] = existing[key]
+        return merged
+
+    async def apply_fetched_metadata(
+        self, app_id: int, slug_or_url: str
+    ) -> dict[str, Any] | None:
+        fetched = await asyncio.to_thread(self._fetch_metadata_sync, slug_or_url)
+        if not fetched:
+            return None
+        self._load_data()
+        existing = self._data["metadata"].get(str(app_id))
+        return await self.save_metadata(
+            app_id, self._merge_fetched_metadata(existing, fetched)
+        )
+
     async def auto_fetch_metadata(
         self, app_id: int, title: str
     ) -> dict[str, Any] | None:
         metadata = await asyncio.to_thread(self._auto_fetch_metadata_sync, title)
         if metadata:
-            await self.save_metadata(app_id, metadata)
-        return metadata
+            self._load_data()
+            existing = self._data["metadata"].get(str(app_id))
+            return await self.save_metadata(
+                app_id, self._merge_fetched_metadata(existing, metadata)
+            )
+        return None
+
+    async def get_community_fallback_page(
+        self, app_id: int, page: int = 1
+    ) -> dict[str, Any]:
+        self._load_data()
+        clean_page = community_provider.clamp_page(page)
+        record = self._data["metadata"].get(str(app_id))
+        if not isinstance(record, dict):
+            _plog(
+                "community",
+                "fallback selected",
+                level=logging.DEBUG,
+                source="none",
+                app_id=app_id,
+                steam_appid=0,
+                page=clean_page,
+                count=0,
+            )
+            return {"source": "none", "page": clean_page, "items": []}
+        steam_appid = self._safe_int(record.get("steam_appid"))
+        if steam_appid and steam_appid > 0:
+            try:
+                items = await asyncio.to_thread(
+                    community_provider.fetch_steam_fallback_items,
+                    steam_appid,
+                    clean_page,
+                    self._http_text,
+                )
+                if items:
+                    _plog(
+                        "community",
+                        "fallback selected",
+                        level=logging.DEBUG,
+                        source="steam-scrape",
+                        app_id=app_id,
+                        steam_appid=steam_appid,
+                        page=clean_page,
+                        count=len(items),
+                    )
+                    return {
+                        "source": "steam-scrape",
+                        "page": clean_page,
+                        "items": items,
+                    }
+            except Exception as error:
+                _plog(
+                    "community",
+                    "scraper fallback failed",
+                    level=logging.DEBUG,
+                    app_id=app_id,
+                    steam_appid=steam_appid,
+                    page=clean_page,
+                    error=error,
+                )
+        items = community_provider.metadata_screenshots_to_fallback_items(
+            record.get("screenshots"), clean_page, record.get("source_url")
+        )
+        source = "metadata" if items else "none"
+        if items:
+            label = str(record.get("source") or "").strip() or "Metadata"
+            items = [{**item, "author": label} for item in items]
+        _plog(
+            "community",
+            "fallback selected",
+            level=logging.DEBUG,
+            source=source,
+            app_id=app_id,
+            steam_appid=steam_appid if steam_appid and steam_appid > 0 else 0,
+            page=clean_page,
+            count=len(items),
+        )
+        return {"source": source, "page": clean_page, "items": items}
 
     async def enrich_steam_app(self, app_id: int) -> dict[str, Any] | None:
         self._load_data()
@@ -1157,7 +1270,9 @@ class Plugin:
                 break
         return rows
 
-    def _http_text(self, url: str, timeout: int = 20) -> str:
+    def _http_text(
+        self, url: str, timeout: int = 20, max_bytes: int | None = None
+    ) -> str:
         request = urllib.request.Request(
             url,
             headers={
@@ -1168,7 +1283,16 @@ class Plugin:
         context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-                return response.read().decode("utf-8", errors="ignore")
+                if max_bytes is None:
+                    payload = response.read()
+                else:
+                    content_length = response.headers.get("Content-Length")
+                    if content_length and int(content_length) > max_bytes:
+                        raise ValueError("HTTP response exceeds bounded read limit")
+                    payload = response.read(max_bytes + 1)
+                    if len(payload) > max_bytes:
+                        raise ValueError("HTTP response exceeds bounded read limit")
+                return payload.decode("utf-8", errors="ignore")
         except Exception as error:
             _log_tls_verification_failure(request, error)
             raise

@@ -1,6 +1,10 @@
 import { findModuleChild } from "@decky/ui";
-import { frontendLog, refreshSteamActivityForApp } from "../backend";
-import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeed";
+import { frontendLog, getCommunityFallbackPage, refreshSteamActivityForApp } from "../backend";
+import {
+  requestedCommunityPage,
+  resolveCommunityRequest,
+  rewriteCommunityFeedUrlForSteamApp,
+} from "../communityFeed";
 import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
 import { createActivityRefreshGate } from "./activityRefreshGate";
@@ -1249,31 +1253,61 @@ export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
               const overview = getOverview(appId);
               // Only touch non-Steam shortcuts; real Steam games keep their native feed.
               if (isNonSteamApp(overview)) {
-                return ensureMetadataCacheFn()
-                  .then(() => {
-                    const steamAppId = metadataCache[String(appId)]?.steam_appid;
-                    if (!steamAppId) return original(...args);
-                    // Rewrite the feed request to the matched Steam appid and pass it
-                    // straight through to the native client: identical shape, real
-                    // screenshots/guides/videos/artwork, and native pagination for free.
-                    const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
-                    if (!steamUrl) return original(...args);
-                    const steamArgs = [steamUrl, ...args.slice(1)];
-                    return Promise.resolve(original(...steamArgs)).then((native: any) => {
-                      void frontendLog("community", "feed passthrough", {
-                        appId,
-                        steamAppId,
-                        hubLen: Array.isArray(native?.hub) ? native.hub.length : null,
-                      }).catch(() => undefined);
-                      return native;
-                    });
-                  })
-                  .catch((err) => {
-                    void frontendLog("community", "feed passthrough error", {
+                return (async () => {
+                  try {
+                    await ensureMetadataCacheFn();
+                  } catch (err) {
+                    void frontendLog("community", "metadata cache unavailable", {
                       appId,
                       err: String(err),
                     }).catch(() => undefined);
                     return original(...args);
+                  }
+                  const steamAppId = Number(metadataCache[String(appId)]?.steam_appid) || 0;
+                  const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
+                  const steamArgs = steamUrl ? [steamUrl, ...args.slice(1)] : null;
+                  const page = requestedCommunityPage(url, args.slice(1));
+                  const response = await resolveCommunityRequest({
+                    isNonSteam: true,
+                    appId,
+                    page,
+                    originalArgs: args,
+                    rewrittenArgs: steamArgs,
+                    nativeRequest: (requestArgs) => Promise.resolve(original(...requestArgs)),
+                    fallbackRequest: getCommunityFallbackPage,
+                    onFallbackError: (err) => {
+                      void frontendLog("community", "fallback RPC unavailable", {
+                        appId,
+                        steamAppId,
+                        page,
+                        err: String(err),
+                      }).catch(() => undefined);
+                    },
+                  });
+                  const hasSyntheticItems =
+                    Array.isArray((response as any)?.hub) &&
+                    (response as any).hub.some((item: any) =>
+                      isDeckyCommunityId(item?.published_file_id)
+                    );
+                  void frontendLog("community", "feed selected", {
+                    appId,
+                    steamAppId,
+                    page,
+                    source:
+                      hasSyntheticItems
+                        ? (response as any)?.cached
+                          ? "metadata"
+                          : "steam-scrape"
+                        : "native",
+                    hubLen: Array.isArray((response as any)?.hub) ? (response as any).hub.length : null,
+                  }).catch(() => undefined);
+                  return response;
+                })().catch((err) => {
+                    void frontendLog("community", "feed fallback error", {
+                      appId,
+                      err: String(err),
+                    }).catch(() => undefined);
+                    throw err;
                   });
               }
             }

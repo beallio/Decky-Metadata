@@ -1,6 +1,7 @@
 import { callable } from "@decky/api";
 import {
   GameOption,
+  CommunityFallbackPage,
   MetadataData,
   MetadataSearchResult,
   ScanProgress,
@@ -47,6 +48,14 @@ export const searchMetadata = callable<
 export const fetchMetadata = callable<[slugOrUrl: string], MetadataData | null>(
   "fetch_metadata"
 );
+export const applyFetchedMetadata = callable<
+  [appId: number, slugOrUrl: string],
+  MetadataData | null
+>("apply_fetched_metadata");
+export const getCommunityFallbackPage = callable<
+  [appId: number, page: number],
+  CommunityFallbackPage
+>("get_community_fallback_page");
 export const autoFetchMetadata = callable<
   [appId: number, title: string],
   MetadataData | null

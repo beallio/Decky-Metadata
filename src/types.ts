@@ -37,6 +37,25 @@ export type MetadataScreenshot = {
   link?: string;
 };
 
+export type CommunityFallbackSource = "steam-scrape" | "metadata" | "none";
+
+export type CommunityFallbackItem = {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  link: string;
+  width: number;
+  height: number;
+  author: string;
+};
+
+export type CommunityFallbackPage = {
+  source: CommunityFallbackSource;
+  page: number;
+  items: CommunityFallbackItem[];
+};
+
 export type MetadataSearchResult = {
   id?: string;
   slug: string;
