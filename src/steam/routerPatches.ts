@@ -1,6 +1,7 @@
 import { routerHook } from "@decky/api";
 import { findInReactTree, findModuleChild } from "@decky/ui";
 import { frontendLog } from "../backend";
+import * as log from "../log";
 import {
   GAME_ACTIVITY_ROUTES,
   GAME_DETAIL_ROUTES,
@@ -52,61 +53,110 @@ const NullQuickLinks = () => null;
 const quickLinksWrapperCache = new Map<any, any>();
 
 export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) => {
-  const sectionClass = findModuleChild((module: any) => {
-    if (typeof module !== "object") return undefined;
-    for (const prop in module) {
-      try {
-        const candidate = module[prop];
-        if (
-          typeof candidate === "function" &&
-          candidate.prototype?.isReactComponent &&
-          typeof candidate.prototype.render === "function" &&
-          String(candidate.prototype.render).includes("RegisterSection")
-        ) {
-          return candidate;
-        }
-      } catch (_error) {
-        continue;
-      }
+  const maxAttempts = 5;
+  let attempts = 0;
+  let cancelled = false;
+  let retryId: number | undefined;
+  let suppressionUnpatch: Unpatch | undefined;
+
+  const clearRetry = () => {
+    if (retryId !== undefined) {
+      window.clearTimeout(retryId);
+      retryId = undefined;
     }
-    return undefined;
-  });
-  if (!sectionClass?.prototype?.render) return;
-  unpatchers.push(
-    safeAfterPatch(sectionClass.prototype, "render", function (this: any, _args: any[], ret: any) {
-      try {
-        if (this?.props?.name !== "info") return ret;
-        const boundaries: any[] = [];
-        findChildElements(ret, isInfoSectionBoundary, boundaries);
-        for (const element of boundaries) {
-          if (!isNeverOnSteam(Number(element.props?.overview?.appid))) continue;
-          const original = element.type;
-          let wrapper = quickLinksWrapperCache.get(original);
-          if (!wrapper) {
-            wrapper = (props: any) => {
-              const rendered = original(props);
-              try {
-                if (isNeverOnSteam(Number(props?.overview?.appid))) {
-                  const linkRows: any[] = [];
-                  findChildElements(rendered, isQuickLinksElement, linkRows);
-                  for (const row of linkRows) row.type = NullQuickLinks;
-                }
-              } catch (_error) {
-                // Leave the native output untouched on shape changes.
-              }
-              return rendered;
-            };
-            wrapper.__dmQuickLinksWrapper = true;
-            quickLinksWrapperCache.set(original, wrapper);
+  };
+
+  const findSectionClass = () =>
+    findModuleChild((module: any) => {
+      if (typeof module !== "object") return undefined;
+      for (const prop in module) {
+        try {
+          const candidate = module[prop];
+          if (
+            typeof candidate === "function" &&
+            candidate.prototype?.isReactComponent &&
+            typeof candidate.prototype.render === "function" &&
+            String(candidate.prototype.render).includes("RegisterSection")
+          ) {
+            return candidate;
           }
-          element.type = wrapper;
+        } catch (_error) {
+          continue;
         }
-      } catch (_error) {
-        // Steam's native render tree must remain usable if its shape changes.
       }
-      return ret;
-    }).unpatch
-  );
+      return undefined;
+    });
+
+  const warnFingerprintMiss = () => {
+    const fields = { attempt: attempts, maxAttempts };
+    log.warn("patch", "never-on-Steam quick-links section target not found", fields);
+    void frontendLog(
+      "patch",
+      "never-on-Steam quick-links section target not found",
+      fields,
+      "warning"
+    ).catch(() => undefined);
+  };
+
+  const tryInstall = () => {
+    retryId = undefined;
+    if (cancelled || suppressionUnpatch) return;
+    attempts += 1;
+    const sectionClass = findSectionClass();
+    if (!sectionClass?.prototype?.render) {
+      warnFingerprintMiss();
+      if (attempts < maxAttempts) {
+        retryId = window.setTimeout(tryInstall, 500);
+      }
+      return;
+    }
+
+    suppressionUnpatch = safeAfterPatch(
+      sectionClass.prototype,
+      "render",
+      function (this: any, _args: any[], ret: any) {
+        try {
+          if (this?.props?.name !== "info") return ret;
+          const boundaries: any[] = [];
+          findChildElements(ret, isInfoSectionBoundary, boundaries);
+          for (const element of boundaries) {
+            if (!isNeverOnSteam(Number(element.props?.overview?.appid))) continue;
+            const original = element.type;
+            let wrapper = quickLinksWrapperCache.get(original);
+            if (!wrapper) {
+              wrapper = (props: any) => {
+                const rendered = original(props);
+                try {
+                  if (isNeverOnSteam(Number(props?.overview?.appid))) {
+                    const linkRows: any[] = [];
+                    findChildElements(rendered, isQuickLinksElement, linkRows);
+                    for (const row of linkRows) row.type = NullQuickLinks;
+                  }
+                } catch (_error) {
+                  // Leave the native output untouched on shape changes.
+                }
+                return rendered;
+              };
+              wrapper.__dmQuickLinksWrapper = true;
+              quickLinksWrapperCache.set(original, wrapper);
+            }
+            element.type = wrapper;
+          }
+        } catch (_error) {
+          // Steam's native render tree must remain usable if its shape changes.
+        }
+        return ret;
+      }
+    ).unpatch;
+  };
+
+  unpatchers.push(() => {
+    cancelled = true;
+    clearRetry();
+    suppressionUnpatch?.();
+    suppressionUnpatch = undefined;
+  });
+  tryInstall();
 };
 
 export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPatchDeps) => {
