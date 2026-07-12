@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   fallbackPageToNativeHub,
-  communityDetailFetcherMethodNames,
   nativeHubHasContent,
   requestedCommunityPage,
   resolveCommunityFeed,
   resolveCommunityRequest,
-  shieldSyntheticCommunityCall,
   syntheticCommunityId,
 } from "./communityFeed";
 import { CommunityFallbackPage } from "./types";
@@ -14,7 +12,7 @@ import { CommunityFallbackPage } from "./types";
 const fallback = (source: CommunityFallbackPage["source"] = "metadata"): CommunityFallbackPage => ({
   source,
   page: 2,
-  items: [{ id: "x", title: "Shot", description: "Desc", image_url: "https://cdn.example/x.jpg", width: 640, height: 340, author: source === "steam-scrape" ? "Alice" : "IGN" }],
+  items: [{ id: "x", title: "Shot", description: "Desc", image_url: "https://cdn.example/x.jpg", link: "https://www.ign.com/games/example", width: 640, height: 340, author: source === "steam-scrape" ? "Alice" : "IGN" }],
 });
 
 describe("community fallback helpers", () => {
@@ -31,18 +29,28 @@ describe("community fallback helpers", () => {
     expect(nativeHubHasContent({ error: "No Content" })).toBe(false);
   });
 
-  it("maps exact native visual fields and source labels", () => {
-    expect(fallbackPageToNativeHub(3156562597, fallback())).toEqual({
-      cached: true,
-      hub: [{
-        published_file_id: syntheticCommunityId(3156562597, 2, 0), type: 5, title: "Shot",
-        preview_image_url: "https://cdn.example/x.jpg", full_image_url: "https://cdn.example/x.jpg",
-        image_width: 640, image_height: 340, comment_count: 0, votes_for: 0,
-        content_descriptorids: [], spoiler_tag: null, description: "Desc", rating_stars: 0,
-        maybe_inappropriate_sex: 0, maybe_inappropriate_violence: 0, youtube_video_id: null,
-        creator: { name: "IGN", steamid: "0", avatar: "", online_state: 0 }, reactions: [],
-      }],
-    });
+  it("maps the complete provider-backed native card shape", () => {
+    const result = fallbackPageToNativeHub(3156562597, fallback());
+    expect(result.cached).toBe(true);
+    const card = result.hub[0];
+    expect(card.published_file_id).toBe(syntheticCommunityId(3156562597, 2, 0));
+    expect(card.publishedfileid).toBe(card.published_file_id);
+    expect(card.type).toBe(5);
+    expect(card.external_url).toBe("https://www.ign.com/games/example");
+    expect(card.strURL).toBe("https://www.ign.com/games/example");
+    expect(card.creator.steamid).not.toBe("0");
+    expect(card.avatar).toMatch(/^data:image\/png;base64,/);
+    expect(card.avatar_url).toBe(card.avatar);
+    expect(card.creator_avatar_url).toBe(card.avatar);
+    expect(card.author_avatar_url).toBe(card.avatar);
+    expect(card.owner_avatar_url).toBe(card.avatar);
+    expect(card.creator.avatar).toBe(card.avatar);
+    expect(card.creator.avatar_url).toBe(card.avatar);
+    expect(card.creator.avatar_medium).toBe(card.avatar);
+    expect(card.creator.avatar_full).toBe(card.avatar);
+    expect(card.creator.avatarFullURL).toBe(card.avatar);
+    expect(card.spoiler_tag).toBe(false);
+    expect(card.time_created).toBeTypeOf("number");
     expect(fallbackPageToNativeHub(1, fallback("steam-scrape")).hub[0].creator.name).toBe("Steam Community · Alice");
     expect(fallbackPageToNativeHub(1, { source: "none", page: 1, items: [] })).toEqual({ cached: false, hub: [] });
   });
@@ -107,54 +115,4 @@ describe("community feed decisions", () => {
     })).toBe(empty);
     expect(onFallbackError).toHaveBeenCalledOnce();
   });
-});
-
-it("shields all-synthetic batches but passes mixed batches through", async () => {
-  const original = vi.fn(async () => ["native"]);
-  await expect(shieldSyntheticCommunityCall(original, [["90909001", "90909002"]], Promise.resolve([]))).resolves.toEqual([]);
-  expect(original).not.toHaveBeenCalled();
-  await expect(shieldSyntheticCommunityCall(original, [["90909001", "123"]], Promise.resolve([]))).resolves.toEqual(["native"]);
-  expect(original).toHaveBeenCalledOnce();
-});
-
-it("selects only published-file query fetchers and tolerates hostile exports", () => {
-  class Message {}
-  class PublishedFileMessage extends Message {
-    static Init() { return new PublishedFileMessage(); }
-    published_file_ids: string[] = [];
-    detail = "message-data";
-  }
-  const module: Record<string, unknown> = {
-    Message: PublishedFileMessage,
-    newsScreenshots: function publishedFileNewsScreenshots() {
-      return { published_file_ids: [], detail: "news-event" };
-    },
-    detailsQuery: function publishedFileDetailsQuery() {
-      const protobuf = { Init: () => ({ published_file_ids: [] }) };
-      return { queryFn: () => protobuf.Init(), detail: "fetch" };
-    },
-    commentsQuery: function publishedFileCommentsQuery() {
-      const protobuf = { Init: () => ({ publishedfileids: [] }) };
-      return { queryFn: () => protobuf.Init(), comments: "fetch" };
-    },
-    reactionsQuery: function publishedFileReactionsQuery() {
-      const protobuf = { Init: () => ({ published_file_ids: [] }) };
-      return { queryFn: () => protobuf.Init(), reactions: "fetch" };
-    },
-  };
-  Object.defineProperty(module, "hostile", {
-    enumerable: true,
-    get() { throw new Error("hostile getter"); },
-  });
-  const revoked = Proxy.revocable(function publishedFileCommentsQuery() {
-    return { Init: () => undefined, queryFn: () => undefined, comments: [] };
-  }, {});
-  module.revoked = revoked.proxy;
-  revoked.revoke();
-
-  expect(communityDetailFetcherMethodNames(module)).toEqual([
-    "detailsQuery",
-    "commentsQuery",
-    "reactionsQuery",
-  ]);
 });

@@ -15,8 +15,7 @@ applying fetched IGN metadata.
 - Added fallback and atomic fetched-metadata RPCs, including pinned Steam-owned
   field preservation for manual apply and auto-fetch paths.
 - Added typed frontend contracts, native hub mapping, transport-aware page
-  parsing, source precedence, deterministic `90909` IDs, and synthetic lookup
-  shields.
+  parsing, source precedence, and deterministic `90909` IDs.
 - Updated the metadata editor to apply fetched results atomically and refresh
   its visible Steam ID from the saved response.
 - Added backend and Vitest regression coverage and regenerated the committed
@@ -26,13 +25,20 @@ applying fetched IGN metadata.
   retry triggered by the first synthetic fallback response. Shield discovery
   now logs installed, pending, and failed outcomes through the backend logger,
   including the owning webpack module ID, method names, and caught error text.
+- Review round 04 removed that shield machinery after device logs proved opening
+  a synthetic card makes no published-file detail, comment, or reaction request.
+  Its target webpack exports are also getter-only and non-configurable, so the
+  assignment-based patch could not install.
+- Ported the proven PlayHub card shape with provider avatars, realistic creator
+  identity, provider links, and the media fields used by Steam's lightbox.
 
 ## Decisions
 
 - Native Steam content always wins and is returned unchanged.
 - Scraped cards require the Steam UGC host and a valid shared-file link;
   metadata screenshots deliberately do not share that allowlist.
-- Synthetic cards contain no invented social data or Steam identity.
+- Synthetic cards use the historical neutral PlayHub creator identity and zeroed
+  social counts so Steam's native card/lightbox model remains controller-friendly.
 - Ordinary `save_metadata` replacement behavior is unchanged, so explicitly
   saving a null Steam ID still clears a pin.
 
@@ -45,13 +51,17 @@ applying fetched IGN metadata.
   pytest tests, plus TypeScript, Rollup, Python compilation, and version drift).
 - `scripts/orchestration/check-review-notes-not-deleted`: passed.
 - `git diff --check`: passed.
+- Round 04 `./run.sh npx vitest run src/communityFeed.test.ts`: 9 tests passed.
+- Round 04 `./run.sh uv run --with pytest -- pytest -q tests/test_community_fallback.py`:
+  15 tests passed.
+- Round 04 `scripts/orchestration/run-quality-gates`: passed (29 Vitest tests
+  and 244 pytest tests, plus TypeScript, Rollup, Python compilation, version
+  drift, review-note preservation, and `git diff --check`).
 
-Review round 02 added a focused Vitest regression proving that protobuf
-`Message` classes, unrelated news functions, throwing getters, and revoked
-function proxies are skipped while detail/comment/reaction query fetchers are
-selected. The orchestrator's next on-device review will confirm the newly logged
-module ID/method names and exercise a synthetic card; no launch is required or
-authorized for that re-verification.
+Review round 04 removed the obsolete shield regression tests and added focused
+coverage for provider-link selection, provider avatars, creator identity, and
+the complete native card shape. The orchestrator's next on-device review will
+exercise the card with a controller; no launch is required or authorized.
 
 The Deck was unreachable during initial inspection (`No route to host`). A later
 `scripts/decky doctor --deck` retry was run with approved out-of-sandbox network
@@ -61,10 +71,12 @@ its local quality gate passed, but deployment failed at SSH with `No route to
 host` for `10.168.168.20:22`. The
 live SteamUI paging transport, concrete minified published-file method names,
 deployment, quick-links/re-render checks, and manual fixtures could therefore
-not be observed in this round. No game launch was attempted or authorized. The
-generic installed shield logs its discovered method keys; those keys and its
-runtime behavior still require confirmation against the live client before
-promotion.
+not be observed in that round. No game launch was attempted or authorized.
+
+Backend changes are not exercised by `scripts/decky verify-change --device`,
+which hot-swaps only `dist/index.js`. Full-plugin verification requires
+`scripts/decky package-push --build --push`, installation through the Decky UI,
+and then the live smoke/manual checks.
 
 ## Unrelated finding
 

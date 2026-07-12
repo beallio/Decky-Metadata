@@ -65,6 +65,7 @@ def test_page_clamping_and_bounded_fetch_contract() -> None:
 
     items = community.fetch_steam_fallback_items(55150, 999, http_text)
     assert items[0]["image_url"].endswith("imw=512&imh=72")
+    assert items[0]["link"] == "https://steamcommunity.com/sharedfiles/filedetails/?id=111"
     assert "p=100" in calls[0][0]
     assert calls[0][1:] == (15, 4 * 1024 * 1024)
     assert community.community_url(0, 1) == ""
@@ -79,7 +80,10 @@ def test_metadata_converter_accepts_ign_cdn_but_scraper_converter_rejects_it() -
         "width": 640,
         "height": 340,
     }
-    assert community.metadata_screenshots_to_fallback_items([screenshot]) == [
+    provider_page = "https://www.ign.com/games/x-men-origins-wolverine"
+    assert community.metadata_screenshots_to_fallback_items(
+        [screenshot], source_url=provider_page
+    ) == [
         {
             "id": "ign-1",
             "title": "",
@@ -88,6 +92,7 @@ def test_metadata_converter_accepts_ign_cdn_but_scraper_converter_rejects_it() -
             "width": 640,
             "height": 340,
             "author": "",
+            "link": provider_page,
         }
     ]
     assert (
@@ -101,6 +106,14 @@ def test_metadata_converter_accepts_ign_cdn_but_scraper_converter_rejects_it() -
         )
         == []
     )
+
+
+def test_metadata_converter_falls_back_to_image_for_unsafe_source_url() -> None:
+    image = "https://assets2.ignimgs.com/shot.jpg"
+    items = community.metadata_screenshots_to_fallback_items(
+        [{"id": "ign-1", "url": image}], source_url="javascript:alert(1)"
+    )
+    assert items[0]["link"] == image
 
 
 def test_metadata_pages_do_not_repeat_and_omit_unsafe_urls() -> None:
@@ -122,6 +135,7 @@ def test_rpc_falls_back_from_scrape_to_metadata(monkeypatch, failure: bool) -> N
             "7": {
                 "steam_appid": 55150,
                 "source": "IGN",
+                "source_url": "https://www.ign.com/games/example",
                 "screenshots": [
                     {
                         "url": "https://assets1.ignimgs.com/a.jpg",
@@ -142,6 +156,7 @@ def test_rpc_falls_back_from_scrape_to_metadata(monkeypatch, failure: bool) -> N
     result = asyncio.run(plugin.get_community_fallback_page(7, 1))
     assert result["source"] == "metadata"
     assert result["items"][0]["author"] == "IGN"
+    assert result["items"][0]["link"] == "https://www.ign.com/games/example"
 
 
 def test_rpc_prioritizes_scrape_and_skips_network_without_id(monkeypatch) -> None:
@@ -150,6 +165,7 @@ def test_rpc_prioritizes_scrape_and_skips_network_without_id(monkeypatch) -> Non
         "title": "",
         "description": "",
         "image_url": "https://images.steamusercontent.com/ugc/1?imw=512",
+        "link": "https://steamcommunity.com/sharedfiles/filedetails/?id=1",
         "width": 0,
         "height": 0,
         "author": "A",

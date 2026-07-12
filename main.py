@@ -496,7 +496,7 @@ class Plugin:
                     error=error,
                 )
         items = community_provider.metadata_screenshots_to_fallback_items(
-            record.get("screenshots"), clean_page
+            record.get("screenshots"), clean_page, record.get("source_url")
         )
         source = "metadata" if items else "none"
         if items:

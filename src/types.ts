@@ -44,6 +44,7 @@ export type CommunityFallbackItem = {
   title: string;
   description: string;
   image_url: string;
+  link: string;
   width: number;
   height: number;
   author: string;

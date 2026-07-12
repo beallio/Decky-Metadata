@@ -183,6 +183,7 @@ def steam_cards_to_fallback_items(cards: Any) -> list[dict[str, Any]]:
                 "title": caption,
                 "description": caption,
                 "image_url": image_url,
+                "link": link,
                 "width": 0,
                 "height": 0,
                 "author": matching.clean_html_text(str(card.get("author") or "")),
@@ -194,11 +195,15 @@ def steam_cards_to_fallback_items(cards: Any) -> list[dict[str, Any]]:
 
 
 def metadata_screenshots_to_fallback_items(
-    screenshots: Any, page: Any = 1
+    screenshots: Any, page: Any = 1, source_url: Any = ""
 ) -> list[dict[str, Any]]:
     clean_page = clamp_page(page)
     start = (clean_page - 1) * PAGE_SIZE
     values = screenshots if isinstance(screenshots, list) else []
+    provider_url = matching.https_url(str(source_url or ""))
+    parsed_provider = urllib.parse.urlsplit(provider_url)
+    if parsed_provider.scheme.lower() != "https" or not parsed_provider.hostname:
+        provider_url = ""
     items: list[dict[str, Any]] = []
     for offset, screenshot in enumerate(values[start : start + PAGE_SIZE]):
         if not isinstance(screenshot, dict):
@@ -214,6 +219,7 @@ def metadata_screenshots_to_fallback_items(
                 "title": caption,
                 "description": caption,
                 "image_url": image_url,
+                "link": provider_url or image_url,
                 "width": max(0, int(matching.as_number(screenshot.get("width"), 0))),
                 "height": max(0, int(matching.as_number(screenshot.get("height"), 0))),
                 "author": "",

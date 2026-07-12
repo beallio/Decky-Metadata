@@ -26,6 +26,17 @@ Prefer `scripts/decky verify-change BASE --device` for change-aware routing. The
 dispatcher requires `--allow-launch` before the real launch smoke and captures a
 diagnostic bundle on behavioral failure. See [Agent Workflow](agent-workflow.md).
 
+`scripts/decky verify-change --device` deploys only the frontend bundle
+(`dist/index.js`) through `scripts/deck/deploy.sh`. It does not deploy changes to
+`main.py` or `backend/`. When either backend path changes, on-device verification
+and release require a full-plugin build and push:
+
+```bash
+scripts/decky package-push --build --push
+```
+
+Install the resulting zip through the Decky UI before running the live checks.
+
 Typical loop:
 
 ```bash

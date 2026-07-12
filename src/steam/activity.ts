@@ -1,11 +1,9 @@
-import { findModuleChild, modules as webpackModules } from "@decky/ui";
+import { findModuleChild } from "@decky/ui";
 import { frontendLog, getCommunityFallbackPage, refreshSteamActivityForApp } from "../backend";
 import {
   requestedCommunityPage,
   resolveCommunityRequest,
   rewriteCommunityFeedUrlForSteamApp,
-  shieldSyntheticCommunityCall,
-  communityDetailFetcherMethodNames,
 } from "../communityFeed";
 import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
@@ -1221,113 +1219,6 @@ export const installActivityRefreshedListener = (unpatchers: Unpatch[]) => {
 };
 
 export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
-  const maxDetailShieldAttempts = 20;
-  let detailShieldAttempts = 0;
-  let detailShieldInstalled = false;
-  let detailShieldCancelled = false;
-  let detailShieldRetryId: number | undefined;
-
-  const moduleIdFor = (target: unknown) => {
-    try {
-      for (const [id, module] of webpackModules) {
-        if (module === target) return id;
-        try {
-          if (module?.default === target) return id;
-        } catch (_error) {
-          continue;
-        }
-      }
-    } catch (_error) {
-      // Module ownership is diagnostic only; discovery can still install safely.
-    }
-    return "unknown";
-  };
-
-  const reportDetailShield = (
-    status: "installed" | "pending" | "failed",
-    trigger: string,
-    fields: Record<string, unknown> = {}
-  ) => {
-    void frontendLog(
-      "community",
-      "synthetic detail shields",
-      { status, trigger, attempt: detailShieldAttempts, ...fields },
-      status === "installed" ? "info" : "warning"
-    ).catch(() => undefined);
-  };
-
-  const ensureCommunityDetailShields = (trigger: "init" | "retry" | "fallback-render") => {
-    if (detailShieldCancelled || detailShieldInstalled) return;
-    if (trigger === "fallback-render") {
-      if (detailShieldRetryId !== undefined) window.clearTimeout(detailShieldRetryId);
-      detailShieldRetryId = undefined;
-      detailShieldAttempts = 0;
-    }
-    detailShieldAttempts += 1;
-    const scheduleRetry = () => {
-      if (
-        detailShieldCancelled ||
-        detailShieldInstalled ||
-        detailShieldRetryId !== undefined ||
-        detailShieldAttempts >= maxDetailShieldAttempts
-      ) return;
-      detailShieldRetryId = window.setTimeout(() => {
-        detailShieldRetryId = undefined;
-        ensureCommunityDetailShields("retry");
-      }, 500);
-    };
-
-    try {
-      const shieldTarget = findModuleChild((module: any) => {
-        const methods = communityDetailFetcherMethodNames(module);
-        return methods.length ? { module, methods } : undefined;
-      });
-      if (!shieldTarget) {
-        reportDetailShield("pending", trigger, { moduleId: null, methods: [] });
-        scheduleRetry();
-        return;
-      }
-
-      const installedMethods: string[] = [];
-      for (const methodName of shieldTarget.methods) {
-        try {
-          const method = shieldTarget.module[methodName];
-          if (typeof method !== "function") continue;
-          unpatchers.push(
-            patchMethod(
-              shieldTarget.module,
-              methodName,
-              (_thisValue, original, args) =>
-                shieldSyntheticCommunityCall(original, args, Promise.resolve([]))
-            )
-          );
-          installedMethods.push(methodName);
-        } catch (_error) {
-          continue;
-        }
-      }
-      detailShieldInstalled = installedMethods.length > 0;
-      reportDetailShield(detailShieldInstalled ? "installed" : "pending", trigger, {
-        moduleId: moduleIdFor(shieldTarget.module),
-        methods: installedMethods,
-      });
-      if (!detailShieldInstalled) scheduleRetry();
-    } catch (error) {
-      const errorText = error instanceof Error ? error.stack || error.message : String(error);
-      reportDetailShield("failed", trigger, { moduleId: null, methods: [], error: errorText });
-      log.warn("patch", "community detail shields skipped", error);
-      scheduleRetry();
-    }
-  };
-
-  unpatchers.push(() => {
-    detailShieldCancelled = true;
-    if (detailShieldRetryId !== undefined) {
-      window.clearTimeout(detailShieldRetryId);
-      detailShieldRetryId = undefined;
-    }
-  });
-
   try {
     const httpClient = findModuleChild((module: any) => {
       if (!module || typeof module !== "object") return undefined;
@@ -1398,7 +1289,6 @@ export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
                     (response as any).hub.some((item: any) =>
                       isDeckyCommunityId(item?.published_file_id)
                     );
-                  if (hasSyntheticItems) ensureCommunityDetailShields("fallback-render");
                   void frontendLog("community", "feed selected", {
                     appId,
                     steamAppId,
@@ -1464,5 +1354,4 @@ export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
   } catch (error) {
     log.warn("patch", "community vote patch skipped", error);
   }
-  ensureCommunityDetailShields("init");
 };
