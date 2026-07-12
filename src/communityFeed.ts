@@ -95,7 +95,10 @@ const communityCreator = (source: string, avatar: string) => ({
 export const fallbackPageToNativeHub = (appId: number, fallback: CommunityFallbackPage) => ({
   cached: fallback.source === "metadata",
   hub: fallback.items.map((item, index) => {
-    const sourceLabel = fallback.source === "steam-scrape"
+    const isVideo = Boolean(item.youtube_id);
+    const sourceLabel = isVideo
+      ? item.author || "YouTube"
+      : fallback.source === "steam-scrape"
       ? item.author ? `Steam Community · ${item.author}` : "Steam Community"
       : item.author || "Metadata";
     const providerIcon = communityProviderIcon(sourceLabel);
@@ -106,7 +109,7 @@ export const fallbackPageToNativeHub = (appId: number, fallback: CommunityFallba
       consumer_appid: appId,
       published_file_id: publishedFileId,
       publishedfileid: publishedFileId,
-      type: 5,
+      type: isVideo ? 2 : 5,
       title: item.title,
       preview_image_url: item.image_url,
       full_image_url: item.image_url,
@@ -116,6 +119,7 @@ export const fallbackPageToNativeHub = (appId: number, fallback: CommunityFallba
       link: itemLink,
       external_url: itemLink,
       strURL: itemLink,
+      ...(isVideo ? { youtube_video_id: item.youtube_id } : {}),
       avatar: providerIcon,
       avatar_url: providerIcon,
       creator_avatar_url: providerIcon,
