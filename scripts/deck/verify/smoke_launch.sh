@@ -13,29 +13,19 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
 appid="${1:?usage: smoke_launch.sh <appid>}"
 
+running_count="$(cdp eval SharedJSContext 'SteamUIStore.RunningApps.length')"
+[[ "$running_count" == "0" ]] || fail \
+  "pre-flight requires no running games (found $running_count); stop them and retry"
+
 cdp eval SharedJSContext "@$JS_DIR/tracer_rungame_install.js" >/dev/null
 nav "/library/app/$appid"
-click="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_play.js")"
+click="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_play.js" --var "APPID=$appid")"
 [[ "$click" == clicked* ]] || fail "could not press Play: $click"
 sleep 6
 dump="$(cdp eval SharedJSContext "@$JS_DIR/tracer_rungame_dump.js")"
 
-gameid="$(python3 - "$appid" "$dump" <<'PY'
-import json, sys
-appid, dump = sys.argv[1], sys.argv[2]
-d = json.loads(dump)
-if not d.get("running"):
-    sys.exit(f"FAIL: nothing running after Play press (RunGame calls: {d.get('runGameCalls')})")
-for call in d.get("runGameCalls", []):
-    gid = call[0]
-    if gid == appid or int(gid) <= 0xFFFFFFFF:
-        sys.exit(f"FAIL: RunGame received a bare appid gameid: {gid} (launch-regression signature)")
-print(d["running"][0].get("gameid") or "")
-PY
-)" || exit 1
+gameid="$(printf '%s' "$dump" | python3 "$(dirname -- "${BASH_SOURCE[0]}")/check_launch.py" "$appid")"
 
-if [[ -n "$gameid" ]]; then
-  cdp eval SharedJSContext "@$JS_DIR/terminate.js" --var "GAMEID=$gameid" >/dev/null
-  echo "terminated $gameid"
-fi
+cdp eval SharedJSContext "@$JS_DIR/terminate.js" --var "GAMEID=$gameid" >/dev/null
+echo "terminated $gameid"
 pass "launch smoke for appid $appid (game started with a 64-bit gameid)"

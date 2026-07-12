@@ -1,6 +1,7 @@
 import { findModuleChild } from "@decky/ui";
 import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
 import { decideBIsModOrShortcut } from "./spoofDecision";
+import { withInCallTruth } from "./inCallTruth";
 import { MetadataData } from "../types";
 import * as log from "../log";
 import {
@@ -493,10 +494,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
     if (!overviewProto?.[methodName]) return;
     unpatchers.push(
       patchMethod(overviewProto, methodName, (_thisValue, original, args) => {
-        metadataState.bypassCounter = -1;
-        const ret = original(...args);
-        metadataState.bypassCounter = 0;
-        return ret;
+        return withInCallTruth(metadataState, () => original(...args));
       })
     );
   });

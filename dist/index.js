@@ -188,6 +188,17 @@ const decideBIsModOrShortcut = (input) => {
     };
 };
 
+const withInCallTruth = (state, run) => {
+    const previous = state.bypassCounter;
+    state.bypassCounter = -1;
+    try {
+        return run();
+    }
+    finally {
+        state.bypassCounter = previous;
+    }
+};
+
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -1098,10 +1109,7 @@ const installMetadataPatches = (unpatchers) => {
         if (!overviewProto?.[methodName])
             return;
         unpatchers.push(patchMethod(overviewProto, methodName, (_thisValue, original, args) => {
-            metadataState.bypassCounter = -1;
-            const ret = original(...args);
-            metadataState.bypassCounter = 0;
-            return ret;
+            return withInCallTruth(metadataState, () => original(...args));
         }));
     });
     if (overviewProto?.GetCanonicalReleaseDate) {
@@ -3670,7 +3678,18 @@ const isNeverOnSteam = (appId) => {
 const NullQuickLinks = () => null;
 const quickLinksWrapperCache = new Map();
 const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
-    const sectionClass = DFL.findModuleChild((module) => {
+    const maxAttempts = 5;
+    let attempts = 0;
+    let cancelled = false;
+    let retryId;
+    let suppressionUnpatch;
+    const clearRetry = () => {
+        if (retryId !== undefined) {
+            window.clearTimeout(retryId);
+            retryId = undefined;
+        }
+    };
+    const findSectionClass = () => DFL.findModuleChild((module) => {
         if (typeof module !== "object")
             return undefined;
         for (const prop in module) {
@@ -3689,46 +3708,70 @@ const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
         }
         return undefined;
     });
-    if (!sectionClass?.prototype?.render)
-        return;
-    unpatchers.push(safeAfterPatch(sectionClass.prototype, "render", function (_args, ret) {
-        try {
-            if (this?.props?.name !== "info")
-                return ret;
-            const boundaries = [];
-            findChildElements(ret, isInfoSectionBoundary, boundaries);
-            for (const element of boundaries) {
-                if (!isNeverOnSteam(Number(element.props?.overview?.appid)))
-                    continue;
-                const original = element.type;
-                let wrapper = quickLinksWrapperCache.get(original);
-                if (!wrapper) {
-                    wrapper = (props) => {
-                        const rendered = original(props);
-                        try {
-                            if (isNeverOnSteam(Number(props?.overview?.appid))) {
-                                const linkRows = [];
-                                findChildElements(rendered, isQuickLinksElement, linkRows);
-                                for (const row of linkRows)
-                                    row.type = NullQuickLinks;
-                            }
-                        }
-                        catch (_error) {
-                            // Leave the native output untouched on shape changes.
-                        }
-                        return rendered;
-                    };
-                    wrapper.__dmQuickLinksWrapper = true;
-                    quickLinksWrapperCache.set(original, wrapper);
-                }
-                element.type = wrapper;
+    const warnFingerprintMiss = () => {
+        const fields = { attempt: attempts, maxAttempts };
+        warn("patch", "never-on-Steam quick-links section target not found", fields);
+        void frontendLog("patch", "never-on-Steam quick-links section target not found", fields, "warning").catch(() => undefined);
+    };
+    const tryInstall = () => {
+        retryId = undefined;
+        if (cancelled || suppressionUnpatch)
+            return;
+        attempts += 1;
+        const sectionClass = findSectionClass();
+        if (!sectionClass?.prototype?.render) {
+            warnFingerprintMiss();
+            if (attempts < maxAttempts) {
+                retryId = window.setTimeout(tryInstall, 500);
             }
+            return;
         }
-        catch (_error) {
-            // Steam's native render tree must remain usable if its shape changes.
-        }
-        return ret;
-    }).unpatch);
+        suppressionUnpatch = safeAfterPatch(sectionClass.prototype, "render", function (_args, ret) {
+            try {
+                if (this?.props?.name !== "info")
+                    return ret;
+                const boundaries = [];
+                findChildElements(ret, isInfoSectionBoundary, boundaries);
+                for (const element of boundaries) {
+                    if (!isNeverOnSteam(Number(element.props?.overview?.appid)))
+                        continue;
+                    const original = element.type;
+                    let wrapper = quickLinksWrapperCache.get(original);
+                    if (!wrapper) {
+                        wrapper = (props) => {
+                            const rendered = original(props);
+                            try {
+                                if (isNeverOnSteam(Number(props?.overview?.appid))) {
+                                    const linkRows = [];
+                                    findChildElements(rendered, isQuickLinksElement, linkRows);
+                                    for (const row of linkRows)
+                                        row.type = NullQuickLinks;
+                                }
+                            }
+                            catch (_error) {
+                                // Leave the native output untouched on shape changes.
+                            }
+                            return rendered;
+                        };
+                        wrapper.__dmQuickLinksWrapper = true;
+                        quickLinksWrapperCache.set(original, wrapper);
+                    }
+                    element.type = wrapper;
+                }
+            }
+            catch (_error) {
+                // Steam's native render tree must remain usable if its shape changes.
+            }
+            return ret;
+        }).unpatch;
+    };
+    unpatchers.push(() => {
+        cancelled = true;
+        clearRetry();
+        suppressionUnpatch?.();
+        suppressionUnpatch = undefined;
+    });
+    tryInstall();
 };
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
