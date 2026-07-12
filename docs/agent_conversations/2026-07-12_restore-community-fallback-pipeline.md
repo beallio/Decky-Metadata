@@ -44,6 +44,9 @@ applying fetched IGN metadata.
 The Deck was unreachable during initial inspection (`No route to host`). A later
 `scripts/decky doctor --deck` retry was run with approved out-of-sandbox network
 access and still reported `deck-reachability: Optional Deck is offline`. The
+committed branch was then passed to `scripts/decky verify-change dev --device`;
+its local quality gate passed, but deployment failed at SSH with `No route to
+host` for `10.168.168.20:22`. The
 live SteamUI paging transport, concrete minified published-file method names,
 deployment, quick-links/re-render checks, and manual fixtures could therefore
 not be observed in this round. No game launch was attempted or authorized. The
