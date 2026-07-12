@@ -18,6 +18,7 @@ export type MetadataData = {
   genres?: string[];
   features?: string[];
   screenshots?: MetadataScreenshot[];
+  community_videos?: MetadataVideo[];
   steam_appid?: number | null;
   steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: number | null;
@@ -37,6 +38,14 @@ export type MetadataScreenshot = {
   link?: string;
 };
 
+export type MetadataVideo = {
+  id: string;
+  title?: string;
+  url?: string;
+  thumbnail?: string;
+  source?: string;
+};
+
 export type CommunityFallbackSource = "steam-scrape" | "metadata" | "none";
 
 export type CommunityFallbackItem = {
@@ -48,6 +57,7 @@ export type CommunityFallbackItem = {
   width: number;
   height: number;
   author: string;
+  youtube_id: string;
 };
 
 export type CommunityFallbackPage = {

@@ -12,8 +12,10 @@ applications bypass this pipeline.
 3. When a known Steam app has no native items, the backend requests its
    anonymous English Steam Community `homecontent` page and retains safe visual
    cards only.
-4. When scraping is empty or unavailable, stored sanitized metadata screenshots
-   are returned in stable 20-item pages.
+4. Stored YouTube videos are additive fallback media. On page 1 they precede a
+   bounded set of scraped cards when scraping succeeds; when scraping is empty
+   or unavailable, stored videos and sanitized metadata screenshots share stable
+   20-item pages with videos first.
 5. When every source is empty, the original native empty response is preserved.
 
 The scraper accepts only `https://images.steamusercontent.com/ugc/` images and
@@ -30,22 +32,34 @@ allowed, including IGN's `assets*.ignimgs.com`, and stored dimensions are kept.
 ```
 
 Each item contains `id`, `title`, `description`, `image_url`, `width`, `height`,
-`author`, and `link`. For metadata items `link` is the record `source_url` (e.g.
-the IGN page) when it is a valid `https://` URL, otherwise the image URL; for
-scraped items it is the validated Steam shared-file link. Pages are clamped to 1
-through 100. Scraper errors are recoverable and fall through to stored
-screenshots; the RPC does not write metadata or start enrichment.
+`author`, `link`, and `youtube_id`. Image items use an empty `youtube_id`. Video
+items use the validated 11-character YouTube ID, the stored thumbnail as
+`image_url`, and the canonical watch URL as `link`. For screenshot items `link`
+is the record `source_url` (e.g. the IGN page) when it is a valid `https://` URL,
+otherwise the image URL; for scraped items it is the validated Steam shared-file
+link. Pages are clamped to 1 through 100. Scraper errors are recoverable and fall
+through to stored media; the RPC does not write metadata or start enrichment.
 
 `apply_fetched_metadata(app_id, slug_or_url)` fetches descriptive metadata and
-saves it atomically. If the existing record has a positive `steam_appid`, its
+saves it atomically. During that fetch/enrichment path, the backend searches
+YouTube for `<clean title> game trailer gameplay`, deduplicates and caps parsed
+video IDs at 10, and stores sanitized results as `community_videos`. The request
+uses a 15-second timeout and a 4 MiB bounded read. YouTube errors and parse misses
+produce an empty video list without failing metadata fetch or save; no YouTube
+request occurs while rendering the Community tab. If the existing record has a
+positive `steam_appid`, its
 Steam ID, store URL/state, Deck compatibility, Steam news, and news timestamp
 survive the fetched result. The existing Steam ID control remains the explicit
 way to clear a pin.
 
 ## Native synthetic cards
 
-Fallback items become native image cards (`type: 5`) with deterministic numeric
-IDs beginning `90909`. Each card carries the observed image, description, a
+Fallback screenshots become native image cards (`type: 5`) with deterministic
+numeric IDs beginning `90909`. Stored videos become native video cards (`type:
+2`) with `youtube_video_id`, their YouTube thumbnail, and the canonical watch URL
+in `url`, `link`, `external_url`, and `strURL`, so activation plays or opens the
+video instead of the image lightbox. Each card carries the observed image,
+description, a
 provider-icon avatar (IGN/Steam/YouTube/RAWG) on every avatar field, a creator
 with a plausible `steamid`, and `url`/`link`/`external_url`/`strURL` pointing at
 the item link (the provider page, or the image when no link exists). Comments,
@@ -63,8 +77,8 @@ detail, comment, or reaction request — it opens Steam's native image lightbox,
 which reads only the card fields already provided. No detail/comment/reaction
 shield is therefore installed. The community **vote** patch and
 `isDeckyCommunityId` recognition remain in place. The pipeline never guesses a
-Steam app ID and never fabricates users, engagement, reactions, videos, or
-persisted community enrichment.
+Steam app ID and never fabricates users, engagement, or reactions. YouTube video
+discovery is best-effort persisted enrichment and is never performed on render.
 
 ## Known limitation — native lightbox close on a controller
 
