@@ -57,3 +57,30 @@ orchestrator/human before `dev` to `main` promotion:
 - Forced quick-links fingerprint miss warning plus normal-boot install check.
 - Matched-game launch during the shield window and `in-call-truth` reason log
   spot-check.
+
+## On-device validation (run 2026-07-11, orchestrator)
+
+Deployed to the Deck (`deploy.sh`) and ran the suite. Fixtures:
+listed=`2312439508`, delisted=`3497159354`, never-on-Steam=`3462906031`.
+
+- `smoke_quicklinks.sh` — PASS (B1 install both directions; metadata intact).
+- `smoke_rerender.sh` — PASS (0 cache writes across subsection round-trips).
+- `smoke_launch.sh 2312439508` — PASS. Game launched inside the shield window
+  with a real 64-bit gameid (`9931852060871884800`), not the bare appid
+  (validates A1/A2/A3 and B2).
+- B1 forced fingerprint miss (broke the deployed bundle's `.includes(...)`
+  literal): emitted `WARNING [decky:patch] never-on-Steam quick-links section
+  target not found` for exactly 5 bounded attempts ~514 ms apart, then stopped.
+  Correct bundle restored; `smoke_quicklinks.sh` re-passed.
+- `logs.sh reasons` — `in-call-truth` (1788) and `truth-window` (109) present;
+  in-call-truth precedence healthy (B2).
+
+### Defect found and fixed on-device
+
+`smoke_launch.sh` pre-flight read `SteamUIStore.RunningApps.length` (a raw
+number), but `cdp eval` only prints the bare value for `type == "string"`
+results and otherwise prints the full RemoteObject JSON — so the `== "0"`
+compare never matched and the pre-flight always failed. Fixed by wrapping the
+expression in `String(...)`, matching the JSON-string idiom every other probe
+uses. This was a test-harness-only bug (the plugin is not involved in the
+pre-flight); the automated gates could not have caught it.

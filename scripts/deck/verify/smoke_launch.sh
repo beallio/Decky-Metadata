@@ -13,7 +13,7 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
 appid="${1:?usage: smoke_launch.sh <appid>}"
 
-running_count="$(cdp eval SharedJSContext 'SteamUIStore.RunningApps.length')"
+running_count="$(cdp eval SharedJSContext 'String(SteamUIStore.RunningApps.length)')"
 [[ "$running_count" == "0" ]] || fail \
   "pre-flight requires no running games (found $running_count); stop them and retry"
 
