@@ -39,10 +39,9 @@ if [[ -f package.json ]]; then
   npx tsc --noEmit
   npm run build
 
-  # Frontend unit tests (pure helpers: spoof decision ordering, tree walker).
-  if [[ -x node_modules/.bin/vitest ]]; then
-    npx vitest run
-  fi
+  # Frontend unit tests. package.json declares vitest, so a stale or incomplete
+  # node_modules must fail the gate instead of silently skipping this step.
+  npm test
 fi
 
 # --- backend: Python syntax check -------------------------------------------
