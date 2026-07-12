@@ -1544,6 +1544,43 @@ const allSyntheticCommunityIds = (value) => {
     const ids = Array.isArray(value) ? value : [];
     return ids.length > 0 && ids.every((id) => String(id).startsWith("90909"));
 };
+const communityDetailFetcherMethodNames = (module) => {
+    if (!module || (typeof module !== "object" && typeof module !== "function"))
+        return [];
+    let keys;
+    try {
+        keys = Object.keys(module);
+    }
+    catch (_error) {
+        return [];
+    }
+    const methods = [];
+    for (const key of keys) {
+        let candidate;
+        try {
+            candidate = module[key];
+        }
+        catch (_error) {
+            continue;
+        }
+        if (typeof candidate !== "function")
+            continue;
+        let source;
+        try {
+            source = Function.prototype.toString.call(candidate);
+        }
+        catch (_error) {
+            continue;
+        }
+        if (/\bInit\s*\(/.test(source) &&
+            /published[_-]?file|publishedfile/i.test(source) &&
+            /queryFn/.test(source) &&
+            /detail|comment|reaction/i.test(source)) {
+            methods.push(key);
+        }
+    }
+    return methods;
+};
 const shieldSyntheticCommunityCall = (original, args, emptyResult) => {
     const ids = args.find(Array.isArray);
     return allSyntheticCommunityIds(ids) ? emptyResult : original(...args);
@@ -2767,6 +2804,99 @@ const installActivityRefreshedListener = (unpatchers) => {
     unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
 };
 const installCommunityFeedPatch = (unpatchers) => {
+    const maxDetailShieldAttempts = 20;
+    let detailShieldAttempts = 0;
+    let detailShieldInstalled = false;
+    let detailShieldCancelled = false;
+    let detailShieldRetryId;
+    const moduleIdFor = (target) => {
+        try {
+            for (const [id, module] of DFL.modules) {
+                if (module === target)
+                    return id;
+                try {
+                    if (module?.default === target)
+                        return id;
+                }
+                catch (_error) {
+                    continue;
+                }
+            }
+        }
+        catch (_error) {
+            // Module ownership is diagnostic only; discovery can still install safely.
+        }
+        return "unknown";
+    };
+    const reportDetailShield = (status, trigger, fields = {}) => {
+        void frontendLog("community", "synthetic detail shields", { status, trigger, attempt: detailShieldAttempts, ...fields }, status === "installed" ? "info" : "warning").catch(() => undefined);
+    };
+    const ensureCommunityDetailShields = (trigger) => {
+        if (detailShieldCancelled || detailShieldInstalled)
+            return;
+        if (trigger === "fallback-render") {
+            if (detailShieldRetryId !== undefined)
+                window.clearTimeout(detailShieldRetryId);
+            detailShieldRetryId = undefined;
+            detailShieldAttempts = 0;
+        }
+        detailShieldAttempts += 1;
+        const scheduleRetry = () => {
+            if (detailShieldCancelled ||
+                detailShieldInstalled ||
+                detailShieldRetryId !== undefined ||
+                detailShieldAttempts >= maxDetailShieldAttempts)
+                return;
+            detailShieldRetryId = window.setTimeout(() => {
+                detailShieldRetryId = undefined;
+                ensureCommunityDetailShields("retry");
+            }, 500);
+        };
+        try {
+            const shieldTarget = DFL.findModuleChild((module) => {
+                const methods = communityDetailFetcherMethodNames(module);
+                return methods.length ? { module, methods } : undefined;
+            });
+            if (!shieldTarget) {
+                reportDetailShield("pending", trigger, { moduleId: null, methods: [] });
+                scheduleRetry();
+                return;
+            }
+            const installedMethods = [];
+            for (const methodName of shieldTarget.methods) {
+                try {
+                    const method = shieldTarget.module[methodName];
+                    if (typeof method !== "function")
+                        continue;
+                    unpatchers.push(patchMethod(shieldTarget.module, methodName, (_thisValue, original, args) => shieldSyntheticCommunityCall(original, args, Promise.resolve([]))));
+                    installedMethods.push(methodName);
+                }
+                catch (_error) {
+                    continue;
+                }
+            }
+            detailShieldInstalled = installedMethods.length > 0;
+            reportDetailShield(detailShieldInstalled ? "installed" : "pending", trigger, {
+                moduleId: moduleIdFor(shieldTarget.module),
+                methods: installedMethods,
+            });
+            if (!detailShieldInstalled)
+                scheduleRetry();
+        }
+        catch (error) {
+            const errorText = error instanceof Error ? error.stack || error.message : String(error);
+            reportDetailShield("failed", trigger, { moduleId: null, methods: [], error: errorText });
+            warn("patch", "community detail shields skipped", error);
+            scheduleRetry();
+        }
+    };
+    unpatchers.push(() => {
+        detailShieldCancelled = true;
+        if (detailShieldRetryId !== undefined) {
+            window.clearTimeout(detailShieldRetryId);
+            detailShieldRetryId = undefined;
+        }
+    });
     try {
         const httpClient = DFL.findModuleChild((module) => {
             if (!module || typeof module !== "object")
@@ -2832,12 +2962,15 @@ const installCommunityFeedPatch = (unpatchers) => {
                                     }).catch(() => undefined);
                                 },
                             });
+                            const hasSyntheticItems = Array.isArray(response?.hub) &&
+                                response.hub.some((item) => isDeckyCommunityId(item?.published_file_id));
+                            if (hasSyntheticItems)
+                                ensureCommunityDetailShields("fallback-render");
                             void frontendLog("community", "feed selected", {
                                 appId,
                                 steamAppId,
                                 page,
-                                source: Array.isArray(response?.hub) &&
-                                    response.hub.some((item) => isDeckyCommunityId(item?.published_file_id))
+                                source: hasSyntheticItems
                                     ? response?.cached
                                         ? "metadata"
                                         : "steam-scrape"
@@ -2888,28 +3021,7 @@ const installCommunityFeedPatch = (unpatchers) => {
     catch (error) {
         warn("patch", "community vote patch skipped", error);
     }
-    try {
-        const shieldTarget = DFL.findModuleChild((module) => {
-            if (!module || typeof module !== "object")
-                return undefined;
-            const methods = Object.keys(module).filter((key) => {
-                if (typeof module[key] !== "function")
-                    return false;
-                const source = Function.prototype.toString.call(module[key]);
-                return /published.?file/i.test(source) && /detail|comment|reaction/i.test(source);
-            });
-            return methods.length ? { module, methods } : undefined;
-        });
-        for (const methodName of shieldTarget?.methods || []) {
-            unpatchers.push(patchMethod(shieldTarget.module, methodName, (_thisValue, original, args) => shieldSyntheticCommunityCall(original, args, Promise.resolve([]))));
-        }
-        void frontendLog("community", "synthetic detail shields", {
-            methods: shieldTarget?.methods || [],
-        }).catch(() => undefined);
-    }
-    catch (error) {
-        warn("patch", "community detail shields skipped", error);
-    }
+    ensureCommunityDetailShields("init");
 };
 
 const firstUrlishArgIndex = (args, firstOnly = false) => {

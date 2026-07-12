@@ -150,6 +150,41 @@ export const allSyntheticCommunityIds = (value: unknown): boolean => {
   return ids.length > 0 && ids.every((id) => String(id).startsWith("90909"));
 };
 
+export const communityDetailFetcherMethodNames = (module: unknown): string[] => {
+  if (!module || (typeof module !== "object" && typeof module !== "function")) return [];
+  let keys: string[];
+  try {
+    keys = Object.keys(module);
+  } catch (_error) {
+    return [];
+  }
+  const methods: string[] = [];
+  for (const key of keys) {
+    let candidate: unknown;
+    try {
+      candidate = (module as Record<string, unknown>)[key];
+    } catch (_error) {
+      continue;
+    }
+    if (typeof candidate !== "function") continue;
+    let source: string;
+    try {
+      source = Function.prototype.toString.call(candidate);
+    } catch (_error) {
+      continue;
+    }
+    if (
+      /\bInit\s*\(/.test(source) &&
+      /published[_-]?file|publishedfile/i.test(source) &&
+      /queryFn/.test(source) &&
+      /detail|comment|reaction/i.test(source)
+    ) {
+      methods.push(key);
+    }
+  }
+  return methods;
+};
+
 export const shieldSyntheticCommunityCall = <T>(
   original: (...args: unknown[]) => T,
   args: unknown[],

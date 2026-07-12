@@ -21,6 +21,11 @@ applying fetched IGN metadata.
   its visible Steam ID from the saved response.
 - Added backend and Vitest regression coverage and regenerated the committed
   Rollup bundle.
+- Review round 02 replaced the broad, one-shot published-file discovery with a
+  non-throwing query-fetcher fingerprint, bounded retry installation, and a
+  retry triggered by the first synthetic fallback response. Shield discovery
+  now logs installed, pending, and failed outcomes through the backend logger,
+  including the owning webpack module ID, method names, and caught error text.
 
 ## Decisions
 
@@ -35,11 +40,18 @@ applying fetched IGN metadata.
 
 - `./run.sh uv run --with pytest -- pytest -q tests/test_community_fallback.py tests/test_steam_appid_override.py`: passed.
 - `./run.sh npx tsc --noEmit`: passed.
-- `./run.sh npx vitest run`: 30 tests passed.
-- `scripts/orchestration/run-quality-gates`: passed (30 Vitest tests and 243
+- `./run.sh npx vitest run`: 31 tests passed.
+- `scripts/orchestration/run-quality-gates`: passed (31 Vitest tests and 243
   pytest tests, plus TypeScript, Rollup, Python compilation, and version drift).
 - `scripts/orchestration/check-review-notes-not-deleted`: passed.
 - `git diff --check`: passed.
+
+Review round 02 added a focused Vitest regression proving that protobuf
+`Message` classes, unrelated news functions, throwing getters, and revoked
+function proxies are skipped while detail/comment/reaction query fetchers are
+selected. The orchestrator's next on-device review will confirm the newly logged
+module ID/method names and exercise a synthetic card; no launch is required or
+authorized for that re-verification.
 
 The Deck was unreachable during initial inspection (`No route to host`). A later
 `scripts/decky doctor --deck` retry was run with approved out-of-sandbox network

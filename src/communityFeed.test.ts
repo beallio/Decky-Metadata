@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   fallbackPageToNativeHub,
+  communityDetailFetcherMethodNames,
   nativeHubHasContent,
   requestedCommunityPage,
   resolveCommunityFeed,
@@ -114,4 +115,46 @@ it("shields all-synthetic batches but passes mixed batches through", async () =>
   expect(original).not.toHaveBeenCalled();
   await expect(shieldSyntheticCommunityCall(original, [["90909001", "123"]], Promise.resolve([]))).resolves.toEqual(["native"]);
   expect(original).toHaveBeenCalledOnce();
+});
+
+it("selects only published-file query fetchers and tolerates hostile exports", () => {
+  class Message {}
+  class PublishedFileMessage extends Message {
+    static Init() { return new PublishedFileMessage(); }
+    published_file_ids: string[] = [];
+    detail = "message-data";
+  }
+  const module: Record<string, unknown> = {
+    Message: PublishedFileMessage,
+    newsScreenshots: function publishedFileNewsScreenshots() {
+      return { published_file_ids: [], detail: "news-event" };
+    },
+    detailsQuery: function publishedFileDetailsQuery() {
+      const protobuf = { Init: () => ({ published_file_ids: [] }) };
+      return { queryFn: () => protobuf.Init(), detail: "fetch" };
+    },
+    commentsQuery: function publishedFileCommentsQuery() {
+      const protobuf = { Init: () => ({ publishedfileids: [] }) };
+      return { queryFn: () => protobuf.Init(), comments: "fetch" };
+    },
+    reactionsQuery: function publishedFileReactionsQuery() {
+      const protobuf = { Init: () => ({ published_file_ids: [] }) };
+      return { queryFn: () => protobuf.Init(), reactions: "fetch" };
+    },
+  };
+  Object.defineProperty(module, "hostile", {
+    enumerable: true,
+    get() { throw new Error("hostile getter"); },
+  });
+  const revoked = Proxy.revocable(function publishedFileCommentsQuery() {
+    return { Init: () => undefined, queryFn: () => undefined, comments: [] };
+  }, {});
+  module.revoked = revoked.proxy;
+  revoked.revoke();
+
+  expect(communityDetailFetcherMethodNames(module)).toEqual([
+    "detailsQuery",
+    "commentsQuery",
+    "reactionsQuery",
+  ]);
 });
