@@ -11,7 +11,7 @@ import {
 } from "@decky/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  fetchMetadata,
+  applyFetchedMetadata,
   getMetadata,
   removeMetadata,
   saveMetadata,
@@ -170,12 +170,12 @@ export const MetadataPage = () => {
   const applyResult = async (result: MetadataSearchResult) => {
     setBusy(true);
     try {
-      const fetched = await fetchMetadata(result.slug || result.url);
-      if (!fetched) return;
-      const saved = await saveMetadata(appId, fetched);
+      const saved = await applyFetchedMetadata(appId, result.slug || result.url);
+      if (!saved) return;
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
       setFormMetadata(saved);
+      setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
       toastError("Fetch failed", String(error));

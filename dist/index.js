@@ -95,6 +95,8 @@ const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
 const searchMetadata = callable("search_metadata");
 const fetchMetadata = callable("fetch_metadata");
+const applyFetchedMetadata = callable("apply_fetched_metadata");
+const getCommunityFallbackPage = callable("get_community_fallback_page");
 const autoFetchMetadata = callable("auto_fetch_metadata");
 const enrichSteamApp = callable("enrich_steam_app");
 const startScanMissing = callable("start_scan_missing");
@@ -110,6 +112,7 @@ const setDebugLogging = callable("set_debug_logging");
 
 var backend = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    applyFetchedMetadata: applyFetchedMetadata,
     autoFetchMetadata: autoFetchMetadata,
     clearMetadataCache: clearMetadataCache,
     enrichSteamApp: enrichSteamApp,
@@ -117,6 +120,7 @@ var backend = /*#__PURE__*/Object.freeze({
     frontendLog: frontendLog,
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
+    getCommunityFallbackPage: getCommunityFallbackPage,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
@@ -1412,11 +1416,137 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
 
 const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
     const cleanSteamAppId = Number(steamAppId || 0);
-    if (!cleanSteamAppId)
+    if (cleanSteamAppId <= 0)
         return null;
     if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
         return null;
     return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
+};
+const pageFromValue = (value) => {
+    if (value == null || String(value).trim() === "")
+        return null;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed))
+        return null;
+    return Math.max(1, Math.min(Math.trunc(parsed), 100));
+};
+const pageFromTransportValue = (value, depth = 0) => {
+    if (depth > 3 || value == null)
+        return null;
+    if (value instanceof URLSearchParams) {
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(value.get(key));
+            if (page)
+                return page;
+        }
+        return null;
+    }
+    if (typeof value === "string") {
+        const query = value.includes("?") ? value.slice(value.indexOf("?") + 1) : value;
+        const params = new URLSearchParams(query);
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(params.get(key));
+            if (page)
+                return page;
+        }
+        const cursorPage = value.match(/(?:^|[^a-z])page[_:=/-]?(\d+)/i)?.[1];
+        return pageFromValue(cursorPage);
+    }
+    if (typeof value === "object") {
+        const record = value;
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(record[key]);
+            if (page)
+                return page;
+        }
+        for (const key of ["body", "data", "params", "cursor"]) {
+            const page = pageFromTransportValue(record[key], depth + 1);
+            if (page)
+                return page;
+        }
+    }
+    return null;
+};
+const requestedCommunityPage = (url, transportArgs = []) => {
+    for (const value of transportArgs) {
+        const page = pageFromTransportValue(value);
+        if (page)
+            return page;
+    }
+    return pageFromTransportValue(url) || 1;
+};
+const nativeHubHasContent = (response) => Boolean(response && typeof response === "object" && Array.isArray(response.hub) && response.hub.length);
+const syntheticCommunityId = (appId, page, index) => {
+    const cleanAppId = String(Math.max(0, Math.trunc(Number(appId) || 0))).padStart(10, "0").slice(-10);
+    const cleanPage = String(Math.max(1, Math.min(Math.trunc(Number(page) || 1), 100))).padStart(3, "0");
+    const cleanIndex = String(Math.max(0, Math.trunc(Number(index) || 0))).padStart(2, "0").slice(-2);
+    return `90909${cleanAppId}${cleanPage}${cleanIndex}`;
+};
+const fallbackPageToNativeHub = (appId, fallback) => ({
+    cached: fallback.source === "metadata",
+    hub: fallback.items.map((item, index) => {
+        const sourceLabel = fallback.source === "steam-scrape"
+            ? item.author ? `Steam Community · ${item.author}` : "Steam Community"
+            : item.author || "Metadata";
+        return {
+            published_file_id: syntheticCommunityId(appId, fallback.page, index),
+            type: 5,
+            title: item.title,
+            preview_image_url: item.image_url,
+            full_image_url: item.image_url,
+            image_width: item.width,
+            image_height: item.height,
+            comment_count: 0,
+            votes_for: 0,
+            content_descriptorids: [],
+            spoiler_tag: null,
+            description: item.description,
+            rating_stars: 0,
+            maybe_inappropriate_sex: 0,
+            maybe_inappropriate_violence: 0,
+            youtube_video_id: null,
+            creator: { name: sourceLabel, steamid: "0", avatar: "", online_state: 0 },
+            reactions: [],
+        };
+    }),
+});
+const resolveCommunityFeed = async ({ appId, page, originalArgs, rewrittenArgs, nativeRequest, fallbackRequest, onFallbackError, }) => {
+    const nativeArgs = rewrittenArgs || originalArgs;
+    let native;
+    let nativeError;
+    try {
+        native = await nativeRequest(nativeArgs);
+        if (nativeHubHasContent(native))
+            return native;
+    }
+    catch (error) {
+        nativeError = error;
+    }
+    try {
+        const fallback = await fallbackRequest(appId, page);
+        if (fallback.items.length)
+            return fallbackPageToNativeHub(appId, fallback);
+    }
+    catch (error) {
+        onFallbackError?.(error);
+        // Native preservation rules below intentionally handle fallback failures.
+    }
+    if (!nativeError)
+        return native;
+    if (rewrittenArgs)
+        return nativeRequest(originalArgs);
+    throw nativeError;
+};
+const resolveCommunityRequest = (options) => options.isNonSteam
+    ? resolveCommunityFeed(options)
+    : options.nativeRequest(options.originalArgs);
+const allSyntheticCommunityIds = (value) => {
+    const ids = Array.isArray(value) ? value : [];
+    return ids.length > 0 && ids.every((id) => String(id).startsWith("90909"));
+};
+const shieldSyntheticCommunityCall = (original, args, emptyResult) => {
+    const ids = args.find(Array.isArray);
+    return allSyntheticCommunityIds(ids) ? emptyResult : original(...args);
 };
 
 const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -2670,33 +2800,57 @@ const installCommunityFeedPatch = (unpatchers) => {
                     const overview = getOverview(appId);
                     // Only touch non-Steam shortcuts; real Steam games keep their native feed.
                     if (isNonSteamApp(overview)) {
-                        return ensureMetadataCacheFn()
-                            .then(() => {
-                            const steamAppId = metadataCache[String(appId)]?.steam_appid;
-                            if (!steamAppId)
-                                return original(...args);
-                            // Rewrite the feed request to the matched Steam appid and pass it
-                            // straight through to the native client: identical shape, real
-                            // screenshots/guides/videos/artwork, and native pagination for free.
-                            const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
-                            if (!steamUrl)
-                                return original(...args);
-                            const steamArgs = [steamUrl, ...args.slice(1)];
-                            return Promise.resolve(original(...steamArgs)).then((native) => {
-                                void frontendLog("community", "feed passthrough", {
+                        return (async () => {
+                            try {
+                                await ensureMetadataCacheFn();
+                            }
+                            catch (err) {
+                                void frontendLog("community", "metadata cache unavailable", {
                                     appId,
-                                    steamAppId,
-                                    hubLen: Array.isArray(native?.hub) ? native.hub.length : null,
+                                    err: String(err),
                                 }).catch(() => undefined);
-                                return native;
+                                return original(...args);
+                            }
+                            const steamAppId = Number(metadataCache[String(appId)]?.steam_appid) || 0;
+                            const steamUrl = rewriteCommunityFeedUrlForSteamApp(url, steamAppId);
+                            const steamArgs = steamUrl ? [steamUrl, ...args.slice(1)] : null;
+                            const page = requestedCommunityPage(url, args.slice(1));
+                            const response = await resolveCommunityRequest({
+                                isNonSteam: true,
+                                appId,
+                                page,
+                                originalArgs: args,
+                                rewrittenArgs: steamArgs,
+                                nativeRequest: (requestArgs) => Promise.resolve(original(...requestArgs)),
+                                fallbackRequest: getCommunityFallbackPage,
+                                onFallbackError: (err) => {
+                                    void frontendLog("community", "fallback RPC unavailable", {
+                                        appId,
+                                        steamAppId,
+                                        page,
+                                        err: String(err),
+                                    }).catch(() => undefined);
+                                },
                             });
-                        })
-                            .catch((err) => {
-                            void frontendLog("community", "feed passthrough error", {
+                            void frontendLog("community", "feed selected", {
+                                appId,
+                                steamAppId,
+                                page,
+                                source: Array.isArray(response?.hub) &&
+                                    response.hub.some((item) => isDeckyCommunityId(item?.published_file_id))
+                                    ? response?.cached
+                                        ? "metadata"
+                                        : "steam-scrape"
+                                    : "native",
+                                hubLen: Array.isArray(response?.hub) ? response.hub.length : null,
+                            }).catch(() => undefined);
+                            return response;
+                        })().catch((err) => {
+                            void frontendLog("community", "feed fallback error", {
                                 appId,
                                 err: String(err),
                             }).catch(() => undefined);
-                            return original(...args);
+                            throw err;
                         });
                     }
                 }
@@ -2733,6 +2887,28 @@ const installCommunityFeedPatch = (unpatchers) => {
     }
     catch (error) {
         warn("patch", "community vote patch skipped", error);
+    }
+    try {
+        const shieldTarget = DFL.findModuleChild((module) => {
+            if (!module || typeof module !== "object")
+                return undefined;
+            const methods = Object.keys(module).filter((key) => {
+                if (typeof module[key] !== "function")
+                    return false;
+                const source = Function.prototype.toString.call(module[key]);
+                return /published.?file/i.test(source) && /detail|comment|reaction/i.test(source);
+            });
+            return methods.length ? { module, methods } : undefined;
+        });
+        for (const methodName of shieldTarget?.methods || []) {
+            unpatchers.push(patchMethod(shieldTarget.module, methodName, (_thisValue, original, args) => shieldSyntheticCommunityCall(original, args, Promise.resolve([]))));
+        }
+        void frontendLog("community", "synthetic detail shields", {
+            methods: shieldTarget?.methods || [],
+        }).catch(() => undefined);
+    }
+    catch (error) {
+        warn("patch", "community detail shields skipped", error);
     }
 };
 
@@ -4711,13 +4887,13 @@ const MetadataPage = () => {
     const applyResult = async (result) => {
         setBusy(true);
         try {
-            const fetched = await fetchMetadata(result.slug || result.url);
-            if (!fetched)
+            const saved = await applyFetchedMetadata(appId, result.slug || result.url);
+            if (!saved)
                 return;
-            const saved = await saveMetadata(appId, fetched);
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
             setFormMetadata(saved);
+            setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
             toastSuccess("Saved", "Metadata saved");
         }
         catch (error) {
