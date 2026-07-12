@@ -57,6 +57,7 @@ run() {
 
 run "$here/smoke_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" "$DELISTED_APPID"
 run "$here/smoke_rerender.sh" "$MATCHED_APPID"
+run "$here/smoke_community.sh" "$NEVER_APPID"
 if ((!no_launch && launch_appid_explicit)); then
   run "$here/smoke_launch.sh" "$MATCHED_APPID"
 elif ((!no_launch)); then
