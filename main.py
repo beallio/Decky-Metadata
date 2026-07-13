@@ -43,7 +43,6 @@ class MetadataRecord(TypedDict, total=False):
     genres: list[str]
     features: list[str]
     screenshots: list[dict[str, Any]]
-    community_videos: list[dict[str, Any]]
     steam_appid: int | None
     steam_store_url: str
     steam_news: list[dict[str, Any]]
@@ -462,9 +461,6 @@ class Plugin:
             )
             return {"source": "none", "page": clean_page, "items": []}
         steam_appid = self._safe_int(record.get("steam_appid"))
-        stored_videos = community_provider.metadata_videos_to_fallback_items(
-            record.get("community_videos")
-        )
         if steam_appid and steam_appid > 0:
             try:
                 items = await asyncio.to_thread(
@@ -473,8 +469,6 @@ class Plugin:
                     clean_page,
                     self._http_text,
                 )
-                if clean_page == 1 and stored_videos:
-                    items = [*stored_videos, *items][: community_provider.PAGE_SIZE]
                 if items:
                     _plog(
                         "community",
@@ -501,15 +495,13 @@ class Plugin:
                     page=clean_page,
                     error=error,
                 )
-        items = community_provider.metadata_media_to_fallback_items(
-            record.get("community_videos"),
-            record.get("screenshots"),
+        items, label = await asyncio.to_thread(
+            self._live_community_media_sync,
+            record,
             clean_page,
-            record.get("source_url"),
         )
         source = "metadata" if items else "none"
         if items:
-            label = str(record.get("source") or "").strip() or "Metadata"
             items = [{**item, "author": item.get("author") or label} for item in items]
         _plog(
             "community",
@@ -522,6 +514,36 @@ class Plugin:
             count=len(items),
         )
         return {"source": source, "page": clean_page, "items": items}
+
+    def _live_community_media_sync(
+        self, record: dict[str, Any], page: int
+    ) -> tuple[list[dict[str, Any]], str]:
+        title = self._clean_game_title(str(record.get("title") or ""))
+        source_url = str(record.get("source_url") or "").strip()
+        try:
+            if source_url:
+                metadata = ign_provider.fetch_metadata(
+                    source_url,
+                    self._graphql,
+                    ign_provider.game_to_metadata,
+                )
+            else:
+                metadata = self._auto_fetch_metadata_sync(title)
+        except Exception:
+            metadata = None
+        live_metadata = metadata if isinstance(metadata, dict) else {}
+        try:
+            videos = community_provider.fetch_youtube_videos(title, self._http_text)
+        except Exception:
+            videos = []
+        items = community_provider.metadata_media_to_fallback_items(
+            videos,
+            live_metadata.get("screenshots"),
+            page,
+            live_metadata.get("source_url"),
+        )
+        label = str(live_metadata.get("source") or "").strip() or "IGN"
+        return items, label
 
     async def enrich_steam_app(self, app_id: int) -> dict[str, Any] | None:
         self._load_data()
@@ -730,7 +752,12 @@ class Plugin:
             if ign_metadata:
                 merged = dict(best_partial)
                 for key, value in ign_metadata.items():
-                    if value or key not in merged:
+                    current = merged.get(key)
+                    is_manual_source = (
+                        key == "source"
+                        and str(current or "").strip().casefold() == "manual"
+                    )
+                    if key not in merged or not current or is_manual_source:
                         merged[key] = value
                 enriched = self._metadata_with_steam_news_sync(merged, title, 10)
                 if self._metadata_is_complete(enriched):
@@ -869,25 +896,7 @@ class Plugin:
         )
         if not metadata:
             return None
-        return self._metadata_with_community_videos_sync(metadata)
-
-    def _metadata_with_community_videos_sync(
-        self, metadata: dict[str, Any], title: str = ""
-    ) -> MetadataRecord:
-        next_metadata = dict(metadata)
-        clean_title = self._clean_game_title(
-            title or str(next_metadata.get("title") or "")
-        )
-        try:
-            videos = community_provider.fetch_youtube_videos(
-                clean_title, self._http_text
-            )
-        except Exception:
-            videos = []
-        next_metadata["community_videos"] = community_provider.sanitize_videos(
-            videos
-        )
-        return self._sanitize_metadata(next_metadata)
+        return self._sanitize_metadata(metadata)
 
     def _game_to_metadata(self, game: dict[str, Any]) -> dict[str, Any]:
         return self._sanitize_metadata(ign_provider.game_to_metadata(game))
@@ -980,9 +989,6 @@ class Plugin:
                 if str(value).strip()
             ],
             "screenshots": self._sanitize_screenshots(metadata.get("screenshots")),
-            "community_videos": community_provider.sanitize_videos(
-                metadata.get("community_videos")
-            ),
             "steam_appid": steam_appid,
             "steam_store_state": steam_store_state,
             "steam_store_url": self._https_url(str(metadata.get("steam_store_url") or "")),

@@ -39,7 +39,7 @@ import {
   isNonSteamApp,
   patchInstallStatus,
   hasSteamInternals,
-} from "./steam";
+} from "./steam/core";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 

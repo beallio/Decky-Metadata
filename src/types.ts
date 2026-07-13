@@ -18,7 +18,6 @@ export type MetadataData = {
   genres?: string[];
   features?: string[];
   screenshots?: MetadataScreenshot[];
-  community_videos?: MetadataVideo[];
   steam_appid?: number | null;
   steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: number | null;
@@ -36,14 +35,6 @@ export type MetadataScreenshot = {
   height?: number;
   author?: string;
   link?: string;
-};
-
-export type MetadataVideo = {
-  id: string;
-  title?: string;
-  url?: string;
-  thumbnail?: string;
-  source?: string;
 };
 
 export type CommunityFallbackSource = "steam-scrape" | "metadata" | "none";
