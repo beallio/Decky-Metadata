@@ -60,11 +60,15 @@ as empty so a successful IGN gap-fill records its real source.
 ## Native synthetic cards
 
 Fallback screenshots become native image cards (`type: 5`) with deterministic
-numeric IDs beginning `90909`. Live videos become native video cards (`type:
-2`) with `youtube_video_id`, their YouTube thumbnail, and the canonical watch URL
-in `url`, `link`, `external_url`, and `strURL`. On-device acceptance verifies
-that activation plays or opens the video instead of the image lightbox. Each
-card carries the observed image, description, a
+numeric IDs beginning `90909`. Live videos also become native image cards
+(`type: 5`) because this Steam build does not render `type: 2` cards. Video cards
+use the YouTube thumbnail and provider icon and carry the canonical watch URL in
+`url`, `link`, `external_url`, and `strURL`; they do not emit
+`youtube_video_id`. Those click-through fields are intended to open the watch
+URL, but activation must still be verified on-device before promotion to
+`main`; if this build ignores them for an image card, the interim behavior is the
+native thumbnail lightbox while navigation is addressed separately. Each card
+carries the observed image, description, a
 provider-icon avatar (IGN/Steam/YouTube/RAWG) on every avatar field, a creator
 with a plausible `steamid`, and `url`/`link`/`external_url`/`strURL` pointing at
 the item link (the provider page, or the image when no link exists). Comments,
