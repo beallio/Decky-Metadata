@@ -7,6 +7,7 @@ export type SpoofReason =
   | "not-nonsteam"
   | "original-not-shortcut"
   | "in-call-truth"
+  | "not-matched"
   | "render-shield"
   | "home-special-case"
   | "truth-window"
@@ -24,6 +25,7 @@ export type SpoofInput = {
   isPatchedNonSteam: boolean;
   originalRet: any;
   bypassCounter: number;
+  hasCache: boolean;
   path: string;
   // Consuming a shield hit is a side effect (decrements the hit budget), so
   // the caller passes it lazily; the decision controls WHETHER it happens.
@@ -31,7 +33,7 @@ export type SpoofInput = {
 };
 
 export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
-  const { isPatchedNonSteam, originalRet, bypassCounter, path, consumeShield } = input;
+  const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, path, consumeShield } = input;
 
   if (!isPatchedNonSteam) {
     return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
@@ -47,6 +49,16 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
   // consulted here at all — its hit budget belongs to render checks.
   if (bypassCounter === -1) {
     return { finalRet: originalRet, reason: "in-call-truth", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+  }
+
+  // Only matched games (in metadataCache) are intentionally spoofed as
+  // real Steam apps so their Game Info renders. For any OTHER non-Steam
+  // shortcut (Heroic, Ludusavi, unmatched emulator entries), spoofing them
+  // as real never-played apps makes Steam tag them "New to Library". Return
+  // the native value so they keep their true shortcut status. Placed after
+  // the in-call-truth check so nothing outranks bypassCounter === -1.
+  if (!hasCache) {
+    return { finalRet: originalRet, reason: "not-matched", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
   }
 
   const shieldHit = consumeShield();
