@@ -382,6 +382,64 @@ def test_rpc_all_live_fetch_failures_return_safe_empty_result(monkeypatch) -> No
     }
 
 
+def test_scan_gap_fill_keeps_steam_values_and_fills_only_empty_fields(
+    monkeypatch,
+) -> None:
+    plugin = plugin_with_metadata({})
+    steam_partial = {
+        "title": "Steam title",
+        "source": "Steam",
+        "developers": [{"name": "Steam Developer", "url": ""}],
+        "publishers": [],
+        "description": "",
+        "screenshots": [{"id": "steam", "url": "https://cdn.example/steam.jpg"}],
+        "steam_appid": 123,
+    }
+    ign_metadata = {
+        "title": "IGN title",
+        "source": "IGN",
+        "developers": [{"name": "IGN Developer", "url": ""}],
+        "publishers": [{"name": "IGN Publisher", "url": ""}],
+        "description": "IGN description",
+        "screenshots": [{"id": "ign", "url": "https://cdn.example/ign.jpg"}],
+    }
+    monkeypatch.setattr(
+        plugin,
+        "_steam_scan_match_sync",
+        lambda _title: {
+            "status": "miss",
+            "metadata": steam_partial,
+            "source": "steam",
+        },
+    )
+    monkeypatch.setattr(
+        plugin,
+        "_delisted_scan_match_sync",
+        lambda _title: {"status": "miss", "metadata": None, "source": "delisted"},
+    )
+    monkeypatch.setattr(plugin, "_auto_fetch_metadata_sync", lambda _title: ign_metadata)
+    monkeypatch.setattr(
+        plugin,
+        "_metadata_with_steam_news_sync",
+        lambda metadata, *_args, **_kwargs: metadata,
+    )
+    monkeypatch.setattr(
+        plugin,
+        "_metadata_is_complete",
+        lambda metadata: bool(metadata and metadata.get("description")),
+    )
+
+    result = plugin._metadata_scan_match_sync(
+        {"app_id": 7, "title": "Example", "metadata": None}
+    )
+    assert result["status"] == "matched"
+    assert result["metadata"] == {
+        **steam_partial,
+        "publishers": ign_metadata["publishers"],
+        "description": "IGN description",
+    }
+
+
 def test_fetched_metadata_merge_preserves_pinned_steam_fields() -> None:
     existing = {
         "steam_appid": 123,

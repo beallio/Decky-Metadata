@@ -752,7 +752,12 @@ class Plugin:
             if ign_metadata:
                 merged = dict(best_partial)
                 for key, value in ign_metadata.items():
-                    if value or key not in merged:
+                    current = merged.get(key)
+                    is_manual_source = (
+                        key == "source"
+                        and str(current or "").strip().casefold() == "manual"
+                    )
+                    if key not in merged or not current or is_manual_source:
                         merged[key] = value
                 enriched = self._metadata_with_steam_news_sync(merged, title, 10)
                 if self._metadata_is_complete(enriched):
