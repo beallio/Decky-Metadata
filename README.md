@@ -52,7 +52,7 @@ scripts/bump_next_patch.sh
 - Finds missing game metadata automatically.
 - Adds descriptions, developers, publishers, release dates, ratings, screenshots, and Steam info fields.
 - Lets you edit metadata manually from each non-Steam game's context menu.
-- Shows native Steam Community content for matched shortcuts, falls back to Steam Community visual cards when a known app's native hub is empty, and adds stored best-effort YouTube video cards alongside source-labeled metadata screenshots.
+- Shows native Steam Community content for matched shortcuts, then fetches live Steam Community cards when a known app's native hub is empty; when Steam has no cards, it fetches fresh best-effort YouTube videos and IGN screenshots without storing Community-tab media.
 - Preserves a manually pinned Steam app ID and its Steam-owned metadata when applying a fetched IGN result.
 - Caches Steam's delisted-app index so removed store pages can still be matched by title.
 
