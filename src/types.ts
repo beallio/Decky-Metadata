@@ -48,7 +48,6 @@ export type CommunityFallbackItem = {
   width: number;
   height: number;
   author: string;
-  youtube_id: string;
 };
 
 export type CommunityFallbackPage = {

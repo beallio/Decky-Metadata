@@ -12,7 +12,7 @@ import { CommunityFallbackPage } from "./types";
 const fallback = (source: CommunityFallbackPage["source"] = "metadata"): CommunityFallbackPage => ({
   source,
   page: 2,
-  items: [{ id: "x", title: "Shot", description: "Desc", image_url: "https://cdn.example/x.jpg", link: "https://www.ign.com/games/example", width: 640, height: 340, author: source === "steam-scrape" ? "Alice" : "IGN", youtube_id: "" }],
+  items: [{ id: "x", title: "Shot", description: "Desc", image_url: "https://cdn.example/x.jpg", link: "https://www.ign.com/games/example", width: 640, height: 340, author: source === "steam-scrape" ? "Alice" : "IGN" }],
 });
 
 describe("community fallback helpers", () => {
@@ -54,45 +54,6 @@ describe("community fallback helpers", () => {
     expect(card.time_created).toBeTypeOf("number");
     expect(fallbackPageToNativeHub(1, fallback("steam-scrape")).hub[0].creator.name).toBe("Steam Community · Alice");
     expect(fallbackPageToNativeHub(1, { source: "none", page: 1, items: [] })).toEqual({ cached: false, hub: [] });
-  });
-
-  it("maps live YouTube videos to native image cards", () => {
-    const watchUrl = "https://www.youtube.com/watch?v=abcdefghijk";
-    const result = fallbackPageToNativeHub(42, {
-      source: "metadata",
-      page: 1,
-      items: [{
-        id: "abcdefghijk",
-        title: "Trailer",
-        description: "Trailer",
-        image_url: "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg",
-        link: watchUrl,
-        width: 0,
-        height: 0,
-        author: "YouTube",
-        youtube_id: "abcdefghijk",
-      }],
-    });
-    const card = result.hub[0];
-    expect(card.type).toBe(5);
-    expect(card).not.toHaveProperty("youtube_video_id");
-    expect(card.preview_image_url).toContain("abcdefghijk");
-    expect(card.full_image_url).toBe(card.preview_image_url);
-    expect(card.url).toBe(watchUrl);
-    expect(card.link).toBe(watchUrl);
-    expect(card.external_url).toBe(watchUrl);
-    expect(card.strURL).toBe(watchUrl);
-    expect(card.creator.name).toBe("YouTube");
-    expect(card.avatar).toMatch(/^data:image\/png;base64,/);
-    expect(card.avatar_url).toBe(card.avatar);
-    expect(card.creator_avatar_url).toBe(card.avatar);
-    expect(card.author_avatar_url).toBe(card.avatar);
-    expect(card.owner_avatar_url).toBe(card.avatar);
-    expect(card.creator.avatar).toBe(card.avatar);
-    expect(card.creator.avatar_url).toBe(card.avatar);
-    expect(card.creator.avatar_medium).toBe(card.avatar);
-    expect(card.creator.avatar_full).toBe(card.avatar);
-    expect(card.creator.avatarFullURL).toBe(card.avatar);
   });
 
   it("generates stable page-specific synthetic ids", () => {
