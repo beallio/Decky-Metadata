@@ -1,9 +1,9 @@
 # Research: Matched non-Steam game Game Info quick-links decay while idle
 
-**Status:** OPEN investigation — deferred. Pick this up **after** the three
-in-flight plans land (`ign-platform-match-preference`,
-`hide-quicklinks-row-nonsteam`, `gameinfo-focus-reset`). This is a *separate*
-problem from all three and from the already-merged `gameinfo-shield-exhaustion`.
+**Status:** RESOLVED on `feat/matched-quicklinks-idle-decay` (2026-07-13).
+Matched shortcut details replacements are populated before SteamUI receives
+them; the five store/community links and injected description survived repeated
+idle checks longer than 60 seconds.
 
 **Date opened:** 2026-07-10. **Device session evidence** captured live over CDP.
 
@@ -73,16 +73,58 @@ idle Devastation → no Market). Confirmed in the bundle:
 - **Route-shield TTL (2000ms)** — the shield is irrelevant here; the spoof isn't
   what's dropping the links.
 
-## Current best hypothesis (unproven)
+## Confirmed mechanism and fix (2026-07-13)
 
-Steam periodically **rebuilds the `details` object** for the shortcut appid
-(evidence: our injected `descriptionsData` is gone → `strFullDescription:""` after
-idle; the rebuilt `details` is bound to the shortcut id `3015223078`). The 5
-store/community links are produced by Steam's link-builder from *some* state that
-is present on first render (optimistic / from a matched-appid fetch during the
-initial spoofed render) but is dropped when `details` is reconciled against the
-shortcut appid, which has no real store page. The 2s `BIsModOrShortcut` poll is a
-symptom of a periodic reconcile pass, not the cause.
+The native cache update is the rebuild boundary. On a fresh Transformers Game
+Info open, the first
+`SetCachedDataForApp(3015223078, "achievements", 2, ...)` call arrived about
+2.65 seconds later and replaced both the `details` and `descriptionsData` object
+identities. The trigger was the achievements cache fill, not a timer,
+focus/visibility event, or route navigation. Decky's description payload remained
+in `appDetailsCache`, but SteamUI could render the transient native replacement
+before a later `GetDescriptions` call restored `appData.descriptionsData`; that
+render then stayed stale.
+
+The current Steam link builder also rules out an async-store-data limitation.
+The five links have these inputs:
+
+- **Store Page:** rendered whenever `overview.BIsModOrShortcut()` is false;
+  its URL uses the app id (or a standalone-store demo parent).
+- **Community Hub:** the same shortcut gate, plus non-launcher mode.
+- **Discussions:** the same shortcut gate, plus non-launcher mode.
+- **Guides:** the same shortcut gate, plus non-launcher mode.
+- **Support:** the same shortcut gate, plus kiosk mode being unlocked.
+
+None of those five reads `details`, `rgCards`, `bAvailableContentOnStore`, or an
+async store-item result. Those fields gate additional links only: DLC uses
+`bAvailableContentOnStore`, Points Shop uses `rgCards`, Workshop uses
+`workshopVisible`, and Market uses `marketPresence`.
+
+The fix patches `appDetailsStore.GetAppData`, records the last `details` identity
+per app id, and recognizes only non-Steam metadata records with a positive
+`steam_appid`. When Steam replaces a matched shortcut's `details`, Decky writes
+the description, associations, and screenshot fields onto the replacement before
+returning it to SteamUI. The native details identity change already invalidates
+the observing section, so the rerender receives the populated object rather than
+the transient empty one. Unmatched shortcuts do not take this rebuild path, and
+the route shield / in-call truth behavior is unchanged.
+
+### Verification evidence
+
+- Before the fix, CDP captured the achievements cache write changing the
+  `details` identity; the DOM could fall from 1,602 to 548 characters while the
+  later `appData.descriptionsData` had already returned to 1,109 characters.
+- On the deployed fix, Transformers (`3015223078` -> `338930`) exposed exactly
+  Store Page, Community Hub, Discussions, Guides, and Support, with a
+  1,109-character `strFullDescription` on the React section's `details` object.
+- Untouched idle samples of 91.6 seconds and 117.5 seconds (including a
+  leave/re-enter cycle) retained all five links and the full description. The
+  exact final matched-only bundle passed another 87.3-second idle sample.
+- `BIsModOrShortcut()` remained `false`, and all details ids remained the
+  shortcut id throughout.
+- The no-launch device suite passed with semantic fixtures: listed
+  `2155012430`, delisted `3497159354`, and never-on-Steam `2977244592`. It also
+  confirmed zero cache writes across three subsection round-trips.
 
 To confirm/refute, the link-builder inputs must be enumerated (see next steps).
 
@@ -129,26 +171,16 @@ computed `links` array. Component names (`N`, `z`) and CSS hashes
 
 ---
 
-## Concrete next steps
+## Investigation steps completed
 
-1. **Enumerate the link-builder inputs**: read the full `l = [...]` assembly in
-   `chunk~2dcc5aaf7.js`; list the exact `details`/`overview` fields each of the 5
-   links reads. This tells us what state is present-then-dropped.
-2. **Instrument the details rebuild**: over CDP, subscribe to / poll
-   `appDetailsStore.GetAppData(3015223078).details` on the idle page; log when the
-   object identity changes and which link-driving fields flip. Identify the
-   trigger (timer? store subscription? focus/visibility event?).
-3. **Test a fix hypothesis**: on the idle page, re-assert the link-driving fields
-   (and `descriptionsData`) on the rebuilt `details`, force a re-render, and check
-   whether the links return **and persist**. If yes, the fix is to patch the
-   `details` getter/cache (or subscribe to the rebuild) and re-assert for matched
-   non-Steam games — not just on render.
-4. **Decide fix vs. limitation**: if the links depend on genuinely async
-   store-item data for the shortcut appid, persisting them may require faking that
-   data continuously. Weigh a robust patch vs. documenting a known limitation.
-5. Keep matched vs. unmatched separated: for **unmatched** games the
-   `hide-quicklinks-row-nonsteam` tree-patch already removes the row (so idle
-   decay there is moot); this investigation is **matched games only**.
+1. Enumerated the full link assembly in `chunk~2dcc5aaf7.js`.
+2. Polled selected app-data fields at 100 ms and instrumented the native cache
+   setter to identify the achievements cache fill as the replacement trigger.
+3. Tested the getter-bound re-assert on-device across repeated idle cycles.
+4. Chose the fix path because the five required links have no async store-data
+   dependency.
+5. Kept the rebuild guard matched-only; unmatched rows remain governed by
+   `hide-quicklinks-row-nonsteam`.
 
 ---
 
