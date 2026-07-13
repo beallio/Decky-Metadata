@@ -56,7 +56,7 @@ describe("community fallback helpers", () => {
     expect(fallbackPageToNativeHub(1, { source: "none", page: 1, items: [] })).toEqual({ cached: false, hub: [] });
   });
 
-  it("maps stored YouTube videos to native video cards", () => {
+  it("maps live YouTube videos to native image cards", () => {
     const watchUrl = "https://www.youtube.com/watch?v=abcdefghijk";
     const result = fallbackPageToNativeHub(42, {
       source: "metadata",
@@ -74,8 +74,8 @@ describe("community fallback helpers", () => {
       }],
     });
     const card = result.hub[0];
-    expect(card.type).toBe(2);
-    expect(card.youtube_video_id).toBe("abcdefghijk");
+    expect(card.type).toBe(5);
+    expect(card).not.toHaveProperty("youtube_video_id");
     expect(card.preview_image_url).toContain("abcdefghijk");
     expect(card.full_image_url).toBe(card.preview_image_url);
     expect(card.url).toBe(watchUrl);
@@ -88,6 +88,11 @@ describe("community fallback helpers", () => {
     expect(card.creator_avatar_url).toBe(card.avatar);
     expect(card.author_avatar_url).toBe(card.avatar);
     expect(card.owner_avatar_url).toBe(card.avatar);
+    expect(card.creator.avatar).toBe(card.avatar);
+    expect(card.creator.avatar_url).toBe(card.avatar);
+    expect(card.creator.avatar_medium).toBe(card.avatar);
+    expect(card.creator.avatar_full).toBe(card.avatar);
+    expect(card.creator.avatarFullURL).toBe(card.avatar);
   });
 
   it("generates stable page-specific synthetic ids", () => {
