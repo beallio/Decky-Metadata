@@ -2,6 +2,7 @@ import { findModuleChild } from "@decky/ui";
 import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
+import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
 import { MetadataData } from "../types";
 import * as log from "../log";
 import {
@@ -208,22 +209,8 @@ export const applyMetadata = (appId: number) => {
   if (!appData) return;
   ensureDetailsOverviewSafeFields(appId);
 
-  const description = metadata.description || metadata.short_description || "";
-  appData.descriptionsData = {
-    strFullDescription: description,
-    strSnippet: description,
-  };
-  appData.associationData = {
-    rgDevelopers: (metadata.developers || []).map((developer) => ({
-      strName: developer.name,
-      strURL: developer.url || "",
-    })),
-    rgPublishers: (metadata.publishers || []).map((publisher) => ({
-      strName: publisher.name,
-      strURL: publisher.url || "",
-    })),
-    rgFranchises: [],
-  };
+  const screenshots = steamScreenshotsFromMetadata(appId, metadata);
+  reassertMatchedAppData(appData, metadata, screenshots);
 
   try {
     const releaseDate = metadata.release_date;
@@ -235,7 +222,6 @@ export const applyMetadata = (appId: number) => {
     // Steam objects are not always writable during early bootstrap.
   }
 
-  const screenshots = steamScreenshotsFromMetadata(appId, metadata);
   if (screenshots.length) {
     const screenshotData = {
       rgScreenshots: screenshots,
@@ -244,10 +230,6 @@ export const applyMetadata = (appId: number) => {
       vecScreenShots: screenshots,
     };
     appData.screenshots = screenshotData;
-    if (appData.details) {
-      appData.details.nScreenshots = screenshots.length;
-      appData.details.vecScreenShots = screenshots;
-    }
   }
 
   if (appData.details) {
@@ -362,6 +344,38 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
   const detailsProto = appDetailsStore?.__proto__;
   if (!overviewProto || !detailsProto) return;
+
+  // GetAppData is the narrowest durable boundary around native details
+  // replacements. Populate a new matched-shortcut details object before any
+  // SteamUI caller can observe the transient shortcut-only version. The
+  // identity guard keeps ordinary reads and renders allocation-free.
+  if (detailsProto?.GetAppData) {
+    const observedDetails = new Map<number, any>();
+    unpatchers.push(
+      patchMethod(detailsProto, "GetAppData", (_thisValue, original, args) => {
+        const appId = Number(args[0]);
+        const appData = original(...args);
+        const details = appData?.details;
+        if (!Number.isFinite(appId) || appId <= 0 || !details) {
+          if (Number.isFinite(appId)) observedDetails.delete(appId);
+          return appData;
+        }
+        if (observedDetails.get(appId) === details) return appData;
+        observedDetails.set(appId, details);
+
+        const metadata = metadataCache[String(appId)];
+        const overview = getOverview(appId);
+        if (hasMatchedSteamAppId(metadata) && isNonSteamAppWithoutPatchedMethod(overview)) {
+          reassertMatchedAppData(
+            appData,
+            metadata,
+            steamScreenshotsFromMetadata(appId, metadata)
+          );
+        }
+        return appData;
+      })
+    );
+  }
 
   if (appStore?.GetAppOverviewByAppID) {
     unpatchers.push(

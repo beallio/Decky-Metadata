@@ -212,6 +212,52 @@ const withInCallTruth = (state, run) => {
     }
 };
 
+const hasMatchedSteamAppId = (metadata) => {
+    const steamAppId = Number(metadata?.steam_appid);
+    return Number.isFinite(steamAppId) && steamAppId > 0;
+};
+/**
+ * Reapply Decky's matched-game fields to a native app-data replacement.
+ *
+ * Steam rebuilds appData.details when another cache category arrives. The
+ * replacement must be populated before GetAppData returns it to SteamUI;
+ * otherwise observers can render the transient shortcut-only details and stay
+ * there until a later navigation.
+ */
+const reassertMatchedAppData = (appData, metadata, screenshots) => {
+    const details = appData?.details;
+    if (!details)
+        return false;
+    const description = metadata.description || metadata.short_description || "";
+    const descriptionsData = {
+        strFullDescription: description,
+        strSnippet: description,
+    };
+    const associationData = {
+        rgDevelopers: (metadata.developers || []).map((developer) => ({
+            strName: developer.name,
+            strURL: developer.url || "",
+        })),
+        rgPublishers: (metadata.publishers || []).map((publisher) => ({
+            strName: publisher.name,
+            strURL: publisher.url || "",
+        })),
+        rgFranchises: [],
+    };
+    appData.descriptionsData = descriptionsData;
+    appData.associationData = associationData;
+    details.strFullDescription = description;
+    details.strSnippet = description;
+    details.rgDevelopers = associationData.rgDevelopers;
+    details.rgPublishers = associationData.rgPublishers;
+    details.rgFranchises = associationData.rgFranchises;
+    if (screenshots.length) {
+        details.nScreenshots = screenshots.length;
+        details.vecScreenShots = screenshots;
+    }
+    return true;
+};
+
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -866,22 +912,8 @@ const applyMetadata = (appId) => {
     if (!appData)
         return;
     ensureDetailsOverviewSafeFields(appId);
-    const description = metadata.description || metadata.short_description || "";
-    appData.descriptionsData = {
-        strFullDescription: description,
-        strSnippet: description,
-    };
-    appData.associationData = {
-        rgDevelopers: (metadata.developers || []).map((developer) => ({
-            strName: developer.name,
-            strURL: developer.url || "",
-        })),
-        rgPublishers: (metadata.publishers || []).map((publisher) => ({
-            strName: publisher.name,
-            strURL: publisher.url || "",
-        })),
-        rgFranchises: [],
-    };
+    const screenshots = steamScreenshotsFromMetadata(appId, metadata);
+    reassertMatchedAppData(appData, metadata, screenshots);
     try {
         const releaseDate = metadata.release_date;
         if (typeof releaseDate === "number" && releaseDate > 0) {
@@ -892,7 +924,6 @@ const applyMetadata = (appId) => {
     catch (_error) {
         // Steam objects are not always writable during early bootstrap.
     }
-    const screenshots = steamScreenshotsFromMetadata(appId, metadata);
     if (screenshots.length) {
         const screenshotData = {
             rgScreenshots: screenshots,
@@ -901,10 +932,6 @@ const applyMetadata = (appId) => {
             vecScreenShots: screenshots,
         };
         appData.screenshots = screenshotData;
-        if (appData.details) {
-            appData.details.nScreenshots = screenshots.length;
-            appData.details.vecScreenShots = screenshots;
-        }
     }
     if (appData.details) {
         if (metadata.steam_store_state === "delisted") {
@@ -1004,6 +1031,32 @@ const installMetadataPatches = (unpatchers) => {
     const detailsProto = appDetailsStore?.__proto__;
     if (!overviewProto || !detailsProto)
         return;
+    // GetAppData is the narrowest durable boundary around native details
+    // replacements. Populate a new matched-shortcut details object before any
+    // SteamUI caller can observe the transient shortcut-only version. The
+    // identity guard keeps ordinary reads and renders allocation-free.
+    if (detailsProto?.GetAppData) {
+        const observedDetails = new Map();
+        unpatchers.push(patchMethod(detailsProto, "GetAppData", (_thisValue, original, args) => {
+            const appId = Number(args[0]);
+            const appData = original(...args);
+            const details = appData?.details;
+            if (!Number.isFinite(appId) || appId <= 0 || !details) {
+                if (Number.isFinite(appId))
+                    observedDetails.delete(appId);
+                return appData;
+            }
+            if (observedDetails.get(appId) === details)
+                return appData;
+            observedDetails.set(appId, details);
+            const metadata = metadataCache[String(appId)];
+            const overview = getOverview(appId);
+            if (hasMatchedSteamAppId(metadata) && isNonSteamAppWithoutPatchedMethod(overview)) {
+                reassertMatchedAppData(appData, metadata, steamScreenshotsFromMetadata(appId, metadata));
+            }
+            return appData;
+        }));
+    }
     if (appStore?.GetAppOverviewByAppID) {
         unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
             const requestedAppId = Number(args[0]);
