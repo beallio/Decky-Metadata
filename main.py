@@ -495,14 +495,13 @@ class Plugin:
                     page=clean_page,
                     error=error,
                 )
-        items, label = await asyncio.to_thread(
-            self._live_community_media_sync,
-            record,
-            clean_page,
+        items = community_provider.metadata_screenshots_to_fallback_items(
+            record.get("screenshots"), clean_page, record.get("source_url")
         )
         source = "metadata" if items else "none"
         if items:
-            items = [{**item, "author": item.get("author") or label} for item in items]
+            label = str(record.get("source") or "").strip() or "Metadata"
+            items = [{**item, "author": label} for item in items]
         _plog(
             "community",
             "fallback selected",
@@ -514,36 +513,6 @@ class Plugin:
             count=len(items),
         )
         return {"source": source, "page": clean_page, "items": items}
-
-    def _live_community_media_sync(
-        self, record: dict[str, Any], page: int
-    ) -> tuple[list[dict[str, Any]], str]:
-        title = self._clean_game_title(str(record.get("title") or ""))
-        source_url = str(record.get("source_url") or "").strip()
-        try:
-            if source_url:
-                metadata = ign_provider.fetch_metadata(
-                    source_url,
-                    self._graphql,
-                    ign_provider.game_to_metadata,
-                )
-            else:
-                metadata = self._auto_fetch_metadata_sync(title)
-        except Exception:
-            metadata = None
-        live_metadata = metadata if isinstance(metadata, dict) else {}
-        try:
-            videos = community_provider.fetch_youtube_videos(title, self._http_text)
-        except Exception:
-            videos = []
-        items = community_provider.metadata_media_to_fallback_items(
-            videos,
-            live_metadata.get("screenshots"),
-            page,
-            live_metadata.get("source_url"),
-        )
-        label = str(live_metadata.get("source") or "").strip() or "IGN"
-        return items, label
 
     async def enrich_steam_app(self, app_id: int) -> dict[str, Any] | None:
         self._load_data()

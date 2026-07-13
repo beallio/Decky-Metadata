@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import html
-import json
 import re
 import urllib.parse
 from typing import Any, Callable
@@ -12,7 +11,6 @@ from backend import matching
 MAX_PAGE = 100
 PAGE_SIZE = 20
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
-YOUTUBE_SEARCH_URL = "https://www.youtube.com/results"
 HttpTextFn = Callable[..., str]
 
 
@@ -189,7 +187,6 @@ def steam_cards_to_fallback_items(cards: Any) -> list[dict[str, Any]]:
                 "width": 0,
                 "height": 0,
                 "author": matching.clean_html_text(str(card.get("author") or "")),
-                "youtube_id": "",
             }
         )
         if len(items) >= PAGE_SIZE:
@@ -224,7 +221,6 @@ def _metadata_screenshot_items(
                 "width": max(0, int(matching.as_number(screenshot.get("width"), 0))),
                 "height": max(0, int(matching.as_number(screenshot.get("height"), 0))),
                 "author": "",
-                "youtube_id": "",
             }
         )
     return items
@@ -238,121 +234,6 @@ def metadata_screenshots_to_fallback_items(
     return _metadata_screenshot_items(screenshots, source_url)[
         start : start + PAGE_SIZE
     ]
-
-
-def _valid_https_url(value: Any) -> str:
-    url = matching.https_url(str(value or ""))
-    parsed = urllib.parse.urlsplit(url)
-    return url if parsed.scheme.lower() == "https" and parsed.hostname else ""
-
-
-def sanitize_videos(values: Any, limit: int = 10) -> list[dict[str, Any]]:
-    videos: list[dict[str, Any]] = []
-    if not isinstance(values, list):
-        return videos
-    seen: set[str] = set()
-    cap = max(1, min(int(limit or 10), 10))
-    for item in values:
-        if not isinstance(item, dict):
-            continue
-        video_id = str(item.get("id") or item.get("youtube_id") or "").strip()
-        if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id) or video_id in seen:
-            continue
-        seen.add(video_id)
-        thumbnail = _valid_https_url(item.get("thumbnail"))
-        videos.append(
-            {
-                "id": video_id,
-                "title": matching.clean_html_text(str(item.get("title") or "")),
-                "url": f"https://www.youtube.com/watch?v={video_id}",
-                "thumbnail": thumbnail
-                or f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
-                "source": matching.clean_html_text(
-                    str(item.get("source") or "YouTube")
-                )
-                or "YouTube",
-            }
-        )
-        if len(videos) >= cap:
-            break
-    return videos
-
-
-def _youtube_title(text: str, match_start: int) -> str:
-    window = text[match_start : match_start + 1600]
-    title_match = re.search(
-        r'"title":\{"runs":\[\{"text":"((?:\\.|[^"\\])*)"', window
-    ) or re.search(r'"title":\{"simpleText":"((?:\\.|[^"\\])*)"', window)
-    if not title_match:
-        return ""
-    raw = title_match.group(1)
-    try:
-        value = json.loads(f'"{raw}"')
-    except (TypeError, ValueError, json.JSONDecodeError):
-        value = raw.replace(r"\u0026", "&")
-    return matching.clean_html_text(html.unescape(str(value)))
-
-
-def fetch_youtube_videos(
-    title: Any, http_text: HttpTextFn, limit: int = 10
-) -> list[dict[str, Any]]:
-    clean_title = matching.clean_game_title(str(title or ""))
-    if not clean_title:
-        return []
-    query = f"{clean_title} game trailer gameplay"
-    url = f"{YOUTUBE_SEARCH_URL}?{urllib.parse.urlencode({'search_query': query})}"
-    try:
-        text = http_text(url, timeout=15, max_bytes=MAX_RESPONSE_BYTES)
-        videos: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        cap = max(1, min(int(limit or 10), 10))
-        for match in re.finditer(r'"videoId":"([A-Za-z0-9_-]{11})"', text):
-            video_id = match.group(1)
-            if video_id in seen:
-                continue
-            seen.add(video_id)
-            videos.append(
-                {
-                    "id": video_id,
-                    "title": _youtube_title(text, match.start())
-                    or f"{clean_title} video",
-                    "source": "YouTube",
-                }
-            )
-            if len(videos) >= cap:
-                break
-        return sanitize_videos(videos, cap)
-    except Exception:
-        return []
-
-
-def metadata_videos_to_fallback_items(videos: Any) -> list[dict[str, Any]]:
-    return [
-        {
-            "id": video["id"],
-            "title": video["title"],
-            "description": video["title"],
-            "image_url": video["thumbnail"],
-            "link": video["url"],
-            "width": 0,
-            "height": 0,
-            "author": video["source"],
-            "youtube_id": video["id"],
-        }
-        for video in sanitize_videos(videos)
-    ]
-
-
-def metadata_media_to_fallback_items(
-    videos: Any, screenshots: Any, page: Any = 1, source_url: Any = ""
-) -> list[dict[str, Any]]:
-    clean_page = clamp_page(page)
-    start = (clean_page - 1) * PAGE_SIZE
-    items = [
-        *metadata_videos_to_fallback_items(videos),
-        *_metadata_screenshot_items(screenshots, source_url),
-    ]
-    return items[start : start + PAGE_SIZE]
 
 
 def fetch_steam_fallback_items(

@@ -18,13 +18,6 @@ CARD = """
 </div>
 """
 
-YOUTUBE_RESULTS = r'''{
-  "videoRenderer":{"videoId":"abcdefghijk","title":{"runs":[{"text":"Game Trailer"}]}},
-  "compactVideoRenderer":{"videoId":"LMNOP_qr-12","title":{"simpleText":"Gameplay &amp; More"}},
-  "duplicate":{"videoId":"abcdefghijk"}
-}'''
-
-
 def plugin_with_metadata(metadata: dict[str, dict]) -> main.Plugin:
     plugin = make_plugin()
     plugin._data = {"metadata": metadata}
@@ -77,55 +70,6 @@ def test_page_clamping_and_bounded_fetch_contract() -> None:
     assert community.community_url(0, 1) == ""
 
 
-def test_youtube_parser_uses_bounded_fetch_dedupes_and_builds_videos() -> None:
-    calls: list[tuple[str, int, int]] = []
-
-    def http_text(url: str, timeout: int, max_bytes: int) -> str:
-        calls.append((url, timeout, max_bytes))
-        return YOUTUBE_RESULTS
-
-    videos = community.fetch_youtube_videos("Example™", http_text)
-    assert [video["id"] for video in videos] == ["abcdefghijk", "LMNOP_qr-12"]
-    assert videos[0] == {
-        "id": "abcdefghijk",
-        "title": "Game Trailer",
-        "url": "https://www.youtube.com/watch?v=abcdefghijk",
-        "thumbnail": "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg",
-        "source": "YouTube",
-    }
-    assert videos[1]["title"] == "Gameplay & More"
-    assert calls[0][1:] == (15, 4 * 1024 * 1024)
-    assert "search_query=Example+game+trailer+gameplay" in calls[0][0]
-
-
-def test_youtube_sanitizer_validates_dedupes_caps_and_normalizes() -> None:
-    values = [
-        {
-            "id": f"videoid{i:04d}",
-            "title": f"Video {i}",
-            "thumbnail": "javascript:alert(1)" if i == 0 else "",
-        }
-        for i in range(12)
-    ]
-    values.insert(1, {"youtube_id": "videoid0000", "title": "Duplicate"})
-    values.insert(2, {"id": "too-short"})
-    videos = community.sanitize_videos(values)
-    assert len(videos) == 10
-    assert [video["id"] for video in videos[:2]] == ["videoid0000", "videoid0001"]
-    assert videos[0]["thumbnail"] == "https://i.ytimg.com/vi/videoid0000/hqdefault.jpg"
-    assert videos[0]["url"] == "https://www.youtube.com/watch?v=videoid0000"
-
-
-@pytest.mark.parametrize("payload", ["", "no video ids here"])
-def test_youtube_fetch_returns_empty_for_errors_and_parse_misses(payload: str) -> None:
-    assert community.fetch_youtube_videos("Example", lambda *_args, **_kwargs: payload) == []
-
-    def fail(*_args, **_kwargs):
-        raise RuntimeError("offline")
-
-    assert community.fetch_youtube_videos("Example", fail) == []
-
-
 def test_metadata_converter_accepts_ign_cdn_but_scraper_converter_rejects_it() -> None:
     image = "https://assets2.ignimgs.com/2009/05/04/x-men-origins-wolverine-shot.jpg"
     screenshot = {
@@ -148,7 +92,6 @@ def test_metadata_converter_accepts_ign_cdn_but_scraper_converter_rejects_it() -
             "height": 340,
             "author": "",
             "link": provider_page,
-            "youtube_id": "",
         }
     ]
     assert (
@@ -172,32 +115,6 @@ def test_metadata_converter_falls_back_to_image_for_unsafe_source_url() -> None:
     assert items[0]["link"] == image
 
 
-def test_metadata_media_pages_put_live_videos_before_screenshots() -> None:
-    videos = [
-        {"id": "abcdefghijk", "title": "Trailer", "source": "YouTube"}
-    ]
-    screenshots = [
-        {"id": str(i), "url": f"https://cdn.example/{i}.jpg"} for i in range(25)
-    ]
-    first = community.metadata_media_to_fallback_items(videos, screenshots, 1)
-    second = community.metadata_media_to_fallback_items(videos, screenshots, 2)
-    assert len(first) == 20
-    assert first[0] == {
-        "id": "abcdefghijk",
-        "title": "Trailer",
-        "description": "Trailer",
-        "image_url": "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg",
-        "link": "https://www.youtube.com/watch?v=abcdefghijk",
-        "width": 0,
-        "height": 0,
-        "author": "YouTube",
-        "youtube_id": "abcdefghijk",
-    }
-    assert first[1]["id"] == "0"
-    assert first[1]["youtube_id"] == ""
-    assert [item["id"] for item in second] == [str(i) for i in range(19, 25)]
-
-
 def test_metadata_pages_do_not_repeat_and_omit_unsafe_urls() -> None:
     screenshots = [
         {"id": str(i), "url": f"https://cdn.example/{i}.jpg"} for i in range(25)
@@ -211,7 +128,9 @@ def test_metadata_pages_do_not_repeat_and_omit_unsafe_urls() -> None:
 
 
 @pytest.mark.parametrize("failure", [False, True])
-def test_rpc_falls_back_from_scrape_to_live_metadata(monkeypatch, failure: bool) -> None:
+def test_rpc_falls_back_from_scrape_to_persisted_metadata(
+    monkeypatch, failure: bool
+) -> None:
     plugin = plugin_with_metadata(
         {
             "7": {
@@ -219,6 +138,14 @@ def test_rpc_falls_back_from_scrape_to_live_metadata(monkeypatch, failure: bool)
                 "source": "IGN",
                 "source_url": "https://www.ign.com/games/example",
                 "title": "Example",
+                "screenshots": [
+                    {
+                        "id": "persisted-shot",
+                        "url": "https://assets1.ignimgs.com/a.jpg",
+                        "width": 640,
+                        "height": 340,
+                    }
+                ],
             }
         }
     )
@@ -232,65 +159,27 @@ def test_rpc_falls_back_from_scrape_to_live_metadata(monkeypatch, failure: bool)
     monkeypatch.setattr(
         main.ign_provider,
         "fetch_metadata",
-        lambda *_args: {
-            "source": "IGN",
-            "source_url": "https://www.ign.com/games/example",
-            "screenshots": [
-                {
-                    "url": "https://assets1.ignimgs.com/a.jpg",
-                    "width": 640,
-                    "height": 340,
-                }
-            ],
-        },
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("IGN must not be fetched on the render path")
+        ),
     )
-    monkeypatch.setattr(community, "fetch_youtube_videos", lambda *_args: [])
+    monkeypatch.setattr(
+        plugin,
+        "_http_text",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("HTTP must not be fetched on the render path")
+        ),
+    )
     result = asyncio.run(plugin.get_community_fallback_page(7, 1))
     assert result["source"] == "metadata"
+    assert result["page"] == 1
+    assert result["items"][0]["id"] == "persisted-shot"
     assert result["items"][0]["author"] == "IGN"
     assert result["items"][0]["link"] == "https://www.ign.com/games/example"
+    assert "youtube_id" not in result["items"][0]
 
 
-def test_rpc_fetches_live_videos_and_screenshots_without_persisting(monkeypatch) -> None:
-    plugin = plugin_with_metadata(
-        {
-            "7": {
-                "title": "Example",
-                "source": "IGN",
-                "source_url": "https://www.ign.com/games/example",
-            }
-        }
-    )
-    monkeypatch.setattr(
-        main.ign_provider,
-        "fetch_metadata",
-        lambda *_args: {
-            "source": "IGN",
-            "source_url": "https://www.ign.com/games/example",
-            "screenshots": [{"id": "shot", "url": "https://cdn.example/a.jpg"}],
-        },
-    )
-    monkeypatch.setattr(
-        community,
-        "fetch_youtube_videos",
-        lambda *_args, **_kwargs: [
-            {"id": "abcdefghijk", "title": "Trailer", "source": "YouTube"}
-        ],
-    )
-    result = asyncio.run(plugin.get_community_fallback_page(7, 1))
-    assert result["source"] == "metadata"
-    assert result["items"][0]["youtube_id"] == "abcdefghijk"
-    assert result["items"][0]["image_url"].endswith("/abcdefghijk/hqdefault.jpg")
-    assert result["items"][0]["link"] == "https://www.youtube.com/watch?v=abcdefghijk"
-    assert result["items"][1]["youtube_id"] == ""
-    assert plugin._data["metadata"]["7"] == {
-        "title": "Example",
-        "source": "IGN",
-        "source_url": "https://www.ign.com/games/example",
-    }
-
-
-def test_rpc_prioritizes_steam_scrape_and_skips_other_live_sources(monkeypatch) -> None:
+def test_rpc_prioritizes_steam_scrape(monkeypatch) -> None:
     steam_item = {
         "id": "1",
         "title": "",
@@ -306,9 +195,6 @@ def test_rpc_prioritizes_steam_scrape_and_skips_other_live_sources(monkeypatch) 
             "8": {
                 "steam_appid": 55150,
                 "title": "Example",
-                "community_videos": [
-                    {"id": "abcdefghijk", "title": "Stale stored video"}
-                ],
             },
         }
     )
@@ -325,63 +211,10 @@ def test_rpc_prioritizes_steam_scrape_and_skips_other_live_sources(monkeypatch) 
             AssertionError("IGN must not be fetched when Steam has content")
         ),
     )
-    monkeypatch.setattr(
-        community,
-        "fetch_youtube_videos",
-        lambda *_args: (_ for _ in ()).throw(
-            AssertionError("YouTube must not be fetched when Steam has content")
-        ),
-    )
     result = asyncio.run(plugin.get_community_fallback_page(8, 1))
     assert result["source"] == "steam-scrape"
     assert result["items"] == [steam_item]
     assert calls == [55150]
-
-
-def test_rpc_uses_title_lookup_without_source_url(monkeypatch) -> None:
-    plugin = plugin_with_metadata({"7": {"title": "Example", "screenshots": []}})
-    calls: list[str] = []
-    monkeypatch.setattr(
-        plugin,
-        "_auto_fetch_metadata_sync",
-        lambda title: calls.append(title)
-        or {
-            "source": "IGN",
-            "source_url": "https://www.ign.com/games/example",
-            "screenshots": [{"id": "shot", "url": "https://cdn.example/a.jpg"}],
-        },
-    )
-    monkeypatch.setattr(community, "fetch_youtube_videos", lambda *_args: [])
-    result = asyncio.run(plugin.get_community_fallback_page(7, 1))
-    assert result["source"] == "metadata"
-    assert result["items"][0]["id"] == "shot"
-    assert calls == ["Example"]
-
-
-def test_rpc_all_live_fetch_failures_return_safe_empty_result(monkeypatch) -> None:
-    plugin = plugin_with_metadata(
-        {
-            "7": {
-                "title": "Example",
-                "steam_appid": 55150,
-                "source_url": "https://www.ign.com/games/example",
-            }
-        }
-    )
-
-    def fail(*_args, **_kwargs):
-        raise RuntimeError("offline")
-
-    monkeypatch.setattr(community, "fetch_steam_fallback_items", fail)
-    monkeypatch.setattr(main.ign_provider, "fetch_metadata", fail)
-    monkeypatch.setattr(community, "fetch_youtube_videos", fail)
-    assert asyncio.run(plugin.get_community_fallback_page(7, 1)) == {
-        "source": "none",
-        "page": 1,
-        "items": [],
-    }
-
-
 def test_scan_gap_fill_keeps_steam_values_and_fills_only_empty_fields(
     monkeypatch,
 ) -> None:
@@ -503,38 +336,6 @@ def test_apply_and_auto_fetch_save_merged_records_once(monkeypatch) -> None:
     assert len(saved) == 2
     assert all(record["steam_appid"] == 123 for record in saved)
     assert all(record["title"] == "IGN title" for record in saved)
-
-
-def test_fetched_metadata_does_not_fetch_or_persist_community_videos(monkeypatch) -> None:
-    plugin = plugin_with_metadata({})
-    fetched = {
-        "title": "Example Game",
-        "description": "IGN description",
-        "store_categories": [],
-    }
-    monkeypatch.setattr(main.ign_provider, "fetch_metadata", lambda *_args: fetched)
-
-    monkeypatch.setattr(
-        community,
-        "fetch_youtube_videos",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("metadata fetch must not fetch YouTube")
-        ),
-    )
-    saved = asyncio.run(plugin.apply_fetched_metadata(7, "example-game"))
-    assert saved is not None
-    assert saved["title"] == "Example Game"
-    assert "community_videos" not in saved
-
-
-def test_metadata_sanitizer_drops_legacy_community_videos() -> None:
-    sanitized = make_plugin()._sanitize_metadata(
-        {
-            "title": "Example",
-            "community_videos": [{"id": "abcdefghijk", "title": "Legacy"}],
-        }
-    )
-    assert "community_videos" not in sanitized
 
 
 def test_existing_save_path_still_clears_explicit_null_pin() -> None:
