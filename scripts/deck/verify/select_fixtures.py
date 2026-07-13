@@ -11,11 +11,21 @@ from pathlib import Path
 ROLES = ("listed_match", "delisted_match", "never_on_steam")
 
 
+def has_stored_game_metadata(entry: dict[str, object]) -> bool:
+    source = str(entry.get("source") or "").strip().casefold()
+    return bool(
+        (source and source != "manual")
+        or entry.get("developers")
+        or entry.get("description")
+        or entry.get("short_description")
+    )
+
+
 def classify(appid: str, entry: dict[str, object]) -> str | None:
     steam = entry.get("steam_appid")
     state = str(entry.get("steam_store_state") or entry.get("store_state") or "").lower()
     if not steam:
-        return "never_on_steam"
+        return "never_on_steam" if has_stored_game_metadata(entry) else None
     if state in {"delisted", "unavailable", "removed"} or entry.get("delisted") is True:
         return "delisted_match"
     return "listed_match"
