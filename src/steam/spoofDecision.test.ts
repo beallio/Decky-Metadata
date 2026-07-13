@@ -5,6 +5,7 @@ const base = {
   isPatchedNonSteam: true,
   originalRet: true,
   bypassCounter: 0,
+  hasCache: true,
   path: "/library/app/123456",
   consumeShield: () => false,
 };
@@ -43,6 +44,40 @@ describe("decideBIsModOrShortcut", () => {
   it("in-call truth window outranks the home special case", () => {
     const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, path: "/library/home" });
     expect(d).toMatchObject({ finalRet: true, reason: "in-call-truth" });
+  });
+
+  it("passes through uncached apps when idle", () => {
+    const consumeShield = vi.fn(() => true);
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, consumeShield });
+    expect(d).toMatchObject({
+      finalRet: true,
+      reason: "not-matched",
+      shieldConsulted: false,
+      nextBypassCounter: 0,
+    });
+    expect(consumeShield).not.toHaveBeenCalled();
+  });
+
+  it("uncached passthrough outranks the render shield", () => {
+    const consumeShield = vi.fn(() => true);
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, consumeShield });
+    expect(d).toMatchObject({ finalRet: true, reason: "not-matched", shieldConsulted: false });
+    expect(consumeShield).not.toHaveBeenCalled();
+  });
+
+  it("uncached passthrough on the home route does not spoof", () => {
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, path: "/library/home" });
+    expect(d).toMatchObject({ finalRet: true, reason: "not-matched" });
+  });
+
+  it("uncached passthrough ignores an armed truth window", () => {
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, bypassCounter: 4 });
+    expect(d).toMatchObject({ finalRet: true, reason: "not-matched", nextBypassCounter: 4 });
+  });
+
+  it("in-call truth still wins for uncached apps", () => {
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, bypassCounter: -1 });
+    expect(d).toMatchObject({ finalRet: true, reason: "in-call-truth", nextBypassCounter: -1 });
   });
 
   it("spoofs false on a render-shield hit", () => {

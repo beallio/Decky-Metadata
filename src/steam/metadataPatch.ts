@@ -461,6 +461,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           isPatchedNonSteam: isNonSteamAppWithoutPatchedMethod(this),
           originalRet: ret,
           bypassCounter: metadataState.bypassCounter,
+          hasCache,
           path,
           consumeShield: () => consumeRouteShield(appId),
         });
