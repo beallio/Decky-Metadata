@@ -12,9 +12,8 @@ applications bypass this pipeline.
 3. When a known Steam app has no native items, the backend requests its
    anonymous English Steam Community `homecontent` page and retains safe visual
    cards only.
-4. When the Steam scrape is empty or unavailable, the backend fetches fresh IGN
-   screenshots and YouTube videos for that Community-tab open. YouTube videos
-   precede screenshots on stable 20-item pages.
+4. When the Steam scrape is empty or unavailable, the backend returns persisted
+   IGN metadata screenshots in stable 20-item pages.
 5. When every source is empty, the original native empty response is preserved.
 
 The scraper accepts only `https://images.steamusercontent.com/ugc/` images and
@@ -22,10 +21,9 @@ valid numeric Steam shared-file links, and normalizes `imw` to 512. Metadata
 screenshots intentionally use a separate converter: any sanitized HTTPS host is
 allowed, including IGN's `assets*.ignimgs.com`, and dimensions are kept.
 
-YouTube is fallback-only: it is not requested when Steam community scraping
-returns cards. The live media path is best-effort and runs off the event loop.
-Steam, IGN, and YouTube failures collapse to an empty result and never escape the
-RPC.
+The Community render path never performs an IGN or other live-media fetch.
+Steam scrape failures fall through to the persisted screenshot record and never
+escape the RPC.
 
 ## Backend RPCs
 
@@ -36,17 +34,13 @@ RPC.
 ```
 
 Each item contains `id`, `title`, `description`, `image_url`, `width`, `height`,
-`author`, `link`, and `youtube_id`. Image items use an empty `youtube_id`. Video
-items use the validated 11-character YouTube ID, a sanitized thumbnail as
-`image_url`, and the canonical watch URL as `link`. For screenshot items `link`
-is the live IGN `source_url` when it is a valid `https://` URL,
-otherwise the image URL; for scraped items it is the validated Steam shared-file
-link. Pages are clamped to 1 through 100. The RPC performs no writes and persists
-neither videos nor the screenshots used by the Community tab.
+`author`, and `link`. For persisted screenshot items, `link` is the stored IGN
+`source_url` when it is a valid `https://` URL, otherwise the image URL; for
+scraped items it is the validated Steam shared-file link. Pages are clamped to 1
+through 100. The RPC performs no writes and makes no live metadata request.
 
 `apply_fetched_metadata(app_id, slug_or_url)` fetches descriptive metadata and
-saves it atomically without fetching or storing Community-tab videos. If the
-existing record has a positive `steam_appid`, its
+saves it atomically. If the existing record has a positive `steam_appid`, its
 Steam ID, store URL/state, Deck compatibility, Steam news, and news timestamp
 survive the fetched result. The existing Steam ID control remains the explicit
 way to clear a pin.
@@ -60,16 +54,8 @@ as empty so a successful IGN gap-fill records its real source.
 ## Native synthetic cards
 
 Fallback screenshots become native image cards (`type: 5`) with deterministic
-numeric IDs beginning `90909`. Live videos also become native image cards
-(`type: 5`) because this Steam build does not render `type: 2` cards. Video cards
-use the YouTube thumbnail and provider icon and carry the canonical watch URL in
-`url`, `link`, `external_url`, and `strURL`; they do not emit
-`youtube_video_id`. Those click-through fields are intended to open the watch
-URL, but activation must still be verified on-device before promotion to
-`main`; if this build ignores them for an image card, the interim behavior is the
-native thumbnail lightbox while navigation is addressed separately. Each card
-carries the observed image, description, a
-provider-icon avatar (IGN/Steam/YouTube/RAWG) on every avatar field, a creator
+numeric IDs beginning `90909`. Each card carries the observed image, description,
+a provider-icon avatar (IGN/Steam/RAWG) on every avatar field, a creator
 with a plausible `steamid`, and `url`/`link`/`external_url`/`strURL` pointing at
 the item link (the provider page, or the image when no link exists). Comments,
 votes, ratings, reactions, and inappropriate-content flags are empty or zero.
@@ -87,7 +73,7 @@ which reads only the card fields already provided. No detail/comment/reaction
 shield is therefore installed. The community **vote** patch and
 `isDeckyCommunityId` recognition remain in place. The pipeline never guesses a
 Steam app ID and never fabricates users, engagement, or reactions. Community-tab
-media discovery is live and best-effort; it is never persisted.
+metadata media is read only from the persisted screenshot record.
 
 ## Known limitation — native lightbox close on a controller
 
