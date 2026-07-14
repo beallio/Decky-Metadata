@@ -409,8 +409,16 @@ def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: Pl
             for value in raw_dlc_appids:
                 if isinstance(value, bool):
                     continue
-                dlc_appid = matching.safe_int(value)
-                if dlc_appid and dlc_appid > 0 and dlc_appid not in steam_dlc_appids:
+                if isinstance(value, int):
+                    dlc_appid = value
+                elif isinstance(value, str):
+                    try:
+                        dlc_appid = int(value.strip())
+                    except Exception:
+                        continue
+                else:
+                    continue
+                if dlc_appid > 0 and dlc_appid not in steam_dlc_appids:
                     steam_dlc_appids.append(dlc_appid)
         details["steam_dlc_appids"] = steam_dlc_appids
         details["has_points_shop"] = 29 in store_categories

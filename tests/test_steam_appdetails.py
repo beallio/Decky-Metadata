@@ -45,7 +45,17 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
                         {"id": "bad"},
                         {"id": 0},
                     ],
-                    "dlc": [15101, "15102", 15101, 0, -1, "bad", True],
+                    "dlc": [
+                        15101,
+                        "15102",
+                        15101,
+                        0,
+                        -1,
+                        15103.5,
+                        "15104.5",
+                        "bad",
+                        True,
+                    ],
                 },
             }
         }
