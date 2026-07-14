@@ -1,6 +1,6 @@
 # Controller Layout Search Context Isolation
 
-**Date:** 2026-07-14  
+**Date:** 2026-07-14
 **Objective:** Implement the existing controller-layout Search context-isolation
 plan without accessing or modifying the Steam Deck.
 
