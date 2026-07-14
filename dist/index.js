@@ -1283,6 +1283,52 @@ const allNonSteamGames = async () => {
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
 
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    xxs: 2,
+    xs: 4,
+    sm: 8,
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16,
+    xl: 20,
+};
+const fontWeight = {
+    bold: 700};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
+
+const TITLE = "Decky Metadata";
+const DURATION = 3000;
+function notify(kind, heading, body) {
+    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
+    try {
+        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
+    }
+    catch {
+        // The Decky toaster may be unavailable outside the runtime.
+    }
+}
+const toastSuccess = (heading, body) => notify("success", heading, body);
+const toastWarn = (heading, body) => notify("warning", heading, body);
+const toastError = (heading, body) => notify("error", heading, body);
+
 const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
 const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
 const isAppDetailsQuickLinksModule = (candidate) => !!candidate &&
@@ -4414,6 +4460,363 @@ const installGameDetailReentryShield = (unpatchers) => {
     });
 };
 
+const resolveControllerLayoutSource = (input) => {
+    if (!input.isNonSteamShortcut)
+        return null;
+    const sourceAppid = input.metadata?.steam_appid;
+    if (!Number.isFinite(input.displayedAppid) ||
+        input.displayedAppid <= 0 ||
+        typeof sourceAppid !== "number" ||
+        !Number.isFinite(sourceAppid) ||
+        sourceAppid <= 0 ||
+        sourceAppid === input.displayedAppid) {
+        return null;
+    }
+    return sourceAppid;
+};
+const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+const hasStableUrl = (value) => typeof value.URL === "string" && value.URL.trim().length > 0;
+const mergeSupplemental = (nativeBase, supplemental, include) => {
+    if (!Array.isArray(supplemental)) {
+        return { ok: false, reason: "supplemental-not-array" };
+    }
+    const merged = [];
+    const seen = new Set();
+    for (const value of nativeBase) {
+        if (isRecord(value) && hasStableUrl(value)) {
+            if (seen.has(value.URL))
+                continue;
+            seen.add(value.URL);
+        }
+        merged.push(value);
+    }
+    for (let index = 0; index < supplemental.length; index += 1) {
+        const value = supplemental[index];
+        if (!isRecord(value)) {
+            return { ok: false, reason: "malformed-supplemental-record", index };
+        }
+        if (!include(value))
+            continue;
+        if (!hasStableUrl(value)) {
+            return { ok: false, reason: "malformed-supplemental-record", index };
+        }
+        if (seen.has(value.URL))
+            continue;
+        seen.add(value.URL);
+        merged.push(value);
+    }
+    return { ok: true, value: merged };
+};
+const mergeOfficialConfigs = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, () => true);
+const mergeRecommendedTemplates = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, (record) => record.bRecommended === true);
+const mergeCommunityConfigs = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, () => true);
+
+const CONTROLLER_LAYOUT_WARNING = {
+    heading: "Controller layouts disabled",
+    body: "Using Steam's standard controller layout UI until Decky Metadata is reloaded.",
+};
+const getterMerges = {
+    official: mergeOfficialConfigs,
+    templates: mergeRecommendedTemplates,
+    workshop: mergeCommunityConfigs,
+};
+const getterKeys = {
+    official: "GetOfficialConfigsForApp",
+    templates: "GetTemplateConfigsForApp",
+    workshop: "GetWorkshopConfigsForApp",
+};
+const callableDataDescriptor = (descriptor) => !!descriptor &&
+    typeof descriptor.value === "function" &&
+    descriptor.writable === true &&
+    descriptor.configurable === true;
+const validateTargets = (targets) => {
+    const inputDescriptor = Object.getOwnPropertyDescriptor(targets.input, "QueryControllerConfigsForApp");
+    const storePrototype = Object.getPrototypeOf(targets.store);
+    if (!storePrototype ||
+        typeof targets.store.QueryConfigsForApp !== "function" ||
+        typeof targets.store.m_mapAppConfigs?.set !== "function" ||
+        !callableDataDescriptor(inputDescriptor)) {
+        return null;
+    }
+    const descriptors = [{
+            target: targets.input,
+            key: "QueryControllerConfigsForApp",
+            descriptor: inputDescriptor,
+        }];
+    for (const key of Object.values(getterKeys)) {
+        const descriptor = Object.getOwnPropertyDescriptor(storePrototype, key);
+        if (!callableDataDescriptor(descriptor))
+            return null;
+        descriptors.push({ target: storePrototype, key, descriptor });
+    }
+    return {
+        input: targets.input,
+        store: targets.store,
+        storePrototype,
+        descriptors,
+    };
+};
+const errorDetail = (error) => {
+    if (error instanceof Error && error.name)
+        return error.name;
+    return typeof error;
+};
+const validAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+const discoverControllerLayoutTargets = () => {
+    const internals = globalThis;
+    const input = internals.SteamClient?.Input;
+    const store = internals.controllerConfiguratorStore;
+    return input && store ? { input, store } : null;
+};
+const defaultSchedule = (callback, delayMs) => globalThis.setTimeout(callback, delayMs);
+const defaultCancel = (handle) => globalThis.clearTimeout(handle);
+const installControllerLayouts = (unpatchers, provided) => {
+    const dependencies = {
+        discoverTargets: discoverControllerLayoutTargets,
+        schedule: defaultSchedule,
+        cancel: defaultCancel,
+        defineProperty: Object.defineProperty,
+        maxAttempts: 240,
+        retryDelayMs: 500,
+        ...provided,
+    };
+    let disabled = false;
+    let installed = false;
+    let cleanedUp = false;
+    let timer;
+    let attempts = 0;
+    let installedDescriptors = [];
+    const trip = (failure) => {
+        if (disabled || cleanedUp)
+            return;
+        disabled = true;
+        try {
+            dependencies.reportFailure(failure);
+        }
+        catch (_error) {
+            // Logging must not interfere with the secured native result.
+        }
+        try {
+            dependencies.notify(CONTROLLER_LAYOUT_WARNING.heading, CONTROLLER_LAYOUT_WARNING.body);
+        }
+        catch (_error) {
+            // The injected or Decky notifier is strictly best effort.
+        }
+    };
+    const restoreDescriptors = (descriptors) => {
+        for (let index = descriptors.length - 1; index >= 0; index -= 1) {
+            const entry = descriptors[index];
+            try {
+                dependencies.defineProperty(entry.target, entry.key, entry.descriptor);
+            }
+            catch (_error) {
+                // Continue restoring every other section even if Steam changed mid-unload.
+            }
+        }
+    };
+    const installValidatedTargets = (targets) => {
+        const applied = [];
+        const inputEntry = targets.descriptors[0];
+        const originalQuery = inputEntry.descriptor.value;
+        const queryWrapper = function (...args) {
+            const nativeResult = originalQuery.apply(this, args);
+            if (disabled)
+                return nativeResult;
+            const displayedAppid = args[0];
+            if (!validAppid(displayedAppid))
+                return nativeResult;
+            let matchedAppid = null;
+            try {
+                matchedAppid = dependencies.resolveSource(displayedAppid);
+                if (matchedAppid === null)
+                    return nativeResult;
+                if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
+                    throw new Error("invalid matched appid");
+                }
+                targets.store.m_mapAppConfigs.set(matchedAppid, []);
+                originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
+            }
+            catch (error) {
+                trip({
+                    section: "query",
+                    code: "runtime-error",
+                    displayedAppid,
+                    matchedAppid: matchedAppid ?? undefined,
+                    detail: errorDetail(error),
+                });
+            }
+            return nativeResult;
+        };
+        const getterWrappers = new Map();
+        for (const section of Object.keys(getterKeys)) {
+            const key = getterKeys[section];
+            const entry = targets.descriptors.find((candidate) => candidate.key === key);
+            const originalGetter = entry.descriptor.value;
+            getterWrappers.set(section, function (...args) {
+                const nativeBase = originalGetter.apply(this, args);
+                if (disabled)
+                    return nativeBase;
+                const displayedAppid = args[0];
+                if (!validAppid(displayedAppid))
+                    return nativeBase;
+                let matchedAppid = null;
+                try {
+                    matchedAppid = dependencies.resolveSource(displayedAppid);
+                    if (matchedAppid === null)
+                        return nativeBase;
+                    if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
+                        throw new Error("invalid matched appid");
+                    }
+                    if (!Array.isArray(nativeBase)) {
+                        trip({
+                            section,
+                            code: "native-base-not-array",
+                            displayedAppid,
+                            matchedAppid,
+                        });
+                        return nativeBase;
+                    }
+                    const supplemental = originalGetter.apply(this, [matchedAppid, ...args.slice(1)]);
+                    const result = getterMerges[section](nativeBase, supplemental);
+                    if (result.ok === false) {
+                        trip({
+                            section,
+                            code: result.reason,
+                            displayedAppid,
+                            matchedAppid,
+                            detail: result.index === undefined ? undefined : `index:${result.index}`,
+                        });
+                        return nativeBase;
+                    }
+                    return result.value;
+                }
+                catch (error) {
+                    trip({
+                        section,
+                        code: "runtime-error",
+                        displayedAppid,
+                        matchedAppid: matchedAppid ?? undefined,
+                        detail: errorDetail(error),
+                    });
+                    return nativeBase;
+                }
+            });
+        }
+        const replacements = [
+            { ...inputEntry, descriptor: { ...inputEntry.descriptor, value: queryWrapper } },
+            ...targets.descriptors.slice(1).map((entry) => {
+                const section = Object.keys(getterKeys)
+                    .find((candidate) => getterKeys[candidate] === entry.key);
+                return {
+                    ...entry,
+                    descriptor: { ...entry.descriptor, value: getterWrappers.get(section) },
+                };
+            }),
+        ];
+        try {
+            for (const replacement of replacements) {
+                dependencies.defineProperty(replacement.target, replacement.key, replacement.descriptor);
+                const original = targets.descriptors.find((entry) => entry.key === replacement.key);
+                applied.push(original);
+            }
+        }
+        catch (error) {
+            restoreDescriptors(applied);
+            trip({ section: "install", code: "transaction-failed", detail: errorDetail(error) });
+            return;
+        }
+        installedDescriptors = targets.descriptors;
+        installed = true;
+    };
+    const attemptInstall = () => {
+        timer = undefined;
+        if (cleanedUp || disabled || installed)
+            return;
+        attempts += 1;
+        let targets;
+        try {
+            targets = dependencies.discoverTargets();
+        }
+        catch (error) {
+            trip({ section: "discovery", code: "discovery-error", detail: errorDetail(error) });
+            return;
+        }
+        if (!targets) {
+            if (attempts >= dependencies.maxAttempts) {
+                trip({ section: "discovery", code: "retry-exhausted" });
+            }
+            else {
+                try {
+                    timer = dependencies.schedule(attemptInstall, dependencies.retryDelayMs);
+                }
+                catch (error) {
+                    trip({
+                        section: "discovery",
+                        code: "retry-schedule-failed",
+                        detail: errorDetail(error),
+                    });
+                }
+            }
+            return;
+        }
+        let validated;
+        try {
+            validated = validateTargets(targets);
+        }
+        catch (error) {
+            trip({
+                section: "install",
+                code: "target-validation-failed",
+                detail: errorDetail(error),
+            });
+            return;
+        }
+        if (!validated) {
+            trip({ section: "install", code: "incompatible-target" });
+            return;
+        }
+        try {
+            installValidatedTargets(validated);
+        }
+        catch (error) {
+            trip({
+                section: "install",
+                code: "wrapper-construction-failed",
+                detail: errorDetail(error),
+            });
+        }
+    };
+    const cleanup = () => {
+        if (cleanedUp)
+            return;
+        cleanedUp = true;
+        if (timer !== undefined) {
+            dependencies.cancel(timer);
+            timer = undefined;
+        }
+        if (installedDescriptors.length > 0) {
+            restoreDescriptors(installedDescriptors);
+            installedDescriptors = [];
+        }
+        installed = false;
+    };
+    unpatchers.push(cleanup);
+    attemptInstall();
+    return {
+        isDisabled: () => disabled,
+        isInstalled: () => installed,
+    };
+};
+
+const resolveInstalledControllerLayoutSource = (displayedAppid) => resolveControllerLayoutSource({
+    displayedAppid,
+    isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(getOverview(displayedAppid)),
+    metadata: metadataCache[String(displayedAppid)],
+});
+const reportControllerLayoutFailure = (failure) => {
+    warn("controller-layouts", "supplemental layouts disabled", failure);
+    void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
+};
 const installSteamPatches = () => {
     configureActivityMetadataLoader(ensureMetadataCache);
     const unpatchers = [];
@@ -4467,6 +4870,13 @@ const installSteamPatches = () => {
         });
         safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
         safeInstallStep("nonSteamQuickLinkPolicy", () => installNonSteamQuickLinkPolicy(unpatchers));
+        // Install last so an unrelated synchronous patch failure cannot strand
+        // controller-layout descriptors outside the normal aggregate teardown.
+        safeInstallStep("controllerLayouts", () => installControllerLayouts(unpatchers, {
+            resolveSource: resolveInstalledControllerLayoutSource,
+            reportFailure: reportControllerLayoutFailure,
+            notify: toastWarn,
+        }));
         void frontendLog("patch", "steam patches installed", {
             attempts,
             unpatcherCount: unpatchers.length,
@@ -4519,52 +4929,6 @@ const installSteamPatches = () => {
         });
     };
 };
-
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
-const colors = {
-    accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    xxs: 2,
-    xs: 4,
-    sm: 8,
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16,
-    xl: 20,
-};
-const fontWeight = {
-    bold: 700};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
-
-const TITLE = "Decky Metadata";
-const DURATION = 3000;
-function notify(kind, heading, body) {
-    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
-    try {
-        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
-    }
-    catch {
-        // The Decky toaster may be unavailable outside the runtime.
-    }
-}
-const toastSuccess = (heading, body) => notify("success", heading, body);
-const toastWarn = (heading, body) => notify("warning", heading, body);
-const toastError = (heading, body) => notify("error", heading, body);
 
 const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
 const pageStyle = {

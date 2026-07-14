@@ -1,6 +1,13 @@
 import { frontendLog, getDebugLogging } from "../backend";
 import * as log from "../log";
-import { steamPatchTargetsReady, Unpatch } from "./core";
+import { toastWarn } from "../toast";
+import {
+  getOverview,
+  isNonSteamAppWithoutPatchedMethod,
+  metadataCache,
+  steamPatchTargetsReady,
+  Unpatch,
+} from "./core";
 import { installUnmatchedAppLinksHider } from "./appLinks";
 import {
   configureActivityMetadataLoader,
@@ -27,6 +34,28 @@ import {
   installNonSteamQuickLinkPolicy,
   installRouterRenderPatches,
 } from "./routerPatches";
+import {
+  ControllerLayoutFailure,
+  installControllerLayouts,
+} from "./controllerLayouts";
+import { resolveControllerLayoutSource } from "./controllerLayoutPolicy";
+
+const resolveInstalledControllerLayoutSource = (displayedAppid: number): number | null =>
+  resolveControllerLayoutSource({
+    displayedAppid,
+    isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(getOverview(displayedAppid)),
+    metadata: metadataCache[String(displayedAppid)],
+  });
+
+const reportControllerLayoutFailure = (failure: ControllerLayoutFailure): void => {
+  log.warn("controller-layouts", "supplemental layouts disabled", failure);
+  void frontendLog(
+    "patch",
+    "controller layout supplementation disabled",
+    failure,
+    "warning",
+  ).catch(() => undefined);
+};
 
 export const installSteamPatches = (): Unpatch => {
   configureActivityMetadataLoader(ensureMetadataCache);
@@ -82,6 +111,13 @@ export const installSteamPatches = (): Unpatch => {
     safeInstallStep("nonSteamQuickLinkPolicy", () =>
       installNonSteamQuickLinkPolicy(unpatchers)
     );
+    // Install last so an unrelated synchronous patch failure cannot strand
+    // controller-layout descriptors outside the normal aggregate teardown.
+    safeInstallStep("controllerLayouts", () => installControllerLayouts(unpatchers, {
+      resolveSource: resolveInstalledControllerLayoutSource,
+      reportFailure: reportControllerLayoutFailure,
+      notify: toastWarn,
+    }));
     void frontendLog("patch", "steam patches installed", {
       attempts,
       unpatcherCount: unpatchers.length,
