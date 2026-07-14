@@ -188,6 +188,11 @@ describe("filterControllerSearchConfigs", () => {
   });
 
   it("preserves unowned and opaque native records", () => {
+    const throwingAppid = Object.defineProperty({}, "appID", {
+      get: () => {
+        throw new Error("opaque native getter");
+      },
+    });
     const records = [
       { appID: 1211020 },
       { appID: 213120 },
@@ -200,6 +205,7 @@ describe("filterControllerSearchConfigs", () => {
       { appID: -1 },
       { appID: Number.POSITIVE_INFINITY },
       { appID: Number.NaN },
+      throwingAppid,
     ];
 
     expect(filterControllerSearchConfigs(

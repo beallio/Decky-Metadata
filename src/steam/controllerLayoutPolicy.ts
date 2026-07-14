@@ -62,9 +62,16 @@ export const filterControllerSearchConfigs = (
   return {
     ok: true,
     value: nativeResult.filter((value) => {
-      if (!isRecord(value) || !positiveNumericAppid(value.appID)) return true;
-      return value.appID === activeMatchedSourceAppid ||
-        !pluginOwnedSourceAppids.has(value.appID);
+      if (!isRecord(value)) return true;
+      let appid: unknown;
+      try {
+        appid = value.appID;
+      } catch (_error) {
+        return true;
+      }
+      if (!positiveNumericAppid(appid)) return true;
+      return appid === activeMatchedSourceAppid ||
+        !pluginOwnedSourceAppids.has(appid);
     }),
   };
 };
