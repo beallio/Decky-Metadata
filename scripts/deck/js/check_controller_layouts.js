@@ -109,7 +109,6 @@
     const secondSourceHasResults = Object.values(secondSource)
       .some((summary) => summary.count > 0);
     isolation = {
-      deferred: sourcePreexisting || secondSourcePreexisting,
       sourcePreexisting,
       secondSourcePreexisting,
       firstSourceCount: countSource(sourceAppid),

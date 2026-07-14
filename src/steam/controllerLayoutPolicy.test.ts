@@ -160,34 +160,32 @@ describe("controller layout merges", () => {
 });
 
 describe("filterControllerSearchConfigs", () => {
-  it("removes only inactive plugin-owned source records in stable order", () => {
-    const shortcut = Object.freeze({ appID: 2405230651, title: "shortcut" });
-    const wobbly = Object.freeze({ appID: 1211020, title: "wobbly" });
-    const transformers = Object.freeze({ appID: 213120, title: "transformers" });
+  it("retains Assassin's Creed while removing inactive Space Marine records", () => {
+    const shortcut = Object.freeze({ appID: 2312439508, title: "shortcut" });
+    const assassinsCreed = Object.freeze({ appID: 15100, title: "assassin's creed" });
     const spaceMarine = Object.freeze({ appID: 55150, title: "space marine" });
     const native = Object.freeze({ appID: 620, title: "portal" });
     const configs = Object.freeze([
       shortcut,
-      wobbly,
-      transformers,
-      native,
       spaceMarine,
+      assassinsCreed,
+      native,
     ]);
-    const owned = new Set([1211020, 213120, 55150]);
+    const supplementalSources = new Set([55150, 15100]);
 
-    const result = filterControllerSearchConfigs(configs, 213120, owned);
+    const result = filterControllerSearchConfigs(configs, 15100, supplementalSources);
 
     expect(result).toEqual({
       ok: true,
-      value: [shortcut, transformers, native],
+      value: [shortcut, assassinsCreed, native],
     });
     expect(result.ok && result.value).not.toBe(configs);
-    expect(configs).toEqual([shortcut, wobbly, transformers, native, spaceMarine]);
-    expect(owned).toEqual(new Set([1211020, 213120, 55150]));
-    expect(wobbly).toEqual({ appID: 1211020, title: "wobbly" });
+    expect(configs).toEqual([shortcut, spaceMarine, assassinsCreed, native]);
+    expect(supplementalSources).toEqual(new Set([55150, 15100]));
+    expect(spaceMarine).toEqual({ appID: 55150, title: "space marine" });
   });
 
-  it("preserves unowned and opaque native records", () => {
+  it("preserves untracked and opaque native records", () => {
     const throwingAppid = Object.defineProperty({}, "appID", {
       get: () => {
         throw new Error("opaque native getter");
@@ -218,9 +216,34 @@ describe("filterControllerSearchConfigs", () => {
     });
   });
 
-  it("returns the native array unchanged without an active matched context", () => {
-    const records = [{ appID: 1211020 }];
-    const result = filterControllerSearchConfigs(records, null, new Set([1211020]));
+  it("removes every supplemental source for a no-match context in stable order", () => {
+    const native = Object.freeze({ appID: 620, title: "portal" });
+    const opaque = Object.freeze({ title: "opaque" });
+    const spaceMarine = Object.freeze({ appID: 55150 });
+    const assassinsCreed = Object.freeze({ appID: 15100 });
+    const records = Object.freeze([spaceMarine, native, assassinsCreed, opaque]);
+    const supplementalSources = new Set([55150, 15100]);
+    const result = filterControllerSearchConfigs(records, null, supplementalSources);
+
+    expect(result).toEqual({ ok: true, value: [native, opaque] });
+    expect(result.ok && result.value).not.toBe(records);
+    expect(records).toEqual([spaceMarine, native, assassinsCreed, opaque]);
+    expect(supplementalSources).toEqual(new Set([55150, 15100]));
+  });
+
+  it("filters a pre-existing cache after it is tracked as supplemental", () => {
+    const preexisting = { appID: 55150, cacheState: "pre-existing" };
+
+    expect(filterControllerSearchConfigs(
+      [preexisting, { appID: 620 }],
+      15100,
+      new Set([55150, 15100]),
+    )).toEqual({ ok: true, value: [{ appID: 620 }] });
+  });
+
+  it("preserves exact native identity when no supplemental source is tracked", () => {
+    const records = [{ appID: 620 }];
+    const result = filterControllerSearchConfigs(records, null, new Set());
 
     expect(result).toEqual({ ok: true, value: records });
     expect(result.ok && result.value).toBe(records);
