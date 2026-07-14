@@ -24,6 +24,8 @@
     "Community Hub",
     "Points Shop",
     "Support",
+    "Market",
+    "Community Market",
   ]);
   const quickLinkOrder = text
     .split("\n")
@@ -38,7 +40,9 @@
     support: quickLinkOrder.includes("Support"),
     quickLinkOrder,
     discussions: /Discussions/i.test(text),
-    market: /Community Market|Market/i.test(text),
+    market: quickLinkOrder.includes("Market") ||
+      quickLinkOrder.includes("Community Market") ||
+      /Community Market|Market/i.test(text),
     developerInfo: /Developer/i.test(text),
     detailsMetadata: hasDetailsMetadata(),
     hltbRows: /MAIN STORY/i.test(text),

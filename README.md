@@ -55,7 +55,7 @@ scripts/bump_next_patch.sh
 - Shows native Steam Community content for matched shortcuts, then fetches live Steam Community cards when a known app's native hub is empty; when Steam has no cards, it fetches fresh best-effort YouTube videos and IGN screenshots without storing Community-tab media.
 - Preserves a manually pinned Steam app ID and its Steam-owned metadata when applying a fetched IGN result.
 - Caches Steam's delisted-app index so removed store pages can still be matched by title.
-- Rewrites Steam's native Game Info quick-links for matched shortcuts: Support is removed, Store Page is kept unless the match is delisted, and known DLC / Points Shop links target the real Steam app. Never-on-Steam shortcuts continue to hide the row entirely.
+- Rewrites Steam's native Game Info quick-links for matched shortcuts: Support and Community Market are removed, Store Page is kept unless the match is delisted, and known DLC / Points Shop links target the real Steam app. Never-on-Steam shortcuts continue to hide the row entirely.
 
 <img width="3840" height="2160" alt="Decky Metadata screenshot" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8?cacheBuster=20260702" />
 <img width="3840" height="2160" alt="Decky Metadata metadata editor" src="https://github.com/user-attachments/assets/1bb89158-1142-410e-9793-63492fbb55a3?cacheBuster=20260702" />

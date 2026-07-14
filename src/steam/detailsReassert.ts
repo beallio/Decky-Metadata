@@ -53,6 +53,14 @@ export const reassertMatchedAppData = (
   details.rgPublishers = associationData.rgPublishers;
   details.rgFranchises = associationData.rgFranchises;
 
+  // A matched shortcut can inherit Steam screenshot metadata without becoming
+  // the real Steam application. Never advertise the shortcut appid as a
+  // Community Market target; the quick-link policy independently removes any
+  // stale native descriptor that SteamUI may already have rendered.
+  if (hasMatchedSteamAppId(metadata)) {
+    details.bCommunityMarketPresence = false;
+  }
+
   if (screenshots.length) {
     details.nScreenshots = screenshots.length;
     details.vecScreenShots = screenshots;

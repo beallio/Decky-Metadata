@@ -35,6 +35,9 @@ export const isSupportQuickLink = (descriptor: QuickLinkDescriptor): boolean =>
 export const isCommunityQuickLink = (descriptor: QuickLinkDescriptor): boolean =>
   descriptor?.link === "GameHub";
 
+export const isCommunityMarketQuickLink = (descriptor: QuickLinkDescriptor): boolean =>
+  descriptor?.link === "CommunityMarketApp";
+
 export const isStoreQuickLink = (descriptor: QuickLinkDescriptor): boolean =>
   /^\/app\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
 
@@ -57,6 +60,7 @@ export const transformMatchedQuickLinks = (
   for (const descriptor of links) {
     if (
       isSupportQuickLink(descriptor) ||
+      isCommunityMarketQuickLink(descriptor) ||
       isDlcQuickLink(descriptor) ||
       isPointsShopQuickLink(descriptor)
     ) {

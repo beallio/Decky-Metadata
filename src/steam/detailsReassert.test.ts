@@ -51,6 +51,21 @@ describe("reassertMatchedAppData", () => {
     });
   });
 
+  it("suppresses synthetic Community Market presence only for matched shortcuts", () => {
+    const matchedAppData: any = { details: { bCommunityMarketPresence: true } };
+    const unmatchedAppData: any = { details: { bCommunityMarketPresence: true } };
+
+    expect(reassertMatchedAppData(
+      matchedAppData,
+      { ...metadata, steam_appid: 338930 } as any,
+      [],
+    )).toBe(true);
+    expect(reassertMatchedAppData(unmatchedAppData, metadata as any, [])).toBe(true);
+
+    expect(matchedAppData.details.bCommunityMarketPresence).toBe(false);
+    expect(unmatchedAppData.details.bCommunityMarketPresence).toBe(true);
+  });
+
   it("falls back to the short description and leaves screenshot fields alone when empty", () => {
     const appData: any = { details: { strFullDescription: "native", nScreenshots: 4 } };
 

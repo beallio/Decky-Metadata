@@ -31,6 +31,8 @@ import json, sys
 matched, never, delisted, feature = map(json.loads, sys.argv[1:])
 if not matched["quickLinksRow"]:
     sys.exit("FAIL: matched game is missing its quick-links row")
+if matched["market"]:
+    sys.exit("FAIL: listed matched game still shows Market")
 if never["quickLinksRow"]:
     sys.exit("FAIL: never-on-Steam game still shows the dead quick-links row")
 if not (
@@ -52,6 +54,8 @@ if feature:
         sys.exit("FAIL: feature fixture lost rich metadata")
     if feature["support"]:
         sys.exit("FAIL: feature fixture still shows Support")
+    if feature["market"]:
+        sys.exit("FAIL: feature fixture still shows Market")
     expected_order = ["Store Page", "DLC", "Community Hub", "Points Shop"]
     observed_order = [
         label for label in feature["quickLinkOrder"] if label in expected_order

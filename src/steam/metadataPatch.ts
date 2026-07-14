@@ -232,14 +232,6 @@ export const applyMetadata = (appId: number) => {
     appData.screenshots = screenshotData;
   }
 
-  if (appData.details) {
-    if (metadata.steam_store_state === "delisted") {
-      appData.details.bCommunityMarketPresence = false;
-    } else if (screenshots.length) {
-      appData.details.bCommunityMarketPresence = true;
-    }
-  }
-
   const metadataKey = String(appId);
   if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
     try {

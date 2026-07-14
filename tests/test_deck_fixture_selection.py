@@ -62,10 +62,15 @@ def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
     assert 'expected_order = ["Store Page", "DLC", "Community Hub", "Points Shop"]' in smoke
     assert 'delisted["storePage"]' in smoke
     assert 'delisted["support"]' in smoke
+    assert 'matched["market"]' in smoke
+    assert 'delisted["market"]' in smoke
     assert 'feature["support"]' in smoke
+    assert 'feature["market"]' in smoke
     assert "quickLinkOrder" in probe
     assert "pointsShop" in probe
     assert "support" in probe
+    assert '"Market"' in probe
+    assert '"Community Market"' in probe
     assert "detailsMetadata" in probe
     assert 'matched["developerInfo"] or matched["detailsMetadata"]' in smoke
     assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke

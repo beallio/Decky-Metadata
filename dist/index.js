@@ -251,6 +251,13 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
     details.rgDevelopers = associationData.rgDevelopers;
     details.rgPublishers = associationData.rgPublishers;
     details.rgFranchises = associationData.rgFranchises;
+    // A matched shortcut can inherit Steam screenshot metadata without becoming
+    // the real Steam application. Never advertise the shortcut appid as a
+    // Community Market target; the quick-link policy independently removes any
+    // stale native descriptor that SteamUI may already have rendered.
+    if (hasMatchedSteamAppId(metadata)) {
+        details.bCommunityMarketPresence = false;
+    }
     if (screenshots.length) {
         details.nScreenshots = screenshots.length;
         details.vecScreenShots = screenshots;
@@ -932,14 +939,6 @@ const applyMetadata = (appId) => {
             vecScreenShots: screenshots,
         };
         appData.screenshots = screenshotData;
-    }
-    if (appData.details) {
-        if (metadata.steam_store_state === "delisted") {
-            appData.details.bCommunityMarketPresence = false;
-        }
-        else if (screenshots.length) {
-            appData.details.bCommunityMarketPresence = true;
-        }
     }
     const metadataKey = String(appId);
     if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
@@ -3912,6 +3911,7 @@ const descriptorPath = (descriptor) => {
 };
 const isSupportQuickLink = (descriptor) => descriptor?.link === "HelpAppPage";
 const isCommunityQuickLink = (descriptor) => descriptor?.link === "GameHub";
+const isCommunityMarketQuickLink = (descriptor) => descriptor?.link === "CommunityMarketApp";
 const isStoreQuickLink = (descriptor) => /^\/app\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
 const isDlcQuickLink = (descriptor) => /^\/dlc\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
 const isPointsShopQuickLink = (descriptor) => /^\/points\/shop\/app\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
@@ -3922,6 +3922,7 @@ const transformMatchedQuickLinks = (links, state, resources) => {
     let originalStoreSlot;
     for (const descriptor of links) {
         if (isSupportQuickLink(descriptor) ||
+            isCommunityMarketQuickLink(descriptor) ||
             isDlcQuickLink(descriptor) ||
             isPointsShopQuickLink(descriptor)) {
             continue;

@@ -27,9 +27,19 @@ const support = (appid = 10): QuickLinkDescriptor => ({
   link: "HelpAppPage",
   appid,
 });
+const market = (appid = 10): QuickLinkDescriptor => ({
+  label: "Market",
+  link: "CommunityMarketApp",
+  appid,
+});
 const discussions: QuickLinkDescriptor = {
   label: "Discussions",
   link: "GameHubDiscussions",
+  appid: 10,
+};
+const guides: QuickLinkDescriptor = {
+  label: "Guides",
+  link: "GameHubGuides",
   appid: 10,
 };
 
@@ -129,6 +139,42 @@ describe("transformMatchedQuickLinks", () => {
       "Community Hub",
       "Localized Points",
     ]);
+  });
+
+  it("removes stale Market descriptors while preserving the complete related-link order", () => {
+    const staleMarket = { ...market(999), label: "Localized stale market label" };
+    expect(labels(transform(
+      [
+        store(),
+        dlc(999),
+        market(),
+        community(),
+        discussions,
+        guides,
+        points(999),
+        staleMarket,
+        support(),
+      ],
+      { hasDlc: true, hasPointsShop: true },
+    ))).toEqual([
+      "Store Page",
+      "Localized DLC",
+      "Community Hub",
+      "Localized Points",
+      "Discussions",
+      "Guides",
+    ]);
+  });
+
+  it("removes Market for delisted and unknown matched shortcuts", () => {
+    expect(labels(transform(
+      [store(), market(), community(), discussions, guides],
+      { steamStoreState: "delisted" },
+    ))).toEqual(["Community Hub", "Discussions", "Guides"]);
+    expect(labels(transform(
+      [store(), market(), community(), discussions, guides],
+      { steamStoreState: "unknown" },
+    ))).toEqual(["Store Page", "Community Hub", "Discussions", "Guides"]);
   });
 
   it("removes unexpected native optional descriptors when metadata says unavailable", () => {

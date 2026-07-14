@@ -19,6 +19,12 @@ deterministic device coverage.
   refresh.
 - Quick-link classification uses `HelpAppPage`, `GameHub`, and stable Steam URL
   paths rather than localized labels.
+- Review round 01 reproduced a listed matched shortcut exposing a synthetic
+  Community Market link. The correction classifies `CommunityMarketApp` by its
+  stable link identifier, removes every stale/native Market descriptor for
+  matched shortcuts, and sets `bCommunityMarketPresence` false whenever matched
+  metadata is reasserted. Unmatched shortcuts and native Steam applications are
+  left unchanged.
 - The pure policy removes native DLC / Points descriptors before inserting one
   normalized descriptor for each known capability. Inserted URLs always use the
   matched Steam appid.
@@ -44,6 +50,9 @@ deterministic device coverage.
 - `src/steam/quickLinkPolicy.ts`
 - `src/steam/quickLinkResources.ts`
 - `src/steam/quickLinkPolicy.test.ts`
+- `src/steam/detailsReassert.ts`
+- `src/steam/detailsReassert.test.ts`
+- `src/steam/metadataPatch.ts`
 - `src/steam/routerPatches.ts`
 - `src/steam/install.ts`
 - `scripts/deck/js/check_quicklinks.js`
@@ -92,6 +101,24 @@ deterministic device coverage.
   `Focusable` links. A physical controller button was not available to this
   remote agent; the controller-specific input check remains a human confirmation
   rather than an automated claim.
+- Review round 01 focused tests passed: 19 Vitest policy/details tests, 5
+  device-tooling pytest tests, and the committed shell/JavaScript syntax checks.
+  The final full quality gate passed with 53 Vitest tests plus the complete
+  Python suite, typecheck, Rollup build, version checks, and review-note
+  preservation.
+- `scripts/decky package-push --build --push` created and checksum-verified
+  `0.1.0+0e25f2f`, then copied the full ZIP to the Deck. Because the correction
+  was frontend-only, `scripts/deck/deploy.sh --no-build` pushed the regenerated
+  bundle into the installed plugin and hard-reloaded SteamUI to `READY`.
+- The focused four-fixture smoke passed with listed `2312439508`, delisted
+  `3497159354`, never-on-Steam `3462906031`, and feature `2405230651`. Market was
+  absent on the listed, delisted, and feature matches; the required Store / DLC /
+  Community Hub / Points Shop order and Support removal remained intact.
+- The exact required command,
+  `QUICKLINK_FEATURE_APPID=2405230651 scripts/deck/verify/run_all.sh --no-launch
+  --extended`, passed with the same fixture IDs. It also proved zero cache writes
+  across three subsection re-renders, retained the never-on-Steam Community
+  fallback, and passed both immediate and post-idle quick-link checks.
 
 ## Deferred / out of scope
 
