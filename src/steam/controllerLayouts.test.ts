@@ -13,36 +13,62 @@ class TrackingMap extends Map<number, unknown> {
   writes: Array<[number, unknown]> = [];
   throwOnHas?: number;
   throwOnSet?: number;
-  forbidEnumeration = false;
+  forbidAccess = false;
+
+  private assertAccessAllowed(operation: string): void {
+    if (this.forbidAccess) throw new Error(`${operation} forbidden`);
+  }
 
   seed(key: number, value: unknown): void {
     Map.prototype.set.call(this, key, value);
   }
 
   override has(key: number): boolean {
+    this.assertAccessAllowed("has");
     this.hasCalls.push(key);
     if (key === this.throwOnHas) throw new Error("has failed");
     return super.has(key);
   }
 
   override set(key: number, value: unknown): this {
+    this.assertAccessAllowed("set");
     this.writes.push([key, value]);
     if (key === this.throwOnSet) throw new Error("set failed");
     return super.set(key, value);
   }
 
+  override get(key: number): unknown {
+    this.assertAccessAllowed("get");
+    return super.get(key);
+  }
+
+  override delete(key: number): boolean {
+    this.assertAccessAllowed("delete");
+    return super.delete(key);
+  }
+
+  override clear(): void {
+    this.assertAccessAllowed("clear");
+    super.clear();
+  }
+
+  override get size(): number {
+    this.assertAccessAllowed("size");
+    return super.size;
+  }
+
   override entries(): MapIterator<[number, unknown]> {
-    if (this.forbidEnumeration) throw new Error("entries forbidden");
+    this.assertAccessAllowed("entries");
     return super.entries();
   }
 
   override keys(): MapIterator<number> {
-    if (this.forbidEnumeration) throw new Error("keys forbidden");
+    this.assertAccessAllowed("keys");
     return super.keys();
   }
 
   override values(): MapIterator<unknown> {
-    if (this.forbidEnumeration) throw new Error("values forbidden");
+    this.assertAccessAllowed("values");
     return super.values();
   }
 
@@ -50,12 +76,12 @@ class TrackingMap extends Map<number, unknown> {
     callbackfn: (value: unknown, key: number, map: Map<number, unknown>) => void,
     thisArg?: unknown,
   ): void {
-    if (this.forbidEnumeration) throw new Error("forEach forbidden");
+    this.assertAccessAllowed("forEach");
     super.forEach(callbackfn, thisArg);
   }
 
   override [Symbol.iterator](): MapIterator<[number, unknown]> {
-    if (this.forbidEnumeration) throw new Error("iterator forbidden");
+    this.assertAccessAllowed("iterator");
     return super[Symbol.iterator]();
   }
 }
@@ -321,7 +347,7 @@ describe("installControllerLayouts", () => {
     expect(harness.store.m_mapAppConfigs.writes).toEqual([[20, []], [20, []]]);
   });
 
-  it("isolates inactive owned Search records while preserving active and native records", () => {
+  it("isolates inactive supplemental Search records while preserving active and native records", () => {
     const sources = new Map([[10, 20], [11, 30], [12, 40]]);
     const harness = makeHarness({
       resolveSource: (appid) => sources.get(appid) ?? null,
@@ -349,7 +375,7 @@ describe("installControllerLayouts", () => {
     expect(harness.calls.filter((call) => call.startsWith("query:20"))).toHaveLength(1);
   });
 
-  it("does not claim pre-existing source caches and relinquishes owned sources on native query", () => {
+  it("tracks absent and pre-existing supplemental caches and relinquishes on native query", () => {
     const sources = new Map([[10, 20], [11, 30]]);
     const preexisting = makeHarness({
       preexistingSourceAppids: [20],
@@ -357,7 +383,13 @@ describe("installControllerLayouts", () => {
     });
     callQuery(preexisting.input, 10);
     callQuery(preexisting.input, 11);
-    expect(preexisting.store.GetAllConfigs()).toEqual(preexisting.outputs.search);
+    expect(preexisting.store.GetAllConfigs()).toEqual([
+      { appID: 30, URL: "search://transformers" },
+      { appID: 40, URL: "search://space-marine" },
+      { appID: 620, URL: "search://native" },
+    ]);
+    expect(preexisting.calls.filter((call) => call.startsWith("query:20")))
+      .toHaveLength(1);
 
     const relinquished = makeHarness({
       resolveSource: (appid) => sources.get(appid) ?? null,
@@ -365,7 +397,12 @@ describe("installControllerLayouts", () => {
     callQuery(relinquished.input, 10);
     callQuery(relinquished.input, 20);
     callQuery(relinquished.input, 11);
-    expect(relinquished.store.GetAllConfigs()).toEqual(relinquished.outputs.search);
+    expect(relinquished.store.GetAllConfigs()).toEqual([
+      { appID: 20, URL: "search://wobbly" },
+      { appID: 30, URL: "search://transformers" },
+      { appID: 40, URL: "search://space-marine" },
+      { appID: 620, URL: "search://native" },
+    ]);
     expect(relinquished.calls.filter((call) => call.startsWith("query:20")))
       .toHaveLength(2);
     callQuery(relinquished.input, 10);
@@ -373,20 +410,67 @@ describe("installControllerLayouts", () => {
       .toHaveLength(3);
   });
 
+  it("establishes matched and no-match Search context from getters before query effects", () => {
+    const sources = new Map([
+      [2155012430, 55150],
+      [2312439508, 15100],
+    ]);
+    const search = [
+      { appID: 55150, URL: "search://space-marine" },
+      { appID: 15100, URL: "search://assassins-creed" },
+      { appID: 620, URL: "search://native" },
+      { title: "opaque" },
+    ];
+    const harness = makeHarness({
+      searchResult: search,
+      resolveSource: (appid) => sources.get(appid) ?? null,
+    });
+
+    callQuery(harness.input, 2155012430);
+    harness.calls.length = 0;
+    harness.store.GetOfficialConfigsForApp(2312439508, 4);
+    harness.store.m_mapAppConfigs.forbidAccess = true;
+    expect(harness.store.GetAllConfigs()).toEqual([
+      { appID: 15100, URL: "search://assassins-creed" },
+      { appID: 620, URL: "search://native" },
+      { title: "opaque" },
+    ]);
+    harness.store.m_mapAppConfigs.forbidAccess = false;
+    expect(harness.calls).toEqual([
+      "official:2312439508:4",
+      "official:15100:4",
+      "search",
+    ]);
+
+    callQuery(harness.input, 2312439508);
+    harness.calls.length = 0;
+    harness.store.GetTemplateConfigsForApp(3156562597, 4);
+    harness.store.m_mapAppConfigs.forbidAccess = true;
+    expect(harness.store.GetAllConfigs()).toEqual([
+      { appID: 620, URL: "search://native" },
+      { title: "opaque" },
+    ]);
+    harness.store.m_mapAppConfigs.forbidAccess = false;
+    expect(harness.calls).toEqual([
+      "templates:3156562597:4",
+      "search",
+    ]);
+  });
+
   it("preserves native Search identity and never touches the map from Search", () => {
     const native = makeHarness({ source: null });
-    native.store.m_mapAppConfigs.forbidEnumeration = true;
+    native.store.m_mapAppConfigs.forbidAccess = true;
     const nativeSearch = native.store.GetAllConfigs();
-    native.store.m_mapAppConfigs.forbidEnumeration = false;
+    native.store.m_mapAppConfigs.forbidAccess = false;
     expect(nativeSearch).toBe(native.outputs.search);
 
     const matched = makeHarness();
     callQuery(matched.input);
     const hasCalls = matched.store.m_mapAppConfigs.hasCalls.length;
     const writes = matched.store.m_mapAppConfigs.writes.length;
-    matched.store.m_mapAppConfigs.forbidEnumeration = true;
+    matched.store.m_mapAppConfigs.forbidAccess = true;
     expect(() => matched.store.GetAllConfigs()).not.toThrow();
-    matched.store.m_mapAppConfigs.forbidEnumeration = false;
+    matched.store.m_mapAppConfigs.forbidAccess = false;
     expect(matched.store.m_mapAppConfigs.hasCalls).toHaveLength(hasCalls);
     expect(matched.store.m_mapAppConfigs.writes).toHaveLength(writes);
   });
@@ -668,6 +752,42 @@ describe("installControllerLayouts", () => {
     expect(harness.failures).toEqual([
       expect.objectContaining({ section: "query", code: "runtime-error" }),
     ]);
+  });
+
+  it("fails open when getter context resolution throws after clearing stale Search state", () => {
+    let failForAppid: number | null = null;
+    const harness = makeHarness({
+      resolveSource: (appid) => {
+        if (appid === failForAppid) throw new Error("resolver failed");
+        return appid === 10 ? 20 : null;
+      },
+    });
+    callQuery(harness.input);
+    failForAppid = 11;
+    harness.calls.length = 0;
+
+    expect(harness.store.GetOfficialConfigsForApp(11, 7)).toBe(
+      harness.outputs.officialMatched,
+    );
+    expect(harness.control.isDisabled()).toBe(true);
+    expect(harness.calls).toEqual(["official:11:7"]);
+    expect(harness.failures).toEqual([
+      expect.objectContaining({
+        section: "official",
+        code: "runtime-error",
+        displayedAppid: 11,
+      }),
+    ]);
+    expect(harness.notifications).toEqual([
+      [CONTROLLER_LAYOUT_WARNING.heading, CONTROLLER_LAYOUT_WARNING.body],
+    ]);
+
+    expect(harness.store.GetAllConfigs()).toBe(harness.outputs.search);
+    expect(harness.store.GetTemplateConfigsForApp(10, 1)).toBe(
+      harness.outputs.templatesShortcut,
+    );
+    expect(harness.failures).toHaveLength(1);
+    expect(harness.notifications).toHaveLength(1);
   });
 
   it("sets disabled state before reporting and notifying and swallows both throws", () => {

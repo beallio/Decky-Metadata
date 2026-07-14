@@ -51,12 +51,12 @@ const positiveNumericAppid = (value: unknown): value is number =>
 export const filterControllerSearchConfigs = (
   nativeResult: unknown,
   activeMatchedSourceAppid: number | null,
-  pluginOwnedSourceAppids: ReadonlySet<number>,
+  supplementalSourceAppids: ReadonlySet<number>,
 ): ControllerConfigSearchResult => {
   if (!Array.isArray(nativeResult)) {
     return { ok: false, reason: "native-search-not-array" };
   }
-  if (activeMatchedSourceAppid === null) {
+  if (supplementalSourceAppids.size === 0) {
     return { ok: true, value: nativeResult };
   }
   return {
@@ -71,7 +71,7 @@ export const filterControllerSearchConfigs = (
       }
       if (!positiveNumericAppid(appid)) return true;
       return appid === activeMatchedSourceAppid ||
-        !pluginOwnedSourceAppids.has(appid);
+        !supplementalSourceAppids.has(appid);
     }),
   };
 };

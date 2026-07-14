@@ -216,7 +216,7 @@ export const installControllerLayouts = (
   let attempts = 0;
   let installedDescriptors: ValidatedTargets["descriptors"] = [];
   let activeMatchedSourceAppid: number | null = null;
-  const pluginOwnedSourceAppids = new Set<number>();
+  const supplementalSourceAppids = new Set<number>();
   const supplementalQueryKeys = new Map<number, SupplementalQueryKey>();
 
   const trip = (failure: ControllerLayoutFailure): void => {
@@ -251,33 +251,40 @@ export const installControllerLayouts = (
 
   const installValidatedTargets = (targets: ValidatedTargets): void => {
     const applied: ValidatedTargets["descriptors"] = [];
+    const establishDisplayedContext = (displayedAppid: unknown): number | null => {
+      activeMatchedSourceAppid = null;
+      if (!validAppid(displayedAppid)) return null;
+      const matchedAppid = dependencies.resolveSource(displayedAppid);
+      if (matchedAppid === null) {
+        if (supplementalSourceAppids.has(displayedAppid)) {
+          supplementalSourceAppids.delete(displayedAppid);
+          supplementalQueryKeys.delete(displayedAppid);
+        }
+        return null;
+      }
+      if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
+        throw new Error("invalid matched appid");
+      }
+      activeMatchedSourceAppid = matchedAppid;
+      return matchedAppid;
+    };
     const inputEntry = targets.descriptors[0];
     const originalQuery = inputEntry.descriptor.value;
     const queryWrapper = function (this: unknown, ...args: unknown[]) {
       const nativeResult = originalQuery.apply(this, args);
       if (disabled) return nativeResult;
-      activeMatchedSourceAppid = null;
       const displayedAppid = args[0];
-      if (!validAppid(displayedAppid)) return nativeResult;
+      const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
       let matchedAppid: number | null = null;
       try {
-        matchedAppid = dependencies.resolveSource(displayedAppid);
-        if (matchedAppid === null) {
-          if (pluginOwnedSourceAppids.has(displayedAppid)) {
-            pluginOwnedSourceAppids.delete(displayedAppid);
-            supplementalQueryKeys.delete(displayedAppid);
-          }
-          return nativeResult;
-        }
-        if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
-          throw new Error("invalid matched appid");
-        }
+        matchedAppid = establishDisplayedContext(displayedAppid);
+        if (matchedAppid === null || validDisplayedAppid === undefined) return nativeResult;
         const queryKey = supplementalQueryKey(matchedAppid, args);
         if (!queryKey) {
           trip({
             section: "query",
             code: "invalid-query-key",
-            displayedAppid,
+            displayedAppid: validDisplayedAppid,
             matchedAppid,
           });
           return nativeResult;
@@ -288,17 +295,18 @@ export const installControllerLayouts = (
           cacheExisted &&
           sameSupplementalQueryKey(supplementalQueryKeys.get(matchedAppid), queryKey)
         ) {
+          supplementalSourceAppids.add(matchedAppid);
           return nativeResult;
         }
         targets.store.m_mapAppConfigs.set(matchedAppid, []);
         originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
         supplementalQueryKeys.set(matchedAppid, queryKey);
-        if (!cacheExisted) pluginOwnedSourceAppids.add(matchedAppid);
+        supplementalSourceAppids.add(matchedAppid);
       } catch (error) {
         trip({
           section: "query",
           code: "runtime-error",
-          displayedAppid,
+          displayedAppid: validDisplayedAppid,
           matchedAppid: matchedAppid ?? undefined,
           detail: errorDetail(error),
         });
@@ -315,19 +323,16 @@ export const installControllerLayouts = (
         const nativeBase = originalGetter.apply(this, args);
         if (disabled) return nativeBase;
         const displayedAppid = args[0];
-        if (!validAppid(displayedAppid)) return nativeBase;
+        const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
         let matchedAppid: number | null = null;
         try {
-          matchedAppid = dependencies.resolveSource(displayedAppid);
-          if (matchedAppid === null) return nativeBase;
-          if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
-            throw new Error("invalid matched appid");
-          }
+          matchedAppid = establishDisplayedContext(displayedAppid);
+          if (matchedAppid === null || validDisplayedAppid === undefined) return nativeBase;
           if (!Array.isArray(nativeBase)) {
             trip({
               section,
               code: "native-base-not-array",
-              displayedAppid,
+              displayedAppid: validDisplayedAppid,
               matchedAppid,
             });
             return nativeBase;
@@ -338,7 +343,7 @@ export const installControllerLayouts = (
             trip({
               section,
               code: result.reason,
-              displayedAppid,
+              displayedAppid: validDisplayedAppid,
               matchedAppid,
               detail: result.index === undefined ? undefined : `index:${result.index}`,
             });
@@ -349,7 +354,7 @@ export const installControllerLayouts = (
           trip({
             section,
             code: "runtime-error",
-            displayedAppid,
+            displayedAppid: validDisplayedAppid,
             matchedAppid: matchedAppid ?? undefined,
             detail: errorDetail(error),
           });
@@ -364,19 +369,19 @@ export const installControllerLayouts = (
     const originalSearch = searchEntry.descriptor.value;
     const searchWrapper = function (this: unknown, ...args: unknown[]) {
       const nativeResult = originalSearch.apply(this, args);
-      if (disabled || activeMatchedSourceAppid === null) return nativeResult;
+      if (disabled) return nativeResult;
       const matchedAppid = activeMatchedSourceAppid;
       try {
         const result = filterControllerSearchConfigs(
           nativeResult,
           matchedAppid,
-          pluginOwnedSourceAppids,
+          supplementalSourceAppids,
         );
         if (result.ok === false) {
           trip({
             section: "search",
             code: result.reason,
-            matchedAppid,
+            matchedAppid: matchedAppid ?? undefined,
           });
           return nativeResult;
         }
@@ -385,7 +390,7 @@ export const installControllerLayouts = (
         trip({
           section: "search",
           code: "runtime-error",
-          matchedAppid,
+          matchedAppid: matchedAppid ?? undefined,
           detail: errorDetail(error),
         });
         return nativeResult;
@@ -492,7 +497,7 @@ export const installControllerLayouts = (
     }
     installed = false;
     activeMatchedSourceAppid = null;
-    pluginOwnedSourceAppids.clear();
+    supplementalSourceAppids.clear();
     supplementalQueryKeys.clear();
   };
 
