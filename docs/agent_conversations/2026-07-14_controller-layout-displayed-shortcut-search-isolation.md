@@ -172,22 +172,46 @@ could not find a row for its auto-selected listed fixture `2312439508`; that
 failure is unrelated to this controller-layout change and did not expand this
 task's scope.
 
-The controller smoke stopped before issuing any controller query with
+The controller smoke initially stopped before issuing any controller query with
 `Error: controller list unavailable`; its diagnostic bundle is
 `/tmp/Decky-Metadata/diagnostics/20260714T200550Z`. Sanitized follow-up CDP
 evidence showed that lowercase `globalThis.controllerStore` is undefined in the
 current SteamUI, while capitalized `globalThis.ControllerStore.GetControllers()`
 exists and returned one controller with `nControllerIndex: 15` and
 `eControllerType: 4`. The bounded probe now resolves the capitalized contract
-first and retains the lowercase legacy fallback. No controller query, layout
-operation, navigation, or game launch occurred, so the displayed-shortcut fix
-is not yet live-verified.
+first and retains the lowercase legacy fallback.
 
-DEFERRED: on-device deployment and controller-cache query require explicit current approval; the separate launch gate also requires an explicitly approved safe shortcut.
+After that verifier correction, the explicitly approved targeted controller
+smoke passed against commit `8291027`. Sanitized evidence is stored at
+`/tmp/Decky-Metadata/verification/controller-layouts-targeted-after-8291027.json`:
+
+- The listed shortcut's Community query returned 31 shortcut records and 31
+  source records in 750 ms.
+- The delisted shortcut's Community query returned 11 shortcut records and 9
+  source records in 703 ms.
+- The never-on-Steam shortcut used only its native query, returned 1 Community
+  record, and completed in 405 ms.
+- After switching from the first shortcut to the second, Search contained 0
+  records for the first displayed shortcut and 0 for its matched source while
+  retaining 72 records for the second displayed shortcut and 79 for its source.
+- After switching to the third shortcut, Search contained 0 records for both
+  prior displayed shortcuts and both prior matched sources while retaining 71
+  records for the current third shortcut.
+
+The post-smoke `scripts/deck/logs.sh audit --json` result was clean:
+`fatal: false`, with no known signature groups and no unknown errors. The
+broader dispatcher's generic quick-links smoke remained failed because its
+listed fixture had no quick-links row; that result is unrelated to the
+controller-search fix and remains outside this plan's scope.
+
+No game was launched. Launch verification remains explicitly deferred because
+it requires separate approval naming a safe shortcut. The successful targeted
+controller smoke satisfies this plan's in-scope live cache-isolation
+requirement.
 
 ## Follow-up Scope
 
-The approval-gated no-launch controller smoke remains required before this
-`src/steam/` change is finalized or integrated unless the user explicitly
-accepts the named deferral. The separate launch gate remains independently
-approval-gated and must use an explicitly approved safe shortcut id.
+The separate launch gate remains independently approval-gated and must use an
+explicitly approved safe shortcut id. The unrelated generic quick-links fixture
+gap should be handled under a separate plan if broader dispatcher coverage is
+needed.
