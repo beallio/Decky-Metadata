@@ -5,6 +5,7 @@
 #   MATCHED_APPID   matched game WITH a steam_appid (launch + links-row checks)
 #   DELISTED_APPID  matched game whose Steam store entry is delisted
 #   NEVER_APPID     matched game WITHOUT a steam_appid (links suppression check)
+#   QUICKLINK_FEATURE_APPID  render-only match with DLC + Points Shop metadata
 #
 #   run_all.sh [--no-launch] [--extended]
 #
@@ -14,6 +15,7 @@ here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 host="${DECKY_DECK_HOST:-steamdeck}"
 launch_appid_explicit=0
 [[ -n "${MATCHED_APPID:-}" ]] && launch_appid_explicit=1
+QUICKLINK_FEATURE_APPID="${QUICKLINK_FEATURE_APPID:-}"
 no_launch=0
 extended=0
 while (($#)); do
@@ -47,7 +49,7 @@ DELISTED_APPID="${DELISTED_APPID:-$auto_delisted}"
 NEVER_APPID="${NEVER_APPID:-$auto_never}"
 [[ -n "$MATCHED_APPID" && -n "$DELISTED_APPID" && -n "$NEVER_APPID" ]] || { echo "run_all: could not pick semantic test appids" >&2; exit 1; }
 
-echo "run_all: listed=$MATCHED_APPID delisted=$DELISTED_APPID never-on-steam=$NEVER_APPID"
+echo "run_all: listed=$MATCHED_APPID delisted=$DELISTED_APPID never-on-steam=$NEVER_APPID feature=${QUICKLINK_FEATURE_APPID:-SKIP}"
 failures=0
 
 run() {
@@ -55,7 +57,7 @@ run() {
   if "$@"; then :; else failures=$((failures + 1)); fi
 }
 
-run "$here/smoke_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" "$DELISTED_APPID"
+run "$here/smoke_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" "$DELISTED_APPID" "$QUICKLINK_FEATURE_APPID"
 run "$here/smoke_rerender.sh" "$MATCHED_APPID"
 run "$here/smoke_community.sh" "$NEVER_APPID"
 if ((!no_launch && launch_appid_explicit)); then
@@ -66,7 +68,7 @@ else
   echo "--- launch smoke skipped (--no-launch)"
 fi
 if ((extended)); then
-  run "$here/smoke_idle_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID"
+  run "$here/smoke_idle_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" "$DELISTED_APPID" "$QUICKLINK_FEATURE_APPID"
 fi
 
 if [[ "$failures" -gt 0 ]]; then
