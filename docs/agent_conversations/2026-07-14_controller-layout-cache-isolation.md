@@ -61,13 +61,13 @@ Steam patch behavior changed.
 
 - Baseline `scripts/decky verify-change dev --explain`: PASS (85 Vitest tests;
   full Python gate passed)
-- Controller policy and adapter focused suite: PASS (51 tests)
+- Controller policy and adapter focused suite: PASS (52 tests)
 - Deck fixture-selection/tooling suite: PASS (7 tests)
 - `node --check scripts/deck/js/check_controller_layouts.js`: PASS
 - `bash -n scripts/deck/verify/smoke_controller_layouts.sh`: PASS
 - `bash -n scripts/deck/verify/run_all.sh`: PASS
 - TypeScript `tsc --noEmit`: PASS
-- Final repository quality gates: PASS (8 Vitest files / 104 tests; full
+- Final repository quality gates: PASS (8 Vitest files / 105 tests; full
   TypeScript build/typecheck, Python compile/pytest, version-drift, and
   review-note-preservation checks passed)
 

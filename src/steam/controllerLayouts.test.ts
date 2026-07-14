@@ -599,6 +599,58 @@ describe("installControllerLayouts", () => {
     expect(harness.notifications).toHaveLength(1);
   });
 
+  it("returns the native Search value when plugin-only filtering throws", () => {
+    const nativeSearch = new Proxy(
+      [{ appID: 20, URL: "search://wobbly" }],
+      {
+        get(target, property, receiver) {
+          if (property === "filter") {
+            return () => {
+              throw new Error("filter failed");
+            };
+          }
+          return Reflect.get(target, property, receiver);
+        },
+      },
+    );
+    const harness = makeHarness({ searchResult: nativeSearch });
+    callQuery(harness.input);
+
+    expect(harness.store.GetAllConfigs()).toBe(nativeSearch);
+    expect(harness.calls.filter((call) => call === "search")).toHaveLength(1);
+    expect(harness.control.isDisabled()).toBe(true);
+    expect(harness.failures).toEqual([
+      expect.objectContaining({
+        section: "search",
+        code: "runtime-error",
+        matchedAppid: 20,
+      }),
+    ]);
+    expect(harness.notifications).toHaveLength(1);
+
+    harness.calls.length = 0;
+    expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(harness.store.GetOfficialConfigsForApp(10, 1)).toBe(
+      harness.outputs.officialShortcut,
+    );
+    expect(harness.store.GetTemplateConfigsForApp(10, 1)).toBe(
+      harness.outputs.templatesShortcut,
+    );
+    expect(harness.store.GetWorkshopConfigsForApp(10, 1)).toBe(
+      harness.outputs.workshopShortcut,
+    );
+    expect(harness.store.GetAllConfigs()).toBe(nativeSearch);
+    expect(harness.calls).toEqual([
+      "query:10:1:true",
+      "official:10:1",
+      "templates:10:1",
+      "workshop:10:1",
+      "search",
+    ]);
+    expect(harness.failures).toHaveLength(1);
+    expect(harness.notifications).toHaveLength(1);
+  });
+
   it("fails open if source resolution throws without retaining stale Search state", () => {
     let shouldThrow = false;
     const harness = makeHarness({
@@ -618,13 +670,17 @@ describe("installControllerLayouts", () => {
     ]);
   });
 
-  it("sets disabled state before notifying and swallows a throwing notifier", () => {
+  it("sets disabled state before reporting and notifying and swallows both throws", () => {
     const harness = makeHarness();
     harness.unpatchers[0]();
     let control: ReturnType<typeof installControllerLayouts>;
+    let disabledDuringReport = false;
     let disabledDuringNotify = false;
+    const reportedFailures: ControllerLayoutFailure[] = [];
+    let notifyCalls = 0;
     const query = harness.query;
-    query.mockImplementation(function (appid: number) {
+    query.mockImplementation(function (appid: number, controller: number, filter: boolean) {
+      harness.calls.push(`query:${appid}:${controller}:${filter}`);
       if (appid === 20) throw new Error("supplemental failed");
       return harness.queryResult;
     });
@@ -632,19 +688,50 @@ describe("installControllerLayouts", () => {
     control = installControllerLayouts([], {
       discoverTargets: () => harness.targets,
       resolveSource: (appid) => appid === 10 ? 20 : null,
-      reportFailure: () => undefined,
+      reportFailure: (failure) => {
+        disabledDuringReport = control.isDisabled();
+        reportedFailures.push(failure);
+        throw new Error("reporter unavailable");
+      },
       notify: () => {
+        notifyCalls += 1;
         disabledDuringNotify = control.isDisabled();
         throw new Error("toaster unavailable");
       },
       maxAttempts: 1,
     });
 
-    expect(() => callQuery(harness.input)).not.toThrow();
-    expect(disabledDuringNotify).toBe(true);
-    expect(query).toHaveBeenCalledTimes(2);
     expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(disabledDuringReport).toBe(true);
+    expect(disabledDuringNotify).toBe(true);
+    expect(reportedFailures).toEqual([
+      expect.objectContaining({ section: "query", code: "runtime-error", matchedAppid: 20 }),
+    ]);
+    expect(notifyCalls).toBe(1);
+    expect(query).toHaveBeenCalledTimes(2);
+
+    harness.calls.length = 0;
+    expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(harness.store.GetOfficialConfigsForApp(10, 1)).toBe(
+      harness.outputs.officialShortcut,
+    );
+    expect(harness.store.GetTemplateConfigsForApp(10, 1)).toBe(
+      harness.outputs.templatesShortcut,
+    );
+    expect(harness.store.GetWorkshopConfigsForApp(10, 1)).toBe(
+      harness.outputs.workshopShortcut,
+    );
+    expect(harness.store.GetAllConfigs()).toBe(harness.outputs.search);
+    expect(harness.calls).toEqual([
+      "query:10:1:true",
+      "official:10:1",
+      "templates:10:1",
+      "workshop:10:1",
+      "search",
+    ]);
     expect(query).toHaveBeenCalledTimes(3);
+    expect(reportedFailures).toHaveLength(1);
+    expect(notifyCalls).toBe(1);
   });
 
   it.each([
