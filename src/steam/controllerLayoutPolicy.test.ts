@@ -58,6 +58,16 @@ describe("resolveControllerLayoutContext", () => {
     },
   );
 
+  it.each([0x80000000, 3156562597, 0xffffffff, 0x100000000])(
+    "rejects shortcut-domain or overflowing matched source %s",
+    (steamAppid) => {
+      expect(context(steamAppid)).toEqual({
+        isNonSteamShortcut: true,
+        matchedSourceAppid: null,
+      });
+    },
+  );
+
   it.each([0, -1, Number.POSITIVE_INFINITY, Number.NaN])(
     "fails closed for invalid displayed appid %s",
     (displayedAppid) => {

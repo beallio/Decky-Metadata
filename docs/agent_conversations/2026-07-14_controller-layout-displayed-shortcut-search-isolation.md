@@ -107,6 +107,32 @@ thermo-nuclear review were not changed.
 - `scripts/orchestration/check-review-notes-not-deleted` — passed.
 - `git diff --check dev...HEAD` and `git diff --check` — passed.
 
+## Review Round 01 Corrections
+
+The first committed review requested two safety/audit corrections before live
+verification:
+
+- Matched sources now use one shared native-Steam appid predicate: an integer
+  greater than zero and below the reserved shortcut boundary `0x80000000`.
+  The pure resolver treats shortcut-domain and overflowing metadata as an
+  unmatched non-Steam context. The adapter independently rejects an injected
+  malformed context carrying those values, trips the existing breaker after
+  securing the native result, and leaves later wrappers native-only.
+- The controller probe and `--no-launch` suite labels now describe the operation
+  as bounded, no-selection, and cache-populating. They no longer call the probe
+  read-only; the existing forbidden-operation assertions remain unchanged.
+
+TDD red evidence is stored below `/tmp/Decky-Metadata` in
+`controller-layout-displayed-shortcut-search-isolation-review01-red-vitest.log`
+and `controller-layout-displayed-shortcut-search-isolation-review01-red-pytest.log`.
+The first run produced eight expected TypeScript failures across pure and
+adapter coverage for `0x80000000`, `3156562597`, `0xffffffff`, and
+`0x100000000`; the fixture-selection contract also failed on the old read-only
+label. After the correction, the focused Vitest run passed 96 tests and the
+fixture-selection pytest run passed 7 tests. The complete local quality gate
+passed with 149 Vitest tests and the full build/Python/version/review-note gate.
+No Steam Deck command was run during this correction round.
+
 ## Device Verification
 
 Read-only `scripts/decky status --deck` and `scripts/decky doctor --deck`

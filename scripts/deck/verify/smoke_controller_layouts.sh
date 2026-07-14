@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Read-only matched controller-configuration discovery check.
+# Bounded no-selection controller-configuration cache-populating check.
 #
 #   smoke_controller_layouts.sh <fixtures-json> [evidence-json]
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"

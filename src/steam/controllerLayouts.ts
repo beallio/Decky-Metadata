@@ -6,6 +6,7 @@ import type {
 import type { Unpatch } from "./core";
 import {
   filterControllerSearchConfigs,
+  isNativeSteamAppid,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
   mergeRecommendedTemplates,
@@ -273,8 +274,7 @@ export const installControllerLayouts = (
       if (
         matchedAppid !== null &&
         (
-          !validAppid(matchedAppid) ||
-          !Number.isInteger(matchedAppid) ||
+          !isNativeSteamAppid(matchedAppid) ||
           matchedAppid === displayedAppid ||
           !isNonSteamShortcut
         )

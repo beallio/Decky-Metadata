@@ -907,6 +907,22 @@ describe("installControllerLayouts", () => {
     ["missing matched source", { isNonSteamShortcut: true }],
     ["zero matched source", { isNonSteamShortcut: true, matchedSourceAppid: 0 }],
     ["fractional matched source", { isNonSteamShortcut: true, matchedSourceAppid: 1.5 }],
+    ["shortcut boundary matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0x80000000,
+    }],
+    ["synthetic shortcut matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 3156562597,
+    }],
+    ["shortcut ceiling matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0xffffffff,
+    }],
+    ["overflowing matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0x100000000,
+    }],
     ["displayed appid as matched source", {
       isNonSteamShortcut: true,
       matchedSourceAppid: 10,

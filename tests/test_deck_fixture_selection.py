@@ -76,7 +76,7 @@ def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
     assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke
 
 
-def test_controller_layout_probe_is_read_only_and_hashes_layout_identities():
+def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_identities():
     root = Path(__file__).parents[1]
     probe_path = root / "scripts/deck/js/check_controller_layouts.js"
     probe = probe_path.read_text()
@@ -157,5 +157,9 @@ def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
     assert 'after_third["thirdDisplayedCount"]' in smoke
     assert "elapsedMs" in smoke
     assert "including pre-existing caches" in smoke
+    assert "Bounded no-selection controller-configuration cache-populating check." in smoke
+    assert "Read-only matched controller-configuration discovery check." not in smoke
     assert 'smoke_controller_layouts.sh" "$run_dir/fixtures.json"' in run_all
     assert "if ((no_launch)); then" in run_all
+    assert "use --no-launch for bounded cache-populating verification" in run_all
+    assert "use --no-launch for read-only verification" not in run_all

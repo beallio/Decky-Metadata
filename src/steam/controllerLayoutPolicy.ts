@@ -34,6 +34,14 @@ const nativeControllerLayoutContext = (): ControllerLayoutContext => ({
   matchedSourceAppid: null,
 });
 
+const STEAM_SHORTCUT_APPID_MIN = 0x80000000;
+
+export const isNativeSteamAppid = (value: unknown): value is number =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value > 0 &&
+  value < STEAM_SHORTCUT_APPID_MIN;
+
 export const resolveControllerLayoutContext = (
   input: ControllerLayoutContextInput,
 ): ControllerLayoutContext => {
@@ -46,10 +54,7 @@ export const resolveControllerLayoutContext = (
   }
   const sourceAppid = input.metadata?.steam_appid;
   if (
-    typeof sourceAppid !== "number" ||
-    !Number.isFinite(sourceAppid) ||
-    !Number.isInteger(sourceAppid) ||
-    sourceAppid <= 0 ||
+    !isNativeSteamAppid(sourceAppid) ||
     sourceAppid === input.displayedAppid
   ) {
     return { isNonSteamShortcut: true, matchedSourceAppid: null };
@@ -67,7 +72,7 @@ const positiveNumericAppid = (value: unknown): value is number =>
 export const isSteamShortcutAppid = (value: unknown): value is number =>
   typeof value === "number" &&
   Number.isInteger(value) &&
-  value >= 0x80000000 &&
+  value >= STEAM_SHORTCUT_APPID_MIN &&
   value <= 0xffffffff;
 
 export const filterControllerSearchConfigs = (

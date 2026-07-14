@@ -4464,6 +4464,11 @@ const nativeControllerLayoutContext = () => ({
     isNonSteamShortcut: false,
     matchedSourceAppid: null,
 });
+const STEAM_SHORTCUT_APPID_MIN = 0x80000000;
+const isNativeSteamAppid = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value < STEAM_SHORTCUT_APPID_MIN;
 const resolveControllerLayoutContext = (input) => {
     if (!Number.isFinite(input.displayedAppid) ||
         input.displayedAppid <= 0 ||
@@ -4471,10 +4476,7 @@ const resolveControllerLayoutContext = (input) => {
         return nativeControllerLayoutContext();
     }
     const sourceAppid = input.metadata?.steam_appid;
-    if (typeof sourceAppid !== "number" ||
-        !Number.isFinite(sourceAppid) ||
-        !Number.isInteger(sourceAppid) ||
-        sourceAppid <= 0 ||
+    if (!isNativeSteamAppid(sourceAppid) ||
         sourceAppid === input.displayedAppid) {
         return { isNonSteamShortcut: true, matchedSourceAppid: null };
     }
@@ -4485,7 +4487,7 @@ const positiveNumericAppid = (value) => typeof value === "number" && Number.isFi
 // Steam shortcut IDs use the unsigned CRC namespace defined in backend/shortcuts_vdf.py.
 const isSteamShortcutAppid = (value) => typeof value === "number" &&
     Number.isInteger(value) &&
-    value >= 0x80000000 &&
+    value >= STEAM_SHORTCUT_APPID_MIN &&
     value <= 0xffffffff;
 const filterControllerSearchConfigs = (nativeResult, activeDisplayedShortcutAppid, activeMatchedSourceAppid, supplementalSourceAppids) => {
     if (!Array.isArray(nativeResult)) {
@@ -4711,8 +4713,7 @@ const installControllerLayouts = (unpatchers, provided) => {
             const isNonSteamShortcut = context.isNonSteamShortcut;
             const matchedAppid = context.matchedSourceAppid;
             if (matchedAppid !== null &&
-                (!validAppid(matchedAppid) ||
-                    !Number.isInteger(matchedAppid) ||
+                (!isNativeSteamAppid(matchedAppid) ||
                     matchedAppid === displayedAppid ||
                     !isNonSteamShortcut)) {
                 throw new Error("invalid matched appid");

@@ -63,7 +63,7 @@ run "$here/smoke_community.sh" "$NEVER_APPID"
 if ((no_launch)); then
   run "$here/smoke_controller_layouts.sh" "$run_dir/fixtures.json" "$run_dir/controller-layouts.json"
 else
-  echo "--- controller-layout smoke SKIP (use --no-launch for read-only verification)"
+  echo "--- controller-layout smoke SKIP (use --no-launch for bounded cache-populating verification)"
 fi
 if ((!no_launch && launch_appid_explicit)); then
   run "$here/smoke_launch.sh" "$MATCHED_APPID"
