@@ -1,5 +1,6 @@
 import { routerHook } from "@decky/api";
 import { findInReactTree, findModuleChild } from "@decky/ui";
+import { cloneElement } from "react";
 import { frontendLog } from "../backend";
 import * as log from "../log";
 import {
@@ -20,7 +21,14 @@ import {
   clearRouteShield,
 } from "./core";
 import { isBypassTraceEnabled } from "./metadataPatch";
-import { findChildElements, isInfoSectionBoundary, isQuickLinksElement } from "./reactTreeWalk";
+import {
+  findChildElements,
+  isInfoSectionBoundary,
+  isQuickLinksElement,
+  isReactElement,
+} from "./reactTreeWalk";
+import { transformMatchedQuickLinks } from "./quickLinkPolicy";
+import { resolveQuickLinkResources } from "./quickLinkResources";
 
 type RouterPatchDeps = {
   ensureMetadataCache: () => Promise<void>;
@@ -40,24 +48,22 @@ const isNeverOnSteam = (appId: number): boolean => {
   }
 };
 
-// The quick-links row (Store Page / Community Hub / Discussions / …) only
-// renders because the BIsModOrShortcut spoof makes the app look like a real
-// Steam title; for never-on-Steam games every link is dead. The row's element
-// is not reachable from the route render tree — Steam's page host mounts the
-// Game Info content through several function-component boundaries — so the
-// suppression hooks the section wrapper class (the component that registers
-// sections via parent.RegisterSection(name, el)): its render output holds the
-// info-section content element, whose render in turn creates the links row.
+// The quick-links row is not reachable from the route render tree. Steam's page
+// host mounts Game Info through several function-component boundaries, so this
+// hooks the class that registers the info section. Its output contains the
+// function boundary whose render creates the native quick-links component.
 
 const NullQuickLinks = () => null;
-const quickLinksWrapperCache = new Map<any, any>();
+const infoSectionWrapperCache = new Map<any, any>();
+const nativeQuickLinksWrapperCache = new Map<any, any>();
 
-export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) => {
+export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
   const maxAttempts = 5;
   let attempts = 0;
   let cancelled = false;
   let retryId: number | undefined;
-  let suppressionUnpatch: Unpatch | undefined;
+  let policyUnpatch: Unpatch | undefined;
+  let quickLinkResources: ReturnType<typeof resolveQuickLinkResources> | undefined;
 
   const clearRetry = () => {
     if (retryId !== undefined) {
@@ -89,18 +95,64 @@ export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) 
 
   const warnFingerprintMiss = () => {
     const fields = { attempt: attempts, maxAttempts };
-    log.warn("patch", "never-on-Steam quick-links section target not found", fields);
+    log.warn("patch", "non-Steam quick-links section target not found", fields);
     void frontendLog(
       "patch",
-      "never-on-Steam quick-links section target not found",
+      "non-Steam quick-links section target not found",
       fields,
       "warning"
     ).catch(() => undefined);
   };
 
+  const warnPolicyFailure = (message: string, fields: Record<string, unknown>) => {
+    log.warn("patch", message, fields);
+    void frontendLog("patch", message, fields, "warning").catch(() => undefined);
+  };
+
+  const policyWrapperFor = (original: any) => {
+    let wrapper = nativeQuickLinksWrapperCache.get(original);
+    if (wrapper) return wrapper;
+    wrapper = (props: any) => {
+      const nativeOutput = original(props);
+      try {
+        const appId = Number(props?.overview?.appid);
+        const metadata = metadataCache[String(appId)];
+        if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
+          return nativeOutput;
+        }
+        if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
+          warnPolicyFailure("matched quick-links output shape changed", { appId });
+          return nativeOutput;
+        }
+        quickLinkResources ??= resolveQuickLinkResources();
+        const links = transformMatchedQuickLinks(
+          nativeOutput.props.links,
+          {
+            isNonSteamShortcut: true,
+            steamAppid: Number(metadata.steam_appid),
+            steamStoreState: metadata.steam_store_state || "unknown",
+            hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
+            hasPointsShop: metadata.has_points_shop === true,
+          },
+          quickLinkResources,
+        );
+        return cloneElement(nativeOutput, { links });
+      } catch (error) {
+        warnPolicyFailure("matched quick-links transformation failed", {
+          appId: Number(props?.overview?.appid) || 0,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return nativeOutput;
+      }
+    };
+    wrapper.__dmQuickLinksWrapper = true;
+    nativeQuickLinksWrapperCache.set(original, wrapper);
+    return wrapper;
+  };
+
   const tryInstall = () => {
     retryId = undefined;
-    if (cancelled || suppressionUnpatch) return;
+    if (cancelled || policyUnpatch) return;
     attempts += 1;
     const sectionClass = findSectionClass();
     if (!sectionClass?.prototype?.render) {
@@ -111,7 +163,7 @@ export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) 
       return;
     }
 
-    suppressionUnpatch = safeAfterPatch(
+    policyUnpatch = safeAfterPatch(
       sectionClass.prototype,
       "render",
       function (this: any, _args: any[], ret: any) {
@@ -120,30 +172,46 @@ export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) 
           const boundaries: any[] = [];
           findChildElements(ret, isInfoSectionBoundary, boundaries);
           for (const element of boundaries) {
-            if (!isNeverOnSteam(Number(element.props?.overview?.appid))) continue;
+            const appId = Number(element.props?.overview?.appid);
+            if (!metadataCache[String(appId)] || !isNonSteamApp(element.props?.overview)) continue;
             const original = element.type;
-            let wrapper = quickLinksWrapperCache.get(original);
+            let wrapper = infoSectionWrapperCache.get(original);
             if (!wrapper) {
               wrapper = (props: any) => {
                 const rendered = original(props);
                 try {
-                  if (isNeverOnSteam(Number(props?.overview?.appid))) {
-                    const linkRows: any[] = [];
-                    findChildElements(rendered, isQuickLinksElement, linkRows);
-                    for (const row of linkRows) row.type = NullQuickLinks;
+                  const renderedAppId = Number(props?.overview?.appid);
+                  const metadata = metadataCache[String(renderedAppId)];
+                  if (!metadata || !isNonSteamApp(props?.overview)) return rendered;
+                  const linkRows: any[] = [];
+                  findChildElements(rendered, isQuickLinksElement, linkRows);
+                  if (linkRows.length === 0) {
+                    warnPolicyFailure("non-Steam quick-links row shape changed", {
+                      appId: renderedAppId,
+                    });
                   }
-                } catch (_error) {
-                  // Leave the native output untouched on shape changes.
+                  for (const row of linkRows) {
+                    row.type = isNeverOnSteam(renderedAppId)
+                      ? NullQuickLinks
+                      : policyWrapperFor(row.type);
+                  }
+                } catch (error) {
+                  warnPolicyFailure("non-Steam quick-links section traversal failed", {
+                    appId: Number(props?.overview?.appid) || 0,
+                    error: error instanceof Error ? error.message : String(error),
+                  });
                 }
                 return rendered;
               };
               wrapper.__dmQuickLinksWrapper = true;
-              quickLinksWrapperCache.set(original, wrapper);
+              infoSectionWrapperCache.set(original, wrapper);
             }
             element.type = wrapper;
           }
-        } catch (_error) {
-          // Steam's native render tree must remain usable if its shape changes.
+        } catch (error) {
+          warnPolicyFailure("non-Steam quick-links boundary traversal failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
         return ret;
       }
@@ -153,8 +221,8 @@ export const installNeverOnSteamQuickLinksSuppression = (unpatchers: Unpatch[]) 
   unpatchers.push(() => {
     cancelled = true;
     clearRetry();
-    suppressionUnpatch?.();
-    suppressionUnpatch = undefined;
+    policyUnpatch?.();
+    policyUnpatch = undefined;
   });
   tryInstall();
 };

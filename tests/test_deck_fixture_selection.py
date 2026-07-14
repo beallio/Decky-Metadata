@@ -45,3 +45,32 @@ def test_auto_selected_fixture_is_never_a_launch_target():
     assert "auto-selected fixtures are render-only" in run_all
     assert 'fixture_args+=(--listed-match "$MATCHED_APPID")' in run_all
     assert '>"$run_dir/fixtures.json"' in run_all
+    assert 'QUICKLINK_FEATURE_APPID="${QUICKLINK_FEATURE_APPID:-}"' in run_all
+    assert (
+        'smoke_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" '
+        '"$DELISTED_APPID" "$QUICKLINK_FEATURE_APPID"'
+    ) in run_all
+    assert 'smoke_launch.sh" "$QUICKLINK_FEATURE_APPID"' not in run_all
+
+
+def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
+    root = Path(__file__).parents[1]
+    smoke = (root / "scripts/deck/verify/smoke_quicklinks.sh").read_text()
+    probe = (root / "scripts/deck/js/check_quicklinks.js").read_text()
+
+    assert 'feature="${4:-}"' in smoke
+    assert 'expected_order = ["Store Page", "DLC", "Community Hub", "Points Shop"]' in smoke
+    assert 'delisted["storePage"]' in smoke
+    assert 'delisted["support"]' in smoke
+    assert 'matched["market"]' in smoke
+    assert 'delisted["market"]' in smoke
+    assert 'feature["support"]' in smoke
+    assert 'feature["market"]' in smoke
+    assert "quickLinkOrder" in probe
+    assert "pointsShop" in probe
+    assert "support" in probe
+    assert '"Market"' in probe
+    assert '"Community Market"' in probe
+    assert "detailsMetadata" in probe
+    assert 'matched["developerInfo"] or matched["detailsMetadata"]' in smoke
+    assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke

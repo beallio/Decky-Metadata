@@ -26,6 +26,8 @@ export const metadataTemplate = (title: string): MetadataData => ({
   release_date: null,
   rating: null,
   store_categories: [StoreCategory.SinglePlayer],
+  steam_dlc_appids: [],
+  has_points_shop: false,
   genres: [],
   features: [],
   screenshots: [],

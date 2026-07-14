@@ -46,6 +46,8 @@ def test_metadata_record_keys():
         "description",
         "store_categories",
         "steam_appid",
+        "steam_dlc_appids",
+        "has_points_shop",
         "steam_news",
     }
     record_keys = set(main.MetadataRecord.__annotations__)

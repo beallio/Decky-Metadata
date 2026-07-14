@@ -44,6 +44,8 @@ class MetadataRecord(TypedDict, total=False):
     features: list[str]
     screenshots: list[dict[str, Any]]
     steam_appid: int | None
+    steam_dlc_appids: list[int]
+    has_points_shop: bool
     steam_store_url: str
     steam_news: list[dict[str, Any]]
     steam_news_enriched_at: int
@@ -897,6 +899,31 @@ class Plugin:
             if category not in categories:
                 categories.append(category)
 
+        steam_dlc_appids: list[int] = []
+        raw_dlc_appids = metadata.get("steam_dlc_appids")
+        if isinstance(raw_dlc_appids, list):
+            for value in raw_dlc_appids:
+                if isinstance(value, bool):
+                    continue
+                if isinstance(value, int):
+                    dlc_appid = value
+                elif isinstance(value, str):
+                    try:
+                        dlc_appid = int(value.strip())
+                    except Exception:
+                        continue
+                else:
+                    continue
+                if dlc_appid > 0 and dlc_appid not in steam_dlc_appids:
+                    steam_dlc_appids.append(dlc_appid)
+
+        raw_has_points_shop = metadata.get("has_points_shop")
+        has_points_shop = (
+            raw_has_points_shop
+            if isinstance(raw_has_points_shop, bool)
+            else 29 in categories
+        )
+
         rating = metadata.get("rating")
         try:
             rating = int(round(float(rating))) if rating is not None else None
@@ -959,6 +986,8 @@ class Plugin:
             ],
             "screenshots": self._sanitize_screenshots(metadata.get("screenshots")),
             "steam_appid": steam_appid,
+            "steam_dlc_appids": steam_dlc_appids,
+            "has_points_shop": has_points_shop,
             "steam_store_state": steam_store_state,
             "steam_store_url": self._https_url(str(metadata.get("steam_store_url") or "")),
             "steam_news": self._sanitize_steam_news(metadata.get("steam_news")),
@@ -995,7 +1024,7 @@ class Plugin:
                 steam_details = self._steam_appdetails_for_appid(steam_appid)
                 if steam_details:
                     for key, value in steam_details.items():
-                        if value:
+                        if key in {"steam_dlc_appids", "has_points_shop"} or value:
                             next_metadata[key] = value
                     next_metadata["source"] = "Steam"
                     if str(metadata.get("steam_store_state") or "").strip().lower() != "delisted":
