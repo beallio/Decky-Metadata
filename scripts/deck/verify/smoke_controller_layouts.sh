@@ -34,24 +34,25 @@ PY
 probe() {
   cdp eval SharedJSContext "@$JS_DIR/check_controller_layouts.js" \
     --var "DISPLAY_APPID=$1" --var "SOURCE_APPID=$2" \
-    --var "SECOND_DISPLAY_APPID=${3:-}" --var "SECOND_SOURCE_APPID=${4:-}"
+    --var "SECOND_DISPLAY_APPID=${3:-}" --var "SECOND_SOURCE_APPID=${4:-}" \
+    --var "THIRD_DISPLAY_APPID=${5:-}"
 }
 
 listed_json="$(probe \
   "$listed_appid" "$listed_source" \
-  "$delisted_appid" "$delisted_source")"
-never_json="$(probe "$never_appid" 0)"
+  "$delisted_appid" "$delisted_source" \
+  "$never_appid")"
 mkdir -p "$(dirname -- "$evidence")"
 
-python3 - "$listed_json" "$never_json" "$evidence" <<'PY' || exit 1
+python3 - "$listed_json" "$evidence" <<'PY' || exit 1
 import json
 import sys
 from pathlib import Path
 
 listed = json.loads(sys.argv[1])
 delisted = listed["second"]
-never = json.loads(sys.argv[2])
-evidence = Path(sys.argv[3])
+never = listed["third"]
+evidence = Path(sys.argv[2])
 
 
 def check_matched(label, result):
@@ -73,7 +74,8 @@ def check_matched(label, result):
     print(
         f"OK: {label} Community shortcut={displayed['count']} source={source['count']}; "
         f"Official={result['displayed']['official']['count']} "
-        f"Recommended={result['displayed']['recommended']['count']}"
+        f"Recommended={result['displayed']['recommended']['count']} "
+        f"elapsedMs={result['elapsedMs']}"
     )
 
 
@@ -87,23 +89,45 @@ print(
     f"OK: never-on-Steam native query only; "
     f"Official={never['displayed']['official']['count']} "
     f"Recommended={never['displayed']['recommended']['count']} "
-    f"Community={never['displayed']['community']['count']}"
+    f"Community={never['displayed']['community']['count']} "
+    f"elapsedMs={never['elapsedMs']}"
 )
 isolation = listed["isolation"]
 if isolation is None:
     raise SystemExit("FAIL: controller Search isolation observation is missing")
-if isolation["firstSourceCount"] != 0:
+after_second = isolation["afterSecond"]
+after_third = isolation["afterThird"]
+if after_second["firstDisplayedCount"] != 0:
+    raise SystemExit(
+        "FAIL: inactive first displayed shortcut remains visible in controller Search"
+    )
+if after_second["firstSourceCount"] != 0:
     raise SystemExit(
         "FAIL: inactive first matched source remains visible in controller Search"
     )
-if isolation["secondSourceHasResults"] and isolation["secondSourceCount"] <= 0:
+if after_second["secondDisplayedHasResults"] and after_second["secondDisplayedCount"] <= 0:
+    raise SystemExit(
+        "FAIL: active second displayed shortcut is missing from controller Search"
+    )
+if after_second["secondSourceHasResults"] and after_second["secondSourceCount"] <= 0:
     raise SystemExit(
         "FAIL: active second matched source is missing from controller Search"
     )
+for key, label in (
+    ("firstDisplayedCount", "first displayed shortcut"),
+    ("firstSourceCount", "first matched source"),
+    ("secondDisplayedCount", "second displayed shortcut"),
+    ("secondSourceCount", "second matched source"),
+):
+    if after_third[key] != 0:
+        raise SystemExit(f"FAIL: inactive {label} remains visible after unmatched shortcut")
+if after_third["thirdDisplayedHasResults"] and after_third["thirdDisplayedCount"] <= 0:
+    raise SystemExit(
+        "FAIL: active unmatched displayed shortcut is missing from controller Search"
+    )
 print(
-    "OK: controller Search isolated inactive source, including pre-existing caches; "
-    f"first={isolation['firstSourceCount']} "
-    f"second={isolation['secondSourceCount']}"
+    "OK: controller Search isolated inactive shortcuts and sources, including pre-existing caches; "
+    f"afterSecond={after_second} afterThird={after_third}"
 )
 evidence.write_text(
     json.dumps(

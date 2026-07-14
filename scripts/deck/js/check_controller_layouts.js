@@ -1,14 +1,19 @@
 // Read controller-configuration query results. Target: SharedJSContext.
-// Vars: DISPLAY_APPID, SOURCE_APPID, optional SECOND_DISPLAY_APPID,
-// SECOND_SOURCE_APPID. Output contains appids, booleans, counts, and URL hashes only.
+// Vars: DISPLAY_APPID, SOURCE_APPID, SECOND_DISPLAY_APPID,
+// SECOND_SOURCE_APPID, and THIRD_DISPLAY_APPID. Output contains appids,
+// booleans, elapsed durations, counts, and URL hashes only.
 (async () => {
   const displayedAppid = Number("__DISPLAY_APPID__");
   const sourceAppid = Number("__SOURCE_APPID__");
   const secondDisplayedAppid = Number("__SECOND_DISPLAY_APPID__");
   const secondSourceAppid = Number("__SECOND_SOURCE_APPID__");
+  const thirdDisplayedAppid = Number("__THIRD_DISPLAY_APPID__");
   const store = globalThis.controllerConfiguratorStore;
   if (!Number.isFinite(displayedAppid) || displayedAppid <= 0) {
     throw new Error("invalid displayed appid");
+  }
+  if (!Number.isFinite(thirdDisplayedAppid) || thirdDisplayedAppid <= 0) {
+    throw new Error("invalid third displayed appid");
   }
   if (!store || typeof store.QueryConfigsForApp !== "function") {
     throw new Error("controller configurator store unavailable");
@@ -53,6 +58,7 @@
     };
   };
   const query = async (appid) => {
+    const startedAt = Date.now();
     controllerConfiguratorStore.QueryConfigsForApp(appid, controllerIndex);
     const deadline = Date.now() + 15000;
     while (store.BConfigurationQueryInFlight === true && Date.now() < deadline) {
@@ -61,7 +67,7 @@
     if (store.BConfigurationQueryInFlight === true) {
       throw new Error("configuration query timed out");
     }
-    return read(appid);
+    return { layouts: read(appid), elapsedMs: Date.now() - startedAt };
   };
 
   const sourceCompared = Number.isFinite(sourceAppid) && sourceAppid > 0;
@@ -81,21 +87,11 @@
     ? store.m_mapAppConfigs.has(secondSourceAppid)
     : null;
 
-  const displayed = await query(displayedAppid);
-  const source = sourceCompared ? read(sourceAppid) : null;
-  let second = null;
-  let isolation = null;
-  if (secondCompared) {
-    const secondDisplayed = await query(secondDisplayedAppid);
-    const secondSource = read(secondSourceAppid);
-    if (typeof store.GetAllConfigs !== "function") {
-      throw new Error("controller configuration Search unavailable");
-    }
-    const search = store.GetAllConfigs();
-    if (!Array.isArray(search)) {
-      throw new Error("controller configuration Search result is not an array");
-    }
-    const countSource = (appid) => search.reduce((count, record) => {
+  if (!secondCompared) throw new Error("second matched fixture is incomplete");
+  if (typeof store.GetAllConfigs !== "function") {
+    throw new Error("controller configuration Search unavailable");
+  }
+  const countAppid = (search, appid) => search.reduce((count, record) => {
       const recordAppid = record?.appID;
       return count + (
         typeof recordAppid === "number" &&
@@ -106,32 +102,83 @@
           : 0
       );
     }, 0);
-    const secondSourceHasResults = Object.values(secondSource)
-      .some((summary) => summary.count > 0);
-    isolation = {
-      sourcePreexisting,
-      secondSourcePreexisting,
-      firstSourceCount: countSource(sourceAppid),
-      secondSourceCount: countSource(secondSourceAppid),
-      secondSourceHasResults,
-    };
-    second = {
-      displayedAppid: secondDisplayedAppid,
-      sourceAppid: secondSourceAppid,
-      sourceCompared: true,
-      controllerIndex,
-      displayed: secondDisplayed,
-      source: secondSource,
-    };
-  }
+  const searchSnapshot = () => {
+    const startedAt = Date.now();
+    const records = store.GetAllConfigs();
+    const elapsedMs = Date.now() - startedAt;
+    if (!Array.isArray(records)) {
+      throw new Error("controller configuration Search result is not an array");
+    }
+    return { records, elapsedMs };
+  };
+  const hasResults = (layouts) => Object.values(layouts)
+    .some((summary) => summary.count > 0);
+
+  const firstQuery = await query(displayedAppid);
+  const secondQuery = await query(secondDisplayedAppid);
+  const afterSecondSearch = searchSnapshot();
+  const afterSecond = {
+    elapsedMs: afterSecondSearch.elapsedMs,
+    firstDisplayedCount: countAppid(afterSecondSearch.records, displayedAppid),
+    firstSourceCount: countAppid(afterSecondSearch.records, sourceAppid),
+    secondDisplayedCount: countAppid(afterSecondSearch.records, secondDisplayedAppid),
+    secondSourceCount: countAppid(afterSecondSearch.records, secondSourceAppid),
+  };
+
+  const thirdQuery = await query(thirdDisplayedAppid);
+  const afterThirdSearch = searchSnapshot();
+  const afterThird = {
+    elapsedMs: afterThirdSearch.elapsedMs,
+    firstDisplayedCount: countAppid(afterThirdSearch.records, displayedAppid),
+    firstSourceCount: countAppid(afterThirdSearch.records, sourceAppid),
+    secondDisplayedCount: countAppid(afterThirdSearch.records, secondDisplayedAppid),
+    secondSourceCount: countAppid(afterThirdSearch.records, secondSourceAppid),
+    thirdDisplayedCount: countAppid(afterThirdSearch.records, thirdDisplayedAppid),
+  };
+
+  // Read source-only results after both Search snapshots. Direct native source
+  // access intentionally relinquishes that source's supplemental classification.
+  const source = sourceCompared ? read(sourceAppid) : null;
+  const secondSource = read(secondSourceAppid);
+  const isolation = {
+    sourcePreexisting,
+    secondSourcePreexisting,
+    afterSecond: {
+      ...afterSecond,
+      secondDisplayedHasResults: hasResults(secondQuery.layouts),
+      secondSourceHasResults: hasResults(secondSource),
+    },
+    afterThird: {
+      ...afterThird,
+      thirdDisplayedHasResults: hasResults(thirdQuery.layouts),
+    },
+  };
   return JSON.stringify({
     displayedAppid,
     sourceAppid: sourceCompared ? sourceAppid : null,
     sourceCompared,
     controllerIndex,
-    displayed,
+    elapsedMs: firstQuery.elapsedMs,
+    displayed: firstQuery.layouts,
     source,
-    second,
+    second: {
+      displayedAppid: secondDisplayedAppid,
+      sourceAppid: secondSourceAppid,
+      sourceCompared: true,
+      controllerIndex,
+      elapsedMs: secondQuery.elapsedMs,
+      displayed: secondQuery.layouts,
+      source: secondSource,
+    },
+    third: {
+      displayedAppid: thirdDisplayedAppid,
+      sourceAppid: null,
+      sourceCompared: false,
+      controllerIndex,
+      elapsedMs: thirdQuery.elapsedMs,
+      displayed: thirdQuery.layouts,
+      source: null,
+    },
     isolation,
   });
 })()

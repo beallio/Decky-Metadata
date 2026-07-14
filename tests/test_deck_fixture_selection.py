@@ -89,10 +89,15 @@ def test_controller_layout_probe_is_read_only_and_hashes_layout_identities():
     assert "GetAllConfigs" in probe
     assert "SECOND_DISPLAY_APPID" in probe
     assert "SECOND_SOURCE_APPID" in probe
+    assert "THIRD_DISPLAY_APPID" in probe
     assert "m_mapAppConfigs.has(sourceAppid)" in probe
     assert "m_mapAppConfigs.has(secondSourceAppid)" in probe
     assert "firstSourceCount" in probe
     assert "secondSourceCount" in probe
+    assert "firstDisplayedCount" in probe
+    assert "secondDisplayedCount" in probe
+    assert "thirdDisplayedCount" in probe
+    assert "elapsedMs" in probe
     assert "BConfigurationQueryInFlight" in probe
     assert "urlHashes" in probe
     assert "URL:" not in probe
@@ -139,10 +144,18 @@ def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
     assert "Official" in smoke
     assert 'SECOND_DISPLAY_APPID=${3:-}' in smoke
     assert 'SECOND_SOURCE_APPID=${4:-}' in smoke
+    assert 'THIRD_DISPLAY_APPID=${5:-}' in smoke
     assert '"$delisted_appid" "$delisted_source"' in smoke
+    assert '"$never_appid"' in smoke
     assert 'isolation["deferred"]' not in smoke
-    assert 'isolation["firstSourceCount"]' in smoke
-    assert 'isolation["secondSourceCount"]' in smoke
+    assert 'isolation["afterSecond"]' in smoke
+    assert 'isolation["afterThird"]' in smoke
+    assert 'after_second["firstDisplayedCount"]' in smoke
+    assert 'after_second["firstSourceCount"]' in smoke
+    assert 'after_second["secondDisplayedCount"]' in smoke
+    assert 'after_second["secondSourceCount"]' in smoke
+    assert 'after_third["thirdDisplayedCount"]' in smoke
+    assert "elapsedMs" in smoke
     assert "including pre-existing caches" in smoke
     assert 'smoke_controller_layouts.sh" "$run_dir/fixtures.json"' in run_all
     assert "if ((no_launch)); then" in run_all
