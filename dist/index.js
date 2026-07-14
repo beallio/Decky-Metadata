@@ -4460,47 +4460,71 @@ const installGameDetailReentryShield = (unpatchers) => {
     });
 };
 
-const resolveControllerLayoutSource = (input) => {
-    if (!input.isNonSteamShortcut)
-        return null;
-    const sourceAppid = input.metadata?.steam_appid;
+const nativeControllerLayoutContext = () => ({
+    isNonSteamShortcut: false,
+    matchedSourceAppid: null,
+});
+const STEAM_SHORTCUT_APPID_MIN = 0x80000000;
+const isNativeSteamAppid = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value < STEAM_SHORTCUT_APPID_MIN;
+const resolveControllerLayoutContext = (input) => {
     if (!Number.isFinite(input.displayedAppid) ||
         input.displayedAppid <= 0 ||
-        typeof sourceAppid !== "number" ||
-        !Number.isFinite(sourceAppid) ||
-        sourceAppid <= 0 ||
-        sourceAppid === input.displayedAppid) {
-        return null;
+        !input.isNonSteamShortcut) {
+        return nativeControllerLayoutContext();
     }
-    return sourceAppid;
+    const sourceAppid = input.metadata?.steam_appid;
+    if (!isNativeSteamAppid(sourceAppid) ||
+        sourceAppid === input.displayedAppid) {
+        return { isNonSteamShortcut: true, matchedSourceAppid: null };
+    }
+    return { isNonSteamShortcut: true, matchedSourceAppid: sourceAppid };
 };
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const positiveNumericAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
-const filterControllerSearchConfigs = (nativeResult, activeMatchedSourceAppid, supplementalSourceAppids) => {
+// Steam shortcut IDs use the unsigned CRC namespace defined in backend/shortcuts_vdf.py.
+const isSteamShortcutAppid = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= STEAM_SHORTCUT_APPID_MIN &&
+    value <= 0xffffffff;
+const filterControllerSearchConfigs = (nativeResult, activeDisplayedShortcutAppid, activeMatchedSourceAppid, supplementalSourceAppids) => {
     if (!Array.isArray(nativeResult)) {
         return { ok: false, reason: "native-search-not-array" };
     }
-    if (supplementalSourceAppids.size === 0) {
+    if (supplementalSourceAppids.size === 0 &&
+        activeDisplayedShortcutAppid === null) {
         return { ok: true, value: nativeResult };
     }
-    return {
-        ok: true,
-        value: nativeResult.filter((value) => {
-            if (!isRecord(value))
-                return true;
+    let filtered = null;
+    for (let index = 0; index < nativeResult.length; index += 1) {
+        const value = nativeResult[index];
+        let remove = false;
+        if (isRecord(value)) {
             let appid;
             try {
                 appid = value.appID;
             }
             catch (_error) {
-                return true;
+                appid = undefined;
             }
-            if (!positiveNumericAppid(appid))
-                return true;
-            return appid === activeMatchedSourceAppid ||
-                !supplementalSourceAppids.has(appid);
-        }),
-    };
+            if (positiveNumericAppid(appid)) {
+                remove = (supplementalSourceAppids.has(appid) &&
+                    appid !== activeMatchedSourceAppid) || (activeDisplayedShortcutAppid !== null &&
+                    isSteamShortcutAppid(appid) &&
+                    appid !== activeDisplayedShortcutAppid);
+            }
+        }
+        if (remove) {
+            if (filtered === null)
+                filtered = nativeResult.slice(0, index);
+        }
+        else if (filtered !== null) {
+            filtered.push(value);
+        }
+    }
+    return { ok: true, value: filtered ?? nativeResult };
 };
 const hasStableUrl = (value) => typeof value.URL === "string" && value.URL.trim().length > 0;
 const mergeSupplemental = (nativeBase, supplemental, include) => {
@@ -4637,6 +4661,7 @@ const installControllerLayouts = (unpatchers, provided) => {
     let timer;
     let attempts = 0;
     let installedDescriptors = [];
+    let activeDisplayedShortcutAppid = null;
     let activeMatchedSourceAppid = null;
     const supplementalSourceAppids = new Set();
     const supplementalQueryKeys = new Map();
@@ -4644,7 +4669,10 @@ const installControllerLayouts = (unpatchers, provided) => {
         if (disabled || cleanedUp)
             return;
         disabled = true;
+        activeDisplayedShortcutAppid = null;
         activeMatchedSourceAppid = null;
+        supplementalSourceAppids.clear();
+        supplementalQueryKeys.clear();
         try {
             dependencies.reportFailure(failure);
         }
@@ -4672,20 +4700,36 @@ const installControllerLayouts = (unpatchers, provided) => {
     const installValidatedTargets = (targets) => {
         const applied = [];
         const establishDisplayedContext = (displayedAppid) => {
+            activeDisplayedShortcutAppid = null;
             activeMatchedSourceAppid = null;
             if (!validAppid(displayedAppid))
                 return null;
-            const matchedAppid = dependencies.resolveSource(displayedAppid);
-            if (matchedAppid === null) {
+            const context = dependencies.resolveContext(displayedAppid);
+            if (typeof context !== "object" ||
+                context === null ||
+                typeof context.isNonSteamShortcut !== "boolean") {
+                throw new Error("invalid controller layout context");
+            }
+            const isNonSteamShortcut = context.isNonSteamShortcut;
+            const matchedAppid = context.matchedSourceAppid;
+            if (matchedAppid !== null &&
+                (!isNativeSteamAppid(matchedAppid) ||
+                    matchedAppid === displayedAppid ||
+                    !isNonSteamShortcut)) {
+                throw new Error("invalid matched appid");
+            }
+            if (!isNonSteamShortcut) {
+                if (matchedAppid !== null)
+                    throw new Error("native context has matched appid");
                 if (supplementalSourceAppids.has(displayedAppid)) {
                     supplementalSourceAppids.delete(displayedAppid);
                     supplementalQueryKeys.delete(displayedAppid);
                 }
                 return null;
             }
-            if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
-                throw new Error("invalid matched appid");
-            }
+            activeDisplayedShortcutAppid = displayedAppid;
+            if (matchedAppid === null)
+                return null;
             activeMatchedSourceAppid = matchedAppid;
             return matchedAppid;
         };
@@ -4792,13 +4836,15 @@ const installControllerLayouts = (unpatchers, provided) => {
             const nativeResult = originalSearch.apply(this, args);
             if (disabled)
                 return nativeResult;
+            const displayedAppid = activeDisplayedShortcutAppid;
             const matchedAppid = activeMatchedSourceAppid;
             try {
-                const result = filterControllerSearchConfigs(nativeResult, matchedAppid, supplementalSourceAppids);
+                const result = filterControllerSearchConfigs(nativeResult, displayedAppid, matchedAppid, supplementalSourceAppids);
                 if (result.ok === false) {
                     trip({
                         section: "search",
                         code: result.reason,
+                        displayedAppid: displayedAppid ?? undefined,
                         matchedAppid: matchedAppid ?? undefined,
                     });
                     return nativeResult;
@@ -4809,6 +4855,7 @@ const installControllerLayouts = (unpatchers, provided) => {
                 trip({
                     section: "search",
                     code: "runtime-error",
+                    displayedAppid: displayedAppid ?? undefined,
                     matchedAppid: matchedAppid ?? undefined,
                     detail: errorDetail(error),
                 });
@@ -4912,6 +4959,7 @@ const installControllerLayouts = (unpatchers, provided) => {
             installedDescriptors = [];
         }
         installed = false;
+        activeDisplayedShortcutAppid = null;
         activeMatchedSourceAppid = null;
         supplementalSourceAppids.clear();
         supplementalQueryKeys.clear();
@@ -4924,11 +4972,14 @@ const installControllerLayouts = (unpatchers, provided) => {
     };
 };
 
-const resolveInstalledControllerLayoutSource = (displayedAppid) => resolveControllerLayoutSource({
-    displayedAppid,
-    isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(getOverview(displayedAppid)),
-    metadata: metadataCache[String(displayedAppid)],
-});
+const resolveInstalledControllerLayoutContext = (displayedAppid) => {
+    const overview = getOverview(displayedAppid);
+    return resolveControllerLayoutContext({
+        displayedAppid,
+        isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(overview),
+        metadata: metadataCache[String(displayedAppid)],
+    });
+};
 const reportControllerLayoutFailure = (failure) => {
     warn("controller-layouts", "supplemental layouts disabled", failure);
     void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
@@ -4989,7 +5040,7 @@ const installSteamPatches = () => {
         // Install last so an unrelated synchronous patch failure cannot strand
         // controller-layout descriptors outside the normal aggregate teardown.
         safeInstallStep("controllerLayouts", () => installControllerLayouts(unpatchers, {
-            resolveSource: resolveInstalledControllerLayoutSource,
+            resolveContext: resolveInstalledControllerLayoutContext,
             reportFailure: reportControllerLayoutFailure,
             notify: toastWarn,
         }));

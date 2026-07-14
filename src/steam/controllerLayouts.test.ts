@@ -5,8 +5,29 @@ import {
   ControllerLayoutTargets,
   installControllerLayouts,
 } from "./controllerLayouts";
+import type { ControllerLayoutContext } from "./controllerLayoutPolicy";
 
 type GetterSection = "official" | "templates" | "workshop";
+
+const nativeContext = (): ControllerLayoutContext => ({
+  isNonSteamShortcut: false,
+  matchedSourceAppid: null,
+});
+
+const shortcutContext = (matchedSourceAppid: number | null): ControllerLayoutContext => ({
+  isNonSteamShortcut: true,
+  matchedSourceAppid,
+});
+
+const contextsForSources = (
+  sources: ReadonlyMap<number, number>,
+  unmatchedShortcuts: ReadonlySet<number> = new Set(),
+) => (appid: number): ControllerLayoutContext =>
+  sources.has(appid)
+    ? shortcutContext(sources.get(appid)!)
+    : unmatchedShortcuts.has(appid)
+    ? shortcutContext(null)
+    : nativeContext();
 
 class TrackingMap extends Map<number, unknown> {
   hasCalls: number[] = [];
@@ -88,7 +109,7 @@ class TrackingMap extends Map<number, unknown> {
 
 const makeHarness = (options: {
   source?: number | null;
-  resolveSource?: (appid: number) => number | null;
+  resolveContext?: (appid: number) => ControllerLayoutContext;
   queryThrowsFor?: number;
   getterThrowsFor?: { section: GetterSection; appid: number };
   searchThrows?: boolean;
@@ -210,7 +231,9 @@ const makeHarness = (options: {
   const unpatchers: Array<() => void> = [];
   const control = installControllerLayouts(unpatchers, {
     discoverTargets: () => targets,
-    resolveSource: options.resolveSource ?? ((appid) => appid === 10 ? source : null),
+    resolveContext: options.resolveContext ?? ((appid) =>
+      appid === 10 ? shortcutContext(source) : nativeContext()
+    ),
     reportFailure: (failure) => failures.push(failure),
     notify: (heading, body) => notifications.push([heading, body]),
     maxAttempts: 1,
@@ -350,7 +373,7 @@ describe("installControllerLayouts", () => {
   it("isolates inactive supplemental Search records while preserving active and native records", () => {
     const sources = new Map([[10, 20], [11, 30], [12, 40]]);
     const harness = makeHarness({
-      resolveSource: (appid) => sources.get(appid) ?? null,
+      resolveContext: contextsForSources(sources),
     });
 
     callQuery(harness.input, 10);
@@ -379,7 +402,7 @@ describe("installControllerLayouts", () => {
     const sources = new Map([[10, 20], [11, 30]]);
     const preexisting = makeHarness({
       preexistingSourceAppids: [20],
-      resolveSource: (appid) => sources.get(appid) ?? null,
+      resolveContext: contextsForSources(sources),
     });
     callQuery(preexisting.input, 10);
     callQuery(preexisting.input, 11);
@@ -392,7 +415,7 @@ describe("installControllerLayouts", () => {
       .toHaveLength(1);
 
     const relinquished = makeHarness({
-      resolveSource: (appid) => sources.get(appid) ?? null,
+      resolveContext: contextsForSources(sources),
     });
     callQuery(relinquished.input, 10);
     callQuery(relinquished.input, 20);
@@ -423,7 +446,7 @@ describe("installControllerLayouts", () => {
     ];
     const harness = makeHarness({
       searchResult: search,
-      resolveSource: (appid) => sources.get(appid) ?? null,
+      resolveContext: contextsForSources(sources, new Set([3156562597])),
     });
 
     callQuery(harness.input, 2155012430);
@@ -457,6 +480,80 @@ describe("installControllerLayouts", () => {
     ]);
   });
 
+  it("isolates the displayed shortcut across the reproduced matched and unmatched sequence", () => {
+    const spaceMarineShortcut = Object.freeze({
+      appID: 2155012430,
+      URL: "search://space-marine-shortcut",
+    });
+    const assassinsCreedShortcut = Object.freeze({
+      appID: 2312439508,
+      URL: "search://assassins-creed-shortcut",
+    });
+    const wolverineShortcut = Object.freeze({
+      appID: 3156562597,
+      URL: "search://wolverine-shortcut",
+    });
+    const spaceMarineSource = Object.freeze({ appID: 55150, URL: "search://55150" });
+    const assassinsCreedSource = Object.freeze({ appID: 15100, URL: "search://15100" });
+    const native = Object.freeze({ appID: 620, URL: "search://native" });
+    const opaque = Object.freeze({ title: "opaque" });
+    const throwingAppid = Object.defineProperty({}, "appID", {
+      get: () => {
+        throw new Error("opaque native getter");
+      },
+    });
+    const search = Object.freeze([
+      spaceMarineShortcut,
+      assassinsCreedShortcut,
+      wolverineShortcut,
+      spaceMarineSource,
+      assassinsCreedSource,
+      native,
+      opaque,
+      throwingAppid,
+    ]);
+    const sources = new Map([
+      [2155012430, 55150],
+      [2312439508, 15100],
+    ]);
+    let forbidContextResolution = false;
+    const harness = makeHarness({
+      searchResult: search,
+      resolveContext: (appid) => {
+        if (forbidContextResolution) throw new Error("context resolution forbidden");
+        return contextsForSources(sources, new Set([3156562597]))(appid);
+      },
+    });
+
+    callQuery(harness.input, 2155012430);
+    callQuery(harness.input, 2312439508);
+    forbidContextResolution = true;
+    harness.store.m_mapAppConfigs.forbidAccess = true;
+    const afterAssassinsCreed = harness.store.GetAllConfigs();
+    harness.store.m_mapAppConfigs.forbidAccess = false;
+    forbidContextResolution = false;
+    expect(afterAssassinsCreed).toEqual([
+      assassinsCreedShortcut,
+      assassinsCreedSource,
+      native,
+      opaque,
+      throwingAppid,
+    ]);
+
+    callQuery(harness.input, 3156562597);
+    forbidContextResolution = true;
+    harness.store.m_mapAppConfigs.forbidAccess = true;
+    const afterWolverine = harness.store.GetAllConfigs();
+    harness.store.m_mapAppConfigs.forbidAccess = false;
+    forbidContextResolution = false;
+    expect(afterWolverine).toEqual([
+      wolverineShortcut,
+      native,
+      opaque,
+      throwingAppid,
+    ]);
+  });
+
   it("preserves native Search identity and never touches the map from Search", () => {
     const native = makeHarness({ source: null });
     native.store.m_mapAppConfigs.forbidAccess = true;
@@ -473,6 +570,20 @@ describe("installControllerLayouts", () => {
     matched.store.m_mapAppConfigs.forbidAccess = false;
     expect(matched.store.m_mapAppConfigs.hasCalls).toHaveLength(hasCalls);
     expect(matched.store.m_mapAppConfigs.writes).toHaveLength(writes);
+  });
+
+  it("resolves displayed context once per wrapped call and never from Search", () => {
+    const resolveContext = vi.fn((appid: number) =>
+      appid === 10 ? shortcutContext(20) : nativeContext()
+    );
+    const harness = makeHarness({ resolveContext });
+
+    callQuery(harness.input);
+    expect(resolveContext).toHaveBeenCalledTimes(1);
+    harness.store.GetOfficialConfigsForApp(10, 4);
+    expect(resolveContext).toHaveBeenCalledTimes(2);
+    harness.store.GetAllConfigs();
+    expect(resolveContext).toHaveBeenCalledTimes(2);
   });
 
   it.each([
@@ -514,7 +625,7 @@ describe("installControllerLayouts", () => {
 
     const control = installControllerLayouts(unpatchers, {
       discoverTargets: () => ({ input: harness.input, store: malformedStore as any }),
-      resolveSource: () => 20,
+      resolveContext: () => shortcutContext(20),
       reportFailure: (failure) => failures.push(failure),
       notify: (heading, body) => notifications.push([heading, body]),
       maxAttempts: 1,
@@ -552,7 +663,7 @@ describe("installControllerLayouts", () => {
 
       const control = installControllerLayouts([], {
         discoverTargets: () => harness.targets,
-        resolveSource: () => 20,
+        resolveContext: () => shortcutContext(20),
         reportFailure: () => undefined,
         notify: () => {
           restoredBeforeNotify = [
@@ -688,11 +799,7 @@ describe("installControllerLayouts", () => {
       [{ appID: 20, URL: "search://wobbly" }],
       {
         get(target, property, receiver) {
-          if (property === "filter") {
-            return () => {
-              throw new Error("filter failed");
-            };
-          }
+          if (property === "0") throw new Error("record access failed");
           return Reflect.get(target, property, receiver);
         },
       },
@@ -738,9 +845,9 @@ describe("installControllerLayouts", () => {
   it("fails open if source resolution throws without retaining stale Search state", () => {
     let shouldThrow = false;
     const harness = makeHarness({
-      resolveSource: (appid) => {
+      resolveContext: (appid) => {
         if (shouldThrow) throw new Error("resolver failed");
-        return appid === 10 ? 20 : null;
+        return appid === 10 ? shortcutContext(20) : nativeContext();
       },
     });
     callQuery(harness.input);
@@ -757,9 +864,9 @@ describe("installControllerLayouts", () => {
   it("fails open when getter context resolution throws after clearing stale Search state", () => {
     let failForAppid: number | null = null;
     const harness = makeHarness({
-      resolveSource: (appid) => {
+      resolveContext: (appid) => {
         if (appid === failForAppid) throw new Error("resolver failed");
-        return appid === 10 ? 20 : null;
+        return appid === 10 ? shortcutContext(20) : nativeContext();
       },
     });
     callQuery(harness.input);
@@ -790,6 +897,51 @@ describe("installControllerLayouts", () => {
     expect(harness.notifications).toHaveLength(1);
   });
 
+  it.each([
+    ["missing context fields", {}],
+    ["non-boolean shortcut flag", { isNonSteamShortcut: "yes", matchedSourceAppid: null }],
+    ["matched source on native context", {
+      isNonSteamShortcut: false,
+      matchedSourceAppid: 20,
+    }],
+    ["missing matched source", { isNonSteamShortcut: true }],
+    ["zero matched source", { isNonSteamShortcut: true, matchedSourceAppid: 0 }],
+    ["fractional matched source", { isNonSteamShortcut: true, matchedSourceAppid: 1.5 }],
+    ["shortcut boundary matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0x80000000,
+    }],
+    ["synthetic shortcut matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 3156562597,
+    }],
+    ["shortcut ceiling matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0xffffffff,
+    }],
+    ["overflowing matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 0x100000000,
+    }],
+    ["displayed appid as matched source", {
+      isNonSteamShortcut: true,
+      matchedSourceAppid: 10,
+    }],
+  ])("fails open once for malformed resolved context: %s", (_label, context) => {
+    const harness = makeHarness({
+      resolveContext: () => context as ControllerLayoutContext,
+    });
+
+    expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(harness.query).toHaveBeenCalledTimes(1);
+    expect(harness.control.isDisabled()).toBe(true);
+    expect(harness.store.GetAllConfigs()).toBe(harness.outputs.search);
+    expect(harness.failures).toEqual([
+      expect.objectContaining({ section: "query", code: "runtime-error" }),
+    ]);
+    expect(harness.notifications).toHaveLength(1);
+  });
+
   it("sets disabled state before reporting and notifying and swallows both throws", () => {
     const harness = makeHarness();
     harness.unpatchers[0]();
@@ -807,7 +959,7 @@ describe("installControllerLayouts", () => {
 
     control = installControllerLayouts([], {
       discoverTargets: () => harness.targets,
-      resolveSource: (appid) => appid === 10 ? 20 : null,
+      resolveContext: (appid) => appid === 10 ? shortcutContext(20) : nativeContext(),
       reportFailure: (failure) => {
         disabledDuringReport = control.isDisabled();
         reportedFailures.push(failure);
@@ -881,7 +1033,7 @@ describe("installControllerLayouts", () => {
     const unpatchers: Array<() => void> = [];
     const control = installControllerLayouts(unpatchers, {
       discoverTargets: () => ready ? harness.targets : null,
-      resolveSource: (appid) => appid === 10 ? 20 : null,
+      resolveContext: (appid) => appid === 10 ? shortcutContext(20) : nativeContext(),
       reportFailure: () => undefined,
       notify: (heading, body) => notifications.push([heading, body]),
       schedule: (callback) => {
@@ -908,7 +1060,7 @@ describe("installControllerLayouts", () => {
     const notifications: Array<[string, string]> = [];
     const control = installControllerLayouts([], {
       discoverTargets: () => null,
-      resolveSource: () => null,
+      resolveContext: nativeContext,
       reportFailure: (failure) => failures.push(failure),
       notify: (heading, body) => notifications.push([heading, body]),
       schedule: (callback) => {
@@ -972,7 +1124,7 @@ describe("installControllerLayouts", () => {
     const secondUnpatchers: Array<() => void> = [];
     const second = installControllerLayouts(secondUnpatchers, {
       discoverTargets: () => first.targets,
-      resolveSource: () => null,
+      resolveContext: nativeContext,
       reportFailure: () => undefined,
       notify: () => undefined,
       maxAttempts: 1,

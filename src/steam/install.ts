@@ -38,14 +38,16 @@ import {
   ControllerLayoutFailure,
   installControllerLayouts,
 } from "./controllerLayouts";
-import { resolveControllerLayoutSource } from "./controllerLayoutPolicy";
+import { resolveControllerLayoutContext } from "./controllerLayoutPolicy";
 
-const resolveInstalledControllerLayoutSource = (displayedAppid: number): number | null =>
-  resolveControllerLayoutSource({
+const resolveInstalledControllerLayoutContext = (displayedAppid: number) => {
+  const overview = getOverview(displayedAppid);
+  return resolveControllerLayoutContext({
     displayedAppid,
-    isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(getOverview(displayedAppid)),
+    isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(overview),
     metadata: metadataCache[String(displayedAppid)],
   });
+};
 
 const reportControllerLayoutFailure = (failure: ControllerLayoutFailure): void => {
   log.warn("controller-layouts", "supplemental layouts disabled", failure);
@@ -114,7 +116,7 @@ export const installSteamPatches = (): Unpatch => {
     // Install last so an unrelated synchronous patch failure cannot strand
     // controller-layout descriptors outside the normal aggregate teardown.
     safeInstallStep("controllerLayouts", () => installControllerLayouts(unpatchers, {
-      resolveSource: resolveInstalledControllerLayoutSource,
+      resolveContext: resolveInstalledControllerLayoutContext,
       reportFailure: reportControllerLayoutFailure,
       notify: toastWarn,
     }));
