@@ -1283,6 +1283,52 @@ const allNonSteamGames = async () => {
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
 
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    xxs: 2,
+    xs: 4,
+    sm: 8,
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16,
+    xl: 20,
+};
+const fontWeight = {
+    bold: 700};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
+
+const TITLE = "Decky Metadata";
+const DURATION = 3000;
+function notify(kind, heading, body) {
+    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
+    try {
+        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
+    }
+    catch {
+        // The Decky toaster may be unavailable outside the runtime.
+    }
+}
+const toastSuccess = (heading, body) => notify("success", heading, body);
+const toastWarn = (heading, body) => notify("warning", heading, body);
+const toastError = (heading, body) => notify("error", heading, body);
+
 const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
 const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
 const isAppDetailsQuickLinksModule = (candidate) => !!candidate &&
@@ -4414,6 +4460,530 @@ const installGameDetailReentryShield = (unpatchers) => {
     });
 };
 
+const nativeControllerLayoutContext = () => ({
+    isNonSteamShortcut: false,
+    matchedSourceAppid: null,
+});
+const STEAM_SHORTCUT_APPID_MIN = 0x80000000;
+const isNativeSteamAppid = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value < STEAM_SHORTCUT_APPID_MIN;
+const resolveControllerLayoutContext = (input) => {
+    if (!Number.isFinite(input.displayedAppid) ||
+        input.displayedAppid <= 0 ||
+        !input.isNonSteamShortcut) {
+        return nativeControllerLayoutContext();
+    }
+    const sourceAppid = input.metadata?.steam_appid;
+    if (!isNativeSteamAppid(sourceAppid) ||
+        sourceAppid === input.displayedAppid) {
+        return { isNonSteamShortcut: true, matchedSourceAppid: null };
+    }
+    return { isNonSteamShortcut: true, matchedSourceAppid: sourceAppid };
+};
+const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+const positiveNumericAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+// Steam shortcut IDs use the unsigned CRC namespace defined in backend/shortcuts_vdf.py.
+const isSteamShortcutAppid = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= STEAM_SHORTCUT_APPID_MIN &&
+    value <= 0xffffffff;
+const filterControllerSearchConfigs = (nativeResult, activeDisplayedShortcutAppid, activeMatchedSourceAppid, supplementalSourceAppids) => {
+    if (!Array.isArray(nativeResult)) {
+        return { ok: false, reason: "native-search-not-array" };
+    }
+    if (supplementalSourceAppids.size === 0 &&
+        activeDisplayedShortcutAppid === null) {
+        return { ok: true, value: nativeResult };
+    }
+    let filtered = null;
+    for (let index = 0; index < nativeResult.length; index += 1) {
+        const value = nativeResult[index];
+        let remove = false;
+        if (isRecord(value)) {
+            let appid;
+            try {
+                appid = value.appID;
+            }
+            catch (_error) {
+                appid = undefined;
+            }
+            if (positiveNumericAppid(appid)) {
+                remove = (supplementalSourceAppids.has(appid) &&
+                    appid !== activeMatchedSourceAppid) || (activeDisplayedShortcutAppid !== null &&
+                    isSteamShortcutAppid(appid) &&
+                    appid !== activeDisplayedShortcutAppid);
+            }
+        }
+        if (remove) {
+            if (filtered === null)
+                filtered = nativeResult.slice(0, index);
+        }
+        else if (filtered !== null) {
+            filtered.push(value);
+        }
+    }
+    return { ok: true, value: filtered ?? nativeResult };
+};
+const hasStableUrl = (value) => typeof value.URL === "string" && value.URL.trim().length > 0;
+const mergeSupplemental = (nativeBase, supplemental, include) => {
+    if (!Array.isArray(supplemental)) {
+        return { ok: false, reason: "supplemental-not-array" };
+    }
+    const merged = [...nativeBase];
+    const seen = new Set();
+    for (const value of nativeBase) {
+        if (isRecord(value) && hasStableUrl(value)) {
+            seen.add(value.URL);
+        }
+    }
+    for (let index = 0; index < supplemental.length; index += 1) {
+        const value = supplemental[index];
+        if (!isRecord(value)) {
+            return { ok: false, reason: "malformed-supplemental-record", index };
+        }
+        if (!include(value))
+            continue;
+        if (!hasStableUrl(value)) {
+            return { ok: false, reason: "malformed-supplemental-record", index };
+        }
+        if (seen.has(value.URL))
+            continue;
+        seen.add(value.URL);
+        merged.push(value);
+    }
+    return { ok: true, value: merged };
+};
+const mergeOfficialConfigs = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, () => true);
+const mergeRecommendedTemplates = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, (record) => record.bRecommended === true);
+const mergeCommunityConfigs = (nativeBase, supplemental) => mergeSupplemental(nativeBase, supplemental, () => true);
+
+const CONTROLLER_LAYOUT_WARNING = {
+    heading: "Controller layouts disabled",
+    body: "Using Steam's standard controller layout UI until Decky Metadata is reloaded.",
+};
+const getterMerges = {
+    official: mergeOfficialConfigs,
+    templates: mergeRecommendedTemplates,
+    workshop: mergeCommunityConfigs,
+};
+const getterKeys = {
+    official: "GetOfficialConfigsForApp",
+    templates: "GetTemplateConfigsForApp",
+    workshop: "GetWorkshopConfigsForApp",
+};
+const callableDataDescriptor = (descriptor) => !!descriptor &&
+    typeof descriptor.value === "function" &&
+    descriptor.writable === true &&
+    descriptor.configurable === true;
+const validateTargets = (targets) => {
+    const inputDescriptor = Object.getOwnPropertyDescriptor(targets.input, "QueryControllerConfigsForApp");
+    const storePrototype = Object.getPrototypeOf(targets.store);
+    if (!storePrototype ||
+        typeof targets.store.QueryConfigsForApp !== "function" ||
+        typeof targets.store.m_mapAppConfigs?.has !== "function" ||
+        typeof targets.store.m_mapAppConfigs?.set !== "function" ||
+        !callableDataDescriptor(inputDescriptor)) {
+        return null;
+    }
+    const descriptors = [{
+            target: targets.input,
+            key: "QueryControllerConfigsForApp",
+            descriptor: inputDescriptor,
+        }];
+    for (const key of Object.values(getterKeys)) {
+        const descriptor = Object.getOwnPropertyDescriptor(storePrototype, key);
+        if (!callableDataDescriptor(descriptor))
+            return null;
+        descriptors.push({ target: storePrototype, key, descriptor });
+    }
+    const searchDescriptor = Object.getOwnPropertyDescriptor(storePrototype, "GetAllConfigs");
+    if (!callableDataDescriptor(searchDescriptor))
+        return null;
+    descriptors.push({
+        target: storePrototype,
+        key: "GetAllConfigs",
+        descriptor: searchDescriptor,
+    });
+    return {
+        input: targets.input,
+        store: targets.store,
+        storePrototype,
+        descriptors,
+    };
+};
+const errorDetail = (error) => {
+    if (error instanceof Error && error.name)
+        return error.name;
+    return typeof error;
+};
+const validAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+const supplementalQueryKey = (sourceAppid, args) => {
+    const controllerIndex = args[1];
+    const filterOtherControllerTypes = args[2];
+    if (!Number.isInteger(controllerIndex) ||
+        controllerIndex < 0 ||
+        typeof filterOtherControllerTypes !== "boolean") {
+        return null;
+    }
+    return {
+        sourceAppid,
+        controllerIndex: controllerIndex,
+        filterOtherControllerTypes,
+    };
+};
+const sameSupplementalQueryKey = (left, right) => !!left &&
+    left.sourceAppid === right.sourceAppid &&
+    left.controllerIndex === right.controllerIndex &&
+    left.filterOtherControllerTypes === right.filterOtherControllerTypes;
+const discoverControllerLayoutTargets = () => {
+    const internals = globalThis;
+    const input = internals.SteamClient?.Input;
+    const store = internals.controllerConfiguratorStore;
+    return input && store ? { input, store } : null;
+};
+const defaultSchedule = (callback, delayMs) => globalThis.setTimeout(callback, delayMs);
+const defaultCancel = (handle) => globalThis.clearTimeout(handle);
+const installControllerLayouts = (unpatchers, provided) => {
+    const dependencies = {
+        discoverTargets: discoverControllerLayoutTargets,
+        schedule: defaultSchedule,
+        cancel: defaultCancel,
+        defineProperty: Object.defineProperty,
+        maxAttempts: 240,
+        retryDelayMs: 500,
+        ...provided,
+    };
+    let disabled = false;
+    let installed = false;
+    let cleanedUp = false;
+    let timer;
+    let attempts = 0;
+    let installedDescriptors = [];
+    let activeDisplayedShortcutAppid = null;
+    let activeMatchedSourceAppid = null;
+    const supplementalSourceAppids = new Set();
+    const supplementalQueryKeys = new Map();
+    const trip = (failure) => {
+        if (disabled || cleanedUp)
+            return;
+        disabled = true;
+        activeDisplayedShortcutAppid = null;
+        activeMatchedSourceAppid = null;
+        supplementalSourceAppids.clear();
+        supplementalQueryKeys.clear();
+        try {
+            dependencies.reportFailure(failure);
+        }
+        catch (_error) {
+            // Logging must not interfere with the secured native result.
+        }
+        try {
+            dependencies.notify(CONTROLLER_LAYOUT_WARNING.heading, CONTROLLER_LAYOUT_WARNING.body);
+        }
+        catch (_error) {
+            // The injected or Decky notifier is strictly best effort.
+        }
+    };
+    const restoreDescriptors = (descriptors) => {
+        for (let index = descriptors.length - 1; index >= 0; index -= 1) {
+            const entry = descriptors[index];
+            try {
+                dependencies.defineProperty(entry.target, entry.key, entry.descriptor);
+            }
+            catch (_error) {
+                // Continue restoring every other section even if Steam changed mid-unload.
+            }
+        }
+    };
+    const installValidatedTargets = (targets) => {
+        const applied = [];
+        const establishDisplayedContext = (displayedAppid) => {
+            activeDisplayedShortcutAppid = null;
+            activeMatchedSourceAppid = null;
+            if (!validAppid(displayedAppid))
+                return null;
+            const context = dependencies.resolveContext(displayedAppid);
+            if (typeof context !== "object" ||
+                context === null ||
+                typeof context.isNonSteamShortcut !== "boolean") {
+                throw new Error("invalid controller layout context");
+            }
+            const isNonSteamShortcut = context.isNonSteamShortcut;
+            const matchedAppid = context.matchedSourceAppid;
+            if (matchedAppid !== null &&
+                (!isNativeSteamAppid(matchedAppid) ||
+                    matchedAppid === displayedAppid ||
+                    !isNonSteamShortcut)) {
+                throw new Error("invalid matched appid");
+            }
+            if (!isNonSteamShortcut) {
+                if (matchedAppid !== null)
+                    throw new Error("native context has matched appid");
+                if (supplementalSourceAppids.has(displayedAppid)) {
+                    supplementalSourceAppids.delete(displayedAppid);
+                    supplementalQueryKeys.delete(displayedAppid);
+                }
+                return null;
+            }
+            activeDisplayedShortcutAppid = displayedAppid;
+            if (matchedAppid === null)
+                return null;
+            activeMatchedSourceAppid = matchedAppid;
+            return matchedAppid;
+        };
+        const inputEntry = targets.descriptors[0];
+        const originalQuery = inputEntry.descriptor.value;
+        const queryWrapper = function (...args) {
+            const nativeResult = originalQuery.apply(this, args);
+            if (disabled)
+                return nativeResult;
+            const displayedAppid = args[0];
+            const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
+            let matchedAppid = null;
+            try {
+                matchedAppid = establishDisplayedContext(displayedAppid);
+                if (matchedAppid === null || validDisplayedAppid === undefined)
+                    return nativeResult;
+                const queryKey = supplementalQueryKey(matchedAppid, args);
+                if (!queryKey) {
+                    trip({
+                        section: "query",
+                        code: "invalid-query-key",
+                        displayedAppid: validDisplayedAppid,
+                        matchedAppid,
+                    });
+                    return nativeResult;
+                }
+                activeMatchedSourceAppid = matchedAppid;
+                const cacheExisted = targets.store.m_mapAppConfigs.has(matchedAppid);
+                if (cacheExisted &&
+                    sameSupplementalQueryKey(supplementalQueryKeys.get(matchedAppid), queryKey)) {
+                    supplementalSourceAppids.add(matchedAppid);
+                    return nativeResult;
+                }
+                targets.store.m_mapAppConfigs.set(matchedAppid, []);
+                originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
+                supplementalQueryKeys.set(matchedAppid, queryKey);
+                supplementalSourceAppids.add(matchedAppid);
+            }
+            catch (error) {
+                trip({
+                    section: "query",
+                    code: "runtime-error",
+                    displayedAppid: validDisplayedAppid,
+                    matchedAppid: matchedAppid ?? undefined,
+                    detail: errorDetail(error),
+                });
+            }
+            return nativeResult;
+        };
+        const getterWrappers = new Map();
+        for (const section of Object.keys(getterKeys)) {
+            const key = getterKeys[section];
+            const entry = targets.descriptors.find((candidate) => candidate.key === key);
+            const originalGetter = entry.descriptor.value;
+            getterWrappers.set(section, function (...args) {
+                const nativeBase = originalGetter.apply(this, args);
+                if (disabled)
+                    return nativeBase;
+                const displayedAppid = args[0];
+                const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
+                let matchedAppid = null;
+                try {
+                    matchedAppid = establishDisplayedContext(displayedAppid);
+                    if (matchedAppid === null || validDisplayedAppid === undefined)
+                        return nativeBase;
+                    if (!Array.isArray(nativeBase)) {
+                        trip({
+                            section,
+                            code: "native-base-not-array",
+                            displayedAppid: validDisplayedAppid,
+                            matchedAppid,
+                        });
+                        return nativeBase;
+                    }
+                    const supplemental = originalGetter.apply(this, [matchedAppid, ...args.slice(1)]);
+                    const result = getterMerges[section](nativeBase, supplemental);
+                    if (result.ok === false) {
+                        trip({
+                            section,
+                            code: result.reason,
+                            displayedAppid: validDisplayedAppid,
+                            matchedAppid,
+                            detail: result.index === undefined ? undefined : `index:${result.index}`,
+                        });
+                        return nativeBase;
+                    }
+                    return result.value;
+                }
+                catch (error) {
+                    trip({
+                        section,
+                        code: "runtime-error",
+                        displayedAppid: validDisplayedAppid,
+                        matchedAppid: matchedAppid ?? undefined,
+                        detail: errorDetail(error),
+                    });
+                    return nativeBase;
+                }
+            });
+        }
+        const searchEntry = targets.descriptors.find((candidate) => candidate.key === "GetAllConfigs");
+        const originalSearch = searchEntry.descriptor.value;
+        const searchWrapper = function (...args) {
+            const nativeResult = originalSearch.apply(this, args);
+            if (disabled)
+                return nativeResult;
+            const displayedAppid = activeDisplayedShortcutAppid;
+            const matchedAppid = activeMatchedSourceAppid;
+            try {
+                const result = filterControllerSearchConfigs(nativeResult, displayedAppid, matchedAppid, supplementalSourceAppids);
+                if (result.ok === false) {
+                    trip({
+                        section: "search",
+                        code: result.reason,
+                        displayedAppid: displayedAppid ?? undefined,
+                        matchedAppid: matchedAppid ?? undefined,
+                    });
+                    return nativeResult;
+                }
+                return result.value;
+            }
+            catch (error) {
+                trip({
+                    section: "search",
+                    code: "runtime-error",
+                    displayedAppid: displayedAppid ?? undefined,
+                    matchedAppid: matchedAppid ?? undefined,
+                    detail: errorDetail(error),
+                });
+                return nativeResult;
+            }
+        };
+        const replacements = [
+            { ...inputEntry, descriptor: { ...inputEntry.descriptor, value: queryWrapper } },
+            ...Object.keys(getterKeys).map((section) => {
+                const entry = targets.descriptors.find((candidate) => candidate.key === getterKeys[section]);
+                return {
+                    ...entry,
+                    descriptor: { ...entry.descriptor, value: getterWrappers.get(section) },
+                };
+            }),
+            { ...searchEntry, descriptor: { ...searchEntry.descriptor, value: searchWrapper } },
+        ];
+        try {
+            for (const replacement of replacements) {
+                dependencies.defineProperty(replacement.target, replacement.key, replacement.descriptor);
+                const original = targets.descriptors.find((entry) => entry.key === replacement.key);
+                applied.push(original);
+            }
+        }
+        catch (error) {
+            restoreDescriptors(applied);
+            trip({ section: "install", code: "transaction-failed", detail: errorDetail(error) });
+            return;
+        }
+        installedDescriptors = targets.descriptors;
+        installed = true;
+    };
+    const attemptInstall = () => {
+        timer = undefined;
+        if (cleanedUp || disabled || installed)
+            return;
+        attempts += 1;
+        let targets;
+        try {
+            targets = dependencies.discoverTargets();
+        }
+        catch (error) {
+            trip({ section: "discovery", code: "discovery-error", detail: errorDetail(error) });
+            return;
+        }
+        if (!targets) {
+            if (attempts >= dependencies.maxAttempts) {
+                trip({ section: "discovery", code: "retry-exhausted" });
+            }
+            else {
+                try {
+                    timer = dependencies.schedule(attemptInstall, dependencies.retryDelayMs);
+                }
+                catch (error) {
+                    trip({
+                        section: "discovery",
+                        code: "retry-schedule-failed",
+                        detail: errorDetail(error),
+                    });
+                }
+            }
+            return;
+        }
+        let validated;
+        try {
+            validated = validateTargets(targets);
+        }
+        catch (error) {
+            trip({
+                section: "install",
+                code: "target-validation-failed",
+                detail: errorDetail(error),
+            });
+            return;
+        }
+        if (!validated) {
+            trip({ section: "install", code: "incompatible-target" });
+            return;
+        }
+        try {
+            installValidatedTargets(validated);
+        }
+        catch (error) {
+            trip({
+                section: "install",
+                code: "wrapper-construction-failed",
+                detail: errorDetail(error),
+            });
+        }
+    };
+    const cleanup = () => {
+        if (cleanedUp)
+            return;
+        cleanedUp = true;
+        if (timer !== undefined) {
+            dependencies.cancel(timer);
+            timer = undefined;
+        }
+        if (installedDescriptors.length > 0) {
+            restoreDescriptors(installedDescriptors);
+            installedDescriptors = [];
+        }
+        installed = false;
+        activeDisplayedShortcutAppid = null;
+        activeMatchedSourceAppid = null;
+        supplementalSourceAppids.clear();
+        supplementalQueryKeys.clear();
+    };
+    unpatchers.push(cleanup);
+    attemptInstall();
+    return {
+        isDisabled: () => disabled,
+        isInstalled: () => installed,
+    };
+};
+
+const resolveInstalledControllerLayoutContext = (displayedAppid) => {
+    const overview = getOverview(displayedAppid);
+    return resolveControllerLayoutContext({
+        displayedAppid,
+        isNonSteamShortcut: isNonSteamAppWithoutPatchedMethod(overview),
+        metadata: metadataCache[String(displayedAppid)],
+    });
+};
+const reportControllerLayoutFailure = (failure) => {
+    warn("controller-layouts", "supplemental layouts disabled", failure);
+    void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
+};
 const installSteamPatches = () => {
     configureActivityMetadataLoader(ensureMetadataCache);
     const unpatchers = [];
@@ -4467,6 +5037,13 @@ const installSteamPatches = () => {
         });
         safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
         safeInstallStep("nonSteamQuickLinkPolicy", () => installNonSteamQuickLinkPolicy(unpatchers));
+        // Install last so an unrelated synchronous patch failure cannot strand
+        // controller-layout descriptors outside the normal aggregate teardown.
+        safeInstallStep("controllerLayouts", () => installControllerLayouts(unpatchers, {
+            resolveContext: resolveInstalledControllerLayoutContext,
+            reportFailure: reportControllerLayoutFailure,
+            notify: toastWarn,
+        }));
         void frontendLog("patch", "steam patches installed", {
             attempts,
             unpatcherCount: unpatchers.length,
@@ -4519,52 +5096,6 @@ const installSteamPatches = () => {
         });
     };
 };
-
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
-const colors = {
-    accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    xxs: 2,
-    xs: 4,
-    sm: 8,
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16,
-    xl: 20,
-};
-const fontWeight = {
-    bold: 700};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
-
-const TITLE = "Decky Metadata";
-const DURATION = 3000;
-function notify(kind, heading, body) {
-    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
-    try {
-        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
-    }
-    catch {
-        // The Decky toaster may be unavailable outside the runtime.
-    }
-}
-const toastSuccess = (heading, body) => notify("success", heading, body);
-const toastWarn = (heading, body) => notify("warning", heading, body);
-const toastError = (heading, body) => notify("error", heading, body);
 
 const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
 const pageStyle = {

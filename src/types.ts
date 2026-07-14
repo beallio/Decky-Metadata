@@ -98,7 +98,10 @@ export type MetadataNews = {
  * as the plugin discovers them at the type boundary.
  */
 export type SteamInternals = {
-  SteamClient: object;
+  SteamClient: {
+    Input?: SteamInputBoundary;
+    [key: string]: unknown;
+  };
   appStore: {
     GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
   };
@@ -116,7 +119,26 @@ export type SteamInternals = {
   partnerEventStore?: NativePartnerEventStore;
   g_PartnerEventStore?: NativePartnerEventStore;
   g_PartnerEventSummaryStore?: NativePartnerEventStore;
+  controllerConfiguratorStore?: ControllerConfiguratorStoreBoundary;
   [key: string]: unknown;
+};
+
+/** Minimal Steam Input bridge used to request controller configuration data. */
+export type SteamInputBoundary = {
+  QueryControllerConfigsForApp?: (...args: unknown[]) => unknown;
+};
+
+/** Minimal controller-configurator store surface used for supplemental reads. */
+export type ControllerConfiguratorStoreBoundary = {
+  QueryConfigsForApp?: (...args: unknown[]) => unknown;
+  GetOfficialConfigsForApp?: (...args: unknown[]) => unknown;
+  GetTemplateConfigsForApp?: (...args: unknown[]) => unknown;
+  GetWorkshopConfigsForApp?: (...args: unknown[]) => unknown;
+  GetAllConfigs?: (...args: unknown[]) => unknown;
+  m_mapAppConfigs?: {
+    has?: (appid: number) => boolean;
+    set?: (appid: number, value: unknown) => unknown;
+  };
 };
 
 /**

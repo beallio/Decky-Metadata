@@ -25,6 +25,9 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 Prefer `scripts/decky verify-change BASE --device` for change-aware routing. The
 dispatcher requires `--allow-launch` before the real launch smoke and captures a
 diagnostic bundle on behavioral failure. See [Agent Workflow](agent-workflow.md).
+The controller-layout smoke populates Steam's in-memory controller configuration
+cache while issuing bounded read queries, so it also requires explicit current
+device approval even though it never persists a selection or launches a game.
 
 `scripts/decky verify-change --device` deploys only the frontend bundle
 (`dist/index.js`) through `scripts/deck/deploy.sh`. It does not deploy changes to
