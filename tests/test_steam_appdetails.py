@@ -38,7 +38,14 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
                         {"id": 2, "path_thumbnail": "https://cdn.example/empty.jpg"},
                     ],
                     "metacritic": {"score": 79},
-                    "categories": [{"id": 2}, {"id": "22"}, {"id": "bad"}, {"id": 0}],
+                    "categories": [
+                        {"id": 2},
+                        {"id": "22"},
+                        {"id": 29},
+                        {"id": "bad"},
+                        {"id": 0},
+                    ],
+                    "dlc": [15101, "15102", 15101, 0, -1, "bad", True],
                 },
             }
         }
@@ -62,7 +69,9 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
         "genres": ["Action"],
         "release_date": plugin._date_to_epoch("Apr 9, 2008"),
         "rating": 79,
-        "store_categories": [2, 22],
+        "store_categories": [2, 22, 29],
+        "steam_dlc_appids": [15101, 15102],
+        "has_points_shop": True,
         "screenshots": [
             {
                 "id": "1",
@@ -72,6 +81,24 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
                 "height": 0,
             }
         ],
+    }
+
+
+def test_steam_appdetails_success_emits_empty_availability_fields(monkeypatch) -> None:
+    plugin = make_plugin()
+    appid = 15100
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {
+            str(appid): {"success": True, "data": {"name": "No extras"}}
+        },
+    )
+
+    assert plugin._steam_appdetails_for_appid(appid) == {
+        "title": "No extras",
+        "steam_dlc_appids": [],
+        "has_points_shop": False,
     }
 
 
@@ -177,3 +204,100 @@ def test_metadata_with_steam_news_sync_preserves_ign_when_appdetails_missing(
     assert enriched["title"] == "IGN Name"
     assert enriched["description"] == "IGN desc"
     assert enriched["source"] == "IGN"
+
+
+def test_sanitize_metadata_normalizes_availability_and_legacy_points_shop() -> None:
+    plugin = make_plugin()
+
+    sanitized = plugin._sanitize_metadata(
+        {
+            "store_categories": [2, 29],
+            "steam_dlc_appids": [10, "11", 10, 0, -2, "bad", True, None],
+        }
+    )
+
+    assert sanitized["steam_dlc_appids"] == [10, 11]
+    assert sanitized["has_points_shop"] is True
+
+
+@pytest.mark.parametrize("malformed", [None, {}, "10", 10, True])
+def test_sanitize_metadata_rejects_malformed_dlc_collections(malformed: Any) -> None:
+    plugin = make_plugin()
+
+    assert plugin._sanitize_metadata({"steam_dlc_appids": malformed})[
+        "steam_dlc_appids"
+    ] == []
+
+
+def test_sanitize_metadata_explicit_false_wins_over_legacy_categories() -> None:
+    plugin = make_plugin()
+
+    sanitized = plugin._sanitize_metadata(
+        {"store_categories": [29], "has_points_shop": False}
+    )
+
+    assert sanitized["has_points_shop"] is False
+
+
+def test_metadata_with_steam_news_sync_clears_stale_availability_on_success(
+    monkeypatch,
+) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (
+            15100,
+            "https://store.steampowered.com/app/15100/",
+            [],
+        ),
+    )
+    monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", lambda steam_appid: None)
+    monkeypatch.setattr(
+        plugin,
+        "_steam_appdetails_for_appid",
+        lambda steam_appid: {"steam_dlc_appids": [], "has_points_shop": False},
+    )
+
+    enriched = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Old Steam Data",
+            "steam_dlc_appids": [15101],
+            "has_points_shop": True,
+            "store_categories": [29],
+        },
+        "Old Steam Data",
+    )
+
+    assert enriched["steam_dlc_appids"] == []
+    assert enriched["has_points_shop"] is False
+
+
+def test_metadata_with_steam_news_sync_preserves_availability_on_transient_failure(
+    monkeypatch,
+) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (
+            15100,
+            "https://store.steampowered.com/app/15100/",
+            [],
+        ),
+    )
+    monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", lambda steam_appid: None)
+    monkeypatch.setattr(plugin, "_steam_appdetails_for_appid", lambda steam_appid: None)
+
+    enriched = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Old Steam Data",
+            "steam_dlc_appids": [15101],
+            "has_points_shop": True,
+            "store_categories": [],
+        },
+        "Old Steam Data",
+    )
+
+    assert enriched["steam_dlc_appids"] == [15101]
+    assert enriched["has_points_shop"] is True
