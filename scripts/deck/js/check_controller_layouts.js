@@ -1,8 +1,11 @@
 // Read controller-configuration query results. Target: SharedJSContext.
-// Vars: DISPLAY_APPID, SOURCE_APPID. Output contains counts and URL hashes only.
+// Vars: DISPLAY_APPID, SOURCE_APPID, optional SECOND_DISPLAY_APPID,
+// SECOND_SOURCE_APPID. Output contains appids, booleans, counts, and URL hashes only.
 (async () => {
   const displayedAppid = Number("__DISPLAY_APPID__");
   const sourceAppid = Number("__SOURCE_APPID__");
+  const secondDisplayedAppid = Number("__SECOND_DISPLAY_APPID__");
+  const secondSourceAppid = Number("__SECOND_SOURCE_APPID__");
   const store = globalThis.controllerConfiguratorStore;
   if (!Number.isFinite(displayedAppid) || displayedAppid <= 0) {
     throw new Error("invalid displayed appid");
@@ -61,9 +64,67 @@
     return read(appid);
   };
 
-  const displayed = await query(displayedAppid);
   const sourceCompared = Number.isFinite(sourceAppid) && sourceAppid > 0;
-  const source = sourceCompared ? await query(sourceAppid) : null;
+  const secondCompared = Number.isFinite(secondDisplayedAppid) &&
+    secondDisplayedAppid > 0 &&
+    Number.isFinite(secondSourceAppid) &&
+    secondSourceAppid > 0;
+  if (sourceCompared || secondCompared) {
+    if (typeof store.m_mapAppConfigs?.has !== "function") {
+      throw new Error("controller configuration cache boundary unavailable");
+    }
+  }
+  const sourcePreexisting = sourceCompared
+    ? store.m_mapAppConfigs.has(sourceAppid)
+    : null;
+  const secondSourcePreexisting = secondCompared
+    ? store.m_mapAppConfigs.has(secondSourceAppid)
+    : null;
+
+  const displayed = await query(displayedAppid);
+  const source = sourceCompared ? read(sourceAppid) : null;
+  let second = null;
+  let isolation = null;
+  if (secondCompared) {
+    const secondDisplayed = await query(secondDisplayedAppid);
+    const secondSource = read(secondSourceAppid);
+    if (typeof store.GetAllConfigs !== "function") {
+      throw new Error("controller configuration Search unavailable");
+    }
+    const search = store.GetAllConfigs();
+    if (!Array.isArray(search)) {
+      throw new Error("controller configuration Search result is not an array");
+    }
+    const countSource = (appid) => search.reduce((count, record) => {
+      const recordAppid = record?.appID;
+      return count + (
+        typeof recordAppid === "number" &&
+        Number.isFinite(recordAppid) &&
+        recordAppid > 0 &&
+        recordAppid === appid
+          ? 1
+          : 0
+      );
+    }, 0);
+    const secondSourceHasResults = Object.values(secondSource)
+      .some((summary) => summary.count > 0);
+    isolation = {
+      deferred: sourcePreexisting || secondSourcePreexisting,
+      sourcePreexisting,
+      secondSourcePreexisting,
+      firstSourceCount: countSource(sourceAppid),
+      secondSourceCount: countSource(secondSourceAppid),
+      secondSourceHasResults,
+    };
+    second = {
+      displayedAppid: secondDisplayedAppid,
+      sourceAppid: secondSourceAppid,
+      sourceCompared: true,
+      controllerIndex,
+      displayed: secondDisplayed,
+      source: secondSource,
+    };
+  }
   return JSON.stringify({
     displayedAppid,
     sourceAppid: sourceCompared ? sourceAppid : null,
@@ -71,5 +132,7 @@
     controllerIndex,
     displayed,
     source,
+    second,
+    isolation,
   });
 })()

@@ -134,7 +134,9 @@ export type ControllerConfiguratorStoreBoundary = {
   GetOfficialConfigsForApp?: (...args: unknown[]) => unknown;
   GetTemplateConfigsForApp?: (...args: unknown[]) => unknown;
   GetWorkshopConfigsForApp?: (...args: unknown[]) => unknown;
+  GetAllConfigs?: (...args: unknown[]) => unknown;
   m_mapAppConfigs?: {
+    has?: (appid: number) => boolean;
     set?: (appid: number, value: unknown) => unknown;
   };
 };

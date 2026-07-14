@@ -4475,6 +4475,33 @@ const resolveControllerLayoutSource = (input) => {
     return sourceAppid;
 };
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
+const positiveNumericAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+const filterControllerSearchConfigs = (nativeResult, activeMatchedSourceAppid, pluginOwnedSourceAppids) => {
+    if (!Array.isArray(nativeResult)) {
+        return { ok: false, reason: "native-search-not-array" };
+    }
+    if (activeMatchedSourceAppid === null) {
+        return { ok: true, value: nativeResult };
+    }
+    return {
+        ok: true,
+        value: nativeResult.filter((value) => {
+            if (!isRecord(value))
+                return true;
+            let appid;
+            try {
+                appid = value.appID;
+            }
+            catch (_error) {
+                return true;
+            }
+            if (!positiveNumericAppid(appid))
+                return true;
+            return appid === activeMatchedSourceAppid ||
+                !pluginOwnedSourceAppids.has(appid);
+        }),
+    };
+};
 const hasStableUrl = (value) => typeof value.URL === "string" && value.URL.trim().length > 0;
 const mergeSupplemental = (nativeBase, supplemental, include) => {
     if (!Array.isArray(supplemental)) {
@@ -4531,6 +4558,7 @@ const validateTargets = (targets) => {
     const storePrototype = Object.getPrototypeOf(targets.store);
     if (!storePrototype ||
         typeof targets.store.QueryConfigsForApp !== "function" ||
+        typeof targets.store.m_mapAppConfigs?.has !== "function" ||
         typeof targets.store.m_mapAppConfigs?.set !== "function" ||
         !callableDataDescriptor(inputDescriptor)) {
         return null;
@@ -4546,6 +4574,14 @@ const validateTargets = (targets) => {
             return null;
         descriptors.push({ target: storePrototype, key, descriptor });
     }
+    const searchDescriptor = Object.getOwnPropertyDescriptor(storePrototype, "GetAllConfigs");
+    if (!callableDataDescriptor(searchDescriptor))
+        return null;
+    descriptors.push({
+        target: storePrototype,
+        key: "GetAllConfigs",
+        descriptor: searchDescriptor,
+    });
     return {
         input: targets.input,
         store: targets.store,
@@ -4559,6 +4595,24 @@ const errorDetail = (error) => {
     return typeof error;
 };
 const validAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
+const supplementalQueryKey = (sourceAppid, args) => {
+    const controllerIndex = args[1];
+    const filterOtherControllerTypes = args[2];
+    if (!Number.isInteger(controllerIndex) ||
+        controllerIndex < 0 ||
+        typeof filterOtherControllerTypes !== "boolean") {
+        return null;
+    }
+    return {
+        sourceAppid,
+        controllerIndex: controllerIndex,
+        filterOtherControllerTypes,
+    };
+};
+const sameSupplementalQueryKey = (left, right) => !!left &&
+    left.sourceAppid === right.sourceAppid &&
+    left.controllerIndex === right.controllerIndex &&
+    left.filterOtherControllerTypes === right.filterOtherControllerTypes;
 const discoverControllerLayoutTargets = () => {
     const internals = globalThis;
     const input = internals.SteamClient?.Input;
@@ -4583,10 +4637,14 @@ const installControllerLayouts = (unpatchers, provided) => {
     let timer;
     let attempts = 0;
     let installedDescriptors = [];
+    let activeMatchedSourceAppid = null;
+    const pluginOwnedSourceAppids = new Set();
+    const supplementalQueryKeys = new Map();
     const trip = (failure) => {
         if (disabled || cleanedUp)
             return;
         disabled = true;
+        activeMatchedSourceAppid = null;
         try {
             dependencies.reportFailure(failure);
         }
@@ -4619,19 +4677,44 @@ const installControllerLayouts = (unpatchers, provided) => {
             const nativeResult = originalQuery.apply(this, args);
             if (disabled)
                 return nativeResult;
+            activeMatchedSourceAppid = null;
             const displayedAppid = args[0];
             if (!validAppid(displayedAppid))
                 return nativeResult;
             let matchedAppid = null;
             try {
                 matchedAppid = dependencies.resolveSource(displayedAppid);
-                if (matchedAppid === null)
+                if (matchedAppid === null) {
+                    if (pluginOwnedSourceAppids.has(displayedAppid)) {
+                        pluginOwnedSourceAppids.delete(displayedAppid);
+                        supplementalQueryKeys.delete(displayedAppid);
+                    }
                     return nativeResult;
+                }
                 if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
                     throw new Error("invalid matched appid");
                 }
+                const queryKey = supplementalQueryKey(matchedAppid, args);
+                if (!queryKey) {
+                    trip({
+                        section: "query",
+                        code: "invalid-query-key",
+                        displayedAppid,
+                        matchedAppid,
+                    });
+                    return nativeResult;
+                }
+                activeMatchedSourceAppid = matchedAppid;
+                const cacheExisted = targets.store.m_mapAppConfigs.has(matchedAppid);
+                if (cacheExisted &&
+                    sameSupplementalQueryKey(supplementalQueryKeys.get(matchedAppid), queryKey)) {
+                    return nativeResult;
+                }
                 targets.store.m_mapAppConfigs.set(matchedAppid, []);
                 originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
+                supplementalQueryKeys.set(matchedAppid, queryKey);
+                if (!cacheExisted)
+                    pluginOwnedSourceAppids.add(matchedAppid);
             }
             catch (error) {
                 trip({
@@ -4699,16 +4782,45 @@ const installControllerLayouts = (unpatchers, provided) => {
                 }
             });
         }
+        const searchEntry = targets.descriptors.find((candidate) => candidate.key === "GetAllConfigs");
+        const originalSearch = searchEntry.descriptor.value;
+        const searchWrapper = function (...args) {
+            const nativeResult = originalSearch.apply(this, args);
+            if (disabled || activeMatchedSourceAppid === null)
+                return nativeResult;
+            const matchedAppid = activeMatchedSourceAppid;
+            try {
+                const result = filterControllerSearchConfigs(nativeResult, matchedAppid, pluginOwnedSourceAppids);
+                if (result.ok === false) {
+                    trip({
+                        section: "search",
+                        code: result.reason,
+                        matchedAppid,
+                    });
+                    return nativeResult;
+                }
+                return result.value;
+            }
+            catch (error) {
+                trip({
+                    section: "search",
+                    code: "runtime-error",
+                    matchedAppid,
+                    detail: errorDetail(error),
+                });
+                return nativeResult;
+            }
+        };
         const replacements = [
             { ...inputEntry, descriptor: { ...inputEntry.descriptor, value: queryWrapper } },
-            ...targets.descriptors.slice(1).map((entry) => {
-                const section = Object.keys(getterKeys)
-                    .find((candidate) => getterKeys[candidate] === entry.key);
+            ...Object.keys(getterKeys).map((section) => {
+                const entry = targets.descriptors.find((candidate) => candidate.key === getterKeys[section]);
                 return {
                     ...entry,
                     descriptor: { ...entry.descriptor, value: getterWrappers.get(section) },
                 };
             }),
+            { ...searchEntry, descriptor: { ...searchEntry.descriptor, value: searchWrapper } },
         ];
         try {
             for (const replacement of replacements) {
@@ -4796,6 +4908,9 @@ const installControllerLayouts = (unpatchers, provided) => {
             installedDescriptors = [];
         }
         installed = false;
+        activeMatchedSourceAppid = null;
+        pluginOwnedSourceAppids.clear();
+        supplementalQueryKeys.clear();
     };
     unpatchers.push(cleanup);
     attemptInstall();

@@ -33,21 +33,25 @@ PY
 
 probe() {
   cdp eval SharedJSContext "@$JS_DIR/check_controller_layouts.js" \
-    --var "DISPLAY_APPID=$1" --var "SOURCE_APPID=$2"
+    --var "DISPLAY_APPID=$1" --var "SOURCE_APPID=$2" \
+    --var "SECOND_DISPLAY_APPID=${3:-}" --var "SECOND_SOURCE_APPID=${4:-}"
 }
 
-listed_json="$(probe "$listed_appid" "$listed_source")"
-delisted_json="$(probe "$delisted_appid" "$delisted_source")"
+listed_json="$(probe \
+  "$listed_appid" "$listed_source" \
+  "$delisted_appid" "$delisted_source")"
 never_json="$(probe "$never_appid" 0)"
 mkdir -p "$(dirname -- "$evidence")"
 
-python3 - "$listed_json" "$delisted_json" "$never_json" "$evidence" <<'PY' || exit 1
+python3 - "$listed_json" "$never_json" "$evidence" <<'PY' || exit 1
 import json
 import sys
 from pathlib import Path
 
-listed, delisted, never = map(json.loads, sys.argv[1:4])
-evidence = Path(sys.argv[4])
+listed = json.loads(sys.argv[1])
+delisted = listed["second"]
+never = json.loads(sys.argv[2])
+evidence = Path(sys.argv[3])
 
 
 def check_matched(label, result):
@@ -74,6 +78,8 @@ def check_matched(label, result):
 
 
 check_matched("listed", listed)
+if delisted is None:
+    raise SystemExit("FAIL: delisted fixture was not included in the bounded sequence")
 check_matched("delisted", delisted)
 if never["sourceCompared"] or never["source"] is not None or never["sourceAppid"] is not None:
     raise SystemExit("FAIL: never-on-Steam fixture unexpectedly requested a source comparison")
@@ -83,9 +89,36 @@ print(
     f"Recommended={never['displayed']['recommended']['count']} "
     f"Community={never['displayed']['community']['count']}"
 )
+isolation = listed["isolation"]
+if isolation is None:
+    raise SystemExit("FAIL: controller Search isolation observation is missing")
+if isolation["deferred"]:
+    print(
+        "OK: controller Search isolation observation DEFERRED; "
+        "one or both source caches pre-existed"
+    )
+else:
+    if isolation["firstSourceCount"] != 0:
+        raise SystemExit(
+            "FAIL: inactive first matched source remains visible in controller Search"
+        )
+    if isolation["secondSourceHasResults"] and isolation["secondSourceCount"] <= 0:
+        raise SystemExit(
+            "FAIL: active second matched source is missing from controller Search"
+        )
+    print(
+        "OK: controller Search isolated inactive source; "
+        f"first={isolation['firstSourceCount']} "
+        f"second={isolation['secondSourceCount']}"
+    )
 evidence.write_text(
     json.dumps(
-        {"listed_match": listed, "delisted_match": delisted, "never_on_steam": never},
+        {
+            "listed_match": listed,
+            "delisted_match": delisted,
+            "never_on_steam": never,
+            "search_isolation": isolation,
+        },
         sort_keys=True,
         separators=(",", ":"),
     ) + "\n",
