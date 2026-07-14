@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   ControllerConfigRecord,
   filterControllerSearchConfigs,
+  isSteamShortcutAppid,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
   mergeRecommendedTemplates,
-  resolveControllerLayoutSource,
+  resolveControllerLayoutContext,
 } from "./controllerLayoutPolicy";
 
 const record = (
@@ -13,10 +14,10 @@ const record = (
   extra: Record<string, unknown> = {},
 ): ControllerConfigRecord => ({ URL, ...extra });
 
-const source = (
+const context = (
   steamAppid: number | null | undefined,
   options: { displayedAppid?: number; isNonSteamShortcut?: boolean; state?: string } = {},
-) => resolveControllerLayoutSource({
+) => resolveControllerLayoutContext({
   displayedAppid: options.displayedAppid ?? 2312439508,
   isNonSteamShortcut: options.isNonSteamShortcut ?? true,
   metadata: steamAppid == null ? undefined : {
@@ -25,25 +26,72 @@ const source = (
   },
 });
 
-describe("resolveControllerLayoutSource", () => {
+describe("resolveControllerLayoutContext", () => {
   it.each(["available", "delisted", "unknown"])(
     "uses the positive matched appid for %s metadata",
     (state) => {
-      expect(source(15100, { state })).toBe(15100);
+      expect(context(15100, { state })).toEqual({
+        isNonSteamShortcut: true,
+        matchedSourceAppid: 15100,
+      });
     },
   );
 
-  it("rejects native applications and never-on-Steam shortcuts", () => {
-    expect(source(15100, { isNonSteamShortcut: false })).toBeNull();
-    expect(source(null)).toBeNull();
-    expect(source(0)).toBeNull();
-    expect(source(-1)).toBeNull();
-    expect(source(Number.POSITIVE_INFINITY)).toBeNull();
+  it("distinguishes native applications from unmatched shortcuts", () => {
+    expect(context(15100, { isNonSteamShortcut: false })).toEqual({
+      isNonSteamShortcut: false,
+      matchedSourceAppid: null,
+    });
+    expect(context(null)).toEqual({
+      isNonSteamShortcut: true,
+      matchedSourceAppid: null,
+    });
   });
 
-  it("rejects a source equal to the displayed appid", () => {
-    expect(source(15100, { displayedAppid: 15100 })).toBeNull();
-    expect(source(15100, { displayedAppid: Number.NaN })).toBeNull();
+  it.each([0, -1, 1.5, Number.POSITIVE_INFINITY, Number.NaN, "15100"])(
+    "rejects malformed matched source %s without losing shortcut context",
+    (steamAppid) => {
+      expect(context(steamAppid as number)).toEqual({
+        isNonSteamShortcut: true,
+        matchedSourceAppid: null,
+      });
+    },
+  );
+
+  it.each([0, -1, Number.POSITIVE_INFINITY, Number.NaN])(
+    "fails closed for invalid displayed appid %s",
+    (displayedAppid) => {
+      expect(context(15100, { displayedAppid })).toEqual({
+        isNonSteamShortcut: false,
+        matchedSourceAppid: null,
+      });
+    },
+  );
+
+  it("rejects a source equal to the displayed appid without losing shortcut context", () => {
+    expect(context(15100, { displayedAppid: 15100 })).toEqual({
+      isNonSteamShortcut: true,
+      matchedSourceAppid: null,
+    });
+  });
+});
+
+describe("isSteamShortcutAppid", () => {
+  it.each([0x80000000, 0xffffffff])("accepts unsigned shortcut boundary %s", (appid) => {
+    expect(isSteamShortcutAppid(appid)).toBe(true);
+  });
+
+  it.each([
+    0x7fffffff,
+    0,
+    -1,
+    0x80000000 + 0.5,
+    Number.POSITIVE_INFINITY,
+    Number.NaN,
+    "2147483648",
+    0x100000000,
+  ])("rejects non-shortcut appid %s", (appid) => {
+    expect(isSteamShortcutAppid(appid)).toBe(false);
   });
 });
 
@@ -160,6 +208,31 @@ describe("controller layout merges", () => {
 });
 
 describe("filterControllerSearchConfigs", () => {
+  it("isolates shortcut records cached before the current displayed shortcut", () => {
+    const spaceMarineShortcut = Object.freeze({ appID: 2155012430 });
+    const assassinsCreedShortcut = Object.freeze({ appID: 2312439508 });
+    const wolverineShortcut = Object.freeze({ appID: 3156562597 });
+    const assassinsCreedSource = Object.freeze({ appID: 15100 });
+    const native = Object.freeze({ appID: 620 });
+    const records = Object.freeze([
+      spaceMarineShortcut,
+      assassinsCreedShortcut,
+      wolverineShortcut,
+      assassinsCreedSource,
+      native,
+    ]);
+
+    expect(filterControllerSearchConfigs(
+      records,
+      2312439508,
+      15100,
+      new Set([55150, 15100]),
+    )).toEqual({
+      ok: true,
+      value: [assassinsCreedShortcut, assassinsCreedSource, native],
+    });
+  });
+
   it("retains Assassin's Creed while removing inactive Space Marine records", () => {
     const shortcut = Object.freeze({ appID: 2312439508, title: "shortcut" });
     const assassinsCreed = Object.freeze({ appID: 15100, title: "assassin's creed" });
@@ -173,7 +246,12 @@ describe("filterControllerSearchConfigs", () => {
     ]);
     const supplementalSources = new Set([55150, 15100]);
 
-    const result = filterControllerSearchConfigs(configs, 15100, supplementalSources);
+    const result = filterControllerSearchConfigs(
+      configs,
+      2312439508,
+      15100,
+      supplementalSources,
+    );
 
     expect(result).toEqual({
       ok: true,
@@ -208,6 +286,7 @@ describe("filterControllerSearchConfigs", () => {
 
     expect(filterControllerSearchConfigs(
       records,
+      null,
       213120,
       new Set([1211020, 213120]),
     )).toEqual({
@@ -223,7 +302,12 @@ describe("filterControllerSearchConfigs", () => {
     const assassinsCreed = Object.freeze({ appID: 15100 });
     const records = Object.freeze([spaceMarine, native, assassinsCreed, opaque]);
     const supplementalSources = new Set([55150, 15100]);
-    const result = filterControllerSearchConfigs(records, null, supplementalSources);
+    const result = filterControllerSearchConfigs(
+      records,
+      3156562597,
+      null,
+      supplementalSources,
+    );
 
     expect(result).toEqual({ ok: true, value: [native, opaque] });
     expect(result.ok && result.value).not.toBe(records);
@@ -236,6 +320,7 @@ describe("filterControllerSearchConfigs", () => {
 
     expect(filterControllerSearchConfigs(
       [preexisting, { appID: 620 }],
+      2312439508,
       15100,
       new Set([55150, 15100]),
     )).toEqual({ ok: true, value: [{ appID: 620 }] });
@@ -243,7 +328,7 @@ describe("filterControllerSearchConfigs", () => {
 
   it("preserves exact native identity when no supplemental source is tracked", () => {
     const records = [{ appID: 620 }];
-    const result = filterControllerSearchConfigs(records, null, new Set());
+    const result = filterControllerSearchConfigs(records, null, null, new Set());
 
     expect(result).toEqual({ ok: true, value: records });
     expect(result.ok && result.value).toBe(records);
@@ -252,8 +337,30 @@ describe("filterControllerSearchConfigs", () => {
   it("returns a typed failure for a malformed native collection", () => {
     expect(filterControllerSearchConfigs(
       { appID: 1211020 },
+      null,
       213120,
       new Set([1211020]),
     )).toEqual({ ok: false, reason: "native-search-not-array" });
+  });
+
+  it("preserves native shortcut records when no shortcut is displayed", () => {
+    const records = [{ appID: 2155012430 }, { appID: 2312439508 }, { appID: 620 }];
+
+    const result = filterControllerSearchConfigs(records, null, null, new Set([55150]));
+
+    expect(result).toEqual({ ok: true, value: records });
+    expect(result.ok && result.value).toBe(records);
+  });
+
+  it("preserves the current unmatched shortcut while isolating every other shortcut", () => {
+    const current = { appID: 3156562597 };
+    const native = { appID: 620 };
+
+    expect(filterControllerSearchConfigs(
+      [{ appID: 2155012430 }, { appID: 2312439508 }, current, native],
+      3156562597,
+      null,
+      new Set([55150, 15100]),
+    )).toEqual({ ok: true, value: [current, native] });
   });
 });

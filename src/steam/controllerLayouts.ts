@@ -9,6 +9,7 @@ import {
   mergeCommunityConfigs,
   mergeOfficialConfigs,
   mergeRecommendedTemplates,
+  type ControllerLayoutContext,
   type ControllerConfigMergeResult,
 } from "./controllerLayoutPolicy";
 
@@ -36,7 +37,7 @@ type TimerHandle = unknown;
 
 export type ControllerLayoutDependencies = {
   discoverTargets: () => ControllerLayoutTargets | null;
-  resolveSource: (displayedAppid: number) => number | null;
+  resolveContext: (displayedAppid: number) => ControllerLayoutContext;
   reportFailure: (failure: ControllerLayoutFailure) => void;
   notify: (heading: string, body: string) => void;
   schedule: (callback: () => void, delayMs: number) => TimerHandle;
@@ -198,7 +199,7 @@ const defaultCancel = (handle: TimerHandle): void =>
 export const installControllerLayouts = (
   unpatchers: Unpatch[],
   provided: Partial<ControllerLayoutDependencies> &
-    Pick<ControllerLayoutDependencies, "notify" | "reportFailure" | "resolveSource">,
+    Pick<ControllerLayoutDependencies, "notify" | "reportFailure" | "resolveContext">,
 ): ControllerLayoutControl => {
   const dependencies: ControllerLayoutDependencies = {
     discoverTargets: discoverControllerLayoutTargets,
@@ -215,6 +216,7 @@ export const installControllerLayouts = (
   let timer: TimerHandle | undefined;
   let attempts = 0;
   let installedDescriptors: ValidatedTargets["descriptors"] = [];
+  let activeDisplayedShortcutAppid: number | null = null;
   let activeMatchedSourceAppid: number | null = null;
   const supplementalSourceAppids = new Set<number>();
   const supplementalQueryKeys = new Map<number, SupplementalQueryKey>();
@@ -222,7 +224,10 @@ export const installControllerLayouts = (
   const trip = (failure: ControllerLayoutFailure): void => {
     if (disabled || cleanedUp) return;
     disabled = true;
+    activeDisplayedShortcutAppid = null;
     activeMatchedSourceAppid = null;
+    supplementalSourceAppids.clear();
+    supplementalQueryKeys.clear();
     try {
       dependencies.reportFailure(failure);
     } catch (_error) {
@@ -252,19 +257,40 @@ export const installControllerLayouts = (
   const installValidatedTargets = (targets: ValidatedTargets): void => {
     const applied: ValidatedTargets["descriptors"] = [];
     const establishDisplayedContext = (displayedAppid: unknown): number | null => {
+      activeDisplayedShortcutAppid = null;
       activeMatchedSourceAppid = null;
       if (!validAppid(displayedAppid)) return null;
-      const matchedAppid = dependencies.resolveSource(displayedAppid);
-      if (matchedAppid === null) {
+      const context: unknown = dependencies.resolveContext(displayedAppid);
+      if (
+        typeof context !== "object" ||
+        context === null ||
+        typeof (context as ControllerLayoutContext).isNonSteamShortcut !== "boolean"
+      ) {
+        throw new Error("invalid controller layout context");
+      }
+      const isNonSteamShortcut = (context as ControllerLayoutContext).isNonSteamShortcut;
+      const matchedAppid = (context as ControllerLayoutContext).matchedSourceAppid;
+      if (
+        matchedAppid !== null &&
+        (
+          !validAppid(matchedAppid) ||
+          !Number.isInteger(matchedAppid) ||
+          matchedAppid === displayedAppid ||
+          !isNonSteamShortcut
+        )
+      ) {
+        throw new Error("invalid matched appid");
+      }
+      if (!isNonSteamShortcut) {
+        if (matchedAppid !== null) throw new Error("native context has matched appid");
         if (supplementalSourceAppids.has(displayedAppid)) {
           supplementalSourceAppids.delete(displayedAppid);
           supplementalQueryKeys.delete(displayedAppid);
         }
         return null;
       }
-      if (!validAppid(matchedAppid) || matchedAppid === displayedAppid) {
-        throw new Error("invalid matched appid");
-      }
+      activeDisplayedShortcutAppid = displayedAppid;
+      if (matchedAppid === null) return null;
       activeMatchedSourceAppid = matchedAppid;
       return matchedAppid;
     };
@@ -370,10 +396,12 @@ export const installControllerLayouts = (
     const searchWrapper = function (this: unknown, ...args: unknown[]) {
       const nativeResult = originalSearch.apply(this, args);
       if (disabled) return nativeResult;
+      const displayedAppid = activeDisplayedShortcutAppid;
       const matchedAppid = activeMatchedSourceAppid;
       try {
         const result = filterControllerSearchConfigs(
           nativeResult,
+          displayedAppid,
           matchedAppid,
           supplementalSourceAppids,
         );
@@ -381,6 +409,7 @@ export const installControllerLayouts = (
           trip({
             section: "search",
             code: result.reason,
+            displayedAppid: displayedAppid ?? undefined,
             matchedAppid: matchedAppid ?? undefined,
           });
           return nativeResult;
@@ -390,6 +419,7 @@ export const installControllerLayouts = (
         trip({
           section: "search",
           code: "runtime-error",
+          displayedAppid: displayedAppid ?? undefined,
           matchedAppid: matchedAppid ?? undefined,
           detail: errorDetail(error),
         });
@@ -496,6 +526,7 @@ export const installControllerLayouts = (
       installedDescriptors = [];
     }
     installed = false;
+    activeDisplayedShortcutAppid = null;
     activeMatchedSourceAppid = null;
     supplementalSourceAppids.clear();
     supplementalQueryKeys.clear();

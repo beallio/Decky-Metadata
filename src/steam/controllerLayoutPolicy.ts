@@ -6,7 +6,12 @@ export type ControllerConfigRecord = {
   [key: string]: unknown;
 };
 
-export type ControllerLayoutSourceInput = {
+export type ControllerLayoutContext = Readonly<{
+  isNonSteamShortcut: boolean;
+  matchedSourceAppid: number | null;
+}>;
+
+export type ControllerLayoutContextInput = {
   displayedAppid: number;
   isNonSteamShortcut: boolean;
   metadata?: Pick<MetadataData, "steam_appid" | "steam_store_state">;
@@ -24,22 +29,32 @@ export type ControllerConfigSearchResult =
   | { ok: true; value: readonly unknown[] }
   | { ok: false; reason: "native-search-not-array" };
 
-export const resolveControllerLayoutSource = (
-  input: ControllerLayoutSourceInput,
-): number | null => {
-  if (!input.isNonSteamShortcut) return null;
-  const sourceAppid = input.metadata?.steam_appid;
+const nativeControllerLayoutContext = (): ControllerLayoutContext => ({
+  isNonSteamShortcut: false,
+  matchedSourceAppid: null,
+});
+
+export const resolveControllerLayoutContext = (
+  input: ControllerLayoutContextInput,
+): ControllerLayoutContext => {
   if (
     !Number.isFinite(input.displayedAppid) ||
     input.displayedAppid <= 0 ||
+    !input.isNonSteamShortcut
+  ) {
+    return nativeControllerLayoutContext();
+  }
+  const sourceAppid = input.metadata?.steam_appid;
+  if (
     typeof sourceAppid !== "number" ||
     !Number.isFinite(sourceAppid) ||
+    !Number.isInteger(sourceAppid) ||
     sourceAppid <= 0 ||
     sourceAppid === input.displayedAppid
   ) {
-    return null;
+    return { isNonSteamShortcut: true, matchedSourceAppid: null };
   }
-  return sourceAppid;
+  return { isNonSteamShortcut: true, matchedSourceAppid: sourceAppid };
 };
 
 const isRecord = (value: unknown): value is ControllerConfigRecord =>
@@ -48,32 +63,58 @@ const isRecord = (value: unknown): value is ControllerConfigRecord =>
 const positiveNumericAppid = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
 
+// Steam shortcut IDs use the unsigned CRC namespace defined in backend/shortcuts_vdf.py.
+export const isSteamShortcutAppid = (value: unknown): value is number =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 0x80000000 &&
+  value <= 0xffffffff;
+
 export const filterControllerSearchConfigs = (
   nativeResult: unknown,
+  activeDisplayedShortcutAppid: number | null,
   activeMatchedSourceAppid: number | null,
   supplementalSourceAppids: ReadonlySet<number>,
 ): ControllerConfigSearchResult => {
   if (!Array.isArray(nativeResult)) {
     return { ok: false, reason: "native-search-not-array" };
   }
-  if (supplementalSourceAppids.size === 0) {
+  if (
+    supplementalSourceAppids.size === 0 &&
+    activeDisplayedShortcutAppid === null
+  ) {
     return { ok: true, value: nativeResult };
   }
-  return {
-    ok: true,
-    value: nativeResult.filter((value) => {
-      if (!isRecord(value)) return true;
+
+  let filtered: unknown[] | null = null;
+  for (let index = 0; index < nativeResult.length; index += 1) {
+    const value = nativeResult[index];
+    let remove = false;
+    if (isRecord(value)) {
       let appid: unknown;
       try {
         appid = value.appID;
       } catch (_error) {
-        return true;
+        appid = undefined;
       }
-      if (!positiveNumericAppid(appid)) return true;
-      return appid === activeMatchedSourceAppid ||
-        !supplementalSourceAppids.has(appid);
-    }),
-  };
+      if (positiveNumericAppid(appid)) {
+        remove = (
+          supplementalSourceAppids.has(appid) &&
+          appid !== activeMatchedSourceAppid
+        ) || (
+          activeDisplayedShortcutAppid !== null &&
+          isSteamShortcutAppid(appid) &&
+          appid !== activeDisplayedShortcutAppid
+        );
+      }
+    }
+    if (remove) {
+      if (filtered === null) filtered = nativeResult.slice(0, index);
+    } else if (filtered !== null) {
+      filtered.push(value);
+    }
+  }
+  return { ok: true, value: filtered ?? nativeResult };
 };
 
 const hasStableUrl = (value: ControllerConfigRecord): value is ControllerConfigRecord & { URL: string } =>
