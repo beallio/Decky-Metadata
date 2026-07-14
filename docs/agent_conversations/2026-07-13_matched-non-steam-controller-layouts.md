@@ -27,8 +27,9 @@ for the shortcut.
 - Source resolution requires the unpatched shortcut predicate plus a finite,
   positive, different `steam_appid`. Store state does not gate listed,
   delisted, or unknown matches; native and never-on-Steam apps are pass-through.
-- Pure merges preserve native records first, deduplicate by non-empty URL, and
-  append only valid matched records. Recommended templates require
+- Pure merges preserve every native record and its ordering, seed native
+  non-empty URLs as identities, and deduplicate only supplemental records before
+  appending valid matched records. Recommended templates require
   `bRecommended === true`; generic and personal matched templates do not leak.
 - Installation validates the Input bridge and all three getter prototype data
   descriptors before replacement. Four wrappers install as one transaction;
@@ -89,6 +90,16 @@ Owner: user. After the locally built package is independently installed, the
 read-only controller-layout smoke and `run_all.sh --no-launch --extended` may be
 run. Live Recommended population remains deferred until a matching fixture
 occurs naturally; deterministic pure and adapter tests cover that branch.
+
+## Review round 01 resolution
+
+- Corrected supplemental merging so duplicate native URL records remain
+  byte-for-byte present in their original order; only matched supplemental
+  collisions are omitted.
+- Added a frozen-input regression covering two native records with the same URL,
+  a colliding supplemental record, and a unique appended supplemental record.
+- TDD evidence: the focused policy suite failed with the second native record
+  missing before the fix, then passed after the native-base copy change.
 
 ## Unrelated observations
 

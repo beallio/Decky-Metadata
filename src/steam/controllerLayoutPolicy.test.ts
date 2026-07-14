@@ -48,20 +48,27 @@ describe("resolveControllerLayoutSource", () => {
 
 describe("controller layout merges", () => {
   it("merges official records base-first with stable URL deduplication", () => {
-    const nativeOnly = record("config://shortcut-personal");
-    const duplicate = record("config://shared", { origin: "shortcut" });
-    const supplementalDuplicate = record("config://shared", { origin: "matched" });
-    const matchedOnly = record("config://matched-official");
+    const nativeOnly = Object.freeze(record("config://shortcut-personal"));
+    const duplicate = Object.freeze(record("config://shared", { origin: "shortcut" }));
+    const secondNativeDuplicate = Object.freeze(record("config://shared", {
+      origin: "second shortcut",
+    }));
+    const supplementalDuplicate = Object.freeze(record("config://shared", {
+      origin: "matched",
+    }));
+    const matchedOnly = Object.freeze(record("config://matched-official"));
+    const native = Object.freeze([nativeOnly, duplicate, secondNativeDuplicate]);
+    const supplemental = Object.freeze([supplementalDuplicate, matchedOnly]);
 
-    const result = mergeOfficialConfigs(
-      [nativeOnly, duplicate, record("config://shared", { origin: "second shortcut" })],
-      [supplementalDuplicate, matchedOnly],
-    );
+    const result = mergeOfficialConfigs(native, supplemental);
 
     expect(result).toEqual({
       ok: true,
-      value: [nativeOnly, duplicate, matchedOnly],
+      value: [nativeOnly, duplicate, secondNativeDuplicate, matchedOnly],
     });
+    expect(result.ok && result.value).not.toBe(native);
+    expect(native).toEqual([nativeOnly, duplicate, secondNativeDuplicate]);
+    expect(supplemental).toEqual([supplementalDuplicate, matchedOnly]);
   });
 
   it("merges community records without mutating arrays or records", () => {

@@ -53,14 +53,12 @@ const mergeSupplemental = (
     return { ok: false, reason: "supplemental-not-array" };
   }
 
-  const merged: unknown[] = [];
+  const merged: unknown[] = [...nativeBase];
   const seen = new Set<string>();
   for (const value of nativeBase) {
     if (isRecord(value) && hasStableUrl(value)) {
-      if (seen.has(value.URL)) continue;
       seen.add(value.URL);
     }
-    merged.push(value);
   }
 
   for (let index = 0; index < supplemental.length; index += 1) {
