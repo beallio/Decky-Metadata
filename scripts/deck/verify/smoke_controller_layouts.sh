@@ -92,25 +92,19 @@ print(
 isolation = listed["isolation"]
 if isolation is None:
     raise SystemExit("FAIL: controller Search isolation observation is missing")
-if isolation["deferred"]:
-    print(
-        "OK: controller Search isolation observation DEFERRED; "
-        "one or both source caches pre-existed"
+if isolation["firstSourceCount"] != 0:
+    raise SystemExit(
+        "FAIL: inactive first matched source remains visible in controller Search"
     )
-else:
-    if isolation["firstSourceCount"] != 0:
-        raise SystemExit(
-            "FAIL: inactive first matched source remains visible in controller Search"
-        )
-    if isolation["secondSourceHasResults"] and isolation["secondSourceCount"] <= 0:
-        raise SystemExit(
-            "FAIL: active second matched source is missing from controller Search"
-        )
-    print(
-        "OK: controller Search isolated inactive source; "
-        f"first={isolation['firstSourceCount']} "
-        f"second={isolation['secondSourceCount']}"
+if isolation["secondSourceHasResults"] and isolation["secondSourceCount"] <= 0:
+    raise SystemExit(
+        "FAIL: active second matched source is missing from controller Search"
     )
+print(
+    "OK: controller Search isolated inactive source, including pre-existing caches; "
+    f"first={isolation['firstSourceCount']} "
+    f"second={isolation['secondSourceCount']}"
+)
 evidence.write_text(
     json.dumps(
         {

@@ -140,9 +140,9 @@ def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
     assert 'SECOND_DISPLAY_APPID=${3:-}' in smoke
     assert 'SECOND_SOURCE_APPID=${4:-}' in smoke
     assert '"$delisted_appid" "$delisted_source"' in smoke
-    assert 'isolation["deferred"]' in smoke
+    assert 'isolation["deferred"]' not in smoke
     assert 'isolation["firstSourceCount"]' in smoke
     assert 'isolation["secondSourceCount"]' in smoke
-    assert "isolation observation DEFERRED" in smoke
+    assert "including pre-existing caches" in smoke
     assert 'smoke_controller_layouts.sh" "$run_dir/fixtures.json"' in run_all
     assert "if ((no_launch)); then" in run_all
