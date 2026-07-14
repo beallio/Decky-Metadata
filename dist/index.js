@@ -3900,6 +3900,139 @@ const isInfoSectionBoundary = (node) => {
         !node.type.__dmQuickLinksWrapper);
 };
 
+const descriptorPath = (descriptor) => {
+    if (typeof descriptor?.url !== "string" || !descriptor.url)
+        return "";
+    try {
+        return new URL(descriptor.url, "https://store.steampowered.com").pathname.toLowerCase();
+    }
+    catch (_error) {
+        return "";
+    }
+};
+const isSupportQuickLink = (descriptor) => descriptor?.link === "HelpAppPage";
+const isCommunityQuickLink = (descriptor) => descriptor?.link === "GameHub";
+const isStoreQuickLink = (descriptor) => /^\/app\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
+const isDlcQuickLink = (descriptor) => /^\/dlc\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
+const isPointsShopQuickLink = (descriptor) => /^\/points\/shop\/app\/\d+(?:\/|$)/.test(descriptorPath(descriptor));
+const transformMatchedQuickLinks = (links, state, resources) => {
+    if (!(state.steamAppid > 0))
+        return links;
+    const transformed = [];
+    let originalStoreSlot;
+    for (const descriptor of links) {
+        if (isSupportQuickLink(descriptor) ||
+            isDlcQuickLink(descriptor) ||
+            isPointsShopQuickLink(descriptor)) {
+            continue;
+        }
+        if (isStoreQuickLink(descriptor)) {
+            if (originalStoreSlot === undefined)
+                originalStoreSlot = transformed.length;
+            if (state.steamStoreState !== "delisted")
+                transformed.push(descriptor);
+            continue;
+        }
+        transformed.push(descriptor);
+    }
+    if (state.hasDlc) {
+        const communityIndex = transformed.findIndex(isCommunityQuickLink);
+        const insertAt = originalStoreSlot !== undefined
+            ? originalStoreSlot + (state.steamStoreState === "delisted" ? 0 : 1)
+            : communityIndex >= 0 ? communityIndex : 0;
+        transformed.splice(insertAt, 0, {
+            label: resources.localize("#AppDetails_Links_DLC", "DLC"),
+            url: resources.buildDlcUrl(state.steamAppid),
+        });
+    }
+    if (state.hasPointsShop) {
+        const communityIndex = transformed.findIndex(isCommunityQuickLink);
+        const insertAt = communityIndex >= 0 ? communityIndex + 1 : transformed.length;
+        transformed.splice(insertAt, 0, {
+            label: resources.localize("#AppDetails_Links_PointsShop", "Points Shop"),
+            url: resources.buildPointsShopUrl(state.steamAppid),
+        });
+    }
+    return transformed;
+};
+
+let cachedSteamUrlBuilder;
+const asSteamUrlBuilder = (candidate) => {
+    if (candidate &&
+        typeof candidate.BuildStoreAppDlcURL === "function" &&
+        typeof candidate.BuildAppPointsShopURL === "function") {
+        return candidate;
+    }
+    if (!candidate || typeof candidate !== "object")
+        return undefined;
+    for (const key in candidate) {
+        try {
+            const nested = candidate[key];
+            if (nested &&
+                typeof nested.BuildStoreAppDlcURL === "function" &&
+                typeof nested.BuildAppPointsShopURL === "function") {
+                return nested;
+            }
+        }
+        catch (_error) {
+            continue;
+        }
+    }
+    return undefined;
+};
+const steamUrlBuilder = () => {
+    if (cachedSteamUrlBuilder !== undefined)
+        return cachedSteamUrlBuilder;
+    try {
+        cachedSteamUrlBuilder = DFL.findModuleChild(asSteamUrlBuilder) || null;
+    }
+    catch (_error) {
+        cachedSteamUrlBuilder = null;
+    }
+    return cachedSteamUrlBuilder;
+};
+const localizeSteamToken = (token, fallback) => {
+    try {
+        const manager = globalThis?.LocalizationManager;
+        const localized = manager?.LocalizeString?.(token);
+        if (typeof localized === "string" && localized && localized !== token) {
+            return localized;
+        }
+    }
+    catch (_error) {
+        // Deterministic English labels remain valid when localization is unavailable.
+    }
+    return fallback;
+};
+const resolveQuickLinkResources = () => {
+    const builder = steamUrlBuilder();
+    return {
+        buildDlcUrl: (steamAppid) => {
+            try {
+                const url = builder?.BuildStoreAppDlcURL(steamAppid, "primarylinks");
+                if (typeof url === "string" && url)
+                    return url;
+            }
+            catch (_error) {
+                // Fall back to the stable public Steam URL.
+            }
+            return `https://store.steampowered.com/dlc/${steamAppid}/`;
+        },
+        buildPointsShopUrl: (steamAppid) => {
+            try {
+                const url = builder?.BuildAppPointsShopURL(steamAppid);
+                if (typeof url === "string" && url)
+                    return url;
+            }
+            catch (_error) {
+                // Fall back to the stable public Steam URL.
+            }
+            return `https://store.steampowered.com/points/shop/app/${steamAppid}`;
+        },
+        localize: localizeSteamToken,
+    };
+};
+
 const isNeverOnSteam = (appId) => {
     try {
         const metadata = metadataCache[String(appId)];
@@ -3911,22 +4044,20 @@ const isNeverOnSteam = (appId) => {
         return false;
     }
 };
-// The quick-links row (Store Page / Community Hub / Discussions / …) only
-// renders because the BIsModOrShortcut spoof makes the app look like a real
-// Steam title; for never-on-Steam games every link is dead. The row's element
-// is not reachable from the route render tree — Steam's page host mounts the
-// Game Info content through several function-component boundaries — so the
-// suppression hooks the section wrapper class (the component that registers
-// sections via parent.RegisterSection(name, el)): its render output holds the
-// info-section content element, whose render in turn creates the links row.
+// The quick-links row is not reachable from the route render tree. Steam's page
+// host mounts Game Info through several function-component boundaries, so this
+// hooks the class that registers the info section. Its output contains the
+// function boundary whose render creates the native quick-links component.
 const NullQuickLinks = () => null;
-const quickLinksWrapperCache = new Map();
-const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
+const infoSectionWrapperCache = new Map();
+const nativeQuickLinksWrapperCache = new Map();
+const installNonSteamQuickLinkPolicy = (unpatchers) => {
     const maxAttempts = 5;
     let attempts = 0;
     let cancelled = false;
     let retryId;
-    let suppressionUnpatch;
+    let policyUnpatch;
+    let quickLinkResources;
     const clearRetry = () => {
         if (retryId !== undefined) {
             window.clearTimeout(retryId);
@@ -3954,12 +4085,53 @@ const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
     });
     const warnFingerprintMiss = () => {
         const fields = { attempt: attempts, maxAttempts };
-        warn("patch", "never-on-Steam quick-links section target not found", fields);
-        void frontendLog("patch", "never-on-Steam quick-links section target not found", fields, "warning").catch(() => undefined);
+        warn("patch", "non-Steam quick-links section target not found", fields);
+        void frontendLog("patch", "non-Steam quick-links section target not found", fields, "warning").catch(() => undefined);
+    };
+    const warnPolicyFailure = (message, fields) => {
+        warn("patch", message, fields);
+        void frontendLog("patch", message, fields, "warning").catch(() => undefined);
+    };
+    const policyWrapperFor = (original) => {
+        let wrapper = nativeQuickLinksWrapperCache.get(original);
+        if (wrapper)
+            return wrapper;
+        wrapper = (props) => {
+            const nativeOutput = original(props);
+            try {
+                const appId = Number(props?.overview?.appid);
+                const metadata = metadataCache[String(appId)];
+                if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
+                    return nativeOutput;
+                }
+                if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
+                    warnPolicyFailure("matched quick-links output shape changed", { appId });
+                    return nativeOutput;
+                }
+                quickLinkResources ?? (quickLinkResources = resolveQuickLinkResources());
+                const links = transformMatchedQuickLinks(nativeOutput.props.links, {
+                    steamAppid: Number(metadata.steam_appid),
+                    steamStoreState: metadata.steam_store_state || "unknown",
+                    hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
+                    hasPointsShop: metadata.has_points_shop === true,
+                }, quickLinkResources);
+                return SP_REACT.cloneElement(nativeOutput, { links });
+            }
+            catch (error) {
+                warnPolicyFailure("matched quick-links transformation failed", {
+                    appId: Number(props?.overview?.appid) || 0,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+                return nativeOutput;
+            }
+        };
+        wrapper.__dmQuickLinksWrapper = true;
+        nativeQuickLinksWrapperCache.set(original, wrapper);
+        return wrapper;
     };
     const tryInstall = () => {
         retryId = undefined;
-        if (cancelled || suppressionUnpatch)
+        if (cancelled || policyUnpatch)
             return;
         attempts += 1;
         const sectionClass = findSectionClass();
@@ -3970,41 +4142,57 @@ const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
             }
             return;
         }
-        suppressionUnpatch = safeAfterPatch(sectionClass.prototype, "render", function (_args, ret) {
+        policyUnpatch = safeAfterPatch(sectionClass.prototype, "render", function (_args, ret) {
             try {
                 if (this?.props?.name !== "info")
                     return ret;
                 const boundaries = [];
                 findChildElements(ret, isInfoSectionBoundary, boundaries);
                 for (const element of boundaries) {
-                    if (!isNeverOnSteam(Number(element.props?.overview?.appid)))
+                    const appId = Number(element.props?.overview?.appid);
+                    if (!metadataCache[String(appId)] || !isNonSteamApp(element.props?.overview))
                         continue;
                     const original = element.type;
-                    let wrapper = quickLinksWrapperCache.get(original);
+                    let wrapper = infoSectionWrapperCache.get(original);
                     if (!wrapper) {
                         wrapper = (props) => {
                             const rendered = original(props);
                             try {
-                                if (isNeverOnSteam(Number(props?.overview?.appid))) {
-                                    const linkRows = [];
-                                    findChildElements(rendered, isQuickLinksElement, linkRows);
-                                    for (const row of linkRows)
-                                        row.type = NullQuickLinks;
+                                const renderedAppId = Number(props?.overview?.appid);
+                                const metadata = metadataCache[String(renderedAppId)];
+                                if (!metadata || !isNonSteamApp(props?.overview))
+                                    return rendered;
+                                const linkRows = [];
+                                findChildElements(rendered, isQuickLinksElement, linkRows);
+                                if (linkRows.length === 0) {
+                                    warnPolicyFailure("non-Steam quick-links row shape changed", {
+                                        appId: renderedAppId,
+                                    });
+                                }
+                                for (const row of linkRows) {
+                                    row.type = isNeverOnSteam(renderedAppId)
+                                        ? NullQuickLinks
+                                        : policyWrapperFor(row.type);
                                 }
                             }
-                            catch (_error) {
-                                // Leave the native output untouched on shape changes.
+                            catch (error) {
+                                warnPolicyFailure("non-Steam quick-links section traversal failed", {
+                                    appId: Number(props?.overview?.appid) || 0,
+                                    error: error instanceof Error ? error.message : String(error),
+                                });
                             }
                             return rendered;
                         };
                         wrapper.__dmQuickLinksWrapper = true;
-                        quickLinksWrapperCache.set(original, wrapper);
+                        infoSectionWrapperCache.set(original, wrapper);
                     }
                     element.type = wrapper;
                 }
             }
-            catch (_error) {
-                // Steam's native render tree must remain usable if its shape changes.
+            catch (error) {
+                warnPolicyFailure("non-Steam quick-links boundary traversal failed", {
+                    error: error instanceof Error ? error.message : String(error),
+                });
             }
             return ret;
         }).unpatch;
@@ -4012,8 +4200,8 @@ const installNeverOnSteamQuickLinksSuppression = (unpatchers) => {
     unpatchers.push(() => {
         cancelled = true;
         clearRetry();
-        suppressionUnpatch?.();
-        suppressionUnpatch = undefined;
+        policyUnpatch?.();
+        policyUnpatch = undefined;
     });
     tryInstall();
 };
@@ -4277,7 +4465,7 @@ const installSteamPatches = () => {
             refreshDeckyNativeActivityForApp,
         });
         safeInstallStep("gameDetailReentryShield", () => installGameDetailReentryShield(unpatchers));
-        safeInstallStep("neverOnSteamQuickLinksSuppression", () => installNeverOnSteamQuickLinksSuppression(unpatchers));
+        safeInstallStep("nonSteamQuickLinkPolicy", () => installNonSteamQuickLinkPolicy(unpatchers));
         void frontendLog("patch", "steam patches installed", {
             attempts,
             unpatcherCount: unpatchers.length,
@@ -4809,6 +4997,8 @@ const metadataTemplate = (title) => ({
     release_date: null,
     rating: null,
     store_categories: [StoreCategory.SinglePlayer],
+    steam_dlc_appids: [],
+    has_points_shop: false,
     genres: [],
     features: [],
     screenshots: [],

@@ -131,6 +131,11 @@ describe("transformMatchedQuickLinks", () => {
     ]);
   });
 
+  it("removes unexpected native optional descriptors when metadata says unavailable", () => {
+    expect(labels(transform([store(), dlc(), community(), points(), support()])))
+      .toEqual(["Store Page", "Community Hub"]);
+  });
+
   it("preserves unrelated descriptors and builds URLs for the real appid", () => {
     const unrelated = { label: "Workshop", link: "SteamWorkshopPage", appid: 10 };
     const output = transform(
