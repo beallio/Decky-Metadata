@@ -133,12 +133,55 @@ fixture-selection pytest run passed 7 tests. The complete local quality gate
 passed with 149 Vitest tests and the full build/Python/version/review-note gate.
 No Steam Deck command was run during this correction round.
 
+## Review Round 02 Corrections
+
+The second committed review captured the first explicitly approved no-launch
+Deck run. It found a SteamUI compatibility change in the bounded test probe,
+not in the production controller-layout wrapper: current SteamUI exposes
+capitalized `globalThis.ControllerStore`, while the probe only checked legacy
+lowercase `globalThis.controllerStore`.
+
+- The probe now selects one local controller-list store reference. It prefers
+  the capitalized store when its `GetControllers` method is callable, otherwise
+  falls back to the lowercase store, validates the selected method, and retains
+  the bounded `controller list unavailable` failure when neither contract is
+  usable.
+- The static fixture-selection contract requires both supported global
+  spellings, the one-reference method guard, and the bounded fallback. All
+  existing privacy and forbidden-operation assertions remain in place.
+- The focused controller-layout Vitest run passed 96 tests. TypeScript, probe
+  JavaScript syntax, smoke shell syntax, and all 7 fixture-selection tests also
+  passed.
+- The complete local quality gate passed with 149 Vitest tests and the full
+  build, TypeScript, Python, version-drift, and review-note-preservation checks.
+- No bundle regeneration was needed because production source did not change.
+  No Deck command was run during this correction round; the targeted controller
+  smoke remains separately approval-gated.
+
 ## Device Verification
 
-Read-only `scripts/decky status --deck` and `scripts/decky doctor --deck`
-reported the Deck offline. `scripts/deck/logs.sh audit --json` could not find a
-reachable log directory on either configured host. No deployment, reload,
-navigation, controller query, layout operation, or launch was attempted.
+Outside-sandbox read-only `scripts/decky status --deck`,
+`scripts/decky doctor --deck`, and `scripts/deck/logs.sh audit --json` confirmed
+that the Deck was reachable; the log audit reported `fatal: false` with no known
+or unknown error groups.
+
+With explicit approval, `scripts/decky verify-change dev --device --explain`
+deployed feature commit `a050a6c` and hard-reloaded SteamUI without launching a
+game. The re-render and Community smokes passed. The generic quick-links smoke
+could not find a row for its auto-selected listed fixture `2312439508`; that
+failure is unrelated to this controller-layout change and did not expand this
+task's scope.
+
+The controller smoke stopped before issuing any controller query with
+`Error: controller list unavailable`; its diagnostic bundle is
+`/tmp/Decky-Metadata/diagnostics/20260714T200550Z`. Sanitized follow-up CDP
+evidence showed that lowercase `globalThis.controllerStore` is undefined in the
+current SteamUI, while capitalized `globalThis.ControllerStore.GetControllers()`
+exists and returned one controller with `nControllerIndex: 15` and
+`eControllerType: 4`. The bounded probe now resolves the capitalized contract
+first and retains the lowercase legacy fallback. No controller query, layout
+operation, navigation, or game launch occurred, so the displayed-shortcut fix
+is not yet live-verified.
 
 DEFERRED: on-device deployment and controller-cache query require explicit current approval; the separate launch gate also requires an explicitly approved safe shortcut.
 

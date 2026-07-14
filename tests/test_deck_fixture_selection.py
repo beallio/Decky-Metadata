@@ -81,7 +81,12 @@ def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_i
     probe_path = root / "scripts/deck/js/check_controller_layouts.js"
     probe = probe_path.read_text()
 
-    assert "controllerStore.GetControllers()" in probe
+    assert "globalThis.ControllerStore" in probe
+    assert "globalThis.controllerStore" in probe
+    assert "const controllerListStore" in probe
+    assert 'typeof controllerListStore?.GetControllers !== "function"' in probe
+    assert 'throw new Error("controller list unavailable")' in probe
+    assert "controllerListStore.GetControllers()" in probe
     assert "controllerConfiguratorStore.QueryConfigsForApp" in probe
     assert "GetOfficialConfigsForApp" in probe
     assert "GetTemplateConfigsForApp" in probe

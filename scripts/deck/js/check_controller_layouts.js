@@ -18,11 +18,15 @@
   if (!store || typeof store.QueryConfigsForApp !== "function") {
     throw new Error("controller configurator store unavailable");
   }
-  if (typeof globalThis.controllerStore?.GetControllers !== "function") {
+  const controllerListStore =
+    typeof globalThis.ControllerStore?.GetControllers === "function"
+      ? globalThis.ControllerStore
+      : globalThis.controllerStore;
+  if (typeof controllerListStore?.GetControllers !== "function") {
     throw new Error("controller list unavailable");
   }
 
-  const controllers = controllerStore.GetControllers();
+  const controllers = controllerListStore.GetControllers();
   const controller = Array.isArray(controllers)
     ? controllers.find((item) => Number.isFinite(item?.nControllerIndex))
     : null;
