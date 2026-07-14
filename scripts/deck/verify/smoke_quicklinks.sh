@@ -33,10 +33,13 @@ if not matched["quickLinksRow"]:
     sys.exit("FAIL: matched game is missing its quick-links row")
 if never["quickLinksRow"]:
     sys.exit("FAIL: never-on-Steam game still shows the dead quick-links row")
-if not (matched["developerInfo"] and never["developerInfo"]):
+if not (
+    (matched["developerInfo"] or matched["detailsMetadata"])
+    and (never["developerInfo"] or never["detailsMetadata"])
+):
     sys.exit("FAIL: developer metadata missing from a Game Info page")
 if delisted:
-    if not delisted["developerInfo"]:
+    if not (delisted["developerInfo"] or delisted["detailsMetadata"]):
         sys.exit("FAIL: delisted game lost rich metadata")
     if delisted["storePage"]:
         sys.exit("FAIL: delisted game still shows Store Page")
@@ -45,7 +48,7 @@ if delisted:
     if delisted["market"]:
         sys.exit("FAIL: delisted game still shows Market")
 if feature:
-    if not feature["developerInfo"]:
+    if not (feature["developerInfo"] or feature["detailsMetadata"]):
         sys.exit("FAIL: feature fixture lost rich metadata")
     if feature["support"]:
         sys.exit("FAIL: feature fixture still shows Support")

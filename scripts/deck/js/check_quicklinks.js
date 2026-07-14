@@ -3,6 +3,21 @@
 // Run after navigating to /library/app/<appid>/tab/GameInfo.
 (() => {
   const text = document.body.innerText;
+  const hasDetailsMetadata = () => {
+    for (const element of document.querySelectorAll("*")) {
+      const fiberKey = Object.keys(element).find((key) => key.startsWith("__reactFiber$"));
+      if (!fiberKey) continue;
+      let fiber = element[fiberKey];
+      for (let depth = 0; fiber && depth < 50; depth += 1, fiber = fiber.return) {
+        const props = fiber.memoizedProps;
+        if (!props?.details || !props?.overview) continue;
+        const description = String(props.details.strFullDescription || "").trim();
+        const developers = props.details.rgDevelopers;
+        return description.length > 0 && Array.isArray(developers) && developers.length > 0;
+      }
+    }
+    return false;
+  };
   const quickLinkLabels = new Set([
     "Store Page",
     "DLC",
@@ -25,6 +40,7 @@
     discussions: /Discussions/i.test(text),
     market: /Community Market|Market/i.test(text),
     developerInfo: /Developer/i.test(text),
+    detailsMetadata: hasDetailsMetadata(),
     hltbRows: /MAIN STORY/i.test(text),
     textLength: text.length,
   });

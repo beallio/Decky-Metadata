@@ -66,3 +66,6 @@ def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
     assert "quickLinkOrder" in probe
     assert "pointsShop" in probe
     assert "support" in probe
+    assert "detailsMetadata" in probe
+    assert 'matched["developerInfo"] or matched["detailsMetadata"]' in smoke
+    assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke
