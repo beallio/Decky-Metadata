@@ -60,6 +60,11 @@ run() {
 run "$here/smoke_quicklinks.sh" "$MATCHED_APPID" "$NEVER_APPID" "$DELISTED_APPID" "$QUICKLINK_FEATURE_APPID"
 run "$here/smoke_rerender.sh" "$MATCHED_APPID"
 run "$here/smoke_community.sh" "$NEVER_APPID"
+if ((no_launch)); then
+  run "$here/smoke_controller_layouts.sh" "$run_dir/fixtures.json" "$run_dir/controller-layouts.json"
+else
+  echo "--- controller-layout smoke SKIP (use --no-launch for read-only verification)"
+fi
 if ((!no_launch && launch_appid_explicit)); then
   run "$here/smoke_launch.sh" "$MATCHED_APPID"
 elif ((!no_launch)); then

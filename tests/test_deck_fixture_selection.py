@@ -74,3 +74,54 @@ def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
     assert "detailsMetadata" in probe
     assert 'matched["developerInfo"] or matched["detailsMetadata"]' in smoke
     assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke
+
+
+def test_controller_layout_probe_is_read_only_and_hashes_layout_identities():
+    root = Path(__file__).parents[1]
+    probe_path = root / "scripts/deck/js/check_controller_layouts.js"
+    probe = probe_path.read_text()
+
+    assert "controllerStore.GetControllers()" in probe
+    assert "controllerConfiguratorStore.QueryConfigsForApp" in probe
+    assert "GetOfficialConfigsForApp" in probe
+    assert "GetTemplateConfigsForApp" in probe
+    assert "GetWorkshopConfigsForApp" in probe
+    assert "BConfigurationQueryInFlight" in probe
+    assert "urlHashes" in probe
+    assert "URL:" not in probe
+
+    forbidden_mutators = (
+        "SetSelectedConfigForApp",
+        "PreviewConfigForAppAndController",
+        "ClearSelectedConfigForApp",
+        "ExportCurrentControllerConfiguration",
+        "DeletePersonalControllerConfiguration",
+        "StartEditingControllerConfiguration",
+        "SaveEditingControllerConfiguration",
+        "SetEditingControllerConfiguration",
+        "save_metadata",
+        "remove_metadata",
+        "reload",
+        "navigate",
+        "launch",
+    )
+    for mutator in forbidden_mutators:
+        assert mutator not in probe
+
+
+def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
+    root = Path(__file__).parents[1]
+    smoke = (root / "scripts/deck/verify/smoke_controller_layouts.sh").read_text()
+    run_all = (root / "scripts/deck/verify/run_all.sh").read_text()
+
+    assert 'fixtures="${1:?usage:' in smoke
+    assert 'f["listed_match"]' in smoke
+    assert 'f["delisted_match"]' in smoke
+    assert 'f["never_on_steam"]' in smoke
+    assert "sourceCompared" in smoke
+    assert "Community results are empty" in smoke
+    assert "duplicate Community layout identities" in smoke
+    assert "Recommended" in smoke
+    assert "Official" in smoke
+    assert 'smoke_controller_layouts.sh" "$run_dir/fixtures.json"' in run_all
+    assert "if ((no_launch)); then" in run_all
