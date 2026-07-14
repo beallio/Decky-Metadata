@@ -20,6 +20,10 @@ export type ControllerConfigMergeResult =
       index?: number;
     };
 
+export type ControllerConfigSearchResult =
+  | { ok: true; value: readonly unknown[] }
+  | { ok: false; reason: "native-search-not-array" };
+
 export const resolveControllerLayoutSource = (
   input: ControllerLayoutSourceInput,
 ): number | null => {
@@ -40,6 +44,30 @@ export const resolveControllerLayoutSource = (
 
 const isRecord = (value: unknown): value is ControllerConfigRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const positiveNumericAppid = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
+
+export const filterControllerSearchConfigs = (
+  nativeResult: unknown,
+  activeMatchedSourceAppid: number | null,
+  pluginOwnedSourceAppids: ReadonlySet<number>,
+): ControllerConfigSearchResult => {
+  if (!Array.isArray(nativeResult)) {
+    return { ok: false, reason: "native-search-not-array" };
+  }
+  if (activeMatchedSourceAppid === null) {
+    return { ok: true, value: nativeResult };
+  }
+  return {
+    ok: true,
+    value: nativeResult.filter((value) => {
+      if (!isRecord(value) || !positiveNumericAppid(value.appID)) return true;
+      return value.appID === activeMatchedSourceAppid ||
+        !pluginOwnedSourceAppids.has(value.appID);
+    }),
+  };
+};
 
 const hasStableUrl = (value: ControllerConfigRecord): value is ControllerConfigRecord & { URL: string } =>
   typeof value.URL === "string" && value.URL.trim().length > 0;

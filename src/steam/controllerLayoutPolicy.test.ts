@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ControllerConfigRecord,
+  filterControllerSearchConfigs,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
   mergeRecommendedTemplates,
@@ -155,5 +156,75 @@ describe("controller layout merges", () => {
       ok: true,
       value: [record("config://recommended", { bRecommended: true })],
     });
+  });
+});
+
+describe("filterControllerSearchConfigs", () => {
+  it("removes only inactive plugin-owned source records in stable order", () => {
+    const shortcut = Object.freeze({ appID: 2405230651, title: "shortcut" });
+    const wobbly = Object.freeze({ appID: 1211020, title: "wobbly" });
+    const transformers = Object.freeze({ appID: 213120, title: "transformers" });
+    const spaceMarine = Object.freeze({ appID: 55150, title: "space marine" });
+    const native = Object.freeze({ appID: 620, title: "portal" });
+    const configs = Object.freeze([
+      shortcut,
+      wobbly,
+      transformers,
+      native,
+      spaceMarine,
+    ]);
+    const owned = new Set([1211020, 213120, 55150]);
+
+    const result = filterControllerSearchConfigs(configs, 213120, owned);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [shortcut, transformers, native],
+    });
+    expect(result.ok && result.value).not.toBe(configs);
+    expect(configs).toEqual([shortcut, wobbly, transformers, native, spaceMarine]);
+    expect(owned).toEqual(new Set([1211020, 213120, 55150]));
+    expect(wobbly).toEqual({ appID: 1211020, title: "wobbly" });
+  });
+
+  it("preserves unowned and opaque native records", () => {
+    const records = [
+      { appID: 1211020 },
+      { appID: 213120 },
+      { appID: 620 },
+      { title: "missing" },
+      null,
+      "opaque",
+      { appID: "1211020" },
+      { appID: 0 },
+      { appID: -1 },
+      { appID: Number.POSITIVE_INFINITY },
+      { appID: Number.NaN },
+    ];
+
+    expect(filterControllerSearchConfigs(
+      records,
+      213120,
+      new Set([1211020, 213120]),
+    )).toEqual({
+      ok: true,
+      value: records.slice(1),
+    });
+  });
+
+  it("returns the native array unchanged without an active matched context", () => {
+    const records = [{ appID: 1211020 }];
+    const result = filterControllerSearchConfigs(records, null, new Set([1211020]));
+
+    expect(result).toEqual({ ok: true, value: records });
+    expect(result.ok && result.value).toBe(records);
+  });
+
+  it("returns a typed failure for a malformed native collection", () => {
+    expect(filterControllerSearchConfigs(
+      { appID: 1211020 },
+      213120,
+      new Set([1211020]),
+    )).toEqual({ ok: false, reason: "native-search-not-array" });
   });
 });
