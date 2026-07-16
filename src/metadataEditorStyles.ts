@@ -49,6 +49,14 @@ export const editorSearchRowStyle = {
   minWidth: 0,
 } as const;
 
+export const editorSearchInputRowSpacingStyle = {
+  marginTop: 12,
+} as const;
+
+export const editorSearchResultsSpacingStyle = {
+  marginTop: 12,
+} as const;
+
 export const editorSearchButtonStyle = {
   width: "100%",
   minWidth: 112,
@@ -173,6 +181,8 @@ export const editorScopedCss = `
 }
 
 .decky-metadata-editor .decky-metadata-editor__category-grid > div {
+  display: flex;
+  align-items: center;
   min-height: ${editorCategoryRowMetrics.minHeight}px !important;
   padding: ${editorCategoryRowMetrics.padding} !important;
   margin: ${editorCategoryRowMetrics.margin} !important;

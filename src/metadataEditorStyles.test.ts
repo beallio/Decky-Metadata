@@ -12,6 +12,8 @@ import {
   editorSaveButtonStyle,
   editorScopedCss,
   editorScrollViewportStyle,
+  editorSearchInputRowSpacingStyle,
+  editorSearchResultsSpacingStyle,
   editorSearchRowStyle,
   editorSourceFieldStyle,
   editorSourceGroupStyle,
@@ -57,6 +59,8 @@ describe("metadata editor layout contract", () => {
     expect(editorAppIdRowStyle.gridTemplateColumns).toBe("minmax(0, 1fr) auto");
     expect(editorSearchRowStyle.display).toBe("grid");
     expect(editorAppIdRowStyle.display).toBe("grid");
+    expect(editorSearchInputRowSpacingStyle.marginTop).toBe(12);
+    expect(editorSearchResultsSpacingStyle.marginTop).toBe(12);
   });
 
   it("aligns source fields and preserves the approved vertical rhythm", () => {
@@ -88,5 +92,8 @@ describe("metadata editor layout contract", () => {
       margin: 0,
     });
     expect(editorScopedCss).toContain(".decky-metadata-editor__category-grid > div");
+    expect(editorScopedCss).toMatch(
+      /\.decky-metadata-editor__category-grid > div \{[^}]*display: flex;[^}]*align-items: center;/s
+    );
   });
 });

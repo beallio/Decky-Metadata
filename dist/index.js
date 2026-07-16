@@ -1316,8 +1316,14 @@ const statusColor = (kind) => ({
 
 const TITLE = "Decky Metadata";
 const DURATION = 3000;
+const toastLogoStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+};
 function notify(kind, heading, body) {
-    const logo = kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning }));
+    const logo = (SP_JSX.jsx("span", { style: toastLogoStyle, children: kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success, size: 28 })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error, size: 28 })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning, size: 28 })) }));
     try {
         toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
     }
@@ -5600,6 +5606,12 @@ const editorSearchRowStyle = {
     width: "100%",
     minWidth: 0,
 };
+const editorSearchInputRowSpacingStyle = {
+    marginTop: 12,
+};
+const editorSearchResultsSpacingStyle = {
+    marginTop: 12,
+};
 const editorSearchButtonStyle = {
     width: "100%",
     minWidth: 112,
@@ -5713,6 +5725,8 @@ const editorScopedCss = `
 }
 
 .decky-metadata-editor .decky-metadata-editor__category-grid > div {
+  display: flex;
+  align-items: center;
   min-height: ${editorCategoryRowMetrics.minHeight}px !important;
   padding: ${editorCategoryRowMetrics.padding} !important;
   margin: ${editorCategoryRowMetrics.margin} !important;
@@ -5888,7 +5902,13 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, children: SP_JSX.jsx("textarea", { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                                    ...editorSearchRowStyle,
+                                    ...editorSearchInputRowSpacingStyle,
+                                }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                                    ...rowStackStyle,
+                                    ...editorSearchResultsSpacingStyle,
+                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, children: SP_JSX.jsx("textarea", { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,

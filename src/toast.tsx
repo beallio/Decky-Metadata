@@ -7,15 +7,25 @@ const DURATION = 3000;
 
 type ToastKind = "success" | "warning" | "error";
 
+const toastLogoStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "100%",
+} as const;
+
 export function notify(kind: ToastKind, heading: string, body: string): void {
-  const logo =
-    kind === "success" ? (
-      <FaCheckCircle color={colors.success} />
-    ) : kind === "error" ? (
-      <FaExclamationTriangle color={colors.error} />
-    ) : (
-      <FaExclamationTriangle color={colors.warning} />
-    );
+  const logo = (
+    <span style={toastLogoStyle}>
+      {kind === "success" ? (
+        <FaCheckCircle color={colors.success} size={28} />
+      ) : kind === "error" ? (
+        <FaExclamationTriangle color={colors.error} size={28} />
+      ) : (
+        <FaExclamationTriangle color={colors.warning} size={28} />
+      )}
+    </span>
+  );
   try {
     toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
   } catch {

@@ -56,6 +56,8 @@ import {
   editorScopedCss,
   editorScrollViewportStyle,
   editorSearchButtonStyle,
+  editorSearchInputRowSpacingStyle,
+  editorSearchResultsSpacingStyle,
   editorSearchRowStyle,
   editorSourceFieldStyle,
   editorSourceGroupStyle,
@@ -288,7 +290,12 @@ export const MetadataPage = () => {
 
         <PanelSection title={"Search IGN metadata"}>
           <PanelSectionRow>
-            <div style={editorSearchRowStyle}>
+            <div
+              style={{
+                ...editorSearchRowStyle,
+                ...editorSearchInputRowSpacingStyle,
+              }}
+            >
               <TextField
                 className={editorFocusTargetClassName}
                 value={query}
@@ -306,7 +313,12 @@ export const MetadataPage = () => {
             </div>
           </PanelSectionRow>
           <PanelSectionRow>
-            <div style={rowStackStyle}>
+            <div
+              style={{
+                ...rowStackStyle,
+                ...editorSearchResultsSpacingStyle,
+              }}
+            >
               {busy ? (
                 <div style={compactTextStyle}>{"Searching..."}</div>
               ) : null}
