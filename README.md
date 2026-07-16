@@ -69,18 +69,31 @@ For non-Steam shortcuts that can be matched to a Steam Store app, Decky Metadata
 
 ## Metadata Cache
 
-The settings panel includes:
+The Quick Access Menu is organized into four native panels:
 
-- `Scan metadata` to find missing metadata for detected non-Steam games.
-- `Refresh Activity` to refresh matched Steam activity/news data.
-- `Refresh delisted index` to download or update the cached Steam delisted-app index.
-- `Clear cache` to clear saved metadata and start fresh.
+- **Metadata** shows detected-game, saved-metadata, and missing-metadata counts.
+  `Refresh metadata` finds and saves matches for detected non-Steam games. Its
+  nested **Metadata cache** subsection provides `Clear cache` so saved matches
+  can be matched again.
+- **Delisted Index** shows the cached count and update date, with
+  `Refresh delisted index` to download or update the cached index.
+- **Logs** provides `View Logs` for the recent bounded plugin log and the Debug
+  Logging toggle.
+- **Versions** shows one full `Decky Metadata: <version>` row, including the
+  packaged commit suffix when present.
 
-The delisted-index status line shows how many delisted apps are cached and when the index was last updated.
+Bulk Activity refresh is no longer exposed in the QAM. Its backend compatibility
+methods remain available, and automatic/per-app Steam Activity refresh continues
+to operate when matched game details are opened.
 
 ## Diagnostics
 
-The diagnostics section includes a debug logging toggle and a versions panel showing the plugin base version, packaged commit, delisted-index status, and metadata count. Debug logging also enables Steam navigation/history/click diagnostic traces after the next plugin reload. Unpackaged checkouts and release builds show `local` for the commit row. This readout stays local to the panel and does not include API keys or tokens.
+`View Logs` opens the recent tail of the existing rotating `decky-metadata.log`
+inside a scrollable, selectable modal. A missing or unavailable log displays
+`No recent logs`. Debug Logging enables verbose troubleshooting output and also
+enables Steam navigation/history/click diagnostic traces after the next plugin
+reload. The Versions panel displays the complete packaged plugin version, or
+`Unknown` while it is unavailable; release builds may show only the base version.
 
 ## Notes
 
