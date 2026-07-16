@@ -5115,13 +5115,6 @@ const pageTitleStyle = {
     // Keep the title clear of the SteamOS top bar when the controller scrolls to it.
     scrollMarginTop: 90,
 };
-const toggleGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    columnGap: space.md,
-    width: "100%",
-    minWidth: 0,
-};
 const qamPanelStyle = {
     width: "100%",
     fontFamily,
@@ -5162,10 +5155,6 @@ const fieldStyle = {
     maxWidth: "100%",
     minWidth: 0,
     boxSizing: "border-box",
-};
-const flexFieldStyle = {
-    ...fieldStyle,
-    flex: "1 1 224px",
 };
 const compactTextStyle = {
     color: colors.textSecondary,
@@ -5566,7 +5555,173 @@ const parseRating = (value) => {
     return Math.max(0, Math.min(100, Math.round(number)));
 };
 
+const editorRootClassName = "decky-metadata-editor";
+const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
+const editorToolbarClearance = 104;
+const editorScrollViewportStyle = {
+    scrollPaddingTop: editorToolbarClearance,
+    scrollPaddingBottom: 39,
+};
+const editorActionBarStyle = {
+    position: "sticky",
+    top: 40,
+    zIndex: 20,
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 8,
+    width: "100%",
+    minWidth: 0,
+    margin: "-4px 0 0",
+    padding: "8px 16px",
+    boxSizing: "border-box",
+    background: "rgba(14, 20, 27, 0.96)",
+    backdropFilter: "blur(8px)",
+};
+const editorActionButtonStyle = {
+    width: "100%",
+    minWidth: 0,
+    whiteSpace: "nowrap",
+};
+const editorSaveButtonStyle = {
+    ...editorActionButtonStyle,
+    color: "white",
+    background: "linear-gradient(180deg, #75b022 0%, #588a1b 100%)",
+};
+const editorRemoveButtonStyle = {
+    ...editorActionButtonStyle,
+    color: "white",
+    background: "linear-gradient(180deg, #d94b43 0%, #a92f2a 100%)",
+};
+const editorSearchRowStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(112px, max-content)",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+    minWidth: 0,
+};
+const editorSearchButtonStyle = {
+    width: "100%",
+    minWidth: 112,
+    whiteSpace: "nowrap",
+};
+const editorSourceStackStyle = {
+    width: "100%",
+    minWidth: 0,
+};
+const editorSourceFieldStyle = {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    padding: "0 12px",
+    background: "transparent",
+    boxSizing: "border-box",
+};
+const editorLabelStyle = {
+    display: "block",
+    marginBottom: 7,
+};
+const editorDescriptionFieldStyle = {
+    ...editorSourceFieldStyle,
+    marginTop: 16,
+};
+const editorSourceGroupStyle = {
+    ...editorSourceFieldStyle,
+    marginTop: 14,
+};
+const editorReleaseRatingRowStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    marginTop: 14,
+    padding: "0 12px",
+    boxSizing: "border-box",
+};
+const editorCategoryGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    columnGap: 12,
+    rowGap: 6,
+    width: "100%",
+    minWidth: 0,
+};
+const editorCategoryRowMetrics = {
+    minHeight: 36,
+    padding: "4px 12px",
+    margin: 0,
+};
+const editorAppIdRowStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    alignItems: "center",
+    gap: 8,
+    width: "100%",
+    minWidth: 0,
+};
+const editorAppIdButtonStyle = {
+    width: "auto",
+    minWidth: 0,
+    paddingLeft: 24,
+    paddingRight: 24,
+    whiteSpace: "nowrap",
+};
+const editorScopedCss = `
+.decky-metadata-editor .decky-metadata-editor__focus-target,
+.decky-metadata-editor .decky-metadata-editor__category-grid > div,
+.decky-metadata-editor .decky-metadata-editor__category-grid > div [role="checkbox"] {
+  scroll-margin-top: ${editorToolbarClearance}px;
+  scroll-margin-bottom: 24px;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--save:hover {
+  color: white !important;
+  background: #75b022 !important;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--remove:hover {
+  color: white !important;
+  background: #d94b43 !important;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus,
+.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
+  color: white !important;
+  outline: 3px solid white !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px #1a9fff !important;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus {
+  background: #75b022 !important;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
+  background: #d94b43 !important;
+}
+
+.decky-metadata-editor .decky-metadata-editor__action--save:disabled,
+.decky-metadata-editor .decky-metadata-editor__action--remove:disabled {
+  opacity: 0.55;
+  filter: saturate(0.45);
+}
+
+.decky-metadata-editor .decky-metadata-editor__category-grid > div {
+  min-height: ${editorCategoryRowMetrics.minHeight}px !important;
+  padding: ${editorCategoryRowMetrics.padding} !important;
+  margin: ${editorCategoryRowMetrics.margin} !important;
+  box-sizing: border-box;
+}
+`;
+
 const MetadataPage = () => {
+    const editorRootRef = SP_REACT.useRef(null);
     const { appid } = DFL.useParams();
     const appId = Number(appid);
     const overview = getOverview(appId);
@@ -5595,6 +5750,19 @@ const MetadataPage = () => {
     SP_REACT.useEffect(() => {
         void load();
     }, [load]);
+    SP_REACT.useEffect(() => {
+        const scrollViewport = editorRootRef.current?.parentElement;
+        if (!scrollViewport)
+            return;
+        const previousScrollPaddingTop = scrollViewport.style.scrollPaddingTop;
+        const previousScrollPaddingBottom = scrollViewport.style.scrollPaddingBottom;
+        scrollViewport.style.scrollPaddingTop = `${editorScrollViewportStyle.scrollPaddingTop}px`;
+        scrollViewport.style.scrollPaddingBottom = `${editorScrollViewportStyle.scrollPaddingBottom}px`;
+        return () => {
+            scrollViewport.style.scrollPaddingTop = previousScrollPaddingTop;
+            scrollViewport.style.scrollPaddingBottom = previousScrollPaddingBottom;
+        };
+    }, []);
     const normalizedMetadata = SP_REACT.useMemo(() => ({
         ...metadata,
         title: cleanTitle(metadata.title),
@@ -5720,21 +5888,21 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { style: pageStyle, children: [SP_JSX.jsx(DFL.Focusable, { onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs(DFL.PanelSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: saveCurrent, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: removeCurrent, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => DFL.Navigation.NavigateBack(), children: "Done" })] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsx(DFL.TextField, { value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, flex: "1 1 auto", minWidth: 220 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: search, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: "DialogButton", onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsxs(DFL.PanelSection, { title: "Source", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Title", childrenLayout: "below", children: SP_JSX.jsx(DFL.TextField, { value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("label", { children: "Description" }), SP_JSX.jsx(DFL.Focusable, { style: { width: "100%" }, children: SP_JSX.jsx("textarea", { value: metadata.description, onChange: (e) => setMetadata((prev) => ({
-                                                ...prev,
-                                                description: e.target.value,
-                                                short_description: e.target.value,
-                                            })), style: {
-                                                width: "100%",
-                                                minHeight: 144,
-                                                boxSizing: "border-box",
-                                                resize: "vertical",
-                                                borderRadius: 4,
-                                                padding: 10,
-                                                color: "white",
-                                                background: "rgba(0,0,0,0.28)",
-                                                border: "1px solid rgba(255,255,255,0.18)",
-                                            } }) })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Developers", childrenLayout: "below", children: SP_JSX.jsx(DFL.TextField, { value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Publishers", childrenLayout: "below", children: SP_JSX.jsx(DFL.TextField, { value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: buttonRowStyle, children: [SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 128 }, children: [SP_JSX.jsx("label", { children: "Release date" }), SP_JSX.jsx(DFL.TextField, { value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { ...flexFieldStyle, minWidth: 112 }, children: [SP_JSX.jsx("label", { children: "Rating" }), SP_JSX.jsx(DFL.TextField, { value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: toggleGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: { ...buttonRowStyle, flexWrap: "nowrap" }, children: [SP_JSX.jsx(DFL.TextField, { value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: { ...fieldStyle, flex: "1 1 auto", minWidth: 120 } }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy, onClick: applySteamAppId, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, children: SP_JSX.jsx("textarea", { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                                    ...prev,
+                                                    description: e.target.value,
+                                                    short_description: e.target.value,
+                                                })), style: {
+                                                    width: "100%",
+                                                    minHeight: 144,
+                                                    boxSizing: "border-box",
+                                                    resize: "vertical",
+                                                    borderRadius: 4,
+                                                    padding: 10,
+                                                    color: "white",
+                                                    background: "rgba(0,0,0,0.28)",
+                                                    border: "1px solid rgba(255,255,255,0.18)",
+                                                } }) })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
