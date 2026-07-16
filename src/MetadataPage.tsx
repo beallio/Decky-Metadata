@@ -1,5 +1,4 @@
 import {
-  Field,
   Focusable,
   Navigation,
   PanelSection,
@@ -9,7 +8,7 @@ import {
   ToggleField,
   useParams,
 } from "@decky/ui";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyFetchedMetadata,
   getMetadata,
@@ -42,18 +41,37 @@ import {
   textToPersons,
 } from "./metadataForm";
 import {
-  buttonRowStyle,
+  editorActionBarStyle,
+  editorActionButtonStyle,
+  editorAppIdButtonStyle,
+  editorAppIdRowStyle,
+  editorCategoryGridStyle,
+  editorDescriptionFieldStyle,
+  editorFocusTargetClassName,
+  editorLabelStyle,
+  editorReleaseRatingRowStyle,
+  editorRemoveButtonStyle,
+  editorRootClassName,
+  editorSaveButtonStyle,
+  editorScopedCss,
+  editorScrollViewportStyle,
+  editorSearchButtonStyle,
+  editorSearchRowStyle,
+  editorSourceFieldStyle,
+  editorSourceGroupStyle,
+  editorSourceStackStyle,
+} from "./metadataEditorStyles";
+import {
   compactTextStyle,
   fieldStyle,
-  flexFieldStyle,
   FocusableButton,
   pageStyle,
   pageTitleStyle,
   rowStackStyle,
-  toggleGridStyle,
 } from "./styles";
 
 export const MetadataPage = () => {
+  const editorRootRef = useRef<HTMLDivElement>(null);
   const { appid } = useParams<{ appid: string }>();
   const appId = Number(appid);
   const overview = getOverview(appId);
@@ -87,6 +105,21 @@ export const MetadataPage = () => {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const scrollViewport = editorRootRef.current?.parentElement;
+    if (!scrollViewport) return;
+
+    const previousScrollPaddingTop = scrollViewport.style.scrollPaddingTop;
+    const previousScrollPaddingBottom = scrollViewport.style.scrollPaddingBottom;
+    scrollViewport.style.scrollPaddingTop = `${editorScrollViewportStyle.scrollPaddingTop}px`;
+    scrollViewport.style.scrollPaddingBottom = `${editorScrollViewportStyle.scrollPaddingBottom}px`;
+
+    return () => {
+      scrollViewport.style.scrollPaddingTop = previousScrollPaddingTop;
+      scrollViewport.style.scrollPaddingBottom = previousScrollPaddingBottom;
+    };
+  }, []);
 
   const normalizedMetadata = useMemo<MetadataData>(
     () => ({
@@ -211,46 +244,62 @@ export const MetadataPage = () => {
 
   return (
     <ScrollPanel>
-      <div style={pageStyle}>
-        <Focusable onActivate={() => {}} style={pageTitleStyle}>
+      <div ref={editorRootRef} className={editorRootClassName} style={pageStyle}>
+        <style>{editorScopedCss}</style>
+        <Focusable
+          className={editorFocusTargetClassName}
+          onActivate={() => {}}
+          style={pageTitleStyle}
+        >
           {`${"Decky Metadata"} - ${appName(appId)}`}
         </Focusable>
-        <PanelSection>
-          {!nonSteam ? (
+        <div style={editorActionBarStyle}>
+          <FocusableButton
+            className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`}
+            onClick={saveCurrent}
+            style={editorSaveButtonStyle}
+          >
+            {"Save"}
+          </FocusableButton>
+          <FocusableButton
+            className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`}
+            onClick={removeCurrent}
+            style={editorRemoveButtonStyle}
+          >
+            {"Remove metadata"}
+          </FocusableButton>
+          <FocusableButton
+            className={`DialogButton ${editorFocusTargetClassName}`}
+            onClick={() => Navigation.NavigateBack()}
+            style={editorActionButtonStyle}
+          >
+            {"Done"}
+          </FocusableButton>
+        </div>
+        {!nonSteam ? (
+          <PanelSection>
             <PanelSectionRow>
-              <div style={compactTextStyle}>{"This plugin only changes non-Steam games."}</div>
+              <div style={compactTextStyle}>
+                {"This plugin only changes non-Steam games."}
+              </div>
             </PanelSectionRow>
-          ) : null}
-          <PanelSectionRow>
-            <div style={buttonRowStyle}>
-              <FocusableButton className="DialogButton" onClick={saveCurrent}>
-                {"Save"}
-              </FocusableButton>
-              <FocusableButton className="DialogButton" onClick={removeCurrent}>
-                {"Remove metadata"}
-              </FocusableButton>
-              <FocusableButton
-                className="DialogButton"
-                onClick={() => Navigation.NavigateBack()}
-              >
-                {"Done"}
-              </FocusableButton>
-            </div>
-          </PanelSectionRow>
-        </PanelSection>
+          </PanelSection>
+        ) : null}
 
         <PanelSection title={"Search IGN metadata"}>
           <PanelSectionRow>
-            <div style={buttonRowStyle}>
+            <div style={editorSearchRowStyle}>
               <TextField
+                className={editorFocusTargetClassName}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                style={{ ...fieldStyle, flex: "1 1 auto", minWidth: 220 }}
+                style={fieldStyle}
               />
               <FocusableButton
-                className="DialogButton"
+                className={`DialogButton ${editorFocusTargetClassName}`}
                 disabled={busy}
                 onClick={search}
+                style={editorSearchButtonStyle}
               >
                 {busy ? "Searching..." : "Search"}
               </FocusableButton>
@@ -267,7 +316,7 @@ export const MetadataPage = () => {
               {results.map((result) => (
                 <FocusableButton
                   key={result.slug || result.url}
-                  className="DialogButton"
+                  className={`DialogButton ${editorFocusTargetClassName}`}
                   onClick={() => void applyResult(result)}
                   style={{ justifyContent: "flex-start", textAlign: "left" }}
                 >
@@ -283,79 +332,85 @@ export const MetadataPage = () => {
 
         <PanelSection title={"Source"}>
           <PanelSectionRow>
-            <Field label={"Title"} childrenLayout="below">
-              <TextField
-                value={metadata.title}
-                onChange={(e) =>
-                  setMetadata((prev) => ({ ...prev, title: e.target.value }))
-                }
-                style={fieldStyle}
-              />
-            </Field>
-          </PanelSectionRow>
-          <PanelSectionRow>
-            <div style={rowStackStyle}>
-              <label>{"Description"}</label>
-              <Focusable style={{ width: "100%" }}>
-                <textarea
-                  value={metadata.description}
-                  onChange={(e) =>
-                    setMetadata((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                      short_description: e.target.value,
-                    }))
-                  }
-                  style={{
-                    width: "100%",
-                    minHeight: 144,
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                    borderRadius: 4,
-                    padding: 10,
-                    color: "white",
-                    background: "rgba(0,0,0,0.28)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                  }}
-                />
-              </Focusable>
-            </div>
-          </PanelSectionRow>
-          <PanelSectionRow>
-            <Field label={"Developers"} childrenLayout="below">
-              <TextField
-                value={developerText}
-                onChange={(e) => setDeveloperText(e.target.value)}
-                style={fieldStyle}
-              />
-            </Field>
-          </PanelSectionRow>
-          <PanelSectionRow>
-            <Field label={"Publishers"} childrenLayout="below">
-              <TextField
-                value={publisherText}
-                onChange={(e) => setPublisherText(e.target.value)}
-                style={fieldStyle}
-              />
-            </Field>
-          </PanelSectionRow>
-          <PanelSectionRow>
-            <div style={buttonRowStyle}>
-              <div style={{ ...flexFieldStyle, minWidth: 128 }}>
-                <label>{"Release date"}</label>
+            <div style={editorSourceStackStyle}>
+              <div style={editorSourceFieldStyle}>
+                <label style={editorLabelStyle}>{"Title"}</label>
                 <TextField
-                  value={releaseText}
-                  onChange={(e) => setReleaseText(e.target.value)}
+                  className={editorFocusTargetClassName}
+                  value={metadata.title}
+                  onChange={(e) =>
+                    setMetadata((prev) => ({ ...prev, title: e.target.value }))
+                  }
                   style={fieldStyle}
                 />
               </div>
-              <div style={{ ...flexFieldStyle, minWidth: 112 }}>
-                <label>{"Rating"}</label>
+              <div style={editorDescriptionFieldStyle}>
+                <label style={editorLabelStyle}>{"Description"}</label>
+                <Focusable
+                  className={editorFocusTargetClassName}
+                  style={{ width: "100%" }}
+                >
+                  <textarea
+                    className={editorFocusTargetClassName}
+                    value={metadata.description}
+                    onChange={(e) =>
+                      setMetadata((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                        short_description: e.target.value,
+                      }))
+                    }
+                    style={{
+                      width: "100%",
+                      minHeight: 144,
+                      boxSizing: "border-box",
+                      resize: "vertical",
+                      borderRadius: 4,
+                      padding: 10,
+                      color: "white",
+                      background: "rgba(0,0,0,0.28)",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                    }}
+                  />
+                </Focusable>
+              </div>
+              <div style={editorSourceGroupStyle}>
+                <label style={editorLabelStyle}>{"Developers"}</label>
                 <TextField
-                  value={ratingText}
-                  onChange={(e) => setRatingText(e.target.value)}
+                  className={editorFocusTargetClassName}
+                  value={developerText}
+                  onChange={(e) => setDeveloperText(e.target.value)}
                   style={fieldStyle}
                 />
+              </div>
+              <div style={editorSourceGroupStyle}>
+                <label style={editorLabelStyle}>{"Publishers"}</label>
+                <TextField
+                  className={editorFocusTargetClassName}
+                  value={publisherText}
+                  onChange={(e) => setPublisherText(e.target.value)}
+                  style={fieldStyle}
+                />
+              </div>
+              <div style={editorReleaseRatingRowStyle}>
+                <div style={{ minWidth: 0 }}>
+                  <label style={editorLabelStyle}>{"Release date"}</label>
+                  <TextField
+                    className={editorFocusTargetClassName}
+                    value={releaseText}
+                    onChange={(e) => setReleaseText(e.target.value)}
+                    style={fieldStyle}
+                  />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <label style={editorLabelStyle}>{"Rating"}</label>
+                  <TextField
+                    className={editorFocusTargetClassName}
+                    value={ratingText}
+                    onChange={(e) => setRatingText(e.target.value)}
+                    style={fieldStyle}
+                  />
+                </div>
               </div>
             </div>
           </PanelSectionRow>
@@ -363,7 +418,10 @@ export const MetadataPage = () => {
 
         <PanelSection title={"Steam info fields"}>
           <PanelSectionRow>
-            <div style={toggleGridStyle}>
+            <div
+              className="decky-metadata-editor__category-grid"
+              style={editorCategoryGridStyle}
+            >
               {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
                 <ToggleField
                   key={category}
@@ -383,16 +441,18 @@ export const MetadataPage = () => {
           <PanelSectionRow>
             <div style={rowStackStyle}>
               <div style={compactTextStyle}>{"Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match."}</div>
-              <div style={{ ...buttonRowStyle, flexWrap: "nowrap" }}>
+              <div style={editorAppIdRowStyle}>
                 <TextField
+                  className={editorFocusTargetClassName}
                   value={steamAppIdText}
                   onChange={(e) => setSteamAppIdText(e.target.value)}
-                  style={{ ...fieldStyle, flex: "1 1 auto", minWidth: 120 }}
+                  style={fieldStyle}
                 />
                 <FocusableButton
-                  className="DialogButton"
+                  className={`DialogButton ${editorFocusTargetClassName}`}
                   disabled={busy}
                   onClick={applySteamAppId}
+                  style={editorAppIdButtonStyle}
                 >
                   {"Apply Steam App ID"}
                 </FocusableButton>
