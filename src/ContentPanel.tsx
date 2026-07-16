@@ -1,52 +1,33 @@
-import { Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { showModal } from "@decky/ui";
 import { useCallback, useEffect, useState } from "react";
+
 import {
-  getDebugLogging,
-  getActivityRefreshProgress,
-  setDebugLogging,
-  startRefreshSteamActivities,
-  startScanMissing,
-  getMissingMetadataCount,
-  getScanProgress,
   clearMetadataCache,
+  getDebugLogging,
   getDelistedIndexStatus,
+  getMissingMetadataCount,
+  getPluginLogs,
   getPluginVersion,
+  getScanProgress,
   refreshDelistedIndex,
+  setDebugLogging,
+  startScanMissing,
 } from "./backend";
+import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { LogsSection } from "./components/qam/LogsSection";
+import { MetadataSection } from "./components/qam/MetadataSection";
+import { PluginLogModal } from "./components/qam/PluginLogModal";
+import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
 import { metadataCache, refreshMetadataCache } from "./steam";
-import { GameOption } from "./types";
+import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
-import {
-  actionButtonStackStyle,
-  ButtonLabel,
-  compactTextStyle,
-  diagnosticsGridStyle,
-  diagnosticsRowStyle,
-  diagnosticsValueStyle,
-  FocusableButton,
-  inlineStatusStyle,
-  qamPanelStyle,
-  rowStackStyle,
-  sectionHeadingStyle,
-  spacedButtonRowStyle,
-} from "./styles";
+import { GameOption } from "./types";
 import { useNonSteamGames } from "./useNonSteamGames";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
-
-export const splitVersion = (version: string): { base: string; commit: string | null } => {
-  const trimmed = String(version || "").trim();
-  const separator = trimmed.indexOf("+");
-  if (separator < 0) {
-    return { base: trimmed, commit: null };
-  }
-  const base = trimmed.slice(0, separator).trim();
-  const commit = trimmed.slice(separator + 1).trim();
-  return { base, commit: commit || null };
-};
 
 const scanCompleteMessage = (progress: {
   total?: number;
@@ -54,12 +35,12 @@ const scanCompleteMessage = (progress: {
   failed?: number;
 }) => {
   const total = Number(progress.total || 0);
-  if (!total) return "Scan complete";
+  if (!total) return "Refresh complete";
   const assigned = Number(progress.assigned || 0);
   const failed = Number(progress.failed || 0);
   return failed
-    ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
-    : `Scan complete: ${assigned}/${total} saved`;
+    ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
+    : `Refresh complete: ${assigned}/${total} saved`;
 };
 
 const scanCompleteStatusKind = (progress: {
@@ -71,15 +52,6 @@ const scanCompleteStatusKind = (progress: {
   const assigned = Number(progress.assigned || 0);
   const failed = Number(progress.failed || 0);
   return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
-
-const activityCompleteMessage = (progress: {
-  total?: number;
-  assigned?: number;
-}) => {
-  const total = Number(progress.total || 0);
-  if (!total) return "Activity refresh complete";
-  return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
 };
 
 const epochToDate = (value?: number | null) => {
@@ -96,19 +68,16 @@ export const Content = () => {
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
-  const [activityBusy, setActivityBusy] = useState(false);
-  const [activityMessage, setActivityMessage] = useState("");
-  const [activityStatusKind, setActivityStatusKind] = useState<StatusKind>("idle");
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{
     count: number;
     fetched_at: number;
   } | null>(null);
   const [delistedBusy, setDelistedBusy] = useState(false);
+  const [logsBusy, setLogsBusy] = useState(false);
   const [debugLogging, setDebugLoggingState] = useState(false);
+  const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
-
-  const parsedPluginVersion = splitVersion(pluginVersion);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
     void getMissingMetadataCount(currentGames)
@@ -169,6 +138,8 @@ export const Content = () => {
   }, []);
 
   const saveDebugLogging = async (enabled: boolean) => {
+    if (debugLoggingBusy) return;
+    setDebugLoggingBusy(true);
     setDebugLoggingState(enabled);
     log.setVerboseLogging(enabled);
     try {
@@ -178,6 +149,8 @@ export const Content = () => {
       log.info("bridge", "debug logging setting updated", saved);
     } catch (error) {
       log.warn("bridge", "debug logging setting update failed", error);
+    } finally {
+      setDebugLoggingBusy(false);
     }
   };
 
@@ -202,53 +175,16 @@ export const Content = () => {
           setBusy(false);
           setScanStatusKind(scanCompleteStatusKind(progress));
           setScanMessage(scanCompleteMessage(progress));
-          toastSuccess("Scan", "Scan complete");
+          toastSuccess("Metadata", "Refresh complete");
         }
       }, 800);
     } catch (error) {
       setBusy(false);
       setScanStatusKind("error");
       setScanMessage(String(error));
-      toastError("Scan failed", String(error));
+      toastError("Metadata refresh failed", String(error));
     }
   };
-
-  const refreshActivities = async () => {
-    if (activityBusy) return;
-    setActivityBusy(true);
-    setActivityStatusKind("active");
-    setActivityMessage("Refreshing Activity...");
-    try {
-      await startRefreshSteamActivities(games);
-      const interval = window.setInterval(async () => {
-        const progress = await getActivityRefreshProgress();
-        setActivityStatusKind("active");
-        setActivityMessage(
-          progress.current ||
-            progress.message ||
-            `${progress.completed}/${progress.total}`
-        );
-        if (!progress.running) {
-          window.clearInterval(interval);
-          await refreshMetadataCache();
-          setMetadataCount(Object.keys(metadataCache).length);
-          updateMissingCount(games);
-          setActivityBusy(false);
-          setActivityStatusKind("success");
-          setActivityMessage(activityCompleteMessage(progress));
-          window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
-          window.dispatchEvent(new Event("decky-metadata:updated"));
-          toastSuccess("Activity", activityCompleteMessage(progress));
-        }
-      }, 800);
-    } catch (error) {
-      setActivityBusy(false);
-      setActivityStatusKind("error");
-      setActivityMessage(String(error));
-      toastError("Activity failed", String(error));
-    }
-  };
-
 
   const clearCache = async () => {
     if (cacheBusy || busy) return;
@@ -289,130 +225,54 @@ export const Content = () => {
     }
   };
 
+  const viewLogs = async () => {
+    if (logsBusy) return;
+    setLogsBusy(true);
+    try {
+      const logs = await getPluginLogs();
+      let modal: ReturnType<typeof showModal> | undefined;
+      modal = showModal(
+        <PluginLogModal logs={logs} closeModal={() => modal?.Close()} />
+      );
+    } catch (error) {
+      log.warn("bridge", "plugin log load failed", error);
+      toastError("Logs", "Plugin logs could not be loaded");
+    } finally {
+      setLogsBusy(false);
+    }
+  };
+
   const delistedStatusText =
     delistedStatus?.count && delistedStatus.fetched_at
       ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
       : "Delisted index not downloaded yet";
 
-
   return (
     <div style={qamPanelStyle}>
-      <PanelSection>
-        <PanelSectionRow>
-          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
-            <div style={rowStackStyle}>
-              <div>
-                <b>{"Detected non-Steam games"}:</b> {games.length}
-              </div>
-              <div>
-                <b>{"Metadata saved"}:</b> {metadataCount}
-              </div>
-              <div>
-                <b>{"Missing metadata"}:</b> {missing}
-              </div>
-            </div>
-          </Field>
-        </PanelSectionRow>
-      </PanelSection>
-      <PanelSection>
-        <PanelSectionRow>
-          <div style={compactTextStyle}>{"Refresh Activity re-fetches the Steam Activity feed for games that already have metadata. It does not find new matches or update store details — use Scan metadata for that."}</div>
-          <div style={spacedButtonRowStyle}>
-            <div style={actionButtonStackStyle}>
-              <FocusableButton
-                className="DialogButton"
-                disabled={busy || !games.length}
-                onClick={scanMissing}
-              >
-                {busy ? (
-                  <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
-                ) : (
-                  <ButtonLabel>{"Scan metadata"}</ButtonLabel>
-                )}
-              </FocusableButton>
-              {busy || scanMessage ? (
-                <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage || "Scanning..."}</div>
-              ) : null}
-            </div>
-            <div style={actionButtonStackStyle}>
-              <FocusableButton
-                className="DialogButton"
-                disabled={activityBusy || busy || !games.length}
-                onClick={refreshActivities}
-              >
-                {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
-              </FocusableButton>
-              {activityBusy || activityMessage ? (
-                <div style={inlineStatusStyle(activityStatusKind)}>{activityMessage || "Refreshing Activity..."}</div>
-              ) : null}
-            </div>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={sectionHeadingStyle}>{"Metadata cache"}</div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={rowStackStyle}>
-            <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
-            <div style={inlineStatusStyle("idle")}>
-              <span>{delistedStatusText}</span>
-            </div>
-            <FocusableButton
-              className="DialogButton"
-              disabled={delistedBusy}
-              onClick={refreshDelisted}
-            >
-              {delistedBusy ? (
-                <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
-              ) : (
-                <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
-              )}
-            </FocusableButton>
-            <FocusableButton
-              className="DialogButton"
-              disabled={cacheBusy || busy}
-              onClick={clearCache}
-            >
-              {"Clear cache"}
-            </FocusableButton>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <ToggleField
-            highlightOnFocus={false}
-            label="Debug Logging"
-            checked={debugLogging}
-            onChange={(checked) => void saveDebugLogging(checked)}
-          />
-        </PanelSectionRow>
-      </PanelSection>
-      <PanelSection title="Versions">
-        <PanelSectionRow>
-          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
-            <div style={diagnosticsGridStyle}>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Plugin"}</span>
-                <span style={diagnosticsValueStyle}>{parsedPluginVersion.base}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Commit"}</span>
-                <span style={diagnosticsValueStyle}>{parsedPluginVersion.commit || "local"}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Delisted index"}</span>
-                <span style={diagnosticsValueStyle}>{delistedStatusText}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Metadata"}</span>
-                <span style={diagnosticsValueStyle}>{metadataCount}</span>
-              </div>
-            </div>
-          </Field>
-        </PanelSectionRow>
-      </PanelSection>
+      <MetadataSection
+        detectedCount={games.length}
+        savedCount={metadataCount}
+        missingCount={missing}
+        scanBusy={busy}
+        scanMessage={scanMessage}
+        scanStatusKind={scanStatusKind}
+        cacheBusy={cacheBusy}
+        onRefreshMetadata={() => void scanMissing()}
+        onClearCache={() => void clearCache()}
+      />
+      <DelistedIndexSection
+        statusText={delistedStatusText}
+        busy={delistedBusy}
+        onRefresh={() => void refreshDelisted()}
+      />
+      <LogsSection
+        logsBusy={logsBusy}
+        debugLogging={debugLogging}
+        debugLoggingBusy={debugLoggingBusy}
+        onViewLogs={() => void viewLogs()}
+        onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
+      />
+      <VersionsSection pluginVersion={pluginVersion} />
     </div>
   );
 };
