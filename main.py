@@ -70,6 +70,7 @@ from backend.steam_paths import SteamInstall
 
 PLUGIN_BASE_VERSION = "0.1.0"
 _LOG_FILE_HANDLER: logging.Handler | None = None
+_PLUGIN_LOG_TAIL_BYTES = 128 * 1024
 
 
 def _redact(text: Any) -> str:
@@ -159,6 +160,31 @@ def _install_file_logging() -> str:
         return str(log_path)
     except Exception:
         return ""
+
+
+def _read_bounded_log_tail(
+    log_path: Path, max_bytes: int = _PLUGIN_LOG_TAIL_BYTES
+) -> str:
+    """Return a bounded recent tail without trusting a caller-supplied path."""
+    if max_bytes <= 0:
+        return ""
+
+    try:
+        with log_path.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = max(0, handle.tell())
+            start = max(0, size - max_bytes)
+            handle.seek(start, os.SEEK_SET)
+            chunk = handle.read(max_bytes)
+    except (OSError, TypeError, ValueError):
+        return ""
+
+    if start > 0:
+        newline = chunk.find(b"\n")
+        if newline >= 0:
+            chunk = chunk[newline + 1 :]
+
+    return chunk.decode("utf-8", errors="replace")
 
 
 def _read_version_file(path: Path) -> str:
@@ -323,6 +349,25 @@ class Plugin:
 
     async def get_plugin_version(self) -> str:
         return _resolve_plugin_version()
+
+    async def get_plugin_logs(self) -> str:
+        global _LOG_FILE_HANDLER
+        if _LOG_FILE_HANDLER is None:
+            _install_file_logging()
+
+        handler = _LOG_FILE_HANDLER
+        if handler is None:
+            return ""
+
+        try:
+            handler.flush()
+        except Exception:
+            pass
+
+        log_path = getattr(handler, "baseFilename", "")
+        if not log_path:
+            return ""
+        return _read_bounded_log_tail(Path(str(log_path)))
 
     async def get_state(self) -> dict[str, Any]:
         self._load_data()
