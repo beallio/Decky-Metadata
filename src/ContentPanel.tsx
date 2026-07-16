@@ -1,5 +1,10 @@
-import { showModal } from "@decky/ui";
-import { useCallback, useEffect, useState } from "react";
+import {
+  Focusable,
+  getGamepadNavigationTrees,
+  NavEntryPositionPreferences,
+  showModal,
+} from "@decky/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   clearMetadataCache,
@@ -28,6 +33,38 @@ import { useNonSteamGames } from "./useNonSteamGames";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
+
+type NativeFocusNode = {
+  Element?: HTMLElement;
+  m_rgChildren?: NativeFocusNode[];
+  BTakeFocus?: () => boolean;
+};
+
+type NativeNavigationTree = {
+  Root?: NativeFocusNode;
+};
+
+const takePreferredPanelFocus = (element: HTMLDivElement): boolean => {
+  try {
+    const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
+    for (const tree of trees) {
+      const pending = tree.Root ? [tree.Root] : [];
+      while (pending.length) {
+        const node = pending.pop();
+        if (!node) continue;
+        if (node.Element === element && typeof node.BTakeFocus === "function") {
+          return Boolean(node.BTakeFocus());
+        }
+        if (Array.isArray(node.m_rgChildren)) {
+          pending.push(...node.m_rgChildren);
+        }
+      }
+    }
+  } catch (error) {
+    log.warn("qam", "preferred metadata focus unavailable", error);
+  }
+  return false;
+};
 
 const scanCompleteMessage = (progress: {
   total?: number;
@@ -62,6 +99,7 @@ const epochToDate = (value?: number | null) => {
 };
 
 export const Content = () => {
+  const focusFrame = useRef<number | null>(null);
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
   const [missing, setMissing] = useState(0);
@@ -78,6 +116,19 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
   const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
+
+  const focusPanel = useCallback((element: HTMLDivElement | null) => {
+    if (focusFrame.current !== null) {
+      window.cancelAnimationFrame(focusFrame.current);
+      focusFrame.current = null;
+    }
+    if (element) {
+      focusFrame.current = window.requestAnimationFrame(() => {
+        focusFrame.current = null;
+        takePreferredPanelFocus(element);
+      });
+    }
+  }, []);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
     void getMissingMetadataCount(currentGames)
@@ -248,7 +299,12 @@ export const Content = () => {
       : "Delisted index not downloaded yet";
 
   return (
-    <div style={qamPanelStyle}>
+    <Focusable
+      ref={focusPanel}
+      preferredFocus={true}
+      navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
+      style={qamPanelStyle}
+    >
       <MetadataSection
         detectedCount={games.length}
         savedCount={metadataCount}
@@ -273,6 +329,6 @@ export const Content = () => {
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
       />
       <VersionsSection pluginVersion={pluginVersion} />
-    </div>
+    </Focusable>
   );
 };

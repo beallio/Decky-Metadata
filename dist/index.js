@@ -5207,6 +5207,29 @@ const useNonSteamGames = () => {
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
+const takePreferredPanelFocus = (element) => {
+    try {
+        const trees = (DFL.getGamepadNavigationTrees() || []);
+        for (const tree of trees) {
+            const pending = tree.Root ? [tree.Root] : [];
+            while (pending.length) {
+                const node = pending.pop();
+                if (!node)
+                    continue;
+                if (node.Element === element && typeof node.BTakeFocus === "function") {
+                    return Boolean(node.BTakeFocus());
+                }
+                if (Array.isArray(node.m_rgChildren)) {
+                    pending.push(...node.m_rgChildren);
+                }
+            }
+        }
+    }
+    catch (error) {
+        warn("qam", "preferred metadata focus unavailable", error);
+    }
+    return false;
+};
 const scanCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
     if (!total)
@@ -5232,6 +5255,7 @@ const epochToDate$1 = (value) => {
     return date.toISOString().slice(0, 10);
 };
 const Content = () => {
+    const focusFrame = SP_REACT.useRef(null);
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [missing, setMissing] = SP_REACT.useState(0);
@@ -5245,6 +5269,18 @@ const Content = () => {
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
     const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
+    const focusPanel = SP_REACT.useCallback((element) => {
+        if (focusFrame.current !== null) {
+            window.cancelAnimationFrame(focusFrame.current);
+            focusFrame.current = null;
+        }
+        if (element) {
+            focusFrame.current = window.requestAnimationFrame(() => {
+                focusFrame.current = null;
+                takePreferredPanelFocus(element);
+            });
+        }
+    }, []);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
             .then(setMissing)
@@ -5410,7 +5446,7 @@ const Content = () => {
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate$1(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs("div", { style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { statusText: delistedStatusText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { statusText: delistedStatusText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion })] }));
 };
 
 var StoreCategory;

@@ -28,6 +28,20 @@ def test_content_panel_composes_four_qam_sections_in_approved_order() -> None:
     for component in components:
         assert re.search(rf"import\s+\{{\s*{component}\s*\}}", source)
 
+    assert "<Focusable" in source
+    assert "preferredFocus={true}" in source
+    assert (
+        "navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}" in source
+    )
+    assert "getGamepadNavigationTrees" in source
+    assert ".BTakeFocus()" in source
+    assert "ref={focusPanel}" in source
+    assert "useLayoutEffect" not in source
+    assert "requestAnimationFrame" in source
+    assert "cancelAnimationFrame" in source
+    assert ".focus(" not in source
+    assert "setTimeout" not in source
+
 
 def test_metadata_section_has_preferred_summary_and_approved_copy() -> None:
     source = _source(QAM_DIR / "MetadataSection.tsx")
