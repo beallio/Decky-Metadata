@@ -35,7 +35,10 @@ export default definePlugin(() => {
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
 
   return {
-    name: "Decky Metadata",
+    // Plugin identity used by Decky Loader (must match plugin.json "name" so
+    // find_plugin_folder resolves this install for in-place self-update).
+    name: "Decky-Metadata",
+    // Display label shown in the QAM header; kept human-readable on purpose.
     titleView: <div className={staticClasses.Title}>{"Decky Metadata"}</div>,
     content: <Content />,
     icon: <FaTags />,
