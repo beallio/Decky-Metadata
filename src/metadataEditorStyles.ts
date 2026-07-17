@@ -188,4 +188,18 @@ export const editorScopedCss = `
   margin: ${editorCategoryRowMetrics.margin} !important;
   box-sizing: border-box;
 }
+
+/*
+ * Search results: the default DialogButton focus fill washes out the result
+ * text. Replace it with a border-only highlight (no background fill) so the
+ * title and description stay readable when the row is selected.
+ */
+.decky-metadata-editor .decky-metadata-editor__result:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__result.gpfocus {
+  background: transparent !important;
+  color: white !important;
+  outline: 3px solid white !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px #1a9fff !important;
+}
 `;

@@ -61,25 +61,42 @@ def test_metadata_section_has_preferred_summary_and_approved_copy() -> None:
     assert "Clear cache" in source
 
 
+def test_qam_descriptions_render_below_their_buttons() -> None:
+    metadata = _source(QAM_DIR / "MetadataSection.tsx")
+
+    # The helper copy now follows its button rather than preceding it.
+    assert metadata.index("Find and save metadata") > metadata.index("Refresh metadata")
+    assert metadata.index("Clear saved matches and metadata") > metadata.index(
+        "Clear cache"
+    )
+
+
 def test_qam_separator_contract_is_explicit() -> None:
     metadata = _source(QAM_DIR / "MetadataSection.tsx")
     delisted = _source(QAM_DIR / "DelistedIndexSection.tsx")
 
+    # Neither action button draws a rule; the Metadata panel is closed by the
+    # standard separator on its final (Clear cache) description.
     refresh_metadata = re.search(
         r'<ButtonItem[^>]*bottomSeparator="none"[^>]*>[\s\S]*?Refresh metadata[\s\S]*?</ButtonItem>',
         metadata,
     )
     clear_cache = re.search(
-        r'<ButtonItem[^>]*bottomSeparator="standard"[^>]*>[\s\S]*?Clear cache[\s\S]*?</ButtonItem>',
+        r'<ButtonItem[^>]*bottomSeparator="none"[^>]*>[\s\S]*?Clear cache[\s\S]*?</ButtonItem>',
+        metadata,
+    )
+    cache_description_closes_panel = re.search(
+        r'bottomSeparator="standard"[\s\S]*?Clear saved matches and metadata',
         metadata,
     )
     refresh_delisted = re.search(
-        r'<ButtonItem[^>]*bottomSeparator="standard"[^>]*>[\s\S]*?Refresh delisted index[\s\S]*?</ButtonItem>',
+        r'<ButtonItem[^>]*bottomSeparator="standard"[^>]*>[\s\S]*?Refresh delisted games[\s\S]*?</ButtonItem>',
         delisted,
     )
 
     assert refresh_metadata
     assert clear_cache
+    assert cache_description_closes_panel
     assert refresh_delisted
 
 
@@ -94,6 +111,8 @@ def test_logs_and_versions_match_the_stable_qam_contract() -> None:
     assert "Enables verbose logging for troubleshooting." in logs
     assert 'title="Versions"' in versions
     assert "Decky Metadata:" in versions
+    assert "Decky:" in versions
+    assert "SteamOS:" in versions
     assert "Unknown" in versions
     assert 'strTitle="Plugin Logs"' in modal
     assert "No recent logs" in modal

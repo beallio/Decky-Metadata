@@ -195,7 +195,10 @@ scripts/deck/verify/run_all.sh    # launch / quick-links / re-render smokes
 Which checks each change requires, plus debugging recipes and hazards
 (notably: NEVER enumerate MobX store instances — overview/details/appStore —
 inside a render-phase tree walk; it wedges the renderer), are documented in
-`docs/runbooks/on-device-verification.md`.
+`docs/runbooks/on-device-verification.md`. For QAM/panel/editor focus and D-pad
+order, drive `scripts/deck/cdp.py input` (synthetic controller keys) plus the
+`js/gpfocus_dump.js` / `js/focus_order.js` probes — do not hand-roll a
+key-dispatch script (see that runbook's "Controller navigation & initial focus").
 
 The `scripts/check_tdd.sh` pre-commit hook runs the lighter staged-file subset of
 these checks.

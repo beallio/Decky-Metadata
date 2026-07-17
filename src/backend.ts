@@ -89,6 +89,9 @@ export const getLocalShortcuts = callable<[], GameOption[]>(
   "get_local_shortcuts"
 );
 export const getPluginVersion = callable<[], string>("get_plugin_version");
+export const getSystemVersions = callable<[], { decky: string; steamos: string }>(
+  "get_system_versions"
+);
 export const getPluginLogs = callable<[], string>("get_plugin_logs");
 export const getDebugLogging = callable<[], boolean>("get_debug_logging");
 export const setDebugLogging = callable<[enabled: boolean], boolean>(

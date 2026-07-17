@@ -3,21 +3,28 @@ import { ButtonItem, PanelSection, PanelSectionRow } from "@decky/ui";
 import { ButtonLabel, inlineStatusStyle } from "../../styles";
 
 type DelistedIndexSectionProps = {
-  statusText: string;
+  countText: string;
+  dateText?: string;
   busy: boolean;
   onRefresh: () => void;
 };
 
 export function DelistedIndexSection({
-  statusText,
+  countText,
+  dateText,
   busy,
   onRefresh,
 }: DelistedIndexSectionProps) {
   return (
-    <PanelSection title="Delisted Index">
+    <PanelSection title="Delisted Steam games">
       <PanelSectionRow>
-        <div style={inlineStatusStyle("idle")}>{statusText}</div>
+        <div style={inlineStatusStyle("idle")}>{countText}</div>
       </PanelSectionRow>
+      {dateText ? (
+        <PanelSectionRow>
+          <div style={inlineStatusStyle("idle")}>{dateText}</div>
+        </PanelSectionRow>
+      ) : null}
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -28,7 +35,7 @@ export function DelistedIndexSection({
           {busy ? (
             <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
           ) : (
-            "Refresh delisted index"
+            "Refresh delisted games"
           )}
         </ButtonItem>
       </PanelSectionRow>

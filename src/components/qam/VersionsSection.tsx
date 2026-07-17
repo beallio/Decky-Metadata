@@ -4,9 +4,15 @@ import { compactTextStyle } from "../../styles";
 
 type VersionsSectionProps = {
   pluginVersion: string;
+  deckyVersion: string;
+  steamosVersion: string;
 };
 
-export function VersionsSection({ pluginVersion }: VersionsSectionProps) {
+export function VersionsSection({
+  pluginVersion,
+  deckyVersion,
+  steamosVersion,
+}: VersionsSectionProps) {
   return (
     <PanelSection title="Versions">
       <PanelSectionRow>
@@ -18,7 +24,9 @@ export function VersionsSection({ pluginVersion }: VersionsSectionProps) {
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            Decky Metadata: {pluginVersion.trim() || "Unknown"}
+            <div>Decky Metadata: {pluginVersion.trim() || "Unknown"}</div>
+            <div>Decky: {deckyVersion.trim() || "Unknown"}</div>
+            <div>SteamOS: {steamosVersion.trim() || "Unknown"}</div>
           </div>
         </Field>
       </PanelSectionRow>

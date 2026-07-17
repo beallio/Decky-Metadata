@@ -225,6 +225,45 @@ def _resolve_plugin_version() -> str:
     return PLUGIN_BASE_VERSION
 
 
+def _parse_os_release_field(text: str, key: str) -> str:
+    """Return a field value from os-release-formatted text, or '' if absent."""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.partition("=")
+        if name.strip() != key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        return value.strip()
+    return ""
+
+
+def _read_steamos_version(path: Path = Path("/etc/os-release")) -> str:
+    """Return the SteamOS VERSION_ID, or '' when the file is unavailable."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as error:
+        _plog("version", "os-release unreadable", level=logging.DEBUG, error=error)
+        return ""
+    return _parse_os_release_field(text, "VERSION_ID")
+
+
+def _resolve_decky_version() -> str:
+    """Return the Decky Loader version from the plugin runtime, or ''.
+
+    Prefer the `decky` module's DECKY_VERSION constant; only accept a real
+    string (the test harness stubs the module with Mock attributes). Fall back
+    to the DECKY_VERSION environment variable.
+    """
+    value = getattr(decky, "DECKY_VERSION", None)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return os.environ.get("DECKY_VERSION", "").strip()
+
+
 @functools.lru_cache(maxsize=1)
 def _build_https_context() -> ssl.SSLContext:
     try:
@@ -349,6 +388,12 @@ class Plugin:
 
     async def get_plugin_version(self) -> str:
         return _resolve_plugin_version()
+
+    async def get_system_versions(self) -> dict[str, str]:
+        return {
+            "decky": _resolve_decky_version() or "Unknown",
+            "steamos": _read_steamos_version() or "Unknown",
+        }
 
     async def get_plugin_logs(self) -> str:
         global _LOG_FILE_HANDLER

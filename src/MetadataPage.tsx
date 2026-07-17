@@ -328,7 +328,7 @@ export const MetadataPage = () => {
               {results.map((result) => (
                 <FocusableButton
                   key={result.slug || result.url}
-                  className={`DialogButton ${editorFocusTargetClassName}`}
+                  className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`}
                   onClick={() => void applyResult(result)}
                   style={{ justifyContent: "flex-start", textAlign: "left" }}
                 >
