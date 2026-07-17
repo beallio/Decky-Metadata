@@ -258,8 +258,9 @@ scripts/bump_next_patch.sh
 
 Pushing `dev` automatically refreshes the rolling GitHub prerelease; no manual
 package command is needed for that channel. README screenshots are committed
-under `assets/` and use stable relative paths, so replace the image files when
-screenshots change rather than adding URL cache-buster parameters.
+under `assets/` and use stable relative paths with a
+`?cacheBuster=YYYYMMDD` query. Bump that value whenever committed screenshots
+are re-captured so GitHub's image proxy serves the updated images.
 
 ---
 

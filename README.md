@@ -16,7 +16,7 @@ The plugin helps non-Steam games look and behave more like native Steam library 
 
 ### Install from GitHub Releases
 
-Download the latest stable [`Decky-Metadata.zip`](https://github.com/beallio/Decky-Metadata/releases/latest) and sideload it through Decky's developer-mode plugin installer. The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel and may be less stable.
+Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then either download its `Decky-Metadata.zip` asset and sideload it through Decky's developer-mode plugin installer, or copy the release asset URL and paste it into Decky's install-from-URL flow. The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel and may be less stable.
 
 ### Build from source
 
@@ -71,16 +71,21 @@ Development packages publish automatically as a rolling prerelease whenever
 - Preserves a manually pinned Steam app ID and its Steam-owned metadata when applying a fetched IGN result.
 - Caches Steam's delisted-app index so removed store pages can still be matched by title.
 - Rewrites Steam's native Game Info quick-links for matched shortcuts: Support and Community Market are removed, Store Page is kept unless the match is delisted, and known DLC / Points Shop links target the real Steam app. Never-on-Steam shortcuts continue to hide the row entirely.
+
+  ![Rewritten Game Info quick-links for a matched non-Steam shortcut](assets/decky-metadata-gameinfo-quicklinks.png?cacheBuster=20260716)
+
 - Supplements Controller Settings for listed and delisted matched shortcuts with the matched Steam game's Recommended / Official and Community layouts while retaining shortcut-specific personal layouts and generic templates. Identical matched-source queries reuse the existing source cache, and Controller Settings Search isolates both inactive matched sources and inactive non-Steam shortcut caches, including caches created before the current plugin session and current shortcuts with no Steam match. Previewing and selecting a borrowed layout remain Steam's native shortcut operations. If SteamUI's internal controller-layout contract is incompatible, the plugin falls back to the standard Controller Settings UI and shows one warning for the current plugin session.
 
-![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png)
-![Decky Metadata metadata editor](assets/decky-metadata-editor.png)
+  ![Borrowed Recommended and Community controller layouts for a matched non-Steam shortcut](assets/decky-metadata-controller-layouts.png?cacheBuster=20260716)
+
+![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260716)
+![Decky Metadata metadata editor](assets/decky-metadata-editor.png?cacheBuster=20260716)
 
 ## Steam Activity News
 
 For non-Steam shortcuts that can be matched to a Steam Store app, Decky Metadata fetches Steam news and announcements and feeds them into Steam Big Picture's normal Activity area.
 
-![Decky Metadata activity news](assets/decky-metadata-activity-news.png)
+![Decky Metadata activity news](assets/decky-metadata-activity-news.png?cacheBuster=20260716)
 
 ## Metadata Cache
 
