@@ -90,7 +90,7 @@ def test_qam_separator_contract_is_explicit() -> None:
         metadata,
     )
     refresh_delisted = re.search(
-        r'<ButtonItem[^>]*bottomSeparator="standard"[^>]*>[\s\S]*?Refresh delisted index[\s\S]*?</ButtonItem>',
+        r'<ButtonItem[^>]*bottomSeparator="standard"[^>]*>[\s\S]*?Refresh delisted games[\s\S]*?</ButtonItem>',
         delisted,
     )
 

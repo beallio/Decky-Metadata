@@ -7,6 +7,7 @@ import {
   rowStackStyle,
   sectionHeadingStyle,
 } from "../../styles";
+import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
 
 type MetadataSectionProps = {
@@ -37,7 +38,7 @@ export function MetadataSection({
       <PanelSectionRow>
         <Field
           focusable={true}
-          highlightOnFocus={true}
+          highlightOnFocus={false}
           preferredFocus={true}
           childrenLayout="below"
           padding="standard"
@@ -79,7 +80,7 @@ export function MetadataSection({
         <Field
           focusable={false}
           childrenLayout="below"
-          padding="standard"
+          padding="none"
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
@@ -108,10 +109,10 @@ export function MetadataSection({
         <Field
           focusable={false}
           childrenLayout="below"
-          padding="standard"
+          padding="none"
           bottomSeparator="standard"
         >
-          <div style={compactTextStyle}>
+          <div style={{ ...compactTextStyle, paddingBottom: space.md }}>
             Clear saved matches and metadata so games can be matched again.
           </div>
         </Field>

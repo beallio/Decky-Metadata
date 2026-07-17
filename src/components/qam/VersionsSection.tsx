@@ -1,6 +1,6 @@
 import { Field, PanelSection, PanelSectionRow } from "@decky/ui";
 
-import { rowStackStyle } from "../../styles";
+import { compactTextStyle } from "../../styles";
 
 type VersionsSectionProps = {
   pluginVersion: string;
@@ -23,7 +23,7 @@ export function VersionsSection({
           padding="standard"
           bottomSeparator="none"
         >
-          <div style={rowStackStyle}>
+          <div style={compactTextStyle}>
             <div>Decky Metadata: {pluginVersion.trim() || "Unknown"}</div>
             <div>Decky: {deckyVersion.trim() || "Unknown"}</div>
             <div>SteamOS: {steamosVersion.trim() || "Unknown"}</div>

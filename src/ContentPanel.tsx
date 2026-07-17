@@ -67,6 +67,18 @@ const takePreferredPanelFocus = (element: HTMLDivElement): boolean => {
   return false;
 };
 
+const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
+  let node: HTMLElement | null = element.parentElement;
+  while (node) {
+    const style = window.getComputedStyle(node);
+    if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
+};
+
 const scanCompleteMessage = (progress: {
   total?: number;
   assigned?: number;
@@ -92,11 +104,13 @@ const scanCompleteStatusKind = (progress: {
   return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
-const epochToDate = (value?: number | null) => {
+const epochToUsDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${mm}-${dd}-${date.getUTCFullYear()}`;
 };
 
 export const Content = () => {
@@ -129,6 +143,16 @@ export const Content = () => {
       focusFrame.current = window.requestAnimationFrame(() => {
         focusFrame.current = null;
         takePreferredPanelFocus(element);
+        // Taking focus scrolls the summary up, hiding the panel's "Metadata"
+        // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
+        // summary is the first row, so snap the viewport back to the top on
+        // entry to keep the title visible.
+        const viewport = findScrollViewport(element);
+        if (viewport) {
+          window.requestAnimationFrame(() => {
+            viewport.scrollTop = 0;
+          });
+        }
       });
     }
   }, []);
@@ -284,11 +308,11 @@ export const Content = () => {
       if (!result.ok) {
         throw new Error("Delisted index refresh failed");
       }
-      toastSuccess("Delisted index", "Delisted index updated");
+      toastSuccess("Delisted Steam games", "Delisted Steam games updated");
       await loadDelistedStatus();
     } catch (error) {
       log.warn("bridge", "delisted index refresh failed", error);
-      toastError("Delisted index", "Delisted index refresh failed");
+      toastError("Delisted Steam games", "Delisted Steam games refresh failed");
     } finally {
       setDelistedBusy(false);
     }
@@ -311,10 +335,14 @@ export const Content = () => {
     }
   };
 
-  const delistedStatusText =
+  const delistedCountText =
     delistedStatus?.count && delistedStatus.fetched_at
-      ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
-      : "Delisted index not downloaded yet";
+      ? `Delisted games: ${delistedStatus.count.toLocaleString("en-US")}`
+      : "Delisted Steam games not downloaded yet";
+  const delistedDateText =
+    delistedStatus?.count && delistedStatus.fetched_at
+      ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
+      : "";
 
   return (
     <Focusable
@@ -335,7 +363,8 @@ export const Content = () => {
         onClearCache={() => void clearCache()}
       />
       <DelistedIndexSection
-        statusText={delistedStatusText}
+        countText={delistedCountText}
+        dateText={delistedDateText}
         busy={delistedBusy}
         onRefresh={() => void refreshDelisted()}
       />

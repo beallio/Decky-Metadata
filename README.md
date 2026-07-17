@@ -75,8 +75,8 @@ The Quick Access Menu is organized into four native panels:
   `Refresh metadata` finds and saves matches for detected non-Steam games. Its
   nested **Metadata cache** subsection provides `Clear cache` so saved matches
   can be matched again.
-- **Delisted Index** shows the cached count and update date, with
-  `Refresh delisted index` to download or update the cached index.
+- **Delisted Steam games** shows the cached count and update date, with
+  `Refresh delisted games` to download or update the cached index.
 - **Logs** provides `View Logs` for the recent bounded plugin log and the Debug
   Logging toggle.
 - **Versions** shows the full `Decky Metadata: <version>` row (including the
