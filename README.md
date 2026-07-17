@@ -1,8 +1,8 @@
 # Decky Metadata
 
-[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
-[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata?cacheBuster=20260717)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata?cacheBuster=20260717)](https://github.com/beallio/Decky-Metadata/releases/latest)
+[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg?cacheBuster=20260717)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
 
 <!-- Badges may require GitHub authentication while this repository is private. -->
 
@@ -40,7 +40,7 @@ The buttons at the bottom also point to useful pages for the matched Steam game.
 
 ## Browse Steam Community content
 
-Matched shortcuts can show content from the Steam game's Community page. If Steam's usual page is empty, Decky Metadata looks for fresh Community posts and can fall back to current YouTube videos and IGN screenshots when Steam has no cards to show.
+Matched shortcuts can show content from the Steam game's Community page. If Steam's usual page is empty, Decky Metadata looks for fresh Community posts, and can fall back to IGN screenshots when Steam has no cards to show.
 
 ![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
 
