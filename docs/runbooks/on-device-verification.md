@@ -16,10 +16,10 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | Tool | Purpose |
 | --- | --- |
 | `tunnel.sh up\|down\|status` | SSH tunnel `localhost:18081` → deck debugger |
-| `cdp.py list\|eval\|reload\|wait-ready` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets |
+| `cdp.py list\|eval\|reload\|wait-ready\|input` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets; `input [<target>] <key>…` dispatches synthetic D-pad/`enter`/`escape` key events (default target Big Picture) to drive gamepad focus without a physical controller |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
 | `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
-| `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate` |
+| `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate`; focus probes `gpfocus_dump` (read-only "what is selected now") and `focus_order` (active focusable inventory with rects) |
 | `verify/run_all.sh [--no-launch] [--extended]` | the suite using a persisted semantic fixture manifest; extended adds bounded idle sampling |
 
 Prefer `scripts/decky verify-change BASE --device` for change-aware routing. The
@@ -59,6 +59,41 @@ scripts/deck/verify/run_all.sh    # verify (really launches a game briefly)
 A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
+
+## Controller navigation & initial focus
+
+QAM/panel and editor changes have a hard gate the static tests cannot prove:
+the intended control is selected on a fresh entry, and D-pad order matches the
+visual order. The `reorganize-qam-panels` `preferredFocus` → `BTakeFocus` fix
+lived and died here. Drive it deterministically with the committed tooling
+instead of hand-rolling a key-dispatch script each time:
+
+```bash
+scripts/deck/deploy.sh                                   # push the change, hard reload
+# open the plugin fresh (physical controller or js/nav.js), then:
+T="Steam Big Picture Mode"
+scripts/deck/cdp.py eval "$T" @scripts/deck/js/gpfocus_dump.js   # is the intended control selected on entry?
+scripts/deck/cdp.py input "$T" down                              # one D-pad step
+scripts/deck/cdp.py eval "$T" @scripts/deck/js/gpfocus_dump.js   # did focus move to the next control?
+# repeat down/dump to walk the whole panel in order; `enter` activates; `escape` (B) backs out of a modal
+scripts/deck/cdp.py input "$T" enter                             # activate the focused control
+scripts/deck/cdp.py input "$T" escape                            # dismiss a modal / back out
+```
+
+- `gpfocus_dump.js` is the **order oracle**: dispatching a real `down` and
+  re-reading `gpfocus` reflects Steam's actual gamepad nav tree. Confirm initial
+  focus by dumping immediately after entry, before any input.
+- `focus_order.js` is a **static inventory** (labels + rects + scroll margins of
+  every focusable in a subtree). Use it to catch clipped/overlapping/off-screen
+  controls and to audit labels — not to assert nav order (DOM order ≠ gamepad
+  order).
+- For modal focus return, open the modal, `escape` it, then `gpfocus_dump.js`
+  and confirm focus landed back on the launching control rather than being
+  trapped in the (now closed) modal.
+
+`preferredFocus` is only a hint; when it does not select on-device, use a native
+mechanism (match the wrapper in `getGamepadNavigationTrees()` and call
+`BTakeFocus()`), never a timer-driven raw DOM `.focus()`.
 
 ## Debugging beyond the suite
 
