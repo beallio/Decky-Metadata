@@ -22,7 +22,7 @@ def _readme_asset_paths() -> list[Path]:
 def test_readme_images_are_committed_assets():
     paths = _readme_asset_paths()
 
-    assert len(paths) == 5
+    assert len(paths) == 7
     for relative_path in paths:
         assert relative_path.parts[0] == "assets"
         assert (ROOT / relative_path).is_file()
