@@ -107,6 +107,7 @@ const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
 const getPluginVersion = callable("get_plugin_version");
+const getPluginLogs = callable("get_plugin_logs");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
 
@@ -126,6 +127,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
     getMissingMetadataCount: getMissingMetadataCount,
+    getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
     refreshDelistedIndex: refreshDelistedIndex,
@@ -137,6 +139,138 @@ var backend = /*#__PURE__*/Object.freeze({
     startRefreshSteamActivities: startRefreshSteamActivities,
     startScanMissing: startScanMissing
 });
+
+// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+const colors = {
+    accent: "#1a9fff",
+    success: "#4ade80",
+    warning: "#f59e0b",
+    error: "#f87171",
+    textSecondary: "#cbd5e1"};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16,
+    xl: 20,
+};
+const fontWeight = {
+    bold: 700};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
+
+const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
+const pageStyle = {
+    padding: 24,
+    paddingTop: 48,
+    paddingBottom: 120,
+    minHeight: "100vh",
+    boxSizing: "border-box",
+    fontFamily,
+};
+const pageTitleStyle = {
+    width: "100%",
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    paddingBottom: space.md,
+    outline: "none",
+    // Keep the title clear of the SteamOS top bar when the controller scrolls to it.
+    scrollMarginTop: 90,
+};
+const qamPanelStyle = {
+    width: "100%",
+    fontFamily,
+};
+const rowStackStyle = {
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    gap: space.md,
+};
+const fieldStyle = {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+};
+const compactTextStyle = {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    lineHeight: 1.35,
+};
+const inlineStatusBaseStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    ...compactTextStyle,
+};
+const inlineStatusStyle = (kind) => ({
+    ...inlineStatusBaseStyle,
+    color: statusColor(kind),
+});
+const busySpinnerStyle = {
+    width: "18px",
+    height: "18px",
+    color: colors.accent,
+};
+const buttonLabelStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    minWidth: 136,
+};
+const sectionHeadingStyle = {
+    width: "100%",
+    paddingTop: space.md,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.lg,
+};
+const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
+const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
+
+function DelistedIndexSection({ statusText, busy, onRefresh, }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Delisted Index", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: statusText }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "standard", disabled: busy, onClick: onRefresh, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh delisted index") }) })] }));
+}
+
+function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Logs", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+}
+
+function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, onRefreshMetadata, onClearCache, }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear saved matches and metadata so games can be matched again." }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "standard", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) })] }));
+}
+
+function PluginLogModal({ logs, closeModal }) {
+    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: "Plugin Logs", strOKButtonText: "OK", onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx("div", { style: {
+                maxHeight: "60vh",
+                overflowY: "auto",
+                fontFamily: "monospace",
+                fontSize: "12px",
+                whiteSpace: "pre-wrap",
+                overflowWrap: "anywhere",
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                padding: "10px",
+                borderRadius: "4px",
+                userSelect: "text",
+            }, children: logs || "No recent logs" }) }));
+}
+
+function VersionsSection({ pluginVersion }) {
+    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }) }) }) }));
+}
 
 let verbose = false;
 const setVerboseLogging = (enabled) => {
@@ -1282,37 +1416,6 @@ const allNonSteamGames = async () => {
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
-
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
-const colors = {
-    accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    xxs: 2,
-    xs: 4,
-    sm: 8,
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16,
-    xl: 20,
-};
-const fontWeight = {
-    bold: 700};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
 
 const TITLE = "Decky Metadata";
 const DURATION = 3000;
@@ -2892,19 +2995,6 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
     catch (error) {
         warn("patch", "window history redirect patch skipped", error);
     }
-};
-const installActivityRefreshedListener = (unpatchers) => {
-    const activityRefreshedListener = () => {
-        deckyNativeActivityCache().clear();
-        deckyNativePartnerEventCache().clear();
-        const appId = currentGameDetailAppId();
-        void ensureMetadataCacheFn().then(() => {
-            if (appId)
-                void refreshDeckyNativeActivityForApp(appId);
-        });
-    };
-    window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
-    unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
 };
 const installCommunityFeedPatch = (unpatchers) => {
     try {
@@ -5013,7 +5103,6 @@ const installSteamPatches = () => {
         // Activity news use Steam's own AppActivityStore and native Activity renderer.
         safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
         safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
-        installActivityRefreshedListener(unpatchers);
         safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
         safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
         void getDebugLogging()
@@ -5103,123 +5192,6 @@ const installSteamPatches = () => {
     };
 };
 
-const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
-const pageStyle = {
-    padding: 24,
-    paddingTop: 48,
-    paddingBottom: 120,
-    minHeight: "100vh",
-    boxSizing: "border-box",
-    fontFamily,
-};
-const pageTitleStyle = {
-    width: "100%",
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    paddingBottom: space.md,
-    outline: "none",
-    // Keep the title clear of the SteamOS top bar when the controller scrolls to it.
-    scrollMarginTop: 90,
-};
-const qamPanelStyle = {
-    width: "100%",
-    fontFamily,
-};
-const rowStackStyle = {
-    display: "flex",
-    flexDirection: "column",
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-    gap: space.md,
-};
-const buttonRowStyle = {
-    display: "flex",
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-    gap: space.sm,
-    alignItems: "center",
-    flexWrap: "wrap",
-};
-const spacedButtonRowStyle = {
-    ...buttonRowStyle,
-    marginTop: space.sm,
-};
-const actionButtonStackStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: space.sm,
-    flex: "1 1 208px",
-    minWidth: 0,
-};
-const fieldStyle = {
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-};
-const compactTextStyle = {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    lineHeight: 1.35,
-};
-const inlineStatusBaseStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    ...compactTextStyle,
-};
-const inlineStatusStyle = (kind) => ({
-    ...inlineStatusBaseStyle,
-    color: statusColor(kind),
-});
-const busySpinnerStyle = {
-    width: "18px",
-    height: "18px",
-    color: colors.accent,
-};
-const buttonLabelStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "10px",
-    minWidth: 136,
-};
-const sectionHeadingStyle = {
-    width: "100%",
-    paddingTop: space.md,
-    fontWeight: fontWeight.bold,
-    fontSize: fontSize.lg,
-};
-const diagnosticsGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr)",
-    gap: space.md,
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-};
-const diagnosticsRowStyle = {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr)",
-    gap: space.xs,
-    alignItems: "start",
-    padding: `${space.xxs}px 0`,
-    ...compactTextStyle,
-};
-const diagnosticsValueStyle = {
-    minWidth: 0,
-    overflowWrap: "anywhere",
-    color: colors.textSecondary,
-};
-const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
-const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
-
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState([]);
     const loadGames = SP_REACT.useCallback(async () => {
@@ -5235,37 +5207,44 @@ const useNonSteamGames = () => {
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
-const splitVersion = (version) => {
-    const trimmed = String(version || "").trim();
-    const separator = trimmed.indexOf("+");
-    if (separator < 0) {
-        return { base: trimmed, commit: null };
+const takePreferredPanelFocus = (element) => {
+    try {
+        const trees = (DFL.getGamepadNavigationTrees() || []);
+        for (const tree of trees) {
+            const pending = tree.Root ? [tree.Root] : [];
+            while (pending.length) {
+                const node = pending.pop();
+                if (!node)
+                    continue;
+                if (node.Element === element && typeof node.BTakeFocus === "function") {
+                    return Boolean(node.BTakeFocus());
+                }
+                if (Array.isArray(node.m_rgChildren)) {
+                    pending.push(...node.m_rgChildren);
+                }
+            }
+        }
     }
-    const base = trimmed.slice(0, separator).trim();
-    const commit = trimmed.slice(separator + 1).trim();
-    return { base, commit: commit || null };
+    catch (error) {
+        warn("qam", "preferred metadata focus unavailable", error);
+    }
+    return false;
 };
 const scanCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
     if (!total)
-        return "Scan complete";
+        return "Refresh complete";
     const assigned = Number(progress.assigned || 0);
     const failed = Number(progress.failed || 0);
     return failed
-        ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
-        : `Scan complete: ${assigned}/${total} saved`;
+        ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
+        : `Refresh complete: ${assigned}/${total} saved`;
 };
 const scanCompleteStatusKind = (progress) => {
     const total = Number(progress.total || 0);
     const assigned = Number(progress.assigned || 0);
     const failed = Number(progress.failed || 0);
     return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
-const activityCompleteMessage = (progress) => {
-    const total = Number(progress.total || 0);
-    if (!total)
-        return "Activity refresh complete";
-    return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
 };
 const epochToDate$1 = (value) => {
     if (!value)
@@ -5276,21 +5255,32 @@ const epochToDate$1 = (value) => {
     return date.toISOString().slice(0, 10);
 };
 const Content = () => {
+    const focusFrame = SP_REACT.useRef(null);
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [missing, setMissing] = SP_REACT.useState(0);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
     const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
-    const [activityBusy, setActivityBusy] = SP_REACT.useState(false);
-    const [activityMessage, setActivityMessage] = SP_REACT.useState("");
-    const [activityStatusKind, setActivityStatusKind] = SP_REACT.useState("idle");
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
+    const [logsBusy, setLogsBusy] = SP_REACT.useState(false);
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
+    const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
     const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
-    const parsedPluginVersion = splitVersion(pluginVersion);
+    const focusPanel = SP_REACT.useCallback((element) => {
+        if (focusFrame.current !== null) {
+            window.cancelAnimationFrame(focusFrame.current);
+            focusFrame.current = null;
+        }
+        if (element) {
+            focusFrame.current = window.requestAnimationFrame(() => {
+                focusFrame.current = null;
+                takePreferredPanelFocus(element);
+            });
+        }
+    }, []);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
             .then(setMissing)
@@ -5344,6 +5334,9 @@ const Content = () => {
         };
     }, []);
     const saveDebugLogging = async (enabled) => {
+        if (debugLoggingBusy)
+            return;
+        setDebugLoggingBusy(true);
         setDebugLoggingState(enabled);
         setVerboseLogging(enabled);
         try {
@@ -5354,6 +5347,9 @@ const Content = () => {
         }
         catch (error) {
             warn("bridge", "debug logging setting update failed", error);
+        }
+        finally {
+            setDebugLoggingBusy(false);
         }
     };
     const scanMissing = async () => {
@@ -5376,7 +5372,7 @@ const Content = () => {
                     setBusy(false);
                     setScanStatusKind(scanCompleteStatusKind(progress));
                     setScanMessage(scanCompleteMessage(progress));
-                    toastSuccess("Scan", "Scan complete");
+                    toastSuccess("Metadata", "Refresh complete");
                 }
             }, 800);
         }
@@ -5384,42 +5380,7 @@ const Content = () => {
             setBusy(false);
             setScanStatusKind("error");
             setScanMessage(String(error));
-            toastError("Scan failed", String(error));
-        }
-    };
-    const refreshActivities = async () => {
-        if (activityBusy)
-            return;
-        setActivityBusy(true);
-        setActivityStatusKind("active");
-        setActivityMessage("Refreshing Activity...");
-        try {
-            await startRefreshSteamActivities(games);
-            const interval = window.setInterval(async () => {
-                const progress = await getActivityRefreshProgress();
-                setActivityStatusKind("active");
-                setActivityMessage(progress.current ||
-                    progress.message ||
-                    `${progress.completed}/${progress.total}`);
-                if (!progress.running) {
-                    window.clearInterval(interval);
-                    await refreshMetadataCache();
-                    setMetadataCount(Object.keys(metadataCache).length);
-                    updateMissingCount(games);
-                    setActivityBusy(false);
-                    setActivityStatusKind("success");
-                    setActivityMessage(activityCompleteMessage(progress));
-                    window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
-                    window.dispatchEvent(new Event("decky-metadata:updated"));
-                    toastSuccess("Activity", activityCompleteMessage(progress));
-                }
-            }, 800);
-        }
-        catch (error) {
-            setActivityBusy(false);
-            setActivityStatusKind("error");
-            setActivityMessage(String(error));
-            toastError("Activity failed", String(error));
+            toastError("Metadata refresh failed", String(error));
         }
     };
     const clearCache = async () => {
@@ -5465,10 +5426,27 @@ const Content = () => {
             setDelistedBusy(false);
         }
     };
+    const viewLogs = async () => {
+        if (logsBusy)
+            return;
+        setLogsBusy(true);
+        try {
+            const logs = await getPluginLogs();
+            let modal;
+            modal = DFL.showModal(SP_JSX.jsx(PluginLogModal, { logs: logs, closeModal: () => modal?.Close() }));
+        }
+        catch (error) {
+            warn("bridge", "plugin log load failed", error);
+            toastError("Logs", "Plugin logs could not be loaded");
+        }
+        finally {
+            setLogsBusy(false);
+        }
+    };
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate$1(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs("div", { style: qamPanelStyle, children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", games.length] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", metadataCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missing] })] }) }) }) }), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Refresh Activity re-fetches the Steam Activity feed for games that already have metadata. It does not find new matches or update store details — use Scan metadata for that." }), SP_JSX.jsxs("div", { style: spacedButtonRowStyle, children: [SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: busy || !games.length, onClick: scanMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Scanning..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Scan metadata" })) }), busy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Scanning..." })) : null] }), SP_JSX.jsxs("div", { style: actionButtonStackStyle, children: [SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: activityBusy || busy || !games.length, onClick: refreshActivities, children: activityBusy ? "Refreshing Activity..." : "Refresh Activity" }), activityBusy || activityMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(activityStatusKind), children: activityMessage || "Refreshing Activity..." })) : null] })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear cached Steam matches and metadata so games re-fetch and re-match." }), SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: SP_JSX.jsx("span", { children: delistedStatusText }) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: delistedBusy, onClick: refreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : (SP_JSX.jsx(ButtonLabel, { children: "Refresh delisted index" })) }), SP_JSX.jsx(FocusableButton, { className: "DialogButton", disabled: cacheBusy || busy, onClick: clearCache, children: "Clear cache" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, label: "Debug Logging", checked: debugLogging, onChange: (checked) => void saveDebugLogging(checked) }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: diagnosticsGridStyle, children: [SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Plugin" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: parsedPluginVersion.base })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Commit" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: parsedPluginVersion.commit || "local" })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Delisted index" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: delistedStatusText })] }), SP_JSX.jsxs("div", { style: diagnosticsRowStyle, children: [SP_JSX.jsx("span", { children: "Metadata" }), SP_JSX.jsx("span", { style: diagnosticsValueStyle, children: metadataCount })] })] }) }) }) })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { statusText: delistedStatusText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion })] }));
 };
 
 var StoreCategory;

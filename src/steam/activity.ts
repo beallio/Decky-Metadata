@@ -1205,19 +1205,6 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
   }
 };
 
-export const installActivityRefreshedListener = (unpatchers: Unpatch[]) => {
-  const activityRefreshedListener = () => {
-    deckyNativeActivityCache().clear();
-    deckyNativePartnerEventCache().clear();
-    const appId = currentGameDetailAppId();
-    void ensureMetadataCacheFn().then(() => {
-      if (appId) void refreshDeckyNativeActivityForApp(appId);
-    });
-  };
-  window.addEventListener("decky-metadata:activity-refreshed", activityRefreshedListener);
-  unpatchers.push(() => window.removeEventListener("decky-metadata:activity-refreshed", activityRefreshedListener));
-};
-
 export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
   try {
     const httpClient = findModuleChild((module: any) => {
