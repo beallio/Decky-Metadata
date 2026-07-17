@@ -1,4 +1,4 @@
-const manifest = {"name":"Decky-Metadata"};
+const manifest = {"name":"Decky Metadata"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 if (!internalAPIConnection) {
@@ -284,7 +284,9 @@ function PluginLogModal({ logs, closeModal }) {
             }, children: logs || "No recent logs" }) }));
 }
 
-const EXPECTED_PLUGIN_NAME = "Decky-Metadata";
+// Must equal plugin.json "name" (Decky's find_plugin_folder identity). Space,
+// not hyphen — asset filenames stay hyphenated, this is the plugin identity.
+const EXPECTED_PLUGIN_NAME = "Decky Metadata";
 const INSTALL_TYPE_UPDATE = 2;
 const INSTALL_TYPE_DOWNGRADE = 3;
 function isDeckyInstallerAvailable() {
@@ -6740,8 +6742,9 @@ var index = DFL.definePlugin(() => {
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
-        // find_plugin_folder resolves this install for in-place self-update).
-        name: "Decky-Metadata",
+        // find_plugin_folder resolves this install for in-place self-update, and
+        // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
+        name: "Decky Metadata",
         // Display label shown in the QAM header; kept human-readable on purpose.
         titleView: SP_JSX.jsx("div", { className: DFL.staticClasses.Title, children: "Decky Metadata" }),
         content: SP_JSX.jsx(Content, {}),

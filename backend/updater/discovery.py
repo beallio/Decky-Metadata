@@ -89,7 +89,9 @@ def validate_prevalidated_candidate(
     if manifest is None:
         return None
 
-    if manifest.plugin_name != "Decky-Metadata":
+    # Plugin identity (Decky's find_plugin_folder key) — space, not hyphen.
+    # The manifest *asset* filename stays hyphenated (expected_manifest_name).
+    if manifest.plugin_name != "Decky Metadata":
         return None
     if manifest.package_name != "decky-metadata":
         return None
