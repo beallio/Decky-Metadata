@@ -119,5 +119,5 @@ jobs:
             "Decky-Metadata-v$DEV_VERSION.manifest.json" \
             --prerelease \
             --target "$FULL_SHA" \
-            --title "Decky Metadata v$DEV_VERSION (Dev)" \
+            --title "v$DEV_VERSION (Dev)" \
             --notes "Automated development pre-release built from commit $FULL_SHA."
