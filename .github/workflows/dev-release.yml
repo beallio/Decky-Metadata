@@ -1,0 +1,123 @@
+# Manual development pre-release for the self-updater's "development" channel.
+#
+# Each run publishes a distinct semver prerelease tagged vX.Y.Z-dev.g<sha> with a
+# release manifest + checksum, so the in-plugin updater can discover and install
+# it. This is separate from the rolling `dev` prerelease (release.yml), which
+# stays a fixed-tag build for the on-device sideload loop and is NOT an updater
+# source (its tag is not semver, so discovery skips it).
+name: Dev Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit hash or ref to build (defaults to the current SHA)"
+        required: false
+        type: string
+
+concurrency:
+  group: dev-release-manual
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  dev-release:
+    name: Build and Publish Dev Prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate commit input
+        shell: bash
+        env:
+          INPUT_COMMIT: ${{ github.event.inputs.commit }}
+        run: |
+          set -euo pipefail
+          commit_ref="$INPUT_COMMIT"
+          if [ -z "$commit_ref" ]; then
+            commit_ref="${{ github.sha }}"
+          fi
+          if [[ ! "$commit_ref" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
+            echo "Commit ref contains invalid characters." >&2
+            exit 1
+          fi
+          echo "COMMIT_REF=$commit_ref" >> "$GITHUB_ENV"
+
+      - name: Check out triggering revision and tags
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_REF }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve dev version
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags origin
+          base="$(node -p "require('./package.json').version")"
+          plugin_base="$(node -p "require('./plugin.json').version")"
+          if [[ "$plugin_base" != "$base" ]]; then
+            echo "plugin.json version $plugin_base does not match package.json version $base" >&2
+            exit 1
+          fi
+          # The base must be ahead of the highest released stable tag so the dev
+          # build sorts above the last stable in the updater's version compare.
+          if ! python3 scripts/version_guard.py check-base "$base"; then
+            exit 1
+          fi
+          full_sha="$(git rev-parse HEAD)"
+          short_sha="$(git rev-parse --short HEAD)"
+          dev_version="${base}-dev.g${short_sha}"
+          if git rev-parse "v${dev_version}" >/dev/null 2>&1; then
+            echo "Tag v${dev_version} already exists." >&2
+            exit 1
+          fi
+          echo "FULL_SHA=$full_sha" >> "$GITHUB_ENV"
+          echo "DEV_VERSION=$dev_version" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Package dev prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/package.mjs --release \
+            --release-version "$DEV_VERSION" \
+            --release-tag "v$DEV_VERSION" \
+            --channel dev \
+            --emit-release-metadata
+          sha256sum -c "Decky-Metadata-v$DEV_VERSION.zip.sha256"
+
+      - name: Create and push dev tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$DEV_VERSION" "$FULL_SHA"
+          git push origin "v$DEV_VERSION"
+
+      - name: Publish dev prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "v$DEV_VERSION" \
+            Decky-Metadata.zip \
+            "Decky-Metadata-v$DEV_VERSION.zip.sha256" \
+            "Decky-Metadata-v$DEV_VERSION.manifest.json" \
+            --prerelease \
+            --target "$FULL_SHA" \
+            --title "v$DEV_VERSION (Dev)" \
+            --notes "Automated development pre-release built from commit $FULL_SHA."

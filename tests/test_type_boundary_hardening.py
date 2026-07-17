@@ -110,9 +110,11 @@ def test_load_save_round_trip_byte_stable(tmp_path):
                 "steam_news": [],
                 "steam_news_enriched_at": 0,
             }
-        },
-        "settings": {"debug_logging": False},
-    }
+            },
+            "settings": {"debug_logging": False},
+            "update_settings": {},
+            "update_check_cache": {},
+        }
     data_file = tmp_path / "decky_metadata.json"
     data_file.write_text(json.dumps(sample, ensure_ascii=False, indent=2), encoding="utf-8")
     original_text = data_file.read_text(encoding="utf-8")

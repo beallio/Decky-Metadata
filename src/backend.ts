@@ -4,7 +4,15 @@ import {
   CommunityFallbackPage,
   MetadataData,
   MetadataSearchResult,
+  PluginUpdateCandidate,
+  RevalidateResult,
   ScanProgress,
+  UpdateChannel,
+  UpdateCheckContext,
+  UpdateCheckResult,
+  UpdateInstallRequest,
+  UpdateRpcResult,
+  UpdateSettings,
 } from "./types";
 
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
@@ -97,3 +105,38 @@ export const getDebugLogging = callable<[], boolean>("get_debug_logging");
 export const setDebugLogging = callable<[enabled: boolean], boolean>(
   "set_debug_logging"
 );
+export const checkForPluginUpdate = callable<
+  [currentVersion: string, force: boolean],
+  UpdateCheckResult
+>("check_for_plugin_update");
+export const revalidatePluginUpdate = callable<
+  [candidate: PluginUpdateCandidate],
+  UpdateRpcResult<RevalidateResult>
+>("revalidate_plugin_update");
+export const recordUpdateInstallRequested = callable<
+  [candidate: UpdateInstallRequest],
+  UpdateRpcResult<UpdateCheckContext>
+>("record_update_install_requested");
+export const confirmUpdateInstallHandoff = callable<
+  [version: string],
+  UpdateRpcResult<UpdateCheckContext>
+>("confirm_update_install_handoff");
+export const clearPendingUpdateInstall = callable<
+  [version: string | null],
+  UpdateRpcResult<UpdateCheckContext>
+>("clear_pending_update_install");
+export const getUpdateCheckContext = callable<
+  [],
+  UpdateRpcResult<UpdateCheckContext>
+>("get_update_check_context");
+export const getUpdateSettings = callable<[], UpdateRpcResult<UpdateSettings>>(
+  "get_update_settings"
+);
+export const setUpdateChannel = callable<
+  [channel: UpdateChannel],
+  UpdateRpcResult<UpdateSettings>
+>("set_update_channel");
+export const setAutomaticUpdateChecks = callable<
+  [enabled: boolean],
+  UpdateRpcResult<UpdateSettings>
+>("set_automatic_update_checks");

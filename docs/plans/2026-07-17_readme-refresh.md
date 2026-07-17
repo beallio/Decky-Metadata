@@ -20,7 +20,7 @@ Maintainer-requested changes:
      (leave only the Releases install path — zip download *or* install-by-URL).
    - Remove the **Notes** section.
    - Delete `CONTRIBUTING.md`.
-   - Remove the "maintained by David Beall" wording from the credits (keep the
+   - Remove the "maintained by beallio" wording from the credits (keep the
      upstream attributions to Playhub Metadata, the Decky Plugin Template, and
      decky-steamgriddb — those are license/credit obligations and must stay).
    - Delete the community-health templates `.github/pull_request_template.md` and
@@ -207,7 +207,7 @@ complete.
    - Rewrite `README.md` in a warm, plain-language, skimmable style per Context
      item 1. Keep every claim accurate to the plugin's actual behavior; simplify
      wording rather than inventing features. Preserve the badges block and the
-     License & Credits attributions (minus the "maintained by David Beall"
+     License & Credits attributions (minus the "maintained by beallio"
      phrasing).
    - Structure: title + badges + a friendly one-paragraph intro; then the **QAM
      hero image** near the top; a short **Install** section (download the
@@ -310,7 +310,7 @@ The round is not complete unless:
 
 3. Static/content checks (no Deck):
    - README reads as approachable, plain-language copy; no Build-from-source
-     subsection and no Notes section remain; no "maintained by David Beall".
+     subsection and no Notes section remain; no "maintained by beallio".
    - `CONTRIBUTING.md`, `.github/pull_request_template.md`, and
      `.github/ISSUE_TEMPLATE/` are gone; `.github/workflows/ci.yml` and
      `release.yml` remain.

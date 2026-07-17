@@ -2,14 +2,14 @@
 
 ## Task objective
 
-Reattribute Decky Metadata fork ownership to David Beall and remove stale
+Reattribute Decky Metadata fork ownership to beallio and remove stale
 Playhub/Windows-packaging references from the in-scope docs, manifests, and
 tooling.
 
 ## Files modified
 
-- `plugin.json`: changed the plugin author to David Beall.
-- `package.json`: changed the package author to David Beall and removed the
+- `plugin.json`: changed the plugin author to beallio.
+- `package.json`: changed the package author to beallio and removed the
   `package:win` script.
 - `NOTICE`: renamed the project reference to Decky Metadata and added the fork
   acknowledgment for Playhub Metadata, ZazaMastro, and upstream contributors.
@@ -39,7 +39,7 @@ tooling.
 ## Validation results
 
 - `plugin.json` and `package.json` parse as valid JSON and report
-  `author: David Beall`.
+  `author: beallio`.
 - `package-win.ps1` is deleted, and `package.json` no longer contains
   `package:win` or `package-win`.
 - No `Windows` references remain in `README.md`, `AGENTS.md`, or
