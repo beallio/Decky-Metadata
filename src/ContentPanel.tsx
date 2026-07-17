@@ -15,21 +15,32 @@ import {
   getPluginVersion,
   getScanProgress,
   getSystemVersions,
+  getUpdateSettings,
   refreshDelistedIndex,
+  setAutomaticUpdateChecks,
   setDebugLogging,
+  setUpdateChannel,
   startScanMissing,
 } from "./backend";
 import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
+import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
 import { metadataCache, refreshMetadataCache } from "./steam";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
-import { GameOption } from "./types";
+import {
+  GameOption,
+  UpdateChannel,
+} from "./types";
+import {
+  resolveLoadedUpdateSettings,
+  resolveSavedUpdateSettings,
+} from "./updater/updateSettings";
 import { useNonSteamGames } from "./useNonSteamGames";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
@@ -133,6 +144,10 @@ export const Content = () => {
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
   const [deckyVersion, setDeckyVersion] = useState("");
   const [steamosVersion, setSteamosVersion] = useState("");
+  const [updateChannel, setUpdateChannelState] =
+    useState<UpdateChannel>("stable");
+  const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -202,6 +217,30 @@ export const Content = () => {
 
   useEffect(() => {
     let cancelled = false;
+    void getUpdateSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        const resolved = resolveLoadedUpdateSettings(settings);
+        setUpdateChannelState(resolved.update_channel);
+        setAutomaticUpdateChecksState(resolved.automatic_update_checks);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setUpdateChannelState("stable");
+          setAutomaticUpdateChecksState(true);
+          log.warn("bridge", "update settings load failed", error);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSettingsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     void getSystemVersions()
       .then((versions) => {
         if (!cancelled) {
@@ -244,6 +283,60 @@ export const Content = () => {
       log.warn("bridge", "debug logging setting update failed", error);
     } finally {
       setDebugLoggingBusy(false);
+    }
+  };
+
+  const saveUpdateChannel = async (enabled: boolean) => {
+    const previous = updateChannel;
+    const requested: UpdateChannel = enabled ? "development" : "stable";
+    setUpdateChannelState(requested);
+    try {
+      const saved = await setUpdateChannel(requested);
+      if ("status" in saved) {
+        const rolledBack = resolveSavedUpdateSettings(
+          {
+            update_channel: previous,
+            automatic_update_checks: automaticUpdateChecks,
+          },
+          saved
+        );
+        setUpdateChannelState(rolledBack.update_channel);
+        toastError("Updates", saved.message || "Update channel could not be saved");
+        return;
+      }
+      setUpdateChannelState(saved.update_channel);
+      setAutomaticUpdateChecksState(saved.automatic_update_checks);
+    } catch (error) {
+      setUpdateChannelState(previous);
+      log.warn("bridge", "update channel save failed", error);
+    }
+  };
+
+  const saveAutomaticUpdateChecks = async (enabled: boolean) => {
+    const previous = automaticUpdateChecks;
+    setAutomaticUpdateChecksState(enabled);
+    try {
+      const saved = await setAutomaticUpdateChecks(enabled);
+      if ("status" in saved) {
+        const rolledBack = resolveSavedUpdateSettings(
+          {
+            update_channel: updateChannel,
+            automatic_update_checks: previous,
+          },
+          saved
+        );
+        setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
+        toastError(
+          "Updates",
+          saved.message || "Automatic update setting could not be saved"
+        );
+        return;
+      }
+      setUpdateChannelState(saved.update_channel);
+      setAutomaticUpdateChecksState(saved.automatic_update_checks);
+    } catch (error) {
+      setAutomaticUpdateChecksState(previous);
+      log.warn("bridge", "automatic update setting save failed", error);
     }
   };
 
@@ -374,6 +467,17 @@ export const Content = () => {
         debugLoggingBusy={debugLoggingBusy}
         onViewLogs={() => void viewLogs()}
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
+      />
+      <PluginUpdateSection
+        currentVersion={pluginVersion}
+        updateChannel={updateChannel}
+        automaticUpdateChecks={automaticUpdateChecks}
+        settingsLoaded={settingsLoaded}
+        onToggleUpdateChannel={(enabled) => void saveUpdateChannel(enabled)}
+        onToggleAutomaticUpdateChecks={(enabled) =>
+          void saveAutomaticUpdateChecks(enabled)
+        }
+        onInstallVersionConfirmed={setPluginVersion}
       />
       <VersionsSection
         pluginVersion={pluginVersion}

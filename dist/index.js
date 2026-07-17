@@ -107,12 +107,24 @@ const getSystemVersions = callable("get_system_versions");
 const getPluginLogs = callable("get_plugin_logs");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
+const checkForPluginUpdate = callable("check_for_plugin_update");
+const revalidatePluginUpdate = callable("revalidate_plugin_update");
+const recordUpdateInstallRequested = callable("record_update_install_requested");
+const confirmUpdateInstallHandoff = callable("confirm_update_install_handoff");
+const clearPendingUpdateInstall = callable("clear_pending_update_install");
+const getUpdateCheckContext = callable("get_update_check_context");
+const getUpdateSettings = callable("get_update_settings");
+const setUpdateChannel = callable("set_update_channel");
+const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
 
 var backend = /*#__PURE__*/Object.freeze({
     __proto__: null,
     applyFetchedMetadata: applyFetchedMetadata,
     autoFetchMetadata: autoFetchMetadata,
+    checkForPluginUpdate: checkForPluginUpdate,
     clearMetadataCache: clearMetadataCache,
+    clearPendingUpdateInstall: clearPendingUpdateInstall,
+    confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
     enrichSteamApp: enrichSteamApp,
     fetchMetadata: fetchMetadata,
     frontendLog: frontendLog,
@@ -128,12 +140,18 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
     getSystemVersions: getSystemVersions,
+    getUpdateCheckContext: getUpdateCheckContext,
+    getUpdateSettings: getUpdateSettings,
+    recordUpdateInstallRequested: recordUpdateInstallRequested,
     refreshDelistedIndex: refreshDelistedIndex,
     refreshSteamActivityForApp: refreshSteamActivityForApp,
     removeMetadata: removeMetadata,
+    revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
     searchMetadata: searchMetadata,
+    setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setDebugLogging: setDebugLogging,
+    setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
     startScanMissing: startScanMissing
 });
@@ -264,6 +282,670 @@ function PluginLogModal({ logs, closeModal }) {
                 borderRadius: "4px",
                 userSelect: "text",
             }, children: logs || "No recent logs" }) }));
+}
+
+const EXPECTED_PLUGIN_NAME = "Decky-Metadata";
+const INSTALL_TYPE_UPDATE = 2;
+const INSTALL_TYPE_DOWNGRADE = 3;
+function isDeckyInstallerAvailable() {
+    return (typeof window !== "undefined" &&
+        typeof window.DeckyBackend === "object" &&
+        window.DeckyBackend !== null &&
+        (typeof window.DeckyBackend.callable === "function" ||
+            typeof window.DeckyBackend.call === "function"));
+}
+async function invokeDeckyInstaller(url, version, sha256, installType, traceId) {
+    const start = performance.now();
+    const backend = window.DeckyBackend;
+    if (!backend) {
+        throw new Error("Decky Loader backend is not available in this environment.");
+    }
+    const shaPrefix = sha256.slice(0, 8);
+    const logHandoff = (api) => {
+        const elapsed = Math.round(performance.now() - start);
+        const message = `handoff_start: trace_id=${traceId || "none"}, version=${version}, ` +
+            `sha256_prefix=${shaPrefix}, installer_api=${api}, elapsed_ms=${elapsed}`;
+        void frontendLog("update", message, null, "info").catch(() => { });
+    };
+    if (typeof backend.callable === "function") {
+        logHandoff("callable");
+        const install = backend.callable("utilities/install_plugin");
+        return await install(url, EXPECTED_PLUGIN_NAME, version, sha256, installType);
+    }
+    if (typeof backend.call === "function") {
+        logHandoff("call");
+        return await backend.call("utilities/install_plugin", url, EXPECTED_PLUGIN_NAME, version, sha256, installType);
+    }
+    throw new Error("Decky Loader backend has no compatible RPC interface.");
+}
+
+const initialUpdateState = {
+    phase: "hydrating",
+    candidate: null,
+    checkResult: null,
+    errorMessage: null,
+    installedReleasePublishedAt: null,
+    installedOverride: null,
+    pendingInstallVersion: null,
+};
+function updateReducer(state, action) {
+    switch (action.type) {
+        case "HYDRATION_COMPLETE":
+            if (action.pendingInstall) {
+                return {
+                    ...state,
+                    phase: "installed",
+                    installedReleasePublishedAt: action.installedReleasePublishedAt,
+                    installedOverride: action.pendingInstall,
+                    pendingInstallVersion: action.pendingInstall.version,
+                    candidate: null,
+                    errorMessage: null,
+                    checkResult: { status: "current", checked_at: new Date().toISOString(), channel: action.pendingInstall.channel }
+                };
+            }
+            return {
+                ...state,
+                phase: "idle",
+                installedReleasePublishedAt: action.installedReleasePublishedAt,
+            };
+        case "CHECK_START":
+            return {
+                ...state,
+                phase: "checking",
+                errorMessage: null,
+            };
+        case "CHECK_TIMEOUT":
+            return {
+                ...state,
+                phase: "failed",
+                errorMessage: action.message,
+                checkResult: {
+                    status: "failed",
+                    checked_at: new Date().toISOString(),
+                    message: action.message
+                }
+            };
+        case "CHECK_FAILED":
+            return {
+                ...state,
+                phase: "failed",
+                errorMessage: action.message,
+                checkResult: action.result || {
+                    status: "failed",
+                    checked_at: new Date().toISOString(),
+                    message: action.message
+                }
+            };
+        case "CHECK_SUCCESS_CURRENT":
+            return {
+                ...state,
+                phase: "idle",
+                candidate: null,
+                checkResult: action.result,
+            };
+        case "CHECK_SUCCESS_AVAILABLE":
+            return {
+                ...state,
+                phase: "available",
+                candidate: action.candidate,
+                checkResult: action.result,
+            };
+        case "INSTALL_START":
+            return {
+                ...state,
+                phase: "installing",
+                errorMessage: null,
+            };
+        case "INSTALL_HANDOFF_PENDING":
+            return {
+                ...state,
+                phase: "handoff_pending",
+            };
+        case "INSTALL_SUCCESS":
+            return {
+                ...state,
+                phase: "installed",
+                candidate: null,
+                errorMessage: null,
+                installedOverride: {
+                    version: action.version,
+                    channel: action.channel,
+                    preInstallVersion: action.preInstallVersion,
+                },
+                pendingInstallVersion: action.version,
+                checkResult: {
+                    status: "current",
+                    checked_at: new Date().toISOString(),
+                    channel: action.channel
+                }
+            };
+        case "INSTALL_FAILED":
+            return {
+                ...state,
+                phase: "failed",
+                errorMessage: action.message,
+                installedOverride: null,
+                pendingInstallVersion: null,
+            };
+        case "CLEAR_INSTALLED_OVERRIDE":
+            return {
+                ...state,
+                installedOverride: null,
+                pendingInstallVersion: null,
+                phase: state.phase === "installed" ? "idle" : state.phase,
+            };
+        default:
+            return state;
+    }
+}
+
+function logUpdate(traceId, stage, details) {
+    const detailsStr = details
+        ? Object.entries(details)
+            .map(([k, v]) => `${k}=${v}`)
+            .join(", ")
+        : "";
+    const prefix = traceId ? `trace_id=${traceId}` : "trace_id=none";
+    const message = `${stage}: ${prefix}${detailsStr ? ", " + detailsStr : ""}`;
+    try {
+        void frontendLog("update", message, null, "info").catch(() => { });
+    }
+    catch (_) { }
+}
+function generateUpdateTraceId() {
+    return "tr-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+}
+const UPDATE_CHECK_UI_TIMEOUT_MS = 120000;
+function usePluginUpdateController({ currentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, onInstallVersionConfirmed }) {
+    const [state, dispatch] = SP_REACT.useReducer(updateReducer, initialUpdateState);
+    const hasChecked = SP_REACT.useRef(false);
+    const inFlightCheck = SP_REACT.useRef(null);
+    const hydratedPendingInstallVersion = SP_REACT.useRef(null);
+    const activeCheckId = SP_REACT.useRef(0);
+    const checkTimeoutRef = SP_REACT.useRef(null);
+    const skipInitialCheck = SP_REACT.useRef(false);
+    const automaticCheckToggleHydrated = SP_REACT.useRef(false);
+    const latestChannel = SP_REACT.useRef(updateChannel);
+    if (latestChannel.current !== updateChannel) {
+        latestChannel.current = updateChannel;
+        activeCheckId.current += 1;
+        inFlightCheck.current = null;
+    }
+    const isHydrated = state.phase !== "hydrating";
+    const effectiveCurrentVersion = state.installedOverride?.version ?? currentVersion;
+    const clearCheckTimeout = SP_REACT.useCallback(() => {
+        if (checkTimeoutRef.current !== null) {
+            clearTimeout(checkTimeoutRef.current);
+            checkTimeoutRef.current = null;
+        }
+    }, []);
+    const finishCheck = SP_REACT.useCallback((checkId) => {
+        if (checkId === activeCheckId.current) {
+            inFlightCheck.current = null;
+            clearCheckTimeout();
+        }
+    }, [clearCheckTimeout]);
+    const checkForUpdates = SP_REACT.useCallback(async (opts) => {
+        if (!effectiveCurrentVersion || effectiveCurrentVersion === "Loading...") {
+            return;
+        }
+        if (opts.source === "automatic" && !settingsLoaded) {
+            return;
+        }
+        if (opts.source === "automatic" && (state.installedOverride || state.pendingInstallVersion)) {
+            logUpdate(null, "automatic_check_suppressed_pending_install");
+            return;
+        }
+        const checkChannel = updateChannel;
+        if (inFlightCheck.current && latestChannel.current === checkChannel) {
+            logUpdate(null, "check_reuse", { channel: updateChannel, elapsed_ms: 0 });
+            return inFlightCheck.current;
+        }
+        if (latestChannel.current !== checkChannel) {
+            activeCheckId.current += 1;
+            inFlightCheck.current = null;
+            clearCheckTimeout();
+            latestChannel.current = checkChannel;
+        }
+        activeCheckId.current += 1;
+        const checkId = activeCheckId.current;
+        const promise = (async () => {
+            const checkStart = performance.now();
+            dispatch({ type: "CHECK_START" });
+            logUpdate(null, "check_start", { channel: updateChannel });
+            clearCheckTimeout();
+            checkTimeoutRef.current = setTimeout(() => {
+                if (activeCheckId.current === checkId) {
+                    activeCheckId.current += 1;
+                    inFlightCheck.current = null;
+                    dispatch({ type: "CHECK_TIMEOUT", message: "Update check interrupted. Check again." });
+                    logUpdate(null, "check_timeout", { checkId });
+                }
+            }, UPDATE_CHECK_UI_TIMEOUT_MS);
+            try {
+                const res = await checkForPluginUpdate(effectiveCurrentVersion, opts.force);
+                if (activeCheckId.current !== checkId ||
+                    latestChannel.current !== checkChannel ||
+                    (res.status !== "failed" && res.channel !== checkChannel)) {
+                    return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
+                }
+                const elapsed_ms = Math.round(performance.now() - checkStart);
+                if (res.status === "failed") {
+                    logUpdate(null, "check_failed", { message: res.message || "unknown", elapsed_ms });
+                    dispatch({ type: "CHECK_FAILED", message: res.message || "Failed to check for updates", result: res });
+                    if (opts.notify && opts.force) {
+                        toaster.toast({
+                            title: "Update Check Failed",
+                            body: res.message || "Failed to check for updates",
+                            duration: 3000
+                        });
+                    }
+                }
+                else if (res.status === "available") {
+                    const candidateVersion = res.candidate?.version;
+                    const isStale = (state.installedOverride && candidateVersion === state.installedOverride.version) ||
+                        candidateVersion === state.pendingInstallVersion ||
+                        candidateVersion === effectiveCurrentVersion;
+                    if (isStale) {
+                        logUpdate(null, "check_success", { status: "current", stale_coerced: true, elapsed_ms });
+                        dispatch({ type: "CHECK_SUCCESS_CURRENT", result: { status: "current", checked_at: res.checked_at, channel: updateChannel } });
+                    }
+                    else {
+                        logUpdate(null, "check_success", { status: "available", version: candidateVersion, elapsed_ms });
+                        dispatch({ type: "CHECK_SUCCESS_AVAILABLE", result: res, candidate: res.candidate });
+                    }
+                }
+                else {
+                    logUpdate(null, "check_success", { status: "current", elapsed_ms });
+                    dispatch({ type: "CHECK_SUCCESS_CURRENT", result: res });
+                }
+                return res;
+            }
+            catch (err) {
+                if (activeCheckId.current !== checkId ||
+                    latestChannel.current !== checkChannel) {
+                    return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
+                }
+                const elapsed_ms = Math.round(performance.now() - checkStart);
+                const msg = err instanceof Error ? err.message : String(err);
+                logUpdate(null, "check_failed", { message: msg, elapsed_ms });
+                dispatch({ type: "CHECK_FAILED", message: msg });
+                if (opts.notify && opts.force) {
+                    toaster.toast({
+                        title: "Update Check Failed",
+                        body: msg,
+                        duration: 3000
+                    });
+                }
+                return {
+                    status: "failed",
+                    checked_at: new Date().toISOString(),
+                    message: msg
+                };
+            }
+            finally {
+                finishCheck(checkId);
+            }
+        })();
+        inFlightCheck.current = promise;
+        return promise;
+    }, [updateChannel, settingsLoaded, state.installedOverride, state.pendingInstallVersion, effectiveCurrentVersion, clearCheckTimeout, finishCheck]);
+    const checkNow = SP_REACT.useCallback(async () => {
+        await checkForUpdates({ force: true, notify: true, source: "manual" });
+    }, [checkForUpdates]);
+    const handleHandoffSuccess = SP_REACT.useCallback(async (version, channel, traceId, handoffStart) => {
+        activeCheckId.current += 1;
+        clearCheckTimeout();
+        inFlightCheck.current = null;
+        dispatch({ type: "INSTALL_SUCCESS", version, channel, preInstallVersion: currentVersion });
+        try {
+            const confirmRes = await confirmUpdateInstallHandoff(version);
+            if ("status" in confirmRes && (confirmRes.status === "failed" || confirmRes.status === "skipped")) {
+                throw new Error(confirmRes.message || "Failed to confirm handoff");
+            }
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            logUpdate(traceId, "handoff_confirm_failed", { message: msg });
+        }
+        logUpdate(traceId, "handoff_resolved", { status: "success", elapsed_ms: Math.round(performance.now() - handoffStart) });
+        onInstallVersionConfirmed?.(version);
+        toaster.toast({
+            title: "Installation Initiated",
+            body: `Requested installation of v${version} via Decky Loader.`,
+            duration: 3000
+        });
+    }, [currentVersion, onInstallVersionConfirmed, clearCheckTimeout]);
+    SP_REACT.useEffect(() => {
+        if (!state.installedOverride)
+            return;
+        if (currentVersion &&
+            currentVersion !== "Loading..." &&
+            (currentVersion !== state.installedOverride.preInstallVersion ||
+                currentVersion === state.installedOverride.version)) {
+            dispatch({ type: "CLEAR_INSTALLED_OVERRIDE" });
+        }
+    }, [currentVersion, state.installedOverride]);
+    SP_REACT.useEffect(() => {
+        return () => {
+            clearCheckTimeout();
+        };
+    }, [clearCheckTimeout]);
+    SP_REACT.useEffect(() => {
+        if (latestChannel.current !== updateChannel) {
+            latestChannel.current = updateChannel;
+            activeCheckId.current += 1;
+            inFlightCheck.current = null;
+            clearCheckTimeout();
+        }
+    }, [updateChannel, clearCheckTimeout]);
+    SP_REACT.useEffect(() => {
+        let active = true;
+        async function loadCache() {
+            try {
+                const result = await getUpdateCheckContext();
+                if (!active)
+                    return;
+                if (result && !("status" in result && (result.status === "failed" || result.status === "skipped"))) {
+                    const ctx = result;
+                    const pendingInstall = ctx.pending_update_install;
+                    if (pendingInstall?.version &&
+                        ctx.effective_installed_version === pendingInstall.version &&
+                        hydratedPendingInstallVersion.current !== pendingInstall.version) {
+                        const pendingChannel = pendingInstall.channel === "development" ? "development" : "stable";
+                        hydratedPendingInstallVersion.current = pendingInstall.version;
+                        activeCheckId.current += 1;
+                        clearCheckTimeout();
+                        inFlightCheck.current = null;
+                        dispatch({
+                            type: "HYDRATION_COMPLETE",
+                            installedReleasePublishedAt: ctx.installed_release_published_at || null,
+                            pendingInstall: {
+                                version: pendingInstall.version,
+                                channel: pendingChannel,
+                                preInstallVersion: ctx.installed_version ?? currentVersion
+                            }
+                        });
+                        onInstallVersionConfirmed?.(pendingInstall.version);
+                        skipInitialCheck.current = true;
+                    }
+                    else {
+                        dispatch({
+                            type: "HYDRATION_COMPLETE",
+                            installedReleasePublishedAt: ctx.installed_release_published_at || null,
+                        });
+                    }
+                    if (settingsLoaded &&
+                        ctx.last_checked_at &&
+                        ctx.last_checked_channel === updateChannel) {
+                        const hasPending = !!ctx.pending_update_install &&
+                            ctx.effective_installed_version === ctx.pending_update_install.version;
+                        if (ctx.last_available_tag && !hasPending) {
+                            void checkForUpdates({ force: false, notify: false, source: "automatic" });
+                        }
+                    }
+                }
+                else {
+                    dispatch({ type: "HYDRATION_COMPLETE", installedReleasePublishedAt: null });
+                }
+            }
+            catch (err) {
+                if (active) {
+                    dispatch({ type: "HYDRATION_COMPLETE", installedReleasePublishedAt: null });
+                }
+            }
+        }
+        void loadCache();
+        return () => {
+            active = false;
+        };
+    }, [currentVersion, onInstallVersionConfirmed, updateChannel, settingsLoaded, checkForUpdates, clearCheckTimeout]);
+    SP_REACT.useEffect(() => {
+        if (!isHydrated || !settingsLoaded) {
+            return;
+        }
+        if (!currentVersion || currentVersion === "Loading...") {
+            return;
+        }
+        const isFirstMount = !hasChecked.current;
+        hasChecked.current = true;
+        if (isFirstMount) {
+            if (skipInitialCheck.current) {
+                logUpdate(null, "initial_check_skipped_hydration");
+                return;
+            }
+            if (automaticUpdateChecks) {
+                void checkForUpdates({ force: false, notify: false, source: "automatic" });
+            }
+        }
+        else {
+            void checkForUpdates({ force: true, notify: false, source: "automatic" });
+        }
+    }, [updateChannel, currentVersion, isHydrated, settingsLoaded, automaticUpdateChecks, checkForUpdates]);
+    SP_REACT.useEffect(() => {
+        if (!isHydrated || !settingsLoaded) {
+            return;
+        }
+        if (!automaticCheckToggleHydrated.current) {
+            automaticCheckToggleHydrated.current = true;
+            return;
+        }
+        if (!automaticUpdateChecks || !currentVersion || currentVersion === "Loading...") {
+            return;
+        }
+        void checkForUpdates({ force: false, notify: false, source: "automatic" });
+    }, [automaticUpdateChecks, currentVersion, isHydrated, settingsLoaded, checkForUpdates]);
+    const install = SP_REACT.useCallback(async (targetCandidate) => {
+        if (state.phase === "installing" || state.phase === "handoff_pending")
+            return;
+        dispatch({ type: "INSTALL_START" });
+        const updateTraceId = generateUpdateTraceId();
+        logUpdate(updateTraceId, "install_clicked", { version: targetCandidate.version });
+        try {
+            const revalStart = performance.now();
+            logUpdate(updateTraceId, "revalidate_start", { tag: targetCandidate.tag });
+            const revalRes = await revalidatePluginUpdate(targetCandidate);
+            const revalElapsed = Math.round(performance.now() - revalStart);
+            if (("status" in revalRes && revalRes.status === "failed") ||
+                !("version" in revalRes)) {
+                const msg = "message" in revalRes ? revalRes.message : "unknown";
+                logUpdate(updateTraceId, "revalidate_failed", { message: msg, elapsed_ms: revalElapsed });
+                throw new Error(msg || "Revalidation failed");
+            }
+            logUpdate(updateTraceId, "revalidate_success", { version: revalRes.version, elapsed_ms: revalElapsed });
+            const installType = targetCandidate.action === "downgrade_to_stable"
+                ? INSTALL_TYPE_DOWNGRADE
+                : INSTALL_TYPE_UPDATE;
+            const payload = { ...revalRes, updateTraceId };
+            const recordStart = performance.now();
+            logUpdate(updateTraceId, "record_install_start", { version: revalRes.version });
+            const recordRes = await recordUpdateInstallRequested(payload);
+            if ("status" in recordRes && (recordRes.status === "failed" || recordRes.status === "skipped")) {
+                throw new Error(recordRes.message || "Failed to record install request");
+            }
+            logUpdate(updateTraceId, "record_install_success", { version: revalRes.version, elapsed_ms: Math.round(performance.now() - recordStart) });
+            activeCheckId.current += 1;
+            clearCheckTimeout();
+            inFlightCheck.current = null;
+            dispatch({ type: "INSTALL_SUCCESS", version: revalRes.version, channel: revalRes.channel, preInstallVersion: currentVersion });
+            const handoffStart = performance.now();
+            logUpdate(updateTraceId, "handoff_start", {
+                version: revalRes.version,
+                sha256_prefix: revalRes.sha256 ? revalRes.sha256.slice(0, 8) : "none"
+            });
+            let handoffTimerFired = false;
+            const handoffTimer = new Promise((resolve) => {
+                setTimeout(() => {
+                    handoffTimerFired = true;
+                    resolve();
+                }, 3000);
+            });
+            const installerPromise = invokeDeckyInstaller(revalRes.artifact_url, revalRes.version, revalRes.sha256, installType, updateTraceId);
+            await Promise.race([installerPromise, handoffTimer]);
+            if (handoffTimerFired) {
+                logUpdate(updateTraceId, "handoff_pending", { status: "installer_handoff_pending", elapsed_ms: Math.round(performance.now() - handoffStart) });
+                dispatch({ type: "INSTALL_HANDOFF_PENDING" });
+                void (async () => {
+                    try {
+                        await installerPromise;
+                        await handleHandoffSuccess(revalRes.version, revalRes.channel, updateTraceId, handoffStart);
+                    }
+                    catch (err) {
+                        const msg = err instanceof Error ? err.message : String(err);
+                        logUpdate(updateTraceId, "handoff_rejected", { message: msg, elapsed_ms: Math.round(performance.now() - handoffStart) });
+                        try {
+                            const clearRes = await clearPendingUpdateInstall(revalRes.version);
+                            if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
+                                throw new Error(clearRes.message || "Failed to clear pending install");
+                            }
+                        }
+                        catch (clearErr) {
+                            const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
+                            logUpdate(updateTraceId, "pending_clear_failed", { message: clearMsg });
+                        }
+                        void checkForUpdates({ force: false, notify: false, source: "automatic" });
+                        dispatch({ type: "INSTALL_FAILED", message: msg });
+                        toaster.toast({
+                            title: "Installation Failed",
+                            body: msg,
+                            duration: 4000
+                        });
+                    }
+                })();
+            }
+            else {
+                await installerPromise;
+                await handleHandoffSuccess(revalRes.version, revalRes.channel, updateTraceId, handoffStart);
+            }
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            try {
+                const clearRes = await clearPendingUpdateInstall(targetCandidate.version);
+                if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
+                    throw new Error(clearRes.message || "Failed to clear pending install");
+                }
+            }
+            catch (clearErr) {
+                const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
+                logUpdate(updateTraceId, "pending_clear_failed", { message: clearMsg });
+            }
+            void checkForUpdates({ force: false, notify: false, source: "automatic" });
+            dispatch({ type: "INSTALL_FAILED", message: msg });
+            toaster.toast({
+                title: "Installation Failed",
+                body: msg,
+                duration: 4000
+            });
+        }
+    }, [state.phase, handleHandoffSuccess, checkForUpdates, currentVersion, clearCheckTimeout]);
+    return {
+        effectiveCurrentVersion,
+        candidate: state.candidate,
+        checkResult: state.checkResult,
+        errorMessage: state.errorMessage,
+        isChecking: state.phase === "checking",
+        isInstalling: state.phase === "installing",
+        isHandoffPending: state.phase === "handoff_pending",
+        installedReleasePublishedAt: state.installedReleasePublishedAt,
+        checkNow,
+        install,
+    };
+}
+
+// THIS FILE IS AUTO GENERATED
+function FaExclamationTriangle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaCheckCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
+}
+
+// THIS FILE IS AUTO GENERATED
+function IoMdRefresh (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
+}
+
+const buttonRowStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    minHeight: "20px",
+    lineHeight: "20px",
+};
+const spinnerSlotStyle = {
+    width: "16px",
+    height: "16px",
+    flex: "0 0 16px",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+};
+function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, onToggleUpdateChannel, onToggleAutomaticUpdateChecks, onInstallVersionConfirmed }) {
+    const { effectiveCurrentVersion, candidate, checkResult, errorMessage: errorMsg, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install: handleInstall, } = usePluginUpdateController({
+        currentVersion,
+        updateChannel,
+        automaticUpdateChecks,
+        settingsLoaded,
+        onInstallVersionConfirmed,
+    });
+    const handleToggleChannel = (checked) => {
+        if (checked) {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Enable Development Releases?", onOK: () => onToggleUpdateChannel(true), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: "Includes prerelease builds intended for testing. These builds may contain regressions." }) }));
+        }
+        else {
+            onToggleUpdateChannel(false);
+        }
+    };
+    const handleInstallClick = (targetCandidate) => {
+        if (targetCandidate.action === "downgrade_to_stable") {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Revert to Stable?", onOK: () => handleInstall(targetCandidate), children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: ["Are you sure you want to revert to stable v", targetCandidate.version, "? This is a downgrade and could result in data loss or configuration issues."] }) }));
+        }
+        else {
+            void handleInstall(targetCandidate);
+        }
+    };
+    const isLocalBuild = effectiveCurrentVersion.includes("+");
+    const isDeckyAvailable = isDeckyInstallerAvailable();
+    const getActionText = (c) => {
+        switch (c.action) {
+            case "move_to_stable":
+                return `Move to Stable v${c.version}`;
+            case "downgrade_to_stable":
+                return `Revert to Stable v${c.version}`;
+            default:
+                if (c.channel === "development") {
+                    return `Install development build v${c.version}`;
+                }
+                return `Update to v${c.version}`;
+        }
+    };
+    const getStatusContent = () => {
+        if (isChecking) {
+            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }), SP_JSX.jsx("span", { children: "Checking..." })] }));
+        }
+        if (errorMsg) {
+            return (SP_JSX.jsx("span", { style: { color: "#f87171" }, children: errorMsg.includes("interrupted")
+                    ? `Check interrupted after ${UPDATE_CHECK_UI_TIMEOUT_MS / 1000} seconds`
+                    : "Failed to check" }));
+        }
+        if (checkResult?.status === "current") {
+            return SP_JSX.jsx("span", { style: { color: "#4ade80" }, children: "Up to date" });
+        }
+        if (checkResult?.status === "available") {
+            return (SP_JSX.jsx("span", { style: { color: "#60a5fa" }, children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+                    ? "Latest available development build"
+                    : "Update available" }));
+        }
+        return SP_JSX.jsx("span", { children: "Never checked" });
+    };
+    const lastCheckedText = checkResult?.checked_at
+        ? `Last checked: ${new Date(checkResult.checked_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`
+        : undefined;
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Updates", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Installed Version", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? "(Local Build)" : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Receive development releases", description: "Includes prerelease builds intended for testing. These builds may contain regressions.", checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Automatically check for updates", description: "Checks in the background while the plugin is loaded.", checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Status", description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMsg }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsxs("div", { children: ["Try again after ", new Date(checkResult.retry_after).toLocaleString()] }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Candidate", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsxs("div", { children: ["New version: v", candidate.version, " (", candidate.channel, ")"] }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: "Warning: Reverting to stable is a downgrade." }))] }) }) })), candidate && isDeckyAvailable && !isLocalBuild && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? "Waiting for Decky..." : "Preparing..." })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && (!isDeckyAvailable || isLocalBuild) && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild
+                            ? "Local builds cannot self-update. Install this release manually from GitHub Releases."
+                            : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases." }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: "View Release Notes" }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: "Check now" })] }) }) })] }));
 }
 
 function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, }) {
@@ -1414,13 +2096,6 @@ const allNonSteamGames = async () => {
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
 };
-
-// THIS FILE IS AUTO GENERATED
-function FaExclamationTriangle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
-}function FaCheckCircle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
-}
 
 const TITLE = "Decky Metadata";
 const DURATION = 3000;
@@ -5197,6 +5872,13 @@ const installSteamPatches = () => {
     };
 };
 
+const DEFAULT_UPDATE_SETTINGS = {
+    update_channel: "stable",
+    automatic_update_checks: true,
+};
+const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
+const resolveSavedUpdateSettings = (previous, result) => ("status" in result ? previous : result);
+
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState([]);
     const loadGames = SP_REACT.useCallback(async () => {
@@ -5289,6 +5971,9 @@ const Content = () => {
     const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
     const [deckyVersion, setDeckyVersion] = SP_REACT.useState("");
     const [steamosVersion, setSteamosVersion] = SP_REACT.useState("");
+    const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
+    const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
+    const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -5351,6 +6036,31 @@ const Content = () => {
     }, []);
     SP_REACT.useEffect(() => {
         let cancelled = false;
+        void getUpdateSettings()
+            .then((settings) => {
+            if (cancelled)
+                return;
+            const resolved = resolveLoadedUpdateSettings(settings);
+            setUpdateChannelState(resolved.update_channel);
+            setAutomaticUpdateChecksState(resolved.automatic_update_checks);
+        })
+            .catch((error) => {
+            if (!cancelled) {
+                setUpdateChannelState("stable");
+                setAutomaticUpdateChecksState(true);
+                warn("bridge", "update settings load failed", error);
+            }
+        })
+            .finally(() => {
+            if (!cancelled)
+                setSettingsLoaded(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
         void getSystemVersions()
             .then((versions) => {
             if (!cancelled) {
@@ -5394,6 +6104,51 @@ const Content = () => {
         }
         finally {
             setDebugLoggingBusy(false);
+        }
+    };
+    const saveUpdateChannel = async (enabled) => {
+        const previous = updateChannel;
+        const requested = enabled ? "development" : "stable";
+        setUpdateChannelState(requested);
+        try {
+            const saved = await setUpdateChannel(requested);
+            if ("status" in saved) {
+                const rolledBack = resolveSavedUpdateSettings({
+                    update_channel: previous,
+                    automatic_update_checks: automaticUpdateChecks,
+                }, saved);
+                setUpdateChannelState(rolledBack.update_channel);
+                toastError("Updates", saved.message || "Update channel could not be saved");
+                return;
+            }
+            setUpdateChannelState(saved.update_channel);
+            setAutomaticUpdateChecksState(saved.automatic_update_checks);
+        }
+        catch (error) {
+            setUpdateChannelState(previous);
+            warn("bridge", "update channel save failed", error);
+        }
+    };
+    const saveAutomaticUpdateChecks = async (enabled) => {
+        const previous = automaticUpdateChecks;
+        setAutomaticUpdateChecksState(enabled);
+        try {
+            const saved = await setAutomaticUpdateChecks(enabled);
+            if ("status" in saved) {
+                const rolledBack = resolveSavedUpdateSettings({
+                    update_channel: updateChannel,
+                    automatic_update_checks: previous,
+                }, saved);
+                setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
+                toastError("Updates", saved.message || "Automatic update setting could not be saved");
+                return;
+            }
+            setUpdateChannelState(saved.update_channel);
+            setAutomaticUpdateChecksState(saved.automatic_update_checks);
+        }
+        catch (error) {
+            setAutomaticUpdateChecksState(previous);
+            warn("bridge", "automatic update setting save failed", error);
         }
     };
     const scanMissing = async () => {
@@ -5493,7 +6248,7 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion })] }));
 };
 
 var StoreCategory;
