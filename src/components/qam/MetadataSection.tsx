@@ -57,11 +57,6 @@ export function MetadataSection({
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={compactTextStyle}>
-          Find and save metadata for detected non-Steam games that do not have a match yet.
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
         <ButtonItem
           layout="below"
           bottomSeparator="none"
@@ -81,17 +76,24 @@ export function MetadataSection({
         ) : null}
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>Metadata cache</div>
+        <Field
+          focusable={false}
+          childrenLayout="below"
+          padding="standard"
+          bottomSeparator="none"
+        >
+          <div style={compactTextStyle}>
+            Find and save metadata for detected non-Steam games that do not have a match yet.
+          </div>
+        </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={compactTextStyle}>
-          Clear saved matches and metadata so games can be matched again.
-        </div>
+        <div style={sectionHeadingStyle}>Metadata cache</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
-          bottomSeparator="standard"
+          bottomSeparator="none"
           disabled={cacheBusy || scanBusy}
           onClick={onClearCache}
         >
@@ -101,6 +103,18 @@ export function MetadataSection({
             "Clear cache"
           )}
         </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field
+          focusable={false}
+          childrenLayout="below"
+          padding="standard"
+          bottomSeparator="standard"
+        >
+          <div style={compactTextStyle}>
+            Clear saved matches and metadata so games can be matched again.
+          </div>
+        </Field>
       </PanelSectionRow>
     </PanelSection>
   );

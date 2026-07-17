@@ -107,6 +107,7 @@ const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
 const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
 const getPluginVersion = callable("get_plugin_version");
+const getSystemVersions = callable("get_system_versions");
 const getPluginLogs = callable("get_plugin_logs");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
@@ -130,6 +131,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
+    getSystemVersions: getSystemVersions,
     refreshDelistedIndex: refreshDelistedIndex,
     refreshSteamActivityForApp: refreshSteamActivityForApp,
     removeMetadata: removeMetadata,
@@ -250,7 +252,7 @@ function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onT
 }
 
 function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, onRefreshMetadata, onClearCache, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear saved matches and metadata so games can be matched again." }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "standard", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
@@ -268,8 +270,8 @@ function PluginLogModal({ logs, closeModal }) {
             }, children: logs || "No recent logs" }) }));
 }
 
-function VersionsSection({ pluginVersion }) {
-    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }) }) }) }));
+function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, }) {
+    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] })] }) }) }) }));
 }
 
 let verbose = false;
@@ -5269,6 +5271,8 @@ const Content = () => {
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
     const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
+    const [deckyVersion, setDeckyVersion] = SP_REACT.useState("");
+    const [steamosVersion, setSteamosVersion] = SP_REACT.useState("");
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -5315,6 +5319,20 @@ const Content = () => {
             }
         })
             .catch((error) => warn("bridge", "plugin version load failed", error));
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getSystemVersions()
+            .then((versions) => {
+            if (!cancelled) {
+                setDeckyVersion(versions.decky || "");
+                setSteamosVersion(versions.steamos || "");
+            }
+        })
+            .catch((error) => warn("bridge", "system versions load failed", error));
         return () => {
             cancelled = true;
         };
@@ -5446,7 +5464,7 @@ const Content = () => {
     const delistedStatusText = delistedStatus?.count && delistedStatus.fetched_at
         ? `${delistedStatus.count} delisted apps · updated ${epochToDate$1(delistedStatus.fetched_at)}`
         : "Delisted index not downloaded yet";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { statusText: delistedStatusText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { statusText: delistedStatusText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion })] }));
 };
 
 var StoreCategory;

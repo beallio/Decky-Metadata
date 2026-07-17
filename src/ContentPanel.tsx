@@ -14,6 +14,7 @@ import {
   getPluginLogs,
   getPluginVersion,
   getScanProgress,
+  getSystemVersions,
   refreshDelistedIndex,
   setDebugLogging,
   startScanMissing,
@@ -116,6 +117,8 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
   const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
+  const [deckyVersion, setDeckyVersion] = useState("");
+  const [steamosVersion, setSteamosVersion] = useState("");
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -168,6 +171,21 @@ export const Content = () => {
         }
       })
       .catch((error) => log.warn("bridge", "plugin version load failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getSystemVersions()
+      .then((versions) => {
+        if (!cancelled) {
+          setDeckyVersion(versions.decky || "");
+          setSteamosVersion(versions.steamos || "");
+        }
+      })
+      .catch((error) => log.warn("bridge", "system versions load failed", error));
     return () => {
       cancelled = true;
     };
@@ -328,7 +346,11 @@ export const Content = () => {
         onViewLogs={() => void viewLogs()}
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
       />
-      <VersionsSection pluginVersion={pluginVersion} />
+      <VersionsSection
+        pluginVersion={pluginVersion}
+        deckyVersion={deckyVersion}
+        steamosVersion={steamosVersion}
+      />
     </Focusable>
   );
 };

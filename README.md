@@ -79,8 +79,9 @@ The Quick Access Menu is organized into four native panels:
   `Refresh delisted index` to download or update the cached index.
 - **Logs** provides `View Logs` for the recent bounded plugin log and the Debug
   Logging toggle.
-- **Versions** shows one full `Decky Metadata: <version>` row, including the
-  packaged commit suffix when present.
+- **Versions** shows the full `Decky Metadata: <version>` row (including the
+  packaged commit suffix when present), plus the current `Decky:` loader version
+  and `SteamOS:` system version.
 
 Bulk Activity refresh is no longer exposed in the QAM. Its backend compatibility
 methods remain available, and automatic/per-app Steam Activity refresh continues
@@ -92,8 +93,9 @@ to operate when matched game details are opened.
 inside a scrollable, selectable modal. A missing or unavailable log displays
 `No recent logs`. Debug Logging enables verbose troubleshooting output and also
 enables Steam navigation/history/click diagnostic traces after the next plugin
-reload. The Versions panel displays the complete packaged plugin version, or
-`Unknown` while it is unavailable; release builds may show only the base version.
+reload. The Versions panel displays the complete packaged plugin version plus the
+Decky loader and SteamOS versions, each showing `Unknown` while unavailable;
+release builds may show only the base plugin version.
 
 ## Notes
 
