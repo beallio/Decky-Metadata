@@ -243,20 +243,23 @@ Prefer small, atomic commits (one coherent change each). Commit the passing
 current change before starting an unrelated one. Generated artifacts (caches,
 `node_modules`, zips) must never be committed.
 
-When cutting a release tag, bump `version` in `package.json` and `plugin.json`
-with `scripts/set_release_version.py`, package the hash-free release build, then
-move the dev base to the next patch so the drift guard stays green:
+After the human-approved `dev` → `main` promotion, prepare a stable release with
+`scripts/release.sh`; it creates the local version commit, annotated tag, and
+hash-free package but only prints the outward-facing push commands. Pushing the
+tag lets GitHub Actions publish `Decky-Metadata.zip`. Then move the dev base to
+the next patch so the drift guard stays green:
 
 ```
-scripts/set_release_version.py 0.1.1
-git commit -am "release: v0.1.1"
-git tag v0.1.1
-node scripts/package.mjs --release
+scripts/release.sh 0.1.1
+git push origin main
+git push origin v0.1.1
 scripts/bump_next_patch.sh
 ```
 
-Also increment the `cacheBuster` parameter on README image URLs when release
-screenshots change so they refresh.
+Pushing `dev` automatically refreshes the rolling GitHub prerelease; no manual
+package command is needed for that channel. README screenshots are committed
+under `assets/` and use stable relative paths, so replace the image files when
+screenshots change rather than adding URL cache-buster parameters.
 
 ---
 

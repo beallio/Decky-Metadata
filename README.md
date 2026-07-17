@@ -1,5 +1,11 @@
 # Decky Metadata
 
+[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
+[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
+
+<!-- Badges may require GitHub authentication while this repository is private. -->
+
 Decky Metadata is a Decky Loader plugin for Steam Big Picture and Steam Gaming Mode.
 
 **Supported platforms**: SteamOS / Steam Deck via Decky Loader.
@@ -7,6 +13,12 @@ Decky Metadata is a Decky Loader plugin for Steam Big Picture and Steam Gaming M
 The plugin helps non-Steam games look and behave more like native Steam library entries by adding editable metadata, Steam community media, store categories, matched Steam activity news, and a cached delisted-app index.
 
 ## Installation
+
+### Install from GitHub Releases
+
+Download the latest stable [`Decky-Metadata.zip`](https://github.com/beallio/Decky-Metadata/releases/latest) and sideload it through Decky's developer-mode plugin installer. The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel and may be less stable.
+
+### Build from source
 
 For manual installation, generate a Decky sideload ZIP from this checkout:
 
@@ -35,17 +47,20 @@ scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
 scripts/install_project_skill.sh --agent codex --install
 ```
 
-For a local stable release, bump both metadata files together, tag the release,
-build the hash-free package, then move the development base to the next patch so
-the release drift guard stays green:
+After merging `dev` into `main` with `--no-ff`, prepare a local stable release
+with the guarded release driver. It creates the version commit, annotated tag,
+and hash-free package but does not push:
 
 ```bash
-scripts/set_release_version.py 0.1.1
-git commit -am "release: v0.1.1"
-git tag v0.1.1
-node scripts/package.mjs --release
+scripts/release.sh 0.3.0
+git push origin main
+git push origin v0.3.0
 scripts/bump_next_patch.sh
 ```
+
+Pushing the stable tag publishes `Decky-Metadata.zip` on GitHub Releases.
+Development packages publish automatically as a rolling prerelease whenever
+`dev` is pushed; no manual packaging command is required for that channel.
 
 ## Features
 
@@ -58,14 +73,14 @@ scripts/bump_next_patch.sh
 - Rewrites Steam's native Game Info quick-links for matched shortcuts: Support and Community Market are removed, Store Page is kept unless the match is delisted, and known DLC / Points Shop links target the real Steam app. Never-on-Steam shortcuts continue to hide the row entirely.
 - Supplements Controller Settings for listed and delisted matched shortcuts with the matched Steam game's Recommended / Official and Community layouts while retaining shortcut-specific personal layouts and generic templates. Identical matched-source queries reuse the existing source cache, and Controller Settings Search isolates both inactive matched sources and inactive non-Steam shortcut caches, including caches created before the current plugin session and current shortcuts with no Steam match. Previewing and selecting a borrowed layout remain Steam's native shortcut operations. If SteamUI's internal controller-layout contract is incompatible, the plugin falls back to the standard Controller Settings UI and shows one warning for the current plugin session.
 
-<img width="3840" height="2160" alt="Decky Metadata screenshot" src="https://github.com/user-attachments/assets/bc1aecdb-8062-4b7e-8c4b-20befd1c98b8?cacheBuster=20260702" />
-<img width="3840" height="2160" alt="Decky Metadata metadata editor" src="https://github.com/user-attachments/assets/1bb89158-1142-410e-9793-63492fbb55a3?cacheBuster=20260702" />
+![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png)
+![Decky Metadata metadata editor](assets/decky-metadata-editor.png)
 
 ## Steam Activity News
 
 For non-Steam shortcuts that can be matched to a Steam Store app, Decky Metadata fetches Steam news and announcements and feeds them into Steam Big Picture's normal Activity area.
 
-<img width="3840" height="2160" alt="Decky Metadata activity news" src="https://github.com/user-attachments/assets/10184af8-2b4e-4d9a-ae41-870981fbdc1d?cacheBuster=20260702" />
+![Decky Metadata activity news](assets/decky-metadata-activity-news.png)
 
 ## Metadata Cache
 
