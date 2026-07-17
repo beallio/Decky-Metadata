@@ -3,6 +3,77 @@ export type Person = {
   url: string;
 };
 
+export type UpdateChannel = "stable" | "development";
+
+export type PluginUpdateCandidate = {
+  version: string;
+  tag: string;
+  channel: UpdateChannel;
+  artifact_url: string;
+  sha256: string;
+  release_url: string;
+  published_at: string;
+  action: "update" | "move_to_stable" | "downgrade_to_stable";
+};
+
+export type UpdateInstallRequest = PluginUpdateCandidate & {
+  updateTraceId: string;
+};
+
+export type UpdateCheckResult =
+  | {
+      status: "available";
+      checked_at: string;
+      channel: UpdateChannel;
+      candidate: PluginUpdateCandidate;
+    }
+  | { status: "current"; checked_at: string; channel: UpdateChannel }
+  | {
+      status: "failed";
+      checked_at: string;
+      message?: string;
+      retry_after?: string;
+    };
+
+export type PendingUpdateInstall = {
+  version: string;
+  tag: string;
+  channel: UpdateChannel;
+  published_at: string;
+  requested_at: string;
+  handoff_confirmed_at?: string;
+  update_trace_id?: string | null;
+};
+
+export type UpdateCheckContext = {
+  update_channel: UpdateChannel;
+  automatic_update_checks: boolean;
+  installed_version: string;
+  effective_installed_version: string;
+  last_checked_at: string | null;
+  last_checked_channel: UpdateChannel | null;
+  last_available_tag: string | null;
+  last_notified_tag: string | null;
+  installed_release_tag: string | null;
+  installed_release_published_at: string | null;
+  pending_update_install: PendingUpdateInstall | null;
+  rate_limited_until: string | null;
+};
+
+export type RevalidateResult = PluginUpdateCandidate;
+
+export type UpdateSettings = {
+  update_channel: UpdateChannel;
+  automatic_update_checks: boolean;
+};
+
+export type UpdateRpcStatus = {
+  status: "failed" | "skipped";
+  message?: string;
+};
+
+export type UpdateRpcResult<T> = T | UpdateRpcStatus;
+
 export type MetadataData = {
   title: string;
   id: string | number;

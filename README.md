@@ -20,7 +20,7 @@ Want to try changes before the next stable release? The rolling [`dev` prereleas
 
 Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
 
-From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, and check your Decky Metadata, Decky Loader, and SteamOS versions.
+From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky-Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions.
 
 ## Edit metadata from a game's menu
 

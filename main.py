@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import functools
 import html
 import json
@@ -9,6 +10,7 @@ import os
 import re
 import ssl
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -67,10 +69,18 @@ from backend.providers import steam as steam_provider
 from backend.providers.delisted import STEAM_TRACKER_DELISTED_URL
 from backend.scan_runner import ScanPipelineResult, ScanPipelineTarget
 from backend.steam_paths import SteamInstall
+from backend.updater.client import GitHubReleaseClient
+from backend.updater.updater import PluginUpdater
 
 PLUGIN_BASE_VERSION = "0.1.0"
 _LOG_FILE_HANDLER: logging.Handler | None = None
 _PLUGIN_LOG_TAIL_BYTES = 128 * 1024
+_UPDATER_LOG_LEVELS = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+}
 
 
 def _redact(text: Any) -> str:
@@ -312,6 +322,7 @@ class Plugin:
     def __init__(self) -> None:
         self._settings_dir = Path(decky.DECKY_PLUGIN_SETTINGS_DIR)
         self._data_file = self._settings_dir / "decky_metadata.json"
+        self._data_lock = threading.RLock()
         self._scan_task: asyncio.Task[Any] | None = None
         self._scan_progress = self._new_scan_progress("idle")
         self._activity_refresh_task: asyncio.Task[Any] | None = None
@@ -320,6 +331,30 @@ class Plugin:
         self._data_cache: dict[str, Any] | None = None
         self._data_cache_mtime_ns: int | None = None
         self._delisted_index: dict[str, Any] | None = None
+        self._updater = PluginUpdater(
+            state_lock=self._data_lock,
+            save_callback=self._save_updater_state,
+            log_callback=lambda level, message: _plog(
+                "update",
+                message,
+                level=_UPDATER_LOG_LEVELS.get(level, logging.INFO),
+            ),
+            release_client=GitHubReleaseClient(
+                version_resolver=_resolve_plugin_version,
+                ssl_context=_build_https_context(),
+            ),
+            version_resolver=_resolve_plugin_version,
+            now=lambda: datetime.datetime.now(datetime.timezone.utc),
+            monotonic=time.monotonic,
+        )
+
+    def _data_guard(self) -> threading.RLock:
+        """Return the shared data lock, initializing partial test instances safely."""
+        lock = getattr(self, "_data_lock", None)
+        if lock is None:
+            lock = threading.RLock()
+            self._data_lock = lock
+        return lock
 
     async def _main(self) -> None:
         log_path = _install_file_logging()
@@ -329,7 +364,13 @@ class Plugin:
         try:
             self._settings_dir.mkdir(parents=True, exist_ok=True)
             step = "load_data"
-            self._load_data()
+            loaded = self._load_data()
+            self._updater.load_state(
+                self._data["update_settings"],
+                {"update_check_cache": self._data["update_check_cache"]},
+            )
+            if loaded:
+                self._updater.reconcile_pending_install(_resolve_plugin_version())
             self._apply_debug_logging()
             step = "platform_capabilities"
             capabilities = await self.get_platform_capabilities()
@@ -389,6 +430,94 @@ class Plugin:
     async def get_plugin_version(self) -> str:
         return _resolve_plugin_version()
 
+    @staticmethod
+    def _update_rpc_failure(error: Exception, *, check: bool = False) -> dict[str, Any]:
+        _plog(
+            "update",
+            "updater RPC failed",
+            level=logging.ERROR,
+            exc=True,
+            error=error,
+        )
+        result: dict[str, Any] = {"status": "failed", "message": str(error)}
+        if check:
+            result["checked_at"] = datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat()
+        return result
+
+    async def check_for_plugin_update(
+        self, current_version: str, force: bool = False
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                self._updater.check_for_update, current_version, force
+            )
+        except Exception as error:
+            return self._update_rpc_failure(error, check=True)
+
+    async def revalidate_plugin_update(
+        self, candidate: dict[str, Any]
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(self._updater.revalidate, candidate)
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def record_update_install_requested(
+        self, candidate: dict[str, Any]
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                self._updater.record_install_requested, candidate
+            )
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def confirm_update_install_handoff(self, version: str) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                self._updater.confirm_install_handoff, version
+            )
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def clear_pending_update_install(
+        self, version: str | None = None
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                self._updater.clear_pending_install, version
+            )
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def get_update_check_context(self) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(self._updater.get_context)
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def get_update_settings(self) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(self._updater.settings_payload)
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def set_update_channel(self, channel: str) -> dict[str, Any]:
+        try:
+            await asyncio.to_thread(self._updater.set_channel, channel)
+            return await asyncio.to_thread(self._updater.settings_payload)
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
+    async def set_automatic_update_checks(self, enabled: bool) -> dict[str, Any]:
+        try:
+            await asyncio.to_thread(self._updater.set_automatic_checks, enabled)
+            return await asyncio.to_thread(self._updater.settings_payload)
+        except Exception as error:
+            return self._update_rpc_failure(error)
+
     async def get_system_versions(self) -> dict[str, str]:
         return {
             "decky": _resolve_decky_version() or "Unknown",
@@ -429,10 +558,11 @@ class Plugin:
         return self._apply_debug_logging()
 
     async def set_debug_logging(self, enabled: bool) -> bool:
-        self._load_data()
-        value = bool(enabled)
-        self._data.setdefault("settings", {})["debug_logging"] = value
-        self._save_data()
+        with self._data_guard():
+            self._load_data()
+            value = bool(enabled)
+            self._data.setdefault("settings", {})["debug_logging"] = value
+            self._save_data()
         decky.logger.setLevel(logging.DEBUG if value else logging.INFO)
         _plog("load", "debug logging updated", level=logging.INFO, enabled=value)
         return value
@@ -448,24 +578,27 @@ class Plugin:
     async def save_metadata(
         self, app_id: int, metadata: dict[str, Any]
     ) -> MetadataRecord:
-        self._load_data()
-        cleaned = self._sanitize_metadata(metadata)
-        cleaned["updated_at"] = now()
-        self._data["metadata"][str(app_id)] = cleaned
-        self._save_data()
+        with self._data_guard():
+            self._load_data()
+            cleaned = self._sanitize_metadata(metadata)
+            cleaned["updated_at"] = now()
+            self._data["metadata"][str(app_id)] = cleaned
+            self._save_data()
         return cleaned
 
     async def remove_metadata(self, app_id: int) -> dict[str, Any]:
-        self._load_data()
-        self._data["metadata"].pop(str(app_id), None)
-        self._save_data()
-        return self._data["metadata"]
+        with self._data_guard():
+            self._load_data()
+            self._data["metadata"].pop(str(app_id), None)
+            self._save_data()
+            return self._data["metadata"]
 
     async def clear_metadata_cache(self) -> dict[str, Any]:
-        self._load_data()
-        cleared = len(self._data.get("metadata") or {})
-        self._data["metadata"] = {}
-        self._save_data()
+        with self._data_guard():
+            self._load_data()
+            cleared = len(self._data.get("metadata") or {})
+            self._data["metadata"] = {}
+            self._save_data()
         _plog("cache", "metadata cache cleared", count=cleared)
         return {"ok": True, "cleared": cleared}
 
@@ -699,25 +832,32 @@ class Plugin:
     def _default_data(self) -> dict[str, Any]:
         return storage.default_data()
 
-    def _load_data(self) -> None:
-        if not self._data_file.exists():
-            self._save_data()
-            return
-        result = storage.load_data(self._data_file, self._data_cache, self._data_cache_mtime_ns, _plog)
-        if result is None:
-            return
-        self._data, self._data_cache, self._data_cache_mtime_ns = result
-        try:
-            if self._normalize_loaded_store_states():
+    def _load_data(self) -> bool:
+        with self._data_guard():
+            if not self._data_file.exists():
                 self._save_data()
-        except Exception as error:
-            _plog(
-                "load",
-                "failed normalizing loaded Steam store states",
-                level=logging.ERROR,
-                exc=True,
-                error=error,
+                return True
+            result = storage.load_data(
+                self._data_file,
+                self._data_cache,
+                self._data_cache_mtime_ns,
+                _plog,
             )
+            if result is None:
+                return False
+            self._data, self._data_cache, self._data_cache_mtime_ns = result
+            try:
+                if self._normalize_loaded_store_states():
+                    self._save_data()
+            except Exception as error:
+                _plog(
+                    "load",
+                    "failed normalizing loaded Steam store states",
+                    level=logging.ERROR,
+                    exc=True,
+                    error=error,
+                )
+            return True
 
     def _normalize_loaded_store_states(self) -> bool:
         metadata = self._data.get("metadata")
@@ -744,8 +884,19 @@ class Plugin:
         return changed
 
     def _save_data(self) -> None:
-        self._settings_dir.mkdir(parents=True, exist_ok=True)
-        self._data_cache, self._data_cache_mtime_ns = storage.save_data(self._data_file, self._data)
+        with self._data_guard():
+            self._settings_dir.mkdir(parents=True, exist_ok=True)
+            self._data_cache, self._data_cache_mtime_ns = storage.save_data(
+                self._data_file, self._data
+            )
+
+    def _save_updater_state(self) -> None:
+        with self._data_guard():
+            self._data["update_settings"] = self._updater.settings_payload()
+            self._data["update_check_cache"] = self._updater.cache_payload()[
+                "update_check_cache"
+            ]
+            self._save_data()
 
     def _new_scan_progress(self, status: str) -> dict[str, Any]:
         return scan_runner.new_scan_progress(status)
@@ -855,8 +1006,9 @@ class Plugin:
     async def _save_activity_pipeline_metadata(
         self, app_id: int, metadata: dict[str, Any]
     ) -> None:
-        self._data["metadata"][str(app_id)] = metadata
-        self._save_data()
+        with self._data_guard():
+            self._data["metadata"][str(app_id)] = metadata
+            self._save_data()
 
     async def _run_scan_pipeline(
         self,
