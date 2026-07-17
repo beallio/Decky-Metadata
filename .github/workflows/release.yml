@@ -48,11 +48,20 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             tag="$GITHUB_REF_NAME"
             version="$(node -p "require('./package.json').version")"
+            plugin_version="$(node -p "require('./plugin.json').version")"
             if [[ "v$version" != "$tag" ]]; then
-              echo "Release tag $tag does not match package version $version" >&2
+              echo "Release tag $tag does not match package.json version $version" >&2
               exit 1
             fi
-            node scripts/package.mjs --release
+            if [[ "$plugin_version" != "$version" ]]; then
+              echo "plugin.json version $plugin_version does not match package.json version $version" >&2
+              exit 1
+            fi
+            node scripts/package.mjs --release \
+              --release-version "$version" \
+              --release-tag "$tag" \
+              --channel stable \
+              --emit-release-metadata
             echo "channel=stable" >> "$GITHUB_OUTPUT"
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
           else
@@ -65,7 +74,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.package.outputs.tag }}
-        run: gh release create "$TAG" Decky-Metadata.zip --title "$TAG" --generate-notes
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            Decky-Metadata.zip \
+            "Decky-Metadata-$TAG.zip.sha256" \
+            "Decky-Metadata-$TAG.manifest.json" \
+            --title "$TAG" --generate-notes
 
       - name: Publish rolling dev prerelease
         if: steps.package.outputs.channel == 'dev'

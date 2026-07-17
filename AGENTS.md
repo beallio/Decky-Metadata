@@ -246,8 +246,10 @@ current change before starting an unrelated one. Generated artifacts (caches,
 After the human-approved `dev` → `main` promotion, prepare a stable release with
 `scripts/release.sh`; it creates the local version commit, annotated tag, and
 hash-free package but only prints the outward-facing push commands. Pushing the
-tag lets GitHub Actions publish `Decky-Metadata.zip`. Then move the dev base to
-the next patch so the drift guard stays green:
+tag lets GitHub Actions publish `Decky-Metadata.zip` **plus** the self-updater
+sidecars `Decky-Metadata-<tag>.zip.sha256` and `Decky-Metadata-<tag>.manifest.json`
+(the manifest carries the whole-zip sha256 the updater and Decky Loader verify).
+Then move the dev base to the next patch so the drift guard stays green:
 
 ```
 scripts/release.sh 0.1.1
@@ -256,8 +258,30 @@ git push origin v0.1.1
 scripts/bump_next_patch.sh
 ```
 
-Pushing `dev` automatically refreshes the rolling GitHub prerelease; no manual
-package command is needed for that channel. README screenshots are committed
+**Plugin identity.** Decky Loader keys an installed plugin off the `plugin.json`
+`name` field, and the self-updater must pass that exact string to
+`install_plugin` to replace in place. The canonical identity is
+`Decky-Metadata` (matching the zip folder and `package.json` name); the QAM
+header still shows the human-readable "Decky Metadata" via `titleView`. Do not
+reintroduce a space into the `name` field.
+
+**Release channels.** Two GitHub prerelease flows exist and must not be
+conflated:
+- The rolling `dev` prerelease (auto-refreshed on every `dev` push, fixed `dev`
+  tag) is for the on-device sideload loop only. Its non-semver tag means the
+  self-updater's discovery deliberately skips it — it is **not** an update
+  source.
+- The **Dev Release** workflow (`.github/workflows/dev-release.yml`, manual
+  `workflow_dispatch`) publishes distinct `vX.Y.Z-dev.g<sha>` semver
+  prereleases with a manifest + checksum. These are what the updater's
+  "development" channel discovers and installs.
+
+Version grammar the updater parses (and `scripts/package.mjs --release-version`
+accepts): `X.Y.Z`, optionally `-dev.<id>` (development channel) and/or
+`+<build>` metadata. A local `npm run package` still stamps `X.Y.Z+<hash>`,
+which the panel treats as a non-updatable local build.
+
+README screenshots are committed
 under `assets/` and use stable relative paths with a
 `?cacheBuster=YYYYMMDD` query. Bump that value whenever committed screenshots
 are re-captured so GitHub's image proxy serves the updated images.

@@ -1,11 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 
 const PLUGIN_FOLDER_NAME = "Decky-Metadata";
 const CRC_TABLE = makeCrcTable();
+
+// Mirrors the version grammar the self-updater parses (backend discovery):
+// X.Y.Z, optionally -dev.<id> (development channel) and/or +<build> metadata.
+const VERSION_RE =
+  /^(\d+)\.(\d+)\.(\d+)(?:-dev\.([a-zA-Z0-9.-]+))?(?:\+([a-zA-Z0-9.-]+))?$/;
 
 function main() {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,10 +21,23 @@ function main() {
   const pluginJson = readJson(pluginJsonPath);
   validatePackageVersions(packageJson, pluginJson);
   const baseVersion = packageJson.version;
+
+  // Explicit version stamp for CI-published releases (stable X.Y.Z or a
+  // development X.Y.Z-dev.g<sha>). When absent we fall back to the base version
+  // (--release/--no-hash) or a local +<hash> build marker (default).
+  const releaseVersionArg = getFlagValue("--release-version");
   const releaseBuild =
-    process.argv.includes("--release") || process.argv.includes("--no-hash");
-  const gitHash = releaseBuild ? "" : getGitShortHash(repoRoot);
-  const version = gitHash ? `${baseVersion}+${gitHash}` : baseVersion;
+    releaseVersionArg !== null ||
+    process.argv.includes("--release") ||
+    process.argv.includes("--no-hash");
+
+  let version;
+  if (releaseVersionArg !== null) {
+    version = resolveReleaseVersion(releaseVersionArg, baseVersion);
+  } else {
+    const gitHash = releaseBuild ? "" : getGitShortHash(repoRoot);
+    version = gitHash ? `${baseVersion}+${gitHash}` : baseVersion;
+  }
   const bundlePath = path.join(repoRoot, "dist", "index.js");
 
   if (!fs.existsSync(bundlePath)) {
@@ -71,6 +90,87 @@ function main() {
 
   console.log(`Packaged version: ${version}`);
   console.log(zipPath);
+
+  if (process.argv.includes("--emit-release-metadata")) {
+    emitReleaseMetadata({ repoRoot, zipPath, version, packageJson, pluginJson });
+  }
+}
+
+// Writes the release manifest + checksum sidecar the self-updater trusts. The
+// manifest's sha256 is the digest of the whole zip (exactly what Decky Loader
+// re-verifies before installing), and its fields are what backend discovery
+// validates: pluginName/packageName identity, tag==v+version, and channel.
+function emitReleaseMetadata({ repoRoot, zipPath, version, packageJson, pluginJson }) {
+  const tag = getFlagValue("--release-tag") ?? `v${version}`;
+  if (`v${version}` !== tag) {
+    throw new Error(
+      `--release-tag ${tag} must equal v${version} (discovery checks tag === "v" + manifest.version)`,
+    );
+  }
+
+  let channel = getFlagValue("--channel");
+  if (channel === null) {
+    channel = version.includes("-dev.") ? "dev" : "stable";
+  }
+  if (channel !== "stable" && channel !== "dev") {
+    throw new Error(`--channel must be "stable" or "dev", got: ${channel}`);
+  }
+
+  const assetName = path.basename(zipPath);
+  const sha256 = createHash("sha256").update(fs.readFileSync(zipPath)).digest("hex");
+
+  const manifest = {
+    schemaVersion: 1,
+    pluginName: pluginJson.name,
+    packageName: packageJson.name,
+    version,
+    sourceVersion: version,
+    tag,
+    channel,
+    assetName,
+    sha256,
+    generatedAt: new Date().toISOString(),
+  };
+
+  const manifestPath = path.join(repoRoot, `${PLUGIN_FOLDER_NAME}-${tag}.manifest.json`);
+  const shaPath = path.join(repoRoot, `${PLUGIN_FOLDER_NAME}-${tag}.zip.sha256`);
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  // `sha256sum -c` format: "<hash>  <filename>"; run from the zip's directory.
+  fs.writeFileSync(shaPath, `${sha256}  ${assetName}\n`);
+
+  console.log(`Release channel: ${channel}`);
+  console.log(manifestPath);
+  console.log(shaPath);
+}
+
+function getFlagValue(flag) {
+  const argv = process.argv;
+  const inline = argv.find((arg) => arg.startsWith(`${flag}=`));
+  if (inline) {
+    return inline.slice(flag.length + 1);
+  }
+  const index = argv.indexOf(flag);
+  if (index !== -1 && index + 1 < argv.length) {
+    return argv[index + 1];
+  }
+  return null;
+}
+
+function resolveReleaseVersion(releaseVersion, baseVersion) {
+  const match = VERSION_RE.exec(releaseVersion);
+  if (!match) {
+    throw new Error(
+      `--release-version ${releaseVersion} is not a valid version (X.Y.Z[-dev.<id>][+<build>])`,
+    );
+  }
+  const releaseBase = `${match[1]}.${match[2]}.${match[3]}`;
+  if (releaseBase !== baseVersion) {
+    throw new Error(
+      `--release-version base ${releaseBase} does not match package.json version ${baseVersion}; ` +
+        "bump the base with scripts/set_release_version.py first",
+    );
+  }
+  return releaseVersion;
 }
 
 function findPythonModules(repoRoot, dirRelative) {
