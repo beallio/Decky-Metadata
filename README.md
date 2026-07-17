@@ -1,8 +1,8 @@
 # Decky Metadata
 
-[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata?cacheBuster=20260717)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata?cacheBuster=20260717)](https://github.com/beallio/Decky-Metadata/releases/latest)
-[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg?cacheBuster=20260717)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
+[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
 
 <!-- Badges may require GitHub authentication while this repository is private. -->
 
