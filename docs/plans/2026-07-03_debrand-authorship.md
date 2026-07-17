@@ -1,15 +1,15 @@
-# Plan: Reattribute authorship to David Beall and acknowledge the fork (debrand-authorship)
+# Plan: Reattribute authorship to beallio and acknowledge the fork (debrand-authorship)
 
 ## Context
 
 Decky Metadata is a fork of the `LoZazaMastro/Playhub-Metadata` Decky plugin (original
 author byline **"ZazaMastro"**). The code and product are fully rebranded to **Decky
 Metadata**, but authorship metadata and a few stale `Playhub` strings still credit/name the
-original project. The current maintainer is **David Beall**.
+original project. The current maintainer is **beallio**.
 
 **Intended outcome:**
 
-1. Author fields identify **David Beall** as the maintainer of this fork.
+1. Author fields identify **beallio** as the maintainer of this fork.
 2. The `NOTICE` file gains an explicit, respectful **fork acknowledgment** crediting the
    upstream project (`LoZazaMastro/Playhub-Metadata`, author "ZazaMastro"), and stops calling
    this project by its old name.
@@ -28,8 +28,8 @@ plugin's *displayed* author changes only because the manifests change.
 
 | File | What | Change |
 | --- | --- | --- |
-| `plugin.json` | `"author"` | `"ZazaMastro"` → `"David Beall"` |
-| `package.json` | `"author"` | `"ZazaMastro"` → `"David Beall"` |
+| `plugin.json` | `"author"` | `"ZazaMastro"` → `"beallio"` |
+| `package.json` | `"author"` | `"ZazaMastro"` → `"beallio"` |
 | `package.json` | `"package:win"` script | **remove the line** |
 | `package-win.ps1` | whole file | **`git rm` (delete)** |
 | `NOTICE` | project-name sentence | "the entire **Playhub Metadata** project" → "the entire **Decky Metadata** project" + new fork-acknowledgment block |
@@ -166,10 +166,10 @@ git commit -m "docs(plan): add debrand-authorship implementation plan"
 
 Work in order. This is a text-edit task — no `./run.sh`, no build, no tests to add.
 
-### Task 1 — Author fields → David Beall
+### Task 1 — Author fields → beallio
 
-- `plugin.json`: set `"author": "David Beall"`.
-- `package.json`: set `"author": "David Beall"`.
+- `plugin.json`: set `"author": "beallio"`.
+- `package.json`: set `"author": "beallio"`.
 - Change nothing else in either file **except** the `package:win` script removal in Task 4.
   Keep JSON valid (no trailing commas). Verify with
   `node -e "JSON.parse(require('fs').readFileSync('plugin.json'))"` and the same for `package.json`.
@@ -191,7 +191,7 @@ Work in order. This is a text-edit task — no `./run.sh`, no build, no tests to
       Playhub Metadata
       https://github.com/LoZazaMastro/Playhub-Metadata
 
-  This fork is maintained by David Beall. It remains distributed under the GNU General
+  This fork is maintained by beallio. It remains distributed under the GNU General
   Public License v3.0 or later; the upstream project's license terms are preserved.
   ```
 
@@ -202,7 +202,7 @@ Work in order. This is a text-edit task — no `./run.sh`, no build, no tests to
 
   ```markdown
   Decky Metadata is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata)
-  by ZazaMastro, and is maintained by David Beall. Full credit and thanks to the original
+  by ZazaMastro, and is maintained by beallio. Full credit and thanks to the original
   author and contributors.
   ```
 
@@ -237,7 +237,7 @@ Windows packaging is dropped — this is a Linux/SteamOS-focused plugin.
 ### Task 5 — Session log
 
 - Record `docs/agent_conversations/2026-07-03_debrand-authorship.md`: the reattribution to
-  David Beall, the NOTICE/README fork acknowledgment, the **removal of Windows packaging**
+  beallio, the NOTICE/README fork acknowledgment, the **removal of Windows packaging**
   (Linux/SteamOS-focused plugin), the tooling cleanup, and the explicitly-preserved items —
   LICENSE, archival spec/gap-analysis/review docs, and the **`main.py` Windows runtime code
   left for a separate future plan**.
@@ -278,8 +278,8 @@ Text/JSON checks (no build):
 
 ```bash
 # Author fields updated, JSON still valid:
-node -e "const p=require('./plugin.json'); if(p.author!=='David Beall') throw 'plugin.json author'; console.log('plugin.json OK')"
-node -e "const p=require('./package.json'); if(p.author!=='David Beall') throw 'package.json author'; console.log('package.json OK')"
+node -e "const p=require('./plugin.json'); if(p.author!=='beallio') throw 'plugin.json author'; console.log('plugin.json OK')"
+node -e "const p=require('./package.json'); if(p.author!=='beallio') throw 'package.json author'; console.log('package.json OK')"
 
 # No stale author/brand references remain in the in-scope files:
 grep -rniI "ZazaMastro" plugin.json package.json                       # expect NONE
@@ -292,7 +292,7 @@ grep -niI "Windows" README.md AGENTS.md scripts/orchestration-hooks/finalize-rel
 
 # Fork acknowledgment landed:
 grep -niI "fork" NOTICE README.md                                       # present in both
-grep -niI "David Beall" NOTICE README.md plugin.json package.json       # present
+grep -niI "beallio" NOTICE README.md plugin.json package.json       # present
 
 # Scope guard — untouched files (main.py Windows runtime code deliberately NOT changed here):
 git diff --name-only dev..HEAD -- src main.py dist LICENSE docs/review docs/plans/playhub-metadata-steamos-native-spec.md docs/specs/steamos-native-gap-analysis.md  # expect EMPTY
@@ -303,7 +303,7 @@ git status --short                                                      # clean
 
 Static review:
 
-- Author is `David Beall` in both manifests; JSON valid.
+- Author is `beallio` in both manifests; JSON valid.
 - `NOTICE` no longer says "Playhub Metadata" as this project's name and carries the fork
   acknowledgment crediting ZazaMastro / the upstream repo; GPL/BSD attribution intact.
 - `README.md` credits the fork origin without dropping template/steamgriddb credits.
@@ -313,7 +313,7 @@ Static review:
 ### Deferred verification — none
 
 Docs/metadata only; nothing to test on-device. The next `dev`/`main` commit's post-commit
-hook will package a zip whose `plugin.json` shows `author: David Beall`.
+hook will package a zip whose `plugin.json` shows `author: beallio`.
 
 ---
 
