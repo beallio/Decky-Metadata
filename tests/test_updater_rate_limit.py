@@ -13,6 +13,17 @@ def test_retry_after_precedes_reset_and_has_fallback() -> None:
     ).isoformat()
 
 
+def test_check_404_gives_actionable_private_repo_message() -> None:
+    # GitHub 404s the releases endpoint for a private/missing repo to an
+    # unauthenticated caller; surface an actionable cause, not a bare "Not Found".
+    client = FakeClient(list_status=404, releases={"message": "Not Found"})
+    updater = make_updater(client)
+    result = updater.check_for_update("0.3.1", force=True)
+    assert result["status"] == "failed"
+    assert result["message"] != "Not Found"
+    assert "private" in result["message"].lower()
+
+
 def test_check_records_403_and_429_cooldown() -> None:
     for status in (403, 429):
         client = FakeClient(

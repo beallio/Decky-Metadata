@@ -256,14 +256,24 @@ class PluginUpdater:
         if resp.status != 200 or not isinstance(resp.body, list):
             msg = "Failed to check for updates"
             body_record = as_string_key_mapping(resp.body)
+            raw_msg = None
             if body_record is not None:
                 if "message" in body_record:
-                    msg = str(body_record["message"])
+                    raw_msg = str(body_record["message"])
                 elif "error" in body_record:
-                    msg = str(body_record["error"])
+                    raw_msg = str(body_record["error"])
+            if raw_msg:
+                msg = raw_msg
+            # GitHub returns 404 (not 403) for repositories an unauthenticated
+            # caller cannot see, so a private/missing repo surfaces as a bare
+            # "Not Found". The updater is unauthenticated by design (end users
+            # have no token, and Decky downloads release assets unauthenticated),
+            # so make the cause actionable instead of cryptic.
+            if resp.status == 404:
+                msg = "Releases are not accessible — the repository may be private or missing."
             self._log(
                 "error",
-                f"GitHub releases fetch failed (status={resp.status}, message={msg}), elapsed_ms={elapsed_ms}",
+                f"GitHub releases fetch failed (status={resp.status}, message={raw_msg or msg}), elapsed_ms={elapsed_ms}",
             )
             return {
                 "status": "failed",
