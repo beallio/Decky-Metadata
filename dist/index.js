@@ -1,4 +1,4 @@
-const manifest = {"name":"Decky Metadata"};
+const manifest = {"name":"Decky-Metadata"};
 const API_VERSION = 2;
 const internalAPIConnection = window.__DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit;
 if (!internalAPIConnection) {
@@ -5984,7 +5984,10 @@ var index = DFL.definePlugin(() => {
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     return {
-        name: "Decky Metadata",
+        // Plugin identity used by Decky Loader (must match plugin.json "name" so
+        // find_plugin_folder resolves this install for in-place self-update).
+        name: "Decky-Metadata",
+        // Display label shown in the QAM header; kept human-readable on purpose.
         titleView: SP_JSX.jsx("div", { className: DFL.staticClasses.Title, children: "Decky Metadata" }),
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
