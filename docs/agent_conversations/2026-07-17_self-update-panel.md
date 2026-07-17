@@ -41,12 +41,18 @@ check redetects state. Settings are repopulated on a later successful save.
 
 ## Validation
 
-- Backend updater, storage, RPC, concurrency, and corruption regression tests.
+- `./run.sh uv run --with pytest python -m pytest`: 331 passed.
+- `./run.sh npm test`: 15 files and 187 tests passed, including updater reducer,
+  controller, installer, QAM behavior, settings hydration, and rollback coverage.
+- `./run.sh npx tsc --noEmit` and `./run.sh npm run build`: passed; the committed
+  Rollup bundle and source map were regenerated.
+- `scripts/orchestration/run-quality-gates` and
+  `scripts/orchestration/check-review-notes-not-deleted`: passed.
+- The release package inspection confirmed every `backend/updater/*.py` module ships
+  in `Decky-Metadata.zip`; the temporary zip was removed afterward.
+- The updater dependency scan found no `requests`, `aiohttp`, or `httpx` imports.
 - Updated the byte-stable persistence fixture to include the plan-required empty
   `update_settings` and `update_check_cache` keys; its equality assertion is unchanged.
-- Frontend reducer, controller, installer, QAM behavior, and settings rollback tests.
-- Full pytest, vitest, TypeScript, Rollup, orchestration quality gates, and package
-  contents verification are required before the round marker is written.
 
 ## Required device-integration gate
 
