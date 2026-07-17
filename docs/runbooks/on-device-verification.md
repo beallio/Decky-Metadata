@@ -19,6 +19,7 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | `cdp.py list\|eval\|reload\|wait-ready\|input\|screenshot` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets; `input [<target>] <key>…` dispatches synthetic D-pad/`enter`/`escape` key events (default target Big Picture) to drive gamepad focus without a physical controller; `screenshot OUTPUT.png [TARGET]` captures a visual page below `/tmp/Decky-Metadata` |
 | `screenshot.sh OUTPUT.png [TARGET]` | Opens the debugger tunnel and captures a PNG below `/tmp/Decky-Metadata/screenshots`; defaults to the composited `Steam Big Picture Mode` target and accepts a visual overlay target such as the active `QuickAccess_uid*` page |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
+| `install_release.sh <tag> [update\|downgrade]` | install a published GitHub *release* build via Decky's own installer (over CDP) — the way to move OFF a local `+hash` build onto a real release so the self-updater is enabled. Fetches the zip URL + whole-zip sha256, then fires `utilities/install_plugin`; you confirm the prompt on the Deck. See the self-update section below |
 | `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
 | `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate`; focus probes `gpfocus_dump` (read-only "what is selected now") and `focus_order` (active focusable inventory with rects) |
 | `verify/run_all.sh [--no-launch] [--extended]` | the suite using a persisted semantic fixture manifest; extended adds bounded idle sampling |
@@ -95,6 +96,55 @@ scripts/deck/cdp.py input "$T" escape                            # dismiss a mod
 `preferredFocus` is only a hint; when it does not select on-device, use a native
 mechanism (match the wrapper in `getGamepadNavigationTrees()` and call
 `BTakeFocus()`), never a timer-driven raw DOM `.focus()`.
+
+## Self-update: verifying / driving updates on-device
+
+The self-update panel only works on a **release build**. The on-device dev loop
+installs `X.Y.Z+<hash>` **local** builds, which are deliberately non-updatable
+(`isLocalBuild`, plus `+build` metadata out-ranks any same-base `-dev.g…`
+prerelease), so the panel shows "(Local Build)" and hides Install. To use or test
+the updater you must first put the Deck on a real release build:
+
+```bash
+# 1. Move off the local build onto a release (Decky's own installer; confirm the
+#    on-device prompt). Downgrade is fine — the local +hash build has a higher base.
+scripts/deck/install_release.sh v0.3.1
+
+# 2. In the panel, enable "Receive development releases", then Check now. A newer
+#    dev prerelease (higher base, or same base + different -dev.g<sha>) is offered.
+# 3. Install it and watch the handoff end to end:
+scripts/deck/logs.sh tail 200 | grep -iE 'decky:update|handoff|pending|reconcil'
+```
+
+A successful cycle logs: `revalidate_success` → `Pending install saved` →
+`handoff_start (installer_api=callable)` → `handoff_resolved status=success` →
+(Decky uninstalls the old dir) → **`Startup reconciliation: Pending update
+promoted`** → a follow-up check reports "already up to date". That promotion line
+is the proof the restart + reconcile worked. Do **not** commit to `dev`/`main`
+mid-test — the post-commit hook reinstalls a local build over the release one.
+
+**Why local builds use `+<hash>` and published dev builds use `-dev.g<sha>` (kept
+distinct on purpose).** They are two deployment paths with different jobs, and the
+version scheme is what keeps them honest:
+
+- `+build` is semver **build metadata** — "built from this commit" — and is
+  *ignored for precedence*. It correctly describes a working-copy build that may
+  not correspond to anything published, and the `+` is the exact signal the panel
+  uses to refuse auto-updating it. That protection matters: without it, an
+  auto-update could silently overwrite the build you are actively debugging.
+- `-dev.g<sha>` is a semver **pre-release identifier** — it *does* affect
+  precedence and announces "this is a distributable pre-release." That is only
+  true of builds published through CI (`dev-release.yml`).
+
+Aligning the two (stamping local builds `-dev.g<sha>`) would drop the `+` marker,
+making local builds auto-updatable, so CI's build of a newer sha could replace the
+one on your bench mid-iteration, and two local shas would trigger spurious "update
+available" offers. The cost of keeping them distinct is small — you can't test the
+updater on a local build, so you install a release build first (`install_release.sh`,
+one command). That trade (a rare deliberate step vs. a standing footgun) is why the
+schemes stay separate. Only align them for a dedicated always-latest QA device — and
+even then, do it by installing published dev prereleases through the updater, not by
+changing the local build scheme.
 
 ## Debugging beyond the suite
 
