@@ -27,7 +27,7 @@ describe("Decky installer bridge", () => {
       call: vi.fn(),
     };
     await expect(invokeDeckyInstaller("zip", "0.4.0", "a".repeat(64), INSTALL_TYPE_UPDATE)).resolves.toBe("ok");
-    expect(install).toHaveBeenCalledWith("zip", "Decky-Metadata", "0.4.0", "a".repeat(64), 2);
+    expect(install).toHaveBeenCalledWith("zip", "Decky Metadata", "0.4.0", "a".repeat(64), 2);
     expect(frontendLog).toHaveBeenCalledWith("update", expect.any(String), null, "info");
   });
 
@@ -38,7 +38,7 @@ describe("Decky installer bridge", () => {
     expect(call).toHaveBeenCalledWith(
       "utilities/install_plugin",
       "zip",
-      "Decky-Metadata",
+      "Decky Metadata",
       "0.4.0",
       "b".repeat(64),
       3

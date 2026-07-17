@@ -16,7 +16,7 @@ def manifest(version: str = "0.4.0", *, channel: str = "stable", **overrides: An
     tag = f"v{version}"
     payload = {
         "schemaVersion": 1,
-        "pluginName": "Decky-Metadata",
+        "pluginName": "Decky Metadata",
         "packageName": "decky-metadata",
         "version": version,
         "sourceVersion": version,

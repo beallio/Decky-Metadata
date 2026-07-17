@@ -9,7 +9,9 @@ declare global {
   }
 }
 
-const EXPECTED_PLUGIN_NAME = "Decky-Metadata";
+// Must equal plugin.json "name" (Decky's find_plugin_folder identity). Space,
+// not hyphen — asset filenames stay hyphenated, this is the plugin identity.
+const EXPECTED_PLUGIN_NAME = "Decky Metadata";
 export const INSTALL_TYPE_UPDATE = 2;
 export const INSTALL_TYPE_DOWNGRADE = 3;
 

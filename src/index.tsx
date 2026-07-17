@@ -36,8 +36,9 @@ export default definePlugin(() => {
 
   return {
     // Plugin identity used by Decky Loader (must match plugin.json "name" so
-    // find_plugin_folder resolves this install for in-place self-update).
-    name: "Decky-Metadata",
+    // find_plugin_folder resolves this install for in-place self-update, and
+    // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
+    name: "Decky Metadata",
     // Display label shown in the QAM header; kept human-readable on purpose.
     titleView: <div className={staticClasses.Title}>{"Decky Metadata"}</div>,
     content: <Content />,
