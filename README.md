@@ -6,131 +6,62 @@
 
 <!-- Badges may require GitHub authentication while this repository is private. -->
 
-Decky Metadata is a Decky Loader plugin for Steam Big Picture and Steam Gaming Mode.
+Decky Metadata helps your non-Steam games feel at home in your Steam library. On SteamOS and Steam Deck, it finds the details a shortcut is missing, brings in content from the matching Steam game, and gives you simple controls through Decky Loader.
 
-**Supported platforms**: SteamOS / Steam Deck via Decky Loader.
+![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260717)
 
-The plugin helps non-Steam games look and behave more like native Steam library entries by adding editable metadata, Steam community media, store categories, matched Steam activity news, and a cached delisted-app index.
+## Install
 
-## Installation
+Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then download `Decky-Metadata.zip` and sideload it with Decky's developer-mode plugin installer. You can also copy the ZIP asset's URL and paste it into Decky's install-from-URL flow.
 
-### Install from GitHub Releases
+Want to try changes before the next stable release? The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel, so it may be less stable.
 
-Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then either download its `Decky-Metadata.zip` asset and sideload it through Decky's developer-mode plugin installer, or copy the release asset URL and paste it into Decky's install-from-URL flow. The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel and may be less stable.
+## Find the details your games are missing
 
-### Build from source
+Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
 
-For manual installation, generate a Decky sideload ZIP from this checkout:
+From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, and check your Decky Metadata, Decky Loader, and SteamOS versions.
 
-```bash
-npm install
-npm run build
-npm run package
-```
+## Edit metadata from a game's menu
 
-`npm run package` creates `Decky-Metadata.zip` in the repository root (containing a `Decky-Metadata/` plugin folder). The filename is always fixed; the version — including the current git short hash for local builds, e.g. `0.1.0+a1b2c3d` — is written into the packaged `plugin.json`/`package.json` and shown in the QAM Versions panel. Use `node scripts/package.mjs --release` after `npm run build` when you need a base-version package without the hash.
+Open a non-Steam game's context menu and choose the metadata editor to search for a match or adjust its details yourself. You can also pin a Steam app ID when you know exactly which Steam game belongs with the shortcut.
 
-Run deterministic contributor checks from the repository root:
+![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
-```bash
-scripts/decky doctor
-scripts/decky verify-change dev --explain
-scripts/install_hooks.sh --check
-```
+## See more in Game Info
 
-The optional canonical agent workflow skill is tracked in
-`skills/decky-project-workflow`. Preview installation without changing an agent
-home, or explicitly install it:
+For a matched shortcut, the Game Info tab can show the Steam game's artwork, description, developer, publisher, release date, and Steam Deck compatibility.
 
-```bash
-scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
-scripts/install_project_skill.sh --agent codex --install
-```
+![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
 
-After merging `dev` into `main` with `--no-ff`, prepare a local stable release
-with the guarded release driver. It creates the version commit, annotated tag,
-and hash-free package but does not push:
+The buttons at the bottom also point to useful pages for the matched Steam game. The Store Page stays available while the game is listed, and known DLC and Points Shop links open the right Steam pages. Links that do not make sense for a non-Steam shortcut are left out.
 
-```bash
-scripts/release.sh 0.3.0
-git push origin main
-git push origin v0.3.0
-scripts/bump_next_patch.sh
-```
+![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20260717)
 
-Pushing the stable tag publishes `Decky-Metadata.zip` on GitHub Releases.
-Development packages publish automatically as a rolling prerelease whenever
-`dev` is pushed; no manual packaging command is required for that channel.
+## Browse Steam Community content
 
-## Features
+Matched shortcuts can show content from the Steam game's Community page. If Steam's usual page is empty, Decky Metadata looks for fresh Community posts and can fall back to current YouTube videos and IGN screenshots when Steam has no cards to show.
 
-- Finds missing game metadata automatically.
-- Adds descriptions, developers, publishers, release dates, ratings, screenshots, and Steam info fields.
-- Lets you edit metadata manually from each non-Steam game's context menu.
-- Shows native Steam Community content for matched shortcuts, then fetches live Steam Community cards when a known app's native hub is empty; when Steam has no cards, it fetches fresh best-effort YouTube videos and IGN screenshots without storing Community-tab media.
-- Preserves a manually pinned Steam app ID and its Steam-owned metadata when applying a fetched IGN result.
-- Caches Steam's delisted-app index so removed store pages can still be matched by title.
-- Rewrites Steam's native Game Info quick-links for matched shortcuts: Support and Community Market are removed, Store Page is kept unless the match is delisted, and known DLC / Points Shop links target the real Steam app. Never-on-Steam shortcuts continue to hide the row entirely.
+![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
 
-  ![Rewritten Game Info quick-links for a matched non-Steam shortcut](assets/decky-metadata-gameinfo-quicklinks.png?cacheBuster=20260716)
+## Use layouts from the matched Steam game
 
-- Supplements Controller Settings for listed and delisted matched shortcuts with the matched Steam game's Recommended / Official and Community layouts while retaining shortcut-specific personal layouts and generic templates. Identical matched-source queries reuse the existing source cache, and Controller Settings Search isolates both inactive matched sources and inactive non-Steam shortcut caches, including caches created before the current plugin session and current shortcuts with no Steam match. Previewing and selecting a borrowed layout remain Steam's native shortcut operations. If SteamUI's internal controller-layout contract is incompatible, the plugin falls back to the standard Controller Settings UI and shows one warning for the current plugin session.
+Controller Settings can include recommended, official, and community layouts from the matching Steam game. Your shortcut's personal layouts and Steam's general templates stay available, and you still preview and choose layouts through Steam's normal controls.
 
-  ![Borrowed Recommended and Community controller layouts for a matched non-Steam shortcut](assets/decky-metadata-controller-layouts.png?cacheBuster=20260716)
+![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
 
-![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260716)
-![Decky Metadata metadata editor](assets/decky-metadata-editor.png?cacheBuster=20260716)
+## Keep up with Steam activity
 
-## Steam Activity News
+When a non-Steam shortcut matches a Steam game, Decky Metadata brings that game's news and announcements into Steam's normal Activity area. The feed refreshes automatically when you open the matched game's details.
 
-For non-Steam shortcuts that can be matched to a Steam Store app, Decky Metadata fetches Steam news and announcements and feeds them into Steam Big Picture's normal Activity area.
-
-![Decky Metadata activity news](assets/decky-metadata-activity-news.png?cacheBuster=20260716)
-
-## Metadata Cache
-
-The Quick Access Menu is organized into four native panels:
-
-- **Metadata** shows detected-game, saved-metadata, and missing-metadata counts.
-  `Refresh metadata` finds and saves matches for detected non-Steam games. Its
-  nested **Metadata cache** subsection provides `Clear cache` so saved matches
-  can be matched again.
-- **Delisted Steam games** shows the cached count and update date, with
-  `Refresh delisted games` to download or update the cached index.
-- **Logs** provides `View Logs` for the recent bounded plugin log and the Debug
-  Logging toggle.
-- **Versions** shows the full `Decky Metadata: <version>` row (including the
-  packaged commit suffix when present), plus the current `Decky:` loader version
-  and `SteamOS:` system version.
-
-Bulk Activity refresh is no longer exposed in the QAM. Its backend compatibility
-methods remain available, and automatic/per-app Steam Activity refresh continues
-to operate when matched game details are opened.
-
-## Diagnostics
-
-`View Logs` opens the recent tail of the existing rotating `decky-metadata.log`
-inside a scrollable, selectable modal. A missing or unavailable log displays
-`No recent logs`. Debug Logging enables verbose troubleshooting output and also
-enables Steam navigation/history/click diagnostic traces after the next plugin
-reload. The Versions panel displays the complete packaged plugin version plus the
-Decky loader and SteamOS versions, each showing `Unknown` while unavailable;
-release builds may show only the base plugin version.
-
-## Notes
-
-If you previously installed the old plugin, uninstall it before sideloading Decky Metadata. The plugin name changed, so Decky treats this as a separate plugin identity.
+![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
 
 ## License & Credits
 
 Decky Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
 
-Decky Metadata is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata)
-by ZazaMastro, and is maintained by David Beall. Full credit and thanks to the original
-author and contributors.
+Decky Metadata is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata) by ZazaMastro. Full credit and thanks to the original author and contributors.
 
 Decky Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
 
-The library context-menu integration (`src/contextMenuPatch.tsx`) is derived from the
-[decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) plugin by the SteamGridDB
-project, which is licensed under the GPL-3.0. Full credit and thanks to its authors and contributors.
+The library context-menu integration (`src/contextMenuPatch.tsx`) is derived from the [decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) plugin by the SteamGridDB project, which is licensed under the GPL-3.0. Full credit and thanks to its authors and contributors.
