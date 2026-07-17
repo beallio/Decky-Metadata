@@ -30,9 +30,14 @@ def test_launch_consent_requires_device():
 
 
 def test_doctor_json_stdout_is_machine_readable():
+    # doctor's exit code reflects environment health (0 for PASS/WARN, non-zero
+    # for FAIL), which is environment-dependent: a bare CI runner legitimately
+    # reports FAIL. This test only cares that --json emits a machine-readable
+    # report on stdout, so assert the contract, not the health verdict.
     result = invoke("doctor", "--json")
-    assert result.returncode == 0
-    assert json.loads(result.stdout)["schema_version"] == 1
+    report = json.loads(result.stdout)
+    assert report["schema_version"] == 1
+    assert "overall" in report
 
 
 def test_merge_base_errors_are_reported_without_device_actions():
