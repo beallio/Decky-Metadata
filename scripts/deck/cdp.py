@@ -11,6 +11,7 @@ Usage:
   cdp.py reload [<target>] [--keep-cache]
   cdp.py wait-ready [--timeout SECONDS]
   cdp.py input [<target>] <key> [<key> ...] [--delay MS]
+  cdp.py screenshot <output.png> [<target>]
 
 Targets are matched by exact title first, then substring
 (e.g. "SharedJSContext", "Big Picture").
@@ -31,6 +32,11 @@ to override. Keys are named tokens with Steam-controller aliases:
 Dispatching arrow keys drives Steam's gamepad focus in this CEF build; pair it
 with js/gpfocus_dump.js after each step to read the authoritative focus order.
 
+screenshot captures the composited Gaming Mode page as a PNG below
+DECKY_TMP_ROOT (default /tmp/Decky-Metadata). The default target is
+"Steam Big Picture Mode"; pass an explicit target as the final argument to
+override it.
+
 eval reads JS from the argument, from @path, or from stdin when "-".
 --var KEY=VALUE replaces every literal __KEY__ in the JS before evaluation,
 so committed snippets in scripts/deck/js/ can be parameterized:
@@ -44,8 +50,10 @@ reload or Steam restart.
 Environment: CDP_HOST (default localhost), CDP_PORT (default 18081).
 """
 import base64
+import binascii
 import json
 import os
+from pathlib import Path
 import socket
 import struct
 import sys
@@ -201,6 +209,58 @@ def evaluate(title, expr):
     return result.get("result", result)
 
 
+def decode_screenshot_data(payload):
+    if not payload:
+        raise ValueError("cdp: no screenshot data returned")
+    try:
+        return base64.b64decode(payload, validate=True)
+    except (binascii.Error, ValueError, TypeError) as exc:
+        raise ValueError("cdp: invalid base64 screenshot data") from exc
+
+
+def _screenshot_output_path(output_arg):
+    tmp_root = Path(os.environ.get("DECKY_TMP_ROOT", "/tmp/Decky-Metadata")).resolve()
+    system_tmp = Path("/tmp").resolve()
+    if tmp_root != system_tmp and system_tmp not in tmp_root.parents:
+        raise SystemExit("cdp: DECKY_TMP_ROOT must resolve below /tmp")
+
+    requested = Path(output_arg)
+    output_path = (
+        requested.resolve()
+        if requested.is_absolute()
+        else (tmp_root / "screenshots" / requested).resolve()
+    )
+    if output_path != tmp_root and tmp_root not in output_path.parents:
+        raise SystemExit(f"cdp: screenshot output must be below {tmp_root}")
+    return output_path
+
+
+def capture_screenshot(title, output_arg):
+    output_path = _screenshot_output_path(output_arg)
+    sock = target_socket(title)
+    try:
+        msg = rpc(sock, 1, "Page.captureScreenshot", {
+            "format": "png",
+            "fromSurface": True,
+            "captureBeyondViewport": False,
+        })
+    finally:
+        sock.close()
+
+    if "error" in msg:
+        error = msg["error"]
+        detail = error.get("message", error) if isinstance(error, dict) else error
+        raise SystemExit(f"cdp: Page.captureScreenshot failed: {detail}")
+    try:
+        png_bytes = decode_screenshot_data(msg.get("result", {}).get("data"))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(png_bytes)
+    print(output_path)
+
+
 def read_js(arg, variables):
     if arg == "-":
         js = sys.stdin.read()
@@ -347,6 +407,14 @@ def cmd_input(argv):
     print(f"sent {len(keys)} key(s) to {title!r}: {' '.join(keys)}")
 
 
+def cmd_screenshot(argv):
+    if not 1 <= len(argv) <= 2:
+        raise SystemExit("usage: cdp.py screenshot <output.png> [<target>]")
+    output_arg = argv[0]
+    title = argv[1] if len(argv) == 2 else DEFAULT_INPUT_TARGET
+    capture_screenshot(title, output_arg)
+
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__.strip())
@@ -361,6 +429,8 @@ def main():
         cmd_wait_ready(argv)
     elif cmd == "input":
         cmd_input(argv)
+    elif cmd == "screenshot":
+        cmd_screenshot(argv)
     else:
         raise SystemExit(f"cdp: unknown command {cmd!r}\n\n{__doc__.strip()}")
 
