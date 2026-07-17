@@ -1,0 +1,92 @@
+# Stable releases publish from vX.Y.Z tags; the rolling dev prerelease publishes
+# from dev-branch pushes (or an explicitly dispatched ref).
+name: Release
+
+on:
+  push:
+    branches:
+      - dev
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ (github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch') && 'dev-release' || github.ref }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch' }}
+
+jobs:
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out triggering revision and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build plugin
+        run: npm run build
+
+      - name: Package selected release channel
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          short_hash="${GITHUB_SHA::7}"
+          echo "short_hash=$short_hash" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            version="$(node -p "require('./package.json').version")"
+            if [[ "v$version" != "$tag" ]]; then
+              echo "Release tag $tag does not match package version $version" >&2
+              exit 1
+            fi
+            node scripts/package.mjs --release
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            node scripts/package.mjs
+            echo "channel=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish stable GitHub Release
+        if: steps.package.outputs.channel == 'stable'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.package.outputs.tag }}
+        run: gh release create "$TAG" Decky-Metadata.zip --title "$TAG" --generate-notes
+
+      - name: Publish rolling dev prerelease
+        if: steps.package.outputs.channel == 'dev'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHORT_HASH: ${{ steps.package.outputs.short_hash }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="Dev build ($SHORT_HASH)"
+          notes="Automated development build from commit $GITHUB_SHA."
+          if gh release view dev >/dev/null 2>&1; then
+            git push origin "$GITHUB_SHA:refs/tags/dev" --force
+            # --clobber removes the old asset before uploading; a brief gap is
+            # acceptable for this prerelease testing channel.
+            gh release upload dev Decky-Metadata.zip --clobber
+            gh release edit dev --prerelease --title "$title" --notes "$notes"
+          else
+            gh release create dev Decky-Metadata.zip \
+              --prerelease \
+              --target "$GITHUB_SHA" \
+              --title "$title" \
+              --notes "$notes"
+          fi

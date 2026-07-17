@@ -11,7 +11,6 @@ import {
 import { installUnmatchedAppLinksHider } from "./appLinks";
 import {
   configureActivityMetadataLoader,
-  installActivityRefreshedListener,
   installCommunityFeedPatch,
   installNativeActivityStorePatch,
   installNativeNewsHistoryRedirects,
@@ -81,8 +80,6 @@ export const installSteamPatches = (): Unpatch => {
     // Activity news use Steam's own AppActivityStore and native Activity renderer.
     safeInstallStep("nativeActivityStorePatch", () => installNativeActivityStorePatch(unpatchers));
     safeInstallStep("nativePartnerEventStorePatch", () => installNativePartnerEventStorePatch(unpatchers));
-    installActivityRefreshedListener(unpatchers);
-
     safeInstallStep("steamNavigationRedirect", () => installSteamNavigationRedirect(unpatchers));
     safeInstallStep("mainWindowHistoryRedirect", () => installMainWindowHistoryRedirect(unpatchers));
     void getDebugLogging()

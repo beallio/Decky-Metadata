@@ -1,51 +1,82 @@
-import { Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
-import { useCallback, useEffect, useState } from "react";
 import {
-  getDebugLogging,
-  getActivityRefreshProgress,
-  setDebugLogging,
-  startRefreshSteamActivities,
-  startScanMissing,
-  getMissingMetadataCount,
-  getScanProgress,
+  Focusable,
+  getGamepadNavigationTrees,
+  NavEntryPositionPreferences,
+  showModal,
+} from "@decky/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import {
   clearMetadataCache,
+  getDebugLogging,
   getDelistedIndexStatus,
+  getMissingMetadataCount,
+  getPluginLogs,
   getPluginVersion,
+  getScanProgress,
+  getSystemVersions,
   refreshDelistedIndex,
+  setDebugLogging,
+  startScanMissing,
 } from "./backend";
+import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { LogsSection } from "./components/qam/LogsSection";
+import { MetadataSection } from "./components/qam/MetadataSection";
+import { PluginLogModal } from "./components/qam/PluginLogModal";
+import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
 import { metadataCache, refreshMetadataCache } from "./steam";
-import { GameOption } from "./types";
+import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
-import {
-  actionButtonStackStyle,
-  ButtonLabel,
-  compactTextStyle,
-  diagnosticsGridStyle,
-  diagnosticsRowStyle,
-  diagnosticsValueStyle,
-  FocusableButton,
-  inlineStatusStyle,
-  qamPanelStyle,
-  rowStackStyle,
-  sectionHeadingStyle,
-  spacedButtonRowStyle,
-} from "./styles";
+import { GameOption } from "./types";
 import { useNonSteamGames } from "./useNonSteamGames";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
 
-export const splitVersion = (version: string): { base: string; commit: string | null } => {
-  const trimmed = String(version || "").trim();
-  const separator = trimmed.indexOf("+");
-  if (separator < 0) {
-    return { base: trimmed, commit: null };
+type NativeFocusNode = {
+  Element?: HTMLElement;
+  m_rgChildren?: NativeFocusNode[];
+  BTakeFocus?: () => boolean;
+};
+
+type NativeNavigationTree = {
+  Root?: NativeFocusNode;
+};
+
+const takePreferredPanelFocus = (element: HTMLDivElement): boolean => {
+  try {
+    const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
+    for (const tree of trees) {
+      const pending = tree.Root ? [tree.Root] : [];
+      while (pending.length) {
+        const node = pending.pop();
+        if (!node) continue;
+        if (node.Element === element && typeof node.BTakeFocus === "function") {
+          return Boolean(node.BTakeFocus());
+        }
+        if (Array.isArray(node.m_rgChildren)) {
+          pending.push(...node.m_rgChildren);
+        }
+      }
+    }
+  } catch (error) {
+    log.warn("qam", "preferred metadata focus unavailable", error);
   }
-  const base = trimmed.slice(0, separator).trim();
-  const commit = trimmed.slice(separator + 1).trim();
-  return { base, commit: commit || null };
+  return false;
+};
+
+const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
+  let node: HTMLElement | null = element.parentElement;
+  while (node) {
+    const style = window.getComputedStyle(node);
+    if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return null;
 };
 
 const scanCompleteMessage = (progress: {
@@ -54,12 +85,12 @@ const scanCompleteMessage = (progress: {
   failed?: number;
 }) => {
   const total = Number(progress.total || 0);
-  if (!total) return "Scan complete";
+  if (!total) return "Refresh complete";
   const assigned = Number(progress.assigned || 0);
   const failed = Number(progress.failed || 0);
   return failed
-    ? `Scan complete: ${assigned}/${total} saved, ${failed} not matched`
-    : `Scan complete: ${assigned}/${total} saved`;
+    ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
+    : `Refresh complete: ${assigned}/${total} saved`;
 };
 
 const scanCompleteStatusKind = (progress: {
@@ -73,42 +104,58 @@ const scanCompleteStatusKind = (progress: {
   return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
-const activityCompleteMessage = (progress: {
-  total?: number;
-  assigned?: number;
-}) => {
-  const total = Number(progress.total || 0);
-  if (!total) return "Activity refresh complete";
-  return `Activity refresh complete: ${Number(progress.assigned || 0)}/${total} updated`;
-};
-
-const epochToDate = (value?: number | null) => {
+const epochToUsDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  return `${mm}-${dd}-${date.getUTCFullYear()}`;
 };
 
 export const Content = () => {
+  const focusFrame = useRef<number | null>(null);
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
   const [missing, setMissing] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
-  const [activityBusy, setActivityBusy] = useState(false);
-  const [activityMessage, setActivityMessage] = useState("");
-  const [activityStatusKind, setActivityStatusKind] = useState<StatusKind>("idle");
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{
     count: number;
     fetched_at: number;
   } | null>(null);
   const [delistedBusy, setDelistedBusy] = useState(false);
+  const [logsBusy, setLogsBusy] = useState(false);
   const [debugLogging, setDebugLoggingState] = useState(false);
+  const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
+  const [deckyVersion, setDeckyVersion] = useState("");
+  const [steamosVersion, setSteamosVersion] = useState("");
 
-  const parsedPluginVersion = splitVersion(pluginVersion);
+  const focusPanel = useCallback((element: HTMLDivElement | null) => {
+    if (focusFrame.current !== null) {
+      window.cancelAnimationFrame(focusFrame.current);
+      focusFrame.current = null;
+    }
+    if (element) {
+      focusFrame.current = window.requestAnimationFrame(() => {
+        focusFrame.current = null;
+        takePreferredPanelFocus(element);
+        // Taking focus scrolls the summary up, hiding the panel's "Metadata"
+        // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
+        // summary is the first row, so snap the viewport back to the top on
+        // entry to keep the title visible.
+        const viewport = findScrollViewport(element);
+        if (viewport) {
+          window.requestAnimationFrame(() => {
+            viewport.scrollTop = 0;
+          });
+        }
+      });
+    }
+  }, []);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
     void getMissingMetadataCount(currentGames)
@@ -155,6 +202,21 @@ export const Content = () => {
 
   useEffect(() => {
     let cancelled = false;
+    void getSystemVersions()
+      .then((versions) => {
+        if (!cancelled) {
+          setDeckyVersion(versions.decky || "");
+          setSteamosVersion(versions.steamos || "");
+        }
+      })
+      .catch((error) => log.warn("bridge", "system versions load failed", error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     void getDebugLogging()
       .then((enabled) => {
         if (!cancelled) {
@@ -169,6 +231,8 @@ export const Content = () => {
   }, []);
 
   const saveDebugLogging = async (enabled: boolean) => {
+    if (debugLoggingBusy) return;
+    setDebugLoggingBusy(true);
     setDebugLoggingState(enabled);
     log.setVerboseLogging(enabled);
     try {
@@ -178,6 +242,8 @@ export const Content = () => {
       log.info("bridge", "debug logging setting updated", saved);
     } catch (error) {
       log.warn("bridge", "debug logging setting update failed", error);
+    } finally {
+      setDebugLoggingBusy(false);
     }
   };
 
@@ -202,53 +268,16 @@ export const Content = () => {
           setBusy(false);
           setScanStatusKind(scanCompleteStatusKind(progress));
           setScanMessage(scanCompleteMessage(progress));
-          toastSuccess("Scan", "Scan complete");
+          toastSuccess("Metadata", "Refresh complete");
         }
       }, 800);
     } catch (error) {
       setBusy(false);
       setScanStatusKind("error");
       setScanMessage(String(error));
-      toastError("Scan failed", String(error));
+      toastError("Metadata refresh failed", String(error));
     }
   };
-
-  const refreshActivities = async () => {
-    if (activityBusy) return;
-    setActivityBusy(true);
-    setActivityStatusKind("active");
-    setActivityMessage("Refreshing Activity...");
-    try {
-      await startRefreshSteamActivities(games);
-      const interval = window.setInterval(async () => {
-        const progress = await getActivityRefreshProgress();
-        setActivityStatusKind("active");
-        setActivityMessage(
-          progress.current ||
-            progress.message ||
-            `${progress.completed}/${progress.total}`
-        );
-        if (!progress.running) {
-          window.clearInterval(interval);
-          await refreshMetadataCache();
-          setMetadataCount(Object.keys(metadataCache).length);
-          updateMissingCount(games);
-          setActivityBusy(false);
-          setActivityStatusKind("success");
-          setActivityMessage(activityCompleteMessage(progress));
-          window.dispatchEvent(new Event("decky-metadata:activity-refreshed"));
-          window.dispatchEvent(new Event("decky-metadata:updated"));
-          toastSuccess("Activity", activityCompleteMessage(progress));
-        }
-      }, 800);
-    } catch (error) {
-      setActivityBusy(false);
-      setActivityStatusKind("error");
-      setActivityMessage(String(error));
-      toastError("Activity failed", String(error));
-    }
-  };
-
 
   const clearCache = async () => {
     if (cacheBusy || busy) return;
@@ -279,140 +308,78 @@ export const Content = () => {
       if (!result.ok) {
         throw new Error("Delisted index refresh failed");
       }
-      toastSuccess("Delisted index", "Delisted index updated");
+      toastSuccess("Delisted Steam games", "Delisted Steam games updated");
       await loadDelistedStatus();
     } catch (error) {
       log.warn("bridge", "delisted index refresh failed", error);
-      toastError("Delisted index", "Delisted index refresh failed");
+      toastError("Delisted Steam games", "Delisted Steam games refresh failed");
     } finally {
       setDelistedBusy(false);
     }
   };
 
-  const delistedStatusText =
-    delistedStatus?.count && delistedStatus.fetched_at
-      ? `${delistedStatus.count} delisted apps · updated ${epochToDate(delistedStatus.fetched_at)}`
-      : "Delisted index not downloaded yet";
+  const viewLogs = async () => {
+    if (logsBusy) return;
+    setLogsBusy(true);
+    try {
+      const logs = await getPluginLogs();
+      let modal: ReturnType<typeof showModal> | undefined;
+      modal = showModal(
+        <PluginLogModal logs={logs} closeModal={() => modal?.Close()} />
+      );
+    } catch (error) {
+      log.warn("bridge", "plugin log load failed", error);
+      toastError("Logs", "Plugin logs could not be loaded");
+    } finally {
+      setLogsBusy(false);
+    }
+  };
 
+  const delistedCountText =
+    delistedStatus?.count && delistedStatus.fetched_at
+      ? `Delisted games: ${delistedStatus.count.toLocaleString("en-US")}`
+      : "Delisted Steam games not downloaded yet";
+  const delistedDateText =
+    delistedStatus?.count && delistedStatus.fetched_at
+      ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
+      : "";
 
   return (
-    <div style={qamPanelStyle}>
-      <PanelSection>
-        <PanelSectionRow>
-          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
-            <div style={rowStackStyle}>
-              <div>
-                <b>{"Detected non-Steam games"}:</b> {games.length}
-              </div>
-              <div>
-                <b>{"Metadata saved"}:</b> {metadataCount}
-              </div>
-              <div>
-                <b>{"Missing metadata"}:</b> {missing}
-              </div>
-            </div>
-          </Field>
-        </PanelSectionRow>
-      </PanelSection>
-      <PanelSection>
-        <PanelSectionRow>
-          <div style={compactTextStyle}>{"Refresh Activity re-fetches the Steam Activity feed for games that already have metadata. It does not find new matches or update store details — use Scan metadata for that."}</div>
-          <div style={spacedButtonRowStyle}>
-            <div style={actionButtonStackStyle}>
-              <FocusableButton
-                className="DialogButton"
-                disabled={busy || !games.length}
-                onClick={scanMissing}
-              >
-                {busy ? (
-                  <ButtonLabel busy={true}>{"Scanning..."}</ButtonLabel>
-                ) : (
-                  <ButtonLabel>{"Scan metadata"}</ButtonLabel>
-                )}
-              </FocusableButton>
-              {busy || scanMessage ? (
-                <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage || "Scanning..."}</div>
-              ) : null}
-            </div>
-            <div style={actionButtonStackStyle}>
-              <FocusableButton
-                className="DialogButton"
-                disabled={activityBusy || busy || !games.length}
-                onClick={refreshActivities}
-              >
-                {activityBusy ? "Refreshing Activity..." : "Refresh Activity"}
-              </FocusableButton>
-              {activityBusy || activityMessage ? (
-                <div style={inlineStatusStyle(activityStatusKind)}>{activityMessage || "Refreshing Activity..."}</div>
-              ) : null}
-            </div>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={sectionHeadingStyle}>{"Metadata cache"}</div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={rowStackStyle}>
-            <div style={compactTextStyle}>{"Clear cached Steam matches and metadata so games re-fetch and re-match."}</div>
-            <div style={inlineStatusStyle("idle")}>
-              <span>{delistedStatusText}</span>
-            </div>
-            <FocusableButton
-              className="DialogButton"
-              disabled={delistedBusy}
-              onClick={refreshDelisted}
-            >
-              {delistedBusy ? (
-                <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
-              ) : (
-                <ButtonLabel>{"Refresh delisted index"}</ButtonLabel>
-              )}
-            </FocusableButton>
-            <FocusableButton
-              className="DialogButton"
-              disabled={cacheBusy || busy}
-              onClick={clearCache}
-            >
-              {"Clear cache"}
-            </FocusableButton>
-          </div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <div style={sectionHeadingStyle}>{"Diagnostics"}</div>
-        </PanelSectionRow>
-        <PanelSectionRow>
-          <ToggleField
-            highlightOnFocus={false}
-            label="Debug Logging"
-            checked={debugLogging}
-            onChange={(checked) => void saveDebugLogging(checked)}
-          />
-        </PanelSectionRow>
-      </PanelSection>
-      <PanelSection title="Versions">
-        <PanelSectionRow>
-          <Field focusable={true} highlightOnFocus={true} childrenLayout="below" padding="standard" bottomSeparator="none">
-            <div style={diagnosticsGridStyle}>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Plugin"}</span>
-                <span style={diagnosticsValueStyle}>{parsedPluginVersion.base}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Commit"}</span>
-                <span style={diagnosticsValueStyle}>{parsedPluginVersion.commit || "local"}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Delisted index"}</span>
-                <span style={diagnosticsValueStyle}>{delistedStatusText}</span>
-              </div>
-              <div style={diagnosticsRowStyle}>
-                <span>{"Metadata"}</span>
-                <span style={diagnosticsValueStyle}>{metadataCount}</span>
-              </div>
-            </div>
-          </Field>
-        </PanelSectionRow>
-      </PanelSection>
-    </div>
+    <Focusable
+      ref={focusPanel}
+      preferredFocus={true}
+      navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
+      style={qamPanelStyle}
+    >
+      <MetadataSection
+        detectedCount={games.length}
+        savedCount={metadataCount}
+        missingCount={missing}
+        scanBusy={busy}
+        scanMessage={scanMessage}
+        scanStatusKind={scanStatusKind}
+        cacheBusy={cacheBusy}
+        onRefreshMetadata={() => void scanMissing()}
+        onClearCache={() => void clearCache()}
+      />
+      <DelistedIndexSection
+        countText={delistedCountText}
+        dateText={delistedDateText}
+        busy={delistedBusy}
+        onRefresh={() => void refreshDelisted()}
+      />
+      <LogsSection
+        logsBusy={logsBusy}
+        debugLogging={debugLogging}
+        debugLoggingBusy={debugLoggingBusy}
+        onViewLogs={() => void viewLogs()}
+        onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
+      />
+      <VersionsSection
+        pluginVersion={pluginVersion}
+        deckyVersion={deckyVersion}
+        steamosVersion={steamosVersion}
+      />
+    </Focusable>
   );
 };

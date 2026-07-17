@@ -1,6 +1,6 @@
 import { routerHook } from "@decky/api";
 import { definePlugin, staticClasses } from "@decky/ui";
-import { FaDatabase } from "react-icons/fa";
+import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
@@ -38,7 +38,7 @@ export default definePlugin(() => {
     name: "Decky Metadata",
     titleView: <div className={staticClasses.Title}>{"Decky Metadata"}</div>,
     content: <Content />,
-    icon: <FaDatabase />,
+    icon: <FaTags />,
     onDismount() {
       try {
         menuPatch?.unpatch?.();

@@ -10,9 +10,32 @@ Usage:
   cdp.py eval <target> <js | @file | ->   [--var KEY=VALUE ...]
   cdp.py reload [<target>] [--keep-cache]
   cdp.py wait-ready [--timeout SECONDS]
+  cdp.py input [<target>] <key> [<key> ...] [--delay MS]
+  cdp.py screenshot <output.png> [<target>]
 
 Targets are matched by exact title first, then substring
 (e.g. "SharedJSContext", "Big Picture").
+
+input dispatches synthetic key events (rawKeyDown + keyUp) to drive the gamepad
+UI when a physical controller is not in the loop — the only way to exercise real
+D-pad focus movement and A/B activation from a script. The default target is
+"Steam Big Picture Mode" (Gaming Mode); pass an explicit target as the first arg
+to override. Keys are named tokens with Steam-controller aliases:
+
+  up/down/left/right (arrows), enter (A), escape (B/back), backspace, tab,
+  space, ctrl-a. --delay sets the gap between successive keys (default 120ms) so
+  the nav tree settles and each focus move registers. Example — walk a panel:
+
+  cdp.py input down down down
+  cdp.py eval "Steam Big Picture Mode" @scripts/deck/js/gpfocus_dump.js
+
+Dispatching arrow keys drives Steam's gamepad focus in this CEF build; pair it
+with js/gpfocus_dump.js after each step to read the authoritative focus order.
+
+screenshot captures the composited Gaming Mode page as a PNG below
+DECKY_TMP_ROOT (default /tmp/Decky-Metadata). The default target is
+"Steam Big Picture Mode"; pass an explicit target as the final argument to
+override it.
 
 eval reads JS from the argument, from @path, or from stdin when "-".
 --var KEY=VALUE replaces every literal __KEY__ in the JS before evaluation,
@@ -27,8 +50,10 @@ reload or Steam restart.
 Environment: CDP_HOST (default localhost), CDP_PORT (default 18081).
 """
 import base64
+import binascii
 import json
 import os
+from pathlib import Path
 import socket
 import struct
 import sys
@@ -44,6 +69,34 @@ READY_EXPR = (
     ' && (typeof appStore !== "undefined" && (appStore?.allApps?.length ?? 0) > 0))'
     ' ? "READY" : "loading")()'
 )
+
+# Gaming Mode context; substring match in find_target resolves the full title.
+DEFAULT_INPUT_TARGET = "Steam Big Picture Mode"
+
+# name -> (key, code, windowsVirtualKeyCode, modifiers). The CDP Input modifier
+# bitfield is Alt=1, Ctrl=2, Meta=4, Shift=8.
+_KEYS = {
+    "up": ("ArrowUp", "ArrowUp", 38, 0),
+    "down": ("ArrowDown", "ArrowDown", 40, 0),
+    "left": ("ArrowLeft", "ArrowLeft", 37, 0),
+    "right": ("ArrowRight", "ArrowRight", 39, 0),
+    "enter": ("Enter", "Enter", 13, 0),
+    "escape": ("Escape", "Escape", 27, 0),
+    "backspace": ("Backspace", "Backspace", 8, 0),
+    "tab": ("Tab", "Tab", 9, 0),
+    "space": (" ", "Space", 32, 0),
+    "ctrl-a": ("a", "KeyA", 65, 2),
+}
+
+# Steam-controller and convenience aliases -> canonical key name.
+_KEY_ALIASES = {
+    "arrowup": "up", "arrowdown": "down", "arrowleft": "left", "arrowright": "right",
+    "a": "enter",  # Steam A button activates the focused control
+    "b": "escape", "back": "escape", "esc": "escape",  # Steam B button backs out
+    "bksp": "backspace", "del": "backspace",
+    "ctrla": "ctrl-a", "select-all": "ctrl-a",
+    "sp": "space",
+}
 
 
 def http_json(path):
@@ -156,6 +209,58 @@ def evaluate(title, expr):
     return result.get("result", result)
 
 
+def decode_screenshot_data(payload):
+    if not payload:
+        raise ValueError("cdp: no screenshot data returned")
+    try:
+        return base64.b64decode(payload, validate=True)
+    except (binascii.Error, ValueError, TypeError) as exc:
+        raise ValueError("cdp: invalid base64 screenshot data") from exc
+
+
+def _screenshot_output_path(output_arg):
+    tmp_root = Path(os.environ.get("DECKY_TMP_ROOT", "/tmp/Decky-Metadata")).resolve()
+    system_tmp = Path("/tmp").resolve()
+    if tmp_root != system_tmp and system_tmp not in tmp_root.parents:
+        raise SystemExit("cdp: DECKY_TMP_ROOT must resolve below /tmp")
+
+    requested = Path(output_arg)
+    output_path = (
+        requested.resolve()
+        if requested.is_absolute()
+        else (tmp_root / "screenshots" / requested).resolve()
+    )
+    if output_path != tmp_root and tmp_root not in output_path.parents:
+        raise SystemExit(f"cdp: screenshot output must be below {tmp_root}")
+    return output_path
+
+
+def capture_screenshot(title, output_arg):
+    output_path = _screenshot_output_path(output_arg)
+    sock = target_socket(title)
+    try:
+        msg = rpc(sock, 1, "Page.captureScreenshot", {
+            "format": "png",
+            "fromSurface": True,
+            "captureBeyondViewport": False,
+        })
+    finally:
+        sock.close()
+
+    if "error" in msg:
+        error = msg["error"]
+        detail = error.get("message", error) if isinstance(error, dict) else error
+        raise SystemExit(f"cdp: Page.captureScreenshot failed: {detail}")
+    try:
+        png_bytes = decode_screenshot_data(msg.get("result", {}).get("data"))
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(png_bytes)
+    print(output_path)
+
+
 def read_js(arg, variables):
     if arg == "-":
         js = sys.stdin.read()
@@ -247,6 +352,69 @@ def cmd_wait_ready(argv):
     raise SystemExit(f"cdp: not ready after {timeout}s")
 
 
+def _resolve_key(name):
+    canon = _KEY_ALIASES.get(name.lower(), name.lower())
+    spec = _KEYS.get(canon)
+    if spec is None:
+        valid = ", ".join(sorted(set(list(_KEYS) + list(_KEY_ALIASES))))
+        raise SystemExit(f"cdp: unknown key {name!r}. Valid: {valid}")
+    return spec
+
+
+def cmd_input(argv):
+    delay_ms = 120
+    rest = []
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--delay":
+            if i + 1 >= len(argv):
+                raise SystemExit("cdp: --delay expects MS")
+            delay_ms = int(argv[i + 1])
+            i += 2
+        else:
+            rest.append(argv[i])
+            i += 1
+    if not rest:
+        raise SystemExit(
+            "usage: cdp.py input [<target>] <key> [<key> ...] [--delay MS]")
+    # The first token is a target override only when it is not itself a key name.
+    title = DEFAULT_INPUT_TARGET
+    keys = rest
+    first = rest[0].lower()
+    if first not in _KEYS and first not in _KEY_ALIASES:
+        title, keys = rest[0], rest[1:]
+    if not keys:
+        raise SystemExit("cdp: no keys to send")
+    # Validate every key before opening a socket so a typo fails fast.
+    resolved = [_resolve_key(k) for k in keys]
+    sock = target_socket(title)
+    try:
+        msg_id = 1
+        for key, code, virtual_key, modifiers in resolved:
+            for phase in ("rawKeyDown", "keyUp"):
+                rpc(sock, msg_id, "Input.dispatchKeyEvent", {
+                    "type": phase,
+                    "key": key,
+                    "code": code,
+                    "windowsVirtualKeyCode": virtual_key,
+                    "nativeVirtualKeyCode": virtual_key,
+                    "modifiers": modifiers,
+                })
+                msg_id += 1
+            time.sleep(delay_ms / 1000)
+    finally:
+        sock.close()
+    print(f"sent {len(keys)} key(s) to {title!r}: {' '.join(keys)}")
+
+
+def cmd_screenshot(argv):
+    if not 1 <= len(argv) <= 2:
+        raise SystemExit("usage: cdp.py screenshot <output.png> [<target>]")
+    output_arg = argv[0]
+    title = argv[1] if len(argv) == 2 else DEFAULT_INPUT_TARGET
+    capture_screenshot(title, output_arg)
+
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__.strip())
@@ -259,6 +427,10 @@ def main():
         cmd_reload(argv)
     elif cmd == "wait-ready":
         cmd_wait_ready(argv)
+    elif cmd == "input":
+        cmd_input(argv)
+    elif cmd == "screenshot":
+        cmd_screenshot(argv)
     else:
         raise SystemExit(f"cdp: unknown command {cmd!r}\n\n{__doc__.strip()}")
 

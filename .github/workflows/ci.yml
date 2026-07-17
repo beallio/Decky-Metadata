@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Type-check frontend
+        run: npx tsc --noEmit
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Verify committed bundle
+        run: git diff --exit-code dist/index.js
+
+      - name: Test frontend
+        run: npm test
+
+      - name: Compile Python backend
+        run: |
+          python -m py_compile main.py
+          find backend -name "*.py" -print0 | xargs -0 python -m py_compile
+
+      - name: Test Python backend and tooling
+        run: uv run --with pytest -- pytest -q
+
+      - name: Check release version drift
+        run: python scripts/version_guard.py check-drift "$(node -p "require('./package.json').version")"

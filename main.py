@@ -70,6 +70,7 @@ from backend.steam_paths import SteamInstall
 
 PLUGIN_BASE_VERSION = "0.1.0"
 _LOG_FILE_HANDLER: logging.Handler | None = None
+_PLUGIN_LOG_TAIL_BYTES = 128 * 1024
 
 
 def _redact(text: Any) -> str:
@@ -161,6 +162,31 @@ def _install_file_logging() -> str:
         return ""
 
 
+def _read_bounded_log_tail(
+    log_path: Path, max_bytes: int = _PLUGIN_LOG_TAIL_BYTES
+) -> str:
+    """Return a bounded recent tail without trusting a caller-supplied path."""
+    if max_bytes <= 0:
+        return ""
+
+    try:
+        with log_path.open("rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            size = max(0, handle.tell())
+            start = max(0, size - max_bytes)
+            handle.seek(start, os.SEEK_SET)
+            chunk = handle.read(max_bytes)
+    except (OSError, TypeError, ValueError):
+        return ""
+
+    if start > 0:
+        newline = chunk.find(b"\n")
+        if newline >= 0:
+            chunk = chunk[newline + 1 :]
+
+    return chunk.decode("utf-8", errors="replace")
+
+
 def _read_version_file(path: Path) -> str:
     try:
         value = json.loads(path.read_text(encoding="utf-8")).get("version")
@@ -197,6 +223,45 @@ def _resolve_plugin_version() -> str:
         if version:
             return version
     return PLUGIN_BASE_VERSION
+
+
+def _parse_os_release_field(text: str, key: str) -> str:
+    """Return a field value from os-release-formatted text, or '' if absent."""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.partition("=")
+        if name.strip() != key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        return value.strip()
+    return ""
+
+
+def _read_steamos_version(path: Path = Path("/etc/os-release")) -> str:
+    """Return the SteamOS VERSION_ID, or '' when the file is unavailable."""
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as error:
+        _plog("version", "os-release unreadable", level=logging.DEBUG, error=error)
+        return ""
+    return _parse_os_release_field(text, "VERSION_ID")
+
+
+def _resolve_decky_version() -> str:
+    """Return the Decky Loader version from the plugin runtime, or ''.
+
+    Prefer the `decky` module's DECKY_VERSION constant; only accept a real
+    string (the test harness stubs the module with Mock attributes). Fall back
+    to the DECKY_VERSION environment variable.
+    """
+    value = getattr(decky, "DECKY_VERSION", None)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return os.environ.get("DECKY_VERSION", "").strip()
 
 
 @functools.lru_cache(maxsize=1)
@@ -323,6 +388,31 @@ class Plugin:
 
     async def get_plugin_version(self) -> str:
         return _resolve_plugin_version()
+
+    async def get_system_versions(self) -> dict[str, str]:
+        return {
+            "decky": _resolve_decky_version() or "Unknown",
+            "steamos": _read_steamos_version() or "Unknown",
+        }
+
+    async def get_plugin_logs(self) -> str:
+        global _LOG_FILE_HANDLER
+        if _LOG_FILE_HANDLER is None:
+            _install_file_logging()
+
+        handler = _LOG_FILE_HANDLER
+        if handler is None:
+            return ""
+
+        try:
+            handler.flush()
+        except Exception:
+            pass
+
+        log_path = getattr(handler, "baseFilename", "")
+        if not log_path:
+            return ""
+        return _read_bounded_log_tail(Path(str(log_path)))
 
     async def get_state(self) -> dict[str, Any]:
         self._load_data()

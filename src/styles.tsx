@@ -55,31 +55,6 @@ export const rowStackStyle = {
   gap: space.md,
 } as const;
 
-export const buttonRowStyle = {
-  display: "flex",
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-  boxSizing: "border-box",
-  gap: space.sm,
-  alignItems: "center",
-  flexWrap: "wrap",
-} as const;
-
-export const spacedButtonRowStyle = {
-  ...buttonRowStyle,
-  marginTop: space.sm,
-} as const;
-
-export const actionButtonStackStyle = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "stretch",
-  gap: space.sm,
-  flex: "1 1 208px",
-  minWidth: 0,
-} as const;
-
 export const resultsStackStyle = {
   ...rowStackStyle,
   marginTop: 20,
@@ -134,31 +109,6 @@ export const sectionHeadingStyle = {
   paddingTop: space.md,
   fontWeight: fontWeight.bold,
   fontSize: fontSize.lg,
-} as const;
-
-export const diagnosticsGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr)",
-  gap: space.md,
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-  boxSizing: "border-box",
-} as const;
-
-export const diagnosticsRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr)",
-  gap: space.xs,
-  alignItems: "start",
-  padding: `${space.xxs}px 0`,
-  ...compactTextStyle,
-} as const;
-
-export const diagnosticsValueStyle = {
-  minWidth: 0,
-  overflowWrap: "anywhere",
-  color: colors.textSecondary,
 } as const;
 
 export const focusableBlockStyle = {
