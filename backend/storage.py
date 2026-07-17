@@ -16,6 +16,8 @@ def default_data() -> dict[str, Any]:
         "settings": {
             "debug_logging": False,
         },
+        "update_settings": {},
+        "update_check_cache": {},
     }
 
 
@@ -42,6 +44,8 @@ def load_data(
     merged = default_data()
     merged["metadata"].update(payload.get("metadata") or {})
     merged["settings"].update(payload.get("settings") or {})
+    merged["update_settings"].update(payload.get("update_settings") or {})
+    merged["update_check_cache"].update(payload.get("update_check_cache") or {})
     merged["settings"]["debug_logging"] = bool(merged["settings"].get("debug_logging", False))
     return merged, copy.deepcopy(merged), mtime_ns
 
