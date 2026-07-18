@@ -4,14 +4,20 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Release hardening and maintenance workflows are more dependable.
+## [0.3.2] - 2026-07-18
 
-- chore(project): align plugin metadata and GitHub Actions.
-- docs(runbook): document updater installation and on-device verification.
-- ci: update maintained Actions and add Dependabot coverage.
-- feat(release): add changelog validation tooling.
-- feat(release): gate publishes on CHANGELOG notes.
-- docs(agents): document the changelog rollover and release gates.
+Maintenance release: release-notes tooling and CI hardening.
+
+- No on-device/plugin behavior changes in this release.
+- Release-notes gate: every stable and dev release now requires curated,
+  dated `CHANGELOG.md` notes, enforced by `scripts/changelog.py` in CI and
+  `scripts/release.sh`, with the release title drawn from the section summary.
+- Deterministic `scripts/changelog.py rollover` command for cutting a version.
+- New `decky-release-notes` maintainer skill that drafts the notes and performs
+  an authorized local release cut; installer now selects among project skills.
+- CI: added Dependabot for GitHub Actions and moved maintained actions off Node 20.
+- Docs: on-device install / self-update runbook; plugin description now mentions
+  Steam community controller layouts.
 
 ## [0.3.1] - 2026-07-17
 
