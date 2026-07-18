@@ -64,6 +64,7 @@ jobs:
               --emit-release-metadata
             echo "channel=stable" >> "$GITHUB_OUTPUT"
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
           else
             node scripts/package.mjs
             echo "channel=dev" >> "$GITHUB_OUTPUT"
@@ -74,13 +75,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.package.outputs.tag }}
+          VERSION: ${{ steps.package.outputs.version }}
         run: |
           set -euo pipefail
+          python3 scripts/changelog.py check "$VERSION"
+          python3 scripts/changelog.py extract "$VERSION" > "$RUNNER_TEMP/release-notes.md"
+          title="$(python3 scripts/changelog.py title "$VERSION")"
           gh release create "$TAG" \
             Decky-Metadata.zip \
             "Decky-Metadata-$TAG.zip.sha256" \
             "Decky-Metadata-$TAG.manifest.json" \
-            --title "$TAG" --generate-notes
+            --title "$title" --notes-file "$RUNNER_TEMP/release-notes.md"
 
       - name: Publish rolling dev prerelease
         if: steps.package.outputs.channel == 'dev'

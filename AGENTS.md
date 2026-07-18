@@ -243,13 +243,16 @@ Prefer small, atomic commits (one coherent change each). Commit the passing
 current change before starting an unrelated one. Generated artifacts (caches,
 `node_modules`, zips) must never be committed.
 
-After the human-approved `dev` → `main` promotion, prepare a stable release with
-`scripts/release.sh`; it creates the local version commit, annotated tag, and
-hash-free package but only prints the outward-facing push commands. Pushing the
-tag lets GitHub Actions publish `Decky-Metadata.zip` **plus** the self-updater
-sidecars `Decky-Metadata-<tag>.zip.sha256` and `Decky-Metadata-<tag>.manifest.json`
-(the manifest carries the whole-zip sha256 the updater and Decky Loader verify).
-Then move the dev base to the next patch so the drift guard stays green:
+Before the human-approved `dev` → `main` promotion, prepare the stable changelog
+rollover on `dev` as described below. After promotion, run `scripts/release.sh`;
+it creates the version commit when the metadata version changes (otherwise it
+tags the current `HEAD`), an annotated tag, and a hash-free package, but only
+prints the outward-facing push commands. Pushing the tag lets GitHub Actions
+publish `Decky-Metadata.zip` **plus** the self-updater sidecars
+`Decky-Metadata-<tag>.zip.sha256` and
+`Decky-Metadata-<tag>.manifest.json` (the manifest carries the whole-zip sha256
+the updater and Decky Loader verify). Then move the dev base to the next patch so
+the drift guard stays green:
 
 ```
 scripts/release.sh 0.1.1
@@ -257,6 +260,31 @@ git push origin main
 git push origin v0.1.1
 scripts/bump_next_patch.sh
 ```
+
+**Release notes / CHANGELOG.** Stable releases require a curated, dated
+`## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md` whose body begins with a
+non-bullet summary line. Both `scripts/release.sh` and stable-release CI enforce
+this via `scripts/changelog.py`; CI enriches the release title to
+`vX.Y.Z — <summary>` from that leading line.
+
+Prepare each release rollover on `dev`, before the `dev` → `main` promotion.
+Rename the existing `## [Unreleased]` header to
+`## [X.Y.Z] - <today>`—do not add a second `[X.Y.Z]` header—ensure its content
+begins with a non-bullet summary, add a fresh empty `## [Unreleased]` above it,
+and commit. Then merge `dev` → `main` with `--no-ff` and run
+`scripts/release.sh X.Y.Z` on clean `main`. Preparing the rename on `dev` keeps
+both branches aligned: after the release, `scripts/bump_next_patch.sh` on `dev`
+sits above the fresh `[Unreleased]`, preventing stale dev notes and a later
+dated-section merge conflict.
+
+The `decky-release-notes` skill's Mode B automates this full local cut, including
+the `dev` → `main` merge and `scripts/release.sh`. It stops before pushing by
+default and publishes only when the maintainer explicitly requests it for that
+invocation.
+
+Manual dev prereleases publish the current `## [Unreleased]` notes. Immediately
+after a stable cut that new section is empty, so `dev-release.yml` intentionally
+refuses to publish until a new entry is added; this is not a bug.
 
 **Plugin identity.** Decky Loader keys an installed plugin off the `plugin.json`
 `name` field, and the self-updater must pass that exact string to
@@ -302,6 +330,11 @@ Two skills drive it:
 - **`/orchestrated-implementation`** — explicitly launches the background
   implementer on a plan, drives review cycles (`docs/review/<slug>-review-NN.md`),
   and merges the `feat/<slug>` branch on approval.
+
+The companion **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
+and can perform the full local stable cut required by §7. Its Mode B stops before
+the public push by default and publishes only with explicit per-invocation
+authorization.
 
 The engine's `finalize` calls `scripts/orchestration-hooks/{quality-gates,
 finalize-release}`. The base → `main` promotion is always a human gate. See

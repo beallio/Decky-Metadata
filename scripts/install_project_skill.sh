@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"; cd "$repo_root"
-source_path="$repo_root/skills/decky-project-workflow"
-install=0; allow_external=0; dest=""; agent="codex"
+install=0; allow_external=0; dest=""; agent="codex"; skill="decky-project-workflow"
 while (($#)); do
   case "$1" in
     --install) install=1 ;;
     --dest) [[ $# -ge 2 ]] || { echo "install-project-skill: --dest requires PATH" >&2; exit 2; }; dest="$2"; shift ;;
     --agent) [[ $# -ge 2 ]] || { echo "install-project-skill: --agent requires claude or codex" >&2; exit 2; }; agent="$2"; shift ;;
+    --skill) [[ $# -ge 2 ]] || { echo "install-project-skill: --skill requires NAME" >&2; exit 2; }; skill="$2"; shift ;;
     --allow-external-worktree) allow_external=1 ;;
     *) echo "install-project-skill: unknown option $1" >&2; exit 2 ;;
   esac
   shift
 done
 case "$agent" in codex|claude) ;; *) echo "install-project-skill: --agent must be claude or codex" >&2; exit 2;; esac
+[[ -n "$skill" && "$skill" != *"/"* && "$skill" != *".."* ]] || { echo "install-project-skill: invalid skill name: $skill" >&2; exit 2; }
+source_path="$repo_root/skills/$skill"
+[[ -d "$source_path" ]] || { echo "install-project-skill: unknown skill: $skill" >&2; exit 2; }
 if [[ -z "$dest" ]]; then
-  [[ "$agent" == codex ]] && dest="${CODEX_HOME:-$HOME/.codex}/skills/decky-project-workflow" || dest="$HOME/.claude/skills/decky-project-workflow"
+  [[ "$agent" == codex ]] && dest="${CODEX_HOME:-$HOME/.codex}/skills/$skill" || dest="$HOME/.claude/skills/$skill"
 fi
 dest="$(realpath -m -s "$dest")"; parent="$(dirname "$dest")"
 external=""; probe="$parent"

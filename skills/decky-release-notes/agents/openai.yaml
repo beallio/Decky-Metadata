@@ -1,0 +1,4 @@
+interface:
+  display_name: "Decky Release Notes"
+  short_description: "Draft changelog notes and prepare a stable release cut"
+  default_prompt: "Use $decky-release-notes to draft the CHANGELOG Unreleased notes or prepare a stable release cut for Decky-Metadata."
