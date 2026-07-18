@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -39,6 +40,12 @@ def run_cli(
     result = changelog.main(["--file", str(path), *args])
     captured = capsys.readouterr()
     return result, captured.out, captured.err
+
+
+def write_changelog(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / "CHANGELOG.md"
+    path.write_bytes(text.encode("utf-8"))
+    return path
 
 
 def test_dated_stable_section_with_summary_and_bullets_passes() -> None:
@@ -250,3 +257,168 @@ def test_title_missing_or_duplicate_fails(
     code, output, _ = run_cli(tmp_path, capsys, text, "title", "0.3.2")
     assert code == 1
     assert output == ""
+
+
+def test_rollover_moves_unreleased_body_and_leaves_fresh_empty_section(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = (
+        "# Changelog\n\n"
+        "## [Unreleased]\n"
+        "Harden the release pipeline.\n\n"
+        "- feat: deterministic rollover\n\n"
+        "## [0.3.1] - 2026-07-17\n"
+        "Previous release.\n"
+    )
+    path = write_changelog(tmp_path, text)
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    code = changelog.main(["--file", str(path), "rollover", "v0.3.2"])
+    output = capsys.readouterr().out
+
+    expected_header = f"## [0.3.2] - {date.today().isoformat()}"
+    rolled = path.read_text(encoding="utf-8")
+    assert code == 0
+    assert rolled.startswith(f"# Changelog\n\n## [Unreleased]\n\n{expected_header}\n")
+    assert "Harden the release pipeline.\n\n- feat: deterministic rollover" in rolled
+    assert rolled.endswith("## [0.3.1] - 2026-07-17\nPrevious release.\n")
+    assert output == (
+        "v0.3.2 — Harden the release pipeline\n"
+        "Harden the release pipeline.\n\n"
+        "- feat: deterministic rollover\n"
+    )
+
+    assert changelog.main(["--file", str(path), "check", "0.3.2"]) == 0
+    assert changelog.main(["--file", str(path), "check", "--unreleased"]) == 1
+    capsys.readouterr()
+
+
+def test_rollover_preserves_crlf_and_untouched_sections(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = (
+        "# Changelog\r\n\r\n"
+        "## [Unreleased]\r\n"
+        "Ship release automation.\r\n\r\n"
+        "- feat: cut locally\r\n\r\n"
+        "## [0.3.1] - 2026-07-17\r\n"
+        "Previous.\r\n"
+    )
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    rolled = changelog.rollover_text(
+        text,
+        "0.3.2",
+        release_date=date(2026, 7, 18),
+    )
+
+    assert "\n" not in rolled.replace("\r\n", "")
+    assert rolled == (
+        "# Changelog\r\n\r\n"
+        "## [Unreleased]\r\n\r\n"
+        "## [0.3.2] - 2026-07-18\r\n"
+        "Ship release automation.\r\n\r\n"
+        "- feat: cut locally\r\n\r\n"
+        "## [0.3.1] - 2026-07-17\r\n"
+        "Previous.\r\n"
+    )
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ("", "substantive"),
+        ("TODO", "substantive"),
+        ("- Real bullet", "non-bullet summary"),
+    ],
+)
+def test_rollover_refuses_invalid_unreleased_without_mutation(
+    body: str,
+    message: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = unreleased_text(body)
+    path = write_changelog(tmp_path, text)
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    code = changelog.main(["--file", str(path), "rollover", "0.3.2"])
+    error = capsys.readouterr().err
+
+    assert code == 1
+    assert message in error
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+def test_rollover_refuses_existing_version_without_mutation(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = unreleased_text("Ready to release.") + stable_text(version="0.3.2")
+    path = write_changelog(tmp_path, text)
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    code = changelog.main(["--file", str(path), "rollover", "0.3.2"])
+    error = capsys.readouterr().err
+
+    assert code == 1
+    assert "already exists" in error
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+@pytest.mark.parametrize("version", ["0.3.1", "0.3.0"])
+def test_rollover_refuses_version_not_ahead_of_highest_without_mutation(
+    version: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = unreleased_text("Ready to release.")
+    path = write_changelog(tmp_path, text)
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    code = changelog.main(["--file", str(path), "rollover", version])
+    error = capsys.readouterr().err
+
+    assert code == 1
+    assert "must be ahead of highest stable tag v0.3.1" in error
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+@pytest.mark.parametrize("version", ["01.2.3", "1.2.3-dev", "1.2.3+build"])
+def test_rollover_refuses_malformed_version_without_mutation(
+    version: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    text = unreleased_text("Ready to release.")
+    path = write_changelog(tmp_path, text)
+
+    code = changelog.main(["--file", str(path), "rollover", version])
+    error = capsys.readouterr().err
+
+    assert code == 1
+    assert "stable version" in error
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+def test_rollover_is_not_repeatable_for_the_same_version(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    text = unreleased_text("Ready to release.")
+    path = write_changelog(tmp_path, text)
+    monkeypatch.setattr(changelog, "_highest_released_version", lambda: (0, 3, 1))
+
+    assert changelog.main(["--file", str(path), "rollover", "0.3.2"]) == 0
+    first_result = path.read_bytes()
+    capsys.readouterr()
+
+    assert changelog.main(["--file", str(path), "rollover", "0.3.2"]) == 1
+    assert "already exists" in capsys.readouterr().err
+    assert path.read_bytes() == first_result

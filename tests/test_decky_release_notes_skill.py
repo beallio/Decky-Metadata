@@ -18,7 +18,9 @@ def test_frontmatter_and_triggers():
         "git log --no-merges",
         "scripts/changelog.py check",
         "scripts/changelog.py extract",
+        "scripts/changelog.py rollover",
         "scripts/release.sh",
+        "git push origin main",
     ):
         assert command in body
 
@@ -26,8 +28,10 @@ def test_frontmatter_and_triggers():
 def test_safety_boundaries():
     body = SKILL.read_text()
     for boundary in (
-        "never push",
+        "never pushes by default",
+        "push only if",
+        "explicit per-invocation publish instruction",
         "dev → main",
-        "does not run scripts/release.sh",
     ):
         assert boundary in body
+    assert "does not run scripts/release.sh" not in body
