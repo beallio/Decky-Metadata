@@ -9,6 +9,11 @@ from datetime import date
 from pathlib import Path
 from typing import Sequence
 
+if __package__:
+    from scripts import version_guard
+else:
+    import version_guard
+
 
 SECTION_HEADER_RE = re.compile(r"^##\s+\[(?P<key>[^\]]+)\](?P<suffix>.*)$")
 LEVEL_TWO_HEADER_RE = re.compile(r"^##(?:\s|$)")
@@ -189,6 +194,65 @@ def _stable_key(value: str) -> str:
     return key
 
 
+def _highest_released_version() -> tuple[int, int, int] | None:
+    """Resolve the highest stable tag through the repository version tooling."""
+
+    return version_guard.highest_stable_version(version_guard._read_git_tags())
+
+
+def _format_version(version: tuple[int, int, int]) -> str:
+    return ".".join(str(part) for part in version)
+
+
+def rollover_text(text: str, version: str, *, release_date: date) -> str:
+    """Return a changelog with a validated Unreleased section rolled forward."""
+
+    key = _stable_key(version)
+    unreleased = find_section(text, "Unreleased")
+    if unreleased is None:
+        raise ValueError('no "## [Unreleased]" section found')
+
+    if find_section(text, key) is not None:
+        raise ValueError(f'"## [{key}]" already exists')
+
+    first = _first_substantive(unreleased)
+    if first is None:
+        raise ValueError('"## [Unreleased]" needs substantive release notes')
+    if first[0]:
+        raise ValueError(
+            '"## [Unreleased]" needs a non-bullet summary line before its bullets'
+        )
+
+    requested = version_guard.parse_semver(key)
+    highest = _highest_released_version()
+    if highest is not None and requested <= highest:
+        raise ValueError(
+            f'"{key}" must be ahead of highest stable tag v{_format_version(highest)}'
+        )
+
+    lines = text.splitlines(keepends=True)
+    header_index: int | None = None
+    header_ending = ""
+    for index, line in enumerate(lines):
+        content = line.rstrip("\r\n")
+        match = SECTION_HEADER_RE.fullmatch(content)
+        if match is not None and match.group("key") == "Unreleased":
+            header_index = index
+            header_ending = line[len(content) :]
+            break
+
+    if header_index is None:
+        raise ValueError('no "## [Unreleased]" header line found')
+    if not header_ending:
+        raise ValueError('"## [Unreleased]" header must end before its release notes')
+
+    lines[header_index] = (
+        f"## [Unreleased]{header_ending}{header_ending}"
+        f"## [{key}] - {release_date.isoformat()}{header_ending}"
+    )
+    return "".join(lines)
+
+
 def _section_key(args: argparse.Namespace) -> tuple[str, bool]:
     if args.unreleased:
         if args.version is not None:
@@ -231,6 +295,45 @@ def _run_check(path: Path, key: str, stable: bool) -> int:
     return 0
 
 
+def _run_rollover(path: Path, key: str) -> int:
+    try:
+        original = path.read_bytes()
+        text = original.decode("utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"cannot read {path}: {exc}") from exc
+
+    rolled = rollover_text(text, key, release_date=date.today())
+    try:
+        path.write_bytes(rolled.encode("utf-8"))
+    except OSError as exc:
+        try:
+            path.write_bytes(original)
+        except OSError as restore_exc:
+            raise ValueError(
+                f"cannot write {path}: {exc}; also failed to restore it: {restore_exc}"
+            ) from exc
+        raise ValueError(f"cannot write {path}: {exc}") from exc
+
+    try:
+        _run_check(path, key, stable=True)
+        section = _load_section(path, key)
+        if section is None:
+            raise ValueError(f"post-check could not reload {_section_label(key)}")
+    except ValueError as exc:
+        try:
+            path.write_bytes(original)
+        except OSError as restore_exc:
+            raise ValueError(
+                f"rollover post-check failed: {exc}; "
+                f"also failed to restore {path}: {restore_exc}"
+            ) from exc
+        raise ValueError(f"rollover post-check failed; restored {path}: {exc}") from exc
+
+    print(render_title(key, section))
+    print(section.body)
+    return 0
+
+
 def _add_section_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("version", nargs="?")
     parser.add_argument(
@@ -260,6 +363,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     title = subparsers.add_parser("title", help="Print an enriched stable release title.")
     title.add_argument("version")
+
+    rollover = subparsers.add_parser(
+        "rollover",
+        help="Move substantive Unreleased notes into a dated stable section.",
+    )
+    rollover.add_argument("version")
     return parser
 
 
@@ -267,11 +376,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     path = args.file.resolve()
     try:
-        if args.command == "title":
+        if args.command in {"title", "rollover"}:
             key = _stable_key(args.version)
             stable = True
         else:
             key, stable = _section_key(args)
+
+        if args.command == "rollover":
+            return _run_rollover(path, key)
 
         section = _load_section(path, key)
         if args.command == "check":
