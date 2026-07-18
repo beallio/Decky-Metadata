@@ -1,7 +1,7 @@
 {
   "name": "decky-metadata",
   "version": "0.3.2",
-  "description": "A Decky Loader plugin that adds clean web metadata and Steam activity news to non-Steam games in Steam Big Picture.",
+  "description": "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
