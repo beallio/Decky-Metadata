@@ -1,0 +1,15 @@
+# Keep GitHub Actions up to date automatically. This is what backfills the
+# full-pin `astral-sh/setup-uv@vX.Y.Z` (no moving major tag) and any newer
+# action majors — Dependabot opens a PR when a newer version is available.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
