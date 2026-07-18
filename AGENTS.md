@@ -326,6 +326,10 @@ Two skills drive it:
   implementer on a plan, drives review cycles (`docs/review/<slug>-review-NN.md`),
   and merges the `feat/<slug>` branch on approval.
 
+The companion **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
+and prepares the release-notes rollover required by the stable release lifecycle
+in §7; it never publishes or performs the human-gated promotion.
+
 The engine's `finalize` calls `scripts/orchestration-hooks/{quality-gates,
 finalize-release}`. The base → `main` promotion is always a human gate. See
 `agent-orchestration/USAGE.md` for the conversational workflow.
