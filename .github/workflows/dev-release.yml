@@ -98,6 +98,17 @@ jobs:
             --emit-release-metadata
           sha256sum -c "Decky-Metadata-v$DEV_VERSION.zip.sha256"
 
+      - name: Validate and prepare dev release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/changelog.py check --unreleased
+          {
+            echo "Automated development pre-release built from commit $FULL_SHA."
+            echo
+            python3 scripts/changelog.py extract --unreleased
+          } > "$RUNNER_TEMP/dev-notes.md"
+
       - name: Create and push dev tag
         shell: bash
         run: |
@@ -120,4 +131,4 @@ jobs:
             --prerelease \
             --target "$FULL_SHA" \
             --title "v$DEV_VERSION (Dev)" \
-            --notes "Automated development pre-release built from commit $FULL_SHA."
+            --notes-file "$RUNNER_TEMP/dev-notes.md"

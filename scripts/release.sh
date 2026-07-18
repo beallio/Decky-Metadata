@@ -4,7 +4,7 @@
 # Expected stable flow:
 #   1. Merge dev into main with --no-ff and check out the clean main branch.
 #   2. Run: scripts/release.sh X.Y.Z
-#   3. Review the local release commit, annotated tag, and hash-free package.
+#   3. Review the annotated tag, hash-free package, and any version commit.
 #   4. Run the printed main/tag pushes when ready.
 #   5. Run scripts/bump_next_patch.sh on dev and commit the next development base.
 #
@@ -19,8 +19,9 @@ usage() {
   cat <<'EOF'
 Usage: scripts/release.sh X.Y.Z
 
-Prepare a stable release commit, annotated vX.Y.Z tag, and hash-free
-Decky-Metadata.zip on clean main. Merge dev to main with --no-ff before running
+Prepare an annotated vX.Y.Z tag and hash-free Decky-Metadata.zip on clean main.
+The script creates a version commit only when the metadata version changes;
+otherwise it tags the current HEAD. Merge dev to main with --no-ff before running
 this command. The script does not push; it prints the explicit push commands.
 
 Development builds need no manual command: every dev push refreshes the rolling
@@ -54,17 +55,22 @@ if [[ "$(git branch --show-current)" != "main" ]]; then
   exit 1
 fi
 
+python3 scripts/changelog.py check "$version"
 scripts/orchestration/run-quality-gates
 scripts/set_release_version.py "$version"
 git add package.json plugin.json
-git commit -m "release: $tag"
-git tag -a "$tag" -m "Release $tag"
+if ! git diff --cached --quiet; then
+  git commit -m "release: $tag"
+else
+  echo "release: package.json/plugin.json already at $version; tagging current HEAD"
+fi
 node scripts/package.mjs --release
+git tag -a "$tag" -m "Release $tag"
 
 cat <<EOF
 
 Prepared $tag locally on main and built Decky-Metadata.zip.
-Review the commit, tag, and package. When ready, publish with:
+Review the tag, package, and any version commit. When ready, publish with:
 
   git push origin main
   git push origin $tag
