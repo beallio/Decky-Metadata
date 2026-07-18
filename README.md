@@ -1,6 +1,6 @@
 # Decky Metadata
 
-[![License: GPL-3.0-or-later](https://img.shields.io/github/license/beallio/Decky-Metadata)](LICENSE)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
 [![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
 
@@ -8,7 +8,7 @@
 
 Decky Metadata helps your non-Steam games feel at home in your Steam library. On SteamOS and Steam Deck, it finds the details a shortcut is missing, brings in content from the matching Steam game, and gives you simple controls through Decky Loader.
 
-![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260717)
+![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260718)
 
 ## Install
 
