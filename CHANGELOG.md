@@ -9,7 +9,9 @@ Release hardening and maintenance workflows are more dependable.
 - chore(project): align plugin metadata and GitHub Actions.
 - docs(runbook): document updater installation and on-device verification.
 - ci: update maintained Actions and add Dependabot coverage.
-- docs(plan): define the curated changelog release gate.
+- feat(release): add changelog validation tooling.
+- feat(release): gate publishes on CHANGELOG notes.
+- docs(agents): document the changelog rollover and release gates.
 
 ## [0.3.1] - 2026-07-17
 
