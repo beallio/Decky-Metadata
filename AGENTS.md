@@ -277,6 +277,11 @@ both branches aligned: after the release, `scripts/bump_next_patch.sh` on `dev`
 sits above the fresh `[Unreleased]`, preventing stale dev notes and a later
 dated-section merge conflict.
 
+The `decky-release-notes` skill's Mode B automates this full local cut, including
+the `dev` → `main` merge and `scripts/release.sh`. It stops before pushing by
+default and publishes only when the maintainer explicitly requests it for that
+invocation.
+
 Manual dev prereleases publish the current `## [Unreleased]` notes. Immediately
 after a stable cut that new section is empty, so `dev-release.yml` intentionally
 refuses to publish until a new entry is added; this is not a bug.
@@ -327,8 +332,9 @@ Two skills drive it:
   and merges the `feat/<slug>` branch on approval.
 
 The companion **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
-and prepares the release-notes rollover required by the stable release lifecycle
-in §7; it never publishes or performs the human-gated promotion.
+and can perform the full local stable cut required by §7. Its Mode B stops before
+the public push by default and publishes only with explicit per-invocation
+authorization.
 
 The engine's `finalize` calls `scripts/orchestration-hooks/{quality-gates,
 finalize-release}`. The base → `main` promotion is always a human gate. See
