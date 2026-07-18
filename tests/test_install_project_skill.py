@@ -28,3 +28,36 @@ def test_external_git_worktree_requires_opt_in(tmp_path):
     refused = invoke(dest, "--install")
     assert refused.returncode == 1 and "external Git worktree" in refused.stderr
     assert invoke(dest, "--install", "--allow-external-worktree").returncode == 0
+
+
+def test_selects_release_notes_skill_and_preserves_default(tmp_path):
+    release_dest = tmp_path / "skills/decky-release-notes"
+    release_dry = invoke(release_dest, "--skill", "decky-release-notes")
+    assert release_dry.returncode == 0
+    assert str(ROOT / "skills/decky-release-notes") in release_dry.stdout
+    assert not release_dest.exists()
+
+    release_install = invoke(
+        release_dest, "--skill", "decky-release-notes", "--install"
+    )
+    assert release_install.returncode == 0 and release_dest.is_symlink()
+    assert release_dest.resolve() == ROOT / "skills/decky-release-notes"
+
+    default_dest = tmp_path / "default/decky-project-workflow"
+    default_dry = invoke(default_dest)
+    assert default_dry.returncode == 0
+    assert str(ROOT / "skills/decky-project-workflow") in default_dry.stdout
+
+
+def test_rejects_unknown_and_traversal_skill_names(tmp_path):
+    unknown_dest = tmp_path / "unknown/nope"
+    unknown = invoke(unknown_dest, "--skill", "nope", "--install")
+    assert unknown.returncode == 2
+    assert "unknown skill" in unknown.stderr
+    assert not unknown_dest.exists()
+
+    traversal_dest = tmp_path / "traversal/evil"
+    traversal = invoke(traversal_dest, "--skill", "../evil", "--install")
+    assert traversal.returncode == 2
+    assert "invalid skill name" in traversal.stderr
+    assert not traversal_dest.exists()
