@@ -97,14 +97,16 @@ jobs:
           set -euo pipefail
           title="Dev build ($SHORT_HASH)"
           notes="Automated development build from commit $GITHUB_SHA."
-          if gh release view dev >/dev/null 2>&1; then
-            git push origin "$GITHUB_SHA:refs/tags/dev" --force
+          # Tag name is 'dev-build' (not 'dev') so it never collides with the
+          # 'dev' branch, which would make bare `git`/`gh` refs ambiguous.
+          if gh release view dev-build >/dev/null 2>&1; then
+            git push origin "$GITHUB_SHA:refs/tags/dev-build" --force
             # --clobber removes the old asset before uploading; a brief gap is
             # acceptable for this prerelease testing channel.
-            gh release upload dev Decky-Metadata.zip --clobber
-            gh release edit dev --prerelease --title "$title" --notes "$notes"
+            gh release upload dev-build Decky-Metadata.zip --clobber
+            gh release edit dev-build --prerelease --title "$title" --notes "$notes"
           else
-            gh release create dev Decky-Metadata.zip \
+            gh release create dev-build Decky-Metadata.zip \
               --prerelease \
               --target "$GITHUB_SHA" \
               --title "$title" \

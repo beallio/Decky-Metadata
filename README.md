@@ -14,7 +14,7 @@ Decky Metadata helps your non-Steam games feel at home in your Steam library. On
 
 Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then download `Decky-Metadata.zip` and sideload it with Decky's developer-mode plugin installer. You can also copy the ZIP asset's URL and paste it into Decky's install-from-URL flow.
 
-Want to try changes before the next stable release? The rolling [`dev` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev) is the testing channel, so it may be less stable.
+Want to try changes before the next stable release? The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build) is the testing channel, so it may be less stable.
 
 ## Find the details your games are missing
 
