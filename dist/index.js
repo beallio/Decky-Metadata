@@ -6260,6 +6260,52 @@ const Content = () => {
     return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion })] }));
 };
 
+/*
+ * Resolve Steam's gamepad-aware <textarea> so the metadata editor's Description
+ * field can receive on-screen-keyboard input in Gamepad UI.
+ *
+ * A plain <textarea> takes DOM focus but never receives OSK text: Steam only
+ * routes the virtual keyboard into inputs built by its own element factory.
+ * That factory (internally `v0(tag)`) returns a forwardRef component plumbed
+ * into the virtual keyboard; `v0("input")` is what @decky/ui's TextField wraps,
+ * and `v0("textarea")` is the multiline sibling Steam uses in its own UI but
+ * does not export.
+ *
+ * We locate the factory by the virtual-keyboard prop plumbing that only it
+ * contains, then build the textarea component once. If Steam's internals shift
+ * and resolution fails, we return null and the caller falls back to a plain
+ * textarea (degraded, but never a crash).
+ */
+
+const resolveGamepadTextArea = () => {
+    try {
+        const factory = DFL.findModuleExport((moduleExport) => typeof moduleExport === "function" &&
+            typeof moduleExport.toString === "function" &&
+            moduleExport.toString().includes("virtualKeyboardProps") &&
+            moduleExport.toString().includes("BIsElementValidForInput"));
+        if (typeof factory !== "function")
+            return null;
+        const component = factory("textarea");
+        return typeof component === "function" || (component && typeof component === "object")
+            ? component
+            : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+let cached;
+/**
+ * The resolved gamepad textarea component, or null when unavailable. Resolved
+ * lazily on first use and cached (including a null result, so a miss is not
+ * retried on every render).
+ */
+const getGamepadTextArea = () => {
+    if (cached === undefined)
+        cached = resolveGamepadTextArea();
+    return cached;
+};
+
 var StoreCategory;
 (function (StoreCategory) {
     StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
@@ -6537,13 +6583,29 @@ const editorScopedCss = `
 }
 `;
 
+// Shared look for the multiline Description field, applied to both the
+// gamepad-aware textarea and the plain fallback.
+const descriptionTextareaStyle = {
+    width: "100%",
+    minHeight: 144,
+    boxSizing: "border-box",
+    resize: "vertical",
+    borderRadius: 4,
+    padding: 10,
+    color: "white",
+    background: "rgba(0,0,0,0.28)",
+    border: "1px solid rgba(255,255,255,0.18)",
+};
 const MetadataPage = () => {
     const editorRootRef = SP_REACT.useRef(null);
     const descriptionRef = SP_REACT.useRef(null);
-    // Move real DOM focus onto the textarea. Steam only shows the on-screen
-    // keyboard (and routes the Steam+X shortcut) for the focused editable
-    // element; a bare <textarea> otherwise never receives focus because gamepad
-    // navigation stops at the wrapping Focusable.
+    // Steam's own gamepad-aware textarea is what receives on-screen-keyboard
+    // input; a plain <textarea> cannot. Resolve it once. Null means Steam's
+    // internals shifted, and we fall back to a Focusable-wrapped textarea below.
+    const GamepadTextArea = SP_REACT.useMemo(() => getGamepadTextArea(), []);
+    // Fallback path only: move real DOM focus onto the plain textarea so it is
+    // reachable and (with a physical keyboard / Steam+X) editable. Steam's own
+    // gamepad text area needs none of this.
     const focusDescription = SP_REACT.useCallback(() => {
         const el = descriptionRef.current;
         if (!el)
@@ -6551,7 +6613,7 @@ const MetadataPage = () => {
         // Focusable installs onActivate as the wrapper's onClick, so a pointer
         // click inside the textarea bubbles here after the browser has already
         // focused it and placed the caret at the click position. Leave that alone;
-        // only take over when focus is arriving from elsewhere (gamepad A press),
+        // only take over when focus arrives from elsewhere (gamepad A press),
         // putting the caret at the end so typing appends rather than overwrites.
         if (document.activeElement === el)
             return;
@@ -6736,21 +6798,15 @@ const MetadataPage = () => {
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                                ...prev,
+                                                description: e.target.value,
+                                                short_description: e.target.value,
+                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,
-                                                })), style: {
-                                                    width: "100%",
-                                                    minHeight: 144,
-                                                    boxSizing: "border-box",
-                                                    resize: "vertical",
-                                                    borderRadius: 4,
-                                                    padding: 10,
-                                                    color: "white",
-                                                    background: "rgba(0,0,0,0.28)",
-                                                    border: "1px solid rgba(255,255,255,0.18)",
-                                                } }) })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";

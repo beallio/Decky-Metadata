@@ -4,14 +4,17 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Bug fixes for the library context menu and the metadata editor's description field.
+
 ### Fixed
 
 - Library context menu: opening "Decky metadata..." for one non-Steam game and
   then another no longer shows the first game's metadata for every subsequent
   game; each entry now opens the game whose menu is actually open.
-- Metadata editor: the Description field now takes keyboard focus, so the
-  on-screen keyboard and the Steam + X shortcut work when editing it. Pointer
-  taps keep the caret where you place it.
+- Metadata editor: the multiline Description field now accepts on-screen
+  keyboard input on the Deck. It previously took focus but could not be typed
+  into, because Steam only routes the virtual keyboard to its own field
+  components; the editor now uses Steam's gamepad-aware text area.
 
 ## [0.3.2] - 2026-07-18
 
