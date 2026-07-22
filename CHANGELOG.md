@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-21
+
 Bug fixes for the library context menu and the metadata editor's description field.
 
 ### Fixed
