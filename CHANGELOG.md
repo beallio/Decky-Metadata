@@ -4,6 +4,15 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Library context menu: opening "Decky metadata..." for one non-Steam game and
+  then another no longer shows the first game's metadata for every subsequent
+  game; each entry now opens the game whose menu is actually open.
+- Metadata editor: the Description field now takes keyboard focus, so the
+  on-screen keyboard and the Steam + X shortcut work when editing it. Pointer
+  taps keep the caret where you place it.
+
 ## [0.3.2] - 2026-07-18
 
 Maintenance release: release-notes tooling and CI hardening.

@@ -74,6 +74,29 @@ import {
 
 export const MetadataPage = () => {
   const editorRootRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+
+  // Move real DOM focus onto the textarea. Steam only shows the on-screen
+  // keyboard (and routes the Steam+X shortcut) for the focused editable
+  // element; a bare <textarea> otherwise never receives focus because gamepad
+  // navigation stops at the wrapping Focusable.
+  const focusDescription = useCallback(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    // Focusable installs onActivate as the wrapper's onClick, so a pointer
+    // click inside the textarea bubbles here after the browser has already
+    // focused it and placed the caret at the click position. Leave that alone;
+    // only take over when focus is arriving from elsewhere (gamepad A press),
+    // putting the caret at the end so typing appends rather than overwrites.
+    if (document.activeElement === el) return;
+    el.focus();
+    const end = el.value.length;
+    try {
+      el.setSelectionRange(end, end);
+    } catch (_e) {
+      /* setSelectionRange is unsupported on some field types; ignore. */
+    }
+  }, []);
   const { appid } = useParams<{ appid: string }>();
   const appId = Number(appid);
   const overview = getOverview(appId);
@@ -361,9 +384,12 @@ export const MetadataPage = () => {
                 <Focusable
                   className={editorFocusTargetClassName}
                   style={{ width: "100%" }}
+                  onActivate={focusDescription}
                 >
                   <textarea
+                    ref={descriptionRef}
                     className={editorFocusTargetClassName}
+                    tabIndex={0}
                     value={metadata.description}
                     onChange={(e) =>
                       setMetadata((prev) => ({

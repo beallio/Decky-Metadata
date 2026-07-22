@@ -4602,17 +4602,24 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     let innerPatch;
     let outerPatch;
+    // Steam reuses a single context-menu instance and installs the inner
+    // (body) render patches only once. Those patches must read the appid of
+    // whichever game is *currently* opening the menu, not the one captured on
+    // first render, so keep the latest values in mutable holders that the outer
+    // render refreshes on every open.
+    let currentOwnerAppId = 0;
+    let currentFallbackAppId = 0;
     try {
         outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-            const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-            const fallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
+            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
             if (!innerPatch) {
                 innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
                     // First render of the menu body.
                     DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
                         const items = output?.props?.children?.[0];
                         try {
-                            syncOurEntry("first-render", items, ownerAppId, fallbackAppId);
+                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
                         }
                         catch (_error) {
                             // Steam reshapes this tree often; skip on mismatch.
@@ -4623,7 +4630,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                     DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
                             if (shouldUpdate === true) {
-                                syncOurEntry("should-update", nextProps.children, ownerAppId, fallbackAppId);
+                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
                             }
                             else {
                                 removeOurEntry(nextProps.children);
@@ -4639,7 +4646,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             }
             else if (Array.isArray(menu?.props?.children)) {
                 try {
-                    syncOurEntry("outer-rerender", menu.props.children, ownerAppId, fallbackAppId);
+                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
                 }
                 catch (_error) {
                     // Ignore non-matching menus.
@@ -6532,6 +6539,31 @@ const editorScopedCss = `
 
 const MetadataPage = () => {
     const editorRootRef = SP_REACT.useRef(null);
+    const descriptionRef = SP_REACT.useRef(null);
+    // Move real DOM focus onto the textarea. Steam only shows the on-screen
+    // keyboard (and routes the Steam+X shortcut) for the focused editable
+    // element; a bare <textarea> otherwise never receives focus because gamepad
+    // navigation stops at the wrapping Focusable.
+    const focusDescription = SP_REACT.useCallback(() => {
+        const el = descriptionRef.current;
+        if (!el)
+            return;
+        // Focusable installs onActivate as the wrapper's onClick, so a pointer
+        // click inside the textarea bubbles here after the browser has already
+        // focused it and placed the caret at the click position. Leave that alone;
+        // only take over when focus is arriving from elsewhere (gamepad A press),
+        // putting the caret at the end so typing appends rather than overwrites.
+        if (document.activeElement === el)
+            return;
+        el.focus();
+        const end = el.value.length;
+        try {
+            el.setSelectionRange(end, end);
+        }
+        catch (_e) {
+            /* setSelectionRange is unsupported on some field types; ignore. */
+        }
+    }, []);
     const { appid } = DFL.useParams();
     const appId = Number(appid);
     const overview = getOverview(appId);
@@ -6704,7 +6736,7 @@ const MetadataPage = () => {
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, children: SP_JSX.jsx("textarea", { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,

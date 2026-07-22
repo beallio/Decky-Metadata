@@ -14,5 +14,5 @@
     "description": "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   },
-  "version": "0.3.2"
+  "version": "0.3.3"
 }
