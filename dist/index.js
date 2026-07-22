@@ -4602,17 +4602,24 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     let innerPatch;
     let outerPatch;
+    // Steam reuses a single context-menu instance and installs the inner
+    // (body) render patches only once. Those patches must read the appid of
+    // whichever game is *currently* opening the menu, not the one captured on
+    // first render, so keep the latest values in mutable holders that the outer
+    // render refreshes on every open.
+    let currentOwnerAppId = 0;
+    let currentFallbackAppId = 0;
     try {
         outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-            const ownerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-            const fallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
+            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
             if (!innerPatch) {
                 innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
                     // First render of the menu body.
                     DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
                         const items = output?.props?.children?.[0];
                         try {
-                            syncOurEntry("first-render", items, ownerAppId, fallbackAppId);
+                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
                         }
                         catch (_error) {
                             // Steam reshapes this tree often; skip on mismatch.
@@ -4623,7 +4630,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                     DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
                             if (shouldUpdate === true) {
-                                syncOurEntry("should-update", nextProps.children, ownerAppId, fallbackAppId);
+                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
                             }
                             else {
                                 removeOurEntry(nextProps.children);
@@ -4639,7 +4646,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             }
             else if (Array.isArray(menu?.props?.children)) {
                 try {
-                    syncOurEntry("outer-rerender", menu.props.children, ownerAppId, fallbackAppId);
+                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
                 }
                 catch (_error) {
                     // Ignore non-matching menus.
