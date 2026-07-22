@@ -8,6 +8,7 @@ import {
   ToggleField,
   useParams,
 } from "@decky/ui";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   applyFetchedMetadata,
@@ -25,6 +26,7 @@ import {
   isNonSteamApp,
   metadataCache,
 } from "./steam";
+import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
   CATEGORY_LABELS,
   MetadataData,
@@ -72,21 +74,39 @@ import {
   rowStackStyle,
 } from "./styles";
 
+// Shared look for the multiline Description field, applied to both the
+// gamepad-aware textarea and the plain fallback.
+const descriptionTextareaStyle: CSSProperties = {
+  width: "100%",
+  minHeight: 144,
+  boxSizing: "border-box",
+  resize: "vertical",
+  borderRadius: 4,
+  padding: 10,
+  color: "white",
+  background: "rgba(0,0,0,0.28)",
+  border: "1px solid rgba(255,255,255,0.18)",
+};
+
 export const MetadataPage = () => {
   const editorRootRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
-  // Move real DOM focus onto the textarea. Steam only shows the on-screen
-  // keyboard (and routes the Steam+X shortcut) for the focused editable
-  // element; a bare <textarea> otherwise never receives focus because gamepad
-  // navigation stops at the wrapping Focusable.
+  // Steam's own gamepad-aware textarea is what receives on-screen-keyboard
+  // input; a plain <textarea> cannot. Resolve it once. Null means Steam's
+  // internals shifted, and we fall back to a Focusable-wrapped textarea below.
+  const GamepadTextArea = useMemo(() => getGamepadTextArea(), []);
+
+  // Fallback path only: move real DOM focus onto the plain textarea so it is
+  // reachable and (with a physical keyboard / Steam+X) editable. Steam's own
+  // gamepad text area needs none of this.
   const focusDescription = useCallback(() => {
     const el = descriptionRef.current;
     if (!el) return;
     // Focusable installs onActivate as the wrapper's onClick, so a pointer
     // click inside the textarea bubbles here after the browser has already
     // focused it and placed the caret at the click position. Leave that alone;
-    // only take over when focus is arriving from elsewhere (gamepad A press),
+    // only take over when focus arrives from elsewhere (gamepad A press),
     // putting the caret at the end so typing appends rather than overwrites.
     if (document.activeElement === el) return;
     el.focus();
@@ -381,15 +401,9 @@ export const MetadataPage = () => {
               </div>
               <div style={editorDescriptionFieldStyle}>
                 <label style={editorLabelStyle}>{"Description"}</label>
-                <Focusable
-                  className={editorFocusTargetClassName}
-                  style={{ width: "100%" }}
-                  onActivate={focusDescription}
-                >
-                  <textarea
-                    ref={descriptionRef}
+                {GamepadTextArea ? (
+                  <GamepadTextArea
                     className={editorFocusTargetClassName}
-                    tabIndex={0}
                     value={metadata.description}
                     onChange={(e) =>
                       setMetadata((prev) => ({
@@ -398,19 +412,30 @@ export const MetadataPage = () => {
                         short_description: e.target.value,
                       }))
                     }
-                    style={{
-                      width: "100%",
-                      minHeight: 144,
-                      boxSizing: "border-box",
-                      resize: "vertical",
-                      borderRadius: 4,
-                      padding: 10,
-                      color: "white",
-                      background: "rgba(0,0,0,0.28)",
-                      border: "1px solid rgba(255,255,255,0.18)",
-                    }}
+                    style={descriptionTextareaStyle}
                   />
-                </Focusable>
+                ) : (
+                  <Focusable
+                    className={editorFocusTargetClassName}
+                    style={{ width: "100%" }}
+                    onActivate={focusDescription}
+                  >
+                    <textarea
+                      ref={descriptionRef}
+                      className={editorFocusTargetClassName}
+                      tabIndex={0}
+                      value={metadata.description}
+                      onChange={(e) =>
+                        setMetadata((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                          short_description: e.target.value,
+                        }))
+                      }
+                      style={descriptionTextareaStyle}
+                    />
+                  </Focusable>
+                )}
               </div>
               <div style={editorSourceGroupStyle}>
                 <label style={editorLabelStyle}>{"Developers"}</label>
