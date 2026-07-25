@@ -4,6 +4,18 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-25
+
+Maintenance release: CI build-toolchain action updates.
+
+- No on-device/plugin behavior changes in this release.
+
+### Changed
+
+- CI: the quality-gates workflow now uses `actions/setup-python@v7` and
+  `astral-sh/setup-uv@v9.0.0`. Both actions run only on the build runner and
+  are never part of the packaged plugin, so installed plugins are unaffected.
+
 ## [0.3.4] - 2026-07-24
 
 Maintenance release: store listing image and build-toolchain dependency patches.
