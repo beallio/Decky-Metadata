@@ -28,14 +28,14 @@ jobs:
         run: npm ci
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
       - name: Install uv
-        # setup-uv publishes no bare "v8" moving tag (only full versions), so
+        # setup-uv publishes no bare "v9" moving tag (only full versions), so
         # pin the exact latest release. Node 24, unlike the deprecated v6.
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
