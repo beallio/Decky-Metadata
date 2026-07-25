@@ -4,6 +4,26 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-24
+
+Maintenance release: store listing image and build-toolchain dependency patches.
+
+- No on-device/plugin behavior changes in this release.
+
+### Changed
+
+- The plugin's store listing image no longer points at the plugin template's
+  placeholder, which rendered a GitHub repository card for an unrelated
+  project. It now shows Decky Metadata's own Steam Community controller
+  layouts screenshot.
+
+### Security
+
+- Patched four high-severity advisories in transitive build dependencies
+  (`brace-expansion`, `fast-uri`), plus `postcss`, via a lockfile-only update.
+  All are devDependencies of the rollup/vitest toolchain and are never part of
+  the packaged plugin, so no installed plugin was ever exposed.
+
 ## [0.3.3] - 2026-07-21
 
 Bug fixes for the library context menu and the metadata editor's description field.
