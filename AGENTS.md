@@ -286,12 +286,36 @@ Manual dev prereleases publish the current `## [Unreleased]` notes. Immediately
 after a stable cut that new section is empty, so `dev-release.yml` intentionally
 refuses to publish until a new entry is added; this is not a bug.
 
-**Plugin identity.** Decky Loader keys an installed plugin off the `plugin.json`
-`name` field, and the self-updater must pass that exact string to
-`install_plugin` to replace in place. The canonical identity is
-`Decky-Metadata` (matching the zip folder and `package.json` name); the QAM
-header still shows the human-readable "Decky Metadata" via `titleView`. Do not
-reintroduce a space into the `name` field.
+**Plugin identity — distribution vs Decky display.** Two names, deliberately
+different. Do not "unify" them.
+
+- **Decky display: `Decky Metadata`** (with a space) — lives in `plugin.json`
+  `name`, in the QAM header via `titleView`, and in `EXPECTED_PLUGIN_NAME` in
+  `src/updater/deckyInstaller.ts`. Decky Loader keys an installed plugin off the
+  manifest `name`, and the self-updater passes that exact string to
+  `install_plugin` to replace in place. **Changing it breaks in-place updates for
+  everyone already installed.**
+- **Distribution: `Decky-Metadata`** (hyphenated) — the repository name,
+  `PLUGIN_FOLDER_NAME` in `scripts/package.mjs`, the ZIP root and filename, and
+  the installed directory `/home/deck/homebrew/plugins/Decky-Metadata` that
+  `scripts/deck/deploy.sh`, `install_release.sh`, and `decky_doctor.py` all
+  target. Its npm spelling is `decky-metadata`.
+
+Decky derives the settings, runtime, and log directories from the archive/install
+folder rather than from `plugin.json` `name`, which is why the two can differ
+safely.
+
+This split was made deliberately in `d0b8c49 refactor(identity): plugin identity
+'Decky-Metadata' -> 'Decky Metadata'` (branch `identity-space`, merged as
+`c4fb484`). An earlier version of this paragraph predated that commit and said
+the canonical identity was `Decky-Metadata` and to "not reintroduce a space into
+the `name` field" — following that instruction today would strip the space from
+`plugin.json` and break in-place updates. Corrected 2026-07-28.
+
+`Decky-SteamAchievements` uses the identical pattern (`Achievements Restored`
+display, `Decky-SteamAchievements` distribution), and the upstream reference is
+the installed `Storage Cleaner` plugin, whose folder is `decky-storage-cleaner`
+while its manifest/list name is `Storage Cleaner`.
 
 **Release channels.** Two GitHub prerelease flows exist and must not be
 conflated:
