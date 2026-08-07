@@ -4,11 +4,23 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-08-07
+
+Controller Settings → Search now shows only the layouts belonging to the game you are configuring.
+
 ### Fixed
 
-- Controller Settings Search now isolates non-Steam shortcut layouts from other
-  shortcuts and injected matched-source layouts, so unrelated shortcut and source
-  records no longer appear on a different shortcut's search page.
+- Controller Settings → Search on a non-Steam game lists that game's layouts and
+  its matched Steam game's layouts, and nothing else. Previously the layouts of
+  any other game whose Controller Settings you had opened during the session —
+  including ordinary Steam games — kept appearing on every game you visited
+  afterwards.
+- Controller Settings → Search on a regular Steam game no longer lists layouts
+  belonging to your non-Steam games. Steam's own cross-game search results for
+  Steam titles are unchanged.
+- The Search filter now takes the app being configured from Steam's controller
+  configurator rather than inferring it from the previous request, so it can no
+  longer act on a stale game after switching pages.
 
 ## [0.3.5] - 2026-07-25
 
