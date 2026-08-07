@@ -6,12 +6,13 @@ import type {
 import type { Unpatch } from "./core";
 import {
   filterControllerSearchConfigs,
-  isNativeSteamAppid,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
   mergeRecommendedTemplates,
   type ControllerLayoutContext,
+  type ControllerSearchContext,
   type ControllerConfigMergeResult,
+  resolveControllerSearchContext,
 } from "./controllerLayoutPolicy";
 
 export const CONTROLLER_LAYOUT_WARNING = {
@@ -217,16 +218,12 @@ export const installControllerLayouts = (
   let timer: TimerHandle | undefined;
   let attempts = 0;
   let installedDescriptors: ValidatedTargets["descriptors"] = [];
-  let activeDisplayedShortcutAppid: number | null = null;
-  let activeMatchedSourceAppid: number | null = null;
   const supplementalSourceAppids = new Set<number>();
   const supplementalQueryKeys = new Map<number, SupplementalQueryKey>();
 
   const trip = (failure: ControllerLayoutFailure): void => {
     if (disabled || cleanedUp) return;
     disabled = true;
-    activeDisplayedShortcutAppid = null;
-    activeMatchedSourceAppid = null;
     supplementalSourceAppids.clear();
     supplementalQueryKeys.clear();
     try {
@@ -257,42 +254,27 @@ export const installControllerLayouts = (
 
   const installValidatedTargets = (targets: ValidatedTargets): void => {
     const applied: ValidatedTargets["descriptors"] = [];
-    const establishDisplayedContext = (displayedAppid: unknown): number | null => {
-      activeDisplayedShortcutAppid = null;
-      activeMatchedSourceAppid = null;
-      if (!validAppid(displayedAppid)) return null;
-      const context: unknown = dependencies.resolveContext(displayedAppid);
-      if (
-        typeof context !== "object" ||
-        context === null ||
-        typeof (context as ControllerLayoutContext).isNonSteamShortcut !== "boolean"
-      ) {
-        throw new Error("invalid controller layout context");
+    const resolveDisplayedContext = (
+      displayedAppid: unknown,
+    ): ControllerSearchContext => {
+      if (!validAppid(displayedAppid)) {
+        return {
+          displayedAppid: null,
+          isNonSteamShortcut: false,
+          matchedSourceAppid: null,
+        };
       }
-      const isNonSteamShortcut = (context as ControllerLayoutContext).isNonSteamShortcut;
-      const matchedAppid = (context as ControllerLayoutContext).matchedSourceAppid;
-      if (
-        matchedAppid !== null &&
-        (
-          !isNativeSteamAppid(matchedAppid) ||
-          matchedAppid === displayedAppid ||
-          !isNonSteamShortcut
-        )
-      ) {
-        throw new Error("invalid matched appid");
-      }
-      if (!isNonSteamShortcut) {
-        if (matchedAppid !== null) throw new Error("native context has matched appid");
-        if (supplementalSourceAppids.has(displayedAppid)) {
-          supplementalSourceAppids.delete(displayedAppid);
-          supplementalQueryKeys.delete(displayedAppid);
-        }
-        return null;
-      }
-      activeDisplayedShortcutAppid = displayedAppid;
-      if (matchedAppid === null) return null;
-      activeMatchedSourceAppid = matchedAppid;
-      return matchedAppid;
+      return resolveControllerSearchContext(
+        dependencies.resolveContext(displayedAppid),
+        displayedAppid,
+      );
+    };
+    const resolveStoreAppid = (store: ValidatedTargets["store"]): number | null => {
+      const candidateAppid = store.m_appId;
+      if (validAppid(candidateAppid)) return candidateAppid;
+      const candidateLastAppid = store.m_lastValidAppId;
+      if (validAppid(candidateLastAppid)) return candidateLastAppid;
+      return null;
     };
     const inputEntry = targets.descriptors[0];
     const originalQuery = inputEntry.descriptor.value;
@@ -301,10 +283,14 @@ export const installControllerLayouts = (
       if (disabled) return nativeResult;
       const displayedAppid = args[0];
       const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
-      let matchedAppid: number | null = null;
+      let context: ControllerSearchContext | null = null;
       try {
-        matchedAppid = establishDisplayedContext(displayedAppid);
-        if (matchedAppid === null || validDisplayedAppid === undefined) return nativeResult;
+        if (validDisplayedAppid === undefined) return nativeResult;
+        context = resolveDisplayedContext(displayedAppid);
+      if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+          return nativeResult;
+        }
+        const matchedAppid = context.matchedSourceAppid;
         const queryKey = supplementalQueryKey(matchedAppid, args);
         if (!queryKey) {
           trip({
@@ -315,7 +301,6 @@ export const installControllerLayouts = (
           });
           return nativeResult;
         }
-        activeMatchedSourceAppid = matchedAppid;
         const cacheExisted = targets.store.m_mapAppConfigs.has(matchedAppid);
         if (
           cacheExisted &&
@@ -333,7 +318,7 @@ export const installControllerLayouts = (
           section: "query",
           code: "runtime-error",
           displayedAppid: validDisplayedAppid,
-          matchedAppid: matchedAppid ?? undefined,
+          matchedAppid: context?.matchedSourceAppid ?? undefined,
           detail: errorDetail(error),
         });
       }
@@ -350,10 +335,14 @@ export const installControllerLayouts = (
         if (disabled) return nativeBase;
         const displayedAppid = args[0];
         const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
-        let matchedAppid: number | null = null;
+        let context: ControllerSearchContext | null = null;
         try {
-          matchedAppid = establishDisplayedContext(displayedAppid);
-          if (matchedAppid === null || validDisplayedAppid === undefined) return nativeBase;
+          if (validDisplayedAppid === undefined) return nativeBase;
+          context = resolveDisplayedContext(displayedAppid);
+          if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+            return nativeBase;
+          }
+          const matchedAppid = context.matchedSourceAppid;
           if (!Array.isArray(nativeBase)) {
             trip({
               section,
@@ -381,7 +370,7 @@ export const installControllerLayouts = (
             section,
             code: "runtime-error",
             displayedAppid: validDisplayedAppid,
-            matchedAppid: matchedAppid ?? undefined,
+            matchedAppid: context?.matchedSourceAppid ?? undefined,
             detail: errorDetail(error),
           });
           return nativeBase;
@@ -396,21 +385,26 @@ export const installControllerLayouts = (
     const searchWrapper = function (this: unknown, ...args: unknown[]) {
       const nativeResult = originalSearch.apply(this, args);
       if (disabled) return nativeResult;
-      const displayedAppid = activeDisplayedShortcutAppid;
-      const matchedAppid = activeMatchedSourceAppid;
       try {
+        const storeAppid = resolveStoreAppid(targets.store);
+        const context = storeAppid === null
+          ? {
+            displayedAppid: null,
+            isNonSteamShortcut: false,
+            matchedSourceAppid: null,
+          }
+          : resolveDisplayedContext(storeAppid);
         const result = filterControllerSearchConfigs(
           nativeResult,
-          displayedAppid,
-          matchedAppid,
+          context,
           supplementalSourceAppids,
         );
         if (result.ok === false) {
           trip({
             section: "search",
             code: result.reason,
-            displayedAppid: displayedAppid ?? undefined,
-            matchedAppid: matchedAppid ?? undefined,
+            displayedAppid: context.displayedAppid ?? undefined,
+            matchedAppid: context.matchedSourceAppid ?? undefined,
           });
           return nativeResult;
         }
@@ -419,8 +413,8 @@ export const installControllerLayouts = (
         trip({
           section: "search",
           code: "runtime-error",
-          displayedAppid: displayedAppid ?? undefined,
-          matchedAppid: matchedAppid ?? undefined,
+          displayedAppid: resolveStoreAppid(targets.store) ?? undefined,
+          matchedAppid: undefined,
           detail: errorDetail(error),
         });
         return nativeResult;
@@ -526,8 +520,6 @@ export const installControllerLayouts = (
       installedDescriptors = [];
     }
     installed = false;
-    activeDisplayedShortcutAppid = null;
-    activeMatchedSourceAppid = null;
     supplementalSourceAppids.clear();
     supplementalQueryKeys.clear();
   };

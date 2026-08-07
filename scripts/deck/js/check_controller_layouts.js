@@ -8,6 +8,7 @@
   const secondDisplayedAppid = Number("__SECOND_DISPLAY_APPID__");
   const secondSourceAppid = Number("__SECOND_SOURCE_APPID__");
   const thirdDisplayedAppid = Number("__THIRD_DISPLAY_APPID__");
+  const providedNativeAppid = Number("__NATIVE_APPID__");
   const store = globalThis.controllerConfiguratorStore;
   if (!Number.isFinite(displayedAppid) || displayedAppid <= 0) {
     throw new Error("invalid displayed appid");
@@ -73,6 +74,31 @@
     }
     return { layouts: read(appid), elapsedMs: Date.now() - startedAt };
   };
+
+  const nativeAppid = (() => {
+    if (Number.isFinite(providedNativeAppid) && providedNativeAppid > 0) {
+      return providedNativeAppid;
+    }
+    const allApps = globalThis.collectionStore?.allAppsCollection?.allApps;
+    if (!Array.isArray(allApps)) return null;
+    for (const app of allApps) {
+      if (!app || typeof app !== "object") continue;
+      const candidate = Number(app.appid);
+      const appType = Number(app.app_type);
+      if (
+        appType === 1 &&
+        Number.isFinite(candidate) &&
+        candidate > 0 &&
+        candidate !== displayedAppid &&
+        candidate !== sourceAppid &&
+        candidate !== secondDisplayedAppid &&
+        candidate !== secondSourceAppid
+      ) {
+        return candidate;
+      }
+    }
+    return null;
+  })();
 
   const sourceCompared = Number.isFinite(sourceAppid) && sourceAppid > 0;
   const secondCompared = Number.isFinite(secondDisplayedAppid) &&
@@ -140,11 +166,35 @@
     thirdDisplayedCount: countAppid(afterThirdSearch.records, thirdDisplayedAppid),
   };
 
+  const afterNativeQuery = nativeAppid === null ? null : await query(nativeAppid);
+  const afterNativeSearch = afterNativeQuery === null
+    ? null
+    : searchSnapshot();
+  const afterNative = nativeAppid === null ? null : {
+    elapsedMs: afterNativeSearch.elapsedMs,
+    nativeAppidCount: countAppid(afterNativeSearch.records, nativeAppid),
+    firstDisplayedCount: countAppid(afterNativeSearch.records, displayedAppid),
+    secondDisplayedCount: countAppid(afterNativeSearch.records, secondDisplayedAppid),
+    thirdDisplayedCount: countAppid(afterNativeSearch.records, thirdDisplayedAppid),
+    firstSourceCount: countAppid(afterNativeSearch.records, sourceAppid),
+    secondSourceCount: countAppid(afterNativeSearch.records, secondSourceAppid),
+  };
+
+  const afterReturnQuery = nativeAppid === null ? null : await query(secondDisplayedAppid);
+  const afterReturnSearch = afterReturnQuery === null ? null : searchSnapshot();
+  const afterReturn = nativeAppid === null ? null : {
+    elapsedMs: afterReturnSearch.elapsedMs,
+    nativeAppidCount: countAppid(afterReturnSearch.records, nativeAppid),
+    secondDisplayedCount: countAppid(afterReturnSearch.records, secondDisplayedAppid),
+    secondSourceCount: countAppid(afterReturnSearch.records, secondSourceAppid),
+  };
+
   // Read source-only results after both Search snapshots. Direct native source
   // access intentionally relinquishes that source's supplemental classification.
   const source = sourceCompared ? read(sourceAppid) : null;
   const secondSource = read(secondSourceAppid);
   const isolation = {
+    nativeAppid,
     sourcePreexisting,
     secondSourcePreexisting,
     afterSecond: {
@@ -156,6 +206,8 @@
       ...afterThird,
       thirdDisplayedHasResults: hasResults(thirdQuery.layouts),
     },
+    afterNative,
+    afterReturn,
   };
   return JSON.stringify({
     displayedAppid,

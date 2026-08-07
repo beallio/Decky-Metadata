@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ControllerConfigRecord,
   filterControllerSearchConfigs,
+  type ControllerSearchContext,
   isSteamShortcutAppid,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
@@ -39,6 +40,10 @@ describe("resolveControllerLayoutContext", () => {
 
   it("distinguishes native applications from unmatched shortcuts", () => {
     expect(context(15100, { isNonSteamShortcut: false })).toEqual({
+      isNonSteamShortcut: false,
+      matchedSourceAppid: null,
+    });
+    expect(context(15100, { displayedAppid: 620, isNonSteamShortcut: true })).toEqual({
       isNonSteamShortcut: false,
       matchedSourceAppid: null,
     });
@@ -80,7 +85,7 @@ describe("resolveControllerLayoutContext", () => {
 
   it("rejects a source equal to the displayed appid without losing shortcut context", () => {
     expect(context(15100, { displayedAppid: 15100 })).toEqual({
-      isNonSteamShortcut: true,
+      isNonSteamShortcut: false,
       matchedSourceAppid: null,
     });
   });
@@ -218,71 +223,124 @@ describe("controller layout merges", () => {
 });
 
 describe("filterControllerSearchConfigs", () => {
-  it("isolates shortcut records cached before the current displayed shortcut", () => {
-    const spaceMarineShortcut = Object.freeze({ appID: 2155012430 });
-    const assassinsCreedShortcut = Object.freeze({ appID: 2312439508 });
-    const wolverineShortcut = Object.freeze({ appID: 3156562597 });
-    const assassinsCreedSource = Object.freeze({ appID: 15100 });
-    const native = Object.freeze({ appID: 620 });
-    const records = Object.freeze([
-      spaceMarineShortcut,
-      assassinsCreedShortcut,
-      wolverineShortcut,
-      assassinsCreedSource,
-      native,
-    ]);
+  const makeContext = (
+    displayedAppid: number | null,
+    isNonSteamShortcut = true,
+    matchedSourceAppid: number | null = null,
+  ): ControllerSearchContext => ({
+    displayedAppid,
+    isNonSteamShortcut,
+    matchedSourceAppid,
+  });
 
+  it("keeps the displayed shortcut and matched source", () => {
+    const displayed = Object.freeze({ appID: 2312439508 });
+    const native = Object.freeze({ appID: 620 });
+    const matchedSource = Object.freeze({ appID: 15100 });
+    const otherShortcut = Object.freeze({ appID: 2155012430 });
     expect(filterControllerSearchConfigs(
-      records,
-      2312439508,
-      15100,
+      [displayed, otherShortcut, matchedSource, native],
+      makeContext(2312439508, true, 15100),
       new Set([55150, 15100]),
     )).toEqual({
       ok: true,
-      value: [assassinsCreedShortcut, assassinsCreedSource, native],
+      value: [displayed, matchedSource],
     });
   });
 
-  it("retains Assassin's Creed while removing inactive Space Marine records", () => {
-    const shortcut = Object.freeze({ appID: 2312439508, title: "shortcut" });
-    const assassinsCreed = Object.freeze({ appID: 15100, title: "assassin's creed" });
-    const spaceMarine = Object.freeze({ appID: 55150, title: "space marine" });
-    const native = Object.freeze({ appID: 620, title: "portal" });
-    const configs = Object.freeze([
-      shortcut,
-      spaceMarine,
-      assassinsCreed,
-      native,
-    ]);
-    const supplementalSources = new Set([55150, 15100]);
-
-    const result = filterControllerSearchConfigs(
-      configs,
-      2312439508,
-      15100,
-      supplementalSources,
-    );
-
-    expect(result).toEqual({
+  it("drops an unrelated native appid on a shortcut page", () => {
+    const displayed = Object.freeze({ appID: 2312439508 });
+    const native = Object.freeze({ appID: 620 });
+    expect(filterControllerSearchConfigs(
+      [displayed, native],
+      makeContext(2312439508, true, 15100),
+      new Set([55150, 15100]),
+    )).toEqual({
       ok: true,
-      value: [shortcut, assassinsCreed, native],
+      value: [displayed],
     });
-    expect(result.ok && result.value).not.toBe(configs);
-    expect(configs).toEqual([shortcut, spaceMarine, assassinsCreed, native]);
-    expect(supplementalSources).toEqual(new Set([55150, 15100]));
-    expect(spaceMarine).toEqual({ appID: 55150, title: "space marine" });
   });
 
-  it("preserves untracked and opaque native records", () => {
+  it("drops another shortcut and another app's injected source", () => {
+    const displayed = Object.freeze({ appID: 2312439508 });
+    const otherShortcut = Object.freeze({ appID: 2155012430 });
+    const injectedSource = Object.freeze({ appID: 55150 });
+    const otherInjected = Object.freeze({ appID: 15100 });
+    expect(filterControllerSearchConfigs(
+      [displayed, otherShortcut, injectedSource, otherInjected],
+      makeContext(2312439508, true, null),
+      new Set([55150, 15100]),
+    )).toEqual({
+      ok: true,
+      value: [displayed],
+    });
+  });
+
+  it("keeps unrelated native appids on a native page", () => {
+    const nativeOne = Object.freeze({ appID: 620 });
+    const nativeTwo = Object.freeze({ appID: 440 });
+    const injectedSource = Object.freeze({ appID: 15100 });
+    const shortcut = Object.freeze({ appID: 2312439508 });
+    expect(filterControllerSearchConfigs(
+      [nativeOne, nativeTwo, shortcut, injectedSource],
+      makeContext(327030, false, null),
+      new Set([55150, 15100]),
+    )).toEqual({
+      ok: true,
+      value: [nativeOne, nativeTwo],
+    });
+  });
+
+  it("drops every shortcut-namespace appid on a native page", () => {
+    const native = Object.freeze({ appID: 620 });
+    const spaceMarine = Object.freeze({ appID: 55150 });
+    const assassinsCreed = Object.freeze({ appID: 15100 });
+    expect(filterControllerSearchConfigs(
+      [native, spaceMarine, assassinsCreed],
+      makeContext(null, false, null),
+      new Set([55150, 15100]),
+    )).toEqual({
+      ok: true,
+      value: [native],
+    });
+  });
+
+  it("drops injected sources except the displayed appid itself on native page", () => {
+    const retainedNativeSource = Object.freeze({ appID: 620 });
+    const removedSource = Object.freeze({ appID: 15100 });
+    expect(filterControllerSearchConfigs(
+      [retainedNativeSource, removedSource, { appID: 2155012430 }],
+      makeContext(620, false, 620),
+      new Set([620, 15100]),
+    )).toEqual({
+      ok: true,
+      value: [retainedNativeSource],
+    });
+  });
+
+  it("drops all injected sources and shortcut appids with unknown displayed context", () => {
+    const native = Object.freeze({ appID: 620 });
+    const unknownShortcut = Object.freeze({ appID: 2312439508 });
+    const injectedSource = Object.freeze({ appID: 15100 });
+    const nativeSource = Object.freeze({ appID: 440 });
+    expect(filterControllerSearchConfigs(
+      [native, unknownShortcut, injectedSource, nativeSource],
+      makeContext(null, false, null),
+      new Set([620, 2312439508, 15100, 440]),
+    )).toEqual({
+      ok: true,
+      value: [],
+    });
+  });
+
+  it("keeps records that are not objects or have unusable appIDs", () => {
     const throwingAppid = Object.defineProperty({}, "appID", {
-      get: () => {
+      get() {
         throw new Error("opaque native getter");
       },
     });
     const records = [
       { appID: 1211020 },
-      { appID: 213120 },
-      { appID: 620 },
       { title: "missing" },
       null,
       "opaque",
@@ -293,84 +351,70 @@ describe("filterControllerSearchConfigs", () => {
       { appID: Number.NaN },
       throwingAppid,
     ];
-
-    expect(filterControllerSearchConfigs(
-      records,
-      null,
-      213120,
-      new Set([1211020, 213120]),
-    )).toEqual({
-      ok: true,
-      value: records.slice(1),
-    });
-  });
-
-  it("removes every supplemental source for a no-match context in stable order", () => {
-    const native = Object.freeze({ appID: 620, title: "portal" });
-    const opaque = Object.freeze({ title: "opaque" });
-    const spaceMarine = Object.freeze({ appID: 55150 });
-    const assassinsCreed = Object.freeze({ appID: 15100 });
-    const records = Object.freeze([spaceMarine, native, assassinsCreed, opaque]);
-    const supplementalSources = new Set([55150, 15100]);
     const result = filterControllerSearchConfigs(
       records,
-      3156562597,
-      null,
-      supplementalSources,
+      makeContext(null, false, null),
+      new Set([1211020, 15100]),
     );
-
-    expect(result).toEqual({ ok: true, value: [native, opaque] });
-    expect(result.ok && result.value).not.toBe(records);
-    expect(records).toEqual([spaceMarine, native, assassinsCreed, opaque]);
-    expect(supplementalSources).toEqual(new Set([55150, 15100]));
-  });
-
-  it("filters a pre-existing cache after it is tracked as supplemental", () => {
-    const preexisting = { appID: 55150, cacheState: "pre-existing" };
-
-    expect(filterControllerSearchConfigs(
-      [preexisting, { appID: 620 }],
-      2312439508,
-      15100,
-      new Set([55150, 15100]),
-    )).toEqual({ ok: true, value: [{ appID: 620 }] });
-  });
-
-  it("preserves exact native identity when no supplemental source is tracked", () => {
-    const records = [{ appID: 620 }];
-    const result = filterControllerSearchConfigs(records, null, null, new Set());
-
-    expect(result).toEqual({ ok: true, value: records });
-    expect(result.ok && result.value).toBe(records);
+    expect(result).toEqual({
+      ok: true,
+      value: expect.any(Array),
+    });
+    const kept = result.ok ? result.value : [];
+    expect(kept).toHaveLength(records.length - 1);
+    expect(kept).toContain(records[1]);
+    expect(kept).toContain(records[2]);
+    expect(kept).toContain(records[3]);
+    expect(kept).toContain(records[4]);
+    expect(kept).toContain(records[5]);
+    expect(kept).toContain(records[6]);
+    expect(kept).toContain(records[7]);
+    expect(kept).toContain(records[8]);
+    expect(kept.some((value) => value === records[9])).toBe(true);
+    expect(kept).not.toContain(records[0]);
+    expect(kept).not.toContain(records[0]);
   });
 
   it("returns a typed failure for a malformed native collection", () => {
     expect(filterControllerSearchConfigs(
-      { appID: 1211020 },
-      null,
-      213120,
+      { appID: 1211020 } as const,
+      makeContext(null, false, null),
       new Set([1211020]),
     )).toEqual({ ok: false, reason: "native-search-not-array" });
   });
 
-  it("preserves native shortcut records when no shortcut is displayed", () => {
-    const records = [{ appID: 2155012430 }, { appID: 2312439508 }, { appID: 620 }];
-
-    const result = filterControllerSearchConfigs(records, null, null, new Set([55150]));
-
+  it("keeps every app when no supplemental source is tracked", () => {
+    const records = [{ appID: 620 }];
+    const result = filterControllerSearchConfigs(
+      records,
+      makeContext(null, false, null),
+      new Set(),
+    );
     expect(result).toEqual({ ok: true, value: records });
     expect(result.ok && result.value).toBe(records);
   });
 
-  it("preserves the current unmatched shortcut while isolating every other shortcut", () => {
-    const current = { appID: 3156562597 };
-    const native = { appID: 620 };
-
+  it("drops unmatched native records on a native context when no matched source exists", () => {
+    const records = [{ appID: 2155012430 }, { appID: 2312439508 }, { appID: 620 }];
     expect(filterControllerSearchConfigs(
-      [{ appID: 2155012430 }, { appID: 2312439508 }, current, native],
-      3156562597,
-      null,
+      records,
+      makeContext(3156562597, true, null),
+      new Set([55150]),
+    )).toEqual({
+      ok: true,
+      value: [],
+    });
+  });
+
+  it("keeps only the current unmatched shortcut while isolating every other shortcut", () => {
+    const current = Object.freeze({ appID: 3156562597 });
+    expect(filterControllerSearchConfigs(
+      [{ appID: 2155012430 }, { appID: 2312439508 }, current, { appID: 620 }],
+      makeContext(3156562597, true, null),
       new Set([55150, 15100]),
-    )).toEqual({ ok: true, value: [current, native] });
+    )).toEqual({
+      ok: true,
+      value: [current],
+    });
   });
 });

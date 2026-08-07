@@ -35,7 +35,8 @@ probe() {
   cdp eval SharedJSContext "@$JS_DIR/check_controller_layouts.js" \
     --var "DISPLAY_APPID=$1" --var "SOURCE_APPID=$2" \
     --var "SECOND_DISPLAY_APPID=${3:-}" --var "SECOND_SOURCE_APPID=${4:-}" \
-    --var "THIRD_DISPLAY_APPID=${5:-}"
+    --var "THIRD_DISPLAY_APPID=${5:-}" \
+    --var "NATIVE_APPID=${DECKY_FIXTURE_NATIVE_APPID:-}"
 }
 
 listed_json="$(probe \
@@ -97,6 +98,9 @@ if isolation is None:
     raise SystemExit("FAIL: controller Search isolation observation is missing")
 after_second = isolation["afterSecond"]
 after_third = isolation["afterThird"]
+native_appid = isolation["nativeAppid"]
+after_native = isolation["afterNative"]
+after_return = isolation["afterReturn"]
 if after_second["firstDisplayedCount"] != 0:
     raise SystemExit(
         "FAIL: inactive first displayed shortcut remains visible in controller Search"
@@ -124,6 +128,28 @@ for key, label in (
 if after_third["thirdDisplayedHasResults"] and after_third["thirdDisplayedCount"] <= 0:
     raise SystemExit(
         "FAIL: active unmatched displayed shortcut is missing from controller Search"
+    )
+if native_appid is None:
+    raise SystemExit("FAIL: no native Steam fixture available; set DECKY_FIXTURE_NATIVE_APPID")
+if after_native is None:
+    raise SystemExit("FAIL: native-game phase could not be executed by the probe")
+if after_native["firstDisplayedCount"] != 0 or after_native["secondDisplayedCount"] != 0:
+    raise SystemExit("FAIL: shortcut layouts leaked into a native game's controller Search")
+if after_native["thirdDisplayedCount"] != 0:
+    raise SystemExit("FAIL: shortcut layouts leaked into a native game's controller Search")
+if after_native["firstSourceCount"] != 0 or after_native["secondSourceCount"] != 0:
+    raise SystemExit("FAIL: inactive matched source leaked into a native game's controller Search")
+if after_native["nativeAppidCount"] <= 0:
+    raise SystemExit("FAIL: native game is missing its own layouts in controller Search")
+if after_return is None:
+    raise SystemExit("FAIL: native return phase could not be executed by the probe")
+if after_return["nativeAppidCount"] != 0:
+    raise SystemExit("FAIL: native game's layouts persist in a shortcut's controller Search")
+if after_return["secondDisplayedCount"] <= 0 and after_third["secondDisplayedHasResults"]:
+    raise SystemExit("FAIL: active second displayed shortcut is missing from controller Search")
+if after_return["secondSourceCount"] <= 0 and after_third["secondSourceHasResults"]:
+    raise SystemExit(
+        "FAIL: active second matched source is missing from controller Search"
     )
 print(
     "OK: controller Search isolated inactive shortcuts and sources, including pre-existing caches; "
