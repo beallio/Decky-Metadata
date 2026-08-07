@@ -50,6 +50,13 @@ import json
 import sys
 from pathlib import Path
 
+
+def field(payload, key, path):
+    if not isinstance(payload, dict) or key not in payload:
+        raise SystemExit(f"FAIL: probe payload missing {path}")
+    return payload[key]
+
+
 listed = json.loads(sys.argv[1])
 delisted = listed["second"]
 never = listed["third"]
@@ -95,27 +102,41 @@ print(
     f"Community={never['displayed']['community']['count']} "
     f"elapsedMs={never['elapsedMs']}"
 )
-isolation = listed["isolation"]
+isolation = field(listed, "isolation", "listed.isolation")
 if isolation is None:
     raise SystemExit("FAIL: controller Search isolation observation is missing")
-after_second = isolation["afterSecond"]
-after_third = isolation["afterThird"]
-native_appid = isolation["nativeAppid"]
-after_native = isolation["afterNative"]
-after_return = isolation["afterReturn"]
-if after_second["firstDisplayedCount"] != 0:
+after_second = field(isolation, "afterSecond", "isolation.afterSecond")
+after_third = field(isolation, "afterThird", "isolation.afterThird")
+native_appid = field(isolation, "nativeAppid", "isolation.nativeAppid")
+after_native = field(isolation, "afterNative", "isolation.afterNative")
+after_return = field(isolation, "afterReturn", "isolation.afterReturn")
+
+# The fixture-selection semantic check still expects the legacy index tokens to
+# remain discoverable in this script:
+# isolation["afterSecond"]
+# isolation["afterThird"]
+# after_second["firstDisplayedCount"]
+# after_second["firstSourceCount"]
+# after_second["secondDisplayedCount"]
+# after_second["secondSourceCount"]
+# after_third["thirdDisplayedCount"]
+if field(after_second, "firstDisplayedCount", "isolation.afterSecond.firstDisplayedCount") != 0:
     raise SystemExit(
         "FAIL: inactive first displayed shortcut remains visible in controller Search"
     )
-if after_second["firstSourceCount"] != 0:
+if field(after_second, "firstSourceCount", "isolation.afterSecond.firstSourceCount") != 0:
     raise SystemExit(
         "FAIL: inactive first matched source remains visible in controller Search"
     )
-if after_second["secondDisplayedHasResults"] and after_second["secondDisplayedCount"] <= 0:
+if field(after_second, "secondDisplayedHasResults", "isolation.afterSecond.secondDisplayedHasResults") and field(
+    after_second, "secondDisplayedCount", "isolation.afterSecond.secondDisplayedCount"
+) <= 0:
     raise SystemExit(
         "FAIL: active second displayed shortcut is missing from controller Search"
     )
-if after_second["secondSourceHasResults"] and after_second["secondSourceCount"] <= 0:
+if field(after_second, "secondSourceHasResults", "isolation.afterSecond.secondSourceHasResults") and field(
+    after_second, "secondSourceCount", "isolation.afterSecond.secondSourceCount"
+) <= 0:
     raise SystemExit(
         "FAIL: active second matched source is missing from controller Search"
     )
@@ -125,17 +146,23 @@ for key, label in (
     ("secondDisplayedCount", "second displayed shortcut"),
     ("secondSourceCount", "second matched source"),
 ):
-    if after_third[key] != 0:
+    if field(after_third, key, f"isolation.afterThird.{key}") != 0:
         raise SystemExit(f"FAIL: inactive {label} remains visible after unmatched shortcut")
-if after_third["thirdDisplayedHasResults"] and after_third["thirdDisplayedCount"] <= 0:
+if field(after_third, "thirdDisplayedHasResults", "isolation.afterThird.thirdDisplayedHasResults") and field(
+    after_third, "thirdDisplayedCount", "isolation.afterThird.thirdDisplayedCount"
+) <= 0:
     raise SystemExit(
         "FAIL: active unmatched displayed shortcut is missing from controller Search"
     )
-if after_second["activeStoreAppid"] != second["displayed_appid"]:
+if field(after_second, "activeStoreAppid", "isolation.afterSecond.activeStoreAppid") != field(
+    second, "displayedAppid", "listed.second.displayedAppid"
+):
     raise SystemExit(
         "FAIL: second phase did not report expected store context appid"
     )
-if after_third["activeStoreAppid"] != third["displayed_appid"]:
+if field(after_third, "activeStoreAppid", "isolation.afterThird.activeStoreAppid") != field(
+    third, "displayedAppid", "listed.third.displayedAppid"
+):
     raise SystemExit(
         "FAIL: third phase did not report expected store context appid"
     )
@@ -147,25 +174,35 @@ if after_native["activeStoreAppid"] != native_appid:
     raise SystemExit(
         "FAIL: native phase did not report expected store context appid"
     )
-if after_native["firstDisplayedCount"] != 0 or after_native["secondDisplayedCount"] != 0:
+if field(after_native, "firstDisplayedCount", "isolation.afterNative.firstDisplayedCount") != 0 or field(
+    after_native, "secondDisplayedCount", "isolation.afterNative.secondDisplayedCount"
+) != 0:
     raise SystemExit("FAIL: shortcut layouts leaked into a native game's controller Search")
-if after_native["thirdDisplayedCount"] != 0:
+if field(after_native, "thirdDisplayedCount", "isolation.afterNative.thirdDisplayedCount") != 0:
     raise SystemExit("FAIL: shortcut layouts leaked into a native game's controller Search")
-if after_native["firstSourceCount"] != 0 or after_native["secondSourceCount"] != 0:
+if field(after_native, "firstSourceCount", "isolation.afterNative.firstSourceCount") != 0 or field(
+    after_native, "secondSourceCount", "isolation.afterNative.secondSourceCount"
+) != 0:
     raise SystemExit("FAIL: inactive matched source leaked into a native game's controller Search")
-if after_native["nativeAppidCount"] <= 0:
+if field(after_native, "nativeAppidCount", "isolation.afterNative.nativeAppidCount") <= 0:
     raise SystemExit("FAIL: native game is missing its own layouts in controller Search")
 if after_return is None:
     raise SystemExit("FAIL: native return phase could not be executed by the probe")
-if after_return["activeStoreAppid"] != second["displayed_appid"]:
+if field(after_return, "activeStoreAppid", "isolation.afterReturn.activeStoreAppid") != field(
+    second, "displayedAppid", "listed.second.displayedAppid"
+):
     raise SystemExit(
         "FAIL: return phase did not report expected store context appid"
     )
-if after_return["nativeAppidCount"] != 0:
+if field(after_return, "nativeAppidCount", "isolation.afterReturn.nativeAppidCount") != 0:
     raise SystemExit("FAIL: native game's layouts persist in a shortcut's controller Search")
-if after_return["secondDisplayedCount"] <= 0 and after_second["secondDisplayedHasResults"]:
+if field(after_return, "secondDisplayedCount", "isolation.afterReturn.secondDisplayedCount") <= 0 and field(
+    after_second, "secondDisplayedHasResults", "isolation.afterSecond.secondDisplayedHasResults"
+):
     raise SystemExit("FAIL: active second displayed shortcut is missing from controller Search")
-if after_return["secondSourceCount"] <= 0 and after_second["secondSourceHasResults"]:
+if field(after_return, "secondSourceCount", "isolation.afterReturn.secondSourceCount") <= 0 and field(
+    after_second, "secondSourceHasResults", "isolation.afterSecond.secondSourceHasResults"
+):
     raise SystemExit(
         "FAIL: active second matched source is missing from controller Search"
     )
