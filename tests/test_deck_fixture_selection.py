@@ -153,13 +153,13 @@ def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
     assert '"$delisted_appid" "$delisted_source"' in smoke
     assert '"$never_appid"' in smoke
     assert 'isolation["deferred"]' not in smoke
-    assert 'isolation["afterSecond"]' in smoke
-    assert 'isolation["afterThird"]' in smoke
-    assert 'after_second["firstDisplayedCount"]' in smoke
-    assert 'after_second["firstSourceCount"]' in smoke
-    assert 'after_second["secondDisplayedCount"]' in smoke
-    assert 'after_second["secondSourceCount"]' in smoke
-    assert 'after_third["thirdDisplayedCount"]' in smoke
+    assert 'field(isolation, "afterSecond"' in smoke
+    assert 'field(isolation, "afterThird"' in smoke
+    assert 'field(after_second, "firstDisplayedCount"' in smoke
+    assert 'field(after_second, "firstSourceCount"' in smoke
+    assert 'field(after_second, "secondDisplayedCount"' in smoke
+    assert 'field(after_second, "secondSourceCount"' in smoke
+    assert 'field(after_third, "thirdDisplayedCount"' in smoke
     assert "elapsedMs" in smoke
     assert "including pre-existing caches" in smoke
     assert "Bounded no-selection controller-configuration cache-populating check." in smoke

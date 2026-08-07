@@ -110,6 +110,8 @@ class TrackingMap extends Map<number, unknown> {
 const makeHarness = (options: {
   source?: number | null;
   resolveContext?: (appid: number) => ControllerLayoutContext;
+  storeAppid?: unknown;
+  storeLastValidAppid?: unknown;
   queryThrowsFor?: number;
   getterThrowsFor?: { section: GetterSection; appid: number };
   searchThrows?: boolean;
@@ -168,6 +170,8 @@ const makeHarness = (options: {
 
   class Store {
     m_mapAppConfigs = configMap;
+    m_appId = options.storeAppid;
+    m_lastValidAppId = options.storeLastValidAppid;
 
     QueryConfigsForApp() {
       return undefined;
@@ -378,22 +382,21 @@ describe("installControllerLayouts", () => {
 
     callQuery(harness.input, 10);
     callQuery(harness.input, 11);
+    harness.store.m_appId = 11;
     expect(harness.store.GetAllConfigs()).toEqual([
       { appID: 30, URL: "search://transformers" },
-      { appID: 40, URL: "search://space-marine" },
-      { appID: 620, URL: "search://native" },
     ]);
 
     callQuery(harness.input, 12);
+    harness.store.m_appId = 12;
     expect(harness.store.GetAllConfigs()).toEqual([
       { appID: 40, URL: "search://space-marine" },
-      { appID: 620, URL: "search://native" },
     ]);
 
     callQuery(harness.input, 10);
+    harness.store.m_appId = 10;
     expect(harness.store.GetAllConfigs()).toEqual([
       { appID: 20, URL: "search://wobbly" },
-      { appID: 620, URL: "search://native" },
     ]);
     expect(harness.calls.filter((call) => call.startsWith("query:20"))).toHaveLength(1);
   });
@@ -406,10 +409,9 @@ describe("installControllerLayouts", () => {
     });
     callQuery(preexisting.input, 10);
     callQuery(preexisting.input, 11);
+    preexisting.store.m_appId = 11;
     expect(preexisting.store.GetAllConfigs()).toEqual([
       { appID: 30, URL: "search://transformers" },
-      { appID: 40, URL: "search://space-marine" },
-      { appID: 620, URL: "search://native" },
     ]);
     expect(preexisting.calls.filter((call) => call.startsWith("query:20")))
       .toHaveLength(1);
@@ -420,17 +422,15 @@ describe("installControllerLayouts", () => {
     callQuery(relinquished.input, 10);
     callQuery(relinquished.input, 20);
     callQuery(relinquished.input, 11);
+    relinquished.store.m_appId = 11;
     expect(relinquished.store.GetAllConfigs()).toEqual([
-      { appID: 20, URL: "search://wobbly" },
       { appID: 30, URL: "search://transformers" },
-      { appID: 40, URL: "search://space-marine" },
-      { appID: 620, URL: "search://native" },
     ]);
     expect(relinquished.calls.filter((call) => call.startsWith("query:20")))
       .toHaveLength(2);
     callQuery(relinquished.input, 10);
     expect(relinquished.calls.filter((call) => call.startsWith("query:20")))
-      .toHaveLength(3);
+      .toHaveLength(2);
   });
 
   it("establishes matched and no-match Search context from getters before query effects", () => {
@@ -453,9 +453,9 @@ describe("installControllerLayouts", () => {
     harness.calls.length = 0;
     harness.store.GetOfficialConfigsForApp(2312439508, 4);
     harness.store.m_mapAppConfigs.forbidAccess = true;
+    harness.store.m_appId = 2312439508;
     expect(harness.store.GetAllConfigs()).toEqual([
       { appID: 15100, URL: "search://assassins-creed" },
-      { appID: 620, URL: "search://native" },
       { title: "opaque" },
     ]);
     harness.store.m_mapAppConfigs.forbidAccess = false;
@@ -469,8 +469,8 @@ describe("installControllerLayouts", () => {
     harness.calls.length = 0;
     harness.store.GetTemplateConfigsForApp(3156562597, 4);
     harness.store.m_mapAppConfigs.forbidAccess = true;
+    harness.store.m_appId = 3156562597;
     expect(harness.store.GetAllConfigs()).toEqual([
-      { appID: 620, URL: "search://native" },
       { title: "opaque" },
     ]);
     harness.store.m_mapAppConfigs.forbidAccess = false;
@@ -527,31 +527,32 @@ describe("installControllerLayouts", () => {
 
     callQuery(harness.input, 2155012430);
     callQuery(harness.input, 2312439508);
-    forbidContextResolution = true;
+    harness.store.m_appId = 2312439508;
     harness.store.m_mapAppConfigs.forbidAccess = true;
-    const afterAssassinsCreed = harness.store.GetAllConfigs();
+    const afterAssassinsCreed = harness.store.GetAllConfigs() as unknown[];
     harness.store.m_mapAppConfigs.forbidAccess = false;
-    forbidContextResolution = false;
-    expect(afterAssassinsCreed).toEqual([
-      assassinsCreedShortcut,
-      assassinsCreedSource,
-      native,
-      opaque,
-      throwingAppid,
-    ]);
+    expect(afterAssassinsCreed).toHaveLength(4);
+    expect(afterAssassinsCreed).toContain(assassinsCreedShortcut);
+    expect(afterAssassinsCreed).toContain(assassinsCreedSource);
+    expect(afterAssassinsCreed).toContain(opaque);
+    expect(afterAssassinsCreed.some((record) => record === throwingAppid)).toBe(true);
+    expect(afterAssassinsCreed).not.toContain(spaceMarineShortcut);
+    expect(afterAssassinsCreed).not.toContain(wolverineShortcut);
+    expect(afterAssassinsCreed).not.toContain(spaceMarineSource);
 
     callQuery(harness.input, 3156562597);
-    forbidContextResolution = true;
+    harness.store.m_appId = 3156562597;
     harness.store.m_mapAppConfigs.forbidAccess = true;
-    const afterWolverine = harness.store.GetAllConfigs();
+    const afterWolverine = harness.store.GetAllConfigs() as unknown[];
     harness.store.m_mapAppConfigs.forbidAccess = false;
-    forbidContextResolution = false;
-    expect(afterWolverine).toEqual([
-      wolverineShortcut,
-      native,
-      opaque,
-      throwingAppid,
-    ]);
+    expect(afterWolverine).toHaveLength(3);
+    expect(afterWolverine).toContain(wolverineShortcut);
+    expect(afterWolverine).toContain(opaque);
+    expect(afterWolverine.some((record) => record === throwingAppid)).toBe(true);
+    expect(afterWolverine).not.toContain(assassinsCreedShortcut);
+    expect(afterWolverine).not.toContain(assassinsCreedSource);
+    expect(afterWolverine).not.toContain(spaceMarineShortcut);
+    expect(afterWolverine).not.toContain(spaceMarineSource);
   });
 
   it("preserves native Search identity and never touches the map from Search", () => {
@@ -571,6 +572,79 @@ describe("installControllerLayouts", () => {
     expect(matched.store.m_mapAppConfigs.hasCalls).toHaveLength(hasCalls);
     expect(matched.store.m_mapAppConfigs.writes).toHaveLength(writes);
   });
+
+  it("derives Search isolation identity from store fields and ignores stale query context", () => {
+    const harness = makeHarness();
+    callQuery(harness.input, 10);
+    harness.store.m_appId = 11;
+
+    expect(harness.store.GetAllConfigs()).toEqual([
+      { appID: 30, URL: "search://transformers" },
+      { appID: 40, URL: "search://space-marine" },
+      { appID: 620, URL: "search://native" },
+    ]);
+  });
+
+  it("uses the call-time store when collecting Search", () => {
+    const harness = makeHarness();
+    harness.store.m_appId = 99;
+    callQuery(harness.input, 10);
+
+    const delegatedStore = Object.create(harness.store) as typeof harness.store;
+    delegatedStore.m_appId = 20;
+
+    expect(delegatedStore.GetAllConfigs()).toEqual([
+      { appID: 20, URL: "search://wobbly" },
+      { appID: 30, URL: "search://transformers" },
+      { appID: 40, URL: "search://space-marine" },
+      { appID: 620, URL: "search://native" },
+    ]);
+  });
+
+  it("preserves native-source filtering when a supplemental source appid is rendered natively", () => {
+    const contexts = new Map([[10, 20], [11, 30], [12, 40]]);
+    const harness = makeHarness({
+      resolveContext: contextsForSources(contexts),
+    });
+
+    callQuery(harness.input, 10);
+    callQuery(harness.input, 20);
+    harness.store.m_appId = 11;
+
+    expect(harness.store.GetAllConfigs()).toEqual([
+      { appID: 30, URL: "search://transformers" },
+    ]);
+  });
+
+  it.each([
+    [
+      "resolve-context throw",
+      () => {
+        throw new Error("resolver failed");
+      },
+    ],
+    [
+      "malformed context",
+      () => ({ isNonSteamShortcut: "true", matchedSourceAppid: 20 }),
+    ],
+  ] as const)(
+    "GetAllConfigs returns native Search and trips once if context %s resolution is invalid",
+    (_label, resolveContext) => {
+      const harness = makeHarness({
+        resolveContext: resolveContext as (appid: number) => ControllerLayoutContext,
+      });
+      harness.store.m_appId = 10;
+
+      expect(harness.store.GetAllConfigs()).toBe(harness.outputs.search);
+      expect(harness.store.GetAllConfigs()).toBe(harness.outputs.search);
+      expect(harness.failures).toHaveLength(1);
+      expect(harness.failures[0]).toEqual(expect.objectContaining({
+        section: "search",
+        code: "runtime-error",
+      }));
+      expect(harness.control.isDisabled()).toBe(true);
+    },
+  );
 
   it("resolves displayed context once per wrapped call and never from Search", () => {
     const resolveContext = vi.fn((appid: number) =>
@@ -765,6 +839,7 @@ describe("installControllerLayouts", () => {
     const malformed = { native: "malformed-search" };
     const harness = makeHarness({ searchResult: malformed });
     callQuery(harness.input);
+    harness.store.m_appId = 10;
 
     expect(harness.store.GetAllConfigs()).toBe(malformed);
     expect(harness.control.isDisabled()).toBe(true);
@@ -772,6 +847,7 @@ describe("installControllerLayouts", () => {
       expect.objectContaining({
         section: "search",
         code: "native-search-not-array",
+        displayedAppid: 10,
         matchedAppid: 20,
       }),
     ]);
@@ -806,6 +882,7 @@ describe("installControllerLayouts", () => {
     );
     const harness = makeHarness({ searchResult: nativeSearch });
     callQuery(harness.input);
+    harness.store.m_appId = 10;
 
     expect(harness.store.GetAllConfigs()).toBe(nativeSearch);
     expect(harness.calls.filter((call) => call === "search")).toHaveLength(1);
@@ -814,7 +891,8 @@ describe("installControllerLayouts", () => {
       expect.objectContaining({
         section: "search",
         code: "runtime-error",
-        matchedAppid: 20,
+        displayedAppid: 10,
+        matchedAppid: undefined,
       }),
     ]);
     expect(harness.notifications).toHaveLength(1);
