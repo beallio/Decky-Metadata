@@ -585,6 +585,22 @@ describe("installControllerLayouts", () => {
     ]);
   });
 
+  it("uses the call-time store when collecting Search", () => {
+    const harness = makeHarness();
+    harness.store.m_appId = 99;
+    callQuery(harness.input, 10);
+
+    const delegatedStore = Object.create(harness.store) as typeof harness.store;
+    delegatedStore.m_appId = 20;
+
+    expect(delegatedStore.GetAllConfigs()).toEqual([
+      { appID: 20, URL: "search://wobbly" },
+      { appID: 30, URL: "search://transformers" },
+      { appID: 40, URL: "search://space-marine" },
+      { appID: 620, URL: "search://native" },
+    ]);
+  });
+
   it("preserves native-source filtering when a supplemental source appid is rendered natively", () => {
     const contexts = new Map([[10, 20], [11, 30], [12, 40]]);
     const harness = makeHarness({

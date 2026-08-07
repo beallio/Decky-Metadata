@@ -46,7 +46,7 @@ Implement `controller-search-isolation` plan so non-Steam shortcut Search pages 
 
 - Final baseline again (post-fix):
   - `./run.sh npx vitest run src/steam/controllerLayoutPolicy.test.ts src/steam/controllerLayouts.test.ts`
-  - `103 passed | 0 failed`
+  - `104 passed | 0 failed` (resume run after R1 + call-time store test)
 
 ### Task 1/6 device probe and smoke
 
@@ -68,6 +68,55 @@ Implement `controller-search-isolation` plan so non-Steam shortcut Search pages 
     - Rollup build, Vitest, Python compile, pytest, version-drift, and note check
   - final line: `quality-gates: OK`
 
+### Resume updates (2026-08-07 follow-up)
+
+- R1 fix attempts:
+  - `this`-first identity path added in `src/steam/controllerLayouts.ts`.
+  - indentation fix in `QueryControllerConfigsForApp` wrapper restored.
+  - new regression test added to `src/steam/controllerLayouts.test.ts`:
+    - `uses the call-time store when collecting Search`
+
+- Task 1 / baseline device probe with pre-change bundle:
+  - `run_dir=/tmp/Decky-Metadata/verification/search-isolation`
+  - `mkdir -p "$run_dir"` succeeded.
+  - `git show dev:dist/index.js > dist/index.js`
+    - exit `0`
+  - `scripts/deck/deploy.sh --no-build`
+    - exit `255`
+    - stderr: `ssh: connect to host 10.168.168.20 port 22: No route to host`
+  - `ssh "${DECKY_DECK_HOST:-steamdeck}" 'cat /home/deck/homebrew/settings/Decky-Metadata/decky_metadata.json' > "$run_dir/metadata.json"`
+    - not reached/failed with host resolution/route issue
+
+- Mutation check after temporary `drop=false` change:
+  - `./run.sh npx vitest run src/steam/controllerLayoutPolicy.test.ts src/steam/controllerLayouts.test.ts`
+  - `Test Files  2 failed (2)`  
+    `Tests  10 failed | 94 passed (104)`
+  - failing test names:
+    - `keeps the displayed shortcut and matched source`
+    - `drops an unrelated native appid on a shortcut page`
+    - `drops another shortcut and another app's injected source`
+    - `drops unmatched native records on a native context when no matched source exists`
+    - `keeps only the current unmatched shortcut while isolating every other shortcut`
+    - `isolates inactive supplemental Search records while preserving active and native records`
+    - `tracks absent and pre-existing supplemental caches and relinquishes on native query`
+    - `establishes matched and no-match Search context from getters before query effects`
+    - `isolates the displayed shortcut across the reproduced matched and unmatched sequence`
+    - `preserves native-source filtering when a supplemental source appid is rendered natively`
+- Mutation restored after verification.
+
+- Post-fix verification:
+  - `./run.sh npx vitest run src/steam/controllerLayoutPolicy.test.ts src/steam/controllerLayouts.test.ts`
+    - `104 passed | 0 failed`
+  - `scripts/orchestration/run-quality-gates`
+    - final line: `quality-gates: OK`
+    - total: 17 frontend test files, 201 tests
+    - all frontend, backend, and python gates passing
+
+- Task 6 smoke still blocked by deck transport:
+  - `scripts/deck/verify/smoke_controller_layouts.sh "$run_dir/fixtures.json"`
+    - `smoke_exit=255`
+    - stderr: `ssh: connect to host 10.168.168.20 port 22: No route to host`
+
 ## Notes
 
-Device smoke/proxy path for this plan could not be completed in this environment due SSH/host resolution and SSH config permissions. The code changes and unit-level verification are complete and green. No files in `docs/review/` were created or modified by this run.
+Device smoke/proxy path for this plan could not be completed in this environment due SSH host route failure (`No route to host` on `steamdeck` / `10.168.168.20`). The code changes and unit-level verification are complete and green. No files in `docs/review/` were created or modified by this run.

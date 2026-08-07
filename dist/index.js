@@ -5628,12 +5628,21 @@ const installControllerLayouts = (unpatchers, provided) => {
         }
         const searchEntry = targets.descriptors.find((candidate) => candidate.key === "GetAllConfigs");
         const originalSearch = searchEntry.descriptor.value;
+        const resolveStoreForContext = (store) => {
+            if (store !== null &&
+                typeof store === "object" &&
+                ("m_appId" in store || "m_lastValidAppId" in store)) {
+                return store;
+            }
+            return targets.store;
+        };
         const searchWrapper = function (...args) {
             const nativeResult = originalSearch.apply(this, args);
             if (disabled)
                 return nativeResult;
             try {
-                const storeAppid = resolveStoreAppid(targets.store);
+                const sourceStore = resolveStoreForContext(this);
+                const storeAppid = resolveStoreAppid(sourceStore);
                 const context = storeAppid === null
                     ? {
                         displayedAppid: null,
@@ -5657,7 +5666,7 @@ const installControllerLayouts = (unpatchers, provided) => {
                 trip({
                     section: "search",
                     code: "runtime-error",
-                    displayedAppid: resolveStoreAppid(targets.store) ?? undefined,
+                    displayedAppid: resolveStoreAppid(resolveStoreForContext(this)) ?? undefined,
                     matchedAppid: undefined,
                     detail: errorDetail(error),
                 });

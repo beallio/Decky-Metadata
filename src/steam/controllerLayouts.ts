@@ -287,7 +287,7 @@ export const installControllerLayouts = (
       try {
         if (validDisplayedAppid === undefined) return nativeResult;
         context = resolveDisplayedContext(displayedAppid);
-      if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+        if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
           return nativeResult;
         }
         const matchedAppid = context.matchedSourceAppid;
@@ -382,11 +382,22 @@ export const installControllerLayouts = (
       (candidate) => candidate.key === "GetAllConfigs",
     )!;
     const originalSearch = searchEntry.descriptor.value;
+    const resolveStoreForContext = (store: unknown): ValidatedTargets["store"] => {
+      if (
+        store !== null &&
+        typeof store === "object" &&
+        ("m_appId" in store || "m_lastValidAppId" in store)
+      ) {
+        return store as ValidatedTargets["store"];
+      }
+      return targets.store;
+    };
     const searchWrapper = function (this: unknown, ...args: unknown[]) {
       const nativeResult = originalSearch.apply(this, args);
       if (disabled) return nativeResult;
       try {
-        const storeAppid = resolveStoreAppid(targets.store);
+        const sourceStore = resolveStoreForContext(this);
+        const storeAppid = resolveStoreAppid(sourceStore);
         const context = storeAppid === null
           ? {
             displayedAppid: null,
@@ -413,7 +424,7 @@ export const installControllerLayouts = (
         trip({
           section: "search",
           code: "runtime-error",
-          displayedAppid: resolveStoreAppid(targets.store) ?? undefined,
+          displayedAppid: resolveStoreAppid(resolveStoreForContext(this)) ?? undefined,
           matchedAppid: undefined,
           detail: errorDetail(error),
         });
