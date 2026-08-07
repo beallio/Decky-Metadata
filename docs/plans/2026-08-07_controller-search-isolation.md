@@ -215,6 +215,84 @@ git commit -m "docs(plan): add controller-search-isolation implementation plan"
 
 ---
 
+## Resuming an interrupted round (read this first)
+
+Round 1 already ran under a sandboxed implementer that could not commit and had
+no working SSH. **Do not run the Setup commands above** — the branch exists and
+is checked out. Current state, verified by the orchestrator:
+
+- `feat/controller-search-isolation` holds two commits: the plan, then
+  `fix(controller): scope controller Search to the app being configured`.
+- The working tree is clean.
+- `scripts/orchestration/run-quality-gates` passes: 17 test files, 200 tests,
+  `quality-gates: OK`.
+- Tasks 2, 3, 4, 5, 7 are done, and Task 1 steps 1–2 (probe + smoke edits) are
+  done. The session log records the red baseline (`100 passed | 3 failed`), the
+  mutation run (`93 passed | 10 failed`), and green after (`103 passed | 0 failed`).
+
+**What is left: the on-device work, plus two small code corrections.**
+
+### R1 — code corrections
+
+1. `src/steam/controllerLayouts.ts`, `searchWrapper`: Task 4.4 asks for the store
+   to come from `this` when it is an object exposing `m_appId` or
+   `m_lastValidAppId`, falling back to the validated `targets.store`. The current
+   code reads `targets.store` unconditionally. Implement the `this`-first form
+   and cover it with a test that gives `this` a different appid from
+   `targets.store` and asserts the filter follows `this`.
+2. Same file, in the query wrapper: the
+   `if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {`
+   line is indented out of alignment with its block. Fix the indentation only.
+
+### R2 — capture the pre-change failure (replaces Task 1 step 3)
+
+The code is already fixed, so the baseline must be taken by deploying the *old*
+bundle. `dist/index.js` is a committed artifact, so `dev`'s copy is the
+pre-change build, and `deploy.sh --no-build` pushes whatever is in `dist/`:
+
+```bash
+run_dir=/tmp/Decky-Metadata/verification/search-isolation
+mkdir -p "$run_dir"
+ssh "${DECKY_DECK_HOST:-steamdeck}" \
+  'cat /home/deck/homebrew/settings/Decky-Metadata/decky_metadata.json' \
+  > "$run_dir/metadata.json"
+scripts/deck/verify/select_fixtures.py "$run_dir/metadata.json" > "$run_dir/fixtures.json"
+
+git show dev:dist/index.js > dist/index.js      # pre-change bundle
+scripts/deck/deploy.sh --no-build
+scripts/deck/verify/smoke_controller_layouts.sh "$run_dir/fixtures.json"  # MUST FAIL
+```
+
+Record the exact `FAIL: ...` line and the exit status. If it passes, stop and
+report — the probe is not exercising the bug and Task 6 proves nothing.
+
+Then restore the fixed bundle by rebuilding, which overwrites `dist/index.js`
+from `src/` and leaves the tree matching the commit:
+
+```bash
+scripts/deck/deploy.sh
+git status --short          # must be clean; dist/index.js must match HEAD
+```
+
+If `git status` shows `dist/index.js` modified after the rebuild, commit the
+rebuilt artifact rather than leaving the tree dirty.
+
+### R3 — then continue with Task 6
+
+Run the post-fix device verification as written in Task 6, using
+`"$run_dir/fixtures.json"`. Then append every piece of real output required by
+the Verification section to the session log, replacing the "could not be
+completed in this environment" note, run the quality gates once more, commit,
+and mark the round complete.
+
+The SSH problem that blocked round 1 was the sandbox, not the host: this run has
+full filesystem access and `ssh steamdeck` works from this machine.
+`scripts/decky doctor --deck` can report the Deck offline even when it is
+reachable — confirm with `scripts/deck/tunnel.sh status` and
+`scripts/deck/cdp.py list` before concluding otherwise.
+
+---
+
 ## Implementation Tasks
 
 Work in this order. Tasks 1 and 2 must produce **failing** output before any
