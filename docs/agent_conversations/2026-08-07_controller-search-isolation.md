@@ -112,6 +112,11 @@ Implement `controller-search-isolation` plan so non-Steam shortcut Search pages 
     - total: 17 frontend test files, 201 tests
     - all frontend, backend, and python gates passing
 
+- Scratch verification for corrected `after_return` assertion line:
+  - `cat /tmp/Decky-Metadata/controller-search-smoke-check.py`
+  - fixture payload: `{"isolation":{"afterSecond":{"secondDisplayedCount":0,"secondDisplayedHasResults":true,"activeStoreAppid":123},"afterReturn":{"secondDisplayedCount":0}}, "second":{"displayed_appid":123}}`
+  - output: `FAIL: active second displayed shortcut is missing from controller Search`
+
 - Task 6 smoke still blocked by deck transport:
   - `scripts/deck/verify/smoke_controller_layouts.sh "$run_dir/fixtures.json"`
     - `smoke_exit=255`
@@ -119,4 +124,8 @@ Implement `controller-search-isolation` plan so non-Steam shortcut Search pages 
 
 ## Notes
 
-Device smoke/proxy path for this plan could not be completed in this environment due SSH host route failure (`No route to host` on `steamdeck` / `10.168.168.20`). The code changes and unit-level verification are complete and green. No files in `docs/review/` were created or modified by this run.
+Task 1 (pre-change baseline failure) and Task 6 (post-fix negative control) are not yet completed because device transport is unavailable from this host:
+
+- `2026-08-07 11:54:13 PDT` — `ssh: connect to host 10.168.168.20 port 22: No route to host`
+
+The Deck transport blocker is environmental, not code-related. No files in `docs/review/` were created or modified by this run.

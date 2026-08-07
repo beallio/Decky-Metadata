@@ -53,6 +53,8 @@ from pathlib import Path
 listed = json.loads(sys.argv[1])
 delisted = listed["second"]
 never = listed["third"]
+second = listed["second"]
+third = listed["third"]
 evidence = Path(sys.argv[2])
 
 
@@ -129,10 +131,22 @@ if after_third["thirdDisplayedHasResults"] and after_third["thirdDisplayedCount"
     raise SystemExit(
         "FAIL: active unmatched displayed shortcut is missing from controller Search"
     )
+if after_second["activeStoreAppid"] != second["displayed_appid"]:
+    raise SystemExit(
+        "FAIL: second phase did not report expected store context appid"
+    )
+if after_third["activeStoreAppid"] != third["displayed_appid"]:
+    raise SystemExit(
+        "FAIL: third phase did not report expected store context appid"
+    )
 if native_appid is None:
     raise SystemExit("FAIL: no native Steam fixture available; set DECKY_FIXTURE_NATIVE_APPID")
 if after_native is None:
     raise SystemExit("FAIL: native-game phase could not be executed by the probe")
+if after_native["activeStoreAppid"] != native_appid:
+    raise SystemExit(
+        "FAIL: native phase did not report expected store context appid"
+    )
 if after_native["firstDisplayedCount"] != 0 or after_native["secondDisplayedCount"] != 0:
     raise SystemExit("FAIL: shortcut layouts leaked into a native game's controller Search")
 if after_native["thirdDisplayedCount"] != 0:
@@ -143,11 +157,15 @@ if after_native["nativeAppidCount"] <= 0:
     raise SystemExit("FAIL: native game is missing its own layouts in controller Search")
 if after_return is None:
     raise SystemExit("FAIL: native return phase could not be executed by the probe")
+if after_return["activeStoreAppid"] != second["displayed_appid"]:
+    raise SystemExit(
+        "FAIL: return phase did not report expected store context appid"
+    )
 if after_return["nativeAppidCount"] != 0:
     raise SystemExit("FAIL: native game's layouts persist in a shortcut's controller Search")
-if after_return["secondDisplayedCount"] <= 0 and after_third["secondDisplayedHasResults"]:
+if after_return["secondDisplayedCount"] <= 0 and after_second["secondDisplayedHasResults"]:
     raise SystemExit("FAIL: active second displayed shortcut is missing from controller Search")
-if after_return["secondSourceCount"] <= 0 and after_third["secondSourceHasResults"]:
+if after_return["secondSourceCount"] <= 0 and after_second["secondSourceHasResults"]:
     raise SystemExit(
         "FAIL: active second matched source is missing from controller Search"
     )
