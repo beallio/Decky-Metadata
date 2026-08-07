@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Controller Settings Search now isolates non-Steam shortcut layouts from other
+  shortcuts and injected matched-source layouts, so unrelated shortcut and source
+  records no longer appear on a different shortcut's search page.
+
 ## [0.3.5] - 2026-07-25
 
 Maintenance release: CI build-toolchain action updates.

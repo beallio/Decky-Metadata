@@ -8,6 +8,7 @@
   const secondDisplayedAppid = Number("__SECOND_DISPLAY_APPID__");
   const secondSourceAppid = Number("__SECOND_SOURCE_APPID__");
   const thirdDisplayedAppid = Number("__THIRD_DISPLAY_APPID__");
+  const providedNativeAppid = Number("__NATIVE_APPID__");
   const store = globalThis.controllerConfiguratorStore;
   if (!Number.isFinite(displayedAppid) || displayedAppid <= 0) {
     throw new Error("invalid displayed appid");
@@ -25,6 +26,7 @@
   if (typeof controllerListStore?.GetControllers !== "function") {
     throw new Error("controller list unavailable");
   }
+  const controllerConfiguratorStore = store;
 
   const controllers = controllerListStore.GetControllers();
   const controller = Array.isArray(controllers)
@@ -61,8 +63,15 @@
       community: summarize(workshop),
     };
   };
+  const setDisplayedContext = (appid) => {
+    // QueryConfigsForApp does not set m_appId or m_lastValidAppId, so the probe
+    // must set these to emulate the configurator UI before each phase.
+    store.m_appId = appid;
+    store.m_lastValidAppId = appid;
+  };
   const query = async (appid) => {
     const startedAt = Date.now();
+    setDisplayedContext(appid);
     controllerConfiguratorStore.QueryConfigsForApp(appid, controllerIndex);
     const deadline = Date.now() + 15000;
     while (store.BConfigurationQueryInFlight === true && Date.now() < deadline) {
@@ -73,6 +82,31 @@
     }
     return { layouts: read(appid), elapsedMs: Date.now() - startedAt };
   };
+
+  const nativeAppid = (() => {
+    if (Number.isFinite(providedNativeAppid) && providedNativeAppid > 0) {
+      return providedNativeAppid;
+    }
+    const allApps = globalThis.collectionStore?.allAppsCollection?.allApps;
+    if (!Array.isArray(allApps)) return null;
+    for (const app of allApps) {
+      if (!app || typeof app !== "object") continue;
+      const candidate = Number(app.appid);
+      const appType = Number(app.app_type);
+      if (
+        appType === 1 &&
+        Number.isFinite(candidate) &&
+        candidate > 0 &&
+        candidate !== displayedAppid &&
+        candidate !== sourceAppid &&
+        candidate !== secondDisplayedAppid &&
+        candidate !== secondSourceAppid
+      ) {
+        return candidate;
+      }
+    }
+    return null;
+  })();
 
   const sourceCompared = Number.isFinite(sourceAppid) && sourceAppid > 0;
   const secondCompared = Number.isFinite(secondDisplayedAppid) &&
@@ -113,38 +147,90 @@
     if (!Array.isArray(records)) {
       throw new Error("controller configuration Search result is not an array");
     }
-    return { records, elapsedMs };
+    return {
+      records,
+      elapsedMs,
+      activeStoreAppid: store.m_appId,
+    };
   };
   const hasResults = (layouts) => Object.values(layouts)
     .some((summary) => summary.count > 0);
 
-  const firstQuery = await query(displayedAppid);
-  const secondQuery = await query(secondDisplayedAppid);
-  const afterSecondSearch = searchSnapshot();
-  const afterSecond = {
-    elapsedMs: afterSecondSearch.elapsedMs,
-    firstDisplayedCount: countAppid(afterSecondSearch.records, displayedAppid),
-    firstSourceCount: countAppid(afterSecondSearch.records, sourceAppid),
-    secondDisplayedCount: countAppid(afterSecondSearch.records, secondDisplayedAppid),
-    secondSourceCount: countAppid(afterSecondSearch.records, secondSourceAppid),
-  };
+  const originalStoreAppid = store.m_appId;
+  const originalStoreLastValidAppid = store.m_lastValidAppId;
 
-  const thirdQuery = await query(thirdDisplayedAppid);
-  const afterThirdSearch = searchSnapshot();
-  const afterThird = {
-    elapsedMs: afterThirdSearch.elapsedMs,
-    firstDisplayedCount: countAppid(afterThirdSearch.records, displayedAppid),
-    firstSourceCount: countAppid(afterThirdSearch.records, sourceAppid),
-    secondDisplayedCount: countAppid(afterThirdSearch.records, secondDisplayedAppid),
-    secondSourceCount: countAppid(afterThirdSearch.records, secondSourceAppid),
-    thirdDisplayedCount: countAppid(afterThirdSearch.records, thirdDisplayedAppid),
-  };
+  let firstQuery;
+  let secondQuery;
+  let thirdQuery;
+  let afterSecond;
+  let afterThird;
+  let afterNative = null;
+  let afterReturn = null;
+
+  try {
+    firstQuery = await query(displayedAppid);
+    secondQuery = await query(secondDisplayedAppid);
+    const afterSecondSearch = searchSnapshot();
+    afterSecond = {
+      elapsedMs: afterSecondSearch.elapsedMs,
+      firstDisplayedCount: countAppid(afterSecondSearch.records, displayedAppid),
+      firstSourceCount: countAppid(afterSecondSearch.records, sourceAppid),
+      secondDisplayedCount: countAppid(afterSecondSearch.records, secondDisplayedAppid),
+      secondSourceCount: countAppid(afterSecondSearch.records, secondSourceAppid),
+      activeStoreAppid: afterSecondSearch.activeStoreAppid,
+    };
+
+    thirdQuery = await query(thirdDisplayedAppid);
+    const afterThirdSearch = searchSnapshot();
+    afterThird = {
+      elapsedMs: afterThirdSearch.elapsedMs,
+      firstDisplayedCount: countAppid(afterThirdSearch.records, displayedAppid),
+      firstSourceCount: countAppid(afterThirdSearch.records, sourceAppid),
+      secondDisplayedCount: countAppid(afterThirdSearch.records, secondDisplayedAppid),
+      secondSourceCount: countAppid(afterThirdSearch.records, secondSourceAppid),
+      thirdDisplayedCount: countAppid(afterThirdSearch.records, thirdDisplayedAppid),
+      activeStoreAppid: afterThirdSearch.activeStoreAppid,
+    };
+
+    if (nativeAppid !== null) {
+      await query(nativeAppid);
+      const afterNativeSearch = searchSnapshot();
+      afterNative = {
+        elapsedMs: afterNativeSearch.elapsedMs,
+        nativeAppidCount: countAppid(afterNativeSearch.records, nativeAppid),
+        firstDisplayedCount: countAppid(afterNativeSearch.records, displayedAppid),
+        secondDisplayedCount: countAppid(afterNativeSearch.records, secondDisplayedAppid),
+        thirdDisplayedCount: countAppid(afterNativeSearch.records, thirdDisplayedAppid),
+        firstSourceCount: countAppid(afterNativeSearch.records, sourceAppid),
+        secondSourceCount: countAppid(afterNativeSearch.records, secondSourceAppid),
+        activeStoreAppid: afterNativeSearch.activeStoreAppid,
+      };
+
+      await query(secondDisplayedAppid);
+      const afterReturnSearch = searchSnapshot();
+      afterReturn = {
+        elapsedMs: afterReturnSearch.elapsedMs,
+        nativeAppidCount: countAppid(afterReturnSearch.records, nativeAppid),
+        secondDisplayedCount: countAppid(afterReturnSearch.records, secondDisplayedAppid),
+        secondSourceCount: countAppid(afterReturnSearch.records, secondSourceAppid),
+        activeStoreAppid: afterReturnSearch.activeStoreAppid,
+      };
+    }
+  } finally {
+    store.m_appId = originalStoreAppid;
+    store.m_lastValidAppId = originalStoreLastValidAppid;
+  }
+
+  if (firstQuery === undefined || secondQuery === undefined || thirdQuery === undefined) {
+    throw new Error("controller search isolation query sequence did not complete");
+  }
 
   // Read source-only results after both Search snapshots. Direct native source
   // access intentionally relinquishes that source's supplemental classification.
   const source = sourceCompared ? read(sourceAppid) : null;
   const secondSource = read(secondSourceAppid);
   const isolation = {
+    nativeAppid,
     sourcePreexisting,
     secondSourcePreexisting,
     afterSecond: {
@@ -156,6 +242,8 @@
       ...afterThird,
       thirdDisplayedHasResults: hasResults(thirdQuery.layouts),
     },
+    afterNative,
+    afterReturn,
   };
   return JSON.stringify({
     displayedAppid,

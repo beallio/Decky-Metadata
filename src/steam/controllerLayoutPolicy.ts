@@ -11,6 +11,12 @@ export type ControllerLayoutContext = Readonly<{
   matchedSourceAppid: number | null;
 }>;
 
+export type ControllerSearchContext = Readonly<{
+  displayedAppid: number | null;
+  isNonSteamShortcut: boolean;
+  matchedSourceAppid: number | null;
+}>;
+
 export type ControllerLayoutContextInput = {
   displayedAppid: number;
   isNonSteamShortcut: boolean;
@@ -48,15 +54,15 @@ export const resolveControllerLayoutContext = (
   if (
     !Number.isFinite(input.displayedAppid) ||
     input.displayedAppid <= 0 ||
-    !input.isNonSteamShortcut
+    !isSteamShortcutAppid(input.displayedAppid)
   ) {
     return nativeControllerLayoutContext();
   }
+  if (!input.isNonSteamShortcut) {
+    return nativeControllerLayoutContext();
+  }
   const sourceAppid = input.metadata?.steam_appid;
-  if (
-    !isNativeSteamAppid(sourceAppid) ||
-    sourceAppid === input.displayedAppid
-  ) {
+  if (!isNativeSteamAppid(sourceAppid) || sourceAppid === input.displayedAppid) {
     return { isNonSteamShortcut: true, matchedSourceAppid: null };
   }
   return { isNonSteamShortcut: true, matchedSourceAppid: sourceAppid };
@@ -75,20 +81,46 @@ export const isSteamShortcutAppid = (value: unknown): value is number =>
   value >= STEAM_SHORTCUT_APPID_MIN &&
   value <= 0xffffffff;
 
+export const resolveControllerSearchContext = (
+  context: unknown,
+  displayedAppid: number,
+): ControllerSearchContext => {
+  if (
+    typeof context !== "object" ||
+    context === null ||
+    typeof (context as ControllerLayoutContext).isNonSteamShortcut !== "boolean"
+  ) {
+    throw new Error("invalid controller layout context");
+  }
+
+  const { isNonSteamShortcut, matchedSourceAppid } = context as ControllerLayoutContext;
+  if (
+    matchedSourceAppid !== null &&
+    (!isNativeSteamAppid(matchedSourceAppid) ||
+      matchedSourceAppid === displayedAppid ||
+      !isNonSteamShortcut)
+  ) {
+    throw new Error("invalid matched appid");
+  }
+
+  if (!isNonSteamShortcut && matchedSourceAppid !== null) {
+    throw new Error("native context has matched appid");
+  }
+
+  return {
+    displayedAppid,
+    isNonSteamShortcut,
+    matchedSourceAppid,
+  };
+};
+
 export const filterControllerSearchConfigs = (
   nativeResult: unknown,
-  activeDisplayedShortcutAppid: number | null,
-  activeMatchedSourceAppid: number | null,
+  context: ControllerSearchContext,
   supplementalSourceAppids: ReadonlySet<number>,
 ): ControllerConfigSearchResult => {
   if (!Array.isArray(nativeResult)) {
     return { ok: false, reason: "native-search-not-array" };
-  }
-  if (
-    supplementalSourceAppids.size === 0 &&
-    activeDisplayedShortcutAppid === null
-  ) {
-    return { ok: true, value: nativeResult };
   }
 
   let filtered: unknown[] | null = null;
@@ -103,14 +135,12 @@ export const filterControllerSearchConfigs = (
         appid = undefined;
       }
       if (positiveNumericAppid(appid)) {
-        remove = (
-          supplementalSourceAppids.has(appid) &&
-          appid !== activeMatchedSourceAppid
-        ) || (
-          activeDisplayedShortcutAppid !== null &&
-          isSteamShortcutAppid(appid) &&
-          appid !== activeDisplayedShortcutAppid
-        );
+        if (context.isNonSteamShortcut && context.displayedAppid !== null) {
+          remove = appid !== context.displayedAppid && appid !== context.matchedSourceAppid;
+        } else {
+          remove = isSteamShortcutAppid(appid) ||
+            (supplementalSourceAppids.has(appid) && appid !== context.displayedAppid);
+        }
       }
     }
     if (remove) {
