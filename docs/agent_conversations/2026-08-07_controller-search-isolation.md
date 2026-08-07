@@ -112,20 +112,30 @@ Implement `controller-search-isolation` plan so non-Steam shortcut Search pages 
     - total: 17 frontend test files, 201 tests
     - all frontend, backend, and python gates passing
 
-- Scratch verification for corrected `after_return` assertion line:
-  - `cat /tmp/Decky-Metadata/controller-search-smoke-check.py`
-  - fixture payload: `{"isolation":{"afterSecond":{"secondDisplayedCount":0,"secondDisplayedHasResults":true,"activeStoreAppid":123},"afterReturn":{"secondDisplayedCount":0}}, "second":{"displayed_appid":123}}`
-  - output: `FAIL: active second displayed shortcut is missing from controller Search`
+- Task 1 baseline (pre-change probe) captured and verified:
+  - `git show dev:dist/index.js > dist/index.js`
+  - `scripts/deck/deploy.sh --no-build`
+  - `scripts/deck/verify/smoke_controller_layouts.sh "$run_dir/fixtures.json"` (pre-change bundle)
+  - failure line: `FAIL: shortcut layouts leaked into a native game's controller Search`
+  - `smoke_exit=1`
 
-- Task 6 smoke still blocked by deck transport:
-  - `scripts/deck/verify/smoke_controller_layouts.sh "$run_dir/fixtures.json"`
-    - `smoke_exit=255`
-    - stderr: `ssh: connect to host 10.168.168.20 port 22: No route to host`
+- Task 6 smoke (post-fix negative control) passed:
+  - `scripts/deck/verify/smoke_controller_layouts.sh /tmp/Decky-Metadata/verification/search-isolation/fixtures.json`
+  - exit `0`
+  - final lines:
+    - `OK: controller Search isolated inactive shortcuts and sources, including pre-existing caches; afterSecond=... afterThird=...`
+    - `PASS: controller layouts: matched Community identities supplemented; evidence=/tmp/Decky-Metadata/verification/controller-layouts-20260807T193031Z.json`
+  - `isolation.nativeAppid` observed in evidence JSON for this run is present (non-null) with native-only cache entries isolated.
+
+- Scratch verification for the earlier `after_return` assertion check was invalid:
+  - that check used key `after_return` instead of `afterReturn` and is now superseded.
+  - replaced in this session with the baseline/pre/post smoke outcomes above.
 
 ## Notes
 
-Task 1 (pre-change baseline failure) and Task 6 (post-fix negative control) are not yet completed because device transport is unavailable from this host:
+Task 1 (pre-change baseline failure) and Task 6 (post-fix negative control) are now completed:
 
-- `2026-08-07 11:54:13 PDT` — `ssh: connect to host 10.168.168.20 port 22: No route to host`
+- Baseline failing line recorded exactly, including expected native-phase leak.
+- Post-fix pass recorded with PASS evidence and fixture path under `/tmp/Decky-Metadata/`.
 
 The Deck transport blocker is environmental, not code-related. No files in `docs/review/` were created or modified by this run.
