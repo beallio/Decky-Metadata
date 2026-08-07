@@ -111,15 +111,6 @@ native_appid = field(isolation, "nativeAppid", "isolation.nativeAppid")
 after_native = field(isolation, "afterNative", "isolation.afterNative")
 after_return = field(isolation, "afterReturn", "isolation.afterReturn")
 
-# The fixture-selection semantic check still expects the legacy index tokens to
-# remain discoverable in this script:
-# isolation["afterSecond"]
-# isolation["afterThird"]
-# after_second["firstDisplayedCount"]
-# after_second["firstSourceCount"]
-# after_second["secondDisplayedCount"]
-# after_second["secondSourceCount"]
-# after_third["thirdDisplayedCount"]
 if field(after_second, "firstDisplayedCount", "isolation.afterSecond.firstDisplayedCount") != 0:
     raise SystemExit(
         "FAIL: inactive first displayed shortcut remains visible in controller Search"
@@ -128,15 +119,11 @@ if field(after_second, "firstSourceCount", "isolation.afterSecond.firstSourceCou
     raise SystemExit(
         "FAIL: inactive first matched source remains visible in controller Search"
     )
-if field(after_second, "secondDisplayedHasResults", "isolation.afterSecond.secondDisplayedHasResults") and field(
-    after_second, "secondDisplayedCount", "isolation.afterSecond.secondDisplayedCount"
-) <= 0:
+if field(after_second, "secondDisplayedHasResults", "isolation.afterSecond.secondDisplayedHasResults") and field(after_second, "secondDisplayedCount", "isolation.afterSecond.secondDisplayedCount") <= 0:
     raise SystemExit(
         "FAIL: active second displayed shortcut is missing from controller Search"
     )
-if field(after_second, "secondSourceHasResults", "isolation.afterSecond.secondSourceHasResults") and field(
-    after_second, "secondSourceCount", "isolation.afterSecond.secondSourceCount"
-) <= 0:
+if field(after_second, "secondSourceHasResults", "isolation.afterSecond.secondSourceHasResults") and field(after_second, "secondSourceCount", "isolation.afterSecond.secondSourceCount") <= 0:
     raise SystemExit(
         "FAIL: active second matched source is missing from controller Search"
     )
@@ -148,9 +135,7 @@ for key, label in (
 ):
     if field(after_third, key, f"isolation.afterThird.{key}") != 0:
         raise SystemExit(f"FAIL: inactive {label} remains visible after unmatched shortcut")
-if field(after_third, "thirdDisplayedHasResults", "isolation.afterThird.thirdDisplayedHasResults") and field(
-    after_third, "thirdDisplayedCount", "isolation.afterThird.thirdDisplayedCount"
-) <= 0:
+if field(after_third, "thirdDisplayedHasResults", "isolation.afterThird.thirdDisplayedHasResults") and field(after_third, "thirdDisplayedCount", "isolation.afterThird.thirdDisplayedCount") <= 0:
     raise SystemExit(
         "FAIL: active unmatched displayed shortcut is missing from controller Search"
     )
@@ -170,7 +155,7 @@ if native_appid is None:
     raise SystemExit("FAIL: no native Steam fixture available; set DECKY_FIXTURE_NATIVE_APPID")
 if after_native is None:
     raise SystemExit("FAIL: native-game phase could not be executed by the probe")
-if after_native["activeStoreAppid"] != native_appid:
+if field(after_native, "activeStoreAppid", "isolation.afterNative.activeStoreAppid") != native_appid:
     raise SystemExit(
         "FAIL: native phase did not report expected store context appid"
     )
