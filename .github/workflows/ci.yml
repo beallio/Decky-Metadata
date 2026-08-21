@@ -35,7 +35,7 @@ jobs:
       - name: Install uv
         # setup-uv publishes no bare "v9" moving tag (only full versions), so
         # pin the exact latest release. Node 24, unlike the deprecated v6.
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
 
