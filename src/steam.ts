@@ -8,6 +8,10 @@ export {
   tryFetchMetadataForApp,
 } from "./steam/metadataPatch";
 export {
+  formatConnectedControllerTypes,
+  getConnectedControllerTypes,
+} from "./steam/controllerTypes";
+export {
   appName,
   cleanTitle,
   getOverview,
