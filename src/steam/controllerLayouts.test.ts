@@ -413,6 +413,25 @@ describe("installControllerLayouts", () => {
     ]);
   });
 
+  it("refreshes an affected supplemental source after Steam queries that source natively", () => {
+    const harness = makeHarness({
+      resolveControllerType: () => LEGION_GO_S_CONTROLLER_TYPE,
+    });
+
+    callQuery(harness.input, 10, 1, true);
+    callQuery(harness.input, 20, 1, true);
+    callQuery(harness.input, 10, 1, true);
+
+    expect(harness.calls).toEqual([
+      "query:10:1:true",
+      "query:20:1:false",
+      "query:20:1:true",
+      "query:10:1:true",
+      "query:20:1:false",
+    ]);
+    expect(harness.store.m_mapAppConfigs.writes).toEqual([[20, []], [20, []]]);
+  });
+
   it("reuses identical source query keys and refreshes changed keys exactly once", () => {
     const harness = makeHarness();
 
@@ -509,7 +528,7 @@ describe("installControllerLayouts", () => {
       .toHaveLength(2);
     callQuery(relinquished.input, 10);
     expect(relinquished.calls.filter((call) => call.startsWith("query:20")))
-      .toHaveLength(2);
+      .toHaveLength(3);
   });
 
   it("establishes matched and no-match Search context from getters before query effects", () => {

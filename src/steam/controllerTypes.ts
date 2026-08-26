@@ -23,36 +23,48 @@ const validControllerType = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 0;
 
 const readControllerStore = (internals?: ControllerInternals | null): ControllerStoreSource => {
-  const boundary = internals ?? (globalThis as unknown as ControllerInternals);
-  const upper = boundary.ControllerStore;
-  if (upper && typeof upper.GetControllers === "function") return upper;
-  const lower = boundary.controllerStore;
-  if (lower && typeof lower.GetControllers === "function") return lower;
-  return null;
-};
-
-const extractControllers = (store?: ControllerStoreSource): readonly unknown[] | null => {
-  if (!store) return null;
-  if (typeof store.GetControllers !== "function") return null;
-  let value: unknown;
   try {
-    value = store.GetControllers();
+    const boundary = internals ?? (globalThis as unknown as ControllerInternals);
+    const upper = boundary.ControllerStore;
+    if (upper && typeof upper.GetControllers === "function") return upper;
+    const lower = boundary.controllerStore;
+    if (lower && typeof lower.GetControllers === "function") return lower;
+    return null;
   } catch (_error) {
     return null;
   }
-  return Array.isArray(value) ? value : null;
+};
+
+const extractControllers = (store?: ControllerStoreSource): readonly unknown[] | null => {
+  try {
+    if (!store) return null;
+    const getControllers = store.GetControllers;
+    if (typeof getControllers !== "function") return null;
+    const value = getControllers.call(store);
+    return Array.isArray(value) ? value : null;
+  } catch (_error) {
+    return null;
+  }
 };
 
 const extractControllerType = (record: unknown): number | null => {
-  if (record === null || typeof record !== "object") return null;
-  const value = (record as SteamControllerRecord).eControllerType;
-  return validControllerType(value) ? value : null;
+  try {
+    if (record === null || typeof record !== "object") return null;
+    const value = (record as SteamControllerRecord).eControllerType;
+    return validControllerType(value) ? value : null;
+  } catch (_error) {
+    return null;
+  }
 };
 
 const extractControllerIndex = (record: unknown): number | null => {
-  if (record === null || typeof record !== "object") return null;
-  const value = (record as SteamControllerRecord).nControllerIndex;
-  return validControllerIndex(value) ? value : null;
+  try {
+    if (record === null || typeof record !== "object") return null;
+    const value = (record as SteamControllerRecord).nControllerIndex;
+    return validControllerIndex(value) ? value : null;
+  } catch (_error) {
+    return null;
+  }
 };
 
 const readControllerTypeAtIndex = (controllerIndex: number, rawControllers: readonly unknown[]): number | null => {
@@ -68,29 +80,32 @@ export const controllerTypeForIndex = (
   controllerIndex: unknown,
   internals?: ControllerInternals | null,
 ): number | null => {
-  if (!validControllerIndex(controllerIndex)) return null;
-  let controllers: readonly unknown[] | null;
   try {
-    controllers = extractControllers(readControllerStore(internals));
+    if (!validControllerIndex(controllerIndex)) return null;
+    const controllers = extractControllers(readControllerStore(internals));
+    if (!controllers) return null;
+    return readControllerTypeAtIndex(controllerIndex, controllers);
   } catch (_error) {
     return null;
   }
-  if (!controllers) return null;
-  return readControllerTypeAtIndex(controllerIndex, controllers);
 };
 
 export const getConnectedControllerTypes = (
   internals?: ControllerInternals | null,
 ): number[] => {
-  const controllers = extractControllers(readControllerStore(internals));
-  if (!controllers) return [];
-  const values = new Set<number>();
-  for (const record of controllers) {
-    const type = extractControllerType(record);
-    if (type === null) continue;
-    values.add(type);
+  try {
+    const controllers = extractControllers(readControllerStore(internals));
+    if (!controllers) return [];
+    const values = new Set<number>();
+    for (const record of controllers) {
+      const type = extractControllerType(record);
+      if (type === null) continue;
+      values.add(type);
+    }
+    return Array.from(values).sort((left, right) => left - right);
+  } catch (_error) {
+    return [];
   }
-  return Array.from(values).sort((left, right) => left - right);
 };
 
 export const sourceFilterForControllerType = (

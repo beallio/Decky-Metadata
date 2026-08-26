@@ -70,6 +70,33 @@ describe("controllerTypeForIndex", () => {
       }),
     ).toBeNull();
   });
+
+  it.each([
+    ["string type", "102"],
+    ["fractional type", 102.5],
+    ["negative type", -1],
+  ])("returns null for a valid index with a malformed %s", (_label, eControllerType) => {
+    expect(controllerTypeForIndex(3, makeStore(() => [
+      { nControllerIndex: 3, eControllerType },
+    ]))).toBeNull();
+  });
+
+  it("returns null instead of propagating throwing store or record properties", () => {
+    const throwingStore = {
+      get ControllerStore() {
+        throw new Error("store boundary unavailable");
+      },
+    };
+    const throwingRecord = {
+      nControllerIndex: 3,
+      get eControllerType() {
+        throw new Error("type unavailable");
+      },
+    };
+
+    expect(controllerTypeForIndex(3, throwingStore as any)).toBeNull();
+    expect(controllerTypeForIndex(3, makeStore(() => [throwingRecord]))).toBeNull();
+  });
 });
 
 describe("getConnectedControllerTypes", () => {
@@ -103,6 +130,30 @@ describe("getConnectedControllerTypes", () => {
     expect(getConnectedControllerTypes({
       ControllerStore: {
         GetControllers: vi.fn(() => ({ values: () => [] })),
+      },
+    } as any)).toEqual([]);
+  });
+
+  it("returns an empty list instead of propagating malformed or throwing boundaries", () => {
+    const makeStore = (getControllers: () => unknown) => ({
+      ControllerStore: { GetControllers: vi.fn(getControllers) },
+    });
+    const throwingType = {
+      nControllerIndex: 0,
+      get eControllerType() {
+        throw new Error("type unavailable");
+      },
+    };
+    const malformedTypes = ["102", 102.5, -1];
+
+    expect(getConnectedControllerTypes(makeStore(() => [throwingType]))).toEqual([]);
+    expect(getConnectedControllerTypes(makeStore(() => malformedTypes.map((eControllerType) => ({
+      nControllerIndex: 0,
+      eControllerType,
+    }))))).toEqual([]);
+    expect(getConnectedControllerTypes({
+      get ControllerStore() {
+        throw new Error("store boundary unavailable");
       },
     } as any)).toEqual([]);
   });

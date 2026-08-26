@@ -958,40 +958,55 @@ const AFFLICTED_CONTROLLER_TYPES = new Set([
 const validControllerIndex = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
 const validControllerType = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
 const readControllerStore = (internals) => {
-    const boundary = internals ?? globalThis;
-    const upper = boundary.ControllerStore;
-    if (upper && typeof upper.GetControllers === "function")
-        return upper;
-    const lower = boundary.controllerStore;
-    if (lower && typeof lower.GetControllers === "function")
-        return lower;
-    return null;
-};
-const extractControllers = (store) => {
-    if (!store)
-        return null;
-    if (typeof store.GetControllers !== "function")
-        return null;
-    let value;
     try {
-        value = store.GetControllers();
+        const boundary = internals ?? globalThis;
+        const upper = boundary.ControllerStore;
+        if (upper && typeof upper.GetControllers === "function")
+            return upper;
+        const lower = boundary.controllerStore;
+        if (lower && typeof lower.GetControllers === "function")
+            return lower;
+        return null;
     }
     catch (_error) {
         return null;
     }
-    return Array.isArray(value) ? value : null;
+};
+const extractControllers = (store) => {
+    try {
+        if (!store)
+            return null;
+        const getControllers = store.GetControllers;
+        if (typeof getControllers !== "function")
+            return null;
+        const value = getControllers.call(store);
+        return Array.isArray(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
 };
 const extractControllerType = (record) => {
-    if (record === null || typeof record !== "object")
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.eControllerType;
+        return validControllerType(value) ? value : null;
+    }
+    catch (_error) {
         return null;
-    const value = record.eControllerType;
-    return validControllerType(value) ? value : null;
+    }
 };
 const extractControllerIndex = (record) => {
-    if (record === null || typeof record !== "object")
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.nControllerIndex;
+        return validControllerIndex(value) ? value : null;
+    }
+    catch (_error) {
         return null;
-    const value = record.nControllerIndex;
-    return validControllerIndex(value) ? value : null;
+    }
 };
 const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
     for (const record of rawControllers) {
@@ -1003,31 +1018,35 @@ const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
     return null;
 };
 const controllerTypeForIndex = (controllerIndex, internals) => {
-    if (!validControllerIndex(controllerIndex))
-        return null;
-    let controllers;
     try {
-        controllers = extractControllers(readControllerStore(internals));
+        if (!validControllerIndex(controllerIndex))
+            return null;
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return null;
+        return readControllerTypeAtIndex(controllerIndex, controllers);
     }
     catch (_error) {
         return null;
     }
-    if (!controllers)
-        return null;
-    return readControllerTypeAtIndex(controllerIndex, controllers);
 };
 const getConnectedControllerTypes = (internals) => {
-    const controllers = extractControllers(readControllerStore(internals));
-    if (!controllers)
-        return [];
-    const values = new Set();
-    for (const record of controllers) {
-        const type = extractControllerType(record);
-        if (type === null)
-            continue;
-        values.add(type);
+    try {
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return [];
+        const values = new Set();
+        for (const record of controllers) {
+            const type = extractControllerType(record);
+            if (type === null)
+                continue;
+            values.add(type);
+        }
+        return Array.from(values).sort((left, right) => left - right);
     }
-    return Array.from(values).sort((left, right) => left - right);
+    catch (_error) {
+        return [];
+    }
 };
 const sourceFilterForControllerType = (controllerType, requestedFilter) => {
     if (!requestedFilter)
@@ -5643,6 +5662,8 @@ const installControllerLayouts = (unpatchers, provided) => {
                     return nativeResult;
                 context = resolveDisplayedContext(displayedAppid);
                 if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+                    supplementalSourceAppids.delete(validDisplayedAppid);
+                    supplementalQueryKeys.delete(validDisplayedAppid);
                     return nativeResult;
                 }
                 const matchedAppid = context.matchedSourceAppid;

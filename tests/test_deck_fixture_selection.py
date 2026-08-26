@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -87,8 +88,11 @@ def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_i
     assert 'typeof controllerListStore?.GetControllers !== "function"' in probe
     assert 'throw new Error("controller list unavailable")' in probe
     assert "controllerListStore.GetControllers()" in probe
-    assert "controllerType" in probe
-    assert "filterOtherControllerTypes" in probe
+    assert "Number.isInteger(controllerType)" in probe
+    assert 'typeof filterOtherControllerTypes !== "boolean"' in probe
+    serialized_payload = probe.rsplit("return JSON.stringify({", 1)[1]
+    assert re.search(r"^    controllerType,$", serialized_payload, re.MULTILINE)
+    assert re.search(r"^    filterOtherControllerTypes,$", serialized_payload, re.MULTILINE)
     assert "controllerConfiguratorStore.QueryConfigsForApp" in probe
     assert "GetOfficialConfigsForApp" in probe
     assert "GetTemplateConfigsForApp" in probe

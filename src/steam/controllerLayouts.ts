@@ -296,6 +296,8 @@ export const installControllerLayouts = (
         if (validDisplayedAppid === undefined) return nativeResult;
         context = resolveDisplayedContext(displayedAppid);
         if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+          supplementalSourceAppids.delete(validDisplayedAppid);
+          supplementalQueryKeys.delete(validDisplayedAppid);
           return nativeResult;
         }
         const matchedAppid = context.matchedSourceAppid;

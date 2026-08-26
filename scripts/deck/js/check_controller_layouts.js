@@ -34,8 +34,20 @@
     : null;
   if (!controller) throw new Error("no connected controller");
   const controllerIndex = controller.nControllerIndex;
-  const controllerType = controller.eControllerType;
-  const filterOtherControllerTypes = controllerConfiguratorStore.m_bFilterOtherControllerTypes;
+  let controllerType;
+  let filterOtherControllerTypes;
+  try {
+    controllerType = controller.eControllerType;
+    filterOtherControllerTypes = controllerConfiguratorStore.m_bFilterOtherControllerTypes;
+  } catch (_error) {
+    throw new Error("controller diagnostics unavailable");
+  }
+  if (!Number.isInteger(controllerType) || controllerType < 0) {
+    throw new Error("controller type unavailable");
+  }
+  if (typeof filterOtherControllerTypes !== "boolean") {
+    throw new Error("controller filter unavailable");
+  }
 
   const hashUrl = (value) => {
     let hash = 2166136261;
