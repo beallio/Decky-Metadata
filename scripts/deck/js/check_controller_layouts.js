@@ -35,6 +35,7 @@
   if (!controller) throw new Error("no connected controller");
   const controllerIndex = controller.nControllerIndex;
   const controllerType = controller.eControllerType;
+  const filterOtherControllerTypes = controllerConfiguratorStore.m_bFilterOtherControllerTypes;
 
   const hashUrl = (value) => {
     let hash = 2166136261;
@@ -249,6 +250,8 @@
     displayedAppid,
     sourceAppid: sourceCompared ? sourceAppid : null,
     sourceCompared,
+    controllerType,
+    filterOtherControllerTypes,
     controllerIndex,
     elapsedMs: firstQuery.elapsedMs,
     displayed: firstQuery.layouts,
@@ -257,6 +260,7 @@
       displayedAppid: secondDisplayedAppid,
       sourceAppid: secondSourceAppid,
       sourceCompared: true,
+      filterOtherControllerTypes,
       controllerIndex,
       elapsedMs: secondQuery.elapsedMs,
       displayed: secondQuery.layouts,
@@ -266,6 +270,7 @@
       displayedAppid: thirdDisplayedAppid,
       sourceAppid: null,
       sourceCompared: false,
+      filterOtherControllerTypes,
       controllerIndex,
       elapsedMs: thirdQuery.elapsedMs,
       displayed: thirdQuery.layouts,
