@@ -5,6 +5,10 @@ import {
   ControllerLayoutTargets,
   installControllerLayouts,
 } from "./controllerLayouts";
+import {
+  LEGION_GO_S_CONTROLLER_TYPE,
+  STEAM_DECK_CONTROLLER_TYPE,
+} from "./controllerTypes";
 import type { ControllerLayoutContext } from "./controllerLayoutPolicy";
 
 type GetterSection = "official" | "templates" | "workshop";
@@ -110,6 +114,7 @@ class TrackingMap extends Map<number, unknown> {
 const makeHarness = (options: {
   source?: number | null;
   resolveContext?: (appid: number) => ControllerLayoutContext;
+  resolveControllerType?: (controllerIndex: number) => number | null;
   storeAppid?: unknown;
   storeLastValidAppid?: unknown;
   queryThrowsFor?: number;
@@ -235,6 +240,7 @@ const makeHarness = (options: {
   const unpatchers: Array<() => void> = [];
   const control = installControllerLayouts(unpatchers, {
     discoverTargets: () => targets,
+    resolveControllerType: options.resolveControllerType,
     resolveContext: options.resolveContext ?? ((appid) =>
       appid === 10 ? shortcutContext(source) : nativeContext()
     ),
@@ -332,6 +338,79 @@ describe("installControllerLayouts", () => {
       .toEqual(selectedDescriptor);
     expect(Object.getOwnPropertyDescriptor(prototype, "PreviewConfigForAppAndController"))
       .toEqual(previewDescriptor);
+  });
+
+  it("uses an affected type to force source-query filtering false while preserving primary request", () => {
+    const harness = makeHarness({
+      resolveControllerType: () => LEGION_GO_S_CONTROLLER_TYPE,
+    });
+
+    expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(harness.calls.slice(0, 2)).toEqual([
+      "query:10:1:true",
+      "query:20:1:false",
+    ]);
+
+    const unknownHarness = makeHarness({
+      resolveControllerType: () => 0,
+    });
+    expect(callQuery(unknownHarness.input, 10, 3, true)).toBe(unknownHarness.queryResult);
+    expect(unknownHarness.calls.slice(0, 2)).toEqual([
+      "query:10:3:true",
+      "query:20:3:true",
+    ]);
+
+    const deckHarness = makeHarness({
+      resolveControllerType: () => STEAM_DECK_CONTROLLER_TYPE,
+    });
+    expect(callQuery(deckHarness.input, 10, 4, true)).toBe(deckHarness.queryResult);
+    expect(deckHarness.calls.slice(0, 2)).toEqual([
+      "query:10:4:true",
+      "query:20:4:true",
+    ]);
+  });
+
+  it("reads controller index from the Query args and does not follow fallback store order", () => {
+    const indexes: number[] = [];
+    const harness = makeHarness({
+      resolveControllerType: (controllerIndex) => {
+        indexes.push(controllerIndex);
+        return controllerIndex === 8 ? LEGION_GO_S_CONTROLLER_TYPE : null;
+      },
+    });
+
+    expect(callQuery(harness.input, 10, 8, true)).toBe(harness.queryResult);
+    expect(indexes).toEqual([8]);
+    expect(harness.calls.slice(0, 2)).toEqual([
+      "query:10:8:true",
+      "query:20:8:false",
+    ]);
+  });
+
+  it("deduplicates source queries on the effective filter for affected types", () => {
+    const harness = makeHarness({
+      resolveControllerType: () => LEGION_GO_S_CONTROLLER_TYPE,
+    });
+
+    expect(callQuery(harness.input)).toBe(harness.queryResult);
+    expect(callQuery(harness.input, 10, 2, false)).toBe(harness.queryResult);
+    expect(callQuery(harness.input, 10, 2, true)).toBe(harness.queryResult);
+    expect(callQuery(harness.input, 10, 3, true)).toBe(harness.queryResult);
+
+    expect(harness.calls).toEqual([
+      "query:10:1:true",
+      "query:20:1:false",
+      "query:10:2:false",
+      "query:20:2:false",
+      "query:10:2:true",
+      "query:10:3:true",
+      "query:20:3:false",
+    ]);
+    expect(harness.store.m_mapAppConfigs.writes).toEqual([
+      [20, []],
+      [20, []],
+      [20, []],
+    ]);
   });
 
   it("reuses identical source query keys and refreshes changed keys exactly once", () => {

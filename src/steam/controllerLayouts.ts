@@ -5,6 +5,10 @@ import type {
 } from "../types";
 import type { Unpatch } from "./core";
 import {
+  controllerTypeForIndex,
+  sourceFilterForControllerType,
+} from "./controllerTypes";
+import {
   filterControllerSearchConfigs,
   mergeCommunityConfigs,
   mergeOfficialConfigs,
@@ -40,6 +44,7 @@ type TimerHandle = unknown;
 export type ControllerLayoutDependencies = {
   discoverTargets: () => ControllerLayoutTargets | null;
   resolveContext: (displayedAppid: number) => ControllerLayoutContext;
+  resolveControllerType: (controllerIndex: number) => number | null;
   reportFailure: (failure: ControllerLayoutFailure) => void;
   notify: (heading: string, body: string) => void;
   schedule: (callback: () => void, delayMs: number) => TimerHandle;
@@ -157,19 +162,19 @@ type SupplementalQueryKey = {
   filterOtherControllerTypes: boolean;
 };
 
+const parseControllerIndex = (value: unknown): number | null => {
+  if (!Number.isInteger(value) || (value as number) < 0) return null;
+  return value as number;
+};
+
+const parseFilter = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
+
 const supplementalQueryKey = (
   sourceAppid: number,
-  args: readonly unknown[],
+  controllerIndex: number,
+  filterOtherControllerTypes: boolean,
 ): SupplementalQueryKey | null => {
-  const controllerIndex = args[1];
-  const filterOtherControllerTypes = args[2];
-  if (
-    !Number.isInteger(controllerIndex) ||
-    (controllerIndex as number) < 0 ||
-    typeof filterOtherControllerTypes !== "boolean"
-  ) {
-    return null;
-  }
   return {
     sourceAppid,
     controllerIndex: controllerIndex as number,
@@ -204,13 +209,16 @@ export const installControllerLayouts = (
     Pick<ControllerLayoutDependencies, "notify" | "reportFailure" | "resolveContext">,
 ): ControllerLayoutControl => {
   const dependencies: ControllerLayoutDependencies = {
-    discoverTargets: discoverControllerLayoutTargets,
-    schedule: defaultSchedule,
-    cancel: defaultCancel,
-    defineProperty: Object.defineProperty,
-    maxAttempts: 240,
-    retryDelayMs: 500,
-    ...provided,
+    discoverTargets: provided.discoverTargets ?? discoverControllerLayoutTargets,
+    resolveContext: provided.resolveContext,
+    resolveControllerType: provided.resolveControllerType ?? controllerTypeForIndex,
+    reportFailure: provided.reportFailure,
+    notify: provided.notify,
+    schedule: provided.schedule ?? defaultSchedule,
+    cancel: provided.cancel ?? defaultCancel,
+    defineProperty: provided.defineProperty ?? Object.defineProperty,
+    maxAttempts: provided.maxAttempts ?? 240,
+    retryDelayMs: provided.retryDelayMs ?? 500,
   };
   let disabled = false;
   let installed = false;
@@ -291,7 +299,27 @@ export const installControllerLayouts = (
           return nativeResult;
         }
         const matchedAppid = context.matchedSourceAppid;
-        const queryKey = supplementalQueryKey(matchedAppid, args);
+        const controllerIndex = parseControllerIndex(args[1]);
+        const requestedFilter = parseFilter(args[2]);
+        if (controllerIndex === null || requestedFilter === null) {
+          trip({
+            section: "query",
+            code: "invalid-query-key",
+            displayedAppid: validDisplayedAppid,
+            matchedAppid,
+          });
+          return nativeResult;
+        }
+        const resolvedType = dependencies.resolveControllerType(controllerIndex);
+        const effectiveSourceFilter = sourceFilterForControllerType(
+          resolvedType,
+          requestedFilter,
+        );
+        const queryKey = supplementalQueryKey(
+          matchedAppid,
+          controllerIndex,
+          effectiveSourceFilter,
+        );
         if (!queryKey) {
           trip({
             section: "query",
@@ -310,7 +338,8 @@ export const installControllerLayouts = (
           return nativeResult;
         }
         targets.store.m_mapAppConfigs.set(matchedAppid, []);
-        originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
+        const sourceQuery = [matchedAppid, controllerIndex, effectiveSourceFilter, ...args.slice(3)];
+        originalQuery.apply(this, sourceQuery);
         supplementalQueryKeys.set(matchedAppid, queryKey);
         supplementalSourceAppids.add(matchedAppid);
       } catch (error) {
