@@ -48,6 +48,8 @@ Matched shortcuts can show content from the Steam game's Community page. If Stea
 
 Controller Settings can include recommended, official, and community layouts from the matching Steam game. Your shortcut's personal layouts and Steam's general templates stay available, and you still preview and choose layouts through Steam's normal controls.
 
+For the verified Legion Go S integrated controller (type `102`), compatible matched-game layouts remain available while Steam's normal visible controller-type filter stays enabled. Other controller types keep Steam's requested source filter.
+
 On a non-Steam shortcut, Search shows only that game's layouts and its matched Steam game's layouts, and nothing from unrelated games.
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
