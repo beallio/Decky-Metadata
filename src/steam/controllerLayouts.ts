@@ -5,6 +5,11 @@ import type {
 } from "../types";
 import type { Unpatch } from "./core";
 import {
+  installControllerTabPersistence,
+  type ControllerTabPersistenceControl,
+  type ControllerTabPersistenceDependencies,
+} from "./controllerTabPersistence";
+import {
   controllerTypeForIndex,
   sourceFilterForControllerType,
 } from "./controllerTypes";
@@ -56,6 +61,13 @@ export type ControllerLayoutDependencies = {
   ) => object;
   maxAttempts: number;
   retryDelayMs: number;
+  createTabPersistence: (
+    dependencies: Pick<
+      ControllerTabPersistenceDependencies,
+      "resolveContext" | "resolveControllerType" | "reportDiagnostic"
+    >,
+  ) => ControllerTabPersistenceControl;
+  reportTabPersistenceDiagnostic: (error: unknown) => void;
 };
 
 export type ControllerLayoutControl = {
@@ -219,6 +231,8 @@ export const installControllerLayouts = (
     defineProperty: provided.defineProperty ?? Object.defineProperty,
     maxAttempts: provided.maxAttempts ?? 240,
     retryDelayMs: provided.retryDelayMs ?? 500,
+    createTabPersistence: provided.createTabPersistence ?? installControllerTabPersistence,
+    reportTabPersistenceDiagnostic: provided.reportTabPersistenceDiagnostic ?? (() => undefined),
   };
   let disabled = false;
   let installed = false;
@@ -228,6 +242,18 @@ export const installControllerLayouts = (
   let installedDescriptors: ValidatedTargets["descriptors"] = [];
   const supplementalSourceAppids = new Set<number>();
   const supplementalQueryKeys = new Map<number, SupplementalQueryKey>();
+  let tabPersistence: ControllerTabPersistenceControl | null = null;
+
+  try {
+    tabPersistence = dependencies.createTabPersistence({
+      resolveContext: dependencies.resolveContext,
+      resolveControllerType: dependencies.resolveControllerType,
+      reportDiagnostic: dependencies.reportTabPersistenceDiagnostic,
+    });
+  } catch (_error) {
+    // The optional Steam tabs patch must never disable controller-layout supplementation.
+    tabPersistence = null;
+  }
 
   const trip = (failure: ControllerLayoutFailure): void => {
     if (disabled || cleanedUp) return;
@@ -287,9 +313,19 @@ export const installControllerLayouts = (
     const inputEntry = targets.descriptors[0];
     const originalQuery = inputEntry.descriptor.value;
     const queryWrapper = function (this: unknown, ...args: unknown[]) {
+      const storeDriven = (targets.store as { BConfigurationQueryInFlight?: unknown })
+        .BConfigurationQueryInFlight === true;
+      const displayedAppid = args[0];
+      const controllerIndex = parseControllerIndex(args[1]);
+      if (validAppid(displayedAppid) && controllerIndex !== null) {
+        try {
+          tabPersistence?.beforeControllerQuery(displayedAppid, controllerIndex, storeDriven);
+        } catch (_error) {
+          // Tab persistence is optional and independently fail-open.
+        }
+      }
       const nativeResult = originalQuery.apply(this, args);
       if (disabled) return nativeResult;
-      const displayedAppid = args[0];
       const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
       let context: ControllerSearchContext | null = null;
       try {
@@ -301,7 +337,6 @@ export const installControllerLayouts = (
           return nativeResult;
         }
         const matchedAppid = context.matchedSourceAppid;
-        const controllerIndex = parseControllerIndex(args[1]);
         const requestedFilter = parseFilter(args[2]);
         if (controllerIndex === null || requestedFilter === null) {
           trip({
@@ -553,6 +588,12 @@ export const installControllerLayouts = (
   const cleanup = (): void => {
     if (cleanedUp) return;
     cleanedUp = true;
+    try {
+      tabPersistence?.cleanup();
+    } catch (_error) {
+      // Continue restoring the primary input/getter/Search descriptors.
+    }
+    tabPersistence = null;
     if (timer !== undefined) {
       dependencies.cancel(timer);
       timer = undefined;

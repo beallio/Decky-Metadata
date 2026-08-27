@@ -50,6 +50,8 @@ Controller Settings can include recommended, official, and community layouts fro
 
 For the verified Legion Go S integrated controller (type `102`), compatible matched-game layouts remain available while Steam's normal visible controller-type filter stays enabled. Other controller types keep Steam's requested source filter.
 
+When you choose **Show All** on that verified Legion controller, Decky Metadata preserves the chooser tab you were already using if it is still available. It does not force Community Layouts: Your Layouts, Templates, Official Layouts, Community Layouts, and Search retain Steam's normal behavior. Steam Deck and other native controller paths are unchanged.
+
 On a non-Steam shortcut, Search shows only that game's layouts and its matched Steam game's layouts, and nothing from unrelated games.
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
