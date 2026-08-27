@@ -1,8 +1,14 @@
 import { findModuleChild } from "@decky/ui";
 import type { ControllerLayoutContext } from "./controllerLayoutPolicy";
 
+type RequiredChooserTab = "templates" | "community" | "search";
+
 const LEGION_GO_S_CONTROLLER_TYPE = 102;
-const REQUIRED_CHOOSER_TABS = new Set(["templates", "community", "search"]);
+const REQUIRED_CHOOSER_TABS: ReadonlySet<RequiredChooserTab> = new Set([
+  "templates",
+  "community",
+  "search",
+]);
 
 export type ControllerChooserTab = {
   id: unknown;
@@ -77,21 +83,14 @@ const tabIdentity = (id: unknown): string | null => {
   return trimmed ? trimmed : null;
 };
 
-const tabSignature = (id: string): string => {
-  const normalized = id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
-  if (normalized.endsWith("communitylayouts") || normalized.endsWith("community")) {
-    return "community";
-  }
-  if (normalized.endsWith("templates")) return "templates";
-  if (normalized.endsWith("search")) return "search";
-  return normalized;
-};
-
-const isRequiredTab = (id: string): boolean => {
-  const signature = tabSignature(id);
-  return signature === "communitylayouts"
-    ? REQUIRED_CHOOSER_TABS.has("community")
-    : REQUIRED_CHOOSER_TABS.has(signature);
+const canonicalChooserTab = (id: string): RequiredChooserTab | null => {
+  // Steam's observed chooser IDs prepend a generated `«r…»` token.  Strip
+  // that one exact shape only; arbitrary suffixes must stay unrelated.
+  const semanticId = id.replace(/^«r[0-9a-z]+»/i, "").toLocaleLowerCase("en-US");
+  if (semanticId === "templates") return "templates";
+  if (semanticId === "community" || semanticId === "community layouts") return "community";
+  if (semanticId === "search") return "search";
+  return null;
 };
 
 const contentNumbers = (content: unknown): {
@@ -119,7 +118,7 @@ const chooserTabs = (value: unknown): ParsedChooserTabs | null => {
     const id = tabIdentity(tab?.id);
     const numbers = contentNumbers(tab?.content);
     if (!id || seenIds.has(id)) return null;
-    const signature = tabSignature(id);
+    const signature = canonicalChooserTab(id);
     if ((signature === "community" || signature === "search") && !numbers) return null;
     if (numbers) {
       if (displayedAppid === undefined) displayedAppid = numbers.displayedAppid;
@@ -133,10 +132,11 @@ const chooserTabs = (value: unknown): ParsedChooserTabs | null => {
   }
 
   if (!displayedAppid || controllerIndex === undefined) return null;
-  const signatures = new Set(output.filter((tab) => isRequiredTab(tab.id)).map((tab) => {
-    const signature = tabSignature(tab.id);
-    return signature === "communitylayouts" ? "community" : signature;
-  }));
+  const signatures = new Set(
+    output.map((tab) => canonicalChooserTab(tab.id)).filter((signature): signature is RequiredChooserTab =>
+      signature !== null,
+    ),
+  );
   for (const required of REQUIRED_CHOOSER_TABS) {
     if (!signatures.has(required)) return null;
   }

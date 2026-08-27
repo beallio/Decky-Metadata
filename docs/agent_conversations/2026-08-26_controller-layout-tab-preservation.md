@@ -166,3 +166,100 @@ control for fresh chooser queries and for every other device/context.
   design. Types other than `4` and `102`, physical multiple-controller switching,
   hot-plug behavior, and webpack shapes outside the structurally tested current
   build remain unit-only/fail-open.
+
+## Review-03 correction and evidence (2026-08-27)
+
+- Tab scoping now removes only Steam's observed generated `«r…»` prefix and
+  accepts the exact semantic IDs `Templates`, `Community`/`Community Layouts`,
+  and `Search`. It rejects misleading suffixes such as `mytemplates`,
+  `notcommunity`, and `research`; it remains covered for observed `«r7e»` and
+  `«r99»` prefixes.
+- The permanent query probe no longer accepts an arbitrary cache change. After
+  a cache mutation it requires an expanded Community getter result and three
+  consecutive stable cache/getter/hash samples before allowing the DOM settle
+  phase. A read-only `capture-filter` phase arms cleanup before the direct
+  query, and the shell atomically overwrites supplied evidence with `started`
+  before its first probe so an old `passed` file cannot survive an early error.
+- Focused restored controls passed `2` Vitest files / `93` tests and the
+  fixture/probe file's `17` tests. Syntax checks passed for the probe and smoke.
+  The final local gate in `review-03-quality-gates.log` passed TypeScript,
+  Rollup, `20` Vitest files / `258` tests, Python byte-compilation, and the
+  review-note integrity check; the matching explicit final Python run in
+  `review-03-final-pytest.log` passed `410` tests.
+  The deliberate, uncommitted mutations all failed as required: broad
+  tab-suffix matching (1 failure), direct-query memory clearing (3), suppressed
+  active-tab substitution (4), type-`4` scope (12), one-sample query completion
+  (3 fixture failures), unarmed filter cleanup (transport restoration failure),
+  and a premature `passed` evidence state (transport and stale-evidence failures).
+  Outputs are `review-03-{red-tab-signature,red-probe-contracts,focused-green-vitest,focused-green-pytest,mutation-*}.log` below
+  `/tmp/Decky-Metadata/controller-layout-tab-preservation/`.
+
+### Current-device execution record
+
+Both device doctors were reachable and reported only the expected dirty-worktree,
+cache-policy, repository-local-node-modules, and stale-local-package warnings:
+
+```bash
+DECKY_DECK_HOST=steamdeck-legos scripts/decky doctor --deck
+DECKY_DECK_HOST=steamdeck scripts/decky doctor --deck
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/deploy.sh
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/deploy.sh
+```
+
+The first Legion deploy revealed a TypeScript inference diagnostic in the new
+tab set; it was corrected before the final successful deployments above. The
+final corrected bundle was pushed and hard-reloaded on both dedicated ports.
+
+The current chooser route could not be established with the committed no-launch
+tooling after those reloads. Both typed smoke commands stopped in `dom-select`
+with `chooser tab unavailable: Community Layouts`, before the direct query or
+visible-filter mutation. Their evidence paths therefore contain non-passing
+`started` state only:
+
+```bash
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
+  scripts/deck/verify/smoke_controller_tab_persistence.sh \
+  3213262460 55150 102 /tmp/Decky-Metadata/controller-layout-tab-preservation/review-03-legos.json
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
+  scripts/deck/verify/smoke_controller_tab_persistence.sh \
+  2155012430 55150 4 /tmp/Decky-Metadata/controller-layout-tab-preservation/review-03-steamdeck.json
+```
+
+The safe failed smoke logs are `review-03-legos-smoke.log` and
+`review-03-steamdeck-smoke.log`. A Legion screenshot attempt at
+`review-03-legos-gameinfo.png` confirmed the Library was showing an unrelated
+X-Men card; `nav.js` reported `DFL.Navigation unavailable`, and the repository
+has no committed no-launch operation that opens this shortcut's controller
+chooser. No ad-hoc click or `enter` action was used because it could activate a
+game. Consequently there are no review-03 Community-selected screenshots yet.
+
+The requested no-launch suites were still captured with unique staging IDs:
+
+```bash
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
+  DECKY_VERIFY_RUN_ID=controller-tab-review-03-legos scripts/deck/verify/run_all.sh --no-launch
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
+  DECKY_VERIFY_RUN_ID=controller-tab-review-03-steamdeck scripts/deck/verify/run_all.sh --no-launch
+```
+
+Legion passed rerender, Community, and controller-layout checks but retained
+the unrelated quick-links failure `developer metadata missing from a Game Info
+page`. Steam Deck passed rerender and Community but retained unrelated
+quick-links `delisted game lost rich metadata` and controller-layout `delisted
+matched source Community results are empty` fixture failures. These are
+recorded as failures, not passes, in `review-03-legos-run-all-no-launch.log` and
+`review-03-steamdeck-run-all-no-launch.log`.
+
+Both tunnels were explicitly closed and their final status was `tunnel: down`
+(the status command's nonzero exit is its expected down-state result):
+
+```bash
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/tunnel.sh down
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/tunnel.sh down
+```
+
+The two current-device typed smoke/screenshot proofs remain outstanding. To
+complete them, start each named shortcut on its controller chooser route, then
+rerun the exact smoke commands above; they must report the corrected commit's
+Community-before/after and restoration evidence before this review round can be
+marked complete.

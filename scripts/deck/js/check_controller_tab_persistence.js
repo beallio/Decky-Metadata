@@ -131,6 +131,18 @@
     });
   }
 
+  if (phase === "capture-filter") {
+    const store = globalThis.controllerConfiguratorStore;
+    if (!store || typeof store.m_bFilterOtherControllerTypes !== "boolean") {
+      throw new Error("visible controller filter unavailable");
+    }
+    return JSON.stringify({
+      displayedAppid,
+      sourceAppid,
+      originalFilter: store.m_bFilterOtherControllerTypes,
+    });
+  }
+
   if (phase !== "query") throw new Error("unknown tab-persistence probe phase");
   const store = globalThis.controllerConfiguratorStore;
   const input = globalThis.SteamClient?.Input;
@@ -194,6 +206,9 @@
     let cacheReplaced = false;
     let cacheMutated = false;
     let cacheUpdated = false;
+    let after = null;
+    let previousResultSignature = null;
+    let stableSamples = 0;
     while (Date.now() < deadline) {
       const cacheAfterQuery = displayedCacheEntry();
       cacheReplaced = cacheReplaced || cacheAfterQuery !== cacheBeforeQuery;
@@ -202,12 +217,29 @@
         cacheEntryFingerprint(cacheAfterQuery) !== cacheFingerprintBeforeQuery
       );
       cacheUpdated = cacheReplaced || cacheMutated;
-      if (cacheUpdated && store.BConfigurationQueryInFlight !== true) break;
+      const candidate = summarize();
+      const expectedExpandedResult = candidate.getterCount > before.getterCount;
+      const resultSignature = JSON.stringify({
+        cache: cacheEntryFingerprint(cacheAfterQuery),
+        getterCount: candidate.getterCount,
+        urlHashes: candidate.urlHashes,
+      });
+      if (cacheUpdated && store.BConfigurationQueryInFlight !== true && expectedExpandedResult) {
+        stableSamples = resultSignature === previousResultSignature ? stableSamples + 1 : 1;
+        previousResultSignature = resultSignature;
+        if (stableSamples >= 3) {
+          after = candidate;
+          break;
+        }
+      } else {
+        previousResultSignature = null;
+        stableSamples = 0;
+      }
       await pause(100);
     }
     if (!cacheUpdated) throw new Error("controller query cache update timed out");
     if (store.BConfigurationQueryInFlight === true) throw new Error("controller query timed out");
-    const after = summarize();
+    if (!after) throw new Error("controller query result did not settle");
     completed = true;
     return JSON.stringify({
       displayedAppid,
@@ -222,6 +254,7 @@
       cacheReplaced,
       cacheMutated,
       cacheUpdated,
+      stableSamples,
       elapsedMs: Date.now() - startedAt,
     });
   } finally {

@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -34,7 +35,7 @@ def _serialized_objects(source: str):
 
 def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
     payloads = _serialized_objects(probe)
-    assert len(payloads) == 4
+    assert len(payloads) == 5
     selected = [payload for payload in payloads if "originalSelectedTab:" in payload]
     observed = [
         payload for payload in payloads
@@ -42,10 +43,15 @@ def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
     ]
     queried = [payload for payload in payloads if re.search(r"(?m)^\s*controllerType(?:,|:)", payload)]
     restored = [payload for payload in payloads if "restoredFilter:" in payload]
+    captured = [
+        payload for payload in payloads
+        if "originalFilter:" in payload and "controllerType" not in payload
+    ]
     assert len(selected) == 1
     assert len(observed) == 1
     assert len(queried) == 1
     assert len(restored) == 1
+    assert len(captured) == 1
     selected = selected[0]
     observed = observed[0]
     queried = queried[0]
@@ -70,7 +76,10 @@ def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
     assert "return { getterCount: identities.length, urlHashes: identities.map(hash) };" in probe
     assert "cacheEntryFingerprint(cacheAfterQuery)" in probe
     assert "controller query cache update timed out" in probe
-    assert "stableSamples >= 3" in probe
+    assert "controller query result did not settle" in probe
+    assert "expectedExpandedResult" in probe
+    assert "candidate.getterCount > before.getterCount" in probe
+    assert "if (stableSamples >= 3) {\n          after = candidate;" in probe
     assert "chooser remount did not settle" in probe
     for forbidden in ("identities:", "URL:", "title:", "account"):
         assert forbidden not in "\n".join(payloads)
@@ -83,6 +92,16 @@ def _assert_controller_tab_smoke_contract(smoke: str) -> None:
     assert "expectedControllerType" in smoke
     assert "query.cacheUpdated" in smoke
     assert "if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):" in smoke
+    capture_filter = 'capture_filter_json="$(probe "SharedJSContext" "capture-filter")"'
+    assert capture_filter in smoke
+    assert smoke.index(capture_filter) < smoke.index('query_json="$(probe "SharedJSContext" "query")"')
+    assert smoke.index("filter_restore_armed=1") < smoke.index(
+        'query_json="$(probe "SharedJSContext" "query")"'
+    )
+    assert '"status": "started"' in smoke
+    assert smoke.index('"status": "started"') < smoke.index(
+        'before_json="$(probe "Steam Big Picture Mode" "dom-select")"'
+    )
     assert '"status": "pending-validation"' in smoke
     assert smoke.index('"status": "pending-validation"') < smoke.index(
         'if selected(before, "before") != "Community Layouts":'
@@ -324,7 +343,11 @@ def test_controller_tab_probe_contract_rejects_missing_payload_fields_and_raw_id
         )
     with pytest.raises(AssertionError):
         _assert_controller_tab_probe_payload_contract(
-            probe.replace("stableSamples >= 3", "stableSamples >= 1", 1)
+            probe.replace(
+                "if (stableSamples >= 3) {\n          after = candidate;",
+                "if (stableSamples >= 1) {\n          after = candidate;",
+                1,
+            )
         )
 
 
@@ -335,20 +358,21 @@ def _run_controller_tab_query_probe(probe: str, replacement_delay_ms: int | None
         .replace('"__SOURCE_APPID__"', '"55150"')
     )
     delayed_replacement = (
-        f"setTimeout(() => {{ entry = {{ generation: 2 }}; }}, {replacement_delay_ms});"
+        f"setTimeout(() => {{ entry = {{ generation: 2 }}; records = [{{ URL: \"layout://one\" }}, {{ URL: \"layout://two\" }}]; }}, {replacement_delay_ms});"
         if replacement_delay_ms is not None
         else ""
     )
     runner = f"""
 const first = {{ generation: 1 }};
 let entry = first;
+let records = [{{ URL: "layout://one" }}];
 globalThis.controllerConfiguratorStore = {{
   m_bFilterOtherControllerTypes: true,
   m_appId: 3213262460,
   m_lastValidAppId: 3213262460,
   BConfigurationQueryInFlight: false,
   m_mapAppConfigs: {{ get: () => entry }},
-  GetWorkshopConfigsForApp: () => [{{ URL: "layout://one" }}],
+  GetWorkshopConfigsForApp: () => records,
 }};
 globalThis.ControllerStore = {{
   GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
@@ -380,6 +404,8 @@ def test_controller_tab_query_probe_waits_for_delayed_cache_replacement_and_time
     assert payload["cacheReplaced"] is True
     assert payload["cacheUpdated"] is True
     assert payload["elapsedMs"] >= 50
+    assert payload["after"]["getterCount"] == 2
+    assert payload["stableSamples"] >= 3
 
     short_timeout = probe.replace("const deadline = Date.now() + 15000;", "const deadline = Date.now() + 50;")
     missing = _run_controller_tab_query_probe(short_timeout, replacement_delay_ms=None)
@@ -397,19 +423,20 @@ def test_controller_tab_query_probe_accepts_a_delayed_in_place_cache_mutation():
     )
     runner = f"""
 const entry = {{ generation: 1 }};
+let records = [{{ URL: "layout://one" }}];
 globalThis.controllerConfiguratorStore = {{
   m_bFilterOtherControllerTypes: true,
   m_appId: 3213262460,
   m_lastValidAppId: 3213262460,
   BConfigurationQueryInFlight: false,
   m_mapAppConfigs: {{ get: () => entry }},
-  GetWorkshopConfigsForApp: () => [{{ URL: "layout://one" }}],
+  GetWorkshopConfigsForApp: () => records,
 }};
 globalThis.ControllerStore = {{
   GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
 }};
 globalThis.SteamClient = {{ Input: {{
-  QueryControllerConfigsForApp: () => {{ setTimeout(() => {{ entry.generation = 2; }}, 75); }},
+  QueryControllerConfigsForApp: () => {{ setTimeout(() => {{ entry.generation = 2; records = [{{ URL: "layout://one" }}, {{ URL: "layout://two" }}]; }}, 75); }},
 }} }};
 {source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
   process.stderr.write(String(error.message));
@@ -428,6 +455,59 @@ globalThis.SteamClient = {{ Input: {{
     assert payload["cacheReplaced"] is False
     assert payload["cacheMutated"] is True
     assert payload["cacheUpdated"] is True
+    assert payload["after"]["getterCount"] == 2
+
+
+def test_controller_tab_query_probe_ignores_an_early_unrelated_cache_mutation_until_expanded_result_settles():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    source = (
+        probe.replace('"__PHASE__"', '"query"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+    )
+    runner = f"""
+const entry = {{ generation: 1 }};
+let records = [{{ URL: "layout://one" }}];
+globalThis.controllerConfiguratorStore = {{
+  m_bFilterOtherControllerTypes: true,
+  m_appId: 3213262460,
+  m_lastValidAppId: 3213262460,
+  BConfigurationQueryInFlight: false,
+  m_mapAppConfigs: {{ get: () => entry }},
+  GetWorkshopConfigsForApp: () => records,
+}};
+globalThis.ControllerStore = {{
+  GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
+}};
+globalThis.SteamClient = {{ Input: {{
+  QueryControllerConfigsForApp: () => {{
+    setTimeout(() => {{ entry.generation = 2; }}, 25);
+    setTimeout(() => {{
+      entry.generation = 3;
+      records = [{{ URL: "layout://one" }}, {{ URL: "layout://two" }}];
+    }}, 250);
+  }},
+}} }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    completed = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["after"]["getterCount"] == 2
+    assert payload["after"]["urlHashes"] != payload["before"]["urlHashes"]
+    assert payload["stableSamples"] >= 3
+    assert payload["elapsedMs"] >= 350
 
 
 def test_controller_tab_filter_restore_probe_restores_the_original_visible_filter():
@@ -455,6 +535,161 @@ globalThis.controllerConfiguratorStore = {{ m_bFilterOtherControllerTypes: true 
     )
     assert restored.returncode == 0, restored.stderr
     assert json.loads(restored.stdout)["restoredFilter"] is False
+
+
+def test_controller_tab_filter_capture_probe_reads_the_original_visible_filter_without_querying():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    source = (
+        probe.replace('"__PHASE__"', '"capture-filter"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+    )
+    runner = f"""
+globalThis.controllerConfiguratorStore = {{ m_bFilterOtherControllerTypes: true }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    captured = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert captured.returncode == 0, captured.stderr
+    assert json.loads(captured.stdout)["originalFilter"] is True
+
+
+def _write_controller_tab_smoke_fixture(tmp_path: Path) -> Path:
+    root = tmp_path / "fixture"
+    verify = root / "scripts/deck/verify"
+    verify.mkdir(parents=True)
+    smoke_source = (
+        Path(__file__).parents[1] / "scripts/deck/verify/smoke_controller_tab_persistence.sh"
+    ).read_text(encoding="utf-8")
+    smoke = verify / "smoke_controller_tab_persistence.sh"
+    smoke.write_text(smoke_source, encoding="utf-8")
+    (verify / "_lib.sh").write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+DECK_DIR=\"$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")/..\" && pwd)\"
+JS_DIR=\"$DECK_DIR/js\"
+cdp() { python3 \"$DECK_DIR/cdp.py\" \"$@\"; }
+pass() { echo \"PASS: $*\"; }
+fail() { echo \"FAIL: $*\" >&2; exit 1; }
+""",
+        encoding="utf-8",
+    )
+    deck = root / "scripts/deck"
+    (deck / "js").mkdir(exist_ok=True)
+    (deck / "js/check_controller_tab_persistence.js").write_text("// fake transport ignores the source\n")
+    (deck / "cdp.py").write_text(
+        """import json
+import os
+import sys
+from pathlib import Path
+
+variables = dict(
+    value.split("=", 1) for value in sys.argv if "=" in value and not value.startswith("@")
+)
+phase = variables["PHASE"]
+log = Path(os.environ["FAKE_CDP_LOG"])
+log.write_text(log.read_text() + phase + "\\n" if log.exists() else phase + "\\n")
+filter_state = Path(os.environ["FAKE_FILTER_STATE"])
+if phase == "capture-filter":
+    print(json.dumps({"originalFilter": filter_state.read_text() == "true"}))
+elif phase == "dom-select":
+    if os.environ.get("FAKE_CDP_MODE") == "select-fail":
+        raise SystemExit("dom-select transport failed")
+    print(json.dumps({
+        "originalSelectedTab": {"label": "Your Layouts"},
+        "selectedTab": {"label": "Community Layouts"},
+        "tabs": [],
+        "renderedCount": 1,
+    }))
+elif phase == "query":
+    filter_state.write_text("false")
+    raise SystemExit("query transport failed")
+elif phase == "restore-filter":
+    filter_state.write_text(variables["RESTORE_FILTER"])
+    print(json.dumps({"restoredFilter": variables["RESTORE_FILTER"] == "true"}))
+elif phase == "dom-restore":
+    print(json.dumps({"selectedTab": {"label": variables["RESTORE_TAB"]}}))
+else:
+    raise SystemExit(f"unexpected phase: {phase}")
+""",
+        encoding="utf-8",
+    )
+    return smoke
+
+
+def _run_controller_tab_smoke_with_failed_transport(
+    tmp_path: Path,
+    evidence: Path,
+    mode: str | None = None,
+) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+    smoke = _write_controller_tab_smoke_fixture(tmp_path)
+    log = tmp_path / "cdp.log"
+    filter_state = tmp_path / "filter-state"
+    filter_state.write_text("true")
+    environment = {
+        "FAKE_CDP_LOG": str(log),
+        "FAKE_FILTER_STATE": str(filter_state),
+    }
+    if mode is not None:
+        environment["FAKE_CDP_MODE"] = mode
+    completed = subprocess.run(
+        ["bash", str(smoke), "3213262460", "55150", "102", str(evidence)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+        env={**os.environ, **environment},
+    )
+    return completed, log, filter_state
+
+
+def _controller_tab_smoke_evidence_path(tmp_path: Path) -> Path:
+    evidence = (
+        Path("/tmp/Decky-Metadata/pytest-controller-tab-smoke")
+        / tmp_path.name
+        / "tab-persistence.json"
+    )
+    evidence.parent.mkdir(parents=True, exist_ok=True)
+    return evidence
+
+
+def test_controller_tab_smoke_restores_filter_when_query_transport_fails(tmp_path: Path):
+    evidence = _controller_tab_smoke_evidence_path(tmp_path)
+    completed, log, filter_state = _run_controller_tab_smoke_with_failed_transport(tmp_path, evidence)
+
+    assert completed.returncode != 0
+    assert filter_state.read_text() == "true"
+    assert log.read_text().splitlines() == [
+        "capture-filter",
+        "dom-select",
+        "query",
+        "restore-filter",
+        "dom-restore",
+    ]
+    assert json.loads(evidence.read_text())["status"] != "passed"
+
+
+def test_controller_tab_smoke_invalidates_prior_passing_evidence_before_dom_select(tmp_path: Path):
+    evidence = _controller_tab_smoke_evidence_path(tmp_path)
+    evidence.write_text('{"status":"passed"}\n')
+    completed, log, _filter_state = _run_controller_tab_smoke_with_failed_transport(
+        tmp_path,
+        evidence,
+        mode="select-fail",
+    )
+
+    assert completed.returncode != 0
+    assert log.read_text().splitlines() == ["capture-filter", "dom-select", "restore-filter"]
+    assert json.loads(evidence.read_text())["status"] != "passed"
 
 
 def test_controller_tab_smoke_contract_rejects_early_pass_before_tab_restoration():

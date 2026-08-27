@@ -52,6 +52,32 @@ restore_on_exit() {
 }
 trap restore_on_exit EXIT
 
+mkdir -p "$(dirname -- "$evidence")"
+python3 - "$evidence" "$expected_controller_type" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+evidence = Path(sys.argv[1])
+temporary = evidence.with_name(f".{evidence.name}.tmp")
+temporary.write_text(json.dumps({
+    "status": "started",
+    "expectedControllerType": int(sys.argv[2]),
+}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+temporary.replace(evidence)
+PY
+capture_filter_json="$(probe "SharedJSContext" "capture-filter")"
+original_filter="$(python3 - "$capture_filter_json" <<'PY'
+import json
+import sys
+
+value = json.loads(sys.argv[1]).get("originalFilter")
+if not isinstance(value, bool):
+    raise SystemExit("FAIL: probe payload missing original visible filter")
+print(str(value).lower())
+PY
+)"
+filter_restore_armed=1
 before_json="$(probe "Steam Big Picture Mode" "dom-select")"
 original_tab="$(python3 - "$before_json" <<'PY'
 import json
@@ -66,20 +92,8 @@ print(label)
 PY
 )"
 query_json="$(probe "SharedJSContext" "query")"
-original_filter="$(python3 - "$query_json" <<'PY'
-import json
-import sys
-
-value = json.loads(sys.argv[1]).get("originalFilter")
-if not isinstance(value, bool):
-    raise SystemExit("FAIL: probe payload missing original visible filter")
-print(str(value).lower())
-PY
-)"
-filter_restore_armed=1
 after_json="$(probe "Steam Big Picture Mode" "dom-observe")"
 
-mkdir -p "$(dirname -- "$evidence")"
 python3 - "$before_json" "$query_json" "$after_json" "$expected_controller_type" "$evidence" <<'PY'
 import json
 import sys

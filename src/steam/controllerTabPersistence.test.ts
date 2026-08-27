@@ -98,11 +98,20 @@ describe("resolveControllerChooserKey", () => {
     });
   });
 
-  it("accepts Steam's generated prefix while retaining the exact tab IDs", () => {
+  it.each(["«r7e»", "«r99»"])("accepts Steam's observed generated prefix %s with exact tab IDs", (prefix) => {
     expect(resolveControllerChooserKey(
-      chooserTabs(3213262460, 0, false, "«r99»"),
+      chooserTabs(3213262460, 0, false, prefix),
       resolverDependencies(),
     )).toEqual({ displayedAppid: 3213262460, controllerIndex: 0 });
+  });
+
+  it("accepts the exact Community Layouts semantic tab", () => {
+    const tabs = chooserTabs();
+    tabs[1] = { id: "Community Layouts", content: { props: { appid: 3213262460, controllerIndex: 0 } } };
+    expect(resolveControllerChooserKey(tabs, resolverDependencies())).toEqual({
+      displayedAppid: 3213262460,
+      controllerIndex: 0,
+    });
   });
 
   it("derives the chooser key when the static Templates tab has no app context", () => {
@@ -121,6 +130,21 @@ describe("resolveControllerChooserKey", () => {
       chooserTabs()[0],
       { id: "community" },
       chooserTabs()[2],
+    ], {}],
+    ["misleading Templates suffix", [
+      { id: "mytemplates", content: { props: { appid: 3213262460, controllerIndex: 0 } } },
+      chooserTabs()[1],
+      chooserTabs()[2],
+    ], {}],
+    ["misleading Community suffix", [
+      chooserTabs()[0],
+      { id: "notcommunity", content: { props: { appid: 3213262460, controllerIndex: 0 } } },
+      chooserTabs()[2],
+    ], {}],
+    ["misleading Search suffix", [
+      chooserTabs()[0],
+      chooserTabs()[1],
+      { id: "research", content: { props: { appid: 3213262460, controllerIndex: 0 } } },
     ], {}],
     ["inconsistent content", [
       ...chooserTabs(),
