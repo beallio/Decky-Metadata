@@ -1099,14 +1099,14 @@ const error = (area, message, ...args) => {
 // ordering bug here (the render shield consumed before the in-call truth
 // window), which only surfaced on-device.
 const decideBIsModOrShortcut = (input) => {
-    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, path, consumeShield } = input;
+    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, consumeShield } = input;
     if (!isPatchedNonSteam) {
         return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
     if (originalRet !== true) {
         return { finalRet: originalRet, reason: "original-not-shortcut", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
-    // In-call truth must outrank the render shield and the home special case:
+    // In-call truth must outrank the render shield and route-scoped spoofing:
     // Steam's launch path derives the shortcut gameid via GetGameID /
     // GetPrimaryAppID, and spoofing inside those calls makes RunGame receive a
     // plain-appid gameid the client silently drops. The shield must not be
@@ -1123,12 +1123,16 @@ const decideBIsModOrShortcut = (input) => {
     if (!hasCache) {
         return { finalRet: originalRet, reason: "not-matched", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
+    // Steam's Library Home, artwork resolvers, collections, controller pages,
+    // and sidebars share this overview prototype.  Only the current matched
+    // shortcut's Library detail page needs to appear native.  Do not spend a
+    // render shield or truth-window budget outside that narrow route scope.
+    if (!isCurrentMatchedDetail) {
+        return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+    }
     const shieldHit = consumeShield();
     if (shieldHit) {
         return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
-    }
-    if (path === "/library/home") {
-        return { finalRet: false, reason: "home-special-case", shieldConsulted: true, shieldHit: false, nextBypassCounter: bypassCounter };
     }
     const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
     const shouldBypass = nextBypassCounter > 0;
@@ -1269,6 +1273,7 @@ const currentRoutePath = () => {
     const steamRouter = steamInternals().Router;
     const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
     const windowLocation = steamInternals().window;
+    const browserLocation = windowLocation?.location;
     return [
         location?.pathname,
         location?.search,
@@ -1277,6 +1282,10 @@ const currentRoutePath = () => {
         windowLocation?.search,
         windowLocation?.hash,
         windowLocation?.href,
+        browserLocation?.pathname,
+        browserLocation?.search,
+        browserLocation?.hash,
+        browserLocation?.href,
     ]
         .filter(Boolean)
         .join(" ");
@@ -1481,6 +1490,42 @@ const gameDetailAppIdFromPath = (path) => {
             return Number(match[1] || 0);
     }
     return 0;
+};
+/**
+ * True only when a joined Steam route context identifies this exact app's
+ * Library detail page.  `currentRoutePath` joins pathname, search, hash, and
+ * href tokens, while `gameDetailAppIdFromPath` deliberately accepts broader
+ * discovery hints.  Identity spoofing needs this stricter boundary: a query,
+ * a sidebar item, or a different app must not turn a shortcut into a native
+ * app for unrelated Steam consumers.
+ */
+const isCurrentGameDetailRoute = (routeContext, appId) => {
+    if (!Number.isSafeInteger(appId) || appId <= 0)
+        return false;
+    const tokens = String(routeContext || "").trim().split(/\s+/);
+    // `currentRoutePath` currently contributes at most seven values.  Keep this
+    // hot-path parser bounded even if a malformed host object appends noise.
+    for (let index = 0; index < Math.min(tokens.length, 8); index += 1) {
+        const token = tokens[index];
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        const match = pathname.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i);
+        const routeAppId = Number(match?.[1] || match?.[2] || 0);
+        if (Number.isSafeInteger(routeAppId) && routeAppId === appId)
+            return true;
+    }
+    return false;
 };
 const appIdFromDom = () => {
     const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
@@ -1690,7 +1735,7 @@ const clearRouteShield = () => {
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
-const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache) => {
+const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedDetail) => {
     if (!bypassTraceEnabled)
         return;
     const now = Date.now();
@@ -1708,6 +1753,7 @@ const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldS
         bypassCounterBefore,
         bypassCounterAfter,
         hasCache,
+        isCurrentMatchedDetail,
     }).catch(() => undefined);
 };
 const setBypassTraceEnabled = (enabled) => {
@@ -2078,6 +2124,7 @@ const installMetadataPatches = (unpatchers) => {
             const appId = Number(this?.appid);
             const path = currentRoutePath();
             const hasCache = !!metadataCache[String(appId)];
+            const isCurrentMatchedDetail = isCurrentGameDetailRoute(path, appId);
             const bypassCounterBefore = metadataState.bypassCounter;
             const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
             // The precedence rules live in decideBIsModOrShortcut (pure,
@@ -2087,7 +2134,7 @@ const installMetadataPatches = (unpatchers) => {
                 originalRet: ret,
                 bypassCounter: metadataState.bypassCounter,
                 hasCache,
-                path,
+                isCurrentMatchedDetail,
                 consumeShield: () => consumeRouteShield(appId),
             });
             metadataState.bypassCounter = decision.nextBypassCounter;
@@ -2095,7 +2142,7 @@ const installMetadataPatches = (unpatchers) => {
                 ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
                 : shieldBefore;
             const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
-            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache, isCurrentMatchedDetail);
             if (decision.reason === "truth-window") {
                 traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
             }

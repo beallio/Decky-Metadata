@@ -62,6 +62,30 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Library Home artwork identity
+
+For a matched non-Steam shortcut with SteamGridDB artwork, first open Library
+Home yourself. Do not use this smoke to navigate. With explicit approval for
+the current device, run:
+
+```bash
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/verify/smoke_artwork_identity.sh \
+  2155012430 55150 library-home true \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home
+```
+
+The smoke checks only the requested shortcut overview, its matched-app alias,
+shortcut identity, bounded icon resolution, and hashed counts of the custom
+vertical, landscape, hero, and logo candidates. It never writes or reapplies
+artwork, changes a plugin setting, navigates, selects an item, dispatches input,
+or launches a game. Steam can populate its in-memory icon-data cache during the
+bounded icon request; this is the only expected state change. Evidence contains
+only route scope, app IDs, booleans, counts, elapsed time, and hashes, never
+artwork values or local paths. Inspect the Library Home sidebar and the Capsule,
+Wide Capsule, Hero, Logo, logo position, and square-capsule presentation
+visually after the smoke.
+
 ## Controller chooser tab persistence
 
 The standalone controller chooser smoke proves the Show All requery without

@@ -12,6 +12,7 @@ import {
   currentRoutePath,
   gameDetailAppIdFromPath,
   getOverview,
+  isCurrentGameDetailRoute,
   isNonSteamApp,
   isNonSteamAppWithoutPatchedMethod,
   metadataCache,
@@ -38,7 +39,8 @@ const traceBIsModDecision = (
   shieldState: any,
   bypassCounterBefore: number,
   bypassCounterAfter: number,
-  hasCache: boolean
+  hasCache: boolean,
+  isCurrentMatchedDetail: boolean
 ) => {
   if (!bypassTraceEnabled) return;
   const now = Date.now();
@@ -55,6 +57,7 @@ const traceBIsModDecision = (
     bypassCounterBefore,
     bypassCounterAfter,
     hasCache,
+    isCurrentMatchedDetail,
   }).catch(() => undefined);
 };
 
@@ -458,6 +461,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const appId = Number(this?.appid);
         const path = currentRoutePath();
         const hasCache = !!metadataCache[String(appId)];
+        const isCurrentMatchedDetail = isCurrentGameDetailRoute(path, appId);
         const bypassCounterBefore = metadataState.bypassCounter;
         const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
 
@@ -468,7 +472,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           originalRet: ret,
           bypassCounter: metadataState.bypassCounter,
           hasCache,
-          path,
+          isCurrentMatchedDetail,
           consumeShield: () => consumeRouteShield(appId),
         });
         metadataState.bypassCounter = decision.nextBypassCounter;
@@ -477,7 +481,18 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
           : shieldBefore;
         const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
-        traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache);
+        traceBIsModDecision(
+          appId,
+          path,
+          ret,
+          decision.finalRet,
+          decision.reason,
+          shieldState,
+          bypassCounterBefore,
+          metadataState.bypassCounter,
+          hasCache,
+          isCurrentMatchedDetail
+        );
         if (decision.reason === "truth-window") {
           traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
         }

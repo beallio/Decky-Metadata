@@ -190,6 +190,41 @@ def test_quicklink_smoke_accepts_feature_fixture_and_checks_policy_order():
     assert 'never["developerInfo"] or never["detailsMetadata"]' in smoke
 
 
+def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
+    root = Path(__file__).parents[1]
+    probe_path = root / "scripts/deck/js/check_artwork_identity.js"
+    smoke_path = root / "scripts/deck/verify/smoke_artwork_identity.sh"
+
+    assert probe_path.is_file(), "missing planned artwork identity probe"
+    assert smoke_path.is_file(), "missing planned artwork identity smoke"
+
+    probe = probe_path.read_text()
+    smoke = smoke_path.read_text()
+    assert "shortcutAppId" in probe
+    assert "matchedAppId" in probe
+    assert "aliasSameObject" in probe
+    assert "isShortcut" in probe
+    assert "isModOrShortcut" in probe
+    assert "iconHashPresent" in probe
+    assert "iconDataPresent" in probe
+    assert "iconResolved" in probe
+    assert "artwork" in probe
+    assert "elapsedMs" in probe
+    for forbidden in (
+        "URL:", "url:", "data:", "path:", "title:", "account",
+        "navigate", "history.push", "dispatchEvent", "RunGame", "launch",
+        "SetCustom", "SetIcon", "SetLibrary", "Clear", "DeckyPluginLoader",
+    ):
+        assert forbidden not in probe
+    assert 'evidence="${5:?usage:' in smoke
+    assert "/tmp/Decky-Metadata" in smoke
+    assert '"status": "started"' in smoke
+    assert '"status": "pending-validation"' in smoke
+    assert "shortcut identity" in smoke
+    assert "icon resolver" in smoke
+    assert "raw" not in "\n".join(_serialized_objects(probe)).lower()
+
+
 def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_identities():
     root = Path(__file__).parents[1]
     probe_path = root / "scripts/deck/js/check_controller_layouts.js"

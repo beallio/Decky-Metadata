@@ -36,6 +36,8 @@ For a matched shortcut, the Game Info tab can show the Steam game's artwork, des
 
 The buttons at the bottom also point to useful pages for the matched Steam game. The Store Page stays available while the game is listed, and known DLC and Points Shop links open the right Steam pages. Links that do not make sense for a non-Steam shortcut are left out.
 
+Decky Metadata works with SteamGridDB custom artwork. A matched non-Steam shortcut keeps its own Library Home icon and custom capsule, hero, and logo artwork, while its matched Game Info page still receives the extra Steam details.
+
 ![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20260717)
 
 ## Browse Steam Community content

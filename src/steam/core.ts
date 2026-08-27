@@ -91,7 +91,14 @@ export const isNonSteamAppWithoutPatchedMethod = (overview: any): boolean => {
 export const currentRoutePath = () => {
   const steamRouter = steamInternals().Router;
   const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
-  const windowLocation = steamInternals().window as { pathname?: string; search?: string; hash?: string; href?: string } | undefined;
+  const windowLocation = steamInternals().window as {
+    pathname?: string;
+    search?: string;
+    hash?: string;
+    href?: string;
+    location?: { pathname?: string; search?: string; hash?: string; href?: string };
+  } | undefined;
+  const browserLocation = windowLocation?.location;
   return [
     location?.pathname,
     location?.search,
@@ -100,6 +107,10 @@ export const currentRoutePath = () => {
     windowLocation?.search,
     windowLocation?.hash,
     windowLocation?.href,
+    browserLocation?.pathname,
+    browserLocation?.search,
+    browserLocation?.hash,
+    browserLocation?.href,
   ]
     .filter(Boolean)
     .join(" ");
@@ -326,6 +337,41 @@ export const gameDetailAppIdFromPath = (path: string) => {
     if (match) return Number(match[1] || 0);
   }
   return 0;
+};
+
+/**
+ * True only when a joined Steam route context identifies this exact app's
+ * Library detail page.  `currentRoutePath` joins pathname, search, hash, and
+ * href tokens, while `gameDetailAppIdFromPath` deliberately accepts broader
+ * discovery hints.  Identity spoofing needs this stricter boundary: a query,
+ * a sidebar item, or a different app must not turn a shortcut into a native
+ * app for unrelated Steam consumers.
+ */
+export const isCurrentGameDetailRoute = (routeContext: string, appId: number): boolean => {
+  if (!Number.isSafeInteger(appId) || appId <= 0) return false;
+  const tokens = String(routeContext || "").trim().split(/\s+/);
+
+  // `currentRoutePath` currently contributes at most seven values.  Keep this
+  // hot-path parser bounded even if a malformed host object appends noise.
+  for (let index = 0; index < Math.min(tokens.length, 8); index += 1) {
+    const token = tokens[index];
+    if (!token) continue;
+    let pathname = token;
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token)) pathname = new URL(token).pathname;
+      else if (!token.startsWith("/")) continue;
+      pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+    } catch (_error) {
+      continue;
+    }
+
+    const match = pathname.match(
+      /^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i
+    );
+    const routeAppId = Number(match?.[1] || match?.[2] || 0);
+    if (Number.isSafeInteger(routeAppId) && routeAppId === appId) return true;
+  }
+  return false;
 };
 
 const appIdFromDom = () => {
