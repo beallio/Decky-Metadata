@@ -62,6 +62,38 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+## Controller chooser tab persistence
+
+The standalone controller chooser smoke proves the Show All requery without
+selecting, previewing, applying, exporting, or saving a layout. It intentionally
+sets only the in-memory controller-type filter while it issues the same bounded
+direct input query as the chooser, then restores that filter and the tab that
+was active before the smoke. It does populate Steam's temporary controller
+configuration cache, so obtain explicit approval for the **current** device and
+start on the current matched shortcut's controller chooser route.
+
+For the verified Space Marine fixtures, deploy first and use separate CDP ports:
+
+```bash
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/deploy.sh
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
+  scripts/deck/verify/smoke_controller_tab_persistence.sh \
+  3213262460 55150 /tmp/Decky-Metadata/controller-layout-tab-preservation/legos.json
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/deploy.sh
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
+  scripts/deck/verify/smoke_controller_tab_persistence.sh \
+  2155012430 55150 /tmp/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json
+```
+
+It fails when Community is not selected before and after the direct query, the
+chooser signature changes, Community rows are empty, the getter and rendered
+counts disagree, or a pre-query identity disappears. The JSON evidence contains
+only app IDs, controller index/type, filter booleans, selected tab labels/IDs,
+counts, elapsed time, and hashed identities. It is intentionally not part of
+`run_all.sh`: semantic fixtures do not establish the required live route and
+tab. Close the dedicated tunnels after capture.
+
 ## Controller navigation & initial focus
 
 QAM/panel and editor changes have a hard gate the static tests cannot prove:

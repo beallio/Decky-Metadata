@@ -9,6 +9,7 @@ Controller layout sourcing now preserves behavior on Steam Deck while enabling c
 ### Fixed
 
 - Matched Community layouts now remain available on Legion Go S controller type `102` while Steam's visible filter stays unchanged.
+- Show All now preserves the currently available controller-layout chooser tab on verified Legion Go S type `102`, without changing Steam Deck or native chooser behavior.
 
 ### Added
 

@@ -174,3 +174,50 @@ def test_controller_layout_smoke_reuses_semantic_fixtures_and_no_launch_suite():
     assert "if ((no_launch)); then" in run_all
     assert "use --no-launch for bounded cache-populating verification" in run_all
     assert "use --no-launch for read-only verification" not in run_all
+
+
+def test_controller_tab_persistence_probe_and_smoke_are_bounded_and_output_safe():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    smoke = (root / "scripts/deck/verify/smoke_controller_tab_persistence.sh").read_text()
+    run_all = (root / "scripts/deck/verify/run_all.sh").read_text()
+
+    assert "DISPLAY_APPID" in probe
+    assert "SOURCE_APPID" in probe
+    assert "QueryControllerConfigsForApp" in probe
+    assert "BConfigurationQueryInFlight" in probe
+    assert "selectedTab" in probe
+    assert "renderedCount" in probe
+    assert "getterCount" in probe
+    assert "urlHashes" in probe
+    assert "m_bFilterOtherControllerTypes" in probe
+    assert "finally" in probe
+    assert "SharedJSContext" in smoke
+    assert "Steam Big Picture Mode" in smoke
+    assert "DISPLAY_APPID" in smoke
+    assert "SOURCE_APPID" in smoke
+    assert "selectedTab" in smoke
+    assert "renderedCount" in smoke
+    assert "getterCount" in smoke
+    assert "urlHashes" in smoke
+    assert "active tab changes unexpectedly" in smoke
+    assert "/tmp/Decky-Metadata/" in smoke
+    assert "smoke_controller_tab_persistence.sh" not in run_all
+
+    forbidden = (
+        "SetSelectedConfigForApp",
+        "PreviewConfigForAppAndController",
+        "ApplyConfig",
+        "StartEditingControllerConfiguration",
+        "SaveEditingControllerConfiguration",
+        "RunGame",
+        "run-game",
+        "cdp.py input",
+        "Navigation.Navigate",
+        "location.href",
+        "URL:",
+        "accountName",
+    )
+    for token in forbidden:
+        assert token not in probe
+        assert token not in smoke

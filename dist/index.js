@@ -951,11 +951,11 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
 }
 
 const STEAM_DECK_CONTROLLER_TYPE = 4;
-const LEGION_GO_S_CONTROLLER_TYPE = 102;
+const LEGION_GO_S_CONTROLLER_TYPE$1 = 102;
 const AFFLICTED_CONTROLLER_TYPES = new Set([
-    LEGION_GO_S_CONTROLLER_TYPE,
+    LEGION_GO_S_CONTROLLER_TYPE$1,
 ]);
-const validControllerIndex = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const validControllerIndex$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
 const validControllerType = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
 const readControllerStore = (internals) => {
     try {
@@ -1002,7 +1002,7 @@ const extractControllerIndex = (record) => {
         if (record === null || typeof record !== "object")
             return null;
         const value = record.nControllerIndex;
-        return validControllerIndex(value) ? value : null;
+        return validControllerIndex$1(value) ? value : null;
     }
     catch (_error) {
         return null;
@@ -1019,7 +1019,7 @@ const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
 };
 const controllerTypeForIndex = (controllerIndex, internals) => {
     try {
-        if (!validControllerIndex(controllerIndex))
+        if (!validControllerIndex$1(controllerIndex))
             return null;
         const controllers = extractControllers(readControllerStore(internals));
         if (!controllers)
@@ -1057,7 +1057,7 @@ const sourceFilterForControllerType = (controllerType, requestedFilter) => {
 };
 const KNOWN_CONTROLLER_TYPES = new Map([
     [STEAM_DECK_CONTROLLER_TYPE, "Steam Deck"],
-    [LEGION_GO_S_CONTROLLER_TYPE, "Legion Go S"],
+    [LEGION_GO_S_CONTROLLER_TYPE$1, "Legion Go S"],
 ]);
 const formatConnectedControllerTypes = (types) => {
     if (!Array.isArray(types))
@@ -5369,6 +5369,277 @@ const installGameDetailReentryShield = (unpatchers) => {
     });
 };
 
+const LEGION_GO_S_CONTROLLER_TYPE = 102;
+const REQUIRED_CHOOSER_TABS = new Set(["templates", "community", "search"]);
+const asRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : null;
+const validDisplayedAppid = (value) => typeof value === "number" && Number.isInteger(value) && value > 0;
+const validControllerIndex = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const tabIdentity = (id) => {
+    if (typeof id !== "string")
+        return null;
+    const trimmed = id.trim();
+    return trimmed ? trimmed : null;
+};
+const tabSignature = (id) => id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
+const isRequiredTab = (id) => {
+    const signature = tabSignature(id);
+    return signature === "communitylayouts"
+        ? REQUIRED_CHOOSER_TABS.has("community")
+        : REQUIRED_CHOOSER_TABS.has(signature);
+};
+const contentNumbers = (content) => {
+    const contentRecord = asRecord(content);
+    const props = asRecord(contentRecord?.props);
+    if (!props)
+        return null;
+    const displayedAppid = props.appid ?? props.appId ?? props.nAppID;
+    const controllerIndex = props.controllerIndex ?? props.nControllerIndex;
+    if (!validDisplayedAppid(displayedAppid) || !validControllerIndex(controllerIndex))
+        return null;
+    return { displayedAppid, controllerIndex };
+};
+const chooserTabs = (value) => {
+    if (!Array.isArray(value) || value.length === 0)
+        return null;
+    const output = [];
+    const seenIds = new Set();
+    let displayedAppid;
+    let controllerIndex;
+    for (const rawTab of value) {
+        const tab = asRecord(rawTab);
+        const id = tabIdentity(tab?.id);
+        const numbers = contentNumbers(tab?.content);
+        if (!id || !numbers || seenIds.has(id))
+            return null;
+        if (displayedAppid === undefined)
+            displayedAppid = numbers.displayedAppid;
+        if (controllerIndex === undefined)
+            controllerIndex = numbers.controllerIndex;
+        if (displayedAppid !== numbers.displayedAppid || controllerIndex !== numbers.controllerIndex) {
+            return null;
+        }
+        seenIds.add(id);
+        output.push({ id, ...numbers });
+    }
+    if (!displayedAppid || controllerIndex === undefined)
+        return null;
+    const signatures = new Set(output.filter((tab) => isRequiredTab(tab.id)).map((tab) => {
+        const signature = tabSignature(tab.id);
+        return signature === "communitylayouts" ? "community" : signature;
+    }));
+    for (const required of REQUIRED_CHOOSER_TABS) {
+        if (!signatures.has(required))
+            return null;
+    }
+    return output;
+};
+const contextMatchesAffectedChooser = (dependencies, displayedAppid, controllerIndex) => {
+    const context = dependencies.resolveContext(displayedAppid);
+    return context?.isNonSteamShortcut === true &&
+        validDisplayedAppid(context.matchedSourceAppid) &&
+        context.matchedSourceAppid !== displayedAppid &&
+        dependencies.resolveControllerType(controllerIndex) === LEGION_GO_S_CONTROLLER_TYPE;
+};
+const resolveControllerChooserKey = (tabs, dependencies) => {
+    try {
+        const parsedTabs = chooserTabs(tabs);
+        if (!parsedTabs?.length)
+            return null;
+        const { displayedAppid, controllerIndex } = parsedTabs[0];
+        return contextMatchesAffectedChooser(dependencies, displayedAppid, controllerIndex)
+            ? { displayedAppid, controllerIndex }
+            : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const callableWritableDescriptor = (descriptor) => !!descriptor &&
+    typeof descriptor.value === "function" &&
+    descriptor.writable === true &&
+    descriptor.configurable === true;
+const sourceHasChooserMarkers = (candidate) => {
+    if (typeof candidate !== "function")
+        return false;
+    try {
+        const source = Function.prototype.toString.call(candidate);
+        return ["activeTab", "tabs", "onShowTab"].every((marker) => source.includes(marker));
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const validTabsTarget = (value) => {
+    const target = asRecord(value);
+    return !!target &&
+        target.memo !== null && typeof target.memo === "object" &&
+        callableWritableDescriptor(target.descriptor);
+};
+const discoverControllerTabsTarget = (locateModule, onError) => {
+    try {
+        const target = locateModule((module) => {
+            const exports = asRecord(module);
+            if (!exports)
+                return undefined;
+            const values = Object.values(exports);
+            if (!values.some(sourceHasChooserMarkers))
+                return undefined;
+            const targets = values.flatMap((candidate) => {
+                if (candidate === null || typeof candidate !== "object")
+                    return [];
+                const descriptor = Object.getOwnPropertyDescriptor(candidate, "type");
+                return callableWritableDescriptor(descriptor)
+                    ? [{ memo: candidate, descriptor }]
+                    : [];
+            });
+            return targets.length === 1 ? targets[0] : undefined;
+        });
+        return validTabsTarget(target) ? target : null;
+    }
+    catch (error) {
+        try {
+            onError?.(error);
+        }
+        catch (_reportError) {
+            // Diagnostics must not affect Steam's native chooser.
+        }
+        return null;
+    }
+};
+const defaultFindModuleChild = (predicate) => DFL.findModuleChild(predicate);
+const selectionKey = (displayedAppid, controllerIndex) => `${displayedAppid}:${controllerIndex}`;
+const renderScope = (propsValue, dependencies) => {
+    const props = asRecord(propsValue);
+    if (!props || typeof props.onShowTab !== "function")
+        return null;
+    const tabs = chooserTabs(props.tabs);
+    const key = resolveControllerChooserKey(props.tabs, dependencies);
+    if (!tabs || !key)
+        return null;
+    return { key, tabs, props, onShowTab: props.onShowTab };
+};
+const installControllerTabPersistence = (provided) => {
+    const dependencies = {
+        ...provided,
+        findModuleChild: provided.findModuleChild ?? defaultFindModuleChild,
+        defineProperty: provided.defineProperty ?? Object.defineProperty,
+    };
+    const rememberedTabs = new Map();
+    let installed = false;
+    let cleanedUp = false;
+    let installedTarget = null;
+    let reported = false;
+    const reportOnce = (error) => {
+        if (reported)
+            return;
+        reported = true;
+        try {
+            dependencies.reportDiagnostic?.(error);
+        }
+        catch (_error) {
+            // Diagnostics are optional and must remain fail-open.
+        }
+    };
+    const cleanup = () => {
+        if (cleanedUp)
+            return;
+        cleanedUp = true;
+        rememberedTabs.clear();
+        if (installedTarget) {
+            try {
+                dependencies.defineProperty(installedTarget.memo, "type", installedTarget.descriptor);
+            }
+            catch (error) {
+                reportOnce(error);
+            }
+        }
+        installed = false;
+        installedTarget = null;
+    };
+    const ensureInstalled = () => {
+        if (cleanedUp)
+            return false;
+        if (installed)
+            return true;
+        const target = discoverControllerTabsTarget(dependencies.findModuleChild, reportOnce);
+        if (!target)
+            return false;
+        const originalRender = target.descriptor.value;
+        const wrappedRender = function (...args) {
+            let patchedArgs = args;
+            try {
+                const scope = renderScope(args[0], dependencies);
+                if (scope) {
+                    const key = selectionKey(scope.key.displayedAppid, scope.key.controllerIndex);
+                    const availableIds = new Set(scope.tabs.map((tab) => tab.id));
+                    const remembered = rememberedTabs.get(key);
+                    let activeTab = scope.props.activeTab;
+                    if (remembered !== undefined) {
+                        if (availableIds.has(remembered))
+                            activeTab = remembered;
+                        else
+                            rememberedTabs.delete(key);
+                    }
+                    const originalOnShowTab = scope.onShowTab;
+                    const onShowTab = function (...callbackArgs) {
+                        const requested = tabIdentity(callbackArgs[0]);
+                        if (requested && availableIds.has(requested))
+                            rememberedTabs.set(key, requested);
+                        return originalOnShowTab.apply(this, callbackArgs);
+                    };
+                    patchedArgs = [{ ...scope.props, activeTab, onShowTab }, ...args.slice(1)];
+                }
+            }
+            catch (error) {
+                reportOnce(error);
+            }
+            return originalRender.apply(this, patchedArgs);
+        };
+        try {
+            dependencies.defineProperty(target.memo, "type", {
+                ...target.descriptor,
+                value: wrappedRender,
+            });
+            installedTarget = target;
+            installed = true;
+            return true;
+        }
+        catch (error) {
+            try {
+                dependencies.defineProperty(target.memo, "type", target.descriptor);
+            }
+            catch (restoreError) {
+                reportOnce(restoreError);
+            }
+            reportOnce(error);
+            return false;
+        }
+    };
+    return {
+        ensureInstalled,
+        beforeControllerQuery: (displayedAppid, controllerIndex, storeDriven) => {
+            if (cleanedUp || !validDisplayedAppid(displayedAppid) || !validControllerIndex(controllerIndex)) {
+                return;
+            }
+            const key = selectionKey(displayedAppid, controllerIndex);
+            if (storeDriven) {
+                rememberedTabs.delete(key);
+                return;
+            }
+            ensureInstalled();
+        },
+        cleanup,
+        isInstalled: () => installed,
+        rememberedTab: (displayedAppid, controllerIndex) => {
+            if (!validDisplayedAppid(displayedAppid) || !validControllerIndex(controllerIndex))
+                return null;
+            return rememberedTabs.get(selectionKey(displayedAppid, controllerIndex)) ?? null;
+        },
+    };
+};
+
 const nativeControllerLayoutContext = () => ({
     isNonSteamShortcut: false,
     matchedSourceAppid: null,
@@ -5588,6 +5859,8 @@ const installControllerLayouts = (unpatchers, provided) => {
         defineProperty: provided.defineProperty ?? Object.defineProperty,
         maxAttempts: provided.maxAttempts ?? 240,
         retryDelayMs: provided.retryDelayMs ?? 500,
+        createTabPersistence: provided.createTabPersistence ?? installControllerTabPersistence,
+        reportTabPersistenceDiagnostic: provided.reportTabPersistenceDiagnostic ?? (() => undefined),
     };
     let disabled = false;
     let installed = false;
@@ -5597,6 +5870,18 @@ const installControllerLayouts = (unpatchers, provided) => {
     let installedDescriptors = [];
     const supplementalSourceAppids = new Set();
     const supplementalQueryKeys = new Map();
+    let tabPersistence = null;
+    try {
+        tabPersistence = dependencies.createTabPersistence({
+            resolveContext: dependencies.resolveContext,
+            resolveControllerType: dependencies.resolveControllerType,
+            reportDiagnostic: dependencies.reportTabPersistenceDiagnostic,
+        });
+    }
+    catch (_error) {
+        // The optional Steam tabs patch must never disable controller-layout supplementation.
+        tabPersistence = null;
+    }
     const trip = (failure) => {
         if (disabled || cleanedUp)
             return;
@@ -5651,10 +5936,21 @@ const installControllerLayouts = (unpatchers, provided) => {
         const inputEntry = targets.descriptors[0];
         const originalQuery = inputEntry.descriptor.value;
         const queryWrapper = function (...args) {
+            const storeDriven = targets.store
+                .BConfigurationQueryInFlight === true;
+            const displayedAppid = args[0];
+            const controllerIndex = parseControllerIndex(args[1]);
+            if (validAppid(displayedAppid) && controllerIndex !== null) {
+                try {
+                    tabPersistence?.beforeControllerQuery(displayedAppid, controllerIndex, storeDriven);
+                }
+                catch (_error) {
+                    // Tab persistence is optional and independently fail-open.
+                }
+            }
             const nativeResult = originalQuery.apply(this, args);
             if (disabled)
                 return nativeResult;
-            const displayedAppid = args[0];
             const validDisplayedAppid = validAppid(displayedAppid) ? displayedAppid : undefined;
             let context = null;
             try {
@@ -5667,7 +5963,6 @@ const installControllerLayouts = (unpatchers, provided) => {
                     return nativeResult;
                 }
                 const matchedAppid = context.matchedSourceAppid;
-                const controllerIndex = parseControllerIndex(args[1]);
                 const requestedFilter = parseFilter(args[2]);
                 if (controllerIndex === null || requestedFilter === null) {
                     trip({
@@ -5903,6 +6198,13 @@ const installControllerLayouts = (unpatchers, provided) => {
         if (cleanedUp)
             return;
         cleanedUp = true;
+        try {
+            tabPersistence?.cleanup();
+        }
+        catch (_error) {
+            // Continue restoring the primary input/getter/Search descriptors.
+        }
+        tabPersistence = null;
         if (timer !== undefined) {
             dependencies.cancel(timer);
             timer = undefined;
