@@ -78,21 +78,25 @@ For the verified Space Marine fixtures, deploy first and use separate CDP ports:
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  3213262460 55150 /tmp/Decky-Metadata/controller-layout-tab-preservation/legos.json
+  3213262460 55150 102 /tmp/Decky-Metadata/controller-layout-tab-preservation/legos.json
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  2155012430 55150 /tmp/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json
+  2155012430 55150 4 /tmp/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json
 ```
 
 It fails when Community is not selected before and after the direct query, the
 chooser signature changes, Community rows are empty, the getter and rendered
-counts disagree, or a pre-query identity disappears. The JSON evidence contains
-only app IDs, controller index/type, filter booleans, selected tab labels/IDs,
-counts, elapsed time, and hashed identities. It is intentionally not part of
-`run_all.sh`: semantic fixtures do not establish the required live route and
-tab. Close the dedicated tunnels after capture.
+counts disagree, a pre-query identity disappears, the observed controller type
+does not equal the required positional argument (`102` for Legion Go S, `4` for
+Steam Deck), or the original tab cannot be restored. The query phase waits for
+the displayed cache entry to be replaced; the Big Picture phases require the
+chooser tab/list state to settle before each snapshot. The JSON evidence
+contains only app IDs, controller index/type, filter booleans, selected tab
+labels/IDs, counts, elapsed time, and hashed identities. It is intentionally not
+part of `run_all.sh`: semantic fixtures do not establish the required live route
+and tab. Close the dedicated tunnels after capture.
 
 ## Controller navigation & initial focus
 

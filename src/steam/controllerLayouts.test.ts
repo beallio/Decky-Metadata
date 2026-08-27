@@ -8,7 +8,10 @@ import {
   ControllerLayoutTargets,
   installControllerLayouts,
 } from "./controllerLayouts";
-import type { ControllerTabPersistenceControl } from "./controllerTabPersistence";
+import {
+  installControllerTabPersistence,
+  type ControllerTabPersistenceControl,
+} from "./controllerTabPersistence";
 import {
   LEGION_GO_S_CONTROLLER_TYPE,
   STEAM_DECK_CONTROLLER_TYPE,
@@ -297,8 +300,75 @@ const callQuery = (
   filterOtherControllerTypes,
 );
 
+const chooserTabs = (appid = 10, controllerIndex = 0) => [
+  { id: "templates", content: { props: { appid, controllerIndex } } },
+  { id: "community", content: { props: { appid, controllerIndex } } },
+  { id: "search", content: { props: { appid, controllerIndex } } },
+];
+
+const makeStatefulTabPersistence = () => {
+  const originalRender = vi.fn((props: Record<string, unknown>) => ({ props }));
+  const memo: Record<string, unknown> = {};
+  Object.defineProperty(memo, "type", {
+    value: originalRender,
+    writable: true,
+    configurable: true,
+  });
+  const originalDescriptor = Object.getOwnPropertyDescriptor(memo, "type")!;
+  const chooserHeader = function () {
+    const activeTab = "templates";
+    const tabs = [];
+    const onShowTab = () => undefined;
+    return [activeTab, tabs, onShowTab];
+  };
+  const control = installControllerTabPersistence({
+    resolveContext: (appid) => appid === 10 ? shortcutContext(20) : nativeContext(),
+    resolveControllerType: () => LEGION_GO_S_CONTROLLER_TYPE,
+    findModuleChild: (predicate) => predicate({ Header: chooserHeader, Tabs: memo }),
+  });
+  const render = (props: Record<string, unknown>) =>
+    (memo.type as Function)(props) as { props: Record<string, unknown> };
+  return { control, memo, originalDescriptor, render };
+};
+
 describe("installControllerLayouts", () => {
-  it("samples query origin before native input, preserves direct tab memory, clears store-driven memory, and cleans up independently", () => {
+  it("installs tab persistence from the initial store query, preserves direct memory, and clears only fresh memory", () => {
+    const tab = makeStatefulTabPersistence();
+    const harness = makeHarness({
+      queryInFlight: true,
+      resolveControllerType: () => LEGION_GO_S_CONTROLLER_TYPE,
+      tabControl: tab.control,
+    });
+
+    callQuery(harness.input, 10, 0, true);
+    expect(tab.control.isInstalled()).toBe(true);
+
+    const first = tab.render({
+      tabs: chooserTabs(),
+      activeTab: "templates",
+      onShowTab: () => undefined,
+    });
+    (first.props.onShowTab as Function)("community");
+    expect(tab.control.rememberedTab(10, 0)).toBe("community");
+
+    harness.store.BConfigurationQueryInFlight = false;
+    callQuery(harness.input, 10, 0, false);
+    expect(tab.control.rememberedTab(10, 0)).toBe("community");
+    const remounted = tab.render({
+      tabs: chooserTabs(),
+      activeTab: "templates",
+      onShowTab: () => undefined,
+    });
+    expect(remounted.props.activeTab).toBe("community");
+
+    harness.store.BConfigurationQueryInFlight = true;
+    callQuery(harness.input, 10, 0, true);
+    expect(tab.control.rememberedTab(10, 0)).toBeNull();
+    harness.unpatchers[0]();
+    expect(Object.getOwnPropertyDescriptor(tab.memo, "type")).toEqual(tab.originalDescriptor);
+  });
+
+  it("samples query origin before native input and restores main descriptors when optional cleanup fails", () => {
     const directEvents: string[] = [];
     const directTabControl: ControllerTabPersistenceControl = {
       ensureInstalled: () => false,

@@ -40,9 +40,11 @@ control for fresh chooser queries and for every other device/context.
   is deleted rather than invented.
 - The input wrapper samples `BConfigurationQueryInFlight` before Steam's native
   call. A store-driven query clears the matching memory; a direct filter query
-  preserves it and retries lazy tab installation. Tab discovery, rendering, and
-  cleanup failures are optional/fail-open and cannot trip the existing
-  controller-layout disable/toast path.
+  preserves it. Both query origins attempt lazy tab installation before the
+  store-driven path clears its exact key, so the first chooser render can capture
+  the user's initial selection. Tab discovery, rendering, and cleanup failures
+  are optional/fail-open and cannot trip the existing controller-layout
+  disable/toast path.
 - The permanent smoke is intentionally separate from `run_all.sh`. It uses the
   real chooser tab DOM plus the SharedJSContext input/cache boundary, emits only
   scalar state and hashed identities, restores the visible filter and original
@@ -66,12 +68,14 @@ control for fresh chooser queries and for every other device/context.
   shortcut records plus that source set. Both filters and their original tabs
   (Steam Deck Your Layouts; Legion Templates) were restored; both baseline
   tunnels were closed.
-- After implementation, both `scripts/decky doctor --deck` calls reported the
-  configured Deck optional target offline. Each required deployment was then
-  attempted once and failed before copying at SSH `No route to host`:
-  `steamdeck` at `10.168.168.20` and `steamdeck-legos` at `10.168.168.219`.
-  No blind retry was made. The post-change smoke, screenshots, and no-launch
-  suite are therefore blocked on current device reachability.
+- After the review-01 correction, `DECKY_DECK_HOST=steamdeck-legos ./run.sh
+  scripts/decky doctor --deck` and `DECKY_DECK_HOST=steamdeck ./run.sh
+  scripts/decky doctor --deck` both returned `WARN deck-reachability: Optional
+  Deck is offline`. No deployment was attempted after those reachability checks,
+  and no blind retry was made. The required post-change typed smokes,
+  screenshots, and no-launch suites remain blocked on current device
+  reachability; they must be rerun against this corrected commit when both hosts
+  return online.
 
 ## Red, green, and mutation evidence
 
@@ -83,21 +87,34 @@ control for fresh chooser queries and for every other device/context.
   The probe contract red run failed on the required `DISPLAY_APPID` field, not
   syntax or a missing file, in
   `/tmp/Decky-Metadata/controller-layout-tab-preservation/red-probe-safety.log`.
-- Focused green passed 2 Vitest files / 83 tests and the fixture safety file's
-  8 tests; outputs are `focused-green.log` and `focused-probe-green.log` below
+- Review-01 red tests failed as intended: a fresh store query did not install
+  the tab wrapper (2 named Vitest failures) and the old probe/smoke contract
+  lacked the required serialized payload/completion contract. Outputs are
+  `review-01-red-vitest.log` and `review-01-red-probe.log` below
   `/tmp/Decky-Metadata/controller-layout-tab-preservation/`.
+- The corrected focused positive control passed 2 Vitest files / 85 tests and
+  the fixture safety file's 11 tests; outputs are
+  `review-01-focused-green-vitest.log` and
+  `review-01-focused-green-pytest.log` below
+  `/tmp/Decky-Metadata/controller-layout-tab-preservation/`. The probe test
+  runs the emitted query phase with a delayed displayed-cache replacement and
+  proves the bounded missing-completion timeout.
 - Mutation controls were restored without committing them:
-  - forcing direct filter queries to clear memory produced the named direct
-    preservation failure in `mutation-direct-clears.log`;
-  - suppressing remembered `activeTab` substitution produced the named remount
-    restoration failure in `mutation-active-tab-substitution.log`;
-  - changing the type scope from `102` to `4` produced six failures, including
-    the Steam Deck native-pass-through contract, in `mutation-type-four-scope.log`.
-- The restored focused positive control passed 83 Vitest tests and 8 fixture
-  tests (`focused-post-mutation-green.log` and
-  `focused-probe-post-mutation-green.log`). Full quality gates passed with
-  TypeScript, Rollup, 20 Vitest files / 248 tests, Python byte-compilation, and
-  pytest in `quality-gates-pre-session.log`.
+  - removing store-driven installation produced 2 named first-render failures
+    in `review-01-mutation-store-install.log`;
+  - forcing direct filter queries to clear memory produced 3 named preservation
+    failures in `review-01-mutation-direct-clears.log`;
+  - suppressing remembered `activeTab` substitution produced 3 named remount
+    restoration failures in `review-01-mutation-active-tab-substitution.log`;
+  - changing the type scope from `102` to `4` produced 7 failures, including
+    the Steam Deck native-pass-through contract, in
+    `review-01-mutation-type-four-scope.log`.
+- `./run.sh bash -n scripts/deck/verify/smoke_controller_tab_persistence.sh`,
+  `./run.sh node --check scripts/deck/js/check_controller_tab_persistence.js`,
+  and `./run.sh scripts/orchestration/run-quality-gates` passed after the
+  restored controls. The full gate regenerated both committed bundle artifacts
+  and passed TypeScript, Rollup, 20 Vitest files / 250 tests, Python
+  byte-compilation, the full pytest suite, and the review-note deletion check.
 
 ## Explicitly unverified
 

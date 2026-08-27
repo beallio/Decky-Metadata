@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Bounded no-selection controller chooser tab-persistence smoke.
 #
-#   smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> [evidence-json]
+#   smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
-displayed_appid="${1:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> [evidence-json]}"
-source_appid="${2:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> [evidence-json]}"
-evidence="${3:-/tmp/Decky-Metadata/controller-layout-tab-preservation/tab-persistence-$(date -u +%Y%m%dT%H%M%SZ).json}"
+displayed_appid="${1:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
+source_appid="${2:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
+expected_controller_type="${3:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
+evidence="${4:-/tmp/Decky-Metadata/controller-layout-tab-preservation/tab-persistence-$(date -u +%Y%m%dT%H%M%SZ).json}"
+[[ "$expected_controller_type" =~ ^[0-9]+$ ]] || fail "expected type must be a non-negative integer"
 case "$evidence" in
   /tmp/Decky-Metadata/*) ;;
   *) fail "tab-persistence evidence must stay below /tmp/Decky-Metadata" ;;
@@ -24,13 +26,21 @@ probe() {
 }
 
 original_tab=""
-restore_status=0
+restore_armed=1
 restore_tab() {
   if [[ -n "$original_tab" ]]; then
-    probe "Steam Big Picture Mode" "dom-restore" "$original_tab" >/dev/null || restore_status=$?
+    probe "Steam Big Picture Mode" "dom-restore" "$original_tab" >/dev/null
   fi
 }
-trap restore_tab EXIT
+restore_on_exit() {
+  local original_status=$?
+  trap - EXIT
+  if ((restore_armed)); then
+    restore_tab || true
+  fi
+  exit "$original_status"
+}
+trap restore_on_exit EXIT
 
 before_json="$(probe "Steam Big Picture Mode" "dom-select")"
 original_tab="$(python3 - "$before_json" <<'PY'
@@ -49,13 +59,14 @@ query_json="$(probe "SharedJSContext" "query")"
 after_json="$(probe "Steam Big Picture Mode" "dom-observe")"
 
 mkdir -p "$(dirname -- "$evidence")"
-python3 - "$before_json" "$query_json" "$after_json" "$evidence" <<'PY'
+python3 - "$before_json" "$query_json" "$after_json" "$expected_controller_type" "$evidence" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 before, query, after = (json.loads(value) for value in sys.argv[1:4])
-evidence = Path(sys.argv[4])
+expected_type = int(sys.argv[4])
+evidence = Path(sys.argv[5])
 
 
 def field(payload, key, label):
@@ -94,8 +105,14 @@ if rendered_before <= 0 or rendered_after <= 0:
     raise SystemExit("FAIL: Community rows are empty")
 controller_type = nonnegative(field(query, "controllerType", "query.controllerType"), "controllerType")
 controller_index = nonnegative(field(query, "controllerIndex", "query.controllerIndex"), "controllerIndex")
+if controller_type != expected_type:
+    raise SystemExit(
+        f"FAIL: controller type {controller_type} does not match expected type {expected_type}"
+    )
 if field(query, "filterDuringQuery", "query.filterDuringQuery") is not False:
     raise SystemExit("FAIL: direct query did not expose the unfiltered controller setting")
+if field(query, "cacheReplaced", "query.cacheReplaced") is not True:
+    raise SystemExit("FAIL: direct query completion did not replace the displayed cache")
 after_getter = field(query, "after", "query.after")
 getter_count = nonnegative(field(after_getter, "getterCount", "query.after.getterCount"), "getterCount")
 hashes = field(after_getter, "urlHashes", "query.after.urlHashes")
@@ -112,6 +129,7 @@ evidence.write_text(json.dumps({
     "query": query,
     "after": after,
     "controllerType": controller_type,
+    "expectedControllerType": expected_type,
     "controllerIndex": controller_index,
     "renderedBefore": rendered_before,
     "renderedAfter": rendered_after,
@@ -119,7 +137,17 @@ evidence.write_text(json.dumps({
 }, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 PY
 
-if ((restore_status != 0)); then
-  fail "chooser tab restoration failed"
-fi
+restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"
+python3 - "$restore_json" "$original_tab" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+selected = payload.get("selectedTab")
+label = selected.get("label") if isinstance(selected, dict) else None
+if label != sys.argv[2]:
+    raise SystemExit("FAIL: chooser tab restoration did not restore the original tab")
+PY
+restore_armed=0
+trap - EXIT
 pass "controller tab persistence: active Community tab survived direct query; evidence=$evidence"

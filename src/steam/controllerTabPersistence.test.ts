@@ -192,14 +192,49 @@ describe("installControllerTabPersistence", () => {
       });
       (output.props.onShowTab as Function)(tab);
     };
+    // Exercise both dimensions independently: a key based on only appid or
+    // only controller index would conflate at least two of these memories.
     remember(3213262460, 0, "community");
-    remember(2155012430, 1, "search");
+    remember(3213262460, 1, "search");
+    remember(2155012430, 0, "templates");
+    remember(2155012430, 1, "community");
     control.beforeControllerQuery(3213262460, 0, false);
     expect(control.rememberedTab(3213262460, 0)).toBe("community");
-    expect(control.rememberedTab(2155012430, 1)).toBe("search");
+    expect(control.rememberedTab(3213262460, 1)).toBe("search");
+    expect(control.rememberedTab(2155012430, 0)).toBe("templates");
+    expect(control.rememberedTab(2155012430, 1)).toBe("community");
     control.beforeControllerQuery(3213262460, 0, true);
     expect(control.rememberedTab(3213262460, 0)).toBeNull();
-    expect(control.rememberedTab(2155012430, 1)).toBe("search");
+    expect(control.rememberedTab(3213262460, 1)).toBe("search");
+    expect(control.rememberedTab(2155012430, 0)).toBe("templates");
+    expect(control.rememberedTab(2155012430, 1)).toBe("community");
+  });
+
+  it("installs before the first chooser selection on a fresh query and preserves it across a direct remount", () => {
+    const target = makeTabsModule();
+    const control = installControllerTabPersistence(dependenciesForModule(target.module));
+
+    expect(control.isInstalled()).toBe(false);
+    control.beforeControllerQuery(3213262460, 0, true);
+    expect(control.isInstalled()).toBe(true);
+    expect(control.rememberedTab(3213262460, 0)).toBeNull();
+
+    const first = render(target.memo, {
+      tabs: chooserTabs(),
+      activeTab: "templates",
+      onShowTab: () => undefined,
+    });
+    (first.props.onShowTab as Function)("community");
+    expect(control.rememberedTab(3213262460, 0)).toBe("community");
+
+    control.beforeControllerQuery(3213262460, 0, false);
+    expect(control.rememberedTab(3213262460, 0)).toBe("community");
+    const remounted = render(target.memo, {
+      tabs: chooserTabs(),
+      activeTab: "templates",
+      onShowTab: () => undefined,
+    });
+    expect(remounted.props.activeTab).toBe("community");
   });
 
   it("does not invent a saved tab, deletes an unavailable remembered id, and lets native state pass through", () => {

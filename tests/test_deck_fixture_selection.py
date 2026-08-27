@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,79 @@ import pytest
 from scripts.deck.verify.select_fixtures import select
 
 FIXTURE = Path(__file__).parent / "fixtures/agent_workflow/metadata.json"
+
+
+def _serialized_objects(source: str):
+    """Return the actual object literals passed to JSON.stringify by a probe."""
+    marker = "return JSON.stringify({"
+    cursor = 0
+    objects = []
+    while (start := source.find(marker, cursor)) >= 0:
+        object_start = source.find("{", start)
+        depth = 0
+        for index in range(object_start, len(source)):
+            if source[index] == "{":
+                depth += 1
+            elif source[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    objects.append(source[object_start + 1:index])
+                    cursor = index + 1
+                    break
+        else:
+            raise AssertionError("unterminated JSON.stringify object")
+    return objects
+
+
+def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
+    payloads = _serialized_objects(probe)
+    assert len(payloads) == 3
+    selected = [payload for payload in payloads if "originalSelectedTab:" in payload]
+    observed = [
+        payload for payload in payloads
+        if "selectedTab:" in payload and "originalSelectedTab:" not in payload
+    ]
+    queried = [payload for payload in payloads if re.search(r"(?m)^\s*controllerType(?:,|:)", payload)]
+    assert len(selected) == 1
+    assert len(observed) == 1
+    assert len(queried) == 1
+    selected = selected[0]
+    observed = observed[0]
+    queried = queried[0]
+
+    for payload in (selected, observed):
+        assert "selectedTab:" in payload
+        assert "tabs:" in payload
+        assert "renderedCount:" in payload
+    assert "originalSelectedTab:" in selected
+    for required in (
+        "controllerIndex",
+        "controllerType",
+        "before",
+        "after",
+        "filterDuringQuery",
+        "elapsedMs:",
+    ):
+        assert required in queried
+    assert "return { getterCount: identities.length, urlHashes: identities.map(hash) };" in probe
+    assert "cacheReplaced = cacheReplaced || displayedCacheEntry() !== cacheBeforeQuery;" in probe
+    assert "controller query cache replacement timed out" in probe
+    assert "stableSamples >= 3" in probe
+    assert "chooser remount did not settle" in probe
+    for forbidden in ("identities:", "URL:", "title:", "account"):
+        assert forbidden not in "\n".join(payloads)
+
+
+def _assert_controller_tab_smoke_contract(smoke: str) -> None:
+    assert 'expected_controller_type="${3:?usage:' in smoke
+    assert "expected type must be a non-negative integer" in smoke
+    assert "if controller_type != expected_type:" in smoke
+    assert "expectedControllerType" in smoke
+    assert "query.cacheReplaced" in smoke
+    restore = 'restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"'
+    assert restore in smoke
+    assert smoke.index(restore) < smoke.index('pass "controller tab persistence')
+    assert "trap - EXIT" in smoke
 
 
 def test_selection_is_semantic_and_deterministic():
@@ -186,20 +260,14 @@ def test_controller_tab_persistence_probe_and_smoke_are_bounded_and_output_safe(
     assert "SOURCE_APPID" in probe
     assert "QueryControllerConfigsForApp" in probe
     assert "BConfigurationQueryInFlight" in probe
-    assert "selectedTab" in probe
-    assert "renderedCount" in probe
-    assert "getterCount" in probe
-    assert "urlHashes" in probe
+    _assert_controller_tab_probe_payload_contract(probe)
     assert "m_bFilterOtherControllerTypes" in probe
     assert "finally" in probe
     assert "SharedJSContext" in smoke
     assert "Steam Big Picture Mode" in smoke
     assert "DISPLAY_APPID" in smoke
     assert "SOURCE_APPID" in smoke
-    assert "selectedTab" in smoke
-    assert "renderedCount" in smoke
-    assert "getterCount" in smoke
-    assert "urlHashes" in smoke
+    _assert_controller_tab_smoke_contract(smoke)
     assert "active tab changes unexpectedly" in smoke
     assert "/tmp/Decky-Metadata/" in smoke
     assert "smoke_controller_tab_persistence.sh" not in run_all
@@ -221,3 +289,90 @@ def test_controller_tab_persistence_probe_and_smoke_are_bounded_and_output_safe(
     for token in forbidden:
         assert token not in probe
         assert token not in smoke
+
+
+def test_controller_tab_probe_contract_rejects_missing_payload_fields_and_raw_identities():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_probe_payload_contract(
+            probe.replace("selectedTab: selected.snapshot.selectedTab,", "", 1)
+        )
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_probe_payload_contract(
+            probe.replace("urlHashes: identities.map(hash)", "hashes: identities.map(hash)", 1)
+        )
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_probe_payload_contract(
+            probe.replace("elapsedMs: Date.now() - startedAt,", "identities: [],", 1)
+        )
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_probe_payload_contract(
+            probe.replace("stableSamples >= 3", "stableSamples >= 1", 1)
+        )
+
+
+def _run_controller_tab_query_probe(probe: str, replacement_delay_ms: int | None):
+    source = (
+        probe.replace('"__PHASE__"', '"query"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+    )
+    delayed_replacement = (
+        f"setTimeout(() => {{ entry = {{ generation: 2 }}; }}, {replacement_delay_ms});"
+        if replacement_delay_ms is not None
+        else ""
+    )
+    runner = f"""
+const first = {{ generation: 1 }};
+let entry = first;
+globalThis.controllerConfiguratorStore = {{
+  m_bFilterOtherControllerTypes: true,
+  BConfigurationQueryInFlight: false,
+  m_mapAppConfigs: {{ get: () => entry }},
+  GetWorkshopConfigsForApp: () => [{{ URL: "layout://one" }}],
+}};
+globalThis.ControllerStore = {{
+  GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
+}};
+globalThis.SteamClient = {{ Input: {{
+  QueryControllerConfigsForApp: () => {{ {delayed_replacement} }},
+}} }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    return subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+
+
+def test_controller_tab_query_probe_waits_for_delayed_cache_replacement_and_times_out_without_one():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+
+    delayed = _run_controller_tab_query_probe(probe, replacement_delay_ms=75)
+    assert delayed.returncode == 0, delayed.stderr
+    payload = json.loads(delayed.stdout)
+    assert payload["cacheReplaced"] is True
+    assert payload["elapsedMs"] >= 50
+
+    short_timeout = probe.replace("const deadline = Date.now() + 15000;", "const deadline = Date.now() + 50;")
+    missing = _run_controller_tab_query_probe(short_timeout, replacement_delay_ms=None)
+    assert missing.returncode != 0
+    assert "controller query cache replacement timed out" in missing.stderr
+
+
+def test_controller_tab_smoke_contract_rejects_early_pass_before_tab_restoration():
+    root = Path(__file__).parents[1]
+    smoke = (root / "scripts/deck/verify/smoke_controller_tab_persistence.sh").read_text()
+    restore = 'restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"'
+
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_smoke_contract(smoke.replace(restore, "", 1))

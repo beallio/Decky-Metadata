@@ -5624,11 +5624,14 @@ const installControllerTabPersistence = (provided) => {
                 return;
             }
             const key = selectionKey(displayedAppid, controllerIndex);
+            // The first fresh chooser query is the only chance to wrap the tab
+            // callback before the user makes a selection. Discovery is lazy and
+            // fail-open, so retrying here is harmless when its webpack chunk is not
+            // loaded yet.
+            ensureInstalled();
             if (storeDriven) {
                 rememberedTabs.delete(key);
-                return;
             }
-            ensureInstalled();
         },
         cleanup,
         isInstalled: () => installed,

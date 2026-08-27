@@ -22,6 +22,7 @@
     }
     return (state >>> 0).toString(16).padStart(8, "0");
   };
+  const pause = (delayMs) => new Promise((resolve) => setTimeout(resolve, delayMs));
 
   const tabSnapshot = () => {
     const tablist = document.querySelector('[role="tablist"]');
@@ -67,28 +68,49 @@
     return tabSnapshot();
   };
 
+  const settledChooser = async () => {
+    const deadline = Date.now() + 10000;
+    let previous = null;
+    let stableSamples = 0;
+    while (Date.now() < deadline) {
+      const snapshot = tabSnapshot();
+      const count = renderedCount(snapshot.tablist);
+      const signature = JSON.stringify({
+        selected: snapshot.selectedTab.id,
+        tabs: snapshot.tabs.map((tab) => [tab.id, tab.selected]),
+        count,
+      });
+      stableSamples = signature === previous ? stableSamples + 1 : 1;
+      previous = signature;
+      if (stableSamples >= 3) return { snapshot, count };
+      await pause(100);
+    }
+    throw new Error("chooser remount did not settle");
+  };
+
   if (phase === "dom-select") {
     const original = tabSnapshot();
-    const selected = chooseTab("Community Layouts");
+    chooseTab("Community Layouts");
+    const selected = await settledChooser();
     return JSON.stringify({
       displayedAppid,
       sourceAppid,
       originalSelectedTab: original.selectedTab,
-      selectedTab: selected.selectedTab,
-      tabs: selected.tabs,
-      renderedCount: renderedCount(selected.tablist),
+      selectedTab: selected.snapshot.selectedTab,
+      tabs: selected.snapshot.tabs,
+      renderedCount: selected.count,
     });
   }
 
   if (phase === "dom-observe" || phase === "dom-restore") {
     if (phase === "dom-restore") chooseTab("__RESTORE_TAB__");
-    const snapshot = tabSnapshot();
+    const settled = await settledChooser();
     return JSON.stringify({
       displayedAppid,
       sourceAppid,
-      selectedTab: snapshot.selectedTab,
-      tabs: snapshot.tabs,
-      renderedCount: renderedCount(snapshot.tablist),
+      selectedTab: settled.snapshot.selectedTab,
+      tabs: settled.snapshot.tabs,
+      renderedCount: settled.count,
     });
   }
 
@@ -112,6 +134,11 @@
   }
   const controllerIndex = controller.nControllerIndex;
   const controllerType = controller.eControllerType;
+  const cache = store.m_mapAppConfigs;
+  if (!cache || typeof cache.get !== "function") {
+    throw new Error("displayed controller cache unavailable");
+  }
+  const displayedCacheEntry = () => cache.get(displayedAppid);
   const summarize = () => {
     const records = store.GetWorkshopConfigsForApp(displayedAppid, controllerType);
     if (!Array.isArray(records)) throw new Error("Community getter unavailable");
@@ -123,17 +150,22 @@
   };
   const originalFilter = store.m_bFilterOtherControllerTypes;
   const before = summarize();
+  const cacheBeforeQuery = displayedCacheEntry();
   const startedAt = Date.now();
   let filterDuringQuery = null;
   try {
     store.m_bFilterOtherControllerTypes = false;
     input.QueryControllerConfigsForApp(displayedAppid, controllerIndex, false);
-    const deadline = Date.now() + 15000;
-    while (store.BConfigurationQueryInFlight === true && Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-    if (store.BConfigurationQueryInFlight === true) throw new Error("controller query timed out");
     filterDuringQuery = store.m_bFilterOtherControllerTypes;
+    const deadline = Date.now() + 15000;
+    let cacheReplaced = false;
+    while (Date.now() < deadline) {
+      cacheReplaced = cacheReplaced || displayedCacheEntry() !== cacheBeforeQuery;
+      if (cacheReplaced && store.BConfigurationQueryInFlight !== true) break;
+      await pause(100);
+    }
+    if (!cacheReplaced) throw new Error("controller query cache replacement timed out");
+    if (store.BConfigurationQueryInFlight === true) throw new Error("controller query timed out");
     const after = summarize();
     return JSON.stringify({
       displayedAppid,
@@ -143,6 +175,7 @@
       before,
       after,
       filterDuringQuery,
+      cacheReplaced,
       elapsedMs: Date.now() - startedAt,
     });
   } finally {
