@@ -33,9 +33,9 @@ jobs:
           python-version: "3.13"
 
       - name: Install uv
-        # setup-uv publishes no bare "v9" moving tag (only full versions), so
-        # pin the exact latest release. Node 24, unlike the deprecated v6.
-        uses: astral-sh/setup-uv@v9.0.0
+        # setup-uv publishes only full-version tags, so pin the current release.
+        # v10 runs on Node 24; explicit caching preserves this workflow's policy.
+        uses: astral-sh/setup-uv@v10.0.1
         with:
           enable-cache: true
 
