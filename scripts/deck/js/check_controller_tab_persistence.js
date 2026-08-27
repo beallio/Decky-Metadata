@@ -2,7 +2,7 @@
 // SharedJSContext (query) or Steam Big Picture Mode (dom-select, dom-observe,
 // dom-restore). It reports only tab labels/ids, scalar counts, controller
 // metadata, booleans, elapsed time, and hashes of layout identities.
-// Vars: PHASE, DISPLAY_APPID, SOURCE_APPID, RESTORE_TAB.
+// Vars: PHASE, DISPLAY_APPID, SOURCE_APPID, RESTORE_TAB, RESTORE_FILTER.
 (async () => {
   const phase = "__PHASE__";
   const displayedAppid = Number("__DISPLAY_APPID__");
@@ -114,6 +114,23 @@
     });
   }
 
+  if (phase === "restore-filter") {
+    const requested = "__RESTORE_FILTER__";
+    if (requested !== "true" && requested !== "false") {
+      throw new Error("invalid controller filter restoration value");
+    }
+    const store = globalThis.controllerConfiguratorStore;
+    if (!store || typeof store.m_bFilterOtherControllerTypes !== "boolean") {
+      throw new Error("visible controller filter unavailable");
+    }
+    store.m_bFilterOtherControllerTypes = requested === "true";
+    return JSON.stringify({
+      displayedAppid,
+      sourceAppid,
+      restoredFilter: store.m_bFilterOtherControllerTypes,
+    });
+  }
+
   if (phase !== "query") throw new Error("unknown tab-persistence probe phase");
   const store = globalThis.controllerConfiguratorStore;
   const input = globalThis.SteamClient?.Input;
@@ -132,6 +149,12 @@
   if (typeof store.m_bFilterOtherControllerTypes !== "boolean") {
     throw new Error("visible controller filter unavailable");
   }
+  const activeStoreAppid = Number.isInteger(store.m_appId)
+    ? store.m_appId
+    : Number.isInteger(store.m_lastValidAppId) ? store.m_lastValidAppId : null;
+  if (activeStoreAppid !== displayedAppid) {
+    throw new Error("active controller chooser appid does not match fixture");
+  }
   const controllerIndex = controller.nControllerIndex;
   const controllerType = controller.eControllerType;
   const cache = store.m_mapAppConfigs;
@@ -139,6 +162,14 @@
     throw new Error("displayed controller cache unavailable");
   }
   const displayedCacheEntry = () => cache.get(displayedAppid);
+  const cacheEntryFingerprint = (entry) => {
+    if (entry === null || typeof entry !== "object") return null;
+    try {
+      return hash(JSON.stringify(entry));
+    } catch (_error) {
+      return null;
+    }
+  };
   const summarize = () => {
     const records = store.GetWorkshopConfigsForApp(displayedAppid, controllerType);
     if (!Array.isArray(records)) throw new Error("Community getter unavailable");
@@ -151,34 +182,49 @@
   const originalFilter = store.m_bFilterOtherControllerTypes;
   const before = summarize();
   const cacheBeforeQuery = displayedCacheEntry();
+  const cacheFingerprintBeforeQuery = cacheEntryFingerprint(cacheBeforeQuery);
   const startedAt = Date.now();
   let filterDuringQuery = null;
+  let completed = false;
   try {
     store.m_bFilterOtherControllerTypes = false;
     input.QueryControllerConfigsForApp(displayedAppid, controllerIndex, false);
     filterDuringQuery = store.m_bFilterOtherControllerTypes;
     const deadline = Date.now() + 15000;
     let cacheReplaced = false;
+    let cacheMutated = false;
+    let cacheUpdated = false;
     while (Date.now() < deadline) {
-      cacheReplaced = cacheReplaced || displayedCacheEntry() !== cacheBeforeQuery;
-      if (cacheReplaced && store.BConfigurationQueryInFlight !== true) break;
+      const cacheAfterQuery = displayedCacheEntry();
+      cacheReplaced = cacheReplaced || cacheAfterQuery !== cacheBeforeQuery;
+      cacheMutated = cacheMutated || (
+        cacheAfterQuery === cacheBeforeQuery &&
+        cacheEntryFingerprint(cacheAfterQuery) !== cacheFingerprintBeforeQuery
+      );
+      cacheUpdated = cacheReplaced || cacheMutated;
+      if (cacheUpdated && store.BConfigurationQueryInFlight !== true) break;
       await pause(100);
     }
-    if (!cacheReplaced) throw new Error("controller query cache replacement timed out");
+    if (!cacheUpdated) throw new Error("controller query cache update timed out");
     if (store.BConfigurationQueryInFlight === true) throw new Error("controller query timed out");
     const after = summarize();
+    completed = true;
     return JSON.stringify({
       displayedAppid,
       sourceAppid,
+      activeStoreAppid,
       controllerIndex,
       controllerType,
       before,
       after,
+      originalFilter,
       filterDuringQuery,
       cacheReplaced,
+      cacheMutated,
+      cacheUpdated,
       elapsedMs: Date.now() - startedAt,
     });
   } finally {
-    store.m_bFilterOtherControllerTypes = originalFilter;
+    if (!completed) store.m_bFilterOtherControllerTypes = originalFilter;
   }
 })()

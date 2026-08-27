@@ -34,16 +34,18 @@ def _serialized_objects(source: str):
 
 def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
     payloads = _serialized_objects(probe)
-    assert len(payloads) == 3
+    assert len(payloads) == 4
     selected = [payload for payload in payloads if "originalSelectedTab:" in payload]
     observed = [
         payload for payload in payloads
         if "selectedTab:" in payload and "originalSelectedTab:" not in payload
     ]
     queried = [payload for payload in payloads if re.search(r"(?m)^\s*controllerType(?:,|:)", payload)]
+    restored = [payload for payload in payloads if "restoredFilter:" in payload]
     assert len(selected) == 1
     assert len(observed) == 1
     assert len(queried) == 1
+    assert len(restored) == 1
     selected = selected[0]
     observed = observed[0]
     queried = queried[0]
@@ -53,18 +55,21 @@ def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
         assert "tabs:" in payload
         assert "renderedCount:" in payload
     assert "originalSelectedTab:" in selected
+    assert "displayedAppid" in restored[0]
     for required in (
         "controllerIndex",
         "controllerType",
+        "activeStoreAppid",
         "before",
         "after",
+        "originalFilter",
         "filterDuringQuery",
         "elapsedMs:",
     ):
         assert required in queried
     assert "return { getterCount: identities.length, urlHashes: identities.map(hash) };" in probe
-    assert "cacheReplaced = cacheReplaced || displayedCacheEntry() !== cacheBeforeQuery;" in probe
-    assert "controller query cache replacement timed out" in probe
+    assert "cacheEntryFingerprint(cacheAfterQuery)" in probe
+    assert "controller query cache update timed out" in probe
     assert "stableSamples >= 3" in probe
     assert "chooser remount did not settle" in probe
     for forbidden in ("identities:", "URL:", "title:", "account"):
@@ -76,7 +81,17 @@ def _assert_controller_tab_smoke_contract(smoke: str) -> None:
     assert "expected type must be a non-negative integer" in smoke
     assert "if controller_type != expected_type:" in smoke
     assert "expectedControllerType" in smoke
-    assert "query.cacheReplaced" in smoke
+    assert "query.cacheUpdated" in smoke
+    assert "if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):" in smoke
+    assert '"status": "pending-validation"' in smoke
+    assert smoke.index('"status": "pending-validation"') < smoke.index(
+        'if selected(before, "before") != "Community Layouts":'
+    )
+    restore_filter = 'restore_filter_json="$(probe "SharedJSContext" "restore-filter" "" "$original_filter")"'
+    assert restore_filter in smoke
+    assert smoke.index('after_json="$(probe "Steam Big Picture Mode" "dom-observe")"') < smoke.index(
+        restore_filter
+    )
     restore = 'restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"'
     assert restore in smoke
     assert smoke.index(restore) < smoke.index('pass "controller tab persistence')
@@ -329,6 +344,8 @@ const first = {{ generation: 1 }};
 let entry = first;
 globalThis.controllerConfiguratorStore = {{
   m_bFilterOtherControllerTypes: true,
+  m_appId: 3213262460,
+  m_lastValidAppId: 3213262460,
   BConfigurationQueryInFlight: false,
   m_mapAppConfigs: {{ get: () => entry }},
   GetWorkshopConfigsForApp: () => [{{ URL: "layout://one" }}],
@@ -361,12 +378,83 @@ def test_controller_tab_query_probe_waits_for_delayed_cache_replacement_and_time
     assert delayed.returncode == 0, delayed.stderr
     payload = json.loads(delayed.stdout)
     assert payload["cacheReplaced"] is True
+    assert payload["cacheUpdated"] is True
     assert payload["elapsedMs"] >= 50
 
     short_timeout = probe.replace("const deadline = Date.now() + 15000;", "const deadline = Date.now() + 50;")
     missing = _run_controller_tab_query_probe(short_timeout, replacement_delay_ms=None)
     assert missing.returncode != 0
-    assert "controller query cache replacement timed out" in missing.stderr
+    assert "controller query cache update timed out" in missing.stderr
+
+
+def test_controller_tab_query_probe_accepts_a_delayed_in_place_cache_mutation():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    source = (
+        probe.replace('"__PHASE__"', '"query"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+    )
+    runner = f"""
+const entry = {{ generation: 1 }};
+globalThis.controllerConfiguratorStore = {{
+  m_bFilterOtherControllerTypes: true,
+  m_appId: 3213262460,
+  m_lastValidAppId: 3213262460,
+  BConfigurationQueryInFlight: false,
+  m_mapAppConfigs: {{ get: () => entry }},
+  GetWorkshopConfigsForApp: () => [{{ URL: "layout://one" }}],
+}};
+globalThis.ControllerStore = {{
+  GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
+}};
+globalThis.SteamClient = {{ Input: {{
+  QueryControllerConfigsForApp: () => {{ setTimeout(() => {{ entry.generation = 2; }}, 75); }},
+}} }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    mutated = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert mutated.returncode == 0, mutated.stderr
+    payload = json.loads(mutated.stdout)
+    assert payload["cacheReplaced"] is False
+    assert payload["cacheMutated"] is True
+    assert payload["cacheUpdated"] is True
+
+
+def test_controller_tab_filter_restore_probe_restores_the_original_visible_filter():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    source = (
+        probe.replace('"__PHASE__"', '"restore-filter"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+        .replace('"__RESTORE_FILTER__"', '"false"')
+    )
+    runner = f"""
+globalThis.controllerConfiguratorStore = {{ m_bFilterOtherControllerTypes: true }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    restored = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert restored.returncode == 0, restored.stderr
+    assert json.loads(restored.stdout)["restoredFilter"] is False
 
 
 def test_controller_tab_smoke_contract_rejects_early_pass_before_tab_restoration():

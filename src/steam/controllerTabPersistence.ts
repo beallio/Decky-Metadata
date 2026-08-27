@@ -45,6 +45,10 @@ export type ControllerTabPersistenceControl = {
 
 type ChooserTab = Readonly<{
   id: string;
+}>;
+
+type ParsedChooserTabs = Readonly<{
+  tabs: readonly ChooserTab[];
   displayedAppid: number;
   controllerIndex: number;
 }>;
@@ -73,8 +77,15 @@ const tabIdentity = (id: unknown): string | null => {
   return trimmed ? trimmed : null;
 };
 
-const tabSignature = (id: string): string =>
-  id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
+const tabSignature = (id: string): string => {
+  const normalized = id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
+  if (normalized.endsWith("communitylayouts") || normalized.endsWith("community")) {
+    return "community";
+  }
+  if (normalized.endsWith("templates")) return "templates";
+  if (normalized.endsWith("search")) return "search";
+  return normalized;
+};
 
 const isRequiredTab = (id: string): boolean => {
   const signature = tabSignature(id);
@@ -96,7 +107,7 @@ const contentNumbers = (content: unknown): {
   return { displayedAppid, controllerIndex };
 };
 
-const chooserTabs = (value: unknown): readonly ChooserTab[] | null => {
+const chooserTabs = (value: unknown): ParsedChooserTabs | null => {
   if (!Array.isArray(value) || value.length === 0) return null;
   const output: ChooserTab[] = [];
   const seenIds = new Set<string>();
@@ -107,14 +118,18 @@ const chooserTabs = (value: unknown): readonly ChooserTab[] | null => {
     const tab = asRecord(rawTab);
     const id = tabIdentity(tab?.id);
     const numbers = contentNumbers(tab?.content);
-    if (!id || !numbers || seenIds.has(id)) return null;
-    if (displayedAppid === undefined) displayedAppid = numbers.displayedAppid;
-    if (controllerIndex === undefined) controllerIndex = numbers.controllerIndex;
-    if (displayedAppid !== numbers.displayedAppid || controllerIndex !== numbers.controllerIndex) {
-      return null;
+    if (!id || seenIds.has(id)) return null;
+    const signature = tabSignature(id);
+    if ((signature === "community" || signature === "search") && !numbers) return null;
+    if (numbers) {
+      if (displayedAppid === undefined) displayedAppid = numbers.displayedAppid;
+      if (controllerIndex === undefined) controllerIndex = numbers.controllerIndex;
+      if (displayedAppid !== numbers.displayedAppid || controllerIndex !== numbers.controllerIndex) {
+        return null;
+      }
     }
     seenIds.add(id);
-    output.push({ id, ...numbers });
+    output.push({ id });
   }
 
   if (!displayedAppid || controllerIndex === undefined) return null;
@@ -125,7 +140,7 @@ const chooserTabs = (value: unknown): readonly ChooserTab[] | null => {
   for (const required of REQUIRED_CHOOSER_TABS) {
     if (!signatures.has(required)) return null;
   }
-  return output;
+  return { tabs: output, displayedAppid, controllerIndex };
 };
 
 const contextMatchesAffectedChooser = (
@@ -146,8 +161,8 @@ export const resolveControllerChooserKey = (
 ): ControllerTabSelectionKey | null => {
   try {
     const parsedTabs = chooserTabs(tabs);
-    if (!parsedTabs?.length) return null;
-    const { displayedAppid, controllerIndex } = parsedTabs[0];
+    if (!parsedTabs) return null;
+    const { displayedAppid, controllerIndex } = parsedTabs;
     return contextMatchesAffectedChooser(dependencies, displayedAppid, controllerIndex)
       ? { displayedAppid, controllerIndex }
       : null;
@@ -222,10 +237,21 @@ const renderScope = (
 ): ChooserRenderScope | null => {
   const props = asRecord(propsValue);
   if (!props || typeof props.onShowTab !== "function") return null;
-  const tabs = chooserTabs(props.tabs);
-  const key = resolveControllerChooserKey(props.tabs, dependencies);
-  if (!tabs || !key) return null;
-  return { key, tabs, props, onShowTab: props.onShowTab };
+  const parsedTabs = chooserTabs(props.tabs);
+  if (!parsedTabs || !contextMatchesAffectedChooser(
+    dependencies,
+    parsedTabs.displayedAppid,
+    parsedTabs.controllerIndex,
+  )) return null;
+  return {
+    key: {
+      displayedAppid: parsedTabs.displayedAppid,
+      controllerIndex: parsedTabs.controllerIndex,
+    },
+    tabs: parsedTabs.tabs,
+    props,
+    onShowTab: props.onShowTab,
+  };
 };
 
 export const installControllerTabPersistence = (

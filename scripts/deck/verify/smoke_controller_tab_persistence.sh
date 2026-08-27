@@ -18,23 +18,33 @@ probe() {
   local target="$1"
   local phase="$2"
   local restore_tab="${3:-Community Layouts}"
+  local restore_filter="${4:-}"
   cdp eval "$target" "@$JS_DIR/check_controller_tab_persistence.js" \
     --var "PHASE=$phase" \
     --var "DISPLAY_APPID=$displayed_appid" \
     --var "SOURCE_APPID=$source_appid" \
-    --var "RESTORE_TAB=$restore_tab"
+    --var "RESTORE_TAB=$restore_tab" \
+    --var "RESTORE_FILTER=$restore_filter"
 }
 
 original_tab=""
+original_filter=""
 restore_armed=1
+filter_restore_armed=0
 restore_tab() {
   if [[ -n "$original_tab" ]]; then
     probe "Steam Big Picture Mode" "dom-restore" "$original_tab" >/dev/null
   fi
 }
+restore_filter() {
+  if ((filter_restore_armed)) && [[ -n "$original_filter" ]]; then
+    probe "SharedJSContext" "restore-filter" "" "$original_filter" >/dev/null
+  fi
+}
 restore_on_exit() {
   local original_status=$?
   trap - EXIT
+  restore_filter || true
   if ((restore_armed)); then
     restore_tab || true
   fi
@@ -56,6 +66,17 @@ print(label)
 PY
 )"
 query_json="$(probe "SharedJSContext" "query")"
+original_filter="$(python3 - "$query_json" <<'PY'
+import json
+import sys
+
+value = json.loads(sys.argv[1]).get("originalFilter")
+if not isinstance(value, bool):
+    raise SystemExit("FAIL: probe payload missing original visible filter")
+print(str(value).lower())
+PY
+)"
+filter_restore_armed=1
 after_json="$(probe "Steam Big Picture Mode" "dom-observe")"
 
 mkdir -p "$(dirname -- "$evidence")"
@@ -67,6 +88,17 @@ from pathlib import Path
 before, query, after = (json.loads(value) for value in sys.argv[1:4])
 expected_type = int(sys.argv[4])
 evidence = Path(sys.argv[5])
+
+# Keep the bounded, redacted probe payload when a later invariant fails.  The
+# final write below replaces this with a passed summary only after every
+# validation has succeeded, so a diagnostic capture can never be mistaken for
+# a passing smoke result.
+evidence.write_text(json.dumps({
+    "status": "pending-validation",
+    "before": before,
+    "query": query,
+    "after": after,
+}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 
 
 def field(payload, key, label):
@@ -111,32 +143,33 @@ if controller_type != expected_type:
     )
 if field(query, "filterDuringQuery", "query.filterDuringQuery") is not False:
     raise SystemExit("FAIL: direct query did not expose the unfiltered controller setting")
-if field(query, "cacheReplaced", "query.cacheReplaced") is not True:
-    raise SystemExit("FAIL: direct query completion did not replace the displayed cache")
+if field(query, "cacheUpdated", "query.cacheUpdated") is not True:
+    raise SystemExit("FAIL: direct query completion did not update the displayed cache")
 after_getter = field(query, "after", "query.after")
 getter_count = nonnegative(field(after_getter, "getterCount", "query.after.getterCount"), "getterCount")
 hashes = field(after_getter, "urlHashes", "query.after.urlHashes")
 before_hashes = field(field(query, "before", "query.before"), "urlHashes", "query.before.urlHashes")
 if not isinstance(hashes, list) or not all(isinstance(item, str) and item for item in hashes):
     raise SystemExit("FAIL: query after hashes are invalid")
-if not isinstance(before_hashes, list) or not set(before_hashes).issubset(set(hashes)):
+if not isinstance(before_hashes, list):
+    raise SystemExit("FAIL: query before hashes are invalid")
+if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):
     raise SystemExit("FAIL: direct query removed a before-query Community identity")
 if getter_count <= 0 or getter_count != rendered_after:
     raise SystemExit("FAIL: Community getter and rendered counts disagree")
-
-evidence.write_text(json.dumps({
-    "before": before,
-    "query": query,
-    "after": after,
-    "controllerType": controller_type,
-    "expectedControllerType": expected_type,
-    "controllerIndex": controller_index,
-    "renderedBefore": rendered_before,
-    "renderedAfter": rendered_after,
-    "getterCount": getter_count,
-}, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 PY
 
+restore_filter_json="$(probe "SharedJSContext" "restore-filter" "" "$original_filter")"
+python3 - "$restore_filter_json" "$original_filter" <<'PY'
+import json
+import sys
+
+payload = json.loads(sys.argv[1])
+expected = sys.argv[2] == "true"
+if payload.get("restoredFilter") is not expected:
+    raise SystemExit("FAIL: visible controller filter restoration did not restore the original value")
+PY
+filter_restore_armed=0
 restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"
 python3 - "$restore_json" "$original_tab" <<'PY'
 import json
@@ -147,6 +180,27 @@ selected = payload.get("selectedTab")
 label = selected.get("label") if isinstance(selected, dict) else None
 if label != sys.argv[2]:
     raise SystemExit("FAIL: chooser tab restoration did not restore the original tab")
+PY
+python3 - "$evidence" "$restore_filter_json" "$restore_json" "$expected_controller_type" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+evidence = Path(sys.argv[1])
+payload = json.loads(evidence.read_text(encoding="utf-8"))
+before = payload["before"]
+query = payload["query"]
+after = payload["after"]
+payload["status"] = "passed"
+payload["controllerType"] = query["controllerType"]
+payload["expectedControllerType"] = int(sys.argv[4])
+payload["controllerIndex"] = query["controllerIndex"]
+payload["renderedBefore"] = before["renderedCount"]
+payload["renderedAfter"] = after["renderedCount"]
+payload["getterCount"] = query["after"]["getterCount"]
+payload["restoredFilter"] = json.loads(sys.argv[2]).get("restoredFilter")
+payload["restoredTab"] = json.loads(sys.argv[3]).get("selectedTab")
+evidence.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 PY
 restore_armed=0
 trap - EXIT

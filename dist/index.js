@@ -5382,7 +5382,17 @@ const tabIdentity = (id) => {
     const trimmed = id.trim();
     return trimmed ? trimmed : null;
 };
-const tabSignature = (id) => id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
+const tabSignature = (id) => {
+    const normalized = id.toLocaleLowerCase("en-US").replace(/[^a-z]/g, "");
+    if (normalized.endsWith("communitylayouts") || normalized.endsWith("community")) {
+        return "community";
+    }
+    if (normalized.endsWith("templates"))
+        return "templates";
+    if (normalized.endsWith("search"))
+        return "search";
+    return normalized;
+};
 const isRequiredTab = (id) => {
     const signature = tabSignature(id);
     return signature === "communitylayouts"
@@ -5411,17 +5421,22 @@ const chooserTabs = (value) => {
         const tab = asRecord(rawTab);
         const id = tabIdentity(tab?.id);
         const numbers = contentNumbers(tab?.content);
-        if (!id || !numbers || seenIds.has(id))
+        if (!id || seenIds.has(id))
             return null;
-        if (displayedAppid === undefined)
-            displayedAppid = numbers.displayedAppid;
-        if (controllerIndex === undefined)
-            controllerIndex = numbers.controllerIndex;
-        if (displayedAppid !== numbers.displayedAppid || controllerIndex !== numbers.controllerIndex) {
+        const signature = tabSignature(id);
+        if ((signature === "community" || signature === "search") && !numbers)
             return null;
+        if (numbers) {
+            if (displayedAppid === undefined)
+                displayedAppid = numbers.displayedAppid;
+            if (controllerIndex === undefined)
+                controllerIndex = numbers.controllerIndex;
+            if (displayedAppid !== numbers.displayedAppid || controllerIndex !== numbers.controllerIndex) {
+                return null;
+            }
         }
         seenIds.add(id);
-        output.push({ id, ...numbers });
+        output.push({ id });
     }
     if (!displayedAppid || controllerIndex === undefined)
         return null;
@@ -5433,7 +5448,7 @@ const chooserTabs = (value) => {
         if (!signatures.has(required))
             return null;
     }
-    return output;
+    return { tabs: output, displayedAppid, controllerIndex };
 };
 const contextMatchesAffectedChooser = (dependencies, displayedAppid, controllerIndex) => {
     const context = dependencies.resolveContext(displayedAppid);
@@ -5441,20 +5456,6 @@ const contextMatchesAffectedChooser = (dependencies, displayedAppid, controllerI
         validDisplayedAppid(context.matchedSourceAppid) &&
         context.matchedSourceAppid !== displayedAppid &&
         dependencies.resolveControllerType(controllerIndex) === LEGION_GO_S_CONTROLLER_TYPE;
-};
-const resolveControllerChooserKey = (tabs, dependencies) => {
-    try {
-        const parsedTabs = chooserTabs(tabs);
-        if (!parsedTabs?.length)
-            return null;
-        const { displayedAppid, controllerIndex } = parsedTabs[0];
-        return contextMatchesAffectedChooser(dependencies, displayedAppid, controllerIndex)
-            ? { displayedAppid, controllerIndex }
-            : null;
-    }
-    catch (_error) {
-        return null;
-    }
 };
 const callableWritableDescriptor = (descriptor) => !!descriptor &&
     typeof descriptor.value === "function" &&
@@ -5514,11 +5515,18 @@ const renderScope = (propsValue, dependencies) => {
     const props = asRecord(propsValue);
     if (!props || typeof props.onShowTab !== "function")
         return null;
-    const tabs = chooserTabs(props.tabs);
-    const key = resolveControllerChooserKey(props.tabs, dependencies);
-    if (!tabs || !key)
+    const parsedTabs = chooserTabs(props.tabs);
+    if (!parsedTabs || !contextMatchesAffectedChooser(dependencies, parsedTabs.displayedAppid, parsedTabs.controllerIndex))
         return null;
-    return { key, tabs, props, onShowTab: props.onShowTab };
+    return {
+        key: {
+            displayedAppid: parsedTabs.displayedAppid,
+            controllerIndex: parsedTabs.controllerIndex,
+        },
+        tabs: parsedTabs.tabs,
+        props,
+        onShowTab: props.onShowTab,
+    };
 };
 const installControllerTabPersistence = (provided) => {
     const dependencies = {

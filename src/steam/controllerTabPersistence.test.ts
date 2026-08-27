@@ -23,11 +23,12 @@ const chooserTabs = (
   appid = 3213262460,
   controllerIndex = 0,
   includeOfficial = false,
-) => [
-  { id: "templates", content: { props: { appid, controllerIndex } } },
-  ...(includeOfficial ? [{ id: "official", content: { props: { appid, controllerIndex } } }] : []),
-  { id: "community", content: { props: { appid, controllerIndex } } },
-  { id: "search", content: { props: { appid, controllerIndex } } },
+  idPrefix = "",
+): Array<{ id: string; content: { props: Record<string, unknown> } }> => [
+  { id: `${idPrefix}templates`, content: { props: { appid, controllerIndex } } },
+  ...(includeOfficial ? [{ id: `${idPrefix}official`, content: { props: { appid, controllerIndex } } }] : []),
+  { id: `${idPrefix}community`, content: { props: { appid, controllerIndex } } },
+  { id: `${idPrefix}search`, content: { props: { appid, controllerIndex } } },
 ];
 
 const resolverDependencies = (options: {
@@ -97,10 +98,30 @@ describe("resolveControllerChooserKey", () => {
     });
   });
 
+  it("accepts Steam's generated prefix while retaining the exact tab IDs", () => {
+    expect(resolveControllerChooserKey(
+      chooserTabs(3213262460, 0, false, "«r99»"),
+      resolverDependencies(),
+    )).toEqual({ displayedAppid: 3213262460, controllerIndex: 0 });
+  });
+
+  it("derives the chooser key when the static Templates tab has no app context", () => {
+    const tabs = chooserTabs();
+    tabs[0] = { id: "templates", content: { props: {} } };
+    expect(resolveControllerChooserKey(tabs, resolverDependencies())).toEqual({
+      displayedAppid: 3213262460,
+      controllerIndex: 0,
+    });
+  });
+
   it.each([
     ["missing chooser tab", chooserTabs().slice(0, 2), {}],
     ["malformed tab id", [{ id: null, content: { props: { appid: 3213262460, controllerIndex: 0 } } }, ...chooserTabs().slice(1)], {}],
-    ["missing content", [{ id: "templates" }, ...chooserTabs().slice(1)], {}],
+    ["missing Community content", [
+      chooserTabs()[0],
+      { id: "community" },
+      chooserTabs()[2],
+    ], {}],
     ["inconsistent content", [
       ...chooserTabs(),
       { id: "official", content: { props: { appid: 3213262461, controllerIndex: 0 } } },
@@ -147,6 +168,27 @@ describe("discoverControllerTabsTarget", () => {
 });
 
 describe("installControllerTabPersistence", () => {
+  it("preserves a selected generated Steam tab ID across a direct remount", () => {
+    const target = makeTabsModule();
+    const control = installControllerTabPersistence(dependenciesForModule(target.module));
+    const tabs = chooserTabs(3213262460, 0, false, "«r99»");
+    control.ensureInstalled();
+
+    const first = render(target.memo, {
+      tabs,
+      activeTab: "«r99»templates",
+      onShowTab: () => undefined,
+    });
+    (first.props.onShowTab as Function)("«r99»community");
+
+    const remounted = render(target.memo, {
+      tabs: [...tabs, { id: "«r99»user", content: { props: { appid: 3213262460, controllerIndex: 0 } } }],
+      activeTab: "«r99»user",
+      onShowTab: () => undefined,
+    });
+    expect(remounted.props.activeTab).toBe("«r99»community");
+  });
+
   it("records a selected available tab, preserves callback semantics, and restores it after a native reset", () => {
     const target = makeTabsModule();
     const control = installControllerTabPersistence(dependenciesForModule(target.module));

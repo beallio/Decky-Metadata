@@ -65,10 +65,12 @@ matched real behavior so far but is not identical input.
 ## Controller chooser tab persistence
 
 The standalone controller chooser smoke proves the Show All requery without
-selecting, previewing, applying, exporting, or saving a layout. It intentionally
+selecting, previewing, applying, exporting, or saving a layout. It first proves
+that the chooser's active store app ID is the requested matched shortcut, then
 sets only the in-memory controller-type filter while it issues the same bounded
-direct input query as the chooser, then restores that filter and the tab that
-was active before the smoke. It does populate Steam's temporary controller
+direct input query as the chooser. The filter remains false through the
+post-query DOM snapshot; cleanup restores it and the tab that was active before
+the smoke, even after a failure. It does populate Steam's temporary controller
 configuration cache, so obtain explicit approval for the **current** device and
 start on the current matched shortcut's controller chooser route.
 
@@ -88,15 +90,18 @@ DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
 
 It fails when Community is not selected before and after the direct query, the
 chooser signature changes, Community rows are empty, the getter and rendered
-counts disagree, a pre-query identity disappears, the observed controller type
-does not equal the required positional argument (`102` for Legion Go S, `4` for
-Steam Deck), or the original tab cannot be restored. The query phase waits for
-the displayed cache entry to be replaced; the Big Picture phases require the
-chooser tab/list state to settle before each snapshot. The JSON evidence
-contains only app IDs, controller index/type, filter booleans, selected tab
-labels/IDs, counts, elapsed time, and hashed identities. It is intentionally not
-part of `run_all.sh`: semantic fixtures do not establish the required live route
-and tab. Close the dedicated tunnels after capture.
+counts disagree, the observed controller type does not equal the required
+positional argument (`102` for Legion Go S, `4` for Steam Deck), or the original
+tab cannot be restored. The query phase accepts either replacement of Steam's
+displayed cache entry or a detected in-place observable mutation; Steam currently
+uses the latter on both verified hosts. For type `102`, it also requires every
+pre-query hash to remain present after the query. Type `4` reports its native
+hashes but does not assume that its differently filtered result set is monotonic.
+The Big Picture phases require the chooser tab/list state to settle before each
+snapshot. The JSON evidence contains only app IDs, controller index/type, filter
+booleans, selected tab labels/IDs, counts, elapsed time, and hashed identities.
+It is intentionally not part of `run_all.sh`: semantic fixtures do not establish
+the required live route and tab. Close the dedicated tunnels after capture.
 
 ## Controller navigation & initial focus
 
