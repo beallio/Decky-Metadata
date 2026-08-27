@@ -26,6 +26,7 @@ const backend = vi.hoisted(() => ({
 const steam = vi.hoisted(() => ({
   metadataCache: {} as Record<string, unknown>,
   refreshMetadataCache: vi.fn(),
+  getConnectedControllerTypes: vi.fn(),
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
@@ -106,6 +107,9 @@ const children = (node: any): any[] => {
 const updateSection = (tree: any) =>
   children(tree).find((node) => node.type === "PluginUpdateSection");
 
+const versionsSection = (tree: any) =>
+  children(tree).find((node) => node.type === "VersionsSection");
+
 const runEffects = () => {
   for (const effect of [...harness.effects]) effect();
 };
@@ -131,6 +135,7 @@ describe("Content update settings", () => {
 
   it("falls back to defaults and marks settings loaded after a failed envelope", async () => {
     backend.getUpdateSettings.mockResolvedValue({ status: "failed" });
+    steam.getConnectedControllerTypes.mockReturnValue([4, 102]);
     render();
     runEffects();
     await flushPromises();
@@ -139,6 +144,7 @@ describe("Content update settings", () => {
     expect(section.props.updateChannel).toBe("stable");
     expect(section.props.automaticUpdateChecks).toBe(true);
     expect(section.props.settingsLoaded).toBe(true);
+    expect(versionsSection(render()).props.controllerTypes).toEqual([4, 102]);
   });
 
   it("rolls both optimistic toggles back after failed or skipped saves", async () => {

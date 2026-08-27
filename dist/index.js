@@ -950,8 +950,132 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
                             : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases." }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: "View Release Notes" }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: "Check now" })] }) }) })] }));
 }
 
-function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, }) {
-    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] })] }) }) }) }));
+const STEAM_DECK_CONTROLLER_TYPE = 4;
+const LEGION_GO_S_CONTROLLER_TYPE = 102;
+const AFFLICTED_CONTROLLER_TYPES = new Set([
+    LEGION_GO_S_CONTROLLER_TYPE,
+]);
+const validControllerIndex = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const validControllerType = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const readControllerStore = (internals) => {
+    try {
+        const boundary = internals ?? globalThis;
+        const upper = boundary.ControllerStore;
+        if (upper && typeof upper.GetControllers === "function")
+            return upper;
+        const lower = boundary.controllerStore;
+        if (lower && typeof lower.GetControllers === "function")
+            return lower;
+        return null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllers = (store) => {
+    try {
+        if (!store)
+            return null;
+        const getControllers = store.GetControllers;
+        if (typeof getControllers !== "function")
+            return null;
+        const value = getControllers.call(store);
+        return Array.isArray(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllerType = (record) => {
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.eControllerType;
+        return validControllerType(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllerIndex = (record) => {
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.nControllerIndex;
+        return validControllerIndex(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
+    for (const record of rawControllers) {
+        const index = extractControllerIndex(record);
+        if (index === null || index !== controllerIndex)
+            continue;
+        return extractControllerType(record);
+    }
+    return null;
+};
+const controllerTypeForIndex = (controllerIndex, internals) => {
+    try {
+        if (!validControllerIndex(controllerIndex))
+            return null;
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return null;
+        return readControllerTypeAtIndex(controllerIndex, controllers);
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const getConnectedControllerTypes = (internals) => {
+    try {
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return [];
+        const values = new Set();
+        for (const record of controllers) {
+            const type = extractControllerType(record);
+            if (type === null)
+                continue;
+            values.add(type);
+        }
+        return Array.from(values).sort((left, right) => left - right);
+    }
+    catch (_error) {
+        return [];
+    }
+};
+const sourceFilterForControllerType = (controllerType, requestedFilter) => {
+    if (!requestedFilter)
+        return false;
+    if (controllerType === null)
+        return requestedFilter;
+    return !AFFLICTED_CONTROLLER_TYPES.has(controllerType) && requestedFilter;
+};
+const KNOWN_CONTROLLER_TYPES = new Map([
+    [STEAM_DECK_CONTROLLER_TYPE, "Steam Deck"],
+    [LEGION_GO_S_CONTROLLER_TYPE, "Legion Go S"],
+]);
+const formatConnectedControllerTypes = (types) => {
+    if (!Array.isArray(types))
+        return "Unknown";
+    const sorted = Array.from(new Set(types.filter(validControllerType)))
+        .sort((left, right) => left - right);
+    if (sorted.length === 0)
+        return "Unknown";
+    const labels = [];
+    for (const type of sorted) {
+        const label = KNOWN_CONTROLLER_TYPES.get(type);
+        labels.push(label === undefined ? `Type ${type}` : `${label} (${type})`);
+    }
+    return labels.join(", ");
+};
+
+function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
+    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Controller Types: ", formatConnectedControllerTypes(controllerTypes)] })] }) }) }) }));
 }
 
 let verbose = false;
@@ -5427,14 +5551,13 @@ const errorDetail = (error) => {
     return typeof error;
 };
 const validAppid = (value) => typeof value === "number" && Number.isFinite(value) && value > 0;
-const supplementalQueryKey = (sourceAppid, args) => {
-    const controllerIndex = args[1];
-    const filterOtherControllerTypes = args[2];
-    if (!Number.isInteger(controllerIndex) ||
-        controllerIndex < 0 ||
-        typeof filterOtherControllerTypes !== "boolean") {
+const parseControllerIndex = (value) => {
+    if (!Number.isInteger(value) || value < 0)
         return null;
-    }
+    return value;
+};
+const parseFilter = (value) => typeof value === "boolean" ? value : null;
+const supplementalQueryKey = (sourceAppid, controllerIndex, filterOtherControllerTypes) => {
     return {
         sourceAppid,
         controllerIndex: controllerIndex,
@@ -5455,13 +5578,16 @@ const defaultSchedule = (callback, delayMs) => globalThis.setTimeout(callback, d
 const defaultCancel = (handle) => globalThis.clearTimeout(handle);
 const installControllerLayouts = (unpatchers, provided) => {
     const dependencies = {
-        discoverTargets: discoverControllerLayoutTargets,
-        schedule: defaultSchedule,
-        cancel: defaultCancel,
-        defineProperty: Object.defineProperty,
-        maxAttempts: 240,
-        retryDelayMs: 500,
-        ...provided,
+        discoverTargets: provided.discoverTargets ?? discoverControllerLayoutTargets,
+        resolveContext: provided.resolveContext,
+        resolveControllerType: provided.resolveControllerType ?? controllerTypeForIndex,
+        reportFailure: provided.reportFailure,
+        notify: provided.notify,
+        schedule: provided.schedule ?? defaultSchedule,
+        cancel: provided.cancel ?? defaultCancel,
+        defineProperty: provided.defineProperty ?? Object.defineProperty,
+        maxAttempts: provided.maxAttempts ?? 240,
+        retryDelayMs: provided.retryDelayMs ?? 500,
     };
     let disabled = false;
     let installed = false;
@@ -5536,10 +5662,25 @@ const installControllerLayouts = (unpatchers, provided) => {
                     return nativeResult;
                 context = resolveDisplayedContext(displayedAppid);
                 if (!context.isNonSteamShortcut || context.matchedSourceAppid === null) {
+                    supplementalSourceAppids.delete(validDisplayedAppid);
+                    supplementalQueryKeys.delete(validDisplayedAppid);
                     return nativeResult;
                 }
                 const matchedAppid = context.matchedSourceAppid;
-                const queryKey = supplementalQueryKey(matchedAppid, args);
+                const controllerIndex = parseControllerIndex(args[1]);
+                const requestedFilter = parseFilter(args[2]);
+                if (controllerIndex === null || requestedFilter === null) {
+                    trip({
+                        section: "query",
+                        code: "invalid-query-key",
+                        displayedAppid: validDisplayedAppid,
+                        matchedAppid,
+                    });
+                    return nativeResult;
+                }
+                const resolvedType = dependencies.resolveControllerType(controllerIndex);
+                const effectiveSourceFilter = sourceFilterForControllerType(resolvedType, requestedFilter);
+                const queryKey = supplementalQueryKey(matchedAppid, controllerIndex, effectiveSourceFilter);
                 if (!queryKey) {
                     trip({
                         section: "query",
@@ -5556,7 +5697,8 @@ const installControllerLayouts = (unpatchers, provided) => {
                     return nativeResult;
                 }
                 targets.store.m_mapAppConfigs.set(matchedAppid, []);
-                originalQuery.apply(this, [matchedAppid, ...args.slice(1)]);
+                const sourceQuery = [matchedAppid, controllerIndex, effectiveSourceFilter, ...args.slice(3)];
+                originalQuery.apply(this, sourceQuery);
                 supplementalQueryKeys.set(matchedAppid, queryKey);
                 supplementalSourceAppids.add(matchedAppid);
             }
@@ -6007,6 +6149,7 @@ const Content = () => {
     const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
     const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
     const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
+    const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -6091,6 +6234,9 @@ const Content = () => {
         return () => {
             cancelled = true;
         };
+    }, []);
+    SP_REACT.useEffect(() => {
+        setControllerTypes(getConnectedControllerTypes());
     }, []);
     SP_REACT.useEffect(() => {
         let cancelled = false;
@@ -6281,7 +6427,7 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*

@@ -34,7 +34,20 @@
     : null;
   if (!controller) throw new Error("no connected controller");
   const controllerIndex = controller.nControllerIndex;
-  const controllerType = controller.eControllerType;
+  let controllerType;
+  let filterOtherControllerTypes;
+  try {
+    controllerType = controller.eControllerType;
+    filterOtherControllerTypes = controllerConfiguratorStore.m_bFilterOtherControllerTypes;
+  } catch (_error) {
+    throw new Error("controller diagnostics unavailable");
+  }
+  if (!Number.isInteger(controllerType) || controllerType < 0) {
+    throw new Error("controller type unavailable");
+  }
+  if (typeof filterOtherControllerTypes !== "boolean") {
+    throw new Error("controller filter unavailable");
+  }
 
   const hashUrl = (value) => {
     let hash = 2166136261;
@@ -249,6 +262,8 @@
     displayedAppid,
     sourceAppid: sourceCompared ? sourceAppid : null,
     sourceCompared,
+    controllerType,
+    filterOtherControllerTypes,
     controllerIndex,
     elapsedMs: firstQuery.elapsedMs,
     displayed: firstQuery.layouts,
@@ -257,6 +272,7 @@
       displayedAppid: secondDisplayedAppid,
       sourceAppid: secondSourceAppid,
       sourceCompared: true,
+      filterOtherControllerTypes,
       controllerIndex,
       elapsedMs: secondQuery.elapsedMs,
       displayed: secondQuery.layouts,
@@ -266,6 +282,7 @@
       displayedAppid: thirdDisplayedAppid,
       sourceAppid: null,
       sourceCompared: false,
+      filterOtherControllerTypes,
       controllerIndex,
       elapsedMs: thirdQuery.elapsedMs,
       displayed: thirdQuery.layouts,

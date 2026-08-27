@@ -20,7 +20,7 @@ Want to try changes before the next stable release? The rolling [`dev-build` pre
 
 Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
 
-From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions.
+From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions. The Versions panel also reports connected controller types (for example `Steam Deck (4)` and `Legion Go S (102)`), which helps confirm whether Legion Go S-compatible layouts are expected to appear.
 
 ## Edit metadata from a game's menu
 
@@ -47,6 +47,8 @@ Matched shortcuts can show content from the Steam game's Community page. If Stea
 ## Use layouts from the matched Steam game
 
 Controller Settings can include recommended, official, and community layouts from the matching Steam game. Your shortcut's personal layouts and Steam's general templates stay available, and you still preview and choose layouts through Steam's normal controls.
+
+For the verified Legion Go S integrated controller (type `102`), compatible matched-game layouts remain available while Steam's normal visible controller-type filter stays enabled. Other controller types keep Steam's requested source filter.
 
 On a non-Steam shortcut, Search shows only that game's layouts and its matched Steam game's layouts, and nothing from unrelated games.
 

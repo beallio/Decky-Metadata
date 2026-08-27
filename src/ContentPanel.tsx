@@ -42,6 +42,7 @@ import {
   resolveSavedUpdateSettings,
 } from "./updater/updateSettings";
 import { useNonSteamGames } from "./useNonSteamGames";
+import { getConnectedControllerTypes } from "./steam";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -148,6 +149,7 @@ export const Content = () => {
     useState<UpdateChannel>("stable");
   const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -237,6 +239,10 @@ export const Content = () => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    setControllerTypes(getConnectedControllerTypes());
   }, []);
 
   useEffect(() => {
@@ -483,6 +489,7 @@ export const Content = () => {
         pluginVersion={pluginVersion}
         deckyVersion={deckyVersion}
         steamosVersion={steamosVersion}
+        controllerTypes={controllerTypes}
       />
     </Focusable>
   );

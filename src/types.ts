@@ -191,12 +191,25 @@ export type SteamInternals = {
   g_PartnerEventStore?: NativePartnerEventStore;
   g_PartnerEventSummaryStore?: NativePartnerEventStore;
   controllerConfiguratorStore?: ControllerConfiguratorStoreBoundary;
+  ControllerStore?: SteamControllerStoreBoundary;
+  controllerStore?: SteamControllerStoreBoundary;
   [key: string]: unknown;
 };
 
 /** Minimal Steam Input bridge used to request controller configuration data. */
 export type SteamInputBoundary = {
   QueryControllerConfigsForApp?: (...args: unknown[]) => unknown;
+};
+
+export type SteamControllerStoreBoundary = {
+  GetControllers?: (() => unknown) | undefined;
+  [key: string]: unknown;
+};
+
+export type SteamControllerRecord = {
+  nControllerIndex: unknown;
+  eControllerType: unknown;
+  eControllerStyle?: unknown;
 };
 
 /** Minimal controller-configurator store surface used for supplemental reads. */
