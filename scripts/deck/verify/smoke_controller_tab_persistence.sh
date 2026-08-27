@@ -169,7 +169,7 @@ if not isinstance(before_hashes, list):
     raise SystemExit("FAIL: query before hashes are invalid")
 if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):
     raise SystemExit("FAIL: direct query removed a before-query Community identity")
-if getter_count <= 0 or getter_count != rendered_after:
+if getter_count <= 0 or rendered_after > getter_count:
     raise SystemExit("FAIL: Community getter and rendered counts disagree")
 PY
 
@@ -214,6 +214,9 @@ payload["controllerIndex"] = query["controllerIndex"]
 payload["renderedBefore"] = before["renderedCount"]
 payload["renderedAfter"] = after["renderedCount"]
 payload["getterCount"] = query["after"]["getterCount"]
+payload["renderCoverage"] = (
+    "complete" if payload["renderedAfter"] == payload["getterCount"] else "virtualized"
+)
 payload["restoredFilter"] = json.loads(sys.argv[2]).get("restoredFilter")
 payload["restoredTab"] = json.loads(sys.argv[3]).get("selectedTab")
 evidence.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")

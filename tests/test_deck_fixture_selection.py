@@ -93,6 +93,8 @@ def _assert_controller_tab_smoke_contract(smoke: str) -> None:
     assert "query.resultSettled" in smoke
     assert "restorationQueryIssued" in smoke
     assert "if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):" in smoke
+    assert "rendered_after > getter_count" in smoke
+    assert 'payload["renderCoverage"] = (' in smoke
     capture_filter = 'capture_filter_json="$(probe "SharedJSContext" "capture-filter")"'
     assert capture_filter in smoke
     assert smoke.index(capture_filter) < smoke.index('query_json="$(probe "SharedJSContext" "query")"')
@@ -674,15 +676,44 @@ elif phase == "dom-select":
     print(json.dumps({
         "originalSelectedTab": {"label": "Your Layouts"},
         "selectedTab": {"label": "Community Layouts"},
-        "tabs": [],
+        "tabs": [
+            {"label": "Templates"},
+            {"label": "Community Layouts"},
+            {"label": "Search"},
+        ],
         "renderedCount": 1,
     }))
 elif phase == "query":
     filter_state.write_text("false")
-    raise SystemExit("query transport failed")
+    if os.environ.get("FAKE_CDP_MODE") != "success":
+        raise SystemExit("query transport failed")
+    getter_count = int(os.environ.get("FAKE_GETTER_COUNT", "52"))
+    before_hashes = [f"before-{index}" for index in range(15)]
+    hashes = before_hashes + [f"after-{index}" for index in range(max(0, getter_count - 15))]
+    print(json.dumps({
+        "controllerType": int(os.environ.get("FAKE_CONTROLLER_TYPE", "4")),
+        "controllerIndex": 0,
+        "filterDuringQuery": False,
+        "resultSettled": True,
+        "before": {"getterCount": len(before_hashes), "urlHashes": before_hashes},
+        "after": {"getterCount": getter_count, "urlHashes": hashes},
+    }))
+elif phase == "dom-observe":
+    print(json.dumps({
+        "selectedTab": {"label": os.environ.get("FAKE_AFTER_TAB", "Community Layouts")},
+        "tabs": [
+            {"label": "Templates"},
+            {"label": "Community Layouts"},
+            {"label": "Search"},
+        ],
+        "renderedCount": int(os.environ.get("FAKE_RENDERED_AFTER", "24")),
+    }))
 elif phase == "restore-filter":
     filter_state.write_text(variables["RESTORE_FILTER"])
-    print(json.dumps({"restoredFilter": variables["RESTORE_FILTER"] == "true"}))
+    print(json.dumps({
+        "restoredFilter": variables["RESTORE_FILTER"] == "true",
+        "restorationQueryIssued": True,
+    }))
 elif phase == "dom-restore":
     print(json.dumps({"selectedTab": {"label": variables["RESTORE_TAB"]}}))
 else:
@@ -766,3 +797,97 @@ def test_controller_tab_smoke_contract_rejects_early_pass_before_tab_restoration
 
     with pytest.raises(AssertionError):
         _assert_controller_tab_smoke_contract(smoke.replace(restore, "", 1))
+
+
+def _run_controller_tab_smoke_with_virtualized_fixture(
+    tmp_path: Path,
+    evidence: Path,
+    *,
+    after_tab: str = "Community Layouts",
+    rendered_after: int = 24,
+    getter_count: int = 52,
+    strict_count_equality: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    smoke = _write_controller_tab_smoke_fixture(tmp_path)
+    if strict_count_equality:
+        source = smoke.read_text(encoding="utf-8")
+        smoke.write_text(
+            source.replace("rendered_after > getter_count", "getter_count != rendered_after", 1),
+            encoding="utf-8",
+        )
+    log = tmp_path / "virtualized-cdp.log"
+    filter_state = tmp_path / "virtualized-filter-state"
+    filter_state.write_text("true")
+    return subprocess.run(
+        ["bash", str(smoke), "2155012430", "55150", "4", str(evidence)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+        env={
+            **os.environ,
+            "FAKE_CDP_LOG": str(log),
+            "FAKE_CDP_MODE": "success",
+            "FAKE_FILTER_STATE": str(filter_state),
+            "FAKE_AFTER_TAB": after_tab,
+            "FAKE_RENDERED_AFTER": str(rendered_after),
+            "FAKE_GETTER_COUNT": str(getter_count),
+            "FAKE_CONTROLLER_TYPE": "4",
+        },
+    )
+
+
+def test_controller_tab_smoke_accepts_virtualized_steam_deck_community_rows(tmp_path: Path):
+    evidence = _controller_tab_smoke_evidence_path(tmp_path)
+
+    completed = _run_controller_tab_smoke_with_virtualized_fixture(tmp_path, evidence)
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(evidence.read_text())
+    assert payload["status"] == "passed"
+    assert payload["getterCount"] == 52
+    assert payload["renderedAfter"] == 24
+    assert payload["renderCoverage"] == "virtualized"
+
+
+@pytest.mark.parametrize(
+    ("after_tab", "rendered_after", "getter_count", "failure"),
+    [
+        ("Your Layouts", 24, 52, "active tab changes unexpectedly"),
+        ("Community Layouts", 0, 52, "Community rows are empty"),
+        ("Community Layouts", 53, 52, "Community getter and rendered counts disagree"),
+    ],
+)
+def test_controller_tab_smoke_rejects_invalid_virtualized_community_evidence(
+    tmp_path: Path,
+    after_tab: str,
+    rendered_after: int,
+    getter_count: int,
+    failure: str,
+):
+    evidence = _controller_tab_smoke_evidence_path(tmp_path)
+
+    completed = _run_controller_tab_smoke_with_virtualized_fixture(
+        tmp_path,
+        evidence,
+        after_tab=after_tab,
+        rendered_after=rendered_after,
+        getter_count=getter_count,
+    )
+
+    assert completed.returncode != 0
+    assert failure in completed.stderr
+    assert json.loads(evidence.read_text())["status"] == "pending-validation"
+
+
+def test_controller_tab_smoke_virtualized_fixture_rejects_strict_count_equality(tmp_path: Path):
+    evidence = _controller_tab_smoke_evidence_path(tmp_path)
+
+    completed = _run_controller_tab_smoke_with_virtualized_fixture(
+        tmp_path,
+        evidence,
+        strict_count_equality=True,
+    )
+
+    assert completed.returncode != 0
+    assert "Community getter and rendered counts disagree" in completed.stderr
