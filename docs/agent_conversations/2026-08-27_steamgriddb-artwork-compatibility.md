@@ -105,6 +105,9 @@ equal hash sets. No artwork was written or reapplied.
   controller types/platforms, the stale delisted fixture, and issue #5's
   release status remain unverified. Issue #5 remains open.
 
+The dedicated CDP tunnel on port 18085 was closed after capture; its final
+status was `down`.
+
 The plan refers to `references/verification-standards.md`; that file was not
 present in this checkout. Its stated failure-first, producer-preserving rules
 were followed and the missing reference is recorded here rather than recreated
