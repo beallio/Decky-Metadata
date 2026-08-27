@@ -4,16 +4,18 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Controller layout sourcing now preserves behavior on Steam Deck while enabling compatible Legions.
+## [0.3.7] - 2026-08-27
+
+Community controller layouts now work correctly on Legion Go S
 
 ### Fixed
 
-- Matched Community layouts now remain available on Legion Go S controller type `102` while Steam's visible filter stays unchanged.
-- Show All now preserves the currently available controller-layout chooser tab on verified Legion Go S type `102`, without changing Steam Deck or native chooser behavior.
+- Matched non-Steam games on Legion Go S now show compatible Community layouts instead of appearing empty, while Steam's normal visible controller filter remains intact.
+- Choosing Show All Layouts now keeps you on the controller-layout tab you were viewing instead of jumping back to Your Layouts.
 
 ### Added
 
-- Quick Access Menu version diagnostics now include connected controller types (for example `Steam Deck (4)` and `Legion Go S (102)`), which can indicate whether a type-specific layout policy is active.
+- The Quick Access Menu Versions panel now shows the connected controller type, making device-specific layout behavior easier to understand and troubleshoot.
 
 ## [0.3.6] - 2026-08-07
 
