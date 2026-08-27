@@ -157,8 +157,8 @@ if controller_type != expected_type:
     )
 if field(query, "filterDuringQuery", "query.filterDuringQuery") is not False:
     raise SystemExit("FAIL: direct query did not expose the unfiltered controller setting")
-if field(query, "cacheUpdated", "query.cacheUpdated") is not True:
-    raise SystemExit("FAIL: direct query completion did not update the displayed cache")
+if field(query, "resultSettled", "query.resultSettled") is not True:
+    raise SystemExit("FAIL: direct query result did not settle")
 after_getter = field(query, "after", "query.after")
 getter_count = nonnegative(field(after_getter, "getterCount", "query.after.getterCount"), "getterCount")
 hashes = field(after_getter, "urlHashes", "query.after.urlHashes")
@@ -182,6 +182,8 @@ payload = json.loads(sys.argv[1])
 expected = sys.argv[2] == "true"
 if payload.get("restoredFilter") is not expected:
     raise SystemExit("FAIL: visible controller filter restoration did not restore the original value")
+if payload.get("restorationQueryIssued") is not True:
+    raise SystemExit("FAIL: visible controller filter restoration did not refresh the chooser result")
 PY
 filter_restore_armed=0
 restore_json="$(probe "Steam Big Picture Mode" "dom-restore" "$original_tab")"

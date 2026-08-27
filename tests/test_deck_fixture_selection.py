@@ -75,10 +75,10 @@ def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
         assert required in queried
     assert "return { getterCount: identities.length, urlHashes: identities.map(hash) };" in probe
     assert "cacheEntryFingerprint(cacheAfterQuery)" in probe
-    assert "controller query cache update timed out" in probe
     assert "controller query result did not settle" in probe
     assert "expectedExpandedResult" in probe
     assert "candidate.getterCount > before.getterCount" in probe
+    assert "resultSettled: true" in probe
     assert "if (stableSamples >= 3) {\n          after = candidate;" in probe
     assert "chooser remount did not settle" in probe
     for forbidden in ("identities:", "URL:", "title:", "account"):
@@ -90,7 +90,8 @@ def _assert_controller_tab_smoke_contract(smoke: str) -> None:
     assert "expected type must be a non-negative integer" in smoke
     assert "if controller_type != expected_type:" in smoke
     assert "expectedControllerType" in smoke
-    assert "query.cacheUpdated" in smoke
+    assert "query.resultSettled" in smoke
+    assert "restorationQueryIssued" in smoke
     assert "if controller_type == 102 and not set(before_hashes).issubset(set(hashes)):" in smoke
     capture_filter = 'capture_filter_json="$(probe "SharedJSContext" "capture-filter")"'
     assert capture_filter in smoke
@@ -410,7 +411,55 @@ def test_controller_tab_query_probe_waits_for_delayed_cache_replacement_and_time
     short_timeout = probe.replace("const deadline = Date.now() + 15000;", "const deadline = Date.now() + 50;")
     missing = _run_controller_tab_query_probe(short_timeout, replacement_delay_ms=None)
     assert missing.returncode != 0
-    assert "controller query cache update timed out" in missing.stderr
+    assert "controller query result did not settle" in missing.stderr
+
+
+def test_controller_tab_query_probe_accepts_an_expanded_result_when_steam_keeps_cache_identity():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_controller_tab_persistence.js").read_text()
+    source = (
+        probe.replace('"__PHASE__"', '"query"')
+        .replace('"__DISPLAY_APPID__"', '"3213262460"')
+        .replace('"__SOURCE_APPID__"', '"55150"')
+        .replace("const deadline = Date.now() + 15000;", "const deadline = Date.now() + 1000;")
+    )
+    runner = f"""
+const entry = {{ generation: 1 }};
+let records = [{{ URL: "layout://one" }}];
+globalThis.controllerConfiguratorStore = {{
+  m_bFilterOtherControllerTypes: true,
+  m_appId: 3213262460,
+  m_lastValidAppId: 3213262460,
+  BConfigurationQueryInFlight: false,
+  m_mapAppConfigs: {{ get: () => entry }},
+  GetWorkshopConfigsForApp: () => records,
+}};
+globalThis.ControllerStore = {{
+  GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
+}};
+globalThis.SteamClient = {{ Input: {{
+  QueryControllerConfigsForApp: () => {{
+    setTimeout(() => {{ records = [{{ URL: "layout://one" }}, {{ URL: "layout://two" }}]; }}, 75);
+  }},
+}} }};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    completed = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["cacheUpdated"] is False
+    assert payload["resultSettled"] is True
+    assert payload["after"]["getterCount"] == 2
 
 
 def test_controller_tab_query_probe_accepts_a_delayed_in_place_cache_mutation():
@@ -520,8 +569,21 @@ def test_controller_tab_filter_restore_probe_restores_the_original_visible_filte
         .replace('"__RESTORE_FILTER__"', '"false"')
     )
     runner = f"""
-globalThis.controllerConfiguratorStore = {{ m_bFilterOtherControllerTypes: true }};
-{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+const calls = [];
+globalThis.controllerConfiguratorStore = {{
+  m_bFilterOtherControllerTypes: true,
+  GetWorkshopConfigsForApp: () => [],
+}};
+globalThis.ControllerStore = {{
+  GetControllers: () => [{{ nControllerIndex: 0, eControllerType: 102 }}],
+}};
+globalThis.SteamClient = {{ Input: {{
+  QueryControllerConfigsForApp: (...args) => calls.push(args),
+}} }};
+{source}.then((payload) => process.stdout.write(JSON.stringify({{
+  payload: JSON.parse(payload),
+  calls,
+}}))).catch((error) => {{
   process.stderr.write(String(error.message));
   process.exit(1);
 }});
@@ -534,7 +596,12 @@ globalThis.controllerConfiguratorStore = {{ m_bFilterOtherControllerTypes: true 
         timeout=3,
     )
     assert restored.returncode == 0, restored.stderr
-    assert json.loads(restored.stdout)["restoredFilter"] is False
+    result = json.loads(restored.stdout)
+    payload = result["payload"]
+    assert payload["restoredFilter"] is False
+    assert payload["restorationQueryIssued"] is True
+    assert payload["controllerIndex"] == 0
+    assert result["calls"] == [[3213262460, 0, False]]
 
 
 def test_controller_tab_filter_capture_probe_reads_the_original_visible_filter_without_querying():

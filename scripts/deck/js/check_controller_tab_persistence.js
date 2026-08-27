@@ -120,14 +120,49 @@
       throw new Error("invalid controller filter restoration value");
     }
     const store = globalThis.controllerConfiguratorStore;
-    if (!store || typeof store.m_bFilterOtherControllerTypes !== "boolean") {
-      throw new Error("visible controller filter unavailable");
+    const input = globalThis.SteamClient?.Input;
+    const controllerStore = typeof globalThis.ControllerStore?.GetControllers === "function"
+      ? globalThis.ControllerStore
+      : globalThis.controllerStore;
+    const controller = controllerStore?.GetControllers?.()
+      ?.find((item) => Number.isInteger(item?.nControllerIndex));
+    if (!store || typeof store.m_bFilterOtherControllerTypes !== "boolean" ||
+        typeof input?.QueryControllerConfigsForApp !== "function" ||
+        !Number.isInteger(controller?.nControllerIndex) ||
+        typeof store.GetWorkshopConfigsForApp !== "function") {
+      throw new Error("controller filter restoration dependencies unavailable");
     }
     store.m_bFilterOtherControllerTypes = requested === "true";
+    input.QueryControllerConfigsForApp(
+      displayedAppid,
+      controller.nControllerIndex,
+      store.m_bFilterOtherControllerTypes,
+    );
+    const controllerType = controller.eControllerType;
+    let previous = null;
+    let stableSamples = 0;
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      const records = store.GetWorkshopConfigsForApp(displayedAppid, controllerType);
+      if (!Array.isArray(records)) {
+        throw new Error("controller filter restoration getter unavailable");
+      }
+      const signature = JSON.stringify(records.map((record) => record?.URL));
+      stableSamples = signature === previous ? stableSamples + 1 : 1;
+      previous = signature;
+      if (stableSamples >= 3) break;
+      await pause(100);
+    }
+    if (stableSamples < 3) {
+      throw new Error("controller filter restoration query did not settle");
+    }
     return JSON.stringify({
       displayedAppid,
       sourceAppid,
       restoredFilter: store.m_bFilterOtherControllerTypes,
+      restorationQueryIssued: true,
+      controllerIndex: controller.nControllerIndex,
+      stableSamples,
     });
   }
 
@@ -224,7 +259,7 @@
         getterCount: candidate.getterCount,
         urlHashes: candidate.urlHashes,
       });
-      if (cacheUpdated && store.BConfigurationQueryInFlight !== true && expectedExpandedResult) {
+      if (store.BConfigurationQueryInFlight !== true && expectedExpandedResult) {
         stableSamples = resultSignature === previousResultSignature ? stableSamples + 1 : 1;
         previousResultSignature = resultSignature;
         if (stableSamples >= 3) {
@@ -237,7 +272,6 @@
       }
       await pause(100);
     }
-    if (!cacheUpdated) throw new Error("controller query cache update timed out");
     if (store.BConfigurationQueryInFlight === true) throw new Error("controller query timed out");
     if (!after) throw new Error("controller query result did not settle");
     completed = true;
@@ -254,6 +288,7 @@
       cacheReplaced,
       cacheMutated,
       cacheUpdated,
+      resultSettled: true,
       stableSamples,
       elapsedMs: Date.now() - startedAt,
     });

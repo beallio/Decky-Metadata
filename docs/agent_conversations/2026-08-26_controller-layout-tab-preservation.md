@@ -263,3 +263,64 @@ complete them, start each named shortcut on its controller chooser route, then
 rerun the exact smoke commands above; they must report the corrected commit's
 Community-before/after and restoration evidence before this review round can be
 marked complete.
+
+## Review-04 verifier correction and current-device evidence (2026-08-27)
+
+- The first review-04 typed-smoke attempts reached the direct query on both
+  devices but failed with `controller query cache update timed out`. A bounded,
+  state-restoring diagnostic showed why this was a verifier false negative:
+  Legion type `102` expanded the Community getter from `15` to `52` within
+  `206 ms` and held three stable samples, while the displayed and matched-source
+  cache object fingerprints legitimately remained unchanged. The verifier now
+  considers the queried result settled when its expanded getter/hash result is
+  stable; cache replacement/mutation remains diagnostic-only metadata.
+- The repair has a dedicated red/green test for a Steam query that changes the
+  getter while retaining cache identity. The previous predicate fails with the
+  named cache-update timeout; the corrected one returns
+  `resultSettled: true` with `cacheUpdated: false`.
+- A Steam Deck failure-path inspection found a second verifier-only side effect:
+  assigning the original visible filter without a matching query left the
+  chooser pane temporarily blank. `restore-filter` now reissues the original
+  direct query, waits for three stable getter samples, and reports
+  `restorationQueryIssued`. Its focused regression verifies both the restored
+  boolean and exact query arguments.
+- The corrected Legion smoke passed against `3213262460` / source `55150` /
+  type `102`. Community remained selected across the query, the getter and DOM
+  both expanded from `15` to `52`, all `15` before-query hashes remained in the
+  `52` after-query hashes, and the original `true` filter plus Community tab
+  were restored. Evidence is
+  `/tmp/Decky-Metadata/controller-layout-tab-preservation/review-04-legos.json`;
+  screenshots are `review-04-legos-before-corrected-smoke.png` and
+  `review-04-legos-after-corrected-smoke.png` in the same directory.
+- The Steam Deck query path is also healthy: it changed the getter from `33` to
+  `52` at type `4`, held three stable samples, and restored the visible filter.
+  Its current Steam UI virtualizes Community cards: the safe DOM probe found
+  `24` mounted layout panels and no `Focusable` marker while the getter reported
+  `33` filtered records; a no-query screenshot confirmed those Community rows
+  are visibly rendered. Because the plan requires exact rendered/getter
+  equality and the permanent probe is deliberately prohibited from scrolling or
+  framework-state enumeration, its typed evidence remains
+  `pending-validation` rather than claiming a pass. The durable evidence and
+  screenshots are `review-04-steamdeck.json`,
+  `review-04-steamdeck-before-corrected-smoke.png`,
+  `review-04-steamdeck-community-no-query.png`, and
+  `review-04-steamdeck-after-refresh.png` below the same temporary directory.
+- Both device doctors were run with dedicated ports. The Steam Deck briefly
+  lost its debugger/SSH connection during tunnel reset, then recovered; no
+  service restart or game launch was attempted. Both dedicated tunnels were
+  closed afterward and their final status was `tunnel: down`.
+- `review-04-fixture-green.log` records all `18` fixture/probe tests passing;
+  the full `review-04-quality-gates.log` records TypeScript, Rollup, `20`
+  Vitest files / `258` tests, Python byte-compilation, and review-note integrity
+  passing. The complete Python collection is now `411` tests because this round
+  added the cache-identity regression.
+
+### Outstanding acceptance boundary
+
+The plugin bundle was unchanged in this verifier-only correction, so no device
+redeployment was required. The Legion proof is complete. The Steam Deck
+underlying getter/hash result and filter restoration are complete, but the
+plan's strict DOM-count equality cannot be honestly asserted against its current
+virtualized markup under the probe's no-scroll/no-framework-enumeration safety
+contract. No round-complete marker was written; do not treat the Steam Deck
+typed smoke as passed until that acceptance boundary is resolved.
