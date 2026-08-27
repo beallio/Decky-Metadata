@@ -81,6 +81,8 @@ def _assert_controller_tab_probe_payload_contract(probe: str) -> None:
     assert "resultSettled: true" in probe
     assert "if (stableSamples >= 3) {\n          after = candidate;" in probe
     assert "chooser remount did not settle" in probe
+    assert 'element.classList.contains("Panel")' in probe
+    assert 'element.classList.contains("Focusable")' not in probe
     for forbidden in ("identities:", "URL:", "title:", "account"):
         assert forbidden not in "\n".join(payloads)
 
@@ -349,6 +351,15 @@ def test_controller_tab_probe_contract_rejects_missing_payload_fields_and_raw_id
             probe.replace(
                 "if (stableSamples >= 3) {\n          after = candidate;",
                 "if (stableSamples >= 1) {\n          after = candidate;",
+                1,
+            )
+        )
+    with pytest.raises(AssertionError):
+        _assert_controller_tab_probe_payload_contract(
+            probe.replace(
+                'if (element === content || !element.classList.contains("Panel")) continue;',
+                'if (element === content || !element.classList.contains("Panel") ||\n'
+                '          !element.classList.contains("Focusable")) continue;',
                 1,
             )
         )

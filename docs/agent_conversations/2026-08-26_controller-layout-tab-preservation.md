@@ -315,12 +315,50 @@ marked complete.
   passing. The complete Python collection is now `411` tests because this round
   added the cache-identity regression.
 
-### Outstanding acceptance boundary
+## Review-05 virtualization-safe verifier and final device evidence (2026-08-27)
 
-The plugin bundle was unchanged in this verifier-only correction, so no device
-redeployment was required. The Legion proof is complete. The Steam Deck
-underlying getter/hash result and filter restoration are complete, but the
-plan's strict DOM-count equality cannot be honestly asserted against its current
-virtualized markup under the probe's no-scroll/no-framework-enumeration safety
-contract. No round-complete marker was written; do not treat the Steam Deck
-typed smoke as passed until that acceptance boundary is resolved.
+- The permanent smoke now treats its DOM count as a bounded mounted-row sample:
+  Community must remain selected, mounted rows must be positive and no greater
+  than the positive settled getter count, and all existing type, filter, hash,
+  and restoration checks remain in force. Passed evidence records
+  `renderCoverage` as `complete` when the counts agree and `virtualized` when
+  the mounted count is lower; it never scrolls or enumerates framework state.
+- New executable fixtures accept the observed Steam Deck-shaped `52` getter /
+  `24` mounted rows as `virtualized`; reject a changed tab, zero rows, and more
+  mounted rows than getter results; and fail when that safe inequality is
+  deliberately mutated back to equality. The focused fixture/probe suite passed
+  `23` tests, its explicit equality-mutation control passed, and the existing
+  controller-focused Vitest run passed `2` files / `93` tests. Shell and probe
+  syntax checks passed. The final project gate passed TypeScript, Rollup, all
+  `20` Vitest files / `258` tests, Python byte-compilation, the full Python
+  suite, and review-note integrity. Logs are
+  `review-05-{fixture-final,mutation-virtualized-count,focused-vitest,full-pytest,quality-gates-final}.log`
+  under `/tmp/Decky-Metadata/controller-layout-tab-preservation/`.
+- The first live rerun safely stopped with `Community rows are empty` on both
+  devices even though the captured Gaming Mode screenshots visibly showed
+  Community cards. The cause was the counter's obsolete `Focusable` requirement.
+  The bounded probe now groups current `.Panel` markup without that old marker;
+  its static regression rejects reintroducing it. No plugin bundle behavior or
+  device installation changed in this verifier-only correction.
+- The corrected typed evidence files both report `status: passed`:
+  - Legion Go S shortcut `3213262460`, source `55150`, type `102`, controller
+    index `0`: Community stayed selected across the direct query; mounted and
+    getter counts expanded `15 -> 52` (`renderCoverage: complete`); all
+    before-query hashes remained present; the visible filter was `false` during
+    the query and the original `true` filter plus Community tab were restored.
+  - Steam Deck shortcut `2155012430`, source `55150`, type `4`, controller
+    index `15`: Community stayed selected across the direct query; mounted and
+    getter counts expanded `24 -> 52` (`renderCoverage: complete`); the probe
+    recorded the redacted before/after hash sets, the visible filter was `false`
+    during the query, and the original `true` filter plus Your Layouts tab were
+    restored. Type-4 hash-subset preservation is deliberately not asserted by
+    the smoke; only the verified type-102 path requires it.
+- Evidence is
+  `/tmp/Decky-Metadata/controller-layout-tab-preservation/review-05-{legos,steamdeck}.json`.
+  The bounded screenshots are `review-05-{legos,steamdeck}-{before,after}.png`
+  in the same directory. Both device doctors confirmed reachability, and both
+  dedicated tunnels were explicitly closed with final `tunnel: down` status.
+- Layout preview, selection, application, game launch, controller types other
+  than `4` and `102`, physical multi-controller switching/hot-plug behavior,
+  and Steam builds outside the structurally verified current build remain
+  untested or fail-open as stated in the plan.

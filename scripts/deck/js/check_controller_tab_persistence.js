@@ -42,8 +42,7 @@
     if (!content) throw new Error("chooser content unavailable");
     const groups = new Map();
     for (const element of content.querySelectorAll("*")) {
-      if (element === content || !element.classList.contains("Panel") ||
-          !element.classList.contains("Focusable")) continue;
+      if (element === content || !element.classList.contains("Panel")) continue;
       const className = String(element.className || "");
       if (!className) continue;
       groups.set(className, (groups.get(className) || 0) + 1);
