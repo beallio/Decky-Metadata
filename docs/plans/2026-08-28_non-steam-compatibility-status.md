@@ -168,6 +168,10 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 
 - Keep one existing `Decky metadata...` entry in the per-game context menu.
   Remove the separate `Compatibility status...` entry and its modal.
+- Treat the removed `decky-metadata-compatibility` item key as stale runtime
+  state from earlier development builds: remove it from reused menu arrays, but
+  never insert it. This one-way cleanup must make the obsolete item disappear
+  without requiring a Steam restart.
 - Add a `Compatibility status` section to the metadata editor page opened by
   `Decky metadata...`. Use Decky's native `DropdownItem` control.
 - The dropdown must show five choices in this order: Automatic, Verified,
@@ -191,6 +195,15 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
   without restarting Steam.
 - Do not replace or delete entries in `appStore.m_mapApps`; live validation
   proved that replacement drops matched-shortcut enriched details.
+- Steam currently suppresses its selected-game Deck compatibility indicators
+  for shortcuts even when the packed category is present. Add the narrowest
+  SteamUI patch needed so a selected non-Steam shortcut shows the same Deck
+  device icon and category icon/label as an official game in both the Library
+  Home carousel and Library grid. Drive the display from the effective category
+  already applied to that exact shortcut.
+- Do not globally spoof shortcut identity, replace `appStore.m_mapApps`, or
+  change official-game rendering. Unknown/Automatic-without-a-resolved-category
+  must retain Steam's normal no-status behavior.
 - Prefer an existing route/render boundary or a narrow plugin-owned revision
   signal. Avoid separate broad SteamUI render patches when one shared refresh
   mechanism can update both surfaces.
@@ -208,6 +221,13 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 - Add frontend tests for effective-category precedence, all values `0..3`,
   higher-bit preservation, original-nibble restoration, metadata removal/cache
   refresh, and dismount cleanup.
+- Add a regression test with an already-rendered legacy compatibility menu item
+  and prove the current patch removes it while inserting only one metadata
+  editor entry.
+- Add focused tests for the selected-card visibility decision in Library Home
+  and the Library grid: effective non-Steam categories render the Deck/category
+  indicators, unknown shortcuts do not fabricate a status, and official games
+  retain native behavior.
 - Keep context-menu tests focused on one deduplicated `Decky metadata...` entry,
   non-Steam eligibility, official-game exclusion, and current App ID selection.
 - Add focused editor/dropdown tests for option order, Automatic, explicit
@@ -262,7 +282,9 @@ and the committed CDP input/focus probes. Verify all of the following:
    compatibility mutation from this feature.
 2. The non-Steam shortcut context menu contains exactly one
    `Decky metadata...` entry after repeated opens and alternating between games;
-   there is no separate compatibility entry.
+   there is no separate compatibility entry. Seed or observe the obsolete
+   `decky-metadata-compatibility` item and prove the current render removes it
+   without a Steam restart.
 3. The metadata editor contains one native Compatibility status dropdown with
    correct initial focus, D-pad option order, selected-state feedback, and no
    clipped controls.
@@ -271,9 +293,12 @@ and the committed CDP input/focus probes. Verify all of the following:
    and Game Info status for the same shortcut.
 6. Saving from the editor and returning to Game Info updates the status without
    restarting Steam or losing the enriched matched-game details.
-7. Returning to Automatic restores the fetched category; removing metadata and
+7. In both Library Home and the Library grid, selecting the shortcut shows the
+   Deck device icon plus the selected category icon/label as it does for an
+   official game. Official-game cards remain unchanged.
+8. Returning to Automatic restores the fetched category; removing metadata and
    reloading/dismounting the plugin do not leave stale packed bits.
-8. The shortcut remains launchable and the rich details/quick-links page remains
+9. The shortcut remains launchable and the rich details/quick-links page remains
    present. Run the no-launch applicable smoke checks and record any check that
    the dispatcher explicitly defers because launch authorization was not given.
 
