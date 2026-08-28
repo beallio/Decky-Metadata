@@ -98,7 +98,7 @@ export const CompatibilityStatusModal = ({
         </div>
       </PanelSectionRow>
       <Focusable
-        flow-children="vertical"
+        flow-children="down"
         navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
       >
         {choices.map((choice) => (

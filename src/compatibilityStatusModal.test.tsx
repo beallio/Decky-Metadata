@@ -186,7 +186,7 @@ describe("compatibility status selector", () => {
     });
   });
 
-  it("groups choices into native vertical gamepad flow and opens in Decky's render target", async () => {
+  it("groups choices into native downward gamepad flow and opens in Decky's render target", async () => {
     await openCompatibilityStatusModal(600);
 
     const modalElement = (ui.showModal as any).mock.calls[0]?.[0] as any;
@@ -195,7 +195,7 @@ describe("compatibility status selector", () => {
     const rows = choiceRows(modal);
 
     expect(choiceFlow.type).toBe("Focusable");
-    expect(choiceFlow.props["flow-children"]).toBe("vertical");
+    expect(choiceFlow.props["flow-children"]).toBe("down");
     expect(choiceFlow.props.navEntryPreferPosition).toBe("preferred-child");
     expect(rows.map((row: any) => row.props.children.props.children)).toEqual([
       "Selected: Automatic",
