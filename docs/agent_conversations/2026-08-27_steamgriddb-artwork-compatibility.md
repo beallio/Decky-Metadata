@@ -221,6 +221,43 @@ artwork. The dedicated CDP tunnel was closed and confirmed down. This is not a
 Library Home smoke pass; repeat it only after a human has left the Deck on
 Library Home, because the smoke deliberately does not navigate Steam.
 
+### Review round 06 Desktop route authority
+
+The Desktop Library `Steam` page is now a second, bounded read-only phase of
+the permanent smoke. It proves the exact current Home entry, then finds exactly
+one row through a caller-supplied lowercase eight-character FNV-1a label hash.
+The probe stores no label, URL, path, or image value. It stores only its route
+boolean, row count, image booleans, dimensions, and data/custom classification.
+Nested matching row containers are reduced to their outermost match before the
+exact-one check, which avoids counting the same rendered row three times.
+
+SharedJSContext still performs the app overview, alias, identity, artwork-file,
+and bounded direct-icon diagnostics. For the `library-home` smoke it can now
+report `other` only when the validated Desktop phase proves the Home surface;
+a conflicting SharedJS detail route still fails. The direct icon API remains a
+diagnostic: an error-free unresolved result is not treated as a missing visible
+sidebar icon.
+
+The round-06 red test first produced 17 expected fixture failures because the
+old probe had no Desktop mode and the old smoke accepted only six arguments.
+After the implementation, the focused fixture-selection suite passed 43 tests,
+including Desktop Home/rendered-image success and failures for noncurrent Home,
+missing row, blank image, noncustom image, wrong/malformed label hash, and an
+unexpected output field. Shell and JavaScript syntax checks also passed.
+
+The requested standalone rerun used CDP port 18085 without deployment or
+launch. It captured a new redacted six-file before manifest. The safe Desktop
+discovery found one candidate label hash; the final bounded Desktop probe found
+one matching row with a complete custom image at positive dimensions. The
+Steam page was no longer on Library Home (`homeSelected=false`), so the smoke
+correctly failed `Desktop Library Home is not selected` after its bounded
+identity diagnostics and before an after-manifest comparison. It did not
+navigate, select an item, dispatch input, change plugin state, write/reapply
+artwork, or launch a game. The dedicated tunnel was closed and confirmed down.
+This is not a new Library Home pass; the review-recorded user visual
+confirmation remains the current visual evidence until the smoke is rerun with
+Desktop Library Home selected.
+
 ## Explicit exclusions and remaining risks
 
 - The matched-ID overview alias (`55150` -> shortcut `2155012430`) remains

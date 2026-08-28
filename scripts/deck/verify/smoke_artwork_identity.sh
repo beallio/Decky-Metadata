@@ -2,7 +2,7 @@
 # Read-only Library Home artwork identity check and redacted artwork-file audit.
 #
 #   smoke_artwork_identity.sh --capture-artwork-files <shortcut-appid> <manifest>
-#   smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>
+#   smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>
 
 fail_early() { printf 'FAIL: %s\n' "$*" >&2; exit 2; }
 
@@ -108,19 +108,21 @@ if [[ "${1:-}" == "--capture-artwork-files" ]]; then
   exit 0
 fi
 
-shortcut="${1:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
-matched="${2:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
-expected_scope="${3:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
-expected_identity="${4:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
-before_manifest="${5:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
-evidence="${6:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir>}"
+shortcut="${1:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+matched="${2:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+expected_scope="${3:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+expected_identity="${4:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+before_manifest="${5:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+evidence="${6:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
+sidebar_label_hash="${7:?usage: smoke_artwork_identity.sh <shortcut-appid> <matched-appid> <route-scope> <shortcut-identity> <before-manifest> <evidence-dir> <sidebar-label-hash>}"
 
-[[ "$#" -eq 6 ]] || fail_early "artwork identity smoke takes exactly six arguments"
+[[ "$#" -eq 7 ]] || fail_early "artwork identity smoke takes exactly seven arguments"
 require_positive_appid "$shortcut" "shortcut appid"
 require_positive_appid "$matched" "matched appid"
 [[ "$shortcut" != "$matched" ]] || fail_early "shortcut and matched appids must differ"
 case "$expected_scope" in library-home|current-detail|other) ;; *) fail_early "invalid expected route scope" ;; esac
 case "$expected_identity" in true|false) ;; *) fail_early "shortcut identity must be true or false" ;; esac
+[[ "$sidebar_label_hash" =~ ^[0-9a-f]{8}$ ]] || fail_early "sidebar label hash must be an eight-character lowercase hex value"
 
 python3 - "$evidence" "$before_manifest" "$shortcut" <<'PY'
 import json
@@ -146,32 +148,44 @@ evidence.mkdir(parents=True, exist_ok=True)
 PY
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
-payload="$(cdp eval SharedJSContext "@$JS_DIR/check_artwork_identity.js" --var "SHORTCUT_APPID=$shortcut" --var "MATCHED_APPID=$matched")"
-printf '%s\n' "$payload" > "$evidence/artwork-identity.json"
+payload="$(cdp eval SharedJSContext "@$JS_DIR/check_artwork_identity.js" --var "SHORTCUT_APPID=$shortcut" --var "MATCHED_APPID=$matched" --var "PROBE_MODE=identity" --var "SIDEBAR_LABEL_HASH=$sidebar_label_hash")"
+desktop_payload=""
+if [[ "$expected_scope" == "library-home" ]]; then
+  desktop_payload="$(cdp eval Steam "@$JS_DIR/check_artwork_identity.js" --var "SHORTCUT_APPID=$shortcut" --var "MATCHED_APPID=$matched" --var "PROBE_MODE=desktop-home" --var "SIDEBAR_LABEL_HASH=$sidebar_label_hash")"
+fi
 
-python3 - "$payload" "$shortcut" "$matched" "$expected_scope" "$expected_identity" "$evidence/artwork-identity-status.json" <<'PY'
+python3 - "$payload" "$desktop_payload" "$shortcut" "$matched" "$expected_scope" "$expected_identity" "$evidence/artwork-identity-status.json" "$evidence/artwork-identity.json" "$evidence/desktop-library-home.json" <<'PY'
 import json
 from pathlib import Path
 import sys
 
-payload, shortcut, matched, expected_scope, expected_identity, status_file = sys.argv[1:]
+(
+    payload,
+    desktop_payload,
+    shortcut,
+    matched,
+    expected_scope,
+    expected_identity,
+    status_file,
+    identity_file,
+    desktop_file,
+) = sys.argv[1:]
 Path(status_file).write_text('{"status": "pending-validation"}\n')
 try:
     data = json.loads(payload)
 except json.JSONDecodeError as exc:
     raise SystemExit(f"FAIL: malformed artwork identity payload: {exc}")
 
-required = (
+required = {
     "routeScope", "shortcutAppId", "matchedAppId", "requestedObjectAppId",
     "matchedObjectAppId", "aliasSameObject", "isShortcut", "isModOrShortcut",
-    "iconHashPresent", "iconDataPresent", "iconResolved", "iconValueHash", "iconRequestError",
-    "iconAttempts", "iconDeadlineMs", "artwork", "elapsedMs",
-)
-missing = [name for name in required if name not in data]
-if missing:
-    raise SystemExit(f"FAIL: malformed artwork identity payload missing {missing}")
-if data["routeScope"] != expected_scope:
-    raise SystemExit(f"FAIL: route scope {data['routeScope']!r}, expected {expected_scope!r}")
+    "appType", "iconHashPresent", "iconDataPresent", "iconResolved", "iconValueHash",
+    "iconRequestError", "iconAttempts", "iconDeadlineMs", "artwork", "elapsedMs",
+}
+if not isinstance(data, dict) or set(data) != required:
+    raise SystemExit("FAIL: malformed artwork identity payload")
+if data["routeScope"] not in {"library-home", "current-detail", "other"}:
+    raise SystemExit("FAIL: malformed artwork route scope")
 if data["shortcutAppId"] != int(shortcut) or data["matchedAppId"] != int(matched):
     raise SystemExit("FAIL: probe app identifiers do not match the requested shortcut")
 if data["requestedObjectAppId"] != int(shortcut):
@@ -198,9 +212,13 @@ if data["iconDeadlineMs"] != 15000:
     raise SystemExit("FAIL: icon resolver deadline does not match the permanent bound")
 if not isinstance(data["iconAttempts"], int) or not 1 <= data["iconAttempts"] <= 61:
     raise SystemExit("FAIL: icon resolver attempt count is outside its bound")
+if not isinstance(data["appType"], int):
+    raise SystemExit("FAIL: malformed shortcut app type")
+if not isinstance(data["artwork"], dict) or set(data["artwork"]) != {"vertical", "landscape", "hero", "logo"}:
+    raise SystemExit("FAIL: malformed custom-art candidates")
 for kind in ("vertical", "landscape", "hero", "logo"):
     candidate = data["artwork"].get(kind)
-    if not isinstance(candidate, dict):
+    if not isinstance(candidate, dict) or set(candidate) != {"count", "hashes"}:
         raise SystemExit(f"FAIL: missing {kind} artwork candidates")
     count, hashes = candidate.get("count"), candidate.get("hashes")
     if not isinstance(count, int) or count < 0 or not isinstance(hashes, list) or len(hashes) != count:
@@ -209,6 +227,45 @@ for kind in ("vertical", "landscape", "hero", "logo"):
         raise SystemExit(f"FAIL: malformed {kind} artwork hash")
 if not isinstance(data["elapsedMs"], int) or data["elapsedMs"] < 0:
     raise SystemExit("FAIL: malformed artwork identity elapsed time")
+
+if expected_scope == "library-home":
+    try:
+        desktop = json.loads(desktop_payload)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"FAIL: malformed Desktop Library payload: {exc}")
+    desktop_required = {
+        "homeSelected", "labelHashValid", "rowCount", "rowFound", "imageFound",
+        "imageComplete", "imageNaturalWidth", "imageNaturalHeight", "imageClassification",
+    }
+    if not isinstance(desktop, dict) or set(desktop) != desktop_required:
+        raise SystemExit("FAIL: malformed Desktop Library payload")
+    if desktop["homeSelected"] is not True:
+        raise SystemExit("FAIL: Desktop Library Home is not selected")
+    if desktop["labelHashValid"] is not True:
+        raise SystemExit("FAIL: Desktop Library label hash is malformed")
+    if not isinstance(desktop["rowCount"], int) or desktop["rowCount"] < 0:
+        raise SystemExit("FAIL: malformed Desktop Library row count")
+    if desktop["rowCount"] != 1 or desktop["rowFound"] is not True:
+        raise SystemExit("FAIL: Desktop Library Home row is missing")
+    if desktop["imageFound"] is not True:
+        raise SystemExit("FAIL: Desktop Library Home image is missing")
+    if desktop["imageComplete"] is not True or any(
+        not isinstance(desktop[name], int) or desktop[name] <= 0
+        for name in ("imageNaturalWidth", "imageNaturalHeight")
+    ):
+        raise SystemExit("FAIL: Desktop Library Home image is blank")
+    if desktop["imageClassification"] not in {"data", "custom"}:
+        raise SystemExit("FAIL: Desktop Library Home image is not custom")
+    if data["routeScope"] not in {"library-home", "other"}:
+        raise SystemExit(f"FAIL: route scope {data['routeScope']!r}, expected 'library-home'")
+    effective_scope = "library-home"
+    Path(desktop_file).write_text(json.dumps(desktop, sort_keys=True) + "\n")
+else:
+    effective_scope = data["routeScope"]
+
+if effective_scope != expected_scope:
+    raise SystemExit(f"FAIL: route scope {effective_scope!r}, expected {expected_scope!r}")
+Path(identity_file).write_text(json.dumps(data, sort_keys=True) + "\n")
 Path(status_file).write_text('{"status": "complete"}\n')
 PY
 

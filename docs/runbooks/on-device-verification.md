@@ -82,7 +82,8 @@ DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh \
   2155012430 55150 library-home true \
   /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home \
+  "$SIDEBAR_LABEL_HASH"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/screenshot.sh \
@@ -92,7 +93,10 @@ DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
 ```
 
-The automated smoke is an identity-and-file evidence check. It requires the
+Set `SIDEBAR_LABEL_HASH` to the eight-character lowercase FNV-1a hash of the
+affected sidebar row label before running the smoke. Calculate it locally and
+do not put the label itself in a command log or evidence directory. The
+automated smoke is an identity-and-file evidence check. It requires the
 requested shortcut overview and matched-app alias, native shortcut identity on
 Library Home, the exact pre/post count and SHA-256 multiset of the shortcut's
 existing custom-art files, and valid redacted candidate count/hash shapes.
@@ -105,10 +109,15 @@ The bounded direct icon API poll is diagnostic evidence, not the visual
 oracle. `iconRequestError` fails the smoke. An error-free unresolved result
 (`iconResolved=false`, no value hash) is recorded but does not fail it, because
 the API can remain null while Steam renders the real Library Home sidebar icon.
-The required user-visible check is a human confirmation in Steam Deck Desktop
-Mode Library Home that the affected shortcut icon is visible with Decky
-Metadata enabled. Retain the screenshot and redacted API payload as diagnostics
-without reporting a direct API resolution that did not occur.
+For `library-home`, the smoke also reads the separate Desktop `Steam` page. It
+requires the exact current Home entry, exactly one shortcut row matching the
+caller-supplied label hash, and a complete positive-size image classified as
+data or custom. This Desktop result is the route authority only when
+SharedJSContext has no route (`other`); a conflicting SharedJS detail route
+fails. Both saved payloads contain only booleans, counts, dimensions, app IDs,
+and short hashes. The required user-visible check remains a human confirmation
+in Steam Deck Desktop Mode Library Home that the affected shortcut icon is
+visible with Decky Metadata enabled.
 
 It never writes or reapplies artwork, changes a plugin setting, navigates,
 selects an item, dispatches input, or launches a game. Steam can populate its

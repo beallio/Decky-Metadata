@@ -215,6 +215,15 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "Math.min(ICON_HYDRATION_POLL_INTERVAL_MS, iconDeadline - Date.now())" in probe
     assert "artwork" in probe
     assert "elapsedMs" in probe
+    assert 'probeMode === "desktop-home"' in probe
+    assert 'a[href=\'/library/home\'][aria-current=\'page\']' in probe
+    assert "sidebarLabelHash" in probe
+    assert "rowFound" in probe
+    assert "imageFound" in probe
+    assert "imageComplete" in probe
+    assert "imageNaturalWidth" in probe
+    assert "imageNaturalHeight" in probe
+    assert "imageClassification" in probe
     for forbidden in (
         "URL:", "url:", "data:", "path:", "title:", "account",
         "navigate", "history.push", "dispatchEvent", "RunGame", "launch",
@@ -223,8 +232,14 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
         assert forbidden not in probe
     assert 'before_manifest="${5:?usage:' in smoke
     assert 'evidence="${6:?usage:' in smoke
+    assert 'sidebar_label_hash="${7:?usage:' in smoke
     assert "--capture-artwork-files" in smoke
     assert "shortcut and matched appids must differ" in smoke
+    assert "sidebar label hash must be an eight-character lowercase hex value" in smoke
+    assert 'cdp eval Steam "@$JS_DIR/check_artwork_identity.js"' in smoke
+    assert "Desktop Library Home is not selected" in smoke
+    assert "Desktop Library Home row is missing" in smoke
+    assert "Desktop Library Home image is blank" in smoke
     assert "fileHashSetUnchanged" in smoke
     assert "iconValueHash" in smoke
     assert "data[\"iconDeadlineMs\"] != 15000" in smoke
@@ -238,7 +253,12 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
 
 
 def _run_artwork_identity_probe(probe: str, hydration_delay_ms: int | None) -> dict:
-    source = probe.replace("__SHORTCUT_APPID__", "2155012430").replace("__MATCHED_APPID__", "55150")
+    source = (
+        probe.replace("__SHORTCUT_APPID__", "2155012430")
+        .replace("__MATCHED_APPID__", "55150")
+        .replace("__PROBE_MODE__", "identity")
+        .replace("__SIDEBAR_LABEL_HASH__", "10203040")
+    )
     hydration_expression = "false" if hydration_delay_ms is None else f"now >= {hydration_delay_ms}"
     runner = f"""
 let now = 0;
@@ -339,17 +359,20 @@ fail() { echo \"FAIL: $*\" >&2; exit 1; }
     (deck / "cdp.py").write_text(
         """import json
 import os
+import sys
 from pathlib import Path
 
 log = Path(os.environ[\"FAKE_ARTWORK_LOG\"])
-log.write_text(log.read_text() + \"cdp\\n\" if log.exists() else \"cdp\\n\")
-payload = {
+target = sys.argv[2]
+log.write_text(log.read_text() + f\"cdp:{target}\\n\" if log.exists() else f\"cdp:{target}\\n\")
+identity_payload = {
     \"routeScope\": \"library-home\",
     \"shortcutAppId\": 2155012430,
     \"matchedAppId\": 55150,
     \"requestedObjectAppId\": 2155012430,
     \"matchedObjectAppId\": 2155012430,
     \"aliasSameObject\": True,
+    \"appType\": 1073741824,
     \"isShortcut\": True,
     \"isModOrShortcut\": True,
     \"iconHashPresent\": False,
@@ -362,7 +385,26 @@ payload = {
     \"artwork\": {kind: {\"count\": 0, \"hashes\": []} for kind in (\"vertical\", \"landscape\", \"hero\", \"logo\")},
     \"elapsedMs\": 20,
 }
-payload.update(json.loads(os.environ.get(\"FAKE_ARTWORK_PAYLOAD_OVERRIDES\", \"{}\")))
+desktop_payload = {
+    \"homeSelected\": True,
+    \"labelHashValid\": True,
+    \"rowCount\": 1,
+    \"rowFound\": True,
+    \"imageFound\": True,
+    \"imageComplete\": True,
+    \"imageNaturalWidth\": 600,
+    \"imageNaturalHeight\": 900,
+    \"imageClassification\": \"data\",
+}
+if target == \"Steam\":
+    supplied_hash = next((value.split(\"=\", 1)[1] for value in sys.argv if value.startswith(\"SIDEBAR_LABEL_HASH=\")), \"\")
+    if supplied_hash != \"10203040\":
+        desktop_payload.update({\"rowCount\": 0, \"rowFound\": False, \"imageFound\": False, \"imageComplete\": False, \"imageNaturalWidth\": 0, \"imageNaturalHeight\": 0, \"imageClassification\": \"none\"})
+    desktop_payload.update(json.loads(os.environ.get(\"FAKE_DESKTOP_PAYLOAD_OVERRIDES\", \"{}\")))
+    payload = desktop_payload
+else:
+    identity_payload.update(json.loads(os.environ.get(\"FAKE_ARTWORK_PAYLOAD_OVERRIDES\", \"{}\")))
+    payload = identity_payload
 print(json.dumps(payload))
 """,
         encoding="utf-8",
@@ -400,6 +442,8 @@ def _run_artwork_identity_smoke(
     after_hashes: list[str],
     *,
     payload_overrides: dict | None = None,
+    desktop_payload_overrides: dict | None = None,
+    sidebar_label_hash: str = "10203040",
     smoke_source: str | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     smoke = _write_artwork_identity_smoke_fixture(tmp_path)
@@ -418,7 +462,7 @@ def _run_artwork_identity_smoke(
     completed = subprocess.run(
         [
             "bash", str(smoke), "2155012430", "55150", "library-home", "true",
-            str(before_manifest), str(evidence),
+            str(before_manifest), str(evidence), sidebar_label_hash,
         ],
         check=False,
         capture_output=True,
@@ -430,6 +474,7 @@ def _run_artwork_identity_smoke(
             "FAKE_ARTWORK_LOG": str(log),
             "FAKE_ARTWORK_HASHES": ",".join(after_hashes),
             "FAKE_ARTWORK_PAYLOAD_OVERRIDES": json.dumps(payload_overrides or {}),
+            "FAKE_DESKTOP_PAYLOAD_OVERRIDES": json.dumps(desktop_payload_overrides or {}),
         },
     )
     return completed, evidence, log
@@ -439,7 +484,31 @@ def test_artwork_identity_smoke_accepts_zero_candidates_when_six_file_hashes_mat
     completed, evidence, log = _run_artwork_identity_smoke(tmp_path, _artwork_file_hashes())
 
     assert completed.returncode == 0, completed.stderr
-    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam", "ssh"]
+    assert json.loads((evidence / "desktop-library-home.json").read_text()) == {
+        "homeSelected": True,
+        "imageClassification": "data",
+        "imageComplete": True,
+        "imageFound": True,
+        "imageNaturalHeight": 900,
+        "imageNaturalWidth": 600,
+        "labelHashValid": True,
+        "rowCount": 1,
+        "rowFound": True,
+    }
+
+
+def test_artwork_identity_smoke_uses_validated_desktop_home_when_shared_context_has_no_route(tmp_path: Path):
+    completed, evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        payload_overrides={"routeScope": "other"},
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads((evidence / "artwork-identity.json").read_text())["routeScope"] == "other"
+    assert json.loads((evidence / "desktop-library-home.json").read_text())["homeSelected"] is True
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam", "ssh"]
     assert json.loads((evidence / "artwork-file-comparison.json").read_text()) == {
         "afterFileCount": 6,
         "beforeFileCount": 6,
@@ -457,7 +526,7 @@ def test_artwork_identity_smoke_accepts_unresolved_icon_without_a_request_error(
 
     assert completed.returncode == 0, completed.stderr
     assert "bounded icon diagnostics" in completed.stdout
-    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam", "ssh"]
     assert json.loads((evidence / "artwork-identity.json").read_text())["iconResolved"] is False
 
 
@@ -470,7 +539,7 @@ def _artwork_candidate_payload() -> dict[str, dict[str, list[str] | int]]:
     [
         ({"iconRequestError": True}, "icon resolver request failed"),
         ({"isModOrShortcut": False}, "shortcut identity does not match"),
-        ({"routeScope": "other"}, "route scope 'other', expected 'library-home'"),
+        ({"routeScope": "current-detail"}, "route scope 'current-detail', expected 'library-home'"),
         (
             {
                 "artwork": {
@@ -493,7 +562,7 @@ def test_artwork_identity_smoke_rejects_invalid_identity_or_diagnostic_payload(
 
     assert completed.returncode != 0
     assert failure in completed.stderr
-    assert log.read_text().splitlines() == ["cdp"]
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam"]
 
 
 def test_artwork_identity_smoke_mutation_makes_unresolved_icon_fail(tmp_path: Path):
@@ -530,7 +599,7 @@ def test_artwork_identity_smoke_rejects_missing_or_changed_artwork_file_hashes(
 
     assert completed.returncode != 0
     assert failure in completed.stderr
-    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam", "ssh"]
     assert not (evidence / "artwork-file-comparison.json").exists()
 
 
@@ -539,7 +608,7 @@ def test_artwork_identity_smoke_rejects_equal_ids_before_tunnel_cdp_or_evidence(
     evidence = _artwork_smoke_evidence_path(tmp_path)
     log = tmp_path / "artwork-equal-ids.log"
     completed = subprocess.run(
-        ["bash", str(smoke), "2155012430", "2155012430", "library-home", "true", "missing.json", str(evidence)],
+        ["bash", str(smoke), "2155012430", "2155012430", "library-home", "true", "missing.json", str(evidence), "10203040"],
         check=False,
         capture_output=True,
         text=True,
@@ -551,6 +620,54 @@ def test_artwork_identity_smoke_rejects_equal_ids_before_tunnel_cdp_or_evidence(
     assert "shortcut and matched appids must differ" in completed.stderr
     assert not log.exists()
     assert not evidence.exists()
+
+
+@pytest.mark.parametrize(
+    ("desktop_payload_overrides", "failure"),
+    [
+        ({"homeSelected": False}, "Desktop Library Home is not selected"),
+        ({"rowCount": 0, "rowFound": False}, "Desktop Library Home row is missing"),
+        ({"imageComplete": True, "imageNaturalWidth": 0}, "Desktop Library Home image is blank"),
+        ({"imageClassification": "other"}, "Desktop Library Home image is not custom"),
+        ({"unexpected": "data:image/private"}, "malformed Desktop Library payload"),
+    ],
+)
+def test_artwork_identity_smoke_rejects_invalid_desktop_library_home_evidence(
+    tmp_path: Path, desktop_payload_overrides: dict, failure: str
+):
+    completed, _evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        desktop_payload_overrides=desktop_payload_overrides,
+    )
+
+    assert completed.returncode != 0
+    assert failure in completed.stderr
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam"]
+
+
+def test_artwork_identity_smoke_rejects_a_valid_but_wrong_desktop_row_label_hash(tmp_path: Path):
+    completed, _evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        sidebar_label_hash="deadbeef",
+    )
+
+    assert completed.returncode != 0
+    assert "Desktop Library Home row is missing" in completed.stderr
+    assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam"]
+
+
+def test_artwork_identity_smoke_rejects_malformed_desktop_row_label_hash_before_cdp(tmp_path: Path):
+    completed, _evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        sidebar_label_hash="not-a-hash",
+    )
+
+    assert completed.returncode != 0
+    assert "sidebar label hash must be an eight-character lowercase hex value" in completed.stderr
+    assert not log.exists()
 
 
 def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_identities():
