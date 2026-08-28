@@ -1,6 +1,7 @@
 import {
   DialogButton,
   Focusable,
+  ModalRoot,
   NavEntryPositionPreferences,
   PanelSection,
   PanelSectionRow,
@@ -91,31 +92,37 @@ export const CompatibilityStatusModal = ({
   };
 
   return (
-    <PanelSection title="Compatibility status">
-      <PanelSectionRow>
-        <div style={{ color: "#cbd5e1", fontSize: "14px", lineHeight: 1.4 }}>
-          {"Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status."}
-        </div>
-      </PanelSectionRow>
-      <Focusable
-        flow-children="down"
-        navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
-      >
-        {choices.map((choice) => (
-          <PanelSectionRow key={String(choice.value)}>
-            <DialogButton
-              focusable={true}
-              preferredFocus={choice.value === null}
-              disabled={saving}
-              onClick={() => void save(choice.value)}
-              style={{ width: "100%", textAlign: "left" }}
-            >
-              {selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved)}
-            </DialogButton>
-          </PanelSectionRow>
-        ))}
-      </Focusable>
-    </PanelSection>
+    <ModalRoot
+      closeModal={closeModal}
+      onCancel={closeModal}
+      onEscKeypress={closeModal}
+    >
+      <PanelSection title="Compatibility status">
+        <PanelSectionRow>
+          <div style={{ color: "#cbd5e1", fontSize: "14px", lineHeight: 1.4 }}>
+            {"Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status."}
+          </div>
+        </PanelSectionRow>
+        <Focusable
+          flow-children="down"
+          navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
+        >
+          {choices.map((choice) => (
+            <PanelSectionRow key={String(choice.value)}>
+              <DialogButton
+                focusable={true}
+                preferredFocus={choice.value === null}
+                disabled={saving}
+                onClick={() => void save(choice.value)}
+                style={{ width: "100%", textAlign: "left" }}
+              >
+                {selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved)}
+              </DialogButton>
+            </PanelSectionRow>
+          ))}
+        </Focusable>
+      </PanelSection>
+    </ModalRoot>
   );
 };
 

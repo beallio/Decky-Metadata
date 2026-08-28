@@ -18,6 +18,7 @@ const react = vi.hoisted(() => ({ useState: vi.fn(() => [false, vi.fn()]) }));
 vi.mock("@decky/ui", () => ({
   DialogButton: "DialogButton",
   Focusable: "Focusable",
+  ModalRoot: "ModalRoot",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred-child" },
   PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
@@ -45,7 +46,8 @@ import {
   saveCompatibilityOverride,
 } from "./compatibilityStatusModal";
 
-const choiceRows = (modal: any) => modal.props.children[1].props.children;
+const panelSection = (modal: any) => modal.props.children;
+const choiceRows = (modal: any) => panelSection(modal).props.children[1].props.children;
 
 afterEach(() => {
   Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
@@ -191,9 +193,13 @@ describe("compatibility status selector", () => {
 
     const modalElement = (ui.showModal as any).mock.calls[0]?.[0] as any;
     const modal = modalElement.type(modalElement.props) as any;
-    const choiceFlow = modal.props.children[1];
+    const choiceFlow = panelSection(modal).props.children[1];
     const rows = choiceRows(modal);
 
+    expect(modal.type).toBe("ModalRoot");
+    expect(modal.props.closeModal).toBe(modalElement.props.closeModal);
+    expect(modal.props.onCancel).toBe(modalElement.props.closeModal);
+    expect(modal.props.onEscKeypress).toBe(modalElement.props.closeModal);
     expect(choiceFlow.type).toBe("Focusable");
     expect(choiceFlow.props["flow-children"]).toBe("down");
     expect(choiceFlow.props.navEntryPreferPosition).toBe("preferred-child");
