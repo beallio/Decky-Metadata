@@ -62,6 +62,71 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Library Home artwork identity
+
+For a matched non-Steam shortcut with SteamGridDB artwork, first open Library
+Home yourself and confirm the artwork is already present. Do not use this
+smoke to navigate, select an item, or reapply artwork. With explicit approval
+for the current device, capture a redacted pre-deploy file baseline, deploy the
+corrected bundle, then run the identity smoke:
+
+```bash
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/verify/smoke_artwork_identity.sh --capture-artwork-files \
+  2155012430 \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/deploy.sh
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/verify/smoke_artwork_identity.sh \
+  2155012430 55150 library-home true \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home \
+  "$SIDEBAR_LABEL_HASH"
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/screenshot.sh \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
+```
+
+Set `SIDEBAR_LABEL_HASH` to the eight-character lowercase FNV-1a hash of the
+affected sidebar row label before running the smoke. Calculate it locally and
+do not put the label itself in a command log or evidence directory. The
+automated smoke is an identity-and-file evidence check. It requires the
+requested shortcut overview and matched-app alias, native shortcut identity on
+Library Home, the exact pre/post count and SHA-256 multiset of the shortcut's
+existing custom-art files, and valid redacted candidate count/hash shapes.
+Candidate URL counts can be zero on a valid fixture. The two redacted manifest
+files contain only the shortcut app ID, count, and sorted SHA-256 values, never
+paths. The smoke rejects equal shortcut and matched app IDs before it opens a
+tunnel or calls CDP.
+
+The bounded direct icon API poll is diagnostic evidence, not the visual
+oracle. `iconRequestError` fails the smoke. An error-free unresolved result
+(`iconResolved=false`, no value hash) is recorded but does not fail it, because
+the API can remain null while Steam renders the real Library Home sidebar icon.
+For `library-home`, the smoke also reads the separate Desktop `Steam` page. It
+requires the exact current Home entry, exactly one shortcut row matching the
+caller-supplied label hash, and a complete positive-size image classified as
+data or custom. This Desktop result is the route authority only when
+SharedJSContext has no route (`other`); a conflicting SharedJS detail route
+fails. Both saved payloads contain only booleans, counts, dimensions, app IDs,
+and short hashes. The required user-visible check remains a human confirmation
+in Steam Deck Desktop Mode Library Home that the affected shortcut icon is
+visible with Decky Metadata enabled.
+
+It never writes or reapplies artwork, changes a plugin setting, navigates,
+selects an item, dispatches input, or launches a game. Steam can populate its
+in-memory icon-data cache during fixed 250 ms polls for up to 15 seconds; this
+is the only expected Steam state change. Inspect the Library Home sidebar and the
+Capsule, Wide Capsule, Hero, Logo, logo position, and square-capsule
+presentation visually after the smoke. Close and verify the dedicated tunnel
+after capturing the screenshot.
+
 ## Controller chooser tab persistence
 
 The standalone controller chooser smoke proves the Show All requery without

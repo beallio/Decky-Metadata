@@ -8,8 +8,8 @@ export type SpoofReason =
   | "original-not-shortcut"
   | "in-call-truth"
   | "not-matched"
+  | "outside-current-detail"
   | "render-shield"
-  | "home-special-case"
   | "truth-window"
   | "normal-shortcut";
 
@@ -26,14 +26,14 @@ export type SpoofInput = {
   originalRet: any;
   bypassCounter: number;
   hasCache: boolean;
-  path: string;
+  isCurrentMatchedDetail: boolean;
   // Consuming a shield hit is a side effect (decrements the hit budget), so
   // the caller passes it lazily; the decision controls WHETHER it happens.
   consumeShield: () => boolean;
 };
 
 export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
-  const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, path, consumeShield } = input;
+  const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, consumeShield } = input;
 
   if (!isPatchedNonSteam) {
     return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
@@ -42,7 +42,7 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
     return { finalRet: originalRet, reason: "original-not-shortcut", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
   }
 
-  // In-call truth must outrank the render shield and the home special case:
+  // In-call truth must outrank the render shield and route-scoped spoofing:
   // Steam's launch path derives the shortcut gameid via GetGameID /
   // GetPrimaryAppID, and spoofing inside those calls makes RunGame receive a
   // plain-appid gameid the client silently drops. The shield must not be
@@ -61,14 +61,18 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
     return { finalRet: originalRet, reason: "not-matched", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
   }
 
+  // Steam's Library Home, artwork resolvers, collections, controller pages,
+  // and sidebars share this overview prototype.  Only the current matched
+  // shortcut's Library detail page needs to appear native.  Do not spend a
+  // render shield or truth-window budget outside that narrow route scope.
+  if (!isCurrentMatchedDetail) {
+    return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
+  }
+
   const shieldHit = consumeShield();
   if (shieldHit) {
     return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
   }
-  if (path === "/library/home") {
-    return { finalRet: false, reason: "home-special-case", shieldConsulted: true, shieldHit: false, nextBypassCounter: bypassCounter };
-  }
-
   const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
   const shouldBypass = nextBypassCounter > 0;
   return {
