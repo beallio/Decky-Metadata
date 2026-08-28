@@ -194,9 +194,10 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 - Prefer an existing route/render boundary or a narrow plugin-owned revision
   signal. Avoid separate broad SteamUI render patches when one shared refresh
   mechanism can update both surfaces.
-- Prove that returning from the saved metadata editor refreshes the library
-  poster and that saving while the Game Info route is mounted refreshes that
-  surface without replacing the shortcut overview.
+- Prove both return paths: save from a Library context-menu editor and return to
+  the updated poster; then open the editor from Game Info, save, and return to
+  an updated Game Info surface without replacing the shortcut overview or
+  losing enriched details.
 - Automatic, explicit Unknown, metadata removal, and plugin dismount must use
   the same refresh path as the positive categories.
 
@@ -268,8 +269,8 @@ and the committed CDP input/focus probes. Verify all of the following:
 4. Automatic shows and applies the fetched Valve category after Save.
 5. Verified, Playable, Unsupported, and Unknown each save and change the poster
    and Game Info status for the same shortcut.
-6. A save made while Game Info is mounted becomes visible without restarting
-   Steam and without losing the enriched matched-game details.
+6. Saving from the editor and returning to Game Info updates the status without
+   restarting Steam or losing the enriched matched-game details.
 7. Returning to Automatic restores the fetched category; removing metadata and
    reloading/dismounting the plugin do not leave stale packed bits.
 8. The shortcut remains launchable and the rich details/quick-links page remains
