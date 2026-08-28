@@ -119,7 +119,7 @@ export const CompatibilityStatusModal = ({
   );
 };
 
-export const openCompatibilityStatusModal = async (appId: number, parent?: EventTarget) => {
+export const openCompatibilityStatusModal = async (appId: number) => {
   try {
     await ensureMetadataCache();
     if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
@@ -127,8 +127,7 @@ export const openCompatibilityStatusModal = async (appId: number, parent?: Event
     }
     let modal: ReturnType<typeof showModal> | undefined;
     modal = showModal(
-      <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />,
-      parent
+      <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />
     );
     return modal;
   } catch (error) {

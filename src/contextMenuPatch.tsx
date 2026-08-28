@@ -195,11 +195,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
     </MenuItem>,
     <MenuItem
       key={COMPATIBILITY_ENTRY_KEY}
-      onSelected={(event) => {
-        const parent = event?.currentTarget
-          || (typeof document === "undefined" ? undefined : document.activeElement || undefined);
-        void openCompatibilityStatusModal(appId, parent);
-      }}
+      onSelected={() => void openCompatibilityStatusModal(appId)}
     >
       {"Compatibility status..."}
     </MenuItem>

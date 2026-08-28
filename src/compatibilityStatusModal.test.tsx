@@ -186,10 +186,8 @@ describe("compatibility status selector", () => {
     });
   });
 
-  it("groups choices into native vertical gamepad flow and restores menu focus on close", async () => {
-    const launcher = {} as EventTarget;
-
-    await openCompatibilityStatusModal(600, launcher);
+  it("groups choices into native vertical gamepad flow and opens in Decky's render target", async () => {
+    await openCompatibilityStatusModal(600);
 
     const modalElement = (ui.showModal as any).mock.calls[0]?.[0] as any;
     const modal = modalElement.type(modalElement.props) as any;
@@ -213,6 +211,6 @@ describe("compatibility status selector", () => {
       false,
       false,
     ]);
-    expect(ui.showModal).toHaveBeenCalledWith(expect.anything(), launcher);
+    expect(ui.showModal).toHaveBeenCalledWith(expect.anything());
   });
 });

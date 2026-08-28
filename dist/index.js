@@ -4902,14 +4902,14 @@ const CompatibilityStatusModal = ({ appId, closeModal, }) => {
     };
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Compatibility status", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { color: "#cbd5e1", fontSize: "14px", lineHeight: 1.4 }, children: "Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status." }) }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "vertical", navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, children: choices.map((choice) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { focusable: true, preferredFocus: choice.value === null, disabled: saving, onClick: () => void save(choice.value), style: { width: "100%", textAlign: "left" }, children: selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved) }) }, String(choice.value)))) })] }));
 };
-const openCompatibilityStatusModal = async (appId, parent) => {
+const openCompatibilityStatusModal = async (appId) => {
     try {
         await ensureMetadataCache();
         if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
             throw new Error("Compatibility status is available only for non-Steam games.");
         }
         let modal;
-        modal = DFL.showModal(SP_JSX.jsx(CompatibilityStatusModal, { appId: appId, closeModal: () => modal?.Close() }), parent);
+        modal = DFL.showModal(SP_JSX.jsx(CompatibilityStatusModal, { appId: appId, closeModal: () => modal?.Close() }));
         return modal;
     }
     catch (error) {
@@ -5017,11 +5017,7 @@ const insertOurEntry = (items, appId) => {
         return false;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: (event) => {
-            const parent = event?.currentTarget
-                || (typeof document === "undefined" ? undefined : document.activeElement || undefined);
-            void openCompatibilityStatusModal(appId, parent);
-        }, children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => void openCompatibilityStatusModal(appId), children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
     return true;
 };
 const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {

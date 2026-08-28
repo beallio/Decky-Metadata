@@ -198,19 +198,15 @@ describe("contextMenuPatch", () => {
 
     const secondItems = new MenuBody().render().props.children[0];
     expect(secondItems.filter((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)).toHaveLength(1);
-    const firstLauncher = {} as EventTarget;
     const firstSelector = secondItems.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY) as any;
     firstSelector.props.onSelected();
-    expect(compatibilityModal.open).toHaveBeenLastCalledWith(100, undefined);
-    firstSelector.props.onSelected({ currentTarget: firstLauncher });
-    expect(compatibilityModal.open).toHaveBeenLastCalledWith(100, firstLauncher);
+    expect(compatibilityModal.open).toHaveBeenLastCalledWith(100);
 
     new LibraryContextMenu(200).render();
     const otherItems = new MenuBody().render().props.children[0];
-    const secondLauncher = {} as EventTarget;
     const secondSelector = otherItems.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY) as any;
-    secondSelector.props.onSelected({ currentTarget: secondLauncher });
-    expect(compatibilityModal.open).toHaveBeenLastCalledWith(200, secondLauncher);
+    secondSelector.props.onSelected();
+    expect(compatibilityModal.open).toHaveBeenLastCalledWith(200);
   });
 
   it("does not add either Decky Metadata entry for official Steam games", () => {
