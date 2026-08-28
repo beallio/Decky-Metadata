@@ -1,8 +1,10 @@
 export {
   allNonSteamGames,
   applyMetadata,
+  effectiveCompatibilityCategory,
   ensureMetadataCache,
   refreshMetadataCache,
+  restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
@@ -18,6 +20,7 @@ export {
   hasActivityStore,
   hasSteamInternals,
   isNonSteamApp,
+  isNativeNonSteamShortcut,
   metadataCache,
   patchInstallStatus,
   rewriteSteamLinkToMatchedApp,

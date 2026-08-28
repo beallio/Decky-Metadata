@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     };
     return { unpatch: () => { target[method] = original; } };
   }),
+  getAllMetadata: vi.fn(),
 }));
 
 vi.mock("@decky/ui", () => ({ afterPatch: mocks.afterPatch, findModuleChild: vi.fn() }));
@@ -15,13 +16,19 @@ vi.mock("../backend", () => ({
   autoFetchMetadata: vi.fn(),
   fetchMetadata: vi.fn(),
   frontendLog: vi.fn(() => Promise.resolve()),
-  getAllMetadata: vi.fn(),
+  getAllMetadata: mocks.getAllMetadata,
   saveMetadata: vi.fn(),
 }));
 vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import { metadataCache, metadataState } from "./core";
-import { installMetadataPatches } from "./metadataPatch";
+import {
+  applyMetadata,
+  effectiveCompatibilityCategory,
+  installMetadataPatches,
+  refreshMetadataCache,
+  restoreAllCompatibilityBaselines,
+} from "./metadataPatch";
 
 type Overview = {
   appid: number;
@@ -73,14 +80,16 @@ const installWithOverview = (route: string) => {
 
 afterEach(() => {
   unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
-  delete metadataCache[String(matchedShortcutAppId)];
+  Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
   metadataState.bypassCounter = 0;
   metadataState.routeShield = null;
+  metadataState.compatibilityBaselines = {};
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appDetailsStore;
   delete (globalThis as Record<string, unknown>).Router;
   delete (globalThis as Record<string, unknown>).window;
   mocks.afterPatch.mockClear();
+  mocks.getAllMetadata.mockReset();
 });
 
 describe("installMetadataPatches BIsModOrShortcut wiring", () => {
@@ -160,5 +169,95 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
     unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
     expect(overview.BIsModOrShortcut("restored")).toBe(true);
     expect(original).toHaveBeenLastCalledWith("restored");
+  });
+});
+
+const compatibilityMetadata = (category?: number | null, override?: number | null) => ({
+  title: "Example",
+  id: "example",
+  description: "",
+  store_categories: [],
+  steam_dlc_appids: [],
+  has_points_shop: false,
+  deck_compat_category: category,
+  deck_compat_override: override,
+});
+
+const installCompatibilityOverview = (appId: number, packed: number, nonSteam = true) => {
+  const overview = {
+    appid: appId,
+    app_type: nonSteam ? 1073741824 : 0,
+    BIsShortcut: () => nonSteam,
+    BIsModOrShortcut: () => nonSteam,
+    steam_hw_compat_category_packed: packed,
+  };
+  const host = globalThis as Record<string, unknown>;
+  host.appStore = {
+    GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
+  };
+  host.appDetailsStore = {};
+  return overview;
+};
+
+describe("compatibility metadata application", () => {
+  it("uses the manual choice before Valve metadata and preserves explicit Unknown", () => {
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(3, 0) as any)).toBe(0);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, null) as any)).toBe(2);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(null, null) as any)).toBeNull();
+  });
+
+  it.each([0, 1, 2, 3])("writes category %i without changing higher packed bits", (category) => {
+    const appId = 9000 + category;
+    const overview = installCompatibilityOverview(appId, 0xab);
+    metadataCache[String(appId)] = compatibilityMetadata(null, category) as any;
+
+    applyMetadata(appId);
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0 | category | (category << 2));
+  });
+
+  it("restores the original packed low nibble after metadata removal", () => {
+    const appId = 9100;
+    const overview = installCompatibilityOverview(appId, 0x9b);
+    metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
+    applyMetadata(appId);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0x9b);
+  });
+
+  it("restores compatibility when a backend cache refresh removes the record", async () => {
+    const appId = 9200;
+    const overview = installCompatibilityOverview(appId, 0x4d);
+    metadataCache[String(appId)] = compatibilityMetadata(1, null) as any;
+    applyMetadata(appId);
+    mocks.getAllMetadata.mockResolvedValue({});
+
+    await refreshMetadataCache();
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0x4d);
+  });
+
+  it("restores every plugin-mutated shortcut during dismount cleanup", () => {
+    const appId = 9300;
+    const overview = installCompatibilityOverview(appId, 0xe6);
+    metadataCache[String(appId)] = compatibilityMetadata(2, null) as any;
+    applyMetadata(appId);
+
+    restoreAllCompatibilityBaselines();
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0xe6);
+  });
+
+  it("does not change official Steam games", () => {
+    const appId = 9400;
+    const overview = installCompatibilityOverview(appId, 0x57, false);
+    metadataCache[String(appId)] = compatibilityMetadata(3, 0) as any;
+
+    applyMetadata(appId);
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0x57);
   });
 });

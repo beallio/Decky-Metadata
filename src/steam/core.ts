@@ -50,6 +50,8 @@ export const metadataState: {
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
+  /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
+  compatibilityBaselines: Record<string, number>;
   lastObservedGameDetailAppId: number;
   routeShield: {
     appId: number;
@@ -66,6 +68,7 @@ export const metadataState: {
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
+  compatibilityBaselines: {},
   lastObservedGameDetailAppId: 0,
   routeShield: null,
 };
@@ -124,6 +127,20 @@ export const isNonSteamApp = (overview: any): boolean => {
     return false;
   }
   return false;
+};
+
+/**
+ * Require Steam's native shortcut identity for operations that write back to
+ * an overview. Cached metadata alone must never make an official app eligible.
+ */
+export const isNativeNonSteamShortcut = (overview: any): boolean => {
+  if (!isNonSteamApp(overview)) return false;
+  if (Number(overview?.app_type) === NON_STEAM_APP_TYPE) return true;
+  try {
+    return overview?.BIsShortcut?.() === true;
+  } catch (_error) {
+    return false;
+  }
 };
 
 export const getOverview = (appId: number): SteamOverview | null => {

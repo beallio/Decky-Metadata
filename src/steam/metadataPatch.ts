@@ -3,7 +3,7 @@ import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMeta
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
-import { MetadataData } from "../types";
+import { DeckCompatibilityCategory, MetadataData } from "../types";
 import * as log from "../log";
 import {
   Unpatch,
@@ -14,6 +14,7 @@ import {
   getOverview,
   isCurrentGameDetailRoute,
   isNonSteamApp,
+  isNativeNonSteamShortcut,
   isNonSteamAppWithoutPatchedMethod,
   metadataCache,
   patchMethod,
@@ -137,12 +138,86 @@ const ensureDetailsOverviewSafeFields = (appId: number) => {
 };
 
 
+const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCategory =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+
+export const effectiveCompatibilityCategory = (
+  metadata: MetadataData | undefined
+): DeckCompatibilityCategory | null => {
+  if (isCompatibilityCategory(metadata?.deck_compat_override)) {
+    return metadata.deck_compat_override;
+  }
+  if (isCompatibilityCategory(metadata?.deck_compat_category)) {
+    return metadata.deck_compat_category;
+  }
+  return null;
+};
+
+const packedCompatibilityValue = (overview: any): number => {
+  const packed = Number(overview?.steam_hw_compat_category_packed);
+  return Number.isFinite(packed) ? packed : 0;
+};
+
+const restoreCompatibilityBaseline = (appId: number, overview = getOverview(appId)): boolean => {
+  const key = String(appId);
+  if (
+    !isNonSteamApp(overview) ||
+    !Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)
+  ) {
+    return false;
+  }
+  try {
+    const packed = packedCompatibilityValue(overview);
+    overview.steam_hw_compat_category_packed =
+      (packed & ~0xf) | metadataState.compatibilityBaselines[key];
+    delete metadataState.compatibilityBaselines[key];
+    return true;
+  } catch (_error) {
+    return false;
+  }
+};
+
+export const restoreAllCompatibilityBaselines = () => {
+  Object.keys(metadataState.compatibilityBaselines).forEach((key) => {
+    restoreCompatibilityBaseline(Number(key));
+  });
+};
+
+const applyCompatibilityCategory = (
+  appId: number,
+  overview: any,
+  category: DeckCompatibilityCategory | null
+) => {
+  if (category === null) {
+    restoreCompatibilityBaseline(appId, overview);
+    return;
+  }
+  try {
+    const key = String(appId);
+    const previousPacked = packedCompatibilityValue(overview);
+    if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
+      metadataState.compatibilityBaselines[key] = previousPacked & 0xf;
+    }
+    // bits 0-1 = steam_deck_compat_category; bits 2-3 = Steam's verified-filter copy.
+    // Keep bits >= 4 from Steam's original packed state.
+    overview.steam_hw_compat_category_packed =
+      (previousPacked & ~0xf) | category | (category << 2);
+  } catch (_error) {
+    // Steam objects are not always writable during early bootstrap.
+  }
+};
+
 export const refreshMetadataCache = async () => {
   const all = await getAllMetadata();
+  const affectedAppIds = new Set([
+    ...Object.keys(metadataCache),
+    ...Object.keys(metadataState.compatibilityBaselines),
+    ...Object.keys(all || {}),
+  ]);
   Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
   Object.assign(metadataCache, all || {});
   metadataState.metadataLoaded = true;
-  Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
+  affectedAppIds.forEach((key) => applyMetadata(Number(key)));
 };
 
 export const ensureMetadataCache = async () => {
@@ -179,25 +254,18 @@ export const startMetadataBootstrap = (): Unpatch => {
 
 export const applyMetadata = (appId: number) => {
   const overview = getOverview(appId);
-  if (!isNonSteamApp(overview)) return;
+  if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview)) return;
   const metadata = metadataCache[String(appId)];
-  if (!metadata) return;
+  if (!metadata) {
+    restoreCompatibilityBaseline(appId, overview);
+    return;
+  }
 
   try {
     if (typeof metadata.rating === "number") {
       overview.metacritic_score = metadata.rating;
     }
-    if (
-      typeof metadata.deck_compat_category === "number" &&
-      metadata.deck_compat_category >= 1 &&
-      metadata.deck_compat_category <= 3
-    ) {
-      const category = metadata.deck_compat_category & 3;
-      const prevPacked = Number(overview.steam_hw_compat_category_packed) || 0;
-      // bits 0-1 = steam_deck_compat_category; bits 2-3 = verified-filter copy; keep bits >= 4
-      overview.steam_hw_compat_category_packed =
-        (prevPacked & ~0xf) | category | (category << 2);
-    }
+    applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
     if (!overview.m_setStoreCategories) {
       overview.m_setStoreCategories = new Set<number>();
     }
