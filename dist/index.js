@@ -1247,6 +1247,8 @@ const metadataState = {
     loadingMetadata: new Set(),
     loadingScreenshots: new Set(),
     appliedMetadataRef: {},
+    compatibilityBaselines: {},
+    compatibilityRevision: 0,
     lastObservedGameDetailAppId: 0,
     routeShield: null,
 };
@@ -1302,9 +1304,47 @@ const isNonSteamApp = (overview) => {
     }
     return false;
 };
+/**
+ * Require Steam's native shortcut identity for operations that write back to
+ * an overview. Cached metadata alone must never make an official app eligible.
+ */
+const isNativeNonSteamShortcut = (overview) => {
+    if (!isNonSteamApp(overview))
+        return false;
+    if (Number(overview?.app_type) === NON_STEAM_APP_TYPE)
+        return true;
+    try {
+        return overview?.BIsShortcut?.() === true;
+    }
+    catch (_error) {
+        return false;
+    }
+};
 const getOverview = (appId) => {
     try {
         return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+/**
+ * Resolve an overview by its own AppID without passing through plugin patches.
+ * This is required for writes: GetAppOverviewByAppID intentionally aliases a
+ * matched Steam AppID to its shortcut on the rich-details path.
+ */
+const getNativeOverview = (appId) => {
+    const nativeAppId = Number(appId);
+    if (!Number.isFinite(nativeAppId) || nativeAppId <= 0)
+        return null;
+    try {
+        const allApps = appStore?.allApps;
+        const entries = Array.isArray(allApps)
+            ? allApps
+            : allApps && typeof allApps === "object"
+                ? Object.values(allApps)
+                : [];
+        return entries.find((overview) => Number(overview?.appid) === nativeAppId) ?? null;
     }
     catch (_error) {
         return null;
@@ -1842,12 +1882,98 @@ const ensureDetailsOverviewSafeFields = (appId) => {
         // Best-effort guard only; never block Steam's native bootstrap.
     }
 };
+const isCompatibilityCategory$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+const effectiveCompatibilityCategory = (metadata) => {
+    if (isCompatibilityCategory$1(metadata?.deck_compat_override)) {
+        return metadata.deck_compat_override;
+    }
+    if (isCompatibilityCategory$1(metadata?.deck_compat_category)) {
+        return metadata.deck_compat_category;
+    }
+    return null;
+};
+const packedCompatibilityValue = (overview) => {
+    const packed = Number(overview?.steam_hw_compat_category_packed);
+    return Number.isFinite(packed) ? packed : 0;
+};
+const restoreCompatibilityBaseline = (appId, overview = getNativeOverview(appId)) => {
+    const key = String(appId);
+    if (!isNativeNonSteamShortcut(overview) ||
+        !Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
+        return false;
+    }
+    try {
+        const packed = packedCompatibilityValue(overview);
+        overview.steam_hw_compat_category_packed =
+            (packed & -16) | metadataState.compatibilityBaselines[key];
+        delete metadataState.compatibilityBaselines[key];
+        return true;
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const restoreAllCompatibilityBaselines = () => {
+    Object.keys(metadataState.compatibilityBaselines).forEach((key) => {
+        restoreCompatibilityBaseline(Number(key));
+    });
+};
+/**
+ * Request one normal Steam route render after a user compatibility change.
+ * This keeps the existing overview object in place, so matched Game Info data
+ * is retained while both the library card and an open Game Info route observe
+ * the new packed category.
+ */
+const refreshCompatibilitySurfaces = (appId) => {
+    const revision = ++metadataState.compatibilityRevision;
+    try {
+        const history = globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+        const location = history?.location;
+        const pathname = location?.pathname;
+        if (typeof history?.replace === "function" && typeof pathname === "string" && pathname) {
+            const path = `${pathname}${location.search || ""}${location.hash || ""}`;
+            history.replace(path, {
+                ...(location.state || {}),
+                deckyMetadataCompatibilityRevision: revision,
+            });
+        }
+    }
+    catch (_error) {
+        // Do not interrupt a user action when a Steam client does not expose history.replace.
+    }
+    return revision;
+};
+const applyCompatibilityCategory = (appId, overview, category) => {
+    if (category === null) {
+        restoreCompatibilityBaseline(appId, overview);
+        return;
+    }
+    try {
+        const key = String(appId);
+        const previousPacked = packedCompatibilityValue(overview);
+        if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
+            metadataState.compatibilityBaselines[key] = previousPacked & 0xf;
+        }
+        // bits 0-1 = steam_deck_compat_category; bits 2-3 = Steam's verified-filter copy.
+        // Keep bits >= 4 from Steam's original packed state.
+        overview.steam_hw_compat_category_packed =
+            (previousPacked & -16) | category | (category << 2);
+    }
+    catch (_error) {
+        // Steam objects are not always writable during early bootstrap.
+    }
+};
 const refreshMetadataCache = async () => {
     const all = await getAllMetadata();
+    const affectedAppIds = new Set([
+        ...Object.keys(metadataCache),
+        ...Object.keys(metadataState.compatibilityBaselines),
+        ...Object.keys(all || {}),
+    ]);
     Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
     Object.assign(metadataCache, all || {});
     metadataState.metadataLoaded = true;
-    Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
+    affectedAppIds.forEach((key) => applyMetadata(Number(key)));
 };
 const ensureMetadataCache = async () => {
     if (metadataState.metadataLoaded)
@@ -1883,25 +2009,19 @@ const startMetadataBootstrap = () => {
     };
 };
 const applyMetadata = (appId) => {
-    const overview = getOverview(appId);
-    if (!isNonSteamApp(overview))
+    const overview = getNativeOverview(appId);
+    if (!isNativeNonSteamShortcut(overview))
         return;
     const metadata = metadataCache[String(appId)];
-    if (!metadata)
+    if (!metadata) {
+        restoreCompatibilityBaseline(appId, overview);
         return;
+    }
     try {
         if (typeof metadata.rating === "number") {
             overview.metacritic_score = metadata.rating;
         }
-        if (typeof metadata.deck_compat_category === "number" &&
-            metadata.deck_compat_category >= 1 &&
-            metadata.deck_compat_category <= 3) {
-            const category = metadata.deck_compat_category & 3;
-            const prevPacked = Number(overview.steam_hw_compat_category_packed) || 0;
-            // bits 0-1 = steam_deck_compat_category; bits 2-3 = verified-filter copy; keep bits >= 4
-            overview.steam_hw_compat_category_packed =
-                (prevPacked & -16) | category | (category << 2);
-        }
+        applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
         if (!overview.m_setStoreCategories) {
             overview.m_setStoreCategories = new Set();
         }
@@ -3985,6 +4105,380 @@ const installCommunityFeedPatch = (unpatchers) => {
     }
 };
 
+const DECK_DISPLAY = 1;
+const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
+const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
+const steamUiWindow = () => {
+    const candidates = [globalThis];
+    try {
+        const currentWindow = globalThis;
+        candidates.push(currentWindow.parent, currentWindow.top);
+    }
+    catch {
+        // A cross-origin frame can still use its own Decky module bridge.
+    }
+    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
+};
+/**
+ * Decky's module finder sees the observer/memo export, not LibraryItemBox's
+ * renderer source. Query only webpack factory text, then load its one match.
+ * This never walks React or MobX state.
+ */
+const findSteamModulesBySource = (fragments) => {
+    const chunks = steamUiWindow().webpackChunksteamui;
+    if (!chunks?.push)
+        return [];
+    let webpackRequire;
+    try {
+        chunks.push([[Symbol("decky-metadata-library-compatibility")], {}, (requireFn) => {
+                webpackRequire = requireFn;
+            }]);
+        const moduleIds = Object.keys(webpackRequire?.m ?? {}).filter((id) => {
+            const factory = webpackRequire.m[id];
+            const source = typeof factory === "function" ? factory.toString() : "";
+            return fragments.every((fragment) => source.includes(fragment));
+        });
+        return moduleIds.flatMap((moduleId) => {
+            try {
+                return [webpackRequire(moduleId)];
+            }
+            catch {
+                return [];
+            }
+        });
+    }
+    catch {
+        return [];
+    }
+};
+const findSteamModuleBySource = (fragments) => {
+    const candidates = findSteamModulesBySource(fragments);
+    return candidates.length === 1 ? candidates[0] : undefined;
+};
+const findLiveModuleChild = (predicate) => {
+    const liveFinder = steamUiWindow().DFL?.findModuleChild;
+    return typeof liveFinder === "function" ? liveFinder(predicate) : DFL.findModuleChild(predicate);
+};
+const findOneSourceExport = (modules, predicate) => {
+    const matches = modules.filter(predicate);
+    return matches.length === 1 ? matches[0] : undefined;
+};
+/**
+ * Return a category only when a rendered card is the exact native shortcut
+ * and Steam has a positive status to display. Category 0 is Steam's native
+ * no-status state, so it deliberately does not fabricate an Unknown badge.
+ */
+const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, isNativeNonSteamShortcut: isNativeShortcut, }) => {
+    if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview))
+        return null;
+    const category = effectiveCompatibilityCategory(metadata);
+    return category === null || category === 0 ? null : category;
+};
+const childrenOf = (element) => {
+    const children = element?.props?.children;
+    return Array.isArray(children) ? children : [children];
+};
+const hasIndicator = (children, indicator, key) => children.some((child) => SP_REACT.isValidElement(child) && (child.type === indicator || child.key === key));
+const decorateCarouselCompatibility = (output, indicator, className, category, overview) => {
+    if (!category || !SP_REACT.isValidElement(output))
+        return output;
+    const element = output;
+    const children = childrenOf(element);
+    if (hasIndicator(children, indicator, HOME_INDICATOR_KEY))
+        return output;
+    // Steam's GameCapsule places compatibility after its in-library marker. A
+    // shortcut suppresses that native slot with `false`; replace only that
+    // confirmed placeholder. If Steam changes the shape, insert our indicator
+    // without discarding another child.
+    const nativeCompatibilitySlot = children[2];
+    const remainingChildren = nativeCompatibilitySlot === false
+        ? children.slice(3)
+        : children.slice(2);
+    return SP_REACT.cloneElement(element, {
+        children: [
+            ...children.slice(0, 2),
+            SP_REACT.createElement(indicator, { key: HOME_INDICATOR_KEY, display: DECK_DISPLAY, overview, className }),
+            ...remainingChildren,
+        ],
+    });
+};
+const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassName, overview) => {
+    if (!SP_REACT.isValidElement(node))
+        return node;
+    const element = node;
+    if (element.props?.className === iconRowClassName) {
+        const children = childrenOf(element);
+        if (hasIndicator(children, indicator, GRID_INDICATOR_KEY))
+            return node;
+        return SP_REACT.cloneElement(element, {
+            children: [
+                ...children,
+                SP_REACT.createElement(indicator, {
+                    key: GRID_INDICATOR_KEY,
+                    display: DECK_DISPLAY,
+                    overview,
+                    className: indicatorClassName,
+                }),
+            ],
+        });
+    }
+    const originalChildren = element.props?.children;
+    if (originalChildren === undefined)
+        return node;
+    const children = childrenOf(node);
+    const decoratedChildren = children.map((child) => decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview));
+    if (decoratedChildren.every((child, index) => child === children[index]))
+        return node;
+    return SP_REACT.cloneElement(element, {
+        children: Array.isArray(originalChildren) ? decoratedChildren : decoratedChildren[0],
+    });
+};
+const decorateGridCompatibility = (output, indicator, iconRowClassName, indicatorClassName, category, overview) => {
+    if (!category || !SP_REACT.isValidElement(output))
+        return output;
+    return decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
+};
+const resolveTargets = (dependencies) => {
+    const findChild = (predicate) => {
+        try {
+            return dependencies.findModuleChild(predicate);
+        }
+        catch {
+            // A lazy Steam module can disappear while Decky's finder is scanning it.
+            // Treat that race as unresolved so the installer retries fail-closed.
+            return undefined;
+        }
+    };
+    const carouselModule = findChild((module) => {
+        if (!module || typeof module !== "object")
+            return undefined;
+        return typeof module._ === "function" &&
+            typeof module.g === "function" &&
+            module._.toString().includes("GameCapsule unable to render") &&
+            module._.toString().includes("#LibraryHome_GameCarousel_ContextMenu") &&
+            module._.toString().includes("gamepadgamecapsule")
+            ? module
+            : undefined;
+    }) ?? dependencies.findModuleBySource([
+        "GameCapsule unable to render",
+        "#LibraryHome_GameCarousel_ContextMenu",
+        "gamepadgamecapsule",
+    ]);
+    const homeModule = findChild((module) => typeof module?.Xd?.render === "function" && module.Xd.render.toString().includes("VBC_")
+        ? module
+        : undefined) ?? dependencies.findModuleBySource([
+        "VirtualizedBoxCarousel",
+        "VBC_",
+        "fnItemRenderer",
+        "CellRenderer",
+    ]);
+    const gridModule = findChild((module) => typeof module?.TK?.type === "function" &&
+        typeof module?.hF === "function" &&
+        typeof module?.Mf === "function" &&
+        typeof module?.eL === "function" &&
+        typeof module?.Kt === "function" &&
+        typeof module?.aT === "number" &&
+        typeof module?.dC === "number" &&
+        typeof module?.UT === "number" &&
+        typeof module?.lS === "number" &&
+        typeof module?.oG === "number"
+        ? module
+        : undefined) ?? dependencies.findModuleBySource([
+        "eForceHWCompatDisplay",
+        "bHideCompatIcons",
+        "LibraryItemBox",
+        "BIsModOrShortcut",
+    ]);
+    const homeStyles = findChild((module) => typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined) ?? findOneSourceExport(dependencies.findModulesBySource(["DeckCompat", "GameCapsule"]), (module) => typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string");
+    const gridStyles = findChild((module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined) ?? findOneSourceExport(dependencies.findModulesBySource(["LibraryItemIcons", "SteamDeckCompatIcon"]), (module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string");
+    const hasWritableCallableMethod = (target, methodName) => typeof target?.[methodName] === "function" &&
+        Object.getOwnPropertyDescriptor(target, methodName)?.writable === true;
+    const isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
+    if (!carouselModule ||
+        Array.isArray(homeModule) ||
+        Array.isArray(gridModule) ||
+        homeModule === gridModule ||
+        !hasWritableCallableMethod(homeModule?.Xd, "render") ||
+        !hasWritableCallableMethod(gridModule?.TK, "type") ||
+        typeof carouselModule._ !== "function" ||
+        typeof carouselModule.g !== "function" ||
+        !isNonEmptyString(homeStyles?.DeckCompat) ||
+        !isNonEmptyString(homeStyles?.GameCapsule) ||
+        !isNonEmptyString(gridStyles?.LibraryItemIcons) ||
+        !isNonEmptyString(gridStyles?.SteamDeckCompatIcon))
+        return null;
+    return {
+        home: homeModule.Xd,
+        carousel: carouselModule._,
+        grid: gridModule.TK,
+        indicator: carouselModule.g,
+        homeClassName: homeStyles.DeckCompat,
+        gridIconsClassName: gridStyles.LibraryItemIcons,
+        gridIndicatorClassName: gridStyles.SteamDeckCompatIcon,
+    };
+};
+const defaultDependencies = {
+    findModuleChild: findLiveModuleChild,
+    findModuleBySource: findSteamModuleBySource,
+    findModulesBySource: findSteamModulesBySource,
+    patchHomeRenderer: (component, handler) => safeAfterPatch(component, "render", handler).unpatch,
+    patchGridRenderer: (component, handler) => safeAfterPatch(component, "type", handler).unpatch,
+    scheduleRetry: (callback, delayMs) => window.setTimeout(callback, delayMs),
+    cancelRetry: (retryId) => window.clearTimeout(retryId),
+    retryIntervalMs: 500,
+    maxResolutionAttempts: 240,
+    getOverview,
+    metadataForApp: (appId) => metadataCache[String(appId)],
+    isNativeNonSteamShortcut,
+};
+const reportInstalled = (resolutionAttempts) => {
+    try {
+        void Promise.resolve(frontendLog("patch", "library compatibility indicators installed", { resolutionAttempts }, "info")).catch(() => undefined);
+    }
+    catch {
+        // Reporting must not alter renderer installation.
+    }
+};
+/**
+ * Replace an exact carousel element with an owned wrapper. Unlike Decky's
+ * createReactTreePatcher this does not patch a component type in place, so a
+ * cached card cannot retain a plugin closure after teardown.
+ */
+const wrapCarouselElement = (node, carousel, wrapper) => {
+    if (!SP_REACT.isValidElement(node))
+        return node;
+    const element = node;
+    if (element.type === carousel) {
+        return SP_REACT.createElement(wrapper, { ...element.props, key: element.key });
+    }
+    const originalChildren = element.props?.children;
+    if (originalChildren === undefined)
+        return node;
+    const children = childrenOf(element);
+    const wrappedChildren = children.map((child) => wrapCarouselElement(child, carousel, wrapper));
+    if (wrappedChildren.every((child, index) => child === children[index]))
+        return node;
+    return SP_REACT.cloneElement(element, {
+        children: Array.isArray(originalChildren) ? wrappedChildren : wrappedChildren[0],
+    });
+};
+/**
+ * Add compatibility indicators at the two native Library card renderers.
+ * The patch calls only those renderers. It never walks MobX state.
+ */
+const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
+    const dependencies = { ...defaultDependencies, ...provided };
+    let active = true;
+    let homeUnpatch;
+    let gridUnpatch;
+    let retryId;
+    let resolutionAttempts = 0;
+    let installed = false;
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned)
+            return;
+        cleaned = true;
+        active = false;
+        if (retryId !== undefined) {
+            dependencies.cancelRetry(retryId);
+            retryId = undefined;
+        }
+        const homeCleanup = homeUnpatch;
+        const gridCleanup = gridUnpatch;
+        homeUnpatch = undefined;
+        gridUnpatch = undefined;
+        try {
+            homeCleanup?.();
+        }
+        catch {
+            // A changed Steam target must not keep the grid patch alive.
+        }
+        try {
+            gridCleanup?.();
+        }
+        catch {
+            // The aggregate Steam cleanup continues after one target changed.
+        }
+    };
+    // Register before resolving lazy Library modules so dismount always cancels
+    // an outstanding retry, even when no renderer has been patched yet.
+    unpatchers.push(cleanup);
+    const installWhenTargetsResolve = () => {
+        if (!active || installed)
+            return;
+        resolutionAttempts += 1;
+        let targets;
+        try {
+            targets = resolveTargets(dependencies);
+        }
+        catch {
+            // Lazy exports can be observed while their module factory is still
+            // initializing. Retry that transient state instead of losing the timer.
+            targets = null;
+        }
+        if (!targets) {
+            if (resolutionAttempts < dependencies.maxResolutionAttempts) {
+                retryId = dependencies.scheduleRetry(() => {
+                    retryId = undefined;
+                    installWhenTargetsResolve();
+                }, dependencies.retryIntervalMs);
+            }
+            return;
+        }
+        const decorateForApp = (appId, output, decorate, renderedOverview) => {
+            const overview = renderedOverview ?? dependencies.getOverview(appId);
+            const category = resolveLibraryCompatibilityIndicator({
+                renderedAppId: appId,
+                overview,
+                metadata: dependencies.metadataForApp(appId),
+                isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
+            });
+            return decorate(output, category, overview);
+        };
+        const carouselWrapper = (props) => {
+            const output = targets.carousel(props);
+            if (!active)
+                return output;
+            // Steam's live Home renderer passes the shortcut overview as `app`.
+            // The top-level `appid` remains a supported fallback for the alternate
+            // renderer shape used by older clients.
+            const appId = Number(props?.appid ?? props?.app?.appid);
+            return decorateForApp(appId, output, (card, category, overview) => decorateCarouselCompatibility(card, targets.indicator, targets.homeClassName, category, overview));
+        };
+        try {
+            homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
+                const homeOutput = output;
+                if (!active || !SP_REACT.isValidElement(homeOutput))
+                    return output;
+                const homeProps = homeOutput.props;
+                if (typeof homeProps?.fnItemRenderer !== "function")
+                    return output;
+                const originalRenderer = homeProps.fnItemRenderer;
+                return SP_REACT.cloneElement(homeOutput, {
+                    fnItemRenderer: (...itemArgs) => wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+                });
+            });
+            if (typeof homeUnpatch !== "function") {
+                cleanup();
+                return;
+            }
+            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, category, overview) => decorateGridCompatibility(card, targets.indicator, targets.gridIconsClassName, targets.gridIndicatorClassName, category, overview), args[0]?.app));
+            if (typeof gridUnpatch !== "function") {
+                cleanup();
+                return;
+            }
+        }
+        catch {
+            cleanup();
+            return;
+        }
+        installed = true;
+        reportInstalled(resolutionAttempts);
+    };
+    installWhenTargetsResolve();
+};
+
 const firstUrlishArgIndex = (args, firstOnly = false) => {
     const limit = firstOnly ? Math.min(args.length, 1) : args.length;
     for (let index = 0; index < limit; index += 1) {
@@ -4636,9 +5130,10 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
-// Stable keys for the entries we inject, so we can find and de-duplicate them.
+// The edit key is the only entry this version inserts. Keep the legacy key in
+// the removal set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-compatibility"]);
 let contextMenuTraceEnabled = false;
 const setContextMenuTraceEnabled = (enabled) => {
     contextMenuTraceEnabled = enabled;
@@ -4720,7 +5215,7 @@ const isGameContextMenu = (items) => {
 const removeOurEntry = (items) => {
     let removed = false;
     for (let index = items.length - 1; index >= 0; index -= 1) {
-        if (ENTRY_KEYS.has(items[index]?.key)) {
+        if (REMOVAL_KEYS.has(items[index]?.key)) {
             items.splice(index, 1);
             removed = true;
         }
@@ -4729,7 +5224,8 @@ const removeOurEntry = (items) => {
 };
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items, appId) => {
-    if (!isNonSteamApp(getOverview(appId)))
+    const overview = getNativeOverview(appId);
+    if (!isNativeNonSteamShortcut(overview))
         return false;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
@@ -6344,6 +6840,7 @@ const installSteamPatches = () => {
         });
         installNativeNewsHistoryRedirects(unpatchers);
         installMetadataPatches(unpatchers);
+        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
         installCommunityFeedPatch(unpatchers);
         installRouterRenderPatches(unpatchers, {
             ensureMetadataCache,
@@ -7133,6 +7630,26 @@ const descriptionTextareaStyle = {
     background: "rgba(0,0,0,0.28)",
     border: "1px solid rgba(255,255,255,0.18)",
 };
+const compatibilityStatusOptions = [
+    { data: null, label: "Automatic" },
+    { data: 3, label: "Verified" },
+    { data: 2, label: "Playable" },
+    { data: 1, label: "Unsupported" },
+    { data: 0, label: "Unknown" },
+];
+const isCompatibilityCategory = (value) => typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 3;
+const compatibilityStatusLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
+const compatibilityStatusValue = (value) => isCompatibilityCategory(value) ? value : null;
+const compatibilityStatusDisplay = (override, resolved) => {
+    if (override !== null)
+        return compatibilityStatusLabel(override);
+    return resolved === null
+        ? "Automatic"
+        : `Automatic (Valve: ${compatibilityStatusLabel(resolved)})`;
+};
 const MetadataPage = () => {
     const editorRootRef = SP_REACT.useRef(null);
     const descriptionRef = SP_REACT.useRef(null);
@@ -7224,7 +7741,9 @@ const MetadataPage = () => {
         try {
             const saved = await saveMetadata(appId, normalizedMetadata);
             metadataCache[String(appId)] = saved;
+            setFormMetadata(saved);
             applyMetadata(appId);
+            refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
         }
         catch (error) {
@@ -7309,6 +7828,8 @@ const MetadataPage = () => {
         try {
             await removeMetadata(appId);
             delete metadataCache[String(appId)];
+            applyMetadata(appId);
+            refreshCompatibilitySurfaces();
             setFormMetadata(metadataTemplate(appName(appId)));
             toastSuccess("Removed", "Metadata removed");
         }
@@ -7343,7 +7864,10 @@ const MetadataPage = () => {
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,
-                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => setMetadata((prev) => ({
+                                ...prev,
+                                deck_compat_override: compatibilityStatusValue(option.data),
+                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
@@ -7386,6 +7910,12 @@ var index = DFL.definePlugin(() => {
             }
             catch (error$1) {
                 error("patch", "metadata bootstrap stop failed", error$1);
+            }
+            try {
+                restoreAllCompatibilityBaselines();
+            }
+            catch (error$1) {
+                error("patch", "compatibility baseline restore failed", error$1);
             }
             try {
                 unpatchSteam?.();

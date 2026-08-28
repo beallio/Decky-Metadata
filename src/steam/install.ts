@@ -25,6 +25,7 @@ import {
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
 } from "./metadataPatch";
+import { installLibraryCompatibilityIndicators } from "./libraryCompatibilityIndicators";
 import { installMainWindowHistoryRedirect, installSteamNavigationRedirect } from "./navigationRedirect";
 import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace } from "./diagnostics";
 import { setContextMenuTraceEnabled } from "../contextMenuPatch";
@@ -98,6 +99,7 @@ export const installSteamPatches = (): Unpatch => {
 
     installNativeNewsHistoryRedirects(unpatchers);
     installMetadataPatches(unpatchers);
+    safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
     installCommunityFeedPatch(unpatchers);
     installRouterRenderPatches(unpatchers, {
       ensureMetadataCache,

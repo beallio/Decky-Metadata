@@ -1,5 +1,6 @@
 import {
   Focusable,
+  DropdownItem,
   Navigation,
   PanelSection,
   PanelSectionRow,
@@ -25,10 +26,12 @@ import {
   getOverview,
   isNonSteamApp,
   metadataCache,
+  refreshCompatibilitySurfaces,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
   CATEGORY_LABELS,
+  DeckCompatibilityCategory,
   MetadataData,
   MetadataSearchResult,
 } from "./types";
@@ -86,6 +89,45 @@ const descriptionTextareaStyle: CSSProperties = {
   color: "white",
   background: "rgba(0,0,0,0.28)",
   border: "1px solid rgba(255,255,255,0.18)",
+};
+
+type CompatibilityOverride = DeckCompatibilityCategory | null;
+
+const compatibilityStatusOptions: Array<{
+  data: CompatibilityOverride;
+  label: string;
+}> = [
+  { data: null, label: "Automatic" },
+  { data: 3, label: "Verified" },
+  { data: 2, label: "Playable" },
+  { data: 1, label: "Unsupported" },
+  { data: 0, label: "Unknown" },
+];
+
+const isCompatibilityCategory = (
+  value: unknown
+): value is DeckCompatibilityCategory =>
+  typeof value === "number" &&
+  Number.isInteger(value) &&
+  value >= 0 &&
+  value <= 3;
+
+const compatibilityStatusLabel = (category: DeckCompatibilityCategory): string =>
+  ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[
+    category
+  ];
+
+const compatibilityStatusValue = (value: unknown): CompatibilityOverride =>
+  isCompatibilityCategory(value) ? value : null;
+
+const compatibilityStatusDisplay = (
+  override: CompatibilityOverride,
+  resolved: CompatibilityOverride
+): string => {
+  if (override !== null) return compatibilityStatusLabel(override);
+  return resolved === null
+    ? "Automatic"
+    : `Automatic (Valve: ${compatibilityStatusLabel(resolved)})`;
 };
 
 export const MetadataPage = () => {
@@ -188,7 +230,9 @@ export const MetadataPage = () => {
     try {
       const saved = await saveMetadata(appId, normalizedMetadata);
       metadataCache[String(appId)] = saved;
+      setFormMetadata(saved);
       applyMetadata(appId);
+      refreshCompatibilitySurfaces(appId);
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
       toastError("Save failed", String(error));
@@ -268,6 +312,8 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
+      applyMetadata(appId);
+      refreshCompatibilitySurfaces(appId);
       setFormMetadata(metadataTemplate(appName(appId)));
       toastSuccess("Removed", "Metadata removed");
     } catch (error) {
@@ -478,6 +524,32 @@ export const MetadataPage = () => {
             </div>
           </PanelSectionRow>
         </PanelSection>
+
+        {nonSteam ? (
+          <PanelSection title={"Compatibility status"}>
+            <PanelSectionRow>
+              <DropdownItem
+                label={"Compatibility status"}
+                rgOptions={compatibilityStatusOptions}
+                selectedOption={compatibilityStatusValue(
+                  metadata.deck_compat_override
+                )}
+                onChange={(option) =>
+                  setMetadata((prev) => ({
+                    ...prev,
+                    deck_compat_override: compatibilityStatusValue(option.data),
+                  }))
+                }
+                renderButtonValue={() =>
+                  compatibilityStatusDisplay(
+                    compatibilityStatusValue(metadata.deck_compat_override),
+                    compatibilityStatusValue(metadata.deck_compat_category)
+                  )
+                }
+              />
+            </PanelSectionRow>
+          </PanelSection>
+        ) : null}
 
         <PanelSection title={"Steam info fields"}>
           <PanelSectionRow>

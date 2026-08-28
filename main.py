@@ -41,6 +41,7 @@ class MetadataRecord(TypedDict, total=False):
     rating: int | None
     steam_store_state: str
     deck_compat_category: int | None
+    deck_compat_override: int | None
     store_categories: list[int]
     genres: list[str]
     features: list[str]
@@ -580,7 +581,18 @@ class Plugin:
     ) -> MetadataRecord:
         with self._data_guard():
             self._load_data()
-            cleaned = self._sanitize_metadata(metadata)
+            next_metadata = dict(metadata)
+            existing = self._data["metadata"].get(str(app_id))
+            if (
+                isinstance(existing, dict)
+                and "deck_compat_override" in existing
+                and "deck_compat_override" not in next_metadata
+            ):
+                # Ordinary editor and scan saves should not silently reset a
+                # user's choice. Passing null remains the explicit Automatic
+                # request because it keeps the key present.
+                next_metadata["deck_compat_override"] = existing["deck_compat_override"]
+            cleaned = self._sanitize_metadata(next_metadata)
             cleaned["updated_at"] = now()
             self._data["metadata"][str(app_id)] = cleaned
             self._save_data()
@@ -624,6 +636,10 @@ class Plugin:
         existing: dict[str, Any] | None, fetched: dict[str, Any]
     ) -> dict[str, Any]:
         merged = dict(fetched)
+        if isinstance(existing, dict) and "deck_compat_override" in existing:
+            # This is a user choice, not provider data. Keep explicit Unknown
+            # (0) too, so a later metadata refresh cannot turn it into Automatic.
+            merged["deck_compat_override"] = existing["deck_compat_override"]
         existing_steam_appid = (
             Plugin._safe_int(existing.get("steam_appid"))
             if isinstance(existing, dict)
@@ -1190,6 +1206,16 @@ class Plugin:
         if deck_compat_category not in {0, 1, 2, 3}:
             deck_compat_category = None
 
+        deck_compat_override = metadata.get("deck_compat_override")
+        try:
+            deck_compat_override = (
+                int(deck_compat_override) if deck_compat_override is not None else None
+            )
+        except Exception:
+            deck_compat_override = None
+        if deck_compat_override not in {0, 1, 2, 3}:
+            deck_compat_override = None
+
         title = self._clean_game_title(str(metadata.get("title") or ""))
         description = self._clean_html_text(str(metadata.get("description") or ""))
         short_description = self._clean_html_text(
@@ -1215,6 +1241,7 @@ class Plugin:
             "release_date": release_date,
             "rating": rating,
             "deck_compat_category": deck_compat_category,
+            "deck_compat_override": deck_compat_override,
             "store_categories": categories,
             "genres": [
                 str(value).strip()

@@ -22,9 +22,17 @@ Decky Metadata can match detected non-Steam games and fill in descriptions, deve
 
 From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions. The Versions panel also reports connected controller types (for example `Steam Deck (4)` and `Legion Go S (102)`), which helps confirm whether Legion Go S-compatible layouts are expected to appear.
 
+
 ## Edit metadata from a game's menu
 
-Open a non-Steam game's context menu and choose the metadata editor to search for a match or adjust its details yourself. You can also pin a Steam app ID when you know exactly which Steam game belongs with the shortcut.
+Open a non-Steam game's context menu and choose **Decky metadata...** to search
+for a match or adjust its details yourself. You can also pin a Steam app ID when
+you know exactly which Steam game belongs with the shortcut.
+
+The metadata editor includes a **Compatibility status** dropdown. Select
+Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut.
+Automatic shows and uses the Valve status for the matched Steam game when it is
+available. ProtonDB is not a compatibility source in Decky Metadata.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 

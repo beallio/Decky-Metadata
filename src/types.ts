@@ -74,6 +74,9 @@ export type UpdateRpcStatus = {
 
 export type UpdateRpcResult<T> = T | UpdateRpcStatus;
 
+/** Steam's packed Deck compatibility category values. */
+export type DeckCompatibilityCategory = 0 | 1 | 2 | 3;
+
 export type MetadataData = {
   title: string;
   id: string | number;
@@ -93,7 +96,9 @@ export type MetadataData = {
   steam_dlc_appids: number[];
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";
-  deck_compat_category?: number | null;
+  deck_compat_category?: DeckCompatibilityCategory | null;
+  /** A user-selected status. Null keeps the Valve-resolved category automatic. */
+  deck_compat_override?: DeckCompatibilityCategory | null;
   steam_store_url?: string;
   steam_news?: MetadataNews[];
   steam_news_enriched_at?: number;
@@ -175,6 +180,7 @@ export type SteamInternals = {
   };
   appStore: {
     GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
+    allApps?: SteamOverview[] | Record<string, SteamOverview>;
   };
   appDetailsStore: object;
   appActivityStore?: object;
