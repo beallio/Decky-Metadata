@@ -12,11 +12,16 @@ Game Info behavior.
 - `src/steam/core.ts` and `src/steam/core.test.ts`: added strict, bounded
   current-detail route classification and the real `window.location` fallback
   used when Steam's shared context has no global `Router` after a hard reload.
+  Review round 02 also makes Steam's `/app/<appid>/controllerconfigurator/...`
+  and `/routes/app/<appid>/controllerconfigurator/...` paths explicit
+  authoritative non-detail routes.
 - `src/steam/spoofDecision.ts` and `src/steam/spoofDecision.test.ts`: made the
   false identity detail-only, before any shield/counter side effect.
 - `src/steam/metadataPatch.ts` and `src/steam/metadataPatch.test.ts`: wired the
   overview's own route scope into the pure decision and trace record; preserved
-  receiver/arguments/unpatch behavior and the matched overview alias.
+  receiver/arguments/unpatch behavior and the matched overview alias. The
+  integration tests now prove ambiguous controller transitions leave an armed
+  shield and a positive truth counter unchanged.
 - `scripts/deck/js/check_artwork_identity.js`,
   `scripts/deck/verify/smoke_artwork_identity.sh`, and
   `tests/test_deck_fixture_selection.py`: added the privacy-bounded artwork
@@ -72,6 +77,19 @@ context shape.
 - Full quality gates passed after the review fixes: TypeScript, Rollup,
   22 Vitest files / 288 tests, Python byte-compilation, and full pytest. The
   review-note deletion gate also passed.
+- Review round 02 added both actual controller-configurator path forms alone
+  and before/after a stale same-app detail token. Duplicate same-app detail
+  tokens remain accepted. The new controller cases were already green because
+  the prior parser failed closed for unrecognized path tokens; the production
+  grammar now names those Steam forms explicitly and keeps the fail-closed
+  result intentional. The focused result is 53 frontend tests and 28
+  fixture-selection tests.
+- Review round 02 mutations again produced the expected red result, then were
+  restored: Library Home as detail (8 failures), no app-ID equality (4),
+  consuming an outside-detail shield (6), and in-call truth below spoofing
+  (3). The final `verify-change dev --device --allow-launch` local gate passed:
+  TypeScript, Rollup, 22 Vitest files / 297 tests, Python byte-compilation,
+  full pytest, and the review-note deletion check.
 
 ## Device evidence
 
@@ -124,6 +142,26 @@ pre-existing stale delisted-fixture problem (`delisted game lost rich metadata`)
 the no-launch suite also reports empty delisted-source Community rows. Its
 rerender and no-fallback Community controls passed, but the suite is not
 recorded as passing.
+
+### Review round 02 device recheck
+
+The corrected bundle was redeployed through CDP port 18085. The first bounded
+Library Home artwork smoke kept the requested shortcut object, alias, native
+shortcut identity, and all eight custom-art candidate counts, but Steam had not
+hydrated its icon cache after 20 attempts / 5.03 seconds. Read-only diagnostics
+showed no new active plugin fault; the audit contains prior reload/shutdown and
+network noise only. A subsequent bounded smoke on the unchanged Library Home
+route resolved the icon on its first attempt (27 ms) and confirmed six unchanged
+artwork-file hashes. No artwork was written or reapplied.
+
+The matched/never-on-Steam quick-links check passed, and the matched rerender
+check again reported zero cache writes across three subsection round-trips. The
+full no-launch suite completed: rerender and empty-fallback Community controls
+passed, while the existing delisted metadata and delisted Community-source
+fixtures failed. The authorized launch validation also launched and terminated
+the matched shortcut with its 64-bit game ID; its dispatcher exit remains
+nonzero only because the known delisted quick-links fixture failed. These two
+delisted failures are recorded separately and are not called passes.
 
 ## Explicit exclusions and remaining risks
 

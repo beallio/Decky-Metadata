@@ -132,6 +132,27 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
     expect(metadataState.routeShield?.remaining).toBe(1);
   });
 
+  it.each([
+    `/app/${matchedShortcutAppId}/controllerconfigurator/layouts`,
+    `/routes/app/${matchedShortcutAppId}/controllerconfigurator/layouts`,
+  ])("fails closed for an ambiguous controller transition without spending its armed budgets: %s", (controllerPath) => {
+    const { overview } = installWithOverview(`/routes/library/app/${matchedShortcutAppId}`);
+    metadataState.bypassCounter = 4;
+    metadataState.routeShield = {
+      appId: matchedShortcutAppId,
+      path: `/routes/library/app/${matchedShortcutAppId}`,
+      trigger: "test",
+      armedAt: Date.now(),
+      remaining: 1,
+      seqId: 1,
+    };
+    setRoute(controllerPath, `/routes/library/app/${matchedShortcutAppId}`);
+
+    expect(overview.BIsModOrShortcut()).toBe(true);
+    expect(metadataState.bypassCounter).toBe(4);
+    expect(metadataState.routeShield?.remaining).toBe(1);
+  });
+
   it("preserves receiver, arguments, return value, and unload restoration", () => {
     const { original, overview } = installWithOverview("/routes/library/home");
     expect(overview.BIsModOrShortcut("sentinel")).toBe(true);

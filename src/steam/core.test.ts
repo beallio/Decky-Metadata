@@ -19,6 +19,7 @@ describe("isCurrentGameDetailRoute", () => {
     "/routes/library/collection/app/55150",
     "/routes/library/app/55150 ?tab=GameInfo #activity https://steamloopback.host/routes/library/app/55150?tab=GameInfo#activity",
     "/routes/library/app/55150 https://steamloopback.host/routes/library/details/55150?tab=GameInfo",
+    "/routes/library/app/55150 /routes/library/app/55150",
   ])("accepts only recognized library detail routes: %s", (routeContext) => {
     const classifier = isCurrentGameDetailRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");
@@ -42,6 +43,12 @@ describe("isCurrentGameDetailRoute", () => {
     "/routes/library/app/55150 /routes/library/app/55151",
     "/routes/library/app/55151 /routes/library/app/55150",
     "/routes/library/app/55150 /controllerconfig/55150",
+    "/app/55150/controllerconfigurator/layouts",
+    "/routes/app/55150/controllerconfigurator/layouts",
+    "/app/55150/controllerconfigurator/layouts /routes/library/app/55150",
+    "/routes/library/app/55150 /app/55150/controllerconfigurator/layouts",
+    "/routes/app/55150/controllerconfigurator/layouts /routes/library/app/55150",
+    "/routes/library/app/55150 /routes/app/55150/controllerconfigurator/layouts",
   ])("rejects a non-current or malformed route context: %s", (routeContext) => {
     const classifier = isCurrentGameDetailRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");

@@ -368,21 +368,21 @@ export const isCurrentGameDetailRoute = (routeContext: string, appId: number): b
       continue;
     }
 
-    const match = pathname.match(
-      /^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i
-    );
-    const routeAppId = Number(match?.[1] || match?.[2] || 0);
-    if (Number.isSafeInteger(routeAppId)) {
-      if (routeAppId !== appId) return false;
-      foundCurrentDetail = true;
-      continue;
-    }
     if (
       /^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
-      /^\/(?:routes\/)?library\/(?:collections?)(?:\/|$)/i.test(pathname)
+      /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+      /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)
     ) {
       return false;
     }
+
+    const match = pathname.match(
+      /^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i
+    );
+    if (!match) return false;
+    const routeAppId = Number(match[1] || match[2]);
+    if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId) return false;
+    foundCurrentDetail = true;
   }
   return foundCurrentDetail;
 };
