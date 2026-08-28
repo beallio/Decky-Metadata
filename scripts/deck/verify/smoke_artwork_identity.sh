@@ -234,8 +234,9 @@ if expected_scope == "library-home":
     except json.JSONDecodeError as exc:
         raise SystemExit(f"FAIL: malformed Desktop Library payload: {exc}")
     desktop_required = {
-        "homeSelected", "labelHashValid", "rowCount", "rowFound", "imageFound",
-        "imageComplete", "imageNaturalWidth", "imageNaturalHeight", "imageClassification",
+        "homeSelected", "labelHashValid", "matchingCellCount", "completeImageCount",
+        "customImageCount", "portraitCandidateCount", "customSidebarIconCount",
+        "customSidebarIconFound", "completeImageDimensions",
     }
     if not isinstance(desktop, dict) or set(desktop) != desktop_required:
         raise SystemExit("FAIL: malformed Desktop Library payload")
@@ -243,19 +244,33 @@ if expected_scope == "library-home":
         raise SystemExit("FAIL: Desktop Library Home is not selected")
     if desktop["labelHashValid"] is not True:
         raise SystemExit("FAIL: Desktop Library label hash is malformed")
-    if not isinstance(desktop["rowCount"], int) or desktop["rowCount"] < 0:
-        raise SystemExit("FAIL: malformed Desktop Library row count")
-    if desktop["rowCount"] != 1 or desktop["rowFound"] is not True:
-        raise SystemExit("FAIL: Desktop Library Home row is missing")
-    if desktop["imageFound"] is not True:
-        raise SystemExit("FAIL: Desktop Library Home image is missing")
-    if desktop["imageComplete"] is not True or any(
-        not isinstance(desktop[name], int) or desktop[name] <= 0
-        for name in ("imageNaturalWidth", "imageNaturalHeight")
+    for name in (
+        "matchingCellCount", "completeImageCount", "customImageCount",
+        "portraitCandidateCount", "customSidebarIconCount",
     ):
-        raise SystemExit("FAIL: Desktop Library Home image is blank")
-    if desktop["imageClassification"] not in {"data", "custom"}:
-        raise SystemExit("FAIL: Desktop Library Home image is not custom")
+        if not isinstance(desktop[name], int) or desktop[name] < 0:
+            raise SystemExit(f"FAIL: malformed Desktop Library {name}")
+    if desktop["matchingCellCount"] < 1:
+        raise SystemExit("FAIL: Desktop Library Home row is missing")
+    if not isinstance(desktop["customSidebarIconFound"], bool):
+        raise SystemExit("FAIL: malformed Desktop Library custom sidebar icon state")
+    if desktop["customSidebarIconFound"] is not (desktop["customSidebarIconCount"] > 0):
+        raise SystemExit("FAIL: malformed Desktop Library custom sidebar icon state")
+    if desktop["customSidebarIconCount"] > desktop["customImageCount"] or desktop["customSidebarIconCount"] > desktop["completeImageCount"]:
+        raise SystemExit("FAIL: malformed Desktop Library custom sidebar icon count")
+    if desktop["portraitCandidateCount"] > desktop["customImageCount"]:
+        raise SystemExit("FAIL: malformed Desktop Library portrait candidate count")
+    dimensions = desktop["completeImageDimensions"]
+    if not isinstance(dimensions, list) or len(dimensions) != desktop["completeImageCount"]:
+        raise SystemExit("FAIL: malformed Desktop Library complete image dimensions")
+    if any(
+        not isinstance(dimension, list) or len(dimension) != 4
+        or any(not isinstance(value, int) or value <= 0 for value in dimension)
+        for dimension in dimensions
+    ):
+        raise SystemExit("FAIL: malformed Desktop Library complete image dimensions")
+    if not desktop["customSidebarIconFound"]:
+        raise SystemExit("FAIL: Desktop Library Home custom sidebar icon is missing")
     if data["routeScope"] not in {"library-home", "other"}:
         raise SystemExit(f"FAIL: route scope {data['routeScope']!r}, expected 'library-home'")
     effective_scope = "library-home"

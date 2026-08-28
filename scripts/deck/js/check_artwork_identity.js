@@ -15,36 +15,78 @@
     return (state >>> 0).toString(16).padStart(8, "0");
   };
   if (probeMode === "desktop-home") {
+    const SIDEBAR_ICON_MAX_DIMENSION = 128;
     const documentNode = globalThis.document;
     const homeSelected = Boolean(documentNode?.querySelector("a[href='/library/home'][aria-current='page']"));
     const labelHashValid = /^[0-9a-f]{8}$/.test(sidebarLabelHash);
-    const matchingRows = labelHashValid
+    const isVisible = (element) => {
+      const rect = element?.getBoundingClientRect?.();
+      const style = globalThis.getComputedStyle?.(element);
+      return Boolean(
+        rect && rect.width > 0 && rect.height > 0
+        && style?.display !== "none" && style?.visibility !== "hidden" && style?.opacity !== "0"
+      );
+    };
+    const matchingElements = labelHashValid
       ? Array.from(documentNode?.querySelectorAll?.("div, a, button, [aria-label]") ?? []).filter((element) => {
           const label = (element.getAttribute("aria-label") ?? element.textContent ?? "").trim();
           return hash(label) === sidebarLabelHash;
         })
       : [];
-    const rows = matchingRows.filter((element) => {
-      const parentLabel = (element.parentElement?.getAttribute("aria-label") ?? element.parentElement?.textContent ?? "").trim();
-      return hash(parentLabel) !== sidebarLabelHash;
+    const uniqueCells = Array.from(new Set(matchingElements.map((element) => element.closest("[role=gridcell]")).filter(Boolean)))
+      .filter(isVisible);
+    const imageCandidates = uniqueCells.flatMap((cell) => Array.from(cell.querySelectorAll?.("img") ?? [])).map((image) => {
+      const source = image.getAttribute("src") ?? "";
+      const rect = image.getBoundingClientRect?.();
+      const naturalWidth = Number(image.naturalWidth ?? 0);
+      const naturalHeight = Number(image.naturalHeight ?? 0);
+      const renderedWidth = Number(rect?.width ?? 0);
+      const renderedHeight = Number(rect?.height ?? 0);
+      const classification = source.startsWith("data" + ":image/") ? "data"
+        : /(?:steamuserimages|custom|grid)/i.test(source) ? "custom"
+        : "other";
+      return {
+        complete: Boolean(image.complete),
+        naturalWidth,
+        naturalHeight,
+        renderedWidth,
+        renderedHeight,
+        classification,
+      };
     });
-    const row = rows.length === 1 ? rows[0] : null;
-    const image = row?.querySelector("img") ?? null;
-    const imageSource = image?.getAttribute("src") ?? "";
-    const imageClassification = !image ? "none"
-      : imageSource.startsWith("data" + ":image/") ? "data"
-      : /(?:steamuserimages|custom|grid)/i.test(imageSource) ? "custom"
-      : "other";
+    const isCustom = (candidate) => candidate.classification === "data" || candidate.classification === "custom";
+    const isSidebarIcon = (candidate) => isCustom(candidate)
+      && candidate.complete
+      && candidate.naturalWidth > 0 && candidate.naturalHeight > 0
+      && candidate.naturalWidth === candidate.naturalHeight
+      && candidate.naturalWidth <= SIDEBAR_ICON_MAX_DIMENSION
+      && candidate.renderedWidth > 0 && candidate.renderedHeight > 0
+      && Math.abs(candidate.renderedWidth - candidate.renderedHeight) <= 1
+      && candidate.renderedWidth <= SIDEBAR_ICON_MAX_DIMENSION
+      && candidate.renderedHeight <= SIDEBAR_ICON_MAX_DIMENSION;
+    const sidebarIcons = imageCandidates.filter(isSidebarIcon);
+    const completeImageDimensions = imageCandidates
+      .filter((candidate) => candidate.complete
+        && candidate.naturalWidth > 0 && candidate.naturalHeight > 0
+        && candidate.renderedWidth > 0 && candidate.renderedHeight > 0)
+      .map((candidate) => [
+        candidate.naturalWidth,
+        candidate.naturalHeight,
+        candidate.renderedWidth,
+        candidate.renderedHeight,
+      ])
+      .sort((left, right) => left[0] - right[0] || left[1] - right[1] || left[2] - right[2] || left[3] - right[3]);
     return JSON.stringify({
       homeSelected,
       labelHashValid,
-      rowCount: rows.length,
-      rowFound: Boolean(row),
-      imageFound: Boolean(image),
-      imageComplete: Boolean(image?.complete),
-      imageNaturalWidth: Number(image?.naturalWidth ?? 0),
-      imageNaturalHeight: Number(image?.naturalHeight ?? 0),
-      imageClassification,
+      matchingCellCount: uniqueCells.length,
+      completeImageCount: completeImageDimensions.length,
+      customImageCount: imageCandidates.filter(isCustom).length,
+      portraitCandidateCount: imageCandidates.filter((candidate) => isCustom(candidate)
+        && candidate.complete && candidate.naturalHeight > candidate.naturalWidth).length,
+      customSidebarIconCount: sidebarIcons.length,
+      customSidebarIconFound: sidebarIcons.length > 0,
+      completeImageDimensions,
     });
   }
   if (probeMode !== "identity") throw new Error("unsupported probe mode");

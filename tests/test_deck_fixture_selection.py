@@ -218,12 +218,13 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert 'probeMode === "desktop-home"' in probe
     assert 'a[href=\'/library/home\'][aria-current=\'page\']' in probe
     assert "sidebarLabelHash" in probe
-    assert "rowFound" in probe
-    assert "imageFound" in probe
-    assert "imageComplete" in probe
-    assert "imageNaturalWidth" in probe
-    assert "imageNaturalHeight" in probe
-    assert "imageClassification" in probe
+    assert 'closest("[role=gridcell]")' in probe
+    assert "new Set" in probe
+    assert "matchingCellCount" in probe
+    assert "customSidebarIconFound" in probe
+    assert "customSidebarIconCount" in probe
+    assert "portraitCandidateCount" in probe
+    assert "completeImageDimensions" in probe
     for forbidden in (
         "URL:", "url:", "data:", "path:", "title:", "account",
         "navigate", "history.push", "dispatchEvent", "RunGame", "launch",
@@ -239,7 +240,7 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert 'cdp eval Steam "@$JS_DIR/check_artwork_identity.js"' in smoke
     assert "Desktop Library Home is not selected" in smoke
     assert "Desktop Library Home row is missing" in smoke
-    assert "Desktop Library Home image is blank" in smoke
+    assert "Desktop Library Home custom sidebar icon is missing" in smoke
     assert "fileHashSetUnchanged" in smoke
     assert "iconValueHash" in smoke
     assert "data[\"iconDeadlineMs\"] != 15000" in smoke
@@ -294,6 +295,191 @@ globalThis.appStore = {{
     )
     assert completed.returncode == 0, completed.stderr
     return json.loads(completed.stdout)
+
+
+def _fnv1a_hash(value: str) -> str:
+    state = 2166136261
+    for character in value:
+        state = ((state ^ ord(character)) * 16777619) & 0xFFFFFFFF
+    return f"{state:08x}"
+
+
+def _run_desktop_artwork_probe(
+    probe: str,
+    *,
+    cells: list[dict],
+    home_selected: bool = True,
+    label: str = "Fixture shortcut",
+    sidebar_label_hash: str | None = None,
+) -> dict:
+    source = (
+        probe.replace("__SHORTCUT_APPID__", "2155012430")
+        .replace("__MATCHED_APPID__", "55150")
+        .replace("__PROBE_MODE__", "desktop-home")
+        .replace("__SIDEBAR_LABEL_HASH__", sidebar_label_hash or _fnv1a_hash(label))
+    )
+    runner = f"""
+const probeSource = {json.dumps(source)};
+const label = {json.dumps(label)};
+const fixtureCells = {json.dumps(cells)};
+const makeImage = (fixture) => ({{
+  complete: fixture.complete,
+  naturalWidth: fixture.naturalWidth,
+  naturalHeight: fixture.naturalHeight,
+  getAttribute: (name) => name === "src" ? fixture.src : null,
+  getBoundingClientRect: () => fixture.rect,
+}});
+const matchingElements = [];
+for (const fixture of fixtureCells) {{
+  const images = fixture.images.map(makeImage);
+  const cell = {{
+    getBoundingClientRect: () => fixture.rect,
+    querySelectorAll: (selector) => selector === "img" ? images : [],
+    _style: fixture.style || {{ display: "block", visibility: "visible", opacity: "1" }},
+  }};
+  for (let index = 0; index < fixture.nestedLabelCount; index += 1) {{
+    matchingElements.push({{
+      textContent: label,
+      getAttribute: (name) => name === "aria-label" ? label : null,
+      closest: (selector) => selector === "[role=gridcell]" ? cell : null,
+    }});
+  }}
+}}
+globalThis.document = {{
+  querySelector: (selector) => selector === "a[href='/library/home'][aria-current='page']" && {str(home_selected).lower()} ? {{}} : null,
+  querySelectorAll: () => matchingElements,
+}};
+globalThis.getComputedStyle = (element) => element._style || {{ display: "block", visibility: "visible", opacity: "1" }};
+eval(probeSource).then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    completed = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return json.loads(completed.stdout)
+
+
+def _desktop_cell(*images: dict, nested_label_count: int = 2) -> dict:
+    return {
+        "nestedLabelCount": nested_label_count,
+        "rect": {"width": 320, "height": 96},
+        "images": list(images),
+    }
+
+
+def _desktop_image(
+    *,
+    src: str = "data:image/png;base64,fixture",
+    complete: bool = True,
+    natural_width: int = 32,
+    natural_height: int = 32,
+    rendered_width: int = 32,
+    rendered_height: int = 32,
+) -> dict:
+    return {
+        "src": src,
+        "complete": complete,
+        "naturalWidth": natural_width,
+        "naturalHeight": natural_height,
+        "rect": {"width": rendered_width, "height": rendered_height},
+    }
+
+
+def test_desktop_artwork_probe_deduplicates_nested_labels_and_accepts_sidebar_icon_clones():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+
+    payload = _run_desktop_artwork_probe(
+        probe,
+        cells=[
+            _desktop_cell(
+                _desktop_image(),
+                _desktop_image(natural_width=600, natural_height=900, rendered_width=160, rendered_height=240),
+            ),
+            _desktop_cell(
+                _desktop_image(),
+                _desktop_image(natural_width=600, natural_height=900, rendered_width=160, rendered_height=240),
+            ),
+        ],
+    )
+
+    assert payload["homeSelected"] is True
+    assert payload["labelHashValid"] is True
+    assert payload["matchingCellCount"] == 2
+    assert payload["customSidebarIconCount"] == 2
+    assert payload["customSidebarIconFound"] is True
+    assert payload["portraitCandidateCount"] == 2
+    assert payload["completeImageDimensions"] == [[32, 32, 32, 32], [32, 32, 32, 32], [600, 900, 160, 240], [600, 900, 160, 240]]
+
+
+@pytest.mark.parametrize(
+    "image",
+    [
+        _desktop_image(natural_width=600, natural_height=900, rendered_width=160, rendered_height=240),
+        _desktop_image(complete=False),
+        _desktop_image(natural_width=0, natural_height=0, rendered_width=0, rendered_height=0),
+        _desktop_image(src="https://example.invalid/icon.png"),
+    ],
+)
+def test_desktop_artwork_probe_rejects_non_icon_sidebar_candidates(image: dict):
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+
+    payload = _run_desktop_artwork_probe(probe, cells=[_desktop_cell(image)])
+
+    assert payload["matchingCellCount"] == 1
+    assert payload["customSidebarIconCount"] == 0
+    assert payload["customSidebarIconFound"] is False
+
+
+def test_desktop_artwork_probe_rejects_a_matching_cell_without_images():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+
+    payload = _run_desktop_artwork_probe(probe, cells=[_desktop_cell()])
+
+    assert payload["matchingCellCount"] == 1
+    assert payload["completeImageCount"] == 0
+    assert payload["customSidebarIconFound"] is False
+
+
+def test_desktop_artwork_probe_rejects_wrong_hash_and_noncurrent_home():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+    cells = [_desktop_cell(_desktop_image())]
+
+    wrong_hash = _run_desktop_artwork_probe(probe, cells=cells, sidebar_label_hash="deadbeef")
+    noncurrent_home = _run_desktop_artwork_probe(probe, cells=cells, home_selected=False)
+
+    assert wrong_hash["matchingCellCount"] == 0
+    assert wrong_hash["customSidebarIconFound"] is False
+    assert noncurrent_home["homeSelected"] is False
+
+
+def test_desktop_artwork_probe_mutation_to_exact_one_rejects_duplicate_sidebar_clones():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+    mutated = probe.replace(
+        "const sidebarIcons = imageCandidates.filter(isSidebarIcon);",
+        "const sidebarIcons = uniqueCells.length === 1 ? imageCandidates.filter(isSidebarIcon) : [];",
+        1,
+    )
+    assert mutated != probe
+
+    payload = _run_desktop_artwork_probe(
+        mutated,
+        cells=[_desktop_cell(_desktop_image()), _desktop_cell(_desktop_image())],
+    )
+
+    assert payload["matchingCellCount"] == 2
+    assert payload["customSidebarIconFound"] is False
 
 
 def test_artwork_identity_probe_waits_past_five_seconds_within_its_fixed_deadline():
@@ -388,18 +574,18 @@ identity_payload = {
 desktop_payload = {
     \"homeSelected\": True,
     \"labelHashValid\": True,
-    \"rowCount\": 1,
-    \"rowFound\": True,
-    \"imageFound\": True,
-    \"imageComplete\": True,
-    \"imageNaturalWidth\": 600,
-    \"imageNaturalHeight\": 900,
-    \"imageClassification\": \"data\",
+    \"matchingCellCount\": 2,
+    \"completeImageCount\": 4,
+    \"customImageCount\": 4,
+    \"portraitCandidateCount\": 2,
+    \"customSidebarIconCount\": 2,
+    \"customSidebarIconFound\": True,
+    \"completeImageDimensions\": [[32, 32, 32, 32], [32, 32, 32, 32], [600, 900, 160, 240], [600, 900, 160, 240]],
 }
 if target == \"Steam\":
     supplied_hash = next((value.split(\"=\", 1)[1] for value in sys.argv if value.startswith(\"SIDEBAR_LABEL_HASH=\")), \"\")
     if supplied_hash != \"10203040\":
-        desktop_payload.update({\"rowCount\": 0, \"rowFound\": False, \"imageFound\": False, \"imageComplete\": False, \"imageNaturalWidth\": 0, \"imageNaturalHeight\": 0, \"imageClassification\": \"none\"})
+        desktop_payload.update({\"matchingCellCount\": 0, \"completeImageCount\": 0, \"customImageCount\": 0, \"portraitCandidateCount\": 0, \"customSidebarIconCount\": 0, \"customSidebarIconFound\": False, \"completeImageDimensions\": []})
     desktop_payload.update(json.loads(os.environ.get(\"FAKE_DESKTOP_PAYLOAD_OVERRIDES\", \"{}\")))
     payload = desktop_payload
 else:
@@ -486,15 +672,15 @@ def test_artwork_identity_smoke_accepts_zero_candidates_when_six_file_hashes_mat
     assert completed.returncode == 0, completed.stderr
     assert log.read_text().splitlines() == ["cdp:SharedJSContext", "cdp:Steam", "ssh"]
     assert json.loads((evidence / "desktop-library-home.json").read_text()) == {
+        "completeImageCount": 4,
+        "completeImageDimensions": [[32, 32, 32, 32], [32, 32, 32, 32], [600, 900, 160, 240], [600, 900, 160, 240]],
+        "customImageCount": 4,
+        "customSidebarIconCount": 2,
+        "customSidebarIconFound": True,
         "homeSelected": True,
-        "imageClassification": "data",
-        "imageComplete": True,
-        "imageFound": True,
-        "imageNaturalHeight": 900,
-        "imageNaturalWidth": 600,
         "labelHashValid": True,
-        "rowCount": 1,
-        "rowFound": True,
+        "matchingCellCount": 2,
+        "portraitCandidateCount": 2,
     }
 
 
@@ -626,10 +812,10 @@ def test_artwork_identity_smoke_rejects_equal_ids_before_tunnel_cdp_or_evidence(
     ("desktop_payload_overrides", "failure"),
     [
         ({"homeSelected": False}, "Desktop Library Home is not selected"),
-        ({"rowCount": 0, "rowFound": False}, "Desktop Library Home row is missing"),
-        ({"imageComplete": True, "imageNaturalWidth": 0}, "Desktop Library Home image is blank"),
-        ({"imageClassification": "other"}, "Desktop Library Home image is not custom"),
-        ({"unexpected": "data:image/private"}, "malformed Desktop Library payload"),
+        ({"matchingCellCount": 0}, "Desktop Library Home row is missing"),
+        ({"customSidebarIconCount": 0, "customSidebarIconFound": False}, "Desktop Library Home custom sidebar icon is missing"),
+        ({"completeImageDimensions": [[32, 32, 0, 32]]}, "malformed Desktop Library complete image dimensions"),
+        ({"unexpected": "opaque"}, "malformed Desktop Library payload"),
     ],
 )
 def test_artwork_identity_smoke_rejects_invalid_desktop_library_home_evidence(

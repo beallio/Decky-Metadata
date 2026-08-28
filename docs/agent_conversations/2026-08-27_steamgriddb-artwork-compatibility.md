@@ -258,6 +258,41 @@ This is not a new Library Home pass; the review-recorded user visual
 confirmation remains the current visual evidence until the smoke is rerun with
 Desktop Library Home selected.
 
+### Review round 08 duplicate Desktop grid cells
+
+The prior Desktop probe treated exactly one matching DOM container as proof of
+the sidebar entry. Review found that Desktop Library virtualization can render
+the same shortcut in several grids and nest its label inside each cell. That
+made a visible, complete custom icon look absent. The probe now maps every
+matching label to its nearest visible `role=gridcell` ancestor, deduplicates
+cells by element identity, and accepts one or more cells. It never writes or
+reports a label, URL, path, image data, or DOM identity.
+
+The new positive condition is at least one complete custom/data, square,
+positive-size sidebar image bounded to 128 pixels. Complete image dimensions,
+counts, and the larger portrait-capsule count remain redacted diagnostics. The
+shell smoke rejects a missing row, malformed dimensions, or an absent custom
+sidebar icon; it no longer treats multiple matching cells as an error.
+
+The red phase produced eight expected fixture failures: the static contract,
+two duplicated/nested-cell assertions, four invalid-icon variants, and the
+exact-one mutation. The restored focused suite passed 52 tests. It includes two
+sidebar clones with nested labels, portrait-only, no-image, incomplete,
+zero-dimension, and noncustom square negatives; wrong hash and noncurrent Home
+remain negative controls. The mutation reintroduced an exact-one condition and
+made the duplicate-clone fixture fail before the production logic was restored.
+Shell and JavaScript syntax checks passed.
+
+The requested current Desktop Library Home smoke ran through CDP port 18085
+without deployment or launch. The Desktop phase proved Home selected and found
+four visible matching grid cells, two complete `32x32` custom sidebar icons,
+and two complete `600x900` portrait diagnostics. SharedJSContext confirmed the
+shortcut and alias contract, native shortcut identity, no resolver request
+error, and redacted custom-art candidate counts/hashes. The file audit compared
+six before and six after hashes successfully. The smoke performed no route
+navigation, selection, input dispatch, plugin change, artwork write/reapply, or
+launch. The dedicated tunnel was closed and its final status was `down`.
+
 ## Explicit exclusions and remaining risks
 
 - The matched-ID overview alias (`55150` -> shortcut `2155012430`) remains
