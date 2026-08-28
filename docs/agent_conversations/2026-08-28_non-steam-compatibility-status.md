@@ -283,3 +283,47 @@ Steam games.
   checks can be captured on the installed package. The delisted fixture must
   also be restored or replaced before its generic rich-metadata/layout smokes
   can pass.
+
+### Review round 09 continuation: reachable Deck, full package retry, and UI-install block
+
+- At 2026-08-28 14:40 PDT, the resumed implementer cleared the required
+  round-complete marker. `./run.sh scripts/decky doctor --deck` and
+  `./run.sh scripts/decky status --deck` confirmed a clean feature branch and
+  a reachable Deck. The doctor reported only the expected cache-policy and
+  intentionally retained `node_modules` warnings.
+- `./run.sh scripts/decky package-push --build --push` built or confirmed the
+  full package `Decky-Metadata.zip` version `0.3.9+0ed07e3` (SHA-256
+  `605818a4f4ed94c3314c315c989a9f77071e0a50aad4ded159fa4cdee23f5638`)
+  in `/home/deck/Downloads/Decky-Metadata.zip`. It reported
+  `LOCAL_VALIDATION PASS`, `PACKAGE_CREATED ALREADY_CURRENT`,
+  `DELIVERY ALREADY_CURRENT`, and `INSTALLED_STATE REINSTALL_REQUIRED`.
+  `git diff --name-only 408c45a..HEAD -- main.py src dist/index.js` produced
+  no paths, so this package contains a code-identical successor to runtime
+  commit `408c45a`.
+- The post-delivery `./run.sh scripts/decky status --deck --json` check shows
+  the downloaded ZIP with the above hash, but the installed manifest remains
+  `0.3.9+6507256`. The local-ZIP install is a Decky developer-mode UI prompt
+  that requires confirmation on the Deck; no approved unattended local-package
+  installer exists. Therefore the full package is not installed and no visual
+  result below is claimed as full-package validation.
+- `./run.sh scripts/decky verify-change dev --device --explain` passed its
+  local quality gate: TypeScript check, rollup build, 342 frontend tests,
+  Python compilation, and the backend suite. It deployed the current frontend
+  and hard-reloaded SteamUI. The retained dispatcher output is
+  `/tmp/Decky-Metadata/non-steam-compatibility-status-review-09-verify-change.log`.
+  The no-launch re-render smoke passed with zero cache writes. The generic
+  delisted shortcut `2783271568` still failed quick-links and controller-layout
+  checks because it has no rich metadata and its source app `224060` has no
+  Community layouts. Those fixtures are outside this compatibility-status plan.
+- `./run.sh scripts/decky capture` wrote
+  `/tmp/Decky-Metadata/diagnostics/20260828T214535Z`; the log audit synced the
+  Deck logs to `/tmp/Decky-Metadata/deck-logs/steamdeck/20260828-144542`.
+  `./run.sh scripts/deck/tunnel.sh down` completed and a following status
+  reported `tunnel: down`.
+- The round-complete marker remains absent. Required next state: confirm the
+  local ZIP installation in Decky's UI, verify that the installed manifest is
+  `0.3.9+0ed07e3` or a code-identical successor, and then run the selected-card,
+  controller/virtualization, lifecycle, editor, and baseline-restoration matrix
+  on the installed package. Use the known compatible Space Marine shortcut
+  `2155012430` for the compatibility matrix because the generic delisted
+  fixture cannot provide the required rich-metadata/layout evidence.
