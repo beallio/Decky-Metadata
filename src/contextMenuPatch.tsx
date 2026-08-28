@@ -1,8 +1,8 @@
 /*
  * Decky Metadata - library context-menu integration.
  *
- * Adds a single "Decky metadata..." entry to the per-game context menu in
- * the Steam library, for non-Steam shortcuts.
+ * Adds a Decky Metadata entry to the per-game context menu in the Steam
+ * library, for non-Steam shortcuts.
  *
  * The technique used here to resolve and patch Steam's internal
  * LibraryContextMenu class is derived from the decky-steamgriddb plugin by the
@@ -35,17 +35,18 @@ import {
 import { FC } from "react";
 
 import {
-  getOverview,
-  isNonSteamApp,
+  getNativeOverview,
+  isNativeNonSteamShortcut,
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
-// Stable keys for the entries we inject, so we can find and de-duplicate them.
+// The edit key is the only entry this version inserts. Keep the legacy key in
+// the removal set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-compatibility"]);
 
 let contextMenuTraceEnabled = false;
 export const setContextMenuTraceEnabled = (enabled: boolean) => {
@@ -161,7 +162,7 @@ const isGameContextMenu = (items: any[]): boolean => {
 const removeOurEntry = (items: any[]): boolean => {
   let removed = false;
   for (let index = items.length - 1; index >= 0; index -= 1) {
-    if (ENTRY_KEYS.has(items[index]?.key)) {
+    if (REMOVAL_KEYS.has(items[index]?.key)) {
       items.splice(index, 1);
       removed = true;
     }
@@ -171,7 +172,8 @@ const removeOurEntry = (items: any[]): boolean => {
 
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items: any[], appId: number): boolean => {
-  if (!isNonSteamApp(getOverview(appId))) return false;
+  const overview = getNativeOverview(appId);
+  if (!isNativeNonSteamShortcut(overview)) return false;
 
   const propertiesIndex = items.findIndex((node) =>
     findInReactTree(

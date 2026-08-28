@@ -9,6 +9,7 @@ import * as log from "./log";
 import {
   installSteamPatches,
   refreshMetadataCache,
+  restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
 } from "./steam";
 
@@ -53,6 +54,11 @@ export default definePlugin(() => {
         stopMetadataBootstrap?.();
       } catch (error) {
         log.error("patch", "metadata bootstrap stop failed", error);
+      }
+      try {
+        restoreAllCompatibilityBaselines();
+      } catch (error) {
+        log.error("patch", "compatibility baseline restore failed", error);
       }
       try {
         unpatchSteam?.();

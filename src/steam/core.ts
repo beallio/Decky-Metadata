@@ -50,6 +50,10 @@ export const metadataState: {
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
+  /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
+  compatibilityBaselines: Record<string, number>;
+  /** Bumps when a compatibility choice needs Steam's current route to render again. */
+  compatibilityRevision: number;
   lastObservedGameDetailAppId: number;
   routeShield: {
     appId: number;
@@ -66,6 +70,8 @@ export const metadataState: {
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
+  compatibilityBaselines: {},
+  compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
 };
@@ -126,9 +132,44 @@ export const isNonSteamApp = (overview: any): boolean => {
   return false;
 };
 
+/**
+ * Require Steam's native shortcut identity for operations that write back to
+ * an overview. Cached metadata alone must never make an official app eligible.
+ */
+export const isNativeNonSteamShortcut = (overview: any): boolean => {
+  if (!isNonSteamApp(overview)) return false;
+  if (Number(overview?.app_type) === NON_STEAM_APP_TYPE) return true;
+  try {
+    return overview?.BIsShortcut?.() === true;
+  } catch (_error) {
+    return false;
+  }
+};
+
 export const getOverview = (appId: number): SteamOverview | null => {
   try {
     return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
+  } catch (_error) {
+    return null;
+  }
+};
+
+/**
+ * Resolve an overview by its own AppID without passing through plugin patches.
+ * This is required for writes: GetAppOverviewByAppID intentionally aliases a
+ * matched Steam AppID to its shortcut on the rich-details path.
+ */
+export const getNativeOverview = (appId: number): SteamOverview | null => {
+  const nativeAppId = Number(appId);
+  if (!Number.isFinite(nativeAppId) || nativeAppId <= 0) return null;
+  try {
+    const allApps = appStore?.allApps;
+    const entries = Array.isArray(allApps)
+      ? allApps
+      : allApps && typeof allApps === "object"
+        ? Object.values(allApps)
+        : [];
+    return entries.find((overview: any) => Number(overview?.appid) === nativeAppId) ?? null;
   } catch (_error) {
     return null;
   }

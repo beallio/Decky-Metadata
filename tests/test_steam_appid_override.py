@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import nullcontext
 
 import main
 from tests._plugin import make_plugin
@@ -13,6 +14,7 @@ def test_enrich_steam_app_respects_pinned_appid(monkeypatch) -> None:
                 "source": "Manual",
                 "steam_appid": 338930,
                 "steam_store_url": "",
+                "deck_compat_override": 0,
             }
         }
     }
@@ -58,6 +60,7 @@ def test_enrich_steam_app_respects_pinned_appid(monkeypatch) -> None:
     assert saved["steam_appid"] == 338930
     assert saved["steam_store_url"] == "https://store.steampowered.com/app/338930/"
     assert saved["deck_compat_category"] == 2
+    assert saved["deck_compat_override"] == 0
     assert saved["description"] == "Steam description"
     assert plugin._data["metadata"]["123"]["steam_appid"] == 338930
 
@@ -74,3 +77,57 @@ def test_enrich_steam_app_returns_none_for_unknown_app() -> None:
 
     assert asyncio.run(plugin.enrich_steam_app(999)) is None
     assert plugin._data == {"metadata": {}}
+
+
+def test_fetched_metadata_merge_keeps_manual_compatibility_override_with_or_without_pin() -> None:
+    fetched = {"title": "Fetched", "deck_compat_category": 3}
+
+    unpinned = main.Plugin._merge_fetched_metadata(
+        {"title": "Manual", "deck_compat_override": 0},
+        fetched,
+    )
+    pinned = main.Plugin._merge_fetched_metadata(
+        {"title": "Manual", "steam_appid": 55150, "deck_compat_override": 2},
+        fetched,
+    )
+
+    assert unpinned["deck_compat_override"] == 0
+    assert pinned["deck_compat_override"] == 2
+
+
+def test_manual_save_and_scan_preserve_existing_compatibility_override() -> None:
+    plugin = make_plugin()
+    plugin._data = {
+        "metadata": {
+            "123": {
+                "title": "Manual shortcut",
+                "description": "",
+                "store_categories": [],
+                "deck_compat_override": 0,
+            }
+        }
+    }
+    plugin._data_guard = lambda: nullcontext()
+    plugin._load_data = lambda: None
+    plugin._save_data = lambda: None
+
+    manually_saved = asyncio.run(
+        plugin.save_metadata(
+            123,
+            {"title": "Manual shortcut", "description": "", "store_categories": []},
+        )
+    )
+    assert manually_saved["deck_compat_override"] == 0
+
+    asyncio.run(
+        plugin._save_scan_pipeline_metadata(
+            123,
+            {
+                "title": "Scanned shortcut",
+                "description": "Fetched",
+                "store_categories": [],
+                "deck_compat_category": 3,
+            },
+        )
+    )
+    assert plugin._data["metadata"]["123"]["deck_compat_override"] == 0

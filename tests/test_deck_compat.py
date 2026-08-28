@@ -107,6 +107,38 @@ def test_sanitize_metadata_drops_invalid_deck_compat_category() -> None:
     assert sanitized["deck_compat_category"] is None
 
 
+def test_sanitize_metadata_round_trips_all_manual_compatibility_overrides() -> None:
+    plugin = make_plugin()
+
+    for category in (0, 1, 2, 3):
+        sanitized = plugin._sanitize_metadata(
+            {
+                "title": "Example",
+                "description": "",
+                "store_categories": [],
+                "deck_compat_override": str(category),
+            }
+        )
+
+        assert sanitized["deck_compat_override"] == category
+
+
+def test_sanitize_metadata_drops_invalid_manual_compatibility_override() -> None:
+    plugin = make_plugin()
+
+    for invalid in (-1, 4, "bad", None):
+        sanitized = plugin._sanitize_metadata(
+            {
+                "title": "Example",
+                "description": "",
+                "store_categories": [],
+                "deck_compat_override": invalid,
+            }
+        )
+
+        assert sanitized["deck_compat_override"] is None
+
+
 def test_metadata_with_steam_news_sync_adds_deck_compat_for_resolved_appid(monkeypatch) -> None:
     plugin = make_plugin()
     monkeypatch.setattr(
@@ -123,3 +155,26 @@ def test_metadata_with_steam_news_sync_adds_deck_compat_for_resolved_appid(monke
 
     assert enriched["steam_appid"] == 123
     assert enriched["deck_compat_category"] == 1
+
+
+def test_metadata_with_steam_news_sync_keeps_manual_compatibility_override(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (123, "https://store.steampowered.com/app/123", []),
+    )
+    monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", lambda steam_appid: 3)
+
+    enriched = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "deck_compat_override": 0,
+        },
+        "Example",
+    )
+
+    assert enriched["deck_compat_category"] == 3
+    assert enriched["deck_compat_override"] == 0
