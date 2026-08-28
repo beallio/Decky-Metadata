@@ -208,6 +208,8 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "iconHashPresent" in probe
     assert "iconDataPresent" in probe
     assert "iconResolved" in probe
+    assert "iconAttempts < 20" in probe
+    assert "setTimeout(resolve, 250)" in probe
     assert "artwork" in probe
     assert "elapsedMs" in probe
     for forbidden in (
@@ -221,6 +223,7 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "--capture-artwork-files" in smoke
     assert "shortcut and matched appids must differ" in smoke
     assert "fileHashSetUnchanged" in smoke
+    assert "1 <= data[\"iconAttempts\"] <= 20" in smoke
     assert "/tmp/Decky-Metadata" in smoke
     assert '"status": "started"' in smoke
     assert '"status": "pending-validation"' in smoke

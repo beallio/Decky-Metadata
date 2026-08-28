@@ -65,26 +65,48 @@ matched real behavior so far but is not identical input.
 ### Library Home artwork identity
 
 For a matched non-Steam shortcut with SteamGridDB artwork, first open Library
-Home yourself. Do not use this smoke to navigate. With explicit approval for
-the current device, run:
+Home yourself and confirm the artwork is already present. Do not use this
+smoke to navigate, select an item, or reapply artwork. With explicit approval
+for the current device, capture a redacted pre-deploy file baseline, deploy the
+corrected bundle, then run the identity smoke:
 
 ```bash
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/verify/smoke_artwork_identity.sh --capture-artwork-files \
+  2155012430 \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/deploy.sh
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh \
   2155012430 55150 library-home true \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json \
   /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
+  scripts/deck/screenshot.sh \
+  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png
+
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
+DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
 ```
 
 The smoke checks only the requested shortcut overview, its matched-app alias,
-shortcut identity, bounded icon resolution, and hashed counts of the custom
-vertical, landscape, hero, and logo candidates. It never writes or reapplies
-artwork, changes a plugin setting, navigates, selects an item, dispatches input,
-or launches a game. Steam can populate its in-memory icon-data cache during the
-bounded icon request; this is the only expected state change. Evidence contains
-only route scope, app IDs, booleans, counts, elapsed time, and hashes, never
-artwork values or local paths. Inspect the Library Home sidebar and the Capsule,
-Wide Capsule, Hero, Logo, logo position, and square-capsule presentation
-visually after the smoke.
+shortcut identity, bounded icon resolution, and the exact pre/post count and
+SHA-256 multiset of the shortcut's existing custom-art files. Candidate URL
+counts and hashes are diagnostics only; they can be zero on a valid fixture.
+The two redacted manifest files contain only the shortcut app ID, count, and
+sorted SHA-256 values, never paths. The smoke rejects equal shortcut and
+matched app IDs before it opens a tunnel or calls CDP.
+
+It never writes or reapplies artwork, changes a plugin setting, navigates,
+selects an item, dispatches input, or launches a game. Steam can populate its
+in-memory icon-data cache during up to 20 polls over five seconds; this is the
+only expected Steam state change. Inspect the Library Home sidebar and the
+Capsule, Wide Capsule, Hero, Logo, logo position, and square-capsule
+presentation visually after the smoke. Close and verify the dedicated tunnel
+after capturing the screenshot.
 
 ## Controller chooser tab persistence
 

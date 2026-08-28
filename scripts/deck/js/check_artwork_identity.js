@@ -37,7 +37,7 @@
   let iconValueHash = null;
   let iconRequestError = false;
   let iconAttempts = 0;
-  for (; iconAttempts < 4 && !iconResolved; iconAttempts += 1) {
+  for (; iconAttempts < 20 && !iconResolved; iconAttempts += 1) {
     try {
       const candidate = appStore?.GetIconURLForApp?.(overview);
       iconResolved = typeof candidate === "string" && candidate.length > 0;
@@ -46,7 +46,7 @@
       iconRequestError = true;
       break;
     }
-    if (!iconResolved && iconAttempts < 3) await new Promise((resolve) => setTimeout(resolve, 150));
+    if (!iconResolved && iconAttempts < 19) await new Promise((resolve) => setTimeout(resolve, 250));
   }
   return JSON.stringify({
     routeScope,
