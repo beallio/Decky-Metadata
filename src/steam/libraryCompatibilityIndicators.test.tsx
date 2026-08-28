@@ -241,6 +241,28 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
   });
 
+  it("uses the live carousel app prop when the renderer does not provide a top-level App ID", () => {
+    const harness = makeHarness();
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { app: item.app }),
+      ),
+    });
+
+    const patchedHome = harness.homeHandler!([], homeOutput);
+    const capsule = patchedHome.props.fnItemRenderer({ app: nativeShortcut }).props.children;
+    const output = capsule.type(capsule.props);
+
+    expect(output.props.children[2]).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+
+    harness.unpatchers[0]();
+  });
+
   it("reinstalls one owned Home wrapper after cleanup without retaining the old decorator", () => {
     const first = makeHarness();
     const cached = renderHomeCapsule(first.homeHandler!, first.carousel, nativeShortcut.appid).capsule;

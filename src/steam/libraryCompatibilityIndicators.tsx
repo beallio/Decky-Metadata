@@ -314,8 +314,12 @@ export const installLibraryCompatibilityIndicators = (
   const carouselWrapper = (props: any) => {
     const output = targets.carousel(props);
     if (!active) return output;
+    // Steam's live Home renderer passes the shortcut overview as `app`.
+    // The top-level `appid` remains a supported fallback for the alternate
+    // renderer shape used by older clients.
+    const appId = Number(props?.appid ?? props?.app?.appid);
     return decorateForApp(
-      Number(props?.appid),
+      appId,
       output,
       (card, category, overview) => decorateCarouselCompatibility(
         card,

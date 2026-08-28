@@ -4342,7 +4342,11 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         const output = targets.carousel(props);
         if (!active)
             return output;
-        return decorateForApp(Number(props?.appid), output, (card, category, overview) => decorateCarouselCompatibility(card, targets.indicator, targets.homeClassName, category, overview));
+        // Steam's live Home renderer passes the shortcut overview as `app`.
+        // The top-level `appid` remains a supported fallback for the alternate
+        // renderer shape used by older clients.
+        const appId = Number(props?.appid ?? props?.app?.appid);
+        return decorateForApp(appId, output, (card, category, overview) => decorateCarouselCompatibility(card, targets.indicator, targets.homeClassName, category, overview));
     };
     try {
         homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
