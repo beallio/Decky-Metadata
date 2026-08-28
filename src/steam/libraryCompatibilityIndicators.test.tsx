@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, Fragment } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/api", () => ({
@@ -66,6 +66,7 @@ describe("Library card compatibility decoration", () => {
       type: CompatibilityIndicator,
       props: { display: 1, className: "home-compat" },
     });
+    expect((children[2] as any).key).toBe("decky-metadata-compatibility-home");
   });
 
   it("keeps a non-placeholder Home child when Steam changes the card shape", () => {
@@ -97,6 +98,30 @@ describe("Library card compatibility decoration", () => {
       type: CompatibilityIndicator,
       props: { display: 1, className: "grid-compat" },
     });
+    expect((children[1] as any).key).toBe("decky-metadata-compatibility-grid");
+  });
+
+  it("keeps existing native or plugin indicators and unrelated false, null, fragment, and icon-row children", () => {
+    const output = createElement(
+      "div",
+      {},
+      "art",
+      "in-library",
+      createElement(CompatibilityIndicator, { display: 1 }),
+      false,
+      null,
+      createElement(Fragment, {}, "footer"),
+    );
+    const pluginKey = createElement("span", { key: "decky-metadata-compatibility-grid" });
+    const gridOutput = createElement(
+      "div",
+      {},
+      createElement("div", { className: "grid-icons" }, false, null, pluginKey),
+      createElement("div", { className: "outside" }, "keep"),
+    );
+
+    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat", 3)).toBe(output);
+    expect(decorateGridCompatibility(gridOutput, CompatibilityIndicator, "grid-icons", "grid-compat", 2)).toBe(gridOutput);
   });
 
   it("does not alter a card when no effective status should be displayed", () => {
@@ -108,10 +133,20 @@ describe("Library card compatibility decoration", () => {
 });
 
 describe("installLibraryCompatibilityIndicators", () => {
-  it("patches only the identified Home and Library-grid renderers, shows a positive exact shortcut status, and cleans both up", () => {
+  const alternateShortcut = { appid: 2155012431, app_type: 1073741824, BIsShortcut: () => true };
+
+  const makeHarness = (options: {
+    candidates?: any[];
+    findModuleBySource?: (fragments: string[]) => any;
+    patchHomeRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
+    patchGridRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
+    metadataForApp?: (appId: number) => any;
+    getOverview?: (appId: number) => any;
+    isNativeNonSteamShortcut?: (overview: any) => boolean;
+  } = {}) => {
     const carousel = function carousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
-      return null;
+      return createElement("div", {}, "art", "in-library", false, "footer");
     };
     const gridRenderer = function gridRenderer() {
       /* eForceHWCompatDisplay bHideCompatIcons LibraryItemBox BIsModOrShortcut */
@@ -120,135 +155,199 @@ describe("installLibraryCompatibilityIndicators", () => {
     const home = { render: () => null };
     const grid = Object.assign(function grid() { return null; }, { type: gridRenderer });
     const indicator = () => null;
-    const findModuleBySource = vi.fn((fragments: string[]) =>
-      fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid }
-    );
     let homeHandler: ((args: any[], output: any) => any) | undefined;
     let gridHandler: ((args: any[], output: any) => any) | undefined;
     const unpatchHomeRenderer = vi.fn(() => { homeHandler = undefined; });
+    const unpatchGridRenderer = vi.fn(() => { gridHandler = undefined; });
     const patchHomeRenderer = vi.fn((_component, handler) => {
       homeHandler = handler;
       return unpatchHomeRenderer;
     });
-    const unpatchGridRenderer = vi.fn(() => { gridHandler = undefined; });
     const patchGridRenderer = vi.fn((_component, handler) => {
       gridHandler = handler;
       return unpatchGridRenderer;
     });
-    const unpatchers: Array<() => void> = [];
-    const findInReactTree = vi.fn((tree, predicate) => predicate(tree) ? tree : undefined);
-    const createReactTreePatcher = vi.fn((_steps, handler) => handler);
-    const candidates = [
+    const candidates = options.candidates ?? [
       { _: carousel, g: indicator },
       { DeckCompat: "home-compat", GameCapsule: "capsule" },
       { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" },
     ];
+    const unpatchers: Array<() => void> = [];
 
     installLibraryCompatibilityIndicators(unpatchers, {
       findModuleChild: (predicate) => candidates.map(predicate).find(Boolean),
-      findModuleBySource,
-      findInReactTree,
-      createReactTreePatcher,
+      findModuleBySource: options.findModuleBySource ?? ((fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid }),
+      patchHomeRenderer: options.patchHomeRenderer ?? patchHomeRenderer,
+      patchGridRenderer: options.patchGridRenderer ?? patchGridRenderer,
+      getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
+      metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
+      isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
+    });
+
+    return {
+      carousel,
+      grid,
+      home,
+      indicator,
+      unpatchers,
+      get homeHandler() { return homeHandler; },
+      get gridHandler() { return gridHandler; },
       patchHomeRenderer,
       patchGridRenderer,
-      getOverview: () => nativeShortcut as any,
-      metadataForApp: () => ({ deck_compat_override: 3 } as any),
-      isNativeNonSteamShortcut: () => true,
+      unpatchHomeRenderer,
+      unpatchGridRenderer,
+    };
+  };
+
+  const renderHomeCapsule = (handler: (args: any[], output: any) => any, carousel: any, appid: number) => {
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(carousel, { appid: item.appid }),
+      ),
+    });
+    const patchedHome = handler([], homeOutput);
+    const tree = patchedHome.props.fnItemRenderer({ appid });
+    const capsule = tree.props.children;
+    return { capsule, output: capsule.type(capsule.props) };
+  };
+
+  it("uses a faithful two-phase Home wrapper, prevents App-ID bleed and duplicate badges, and makes cached cards inert on cleanup", () => {
+    const harness = makeHarness({
+      metadataForApp: (appId) => ({ deck_compat_override: appId === nativeShortcut.appid ? 3 : 2 } as any),
     });
 
-    expect(findModuleBySource).toHaveBeenCalledWith([
-      "VirtualizedBoxCarousel",
-      "VBC_",
-      "fnItemRenderer",
-      "CellRenderer",
-    ]);
-    expect(findModuleBySource).toHaveBeenCalledWith([
-      "eForceHWCompatDisplay",
-      "bHideCompatIcons",
-      "LibraryItemBox",
-      "BIsModOrShortcut",
-    ]);
-    expect(patchHomeRenderer).toHaveBeenCalledWith(home, expect.any(Function));
-    expect(patchGridRenderer).toHaveBeenCalledWith(grid, expect.any(Function));
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
 
-    const homeCard = createElement("div", {}, "art", "in-library", false, "footer");
-    const homeOutput = createElement("div", { fnItemRenderer: () => homeCard });
-    const patchedHome = homeHandler!([], homeOutput);
-    const decoratedHomeCard = patchedHome.props.fnItemRenderer({ appid: nativeShortcut.appid });
-    expect(decoratedHomeCard.props.children[2]).toMatchObject({
-      type: indicator,
+    const first = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    const second = renderHomeCapsule(harness.homeHandler!, harness.carousel, alternateShortcut.appid);
+    const repeat = first.capsule.type(first.capsule.props);
+
+    expect(first.output.props.children[2]).toMatchObject({
+      type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
-
-    const gridOutput = createElement(
-      "div",
-      {},
-      createElement("div", { className: "grid-icons" }, "existing"),
-    );
-    const decoratedGrid = gridHandler!([{ app: nativeShortcut }], gridOutput);
-    expect(decoratedGrid.props.children.props.children[1]).toMatchObject({
-      type: indicator,
-      props: { display: 1, overview: nativeShortcut, className: "grid-compat" },
+    expect(second.output.props.children[2]).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: alternateShortcut, className: "home-compat" },
     });
+    expect(repeat.props.children.filter((child: any) => child?.type === harness.indicator)).toHaveLength(1);
 
-    unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+    harness.unpatchers[0]();
+    expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.unpatchGridRenderer).toHaveBeenCalledOnce();
+    expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
+  });
 
-    expect(unpatchHomeRenderer).toHaveBeenCalledOnce();
-    expect(unpatchGridRenderer).toHaveBeenCalledOnce();
-    expect(homeHandler).toBeUndefined();
-    expect(gridHandler).toBeUndefined();
+  it("reinstalls one owned Home wrapper after cleanup without retaining the old decorator", () => {
+    const first = makeHarness();
+    const cached = renderHomeCapsule(first.homeHandler!, first.carousel, nativeShortcut.appid).capsule;
+    first.unpatchers[0]();
+    const second = makeHarness();
+    const rerendered = renderHomeCapsule(second.homeHandler!, second.carousel, nativeShortcut.appid);
+
+    expect(cached.type(cached.props).props.children[2]).toBe(false);
+    expect(rerendered.output.props.children.filter((child: any) => child?.type === second.indicator)).toHaveLength(1);
+    expect(rerendered.capsule.type).not.toBe(cached.type);
+    second.unpatchers[0]();
   });
 
   it("does not change Home or grid output for an unresolved shortcut or an official game", () => {
-    const carousel = function carousel() {
-      /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
-      return null;
-    };
-    const gridRenderer = function gridRenderer() {
-      /* eForceHWCompatDisplay bHideCompatIcons LibraryItemBox BIsModOrShortcut */
-      return null;
-    };
-    const home = { render: () => null };
-    const grid = Object.assign(function grid() { return null; }, { type: gridRenderer });
-    const indicator = () => null;
-    let homeHandler: ((args: any[], output: any) => any) | undefined;
-    let gridHandler: ((args: any[], output: any) => any) | undefined;
-    const candidates = [
-      { _: carousel, g: indicator },
-      { DeckCompat: "home-compat", GameCapsule: "capsule" },
-      { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" },
-    ];
-    const unpatchers: Array<() => void> = [];
-
-    installLibraryCompatibilityIndicators(unpatchers, {
-      findModuleChild: (predicate) => candidates.map(predicate).find(Boolean),
-      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid },
-      findInReactTree: (tree, predicate) => predicate(tree) ? tree : undefined,
-      createReactTreePatcher: (_steps, handler) => handler,
-      patchHomeRenderer: (_component, handler) => {
-        homeHandler = handler;
-        return () => { homeHandler = undefined; };
-      },
-      patchGridRenderer: (_component, handler) => {
-        gridHandler = handler;
-        return () => { gridHandler = undefined; };
-      },
+    const harness = makeHarness({
       getOverview: (appId) => appId === nativeShortcut.appid ? nativeShortcut : officialGame,
       metadataForApp: () => ({ deck_compat_override: 0 } as any),
       isNativeNonSteamShortcut: (overview) => overview === nativeShortcut,
     });
 
-    const homeCard = createElement("div", {}, "art", "in-library", false, "footer");
-    const homeOutput = createElement("div", { fnItemRenderer: () => homeCard });
-    const patchedHome = homeHandler!([], homeOutput);
-    expect(patchedHome.props.fnItemRenderer({ appid: nativeShortcut.appid })).toBe(homeCard);
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    expect(home.output.props.children[2]).toBe(false);
 
     const gridOutput = createElement("div", {}, createElement("div", { className: "grid-icons" }, "existing"));
-    expect(gridHandler!([{ app: nativeShortcut }], gridOutput)).toBe(gridOutput);
-    expect(gridHandler!([{ app: officialGame }], gridOutput)).toBe(gridOutput);
+    expect(harness.gridHandler!([{ app: nativeShortcut }], gridOutput)).toBe(gridOutput);
+    expect(harness.gridHandler!([{ app: officialGame }], gridOutput)).toBe(gridOutput);
 
-    unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
-    expect(homeHandler).toBeUndefined();
-    expect(gridHandler).toBeUndefined();
+    harness.unpatchers[0]();
+  });
+
+  it.each([
+    ["missing", () => undefined],
+    ["renamed", (_home: any, grid: any) => ({ Yd: _home, TK: grid })],
+    ["swapped", (_home: any, grid: any) => ({ TK: grid })],
+    ["ambiguous", (home: any) => [{ Xd: home }, { Xd: home }]],
+  ])("fails closed when Home target resolution is %s", (_label, homeModule) => {
+    const harness = makeHarness({
+      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel"
+        ? homeModule({ render: () => null }, Object.assign(() => null, { type: () => null }))
+        : { TK: Object.assign(() => null, { type: () => null }) },
+    });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.unpatchers).toHaveLength(0);
+  });
+
+  it("fails closed when the grid target is missing", () => {
+    const harness = makeHarness({
+      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel"
+        ? { Xd: { render: () => null } }
+        : undefined,
+    });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.unpatchers).toHaveLength(0);
+  });
+
+  it.each([
+    ["a non-callable Home render", { render: "not a function" }, Object.assign(() => null, { type: () => null })],
+    ["a non-callable grid type", { render: () => null }, Object.assign(() => null, { type: "not a function" })],
+  ])("fails closed for %s", (_label, home, grid) => {
+    const harness = makeHarness({
+      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid },
+    });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for an invalid indicator export", () => {
+    const carousel = function carousel() {
+      /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
+      return null;
+    };
+    const harness = makeHarness({
+      candidates: [
+        { _: carousel, g: "not a component" },
+        { DeckCompat: "home-compat", GameCapsule: "capsule" },
+        { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" },
+      ],
+    });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+  });
+
+  it("unwinds Home immediately when grid installation fails", () => {
+    const gridInstallFailure = vi.fn(() => { throw new Error("grid target changed"); });
+    const harness = makeHarness({ patchGridRenderer: gridInstallFailure });
+
+    expect(gridInstallFailure).toHaveBeenCalledOnce();
+    expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.unpatchers).toHaveLength(0);
+  });
+
+  it("requires writable renderer descriptors before patching", () => {
+    const home = {} as { render?: () => void };
+    Object.defineProperty(home, "render", { value: () => undefined, writable: false });
+    const grid = Object.assign(() => null, {} as { type?: () => void });
+    Object.defineProperty(grid, "type", { value: () => undefined, writable: false });
+    const harness = makeHarness({
+      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid },
+    });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
   });
 });

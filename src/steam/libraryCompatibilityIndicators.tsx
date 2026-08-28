@@ -1,4 +1,4 @@
-import { createReactTreePatcher, findInReactTree, findModuleChild } from "@decky/ui";
+import { findModuleChild } from "@decky/ui";
 import { cloneElement, createElement, isValidElement } from "react";
 import type { MetadataData } from "../types";
 import { effectiveCompatibilityCategory } from "./metadataPatch";
@@ -8,15 +8,14 @@ const DECK_DISPLAY = 1;
 
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
-type TreeFinder = (tree: any, predicate: (node: any) => boolean) => any;
-type TreePatcher = (steps: Array<(tree: any) => any>, handler: (args: any[], ret: any) => any) => any;
 type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category">;
+
+const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
+const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
 
 export type LibraryCompatibilityIndicatorDependencies = {
   findModuleChild: ModuleFinder;
   findModuleBySource: ModuleSourceFinder;
-  findInReactTree: TreeFinder;
-  createReactTreePatcher: TreePatcher;
   patchHomeRenderer: (module: any, handler: (args: any[], output: any) => any) => Unpatch;
   patchGridRenderer: (component: any, handler: (args: any[], output: any) => any) => Unpatch;
   getOverview: (appId: number) => any;
@@ -48,12 +47,12 @@ const findSteamModuleBySource: ModuleSourceFinder = (fragments) => {
     chunks.push([[Symbol("decky-metadata-library-compatibility")], {}, (requireFn: any) => {
       webpackRequire = requireFn;
     }]);
-    const moduleId = Object.keys(webpackRequire?.m ?? {}).find((id) => {
+    const moduleIds = Object.keys(webpackRequire?.m ?? {}).filter((id) => {
       const factory = webpackRequire.m[id];
       const source = typeof factory === "function" ? factory.toString() : "";
       return fragments.every((fragment) => source.includes(fragment));
     });
-    return moduleId === undefined ? undefined : webpackRequire(moduleId);
+    return moduleIds.length === 1 ? webpackRequire(moduleIds[0]) : undefined;
   } catch {
     return undefined;
   }
@@ -85,8 +84,8 @@ const childrenOf = (element: any): any[] => {
   return Array.isArray(children) ? children : [children];
 };
 
-const hasIndicator = (children: any[], indicator: any) =>
-  children.some((child) => isValidElement(child) && child.type === indicator);
+const hasIndicator = (children: any[], indicator: any, key: string) =>
+  children.some((child) => isValidElement(child) && (child.type === indicator || child.key === key));
 
 export const decorateCarouselCompatibility = (
   output: any,
@@ -98,7 +97,7 @@ export const decorateCarouselCompatibility = (
   if (!category || !isValidElement(output)) return output;
   const element = output as any;
   const children = childrenOf(element);
-  if (hasIndicator(children, indicator)) return output;
+  if (hasIndicator(children, indicator, HOME_INDICATOR_KEY)) return output;
 
   // Steam's GameCapsule places compatibility after its in-library marker. A
   // shortcut suppresses that native slot with `false`; replace only that
@@ -111,7 +110,7 @@ export const decorateCarouselCompatibility = (
   return cloneElement(element, {
     children: [
       ...children.slice(0, 2),
-      createElement(indicator, { display: DECK_DISPLAY, overview, className }),
+      createElement(indicator, { key: HOME_INDICATOR_KEY, display: DECK_DISPLAY, overview, className }),
       ...remainingChildren,
     ],
   });
@@ -128,11 +127,16 @@ const decorateGridIconRow = (
   const element = node as any;
   if (element.props?.className === iconRowClassName) {
     const children = childrenOf(element);
-    if (hasIndicator(children, indicator)) return node;
+    if (hasIndicator(children, indicator, GRID_INDICATOR_KEY)) return node;
     return cloneElement(element, {
       children: [
         ...children,
-        createElement(indicator, { display: DECK_DISPLAY, overview, className: indicatorClassName }),
+        createElement(indicator, {
+          key: GRID_INDICATOR_KEY,
+          display: DECK_DISPLAY,
+          overview,
+          className: indicatorClassName,
+        }),
       ],
     });
   }
@@ -191,14 +195,26 @@ const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependen
     typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined
   );
 
+  const hasWritableCallableMethod = (target: any, methodName: string) =>
+    typeof target?.[methodName] === "function" &&
+    Object.getOwnPropertyDescriptor(target, methodName)?.writable === true;
+  const isNonEmptyString = (value: unknown): value is string =>
+    typeof value === "string" && value.length > 0;
+
   if (
     !carouselModule ||
-    !homeModule?.Xd ||
-    Object.getOwnPropertyDescriptor(homeModule.Xd, "render")?.writable !== true ||
-    !gridModule?.TK ||
-    Object.getOwnPropertyDescriptor(gridModule.TK, "type")?.writable !== true ||
-    !homeStyles ||
-    !gridStyles
+    Array.isArray(homeModule) ||
+    Array.isArray(gridModule) ||
+    homeModule === gridModule ||
+    !hasWritableCallableMethod(homeModule?.Xd, "render") ||
+    typeof gridModule?.TK !== "function" ||
+    !hasWritableCallableMethod(gridModule.TK, "type") ||
+    typeof carouselModule._ !== "function" ||
+    typeof carouselModule.g !== "function" ||
+    !isNonEmptyString(homeStyles?.DeckCompat) ||
+    !isNonEmptyString(homeStyles?.GameCapsule) ||
+    !isNonEmptyString(gridStyles?.LibraryItemIcons) ||
+    !isNonEmptyString(gridStyles?.SteamDeckCompatIcon)
   ) return null;
   return {
     home: homeModule.Xd,
@@ -214,8 +230,6 @@ const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependen
 const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
   findModuleChild,
   findModuleBySource: findSteamModuleBySource,
-  findInReactTree,
-  createReactTreePatcher,
   patchHomeRenderer: (component, handler) => safeAfterPatch(component, "render", handler).unpatch,
   patchGridRenderer: (component, handler) => safeAfterPatch(component, "type", handler).unpatch,
   getOverview,
@@ -223,16 +237,27 @@ const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
   isNativeNonSteamShortcut,
 };
 
-const cardTreePatcher = (
-  component: any,
-  decorate: (props: any, output: any) => any,
-  dependencies: LibraryCompatibilityIndicatorDependencies,
-) => dependencies.createReactTreePatcher(
-  [
-    (tree) => dependencies.findInReactTree(tree, (node) => node?.type === component),
-  ],
-  (args, output) => decorate(args[0], output),
-);
+/**
+ * Replace an exact carousel element with an owned wrapper. Unlike Decky's
+ * createReactTreePatcher this does not patch a component type in place, so a
+ * cached card cannot retain a plugin closure after teardown.
+ */
+const wrapCarouselElement = (node: any, carousel: any, wrapper: any): any => {
+  if (!isValidElement(node)) return node;
+  const element = node as any;
+  if (element.type === carousel) {
+    return createElement(wrapper, { ...element.props, key: element.key });
+  }
+
+  const originalChildren = element.props?.children;
+  if (originalChildren === undefined) return node;
+  const children = childrenOf(element);
+  const wrappedChildren = children.map((child) => wrapCarouselElement(child, carousel, wrapper));
+  if (wrappedChildren.every((child, index) => child === children[index])) return node;
+  return cloneElement(element, {
+    children: Array.isArray(originalChildren) ? wrappedChildren : wrappedChildren[0],
+  });
+};
 
 /**
  * Add compatibility indicators at the two native Library card renderers.
@@ -262,9 +287,34 @@ export const installLibraryCompatibilityIndicators = (
     return decorate(output, category, overview);
   };
 
-  const homeCardPatcher = cardTreePatcher(
-    targets.carousel,
-    (props, output) => decorateForApp(
+  let active = true;
+  let homeUnpatch: Unpatch | undefined;
+  let gridUnpatch: Unpatch | undefined;
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    active = false;
+    const homeCleanup = homeUnpatch;
+    const gridCleanup = gridUnpatch;
+    homeUnpatch = undefined;
+    gridUnpatch = undefined;
+    try {
+      homeCleanup?.();
+    } catch {
+      // A changed Steam target must not keep the grid patch alive.
+    }
+    try {
+      gridCleanup?.();
+    } catch {
+      // The aggregate Steam cleanup continues after one target changed.
+    }
+  };
+
+  const carouselWrapper = (props: any) => {
+    const output = targets.carousel(props);
+    if (!active) return output;
+    return decorateForApp(
       Number(props?.appid),
       output,
       (card, category, overview) => decorateCarouselCompatibility(
@@ -274,38 +324,52 @@ export const installLibraryCompatibilityIndicators = (
         category,
         overview,
       ),
-    ),
-    dependencies,
-  );
-  const homeUnpatch = dependencies.patchHomeRenderer(
-    targets.home,
-    (_args, output) => {
-      const homeOutput = output as any;
-      if (!isValidElement(homeOutput)) return output;
-      const homeProps = (homeOutput as any).props;
-      if (typeof homeProps?.fnItemRenderer !== "function") return output;
-      const originalRenderer = homeProps.fnItemRenderer;
-      return cloneElement(homeOutput as any, {
-        fnItemRenderer: (...itemArgs: any[]) => homeCardPatcher(itemArgs, originalRenderer(...itemArgs)),
-      });
-    },
-  );
-  const gridUnpatch = dependencies.patchGridRenderer(
-    targets.grid,
-    (args, output) => decorateForApp(
-      Number(args[0]?.app?.appid),
-      output,
-      (card, category, overview) => decorateGridCompatibility(
-        card,
-        targets.indicator,
-        targets.gridIconsClassName,
-        targets.gridIndicatorClassName,
-        category,
-        overview,
-      ),
-      args[0]?.app,
-    ),
-  );
+    );
+  };
 
-  unpatchers.push(homeUnpatch, gridUnpatch);
+  try {
+    homeUnpatch = dependencies.patchHomeRenderer(
+      targets.home,
+      (_args, output) => {
+        const homeOutput = output as any;
+        if (!active || !isValidElement(homeOutput)) return output;
+        const homeProps = (homeOutput as any).props;
+        if (typeof homeProps?.fnItemRenderer !== "function") return output;
+        const originalRenderer = homeProps.fnItemRenderer;
+        return cloneElement(homeOutput as any, {
+          fnItemRenderer: (...itemArgs: any[]) =>
+            wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+        });
+      },
+    );
+    if (typeof homeUnpatch !== "function") {
+      cleanup();
+      return;
+    }
+    gridUnpatch = dependencies.patchGridRenderer(
+      targets.grid,
+      (args, output) => decorateForApp(
+        Number(args[0]?.app?.appid),
+        output,
+        (card, category, overview) => decorateGridCompatibility(
+          card,
+          targets.indicator,
+          targets.gridIconsClassName,
+          targets.gridIndicatorClassName,
+          category,
+          overview,
+        ),
+        args[0]?.app,
+      ),
+    );
+    if (typeof gridUnpatch !== "function") {
+      cleanup();
+      return;
+    }
+  } catch {
+    cleanup();
+    return;
+  }
+
+  unpatchers.push(cleanup);
 };
