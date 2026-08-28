@@ -208,6 +208,7 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "iconHashPresent" in probe
     assert "iconDataPresent" in probe
     assert "iconResolved" in probe
+    assert "iconValueHash" in probe
     assert "const ICON_HYDRATION_DEADLINE_MS = 15000;" in probe
     assert "const ICON_HYDRATION_POLL_INTERVAL_MS = 250;" in probe
     assert "iconDeadlineMs" in probe
@@ -225,6 +226,7 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "--capture-artwork-files" in smoke
     assert "shortcut and matched appids must differ" in smoke
     assert "fileHashSetUnchanged" in smoke
+    assert "iconValueHash" in smoke
     assert "data[\"iconDeadlineMs\"] != 15000" in smoke
     assert "1 <= data[\"iconAttempts\"] <= 61" in smoke
     assert "/tmp/Decky-Metadata" in smoke
@@ -341,7 +343,7 @@ from pathlib import Path
 
 log = Path(os.environ[\"FAKE_ARTWORK_LOG\"])
 log.write_text(log.read_text() + \"cdp\\n\" if log.exists() else \"cdp\\n\")
-print(json.dumps({
+payload = {
     \"routeScope\": \"library-home\",
     \"shortcutAppId\": 2155012430,
     \"matchedAppId\": 55150,
@@ -353,12 +355,15 @@ print(json.dumps({
     \"iconHashPresent\": False,
     \"iconDataPresent\": False,
     \"iconResolved\": True,
+    \"iconValueHash\": \"1234abcd\",
     \"iconRequestError\": False,
     \"iconAttempts\": 2,
     \"iconDeadlineMs\": 15000,
     \"artwork\": {kind: {\"count\": 0, \"hashes\": []} for kind in (\"vertical\", \"landscape\", \"hero\", \"logo\")},
     \"elapsedMs\": 20,
-}))
+}
+payload.update(json.loads(os.environ.get(\"FAKE_ARTWORK_PAYLOAD_OVERRIDES\", \"{}\")))
+print(json.dumps(payload))
 """,
         encoding="utf-8",
     )
@@ -393,8 +398,13 @@ def _artwork_smoke_evidence_path(tmp_path: Path) -> Path:
 def _run_artwork_identity_smoke(
     tmp_path: Path,
     after_hashes: list[str],
+    *,
+    payload_overrides: dict | None = None,
+    smoke_source: str | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
     smoke = _write_artwork_identity_smoke_fixture(tmp_path)
+    if smoke_source is not None:
+        smoke.write_text(smoke_source, encoding="utf-8")
     evidence = _artwork_smoke_evidence_path(tmp_path)
     before_manifest = evidence.parent / "before-artwork-files.json"
     before_manifest.write_text(
@@ -419,6 +429,7 @@ def _run_artwork_identity_smoke(
             "PATH": f"{smoke.parents[3] / 'bin'}:{os.environ['PATH']}",
             "FAKE_ARTWORK_LOG": str(log),
             "FAKE_ARTWORK_HASHES": ",".join(after_hashes),
+            "FAKE_ARTWORK_PAYLOAD_OVERRIDES": json.dumps(payload_overrides or {}),
         },
     )
     return completed, evidence, log
@@ -435,6 +446,74 @@ def test_artwork_identity_smoke_accepts_zero_candidates_when_six_file_hashes_mat
         "fileHashSetUnchanged": True,
         "shortcutAppId": 2155012430,
     }
+
+
+def test_artwork_identity_smoke_accepts_unresolved_icon_without_a_request_error(tmp_path: Path):
+    completed, evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        payload_overrides={"iconResolved": False, "iconValueHash": None},
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "bounded icon diagnostics" in completed.stdout
+    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert json.loads((evidence / "artwork-identity.json").read_text())["iconResolved"] is False
+
+
+def _artwork_candidate_payload() -> dict[str, dict[str, list[str] | int]]:
+    return {kind: {"count": 0, "hashes": []} for kind in ("vertical", "landscape", "hero", "logo")}
+
+
+@pytest.mark.parametrize(
+    ("payload_overrides", "failure"),
+    [
+        ({"iconRequestError": True}, "icon resolver request failed"),
+        ({"isModOrShortcut": False}, "shortcut identity does not match"),
+        ({"routeScope": "other"}, "route scope 'other', expected 'library-home'"),
+        (
+            {
+                "artwork": {
+                    **_artwork_candidate_payload(),
+                    "vertical": {"count": 1, "hashes": ["not-a-hash"]},
+                }
+            },
+            "malformed vertical artwork hash",
+        ),
+    ],
+)
+def test_artwork_identity_smoke_rejects_invalid_identity_or_diagnostic_payload(
+    tmp_path: Path, payload_overrides: dict, failure: str
+):
+    completed, _evidence, log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        payload_overrides=payload_overrides,
+    )
+
+    assert completed.returncode != 0
+    assert failure in completed.stderr
+    assert log.read_text().splitlines() == ["cdp"]
+
+
+def test_artwork_identity_smoke_mutation_makes_unresolved_icon_fail(tmp_path: Path):
+    source = (Path(__file__).parents[1] / "scripts/deck/verify/smoke_artwork_identity.sh").read_text()
+    mutated = source.replace(
+        'if data["iconRequestError"]:\n',
+        'if data["iconRequestError"] or not data["iconResolved"]:\n',
+        1,
+    )
+    assert mutated != source
+
+    completed, _evidence, _log = _run_artwork_identity_smoke(
+        tmp_path,
+        _artwork_file_hashes(),
+        payload_overrides={"iconResolved": False, "iconValueHash": None},
+        smoke_source=mutated,
+    )
+
+    assert completed.returncode != 0
+    assert "icon resolver request failed" in completed.stderr
 
 
 @pytest.mark.parametrize(

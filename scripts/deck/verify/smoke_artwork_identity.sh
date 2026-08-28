@@ -164,7 +164,7 @@ except json.JSONDecodeError as exc:
 required = (
     "routeScope", "shortcutAppId", "matchedAppId", "requestedObjectAppId",
     "matchedObjectAppId", "aliasSameObject", "isShortcut", "isModOrShortcut",
-    "iconHashPresent", "iconDataPresent", "iconResolved", "iconRequestError",
+    "iconHashPresent", "iconDataPresent", "iconResolved", "iconValueHash", "iconRequestError",
     "iconAttempts", "iconDeadlineMs", "artwork", "elapsedMs",
 )
 missing = [name for name in required if name not in data]
@@ -182,8 +182,18 @@ if data["isShortcut"] is not True:
     raise SystemExit("FAIL: shortcut no longer reports native shortcut identity")
 if data["isModOrShortcut"] is not (expected_identity == "true"):
     raise SystemExit("FAIL: shortcut identity does not match the requested route scope")
-if data["iconRequestError"] or not data["iconResolved"]:
-    raise SystemExit("FAIL: icon resolver stayed null after its bounded request")
+if not isinstance(data["iconResolved"], bool):
+    raise SystemExit("FAIL: malformed icon resolver diagnostic")
+if data["iconValueHash"] is not None and (
+    not isinstance(data["iconValueHash"], str) or len(data["iconValueHash"]) != 8
+):
+    raise SystemExit("FAIL: malformed icon resolver value hash")
+if data["iconResolved"] and data["iconValueHash"] is None:
+    raise SystemExit("FAIL: resolved icon is missing its diagnostic hash")
+if not isinstance(data["iconRequestError"], bool):
+    raise SystemExit("FAIL: malformed icon resolver request state")
+if data["iconRequestError"]:
+    raise SystemExit("FAIL: icon resolver request failed")
 if data["iconDeadlineMs"] != 15000:
     raise SystemExit("FAIL: icon resolver deadline does not match the permanent bound")
 if not isinstance(data["iconAttempts"], int) or not 1 <= data["iconAttempts"] <= 61:
@@ -206,4 +216,4 @@ after_manifest="$evidence/artwork-files-after.json"
 capture_artwork_files "$shortcut" "$after_manifest"
 validate_and_compare_artwork_manifests "$before_manifest" "$after_manifest" "$shortcut" "$evidence/artwork-file-comparison.json"
 
-pass "artwork identity: shortcut=$shortcut, matched=$matched, scope=$expected_scope; icon resolver and artwork files verified"
+pass "artwork identity: shortcut=$shortcut, matched=$matched, scope=$expected_scope; shortcut identity, artwork files, and bounded icon diagnostics verified"

@@ -92,13 +92,23 @@ DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
 ```
 
-The smoke checks only the requested shortcut overview, its matched-app alias,
-shortcut identity, bounded icon resolution, and the exact pre/post count and
-SHA-256 multiset of the shortcut's existing custom-art files. Candidate URL
-counts and hashes are diagnostics only; they can be zero on a valid fixture.
-The two redacted manifest files contain only the shortcut app ID, count, and
-sorted SHA-256 values, never paths. The smoke rejects equal shortcut and
-matched app IDs before it opens a tunnel or calls CDP.
+The automated smoke is an identity-and-file evidence check. It requires the
+requested shortcut overview and matched-app alias, native shortcut identity on
+Library Home, the exact pre/post count and SHA-256 multiset of the shortcut's
+existing custom-art files, and valid redacted candidate count/hash shapes.
+Candidate URL counts can be zero on a valid fixture. The two redacted manifest
+files contain only the shortcut app ID, count, and sorted SHA-256 values, never
+paths. The smoke rejects equal shortcut and matched app IDs before it opens a
+tunnel or calls CDP.
+
+The bounded direct icon API poll is diagnostic evidence, not the visual
+oracle. `iconRequestError` fails the smoke. An error-free unresolved result
+(`iconResolved=false`, no value hash) is recorded but does not fail it, because
+the API can remain null while Steam renders the real Library Home sidebar icon.
+The required user-visible check is a human confirmation in Steam Deck Desktop
+Mode Library Home that the affected shortcut icon is visible with Decky
+Metadata enabled. Retain the screenshot and redacted API payload as diagnostics
+without reporting a direct API resolution that did not occur.
 
 It never writes or reapplies artwork, changes a plugin setting, navigates,
 selects an item, dispatches input, or launches a game. Steam can populate its
