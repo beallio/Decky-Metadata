@@ -1,5 +1,6 @@
 import { findModuleChild } from "@decky/ui";
 import { cloneElement, createElement, isValidElement } from "react";
+import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
 import { effectiveCompatibilityCategory } from "./metadataPatch";
 import { getOverview, isNativeNonSteamShortcut, metadataCache, safeAfterPatch, Unpatch } from "./core";
@@ -8,16 +9,35 @@ const DECK_DISPLAY = 1;
 
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
+type ModuleSourceCandidatesFinder = (fragments: string[]) => any[];
 type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category">;
 
 const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
 const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
 
+const steamUiWindow = () => {
+  const candidates: any[] = [globalThis];
+  try {
+    const currentWindow = globalThis as any;
+    candidates.push(currentWindow.parent, currentWindow.top);
+  } catch {
+    // A cross-origin frame can still use its own Decky module bridge.
+  }
+  return candidates.find((candidate) =>
+    candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function"
+  ) ?? globalThis;
+};
+
 export type LibraryCompatibilityIndicatorDependencies = {
   findModuleChild: ModuleFinder;
   findModuleBySource: ModuleSourceFinder;
+  findModulesBySource: ModuleSourceCandidatesFinder;
   patchHomeRenderer: (module: any, handler: (args: any[], output: any) => any) => Unpatch;
   patchGridRenderer: (component: any, handler: (args: any[], output: any) => any) => Unpatch;
+  scheduleRetry: (callback: () => void, delayMs: number) => number;
+  cancelRetry: (retryId: number) => void;
+  retryIntervalMs: number;
+  maxResolutionAttempts: number;
   getOverview: (appId: number) => any;
   metadataForApp: (appId: number) => MetadataData | undefined;
   isNativeNonSteamShortcut: (overview: any) => boolean;
@@ -38,9 +58,9 @@ type LibraryCompatibilityTargets = {
  * renderer source. Query only webpack factory text, then load its one match.
  * This never walks React or MobX state.
  */
-const findSteamModuleBySource: ModuleSourceFinder = (fragments) => {
-  const chunks = (window as any).webpackChunksteamui;
-  if (!chunks?.push) return undefined;
+const findSteamModulesBySource: ModuleSourceCandidatesFinder = (fragments) => {
+  const chunks = (steamUiWindow() as any).webpackChunksteamui;
+  if (!chunks?.push) return [];
 
   let webpackRequire: any;
   try {
@@ -52,10 +72,31 @@ const findSteamModuleBySource: ModuleSourceFinder = (fragments) => {
       const source = typeof factory === "function" ? factory.toString() : "";
       return fragments.every((fragment) => source.includes(fragment));
     });
-    return moduleIds.length === 1 ? webpackRequire(moduleIds[0]) : undefined;
+    return moduleIds.flatMap((moduleId) => {
+      try {
+        return [webpackRequire(moduleId)];
+      } catch {
+        return [];
+      }
+    });
   } catch {
-    return undefined;
+    return [];
   }
+};
+
+const findSteamModuleBySource: ModuleSourceFinder = (fragments) => {
+  const candidates = findSteamModulesBySource(fragments);
+  return candidates.length === 1 ? candidates[0] : undefined;
+};
+
+const findLiveModuleChild: ModuleFinder = (predicate) => {
+  const liveFinder = (steamUiWindow() as any).DFL?.findModuleChild;
+  return typeof liveFinder === "function" ? liveFinder(predicate) : findModuleChild(predicate);
+};
+
+const findOneSourceExport = (modules: any[], predicate: (module: any) => boolean): any | undefined => {
+  const matches = modules.filter(predicate);
+  return matches.length === 1 ? matches[0] : undefined;
 };
 
 /**
@@ -165,8 +206,22 @@ export const decorateGridCompatibility = (
   return decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
 };
 
-const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependencies, "findModuleChild" | "findModuleBySource">): LibraryCompatibilityTargets | null => {
-  const carouselModule = dependencies.findModuleChild((module) => {
+const resolveTargets = (
+  dependencies: Pick<
+    LibraryCompatibilityIndicatorDependencies,
+    "findModuleChild" | "findModuleBySource" | "findModulesBySource"
+  >,
+): LibraryCompatibilityTargets | null => {
+  const findChild = (predicate: (module: any) => any) => {
+    try {
+      return dependencies.findModuleChild(predicate);
+    } catch {
+      // A lazy Steam module can disappear while Decky's finder is scanning it.
+      // Treat that race as unresolved so the installer retries fail-closed.
+      return undefined;
+    }
+  };
+  const carouselModule = findChild((module) => {
     if (!module || typeof module !== "object") return undefined;
     return typeof module._ === "function" &&
       typeof module.g === "function" &&
@@ -175,24 +230,49 @@ const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependen
       module._.toString().includes("gamepadgamecapsule")
       ? module
       : undefined;
-  });
-  const homeModule = dependencies.findModuleBySource([
+  }) ?? dependencies.findModuleBySource([
+    "GameCapsule unable to render",
+    "#LibraryHome_GameCarousel_ContextMenu",
+    "gamepadgamecapsule",
+  ]);
+  const homeModule = findChild((module) =>
+    typeof module?.Xd?.render === "function" && module.Xd.render.toString().includes("VBC_")
+      ? module
+      : undefined
+  ) ?? dependencies.findModuleBySource([
     "VirtualizedBoxCarousel",
     "VBC_",
     "fnItemRenderer",
     "CellRenderer",
   ]);
-  const gridModule = dependencies.findModuleBySource([
+  const gridModule = findChild((module) =>
+    typeof module?.TK?.type === "function" &&
+    typeof module?.hF === "function" &&
+    typeof module?.Mf === "function" &&
+    typeof module?.eL === "function" &&
+    typeof module?.Kt === "function" &&
+    typeof module?.aT === "number" &&
+    typeof module?.dC === "number" &&
+    typeof module?.UT === "number" &&
+    typeof module?.lS === "number" &&
+    typeof module?.oG === "number"
+      ? module
+      : undefined
+  ) ?? dependencies.findModuleBySource([
     "eForceHWCompatDisplay",
     "bHideCompatIcons",
     "LibraryItemBox",
     "BIsModOrShortcut",
   ]);
-  const homeStyles = dependencies.findModuleChild((module) =>
+  const homeStyles = findChild((module) =>
     typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined
+  ) ?? findOneSourceExport(dependencies.findModulesBySource(["DeckCompat", "GameCapsule"]), (module) =>
+    typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string"
   );
-  const gridStyles = dependencies.findModuleChild((module) =>
+  const gridStyles = findChild((module) =>
     typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined
+  ) ?? findOneSourceExport(dependencies.findModulesBySource(["LibraryItemIcons", "SteamDeckCompatIcon"]), (module) =>
+    typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string"
   );
 
   const hasWritableCallableMethod = (target: any, methodName: string) =>
@@ -207,8 +287,7 @@ const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependen
     Array.isArray(gridModule) ||
     homeModule === gridModule ||
     !hasWritableCallableMethod(homeModule?.Xd, "render") ||
-    typeof gridModule?.TK !== "function" ||
-    !hasWritableCallableMethod(gridModule.TK, "type") ||
+    !hasWritableCallableMethod(gridModule?.TK, "type") ||
     typeof carouselModule._ !== "function" ||
     typeof carouselModule.g !== "function" ||
     !isNonEmptyString(homeStyles?.DeckCompat) ||
@@ -228,13 +307,31 @@ const resolveTargets = (dependencies: Pick<LibraryCompatibilityIndicatorDependen
 };
 
 const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
-  findModuleChild,
+  findModuleChild: findLiveModuleChild,
   findModuleBySource: findSteamModuleBySource,
+  findModulesBySource: findSteamModulesBySource,
   patchHomeRenderer: (component, handler) => safeAfterPatch(component, "render", handler).unpatch,
   patchGridRenderer: (component, handler) => safeAfterPatch(component, "type", handler).unpatch,
+  scheduleRetry: (callback, delayMs) => window.setTimeout(callback, delayMs),
+  cancelRetry: (retryId) => window.clearTimeout(retryId),
+  retryIntervalMs: 500,
+  maxResolutionAttempts: 240,
   getOverview,
   metadataForApp: (appId) => metadataCache[String(appId)],
   isNativeNonSteamShortcut,
+};
+
+const reportInstalled = (resolutionAttempts: number) => {
+  try {
+    void Promise.resolve(frontendLog(
+      "patch",
+      "library compatibility indicators installed",
+      { resolutionAttempts },
+      "info",
+    )).catch(() => undefined);
+  } catch {
+    // Reporting must not alter renderer installation.
+  }
 };
 
 /**
@@ -268,33 +365,21 @@ export const installLibraryCompatibilityIndicators = (
   provided: Partial<LibraryCompatibilityIndicatorDependencies> = {},
 ) => {
   const dependencies = { ...defaultDependencies, ...provided };
-  const targets = resolveTargets(dependencies);
-  if (!targets) return;
-
-  const decorateForApp = (
-    appId: number,
-    output: any,
-    decorate: (output: any, category: number | null, overview: any) => any,
-    renderedOverview?: any,
-  ) => {
-    const overview = renderedOverview ?? dependencies.getOverview(appId);
-    const category = resolveLibraryCompatibilityIndicator({
-      renderedAppId: appId,
-      overview,
-      metadata: dependencies.metadataForApp(appId),
-      isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
-    });
-    return decorate(output, category, overview);
-  };
-
   let active = true;
   let homeUnpatch: Unpatch | undefined;
   let gridUnpatch: Unpatch | undefined;
+  let retryId: number | undefined;
+  let resolutionAttempts = 0;
+  let installed = false;
   let cleaned = false;
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
     active = false;
+    if (retryId !== undefined) {
+      dependencies.cancelRetry(retryId);
+      retryId = undefined;
+    }
     const homeCleanup = homeUnpatch;
     const gridCleanup = gridUnpatch;
     homeUnpatch = undefined;
@@ -310,70 +395,113 @@ export const installLibraryCompatibilityIndicators = (
       // The aggregate Steam cleanup continues after one target changed.
     }
   };
+  // Register before resolving lazy Library modules so dismount always cancels
+  // an outstanding retry, even when no renderer has been patched yet.
+  unpatchers.push(cleanup);
 
-  const carouselWrapper = (props: any) => {
-    const output = targets.carousel(props);
-    if (!active) return output;
-    // Steam's live Home renderer passes the shortcut overview as `app`.
-    // The top-level `appid` remains a supported fallback for the alternate
-    // renderer shape used by older clients.
-    const appId = Number(props?.appid ?? props?.app?.appid);
-    return decorateForApp(
-      appId,
-      output,
-      (card, category, overview) => decorateCarouselCompatibility(
-        card,
-        targets.indicator,
-        targets.homeClassName,
-        category,
-        overview,
-      ),
-    );
-  };
-
-  try {
-    homeUnpatch = dependencies.patchHomeRenderer(
-      targets.home,
-      (_args, output) => {
-        const homeOutput = output as any;
-        if (!active || !isValidElement(homeOutput)) return output;
-        const homeProps = (homeOutput as any).props;
-        if (typeof homeProps?.fnItemRenderer !== "function") return output;
-        const originalRenderer = homeProps.fnItemRenderer;
-        return cloneElement(homeOutput as any, {
-          fnItemRenderer: (...itemArgs: any[]) =>
-            wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
-        });
-      },
-    );
-    if (typeof homeUnpatch !== "function") {
-      cleanup();
+  const installWhenTargetsResolve = () => {
+    if (!active || installed) return;
+    resolutionAttempts += 1;
+    let targets: LibraryCompatibilityTargets | null;
+    try {
+      targets = resolveTargets(dependencies);
+    } catch {
+      // Lazy exports can be observed while their module factory is still
+      // initializing. Retry that transient state instead of losing the timer.
+      targets = null;
+    }
+    if (!targets) {
+      if (resolutionAttempts < dependencies.maxResolutionAttempts) {
+        retryId = dependencies.scheduleRetry(() => {
+          retryId = undefined;
+          installWhenTargetsResolve();
+        }, dependencies.retryIntervalMs);
+      }
       return;
     }
-    gridUnpatch = dependencies.patchGridRenderer(
-      targets.grid,
-      (args, output) => decorateForApp(
-        Number(args[0]?.app?.appid),
+
+    const decorateForApp = (
+      appId: number,
+      output: any,
+      decorate: (output: any, category: number | null, overview: any) => any,
+      renderedOverview?: any,
+    ) => {
+      const overview = renderedOverview ?? dependencies.getOverview(appId);
+      const category = resolveLibraryCompatibilityIndicator({
+        renderedAppId: appId,
+        overview,
+        metadata: dependencies.metadataForApp(appId),
+        isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
+      });
+      return decorate(output, category, overview);
+    };
+
+    const carouselWrapper = (props: any) => {
+      const output = targets.carousel(props);
+      if (!active) return output;
+      // Steam's live Home renderer passes the shortcut overview as `app`.
+      // The top-level `appid` remains a supported fallback for the alternate
+      // renderer shape used by older clients.
+      const appId = Number(props?.appid ?? props?.app?.appid);
+      return decorateForApp(
+        appId,
         output,
-        (card, category, overview) => decorateGridCompatibility(
+        (card, category, overview) => decorateCarouselCompatibility(
           card,
           targets.indicator,
-          targets.gridIconsClassName,
-          targets.gridIndicatorClassName,
+          targets.homeClassName,
           category,
           overview,
         ),
-        args[0]?.app,
-      ),
-    );
-    if (typeof gridUnpatch !== "function") {
+      );
+    };
+
+    try {
+      homeUnpatch = dependencies.patchHomeRenderer(
+        targets.home,
+        (_args, output) => {
+          const homeOutput = output as any;
+          if (!active || !isValidElement(homeOutput)) return output;
+          const homeProps = (homeOutput as any).props;
+          if (typeof homeProps?.fnItemRenderer !== "function") return output;
+          const originalRenderer = homeProps.fnItemRenderer;
+          return cloneElement(homeOutput as any, {
+            fnItemRenderer: (...itemArgs: any[]) =>
+              wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+          });
+        },
+      );
+      if (typeof homeUnpatch !== "function") {
+        cleanup();
+        return;
+      }
+      gridUnpatch = dependencies.patchGridRenderer(
+        targets.grid,
+        (args, output) => decorateForApp(
+          Number(args[0]?.app?.appid),
+          output,
+          (card, category, overview) => decorateGridCompatibility(
+            card,
+            targets.indicator,
+            targets.gridIconsClassName,
+            targets.gridIndicatorClassName,
+            category,
+            overview,
+          ),
+          args[0]?.app,
+        ),
+      );
+      if (typeof gridUnpatch !== "function") {
+        cleanup();
+        return;
+      }
+    } catch {
       cleanup();
       return;
     }
-  } catch {
-    cleanup();
-    return;
-  }
+    installed = true;
+    reportInstalled(resolutionAttempts);
+  };
 
-  unpatchers.push(cleanup);
+  installWhenTargetsResolve();
 };

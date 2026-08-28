@@ -137,12 +137,21 @@ describe("installLibraryCompatibilityIndicators", () => {
 
   const makeHarness = (options: {
     candidates?: any[];
+    findModuleChild?: (predicate: (module: any) => any) => any;
     findModuleBySource?: (fragments: string[]) => any;
+    findModulesBySource?: (fragments: string[]) => any[];
+    enableSourceFallbacks?: boolean;
+    useLiveChildRendererTargets?: boolean;
+    useMemoGridTarget?: boolean;
     patchHomeRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
     patchGridRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
     metadataForApp?: (appId: number) => any;
     getOverview?: (appId: number) => any;
     isNativeNonSteamShortcut?: (overview: any) => boolean;
+    homeResolution?: () => "valid" | "missing" | "ambiguous";
+    throwSourceLookups?: number;
+    retryIntervalMs?: number;
+    maxResolutionAttempts?: number;
   } = {}) => {
     const carousel = function carousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
@@ -152,13 +161,32 @@ describe("installLibraryCompatibilityIndicators", () => {
       /* eForceHWCompatDisplay bHideCompatIcons LibraryItemBox BIsModOrShortcut */
       return null;
     };
-    const home = { render: () => null };
-    const grid = Object.assign(function grid() { return null; }, { type: gridRenderer });
+    const home = {
+      render: function homeRenderer() {
+        /* VBC_ */
+        return null;
+      },
+    };
+    const grid = options.useMemoGridTarget
+      ? { type: gridRenderer }
+      : Object.assign(function grid() { return null; }, { type: gridRenderer });
     const indicator = () => null;
     let homeHandler: ((args: any[], output: any) => any) | undefined;
     let gridHandler: ((args: any[], output: any) => any) | undefined;
     const unpatchHomeRenderer = vi.fn(() => { homeHandler = undefined; });
     const unpatchGridRenderer = vi.fn(() => { gridHandler = undefined; });
+    const scheduledRetries: Array<{ id: number; callback: () => void }> = [];
+    const pendingRetries = new Map<number, () => void>();
+    let nextRetryId = 1;
+    const scheduleRetry = vi.fn((callback: () => void, _delayMs: number) => {
+      const id = nextRetryId++;
+      scheduledRetries.push({ id, callback });
+      pendingRetries.set(id, callback);
+      return id;
+    });
+    const cancelRetry = vi.fn((id: number) => {
+      pendingRetries.delete(id);
+    });
     const patchHomeRenderer = vi.fn((_component, handler) => {
       homeHandler = handler;
       return unpatchHomeRenderer;
@@ -171,14 +199,59 @@ describe("installLibraryCompatibilityIndicators", () => {
       { _: carousel, g: indicator },
       { DeckCompat: "home-compat", GameCapsule: "capsule" },
       { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" },
+      ...(options.useLiveChildRendererTargets ? [
+        { Xd: home },
+        {
+          TK: grid,
+          hF: () => undefined,
+          Mf: () => undefined,
+          eL: () => undefined,
+          Kt: () => undefined,
+          aT: 0,
+          dC: 0,
+          UT: 0,
+          lS: 0,
+          oG: 0,
+        },
+      ] : []),
     ];
     const unpatchers: Array<() => void> = [];
+    let remainingSourceLookupFailures = options.throwSourceLookups ?? 0;
+    const defaultFindModuleBySource = (fragments: string[]) => {
+      if (remainingSourceLookupFailures > 0) {
+        remainingSourceLookupFailures -= 1;
+        throw new Error("lazy module factory is initializing");
+      }
+      const resolution = options.homeResolution?.() ?? "valid";
+      if (options.enableSourceFallbacks && fragments[0] === "GameCapsule unable to render") {
+        return { _: carousel, g: indicator };
+      }
+      if (fragments[0] === "VirtualizedBoxCarousel") {
+        if (resolution === "missing") return undefined;
+        if (resolution === "ambiguous") return [{ Xd: home }, { Xd: home }];
+        return { Xd: home };
+      }
+      return { TK: grid };
+    };
+    const defaultFindModulesBySource = (fragments: string[]) => {
+      if (!options.enableSourceFallbacks) return [];
+      if (fragments[0] === "DeckCompat") return [{ DeckCompat: "home-compat", GameCapsule: "capsule" }];
+      if (fragments[0] === "LibraryItemIcons") {
+        return [{ LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" }];
+      }
+      return [];
+    };
 
     installLibraryCompatibilityIndicators(unpatchers, {
-      findModuleChild: (predicate) => candidates.map(predicate).find(Boolean),
-      findModuleBySource: options.findModuleBySource ?? ((fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid }),
+      findModuleChild: options.findModuleChild ?? ((predicate) => candidates.map(predicate).find(Boolean)),
+      findModuleBySource: options.findModuleBySource ?? defaultFindModuleBySource,
+      findModulesBySource: options.findModulesBySource ?? defaultFindModulesBySource,
       patchHomeRenderer: options.patchHomeRenderer ?? patchHomeRenderer,
       patchGridRenderer: options.patchGridRenderer ?? patchGridRenderer,
+      scheduleRetry,
+      cancelRetry,
+      retryIntervalMs: options.retryIntervalMs ?? 500,
+      maxResolutionAttempts: options.maxResolutionAttempts ?? 3,
       getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
       metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
       isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
@@ -196,6 +269,21 @@ describe("installLibraryCompatibilityIndicators", () => {
       patchGridRenderer,
       unpatchHomeRenderer,
       unpatchGridRenderer,
+      scheduleRetry,
+      cancelRetry,
+      pendingRetries,
+      runNextRetry() {
+        const next = pendingRetries.entries().next().value;
+        if (!next) throw new Error("No pending retry");
+        const [id, callback] = next;
+        pendingRetries.delete(id);
+        callback();
+      },
+      runScheduledRetry(id: number) {
+        const retry = scheduledRetries.find((item) => item.id === id);
+        if (!retry) throw new Error(`No scheduled retry ${id}`);
+        retry.callback();
+      },
     };
   };
 
@@ -220,6 +308,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
     expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    expect(harness.scheduleRetry).not.toHaveBeenCalled();
 
     const first = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const second = renderHomeCapsule(harness.homeHandler!, harness.carousel, alternateShortcut.appid);
@@ -263,6 +352,56 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
+  it("uses strict source-factory fallbacks for lazy carousel and style exports", () => {
+    const harness = makeHarness({ candidates: [], enableSourceFallbacks: true });
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    expect(harness.scheduleRetry).not.toHaveBeenCalled();
+    harness.unpatchers[0]();
+  });
+
+  it("uses strict live child exports when the factory scanner is unavailable", () => {
+    const harness = makeHarness({
+      useLiveChildRendererTargets: true,
+      findModuleBySource: () => undefined,
+    });
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    harness.unpatchers[0]();
+  });
+
+  it("accepts Steam's writable memo grid renderer target", () => {
+    const harness = makeHarness({
+      useLiveChildRendererTargets: true,
+      useMemoGridTarget: true,
+      findModuleBySource: () => undefined,
+    });
+
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    harness.unpatchers[0]();
+  });
+
+  it("retries when Decky's child finder races a lazy module scan", () => {
+    let homeResolution: "valid" | "missing" = "missing";
+    const harness = makeHarness({
+      enableSourceFallbacks: true,
+      findModuleChild: () => { throw new Error("lazy module changed during scan"); },
+      homeResolution: () => homeResolution,
+    });
+
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+
+    homeResolution = "valid";
+    harness.runNextRetry();
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    harness.unpatchers[0]();
+  });
+
   it("reinstalls one owned Home wrapper after cleanup without retaining the old decorator", () => {
     const first = makeHarness();
     const cached = renderHomeCapsule(first.homeHandler!, first.carousel, nativeShortcut.appid).capsule;
@@ -293,6 +432,84 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
+  it("retries missing lazy Library targets and installs the wrappers exactly once when they resolve", () => {
+    let homeResolution: "valid" | "missing" = "missing";
+    const harness = makeHarness({ homeResolution: () => homeResolution });
+
+    expect(harness.unpatchers).toHaveLength(1);
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    expect(harness.scheduleRetry).toHaveBeenCalledWith(expect.any(Function), 500);
+
+    homeResolution = "valid";
+    harness.runNextRetry();
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    expect(harness.pendingRetries.size).toBe(0);
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    harness.unpatchers[0]();
+  });
+
+  it("cancels a pending target retry and keeps a raced callback inert after cleanup", () => {
+    const harness = makeHarness({ homeResolution: () => "missing" });
+
+    harness.unpatchers[0]();
+
+    expect(harness.cancelRetry).toHaveBeenCalledWith(1);
+    expect(harness.pendingRetries.size).toBe(0);
+    harness.runScheduledRetry(1);
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+  });
+
+  it("retries an ambiguous target until one unique Library module remains", () => {
+    let homeResolution: "valid" | "ambiguous" = "ambiguous";
+    const harness = makeHarness({ homeResolution: () => homeResolution });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+
+    homeResolution = "valid";
+    harness.runNextRetry();
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    harness.unpatchers[0]();
+  });
+
+  it("retries when a lazy source factory throws during target resolution", () => {
+    const harness = makeHarness({ throwSourceLookups: 1 });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+
+    harness.runNextRetry();
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    harness.unpatchers[0]();
+  });
+
+  it("stops retrying unresolved targets at the bounded attempt limit", () => {
+    const harness = makeHarness({
+      homeResolution: () => "missing",
+      maxResolutionAttempts: 2,
+    });
+
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    harness.runNextRetry();
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.pendingRetries.size).toBe(0);
+    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    harness.unpatchers[0]();
+  });
+
   it.each([
     ["missing", () => undefined],
     ["renamed", (_home: any, grid: any) => ({ Yd: _home, TK: grid })],
@@ -307,7 +524,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
-    expect(harness.unpatchers).toHaveLength(0);
+    expect(harness.unpatchers).toHaveLength(1);
   });
 
   it("fails closed when the grid target is missing", () => {
@@ -319,7 +536,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
-    expect(harness.unpatchers).toHaveLength(0);
+    expect(harness.unpatchers).toHaveLength(1);
   });
 
   it.each([
@@ -357,7 +574,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(gridInstallFailure).toHaveBeenCalledOnce();
     expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
-    expect(harness.unpatchers).toHaveLength(0);
+    expect(harness.unpatchers).toHaveLength(1);
   });
 
   it("requires writable renderer descriptors before patching", () => {

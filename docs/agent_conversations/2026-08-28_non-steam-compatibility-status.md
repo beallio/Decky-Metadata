@@ -371,3 +371,46 @@ Steam games.
   `/tmp/Decky-Metadata/diagnostics/20260828T223046Z`; they contain historical
   reload and network noise but no new compatibility render or controller-key
   error for this round.
+
+### Review round 11: lazy Library target retry
+
+- The Library indicator installer now retries boundedly when Steam has not
+  loaded its lazy Home or grid modules yet. It resolves only the exact current
+  Steam exports, requires one matching source fallback, and accepts Steam's
+  writable memo object for the grid renderer. An unresolved or ambiguous target
+  remains unpatched until a later retry resolves one unique target.
+- Cleanup is registered before target discovery. It cancels a pending retry,
+  makes a raced callback inert, disables existing wrappers, and unpatches both
+  renderer targets. The focused suite covers delayed availability, ambiguity
+  becoming unique, a thrown lazy source lookup, the retry bound, cleanup before
+  resolution, one install only, exact shortcut identity, positive categories,
+  official-game pass-through, and cached-wrapper teardown.
+- `./run.sh npx vitest run src/steam/libraryCompatibilityIndicators.test.tsx`
+  passed 34 tests. The final project quality gate and review-note integrity
+  check are recorded with this round's commit.
+- `./run.sh scripts/deck/deploy.sh --no-build` pushed the regenerated bundle
+  and hard-reloaded SteamUI. The live plugin log records
+  `library compatibility indicators installed resolutionAttempts='1'` at
+  2026-08-28 16:40 PDT. Evidence:
+  `/tmp/Decky-Metadata/non-steam-compatibility-status/round-11-final-install-log.txt`.
+- Native controller focus selected the Space Marine fixture (`2155012430`) in
+  the Non-Steam grid. The focused grid card visibly shows the white Deck icon
+  and yellow Playable indicator in
+  `/tmp/Decky-Metadata/non-steam-compatibility-status/round-11-grid-space-marine-selected.png`;
+  the paired focus JSON identifies the card by title. Library Home shows the
+  same selected fixture and both indicators in
+  `/tmp/Decky-Metadata/non-steam-compatibility-status/round-11-installed-space-marine-home.png`.
+- The fixture was restored through the normal Metadata editor: controller
+  focus selected `Automatic`, then the existing Save control persisted it.
+  The native shortcut probe subsequently reported packed compatibility `0`
+  and low nibble `0`, its original state. Evidence:
+  `round-11-automatic-selected-before-save.png`,
+  `round-11-automatic-saved.png`, and
+  `round-11-restored-packed-status.json` below
+  `/tmp/Decky-Metadata/non-steam-compatibility-status/`.
+- `./run.sh scripts/deck/verify/run_all.sh --no-launch` again passed the
+  re-render and community checks, skipped the launch check, and failed only
+  the existing delisted fixture's rich-metadata and matched-source Community
+  layout assertions. The compatibility implementation does not touch those
+  systems. Exact output:
+  `/tmp/Decky-Metadata/non-steam-compatibility-status/round-11-run-all-no-launch.log`.
