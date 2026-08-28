@@ -154,3 +154,49 @@ Steam games.
   Deck for human local installation. The tool correctly reported
   `INSTALLED_STATE REINSTALL_REQUIRED`; the live frontend deploy above ran the
   same commit while the full ZIP awaits the Decky reinstall action.
+
+### Review round 08: teardown-safe selected-card indicators
+
+- Replaced the Home path's `createReactTreePatcher` use with a plugin-owned
+  wrapper. It replaces only the exact carousel element in a returned Home tree,
+  reads its current props at render time, and becomes inert before either
+  renderer patch is removed. A cached card therefore cannot retain a previous
+  plugin closure through dismount and reinstall.
+- Home and grid installation is now transactional. Target resolution requires
+  unique source matches, callable writable `render` and `type` methods, a
+  callable indicator component, and the expected non-empty style exports. A
+  failed grid installation immediately disables and removes Home.
+- Compatibility siblings now have stable plugin keys. Existing native
+  indicators or plugin-keyed indicators are left unchanged, without dropping
+  unrelated false/null slots, fragments, or grid icon-row children.
+
+#### Review round 08 validation
+
+- Test-first evidence is saved at
+  `/tmp/Decky-Metadata/library-compatibility-indicators-red.log`: the old
+  implementation failed the faithful two-phase test because its inner Decky
+  tree wrapper escaped cleanup. The focused green run passed 24 tests at
+  `/tmp/Decky-Metadata/library-compatibility-indicators-green.log`.
+- The focused suite covers two recycled App IDs, repeat renders, cached-card
+  cleanup, reinstall without duplicate badges, native/plugin indicator
+  idempotence, false/null/fragment preservation, missing/renamed/swapped/
+  ambiguous targets, non-callable or non-writable targets, and rollback after
+  grid installation failure.
+- `./run.sh scripts/orchestration/run-quality-gates` completed after commit
+  `408c45a`: TypeScript, rollup, 342 frontend tests, Python compilation, and
+  all backend tests passed. `scripts/orchestration/check-review-notes-not-deleted`
+  and `git diff --check` passed.
+- The review-required `./run.sh scripts/decky verify-change dev --device
+  --explain` completed its local quality stage, but deployment failed twice at
+  SSH tunnel setup with `No route to host` for `10.168.168.20`. The exact
+  captured output is
+  `/tmp/Decky-Metadata/round08-device-verify-error.log`. A subsequent
+  `./run.sh scripts/decky doctor --deck` reported the Deck offline; DNS still
+  resolved and the tunnel was confirmed down. No new visual, badge-count, or
+  log evidence was claimed from the prior round's screenshots.
+- `./run.sh npm run package` produced a new full local package,
+  `Decky-Metadata.zip` version `0.3.9+408c45a` (SHA-256
+  `06f8bea7c22eefbcd89f64a4d50a680980415a386d597873905fb823072caecf`).
+  Delivery, live status cycling, dismount/reinstall checks, and human local
+  installation remain blocked by the offline Deck. Do not create the
+  round-complete marker until those live checks pass.
