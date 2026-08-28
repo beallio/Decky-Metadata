@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-08-27
+
+SteamGridDB artwork now works with matched non-Steam games
+
 ### Fixed
 
 - Matched non-Steam shortcuts now keep their SteamGridDB artwork and Library Home icons while Decky Metadata enriches Game Info pages ([#5](https://github.com/beallio/Decky-Metadata/issues/5)).
