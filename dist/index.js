@@ -1503,9 +1503,12 @@ const isCurrentGameDetailRoute = (routeContext, appId) => {
     if (!Number.isSafeInteger(appId) || appId <= 0)
         return false;
     const tokens = String(routeContext || "").trim().split(/\s+/);
-    // `currentRoutePath` currently contributes at most seven values.  Keep this
+    // `currentRoutePath` currently contributes at most eleven values. Keep this
     // hot-path parser bounded even if a malformed host object appends noise.
-    for (let index = 0; index < Math.min(tokens.length, 8); index += 1) {
+    // Every authoritative route token must agree. A stale detail path must not
+    // override a current Home, controller, or other-app path during navigation.
+    let foundCurrentDetail = false;
+    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
         const token = tokens[index];
         if (!token)
             continue;
@@ -1522,10 +1525,18 @@ const isCurrentGameDetailRoute = (routeContext, appId) => {
         }
         const match = pathname.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i);
         const routeAppId = Number(match?.[1] || match?.[2] || 0);
-        if (Number.isSafeInteger(routeAppId) && routeAppId === appId)
-            return true;
+        if (Number.isSafeInteger(routeAppId)) {
+            if (routeAppId !== appId)
+                return false;
+            foundCurrentDetail = true;
+            continue;
+        }
+        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?library\/(?:collections?)(?:\/|$)/i.test(pathname)) {
+            return false;
+        }
     }
-    return false;
+    return foundCurrentDetail;
 };
 const appIdFromDom = () => {
     const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];

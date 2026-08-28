@@ -39,10 +39,12 @@ const matchedShortcutAppId = 2155012430;
 const matchedSteamAppId = 55150;
 let unpatchers: Array<() => void> = [];
 
-const setRoute = (pathname: string) => {
+const setRoute = (pathname: string, browserPathname = pathname) => {
   const host = globalThis as Record<string, unknown>;
-  delete host.Router;
-  host.window = { location: { pathname } };
+  host.Router = {
+    WindowStore: { GamepadUIMainWindowInstance: { m_history: { location: { pathname } } } },
+  };
+  host.window = { location: { pathname: browserPathname } };
 };
 
 const installWithOverview = (route: string) => {
@@ -107,6 +109,24 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
       remaining: 1,
       seqId: 1,
     };
+    expect(overview.BIsModOrShortcut()).toBe(true);
+    expect(metadataState.bypassCounter).toBe(4);
+    expect(metadataState.routeShield?.remaining).toBe(1);
+  });
+
+  it("fails closed for an ambiguous Home transition without spending its armed budgets", () => {
+    const { overview } = installWithOverview(`/routes/library/app/${matchedShortcutAppId}`);
+    metadataState.bypassCounter = 4;
+    metadataState.routeShield = {
+      appId: matchedShortcutAppId,
+      path: `/routes/library/app/${matchedShortcutAppId}`,
+      trigger: "test",
+      armedAt: Date.now(),
+      remaining: 1,
+      seqId: 1,
+    };
+    setRoute("/routes/library/home", `/routes/library/app/${matchedShortcutAppId}`);
+
     expect(overview.BIsModOrShortcut()).toBe(true);
     expect(metadataState.bypassCounter).toBe(4);
     expect(metadataState.routeShield?.remaining).toBe(1);

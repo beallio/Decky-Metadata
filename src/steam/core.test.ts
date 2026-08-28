@@ -18,6 +18,7 @@ describe("isCurrentGameDetailRoute", () => {
     "/routes/library/details/55150/activity",
     "/routes/library/collection/app/55150",
     "/routes/library/app/55150 ?tab=GameInfo #activity https://steamloopback.host/routes/library/app/55150?tab=GameInfo#activity",
+    "/routes/library/app/55150 https://steamloopback.host/routes/library/details/55150?tab=GameInfo",
   ])("accepts only recognized library detail routes: %s", (routeContext) => {
     const classifier = isCurrentGameDetailRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");
@@ -36,6 +37,11 @@ describe("isCurrentGameDetailRoute", () => {
     "",
     "not a route",
     "/library/app/not-an-appid",
+    "/routes/library/app/55150 /routes/library/home",
+    "/routes/library/home /routes/library/app/55150",
+    "/routes/library/app/55150 /routes/library/app/55151",
+    "/routes/library/app/55151 /routes/library/app/55150",
+    "/routes/library/app/55150 /controllerconfig/55150",
   ])("rejects a non-current or malformed route context: %s", (routeContext) => {
     const classifier = isCurrentGameDetailRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");
