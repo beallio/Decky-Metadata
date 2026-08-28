@@ -327,3 +327,47 @@ Steam games.
   on the installed package. Use the known compatible Space Marine shortcut
   `2155012430` for the compatibility matrix because the generic delisted
   fixture cannot provide the required rich-metadata/layout evidence.
+
+### Review round 10: installed-package compatibility matrix
+
+- The committed review-10 decision confirmed that the installed full package
+  `0.3.9+6507256` contains the same runtime code as `408c45a`. Per that
+  decision, this round did not rebuild, package, push, reinstall, or replace an
+  app-store object. `./run.sh scripts/decky doctor --deck` confirmed the Deck
+  and a clean branch were reachable. The existing tunnel was reused, then
+  closed with `./run.sh scripts/deck/tunnel.sh down` and verified down.
+- The review fixture was `2155012430` (Warhammer 40,000: Space Marine). Its
+  native shortcut identity stayed true in every state probe. Controller input
+  entered the editor heading, Save control, form fields, and native
+  Compatibility status combobox. Opening that combobox showed exactly the
+  required order: Automatic, Verified, Playable, Unsupported, Unknown. The
+  initial popup had Verified selected. Evidence:
+  `/tmp/Decky-Metadata/review-10/editor-dropdown-options.png`,
+  `editor-dropdown-options.json`, `editor-dropdown-initial-focus.json`, and
+  `editor-dropdown-playable-focused.png`.
+- Native editor saves persisted each non-Automatic value and applied the
+  expected packed category while retaining the shortcut identity: Playable
+  (`deck_compat_override: 2`, packed `10`), Verified (`3`, `15`), Unsupported
+  (`1`, `5`), and explicit Unknown (`0`, `0`). The `0` result is direct live
+  evidence that Unknown is not treated as a false value. The JSON probes are
+  under `/tmp/Decky-Metadata/review-10/space-marine-metadata-*.json` and
+  `space-marine-native-state-*.json`; editor screenshots use the same prefix.
+- Saving Automatic displayed `Automatic (Valve: Playable)`, persisted a null
+  override with fetched category `2`, and applied packed category `10`.
+  Removing the metadata then removed the record and restored the runtime's
+  captured original low nibble (`0`). The final state is therefore Automatic,
+  has no metadata record, and has packed category `0`. Evidence:
+  `editor-automatic-display.json`, `space-marine-metadata-automatic.json`,
+  `space-marine-native-state-automatic.json`,
+  `space-marine-metadata-removed.json`, and
+  `space-marine-native-state-removed.json`.
+- Library Home and the Non-Steam grid were captured after the changes at
+  `/tmp/Decky-Metadata/review-10/library-home-playable.png`,
+  `library-home-metadata-removed.png`, `library-grid-nonsteam.png`, and
+  `library-grid-space-marine-automatic-removed.png`. The direct state probes
+  confirm no map replacement and no stale record after removal. The captured
+  log audit and diagnostic bundle are
+  `/tmp/Decky-Metadata/review-10/deck-log-audit.json` and
+  `/tmp/Decky-Metadata/diagnostics/20260828T223046Z`; they contain historical
+  reload and network noise but no new compatibility render or controller-key
+  error for this round.
