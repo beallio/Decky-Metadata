@@ -216,13 +216,183 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
         "SetCustom", "SetIcon", "SetLibrary", "Clear", "DeckyPluginLoader",
     ):
         assert forbidden not in probe
-    assert 'evidence="${5:?usage:' in smoke
+    assert 'before_manifest="${5:?usage:' in smoke
+    assert 'evidence="${6:?usage:' in smoke
+    assert "--capture-artwork-files" in smoke
+    assert "shortcut and matched appids must differ" in smoke
+    assert "fileHashSetUnchanged" in smoke
     assert "/tmp/Decky-Metadata" in smoke
     assert '"status": "started"' in smoke
     assert '"status": "pending-validation"' in smoke
     assert "shortcut identity" in smoke
     assert "icon resolver" in smoke
     assert "raw" not in "\n".join(_serialized_objects(probe)).lower()
+
+
+def _artwork_file_hashes(count: int = 6) -> list[str]:
+    return [f"{index:064x}" for index in range(count)]
+
+
+def _write_artwork_identity_smoke_fixture(tmp_path: Path) -> Path:
+    root = tmp_path / "fixture"
+    verify = root / "scripts/deck/verify"
+    verify.mkdir(parents=True)
+    smoke = verify / "smoke_artwork_identity.sh"
+    smoke.write_text(
+        (Path(__file__).parents[1] / "scripts/deck/verify/smoke_artwork_identity.sh").read_text(),
+        encoding="utf-8",
+    )
+    (verify / "_lib.sh").write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+DECK_DIR=\"$(cd -- \"$(dirname -- \"${BASH_SOURCE[0]}\")/..\" && pwd)\"
+JS_DIR=\"$DECK_DIR/js\"
+cdp() { python3 \"$DECK_DIR/cdp.py\" \"$@\"; }
+pass() { echo \"PASS: $*\"; }
+fail() { echo \"FAIL: $*\" >&2; exit 1; }
+""",
+        encoding="utf-8",
+    )
+    deck = root / "scripts/deck"
+    (deck / "js").mkdir(exist_ok=True)
+    (deck / "js/check_artwork_identity.js").write_text("// fake transport ignores the source\n")
+    (deck / "cdp.py").write_text(
+        """import json
+import os
+from pathlib import Path
+
+log = Path(os.environ[\"FAKE_ARTWORK_LOG\"])
+log.write_text(log.read_text() + \"cdp\\n\" if log.exists() else \"cdp\\n\")
+print(json.dumps({
+    \"routeScope\": \"library-home\",
+    \"shortcutAppId\": 2155012430,
+    \"matchedAppId\": 55150,
+    \"requestedObjectAppId\": 2155012430,
+    \"matchedObjectAppId\": 2155012430,
+    \"aliasSameObject\": True,
+    \"isShortcut\": True,
+    \"isModOrShortcut\": True,
+    \"iconHashPresent\": False,
+    \"iconDataPresent\": False,
+    \"iconResolved\": True,
+    \"iconRequestError\": False,
+    \"iconAttempts\": 2,
+    \"artwork\": {kind: {\"count\": 0, \"hashes\": []} for kind in (\"vertical\", \"landscape\", \"hero\", \"logo\")},
+    \"elapsedMs\": 20,
+}))
+""",
+        encoding="utf-8",
+    )
+    bin_dir = root / "bin"
+    bin_dir.mkdir()
+    fake_ssh = bin_dir / "ssh"
+    fake_ssh.write_text(
+        """#!/usr/bin/env python3
+import json
+import os
+import sys
+from pathlib import Path
+
+log = Path(os.environ[\"FAKE_ARTWORK_LOG\"])
+log.write_text(log.read_text() + \"ssh\\n\" if log.exists() else \"ssh\\n\")
+shortcut = int(sys.argv[-1])
+hashes = sorted(filter(None, os.environ[\"FAKE_ARTWORK_HASHES\"].split(",")))
+print(json.dumps({\"shortcutAppId\": shortcut, \"fileCount\": len(hashes), \"fileHashes\": hashes}, sort_keys=True))
+""",
+        encoding="utf-8",
+    )
+    fake_ssh.chmod(0o755)
+    return smoke
+
+
+def _artwork_smoke_evidence_path(tmp_path: Path) -> Path:
+    evidence = Path("/tmp/Decky-Metadata/pytest-artwork-identity") / tmp_path.name / "evidence"
+    evidence.parent.mkdir(parents=True, exist_ok=True)
+    return evidence
+
+
+def _run_artwork_identity_smoke(
+    tmp_path: Path,
+    after_hashes: list[str],
+) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
+    smoke = _write_artwork_identity_smoke_fixture(tmp_path)
+    evidence = _artwork_smoke_evidence_path(tmp_path)
+    before_manifest = evidence.parent / "before-artwork-files.json"
+    before_manifest.write_text(
+        json.dumps(
+            {"shortcutAppId": 2155012430, "fileCount": 6, "fileHashes": _artwork_file_hashes()},
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    log = tmp_path / "artwork-smoke.log"
+    completed = subprocess.run(
+        [
+            "bash", str(smoke), "2155012430", "55150", "library-home", "true",
+            str(before_manifest), str(evidence),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+        env={
+            **os.environ,
+            "PATH": f"{smoke.parents[3] / 'bin'}:{os.environ['PATH']}",
+            "FAKE_ARTWORK_LOG": str(log),
+            "FAKE_ARTWORK_HASHES": ",".join(after_hashes),
+        },
+    )
+    return completed, evidence, log
+
+
+def test_artwork_identity_smoke_accepts_zero_candidates_when_six_file_hashes_match(tmp_path: Path):
+    completed, evidence, log = _run_artwork_identity_smoke(tmp_path, _artwork_file_hashes())
+
+    assert completed.returncode == 0, completed.stderr
+    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert json.loads((evidence / "artwork-file-comparison.json").read_text()) == {
+        "afterFileCount": 6,
+        "beforeFileCount": 6,
+        "fileHashSetUnchanged": True,
+        "shortcutAppId": 2155012430,
+    }
+
+
+@pytest.mark.parametrize(
+    ("after_hashes", "failure"),
+    [
+        (_artwork_file_hashes(5), "artwork file count changed"),
+        (_artwork_file_hashes(5) + ["f" * 64], "artwork file hash set changed"),
+    ],
+)
+def test_artwork_identity_smoke_rejects_missing_or_changed_artwork_file_hashes(
+    tmp_path: Path, after_hashes: list[str], failure: str
+):
+    completed, evidence, log = _run_artwork_identity_smoke(tmp_path, after_hashes)
+
+    assert completed.returncode != 0
+    assert failure in completed.stderr
+    assert log.read_text().splitlines() == ["cdp", "ssh"]
+    assert not (evidence / "artwork-file-comparison.json").exists()
+
+
+def test_artwork_identity_smoke_rejects_equal_ids_before_tunnel_cdp_or_evidence(tmp_path: Path):
+    smoke = _write_artwork_identity_smoke_fixture(tmp_path)
+    evidence = _artwork_smoke_evidence_path(tmp_path)
+    log = tmp_path / "artwork-equal-ids.log"
+    completed = subprocess.run(
+        ["bash", str(smoke), "2155012430", "2155012430", "library-home", "true", "missing.json", str(evidence)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+        env={**os.environ, "FAKE_ARTWORK_LOG": str(log)},
+    )
+
+    assert completed.returncode != 0
+    assert "shortcut and matched appids must differ" in completed.stderr
+    assert not log.exists()
+    assert not evidence.exists()
 
 
 def test_controller_layout_probe_is_bounded_cache_populating_and_hashes_layout_identities():
