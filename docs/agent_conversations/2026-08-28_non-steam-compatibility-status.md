@@ -246,3 +246,40 @@ Steam games.
   TypeScript check, rollup build, 342 frontend tests, Python compilation, and
   the backend suite. `scripts/orchestration/check-review-notes-not-deleted`
   and `git diff --check` also passed before this log was committed.
+
+### Review round 09 continuation: current package and device-state evidence
+
+- At 2026-08-28 14:03 PDT, the resumed implementer cleared the required
+  round-complete marker. `scripts/decky doctor --deck` then confirmed the
+  Deck was reachable and the feature branch was clean.
+- `scripts/decky verify-change dev --device --explain` rebuilt, deployed, and
+  hard-reloaded the current frontend. Its retained dispatcher log is
+  `/tmp/Decky-Metadata/diagnostics/round09-device-dispatcher.log`. The local
+  stage passed TypeScript, rollup, 342 frontend tests, Python compilation, and
+  the backend suite. The no-launch re-render smoke passed. The generic
+  delisted-shortcut quick-links and controller-layout smokes failed again
+  because fixture `2783271568` has no rich rendered metadata and source app
+  `224060` has no Community layouts; no quick-links or layout code was changed
+  because those systems are outside this plan.
+- `scripts/deck/logs.sh audit --json` and `scripts/decky capture` created
+  `/tmp/Decky-Metadata/diagnostics/round09-deck-log-audit.json` and
+  `/tmp/Decky-Metadata/diagnostics/20260828T210956Z`. The audit found no new
+  fatal compatibility-patch failure; its reported historical reload and
+  network errors do not identify a feature regression.
+- After the Deck disconnected, `scripts/decky package-push --build --push`
+  still created `Decky-Metadata.zip` version `0.3.9+0ac0afa`, but reported
+  `LOCAL_VALIDATION PASS`, `PACKAGE_CREATED PASS`, `DELIVERY OFFLINE`, and
+  `INSTALLED_STATE UNKNOWN`. The exact output is
+  `/tmp/Decky-Metadata/diagnostics/round09-package-push.log`.
+- To recover the local test cache quota, only disposable npm, uv, pytest, and
+  compile caches were moved to recoverable trash at
+  `/home/beallio/.local/share/Trash/files/Decky-Metadata-cache-20260828T1405-0oUBLz`.
+  The rerun full gate passed; its output is
+  `/tmp/Decky-Metadata/diagnostics/round09-quality-gates.log`. The tunnel was
+  closed with `scripts/deck/tunnel.sh down` and reported `tunnel: down`.
+- The round-complete marker remains absent. Completion is blocked until the
+  Deck stays reachable, the new ZIP is installed through Decky's local ZIP UI,
+  and the plan's selected-card, lifecycle, menu, editor, and baseline-restoration
+  checks can be captured on the installed package. The delisted fixture must
+  also be restored or replaced before its generic rich-metadata/layout smokes
+  can pass.
