@@ -200,3 +200,49 @@ Steam games.
   Delivery, live status cycling, dismount/reinstall checks, and human local
   installation remain blocked by the offline Deck. Do not create the
   round-complete marker until those live checks pass.
+
+### Review round 09: reachable Deck, package delivery, and live-smoke blocker
+
+- `./run.sh scripts/decky doctor --deck` at 2026-08-28 13:18 PDT confirmed
+  that the Deck is reachable and the feature branch is clean. The previous
+  round-complete marker was cleared before the review work started.
+- `./run.sh scripts/decky verify-change dev --device --explain` rebuilt and
+  deployed the current frontend bundle, hard-reloaded SteamUI, and passed the
+  local quality stage: TypeScript, rollup, 342 frontend tests, Python
+  compilation, and the backend suite. Its explicit launch smoke was deferred
+  because this run did not authorize `--allow-launch`.
+- The dispatcher stopped on two unrelated live-fixture assertions. The
+  rerun output is retained at
+  `/tmp/Decky-Metadata/non-steam-compatibility-status-round09-quicklinks-failure.log`
+  and
+  `/tmp/Decky-Metadata/non-steam-compatibility-status-round09-controller-layouts-failure.log`.
+  Raw probes at
+  `/tmp/Decky-Metadata/non-steam-compatibility-status-round09-delisted-quicklinks.json`
+  and
+  `/tmp/Decky-Metadata/non-steam-compatibility-status-round09-controller-layouts-raw.json`
+  show that the existing Deadpool shortcut (`2783271568`) has no rich rendered
+  metadata and its source app (`224060`) returns zero Community layouts. The
+  listed fixture still returns 31 matching Community layouts. This feature did
+  not change the quick-links or controller-layout code, so no unrelated code
+  change was made to hide the drift.
+- `./run.sh scripts/decky package-push --build --push` confirmed
+  `LOCAL_VALIDATION PASS`, `PACKAGE_CREATED ALREADY_CURRENT`, and
+  `DELIVERY ALREADY_CURRENT` for `Decky-Metadata.zip` version
+  `0.3.9+6507256` (SHA-256
+  `ac0c6415df0ee63f1fd7e44fdceb1e4aa0507f524918925de1177755e370e05c`).
+  `./run.sh scripts/decky status --deck --json` confirms that the downloaded
+  ZIP matches it, but the installed manifest remains `0.3.9+95a541d`.
+  `INSTALLED_STATE REINSTALL_REQUIRED` therefore requires a human local-ZIP
+  installation through Decky before the owned-wrapper lifecycle and selected-
+  card matrix can be claimed.
+- The round-complete marker remains intentionally absent. Required next state:
+  install `/home/deck/Downloads/Decky-Metadata.zip` through the Decky UI, then
+  rerun the live matrix with the installed package and replace the stale
+  delisted fixture or restore its required metadata/layout data. Close the
+  tunnel after this blocked checkpoint.
+- `./run.sh scripts/deck/tunnel.sh down` closed the verification tunnel and a
+  following `status` reported `tunnel: down`. The final
+  `./run.sh scripts/orchestration/run-quality-gates` pass again completed the
+  TypeScript check, rollup build, 342 frontend tests, Python compilation, and
+  the backend suite. `scripts/orchestration/check-review-notes-not-deleted`
+  and `git diff --check` also passed before this log was committed.
