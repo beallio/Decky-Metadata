@@ -96,6 +96,7 @@ vi.mock("./backend", () => ({ frontendLog: vi.fn(() => Promise.resolve()) }));
 import contextMenuPatch from "./contextMenuPatch";
 
 const ENTRY_KEY = "decky-metadata-edit";
+const LEGACY_COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
 
 /**
  * Build a fake LibraryContextMenu whose shape mirrors what the patch walks:
@@ -103,17 +104,17 @@ const ENTRY_KEY = "decky-metadata-edit";
  *  - menu.type() -> the menu body element, whose class prototype.render
  *    returns the item list at output.props.children[0].
  */
-function makeMenuStack() {
+function makeMenuStack(reusedItems?: any[]) {
+  const items = reusedItems || [
+    { key: "launch", props: { onSelected: () => "launchSource" } },
+    { key: "properties", onSelected: () => "AppProperties" },
+  ];
+
   class MenuBody {
     render() {
       return {
         props: {
-          children: [
-            [
-              { key: "launch", props: { onSelected: () => "launchSource" } },
-              { key: "properties", onSelected: () => "AppProperties" },
-            ],
-          ],
+          children: [items],
         },
       };
     }
@@ -195,7 +196,7 @@ describe("contextMenuPatch", () => {
     expect(injectedTarget(otherItems)).toBe("/decky-metadata/200");
   });
 
-  it("does not add either Decky Metadata entry for official Steam games", () => {
+  it("does not add the Decky Metadata editor entry for official Steam games", () => {
     const officialAppId = 55150;
     const shortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
     const official = { appid: officialAppId, app_type: 0, BIsShortcut: () => false };
@@ -210,5 +211,21 @@ describe("contextMenuPatch", () => {
 
     expect(items.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
     expect(steam.getNativeOverview).toHaveBeenCalledWith(officialAppId);
+  });
+
+  it("purges a legacy compatibility entry from a reused menu while keeping one editor entry", () => {
+    const reusedItems = [
+      { key: "launch", props: { onSelected: () => "launchSource" } },
+      { key: LEGACY_COMPATIBILITY_ENTRY_KEY },
+      { key: "properties", onSelected: () => "AppProperties" },
+    ];
+    const { LibraryContextMenu, MenuBody } = makeMenuStack(reusedItems);
+    contextMenuPatch(LibraryContextMenu);
+
+    new LibraryContextMenu(100).render().type();
+    const items = new MenuBody().render().props.children[0];
+
+    expect(items.filter((item: any) => item?.key === LEGACY_COMPATIBILITY_ENTRY_KEY)).toHaveLength(0);
+    expect(items.filter((item: any) => item?.key === ENTRY_KEY)).toHaveLength(1);
   });
 });

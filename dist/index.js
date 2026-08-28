@@ -4105,6 +4105,196 @@ const installCommunityFeedPatch = (unpatchers) => {
     }
 };
 
+const DECK_DISPLAY = 1;
+/**
+ * Decky's module finder sees the observer/memo export, not LibraryItemBox's
+ * renderer source. Query only webpack factory text, then load its one match.
+ * This never walks React or MobX state.
+ */
+const findSteamModuleBySource = (fragments) => {
+    const chunks = window.webpackChunksteamui;
+    if (!chunks?.push)
+        return undefined;
+    let webpackRequire;
+    try {
+        chunks.push([[Symbol("decky-metadata-library-compatibility")], {}, (requireFn) => {
+                webpackRequire = requireFn;
+            }]);
+        const moduleId = Object.keys(webpackRequire?.m ?? {}).find((id) => {
+            const factory = webpackRequire.m[id];
+            const source = typeof factory === "function" ? factory.toString() : "";
+            return fragments.every((fragment) => source.includes(fragment));
+        });
+        return moduleId === undefined ? undefined : webpackRequire(moduleId);
+    }
+    catch {
+        return undefined;
+    }
+};
+/**
+ * Return a category only when a rendered card is the exact native shortcut
+ * and Steam has a positive status to display. Category 0 is Steam's native
+ * no-status state, so it deliberately does not fabricate an Unknown badge.
+ */
+const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, isNativeNonSteamShortcut: isNativeShortcut, }) => {
+    if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview))
+        return null;
+    const category = effectiveCompatibilityCategory(metadata);
+    return category === null || category === 0 ? null : category;
+};
+const childrenOf = (element) => {
+    const children = element?.props?.children;
+    return Array.isArray(children) ? children : [children];
+};
+const hasIndicator = (children, indicator) => children.some((child) => SP_REACT.isValidElement(child) && child.type === indicator);
+const decorateCarouselCompatibility = (output, indicator, className, category, overview) => {
+    if (!category || !SP_REACT.isValidElement(output))
+        return output;
+    const element = output;
+    const children = childrenOf(element);
+    if (hasIndicator(children, indicator))
+        return output;
+    // Steam's GameCapsule places compatibility after its in-library marker. A
+    // shortcut suppresses that native slot with `false`; replace only that
+    // confirmed placeholder. If Steam changes the shape, insert our indicator
+    // without discarding another child.
+    const nativeCompatibilitySlot = children[2];
+    const remainingChildren = nativeCompatibilitySlot === false
+        ? children.slice(3)
+        : children.slice(2);
+    return SP_REACT.cloneElement(element, {
+        children: [
+            ...children.slice(0, 2),
+            SP_REACT.createElement(indicator, { display: DECK_DISPLAY, overview, className }),
+            ...remainingChildren,
+        ],
+    });
+};
+const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassName, overview) => {
+    if (!SP_REACT.isValidElement(node))
+        return node;
+    const element = node;
+    if (element.props?.className === iconRowClassName) {
+        const children = childrenOf(element);
+        if (hasIndicator(children, indicator))
+            return node;
+        return SP_REACT.cloneElement(element, {
+            children: [
+                ...children,
+                SP_REACT.createElement(indicator, { display: DECK_DISPLAY, overview, className: indicatorClassName }),
+            ],
+        });
+    }
+    const originalChildren = element.props?.children;
+    if (originalChildren === undefined)
+        return node;
+    const children = childrenOf(node);
+    const decoratedChildren = children.map((child) => decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview));
+    if (decoratedChildren.every((child, index) => child === children[index]))
+        return node;
+    return SP_REACT.cloneElement(element, {
+        children: Array.isArray(originalChildren) ? decoratedChildren : decoratedChildren[0],
+    });
+};
+const decorateGridCompatibility = (output, indicator, iconRowClassName, indicatorClassName, category, overview) => {
+    if (!category || !SP_REACT.isValidElement(output))
+        return output;
+    return decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
+};
+const resolveTargets = (dependencies) => {
+    const carouselModule = dependencies.findModuleChild((module) => {
+        if (!module || typeof module !== "object")
+            return undefined;
+        return typeof module._ === "function" &&
+            typeof module.g === "function" &&
+            module._.toString().includes("GameCapsule unable to render") &&
+            module._.toString().includes("#LibraryHome_GameCarousel_ContextMenu") &&
+            module._.toString().includes("gamepadgamecapsule")
+            ? module
+            : undefined;
+    });
+    const homeModule = dependencies.findModuleBySource([
+        "VirtualizedBoxCarousel",
+        "VBC_",
+        "fnItemRenderer",
+        "CellRenderer",
+    ]);
+    const gridModule = dependencies.findModuleBySource([
+        "eForceHWCompatDisplay",
+        "bHideCompatIcons",
+        "LibraryItemBox",
+        "BIsModOrShortcut",
+    ]);
+    const homeStyles = dependencies.findModuleChild((module) => typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined);
+    const gridStyles = dependencies.findModuleChild((module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined);
+    if (!carouselModule ||
+        !homeModule?.Xd ||
+        Object.getOwnPropertyDescriptor(homeModule.Xd, "render")?.writable !== true ||
+        !gridModule?.TK ||
+        Object.getOwnPropertyDescriptor(gridModule.TK, "type")?.writable !== true ||
+        !homeStyles ||
+        !gridStyles)
+        return null;
+    return {
+        home: homeModule.Xd,
+        carousel: carouselModule._,
+        grid: gridModule.TK,
+        indicator: carouselModule.g,
+        homeClassName: homeStyles.DeckCompat,
+        gridIconsClassName: gridStyles.LibraryItemIcons,
+        gridIndicatorClassName: gridStyles.SteamDeckCompatIcon,
+    };
+};
+const defaultDependencies = {
+    findModuleChild: DFL.findModuleChild,
+    findModuleBySource: findSteamModuleBySource,
+    findInReactTree: DFL.findInReactTree,
+    createReactTreePatcher: DFL.createReactTreePatcher,
+    patchHomeRenderer: (component, handler) => safeAfterPatch(component, "render", handler).unpatch,
+    patchGridRenderer: (component, handler) => safeAfterPatch(component, "type", handler).unpatch,
+    getOverview,
+    metadataForApp: (appId) => metadataCache[String(appId)],
+    isNativeNonSteamShortcut,
+};
+const cardTreePatcher = (component, decorate, dependencies) => dependencies.createReactTreePatcher([
+    (tree) => dependencies.findInReactTree(tree, (node) => node?.type === component),
+], (args, output) => decorate(args[0], output));
+/**
+ * Add compatibility indicators at the two native Library card renderers.
+ * The patch calls only those renderers. It never walks MobX state.
+ */
+const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
+    const dependencies = { ...defaultDependencies, ...provided };
+    const targets = resolveTargets(dependencies);
+    if (!targets)
+        return;
+    const decorateForApp = (appId, output, decorate, renderedOverview) => {
+        const overview = renderedOverview ?? dependencies.getOverview(appId);
+        const category = resolveLibraryCompatibilityIndicator({
+            renderedAppId: appId,
+            overview,
+            metadata: dependencies.metadataForApp(appId),
+            isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
+        });
+        return decorate(output, category, overview);
+    };
+    const homeCardPatcher = cardTreePatcher(targets.carousel, (props, output) => decorateForApp(Number(props?.appid), output, (card, category, overview) => decorateCarouselCompatibility(card, targets.indicator, targets.homeClassName, category, overview)), dependencies);
+    const homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
+        const homeOutput = output;
+        if (!SP_REACT.isValidElement(homeOutput))
+            return output;
+        const homeProps = homeOutput.props;
+        if (typeof homeProps?.fnItemRenderer !== "function")
+            return output;
+        const originalRenderer = homeProps.fnItemRenderer;
+        return SP_REACT.cloneElement(homeOutput, {
+            fnItemRenderer: (...itemArgs) => homeCardPatcher(itemArgs, originalRenderer(...itemArgs)),
+        });
+    });
+    const gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, category, overview) => decorateGridCompatibility(card, targets.indicator, targets.gridIconsClassName, targets.gridIndicatorClassName, category, overview), args[0]?.app));
+    unpatchers.push(homeUnpatch, gridUnpatch);
+};
+
 const firstUrlishArgIndex = (args, firstOnly = false) => {
     const limit = firstOnly ? Math.min(args.length, 1) : args.length;
     for (let index = 0; index < limit; index += 1) {
@@ -4756,9 +4946,10 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
-// Stable keys for the entries we inject, so we can find and de-duplicate them.
+// The edit key is the only entry this version inserts. Keep the legacy key in
+// the removal set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-compatibility"]);
 let contextMenuTraceEnabled = false;
 const setContextMenuTraceEnabled = (enabled) => {
     contextMenuTraceEnabled = enabled;
@@ -4840,7 +5031,7 @@ const isGameContextMenu = (items) => {
 const removeOurEntry = (items) => {
     let removed = false;
     for (let index = items.length - 1; index >= 0; index -= 1) {
-        if (ENTRY_KEYS.has(items[index]?.key)) {
+        if (REMOVAL_KEYS.has(items[index]?.key)) {
             items.splice(index, 1);
             removed = true;
         }
@@ -6465,6 +6656,7 @@ const installSteamPatches = () => {
         });
         installNativeNewsHistoryRedirects(unpatchers);
         installMetadataPatches(unpatchers);
+        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
         installCommunityFeedPatch(unpatchers);
         installRouterRenderPatches(unpatchers, {
             ensureMetadataCache,

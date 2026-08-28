@@ -43,9 +43,10 @@ import {
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
-// Stable keys for the entries we inject, so we can find and de-duplicate them.
+// The edit key is the only entry this version inserts. Keep the legacy key in
+// the removal set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-compatibility"]);
 
 let contextMenuTraceEnabled = false;
 export const setContextMenuTraceEnabled = (enabled: boolean) => {
@@ -161,7 +162,7 @@ const isGameContextMenu = (items: any[]): boolean => {
 const removeOurEntry = (items: any[]): boolean => {
   let removed = false;
   for (let index = items.length - 1; index >= 0; index -= 1) {
-    if (ENTRY_KEYS.has(items[index]?.key)) {
+    if (REMOVAL_KEYS.has(items[index]?.key)) {
       items.splice(index, 1);
       removed = true;
     }
