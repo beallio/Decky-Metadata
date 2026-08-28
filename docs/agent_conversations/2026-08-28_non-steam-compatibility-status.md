@@ -73,3 +73,15 @@ Steam games.
   host`. No on-device checks, screenshots, or focused JSON evidence could be
   collected. This external blocker leaves the round incomplete; do not create
   the round-complete marker.
+
+### Package handoff for review round 05
+
+- `./run.sh scripts/decky status --deck` at 2026-08-28 11:03 PDT confirmed
+  that the Deck was reachable and the feature branch was clean.
+- `./run.sh scripts/decky package-push --build --push` built
+  `Decky-Metadata.zip` with version `0.3.9+95a541d` and reported
+  `LOCAL_VALIDATION PASS`, `PACKAGE_CREATED PASS`, and `DELIVERY PASS`.
+- The delivery tool reported `INSTALLED_STATE REINSTALL_REQUIRED`. The ZIP is
+  ready for the required human local installation. Do not mark the round
+  complete until that install is done and the editor-dropdown live contract is
+  verified with focused evidence below `/tmp/Decky-Metadata`.
