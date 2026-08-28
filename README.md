@@ -18,15 +18,14 @@ Want to try changes before the next stable release? The rolling [`dev-build` pre
 
 ## Find the details your games are missing
 
-Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
+Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, community controller layouts, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
 
-From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions. The Versions panel also reports connected controller types (for example `Steam Deck (4)` and `Legion Go S (102)`), which helps confirm whether Legion Go S-compatible layouts are expected to appear.
 
 ## Edit metadata from a game's menu
 
-Open a non-Steam game's context menu and choose the metadata editor to search for a match or adjust its details yourself. You can also pin a Steam app ID when you know exactly which Steam game belongs with the shortcut.
+Open a non-Steam game's context menu and choose the metadata editor to search for a match or update its details. You can also pin a Steam app ID when you know exactly which Steam game belongs with the shortcut.
 
-The same menu has **Compatibility status...**. Select Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut. Automatic shows and uses the Valve status for the matched Steam game when it is available. ProtonDB is not a compatibility source in Decky Metadata.
+The same menu has **Compatibility status...**. Select Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut. Automatic shows and uses the Valve status for the matched Steam game when it is available.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
@@ -36,7 +35,7 @@ For a matched shortcut, the Game Info tab can show the Steam game's artwork, des
 
 ![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
 
-The buttons at the bottom also point to useful pages for the matched Steam game. The Store Page stays available while the game is listed, and known DLC and Points Shop links open the right Steam pages. Links that do not make sense for a non-Steam shortcut are left out.
+The buttons at the bottom also point to useful pages for the matched Steam game. The Store Page stays available while the game is listed, and known DLC and Points Shop links open the right Steam pages. Links that do not make sense for a non-Steam shortcut are excluded.
 
 Decky Metadata works with SteamGridDB custom artwork. A matched non-Steam shortcut keeps its own Library Home icon and custom capsule, hero, and logo artwork, while its matched Game Info page still receives the extra Steam details.
 
@@ -48,13 +47,9 @@ Matched shortcuts can show content from the Steam game's Community page. If Stea
 
 ![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
 
-## Use layouts from the matched Steam game
+## Use Controller layouts from the matched Steam game
 
 Controller Settings can include recommended, official, and community layouts from the matching Steam game. Your shortcut's personal layouts and Steam's general templates stay available, and you still preview and choose layouts through Steam's normal controls.
-
-For the verified Legion Go S integrated controller (type `102`), compatible matched-game layouts remain available while Steam's normal visible controller-type filter stays enabled. Other controller types keep Steam's requested source filter.
-
-When you choose **Show All** on that verified Legion controller, Decky Metadata preserves the chooser tab you were already using if it is still available. It does not force Community Layouts: Your Layouts, Templates, Official Layouts, Community Layouts, and Search retain Steam's normal behavior. Steam Deck and other native controller paths are unchanged.
 
 On a non-Steam shortcut, Search shows only that game's layouts and its matched Steam game's layouts, and nothing from unrelated games.
 
