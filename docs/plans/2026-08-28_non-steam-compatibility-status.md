@@ -3,10 +3,11 @@
 ## Context
 
 Issue #4 asks for a per-game control that changes the Steam Deck compatibility
-status shown for non-Steam shortcuts. The control must be available directly
-from the existing per-game Steam context menu and must support Automatic,
-Verified, Playable, Unsupported, and Unknown. Automatic uses the Valve-resolved
-category already fetched for a matched Steam app; ProtonDB is explicitly
+status shown for non-Steam shortcuts. Users access the control through the
+existing `Decky metadata...` context-menu entry; the metadata editor presents
+it as a dropdown with Automatic, Verified, Playable, Unsupported, and Unknown.
+Automatic uses the Valve-resolved category already fetched for a matched Steam
+app; ProtonDB is explicitly
 deferred. This feature is for non-Steam shortcuts only. Do not expose it for or
 mutate official Steam games.
 
@@ -163,25 +164,26 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 - Keep baseline capture and restoration bounded to App IDs the plugin actually
   mutates. Remove restored entries from the baseline map.
 
-### 3. Add the context-menu selector
+### 3. Integrate the selector into the metadata editor
 
-- Keep the existing `Decky metadata...` entry.
-- Add a deduplicated `Compatibility status...` entry in the same per-game
-  context menu, adjacent to the metadata entry and still above `Properties...`.
-- Selecting it must open a controller-friendly Decky modal from the context
-  menu, not navigate to the full metadata editor. The modal must show five
-  choices in this order: Automatic, Verified, Playable, Unsupported, Unknown.
-- Show the saved manual choice as selected. For Automatic, also show the
-  currently resolved Valve status when one exists so the result is not
-  ambiguous.
-- Save the chosen value immediately through the existing backend RPC, update
-  `metadataCache`, call the compatibility application path, close the modal on
-  success, and show the project's normal success/error toast. A failed save must
-  leave the prior cache and runtime state intact.
+- Keep one existing `Decky metadata...` entry in the per-game context menu.
+  Remove the separate `Compatibility status...` entry and its modal.
+- Add a `Compatibility status` section to the metadata editor page opened by
+  `Decky metadata...`. Use Decky's native `DropdownItem` control.
+- The dropdown must show five choices in this order: Automatic, Verified,
+  Playable, Unsupported, Unknown.
+- Show the saved manual choice as selected. For Automatic, include the currently
+  resolved Valve status when one exists so the result is not ambiguous.
+- Treat the dropdown as part of the editor form. Changing it updates
+  `deck_compat_override` in form state; the editor's existing Save action
+  persists the complete record, updates `metadataCache`, applies compatibility,
+  requests the safe SteamUI refresh, and uses the existing save toast/error
+  behavior.
+- Preserve numeric `0` as explicit Unknown. Automatic writes `null`.
 - Preserve the current menu's stale-App-ID protections. Reused menu bodies must
-  always read and save the App ID for the game whose menu is currently open.
-- Use native Decky focus/modal components and deterministic gamepad focus. Do
-  not add raw DOM focus timers.
+  still open the metadata editor for the game whose menu is currently open.
+- Use native Decky dropdown/focus behavior. Do not add a modal, raw DOM focus,
+  timers, or a second context-menu entry.
 
 ### 4. Refresh affected SteamUI surfaces safely
 
@@ -192,9 +194,9 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 - Prefer an existing route/render boundary or a narrow plugin-owned revision
   signal. Avoid separate broad SteamUI render patches when one shared refresh
   mechanism can update both surfaces.
-- If the context-menu/modal close naturally remounts a surface, use that
-  behavior only after proving it on-device for both the library poster and an
-  already-mounted Game Info page.
+- Prove that returning from the saved metadata editor refreshes the library
+  poster and that saving while the Game Info route is mounted refreshes that
+  surface without replacing the shortcut overview.
 - Automatic, explicit Unknown, metadata removal, and plugin dismount must use
   the same refresh path as the positive categories.
 
@@ -205,9 +207,10 @@ git commit -m "docs(plan): add non-steam-compatibility-status implementation pla
 - Add frontend tests for effective-category precedence, all values `0..3`,
   higher-bit preservation, original-nibble restoration, metadata removal/cache
   refresh, and dismount cleanup.
-- Extend context-menu tests for two injected entries, deduplication, non-Steam
-  eligibility, current App ID selection, Automatic, explicit Unknown, success,
-  and failed-save rollback.
+- Keep context-menu tests focused on one deduplicated `Decky metadata...` entry,
+  non-Steam eligibility, official-game exclusion, and current App ID selection.
+- Add focused editor/dropdown tests for option order, Automatic, explicit
+  Unknown, saved selection, failed-save rollback, and refresh after save.
 - Test observable behavior and user-visible outcomes. Do not test source text or
   incidental component internals.
 - Regenerate and commit `dist/index.js`.
@@ -254,17 +257,18 @@ Do not add `--allow-launch`; this feature does not require launching a game.
 Use the actual context menu on the verified matched non-Steam shortcut fixture
 and the committed CDP input/focus probes. Verify all of the following:
 
-1. Official Steam games do not receive either a selector or compatibility
-   mutation from this feature.
-2. The non-Steam shortcut context menu contains one `Decky metadata...` entry
-   and one `Compatibility status...` entry after repeated opens and alternating
-   between games.
-3. The modal has correct initial focus, D-pad order, selected-state feedback,
-   modal close focus return, and no clipped controls.
-4. Automatic shows and applies the fetched Valve category.
-5. Verified, Playable, Unsupported, and Unknown each change the poster and Game
-   Info status for the same shortcut.
-6. A change made while Game Info is mounted becomes visible without restarting
+1. Official Steam games do not receive a Decky Metadata editor entry or any
+   compatibility mutation from this feature.
+2. The non-Steam shortcut context menu contains exactly one
+   `Decky metadata...` entry after repeated opens and alternating between games;
+   there is no separate compatibility entry.
+3. The metadata editor contains one native Compatibility status dropdown with
+   correct initial focus, D-pad option order, selected-state feedback, and no
+   clipped controls.
+4. Automatic shows and applies the fetched Valve category after Save.
+5. Verified, Playable, Unsupported, and Unknown each save and change the poster
+   and Game Info status for the same shortcut.
+6. A save made while Game Info is mounted becomes visible without restarting
    Steam and without losing the enriched matched-game details.
 7. Returning to Automatic restores the fetched category; removing metadata and
    reloading/dismounting the plugin do not leave stale packed bits.
