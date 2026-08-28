@@ -5017,7 +5017,11 @@ const insertOurEntry = (items, appId) => {
         return false;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: (event) => void openCompatibilityStatusModal(appId, event.currentTarget || undefined), children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: (event) => {
+            const parent = event?.currentTarget
+                || (typeof document === "undefined" ? undefined : document.activeElement || undefined);
+            void openCompatibilityStatusModal(appId, parent);
+        }, children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
     return true;
 };
 const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {

@@ -200,6 +200,8 @@ describe("contextMenuPatch", () => {
     expect(secondItems.filter((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)).toHaveLength(1);
     const firstLauncher = {} as EventTarget;
     const firstSelector = secondItems.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY) as any;
+    firstSelector.props.onSelected();
+    expect(compatibilityModal.open).toHaveBeenLastCalledWith(100, undefined);
     firstSelector.props.onSelected({ currentTarget: firstLauncher });
     expect(compatibilityModal.open).toHaveBeenLastCalledWith(100, firstLauncher);
 
