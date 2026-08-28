@@ -193,7 +193,10 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
     >
       {"Decky metadata..."}
     </MenuItem>,
-    <MenuItem key={COMPATIBILITY_ENTRY_KEY} onSelected={() => void openCompatibilityStatusModal(appId)}>
+    <MenuItem
+      key={COMPATIBILITY_ENTRY_KEY}
+      onSelected={(event) => void openCompatibilityStatusModal(appId, event.currentTarget || undefined)}
+    >
       {"Compatibility status..."}
     </MenuItem>
   );

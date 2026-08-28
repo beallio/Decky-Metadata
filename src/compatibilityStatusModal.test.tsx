@@ -17,6 +17,8 @@ const react = vi.hoisted(() => ({ useState: vi.fn(() => [false, vi.fn()]) }));
 
 vi.mock("@decky/ui", () => ({
   DialogButton: "DialogButton",
+  Focusable: "Focusable",
+  NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred-child" },
   PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
   showModal: ui.showModal,
@@ -42,6 +44,8 @@ import {
   openCompatibilityStatusModal,
   saveCompatibilityOverride,
 } from "./compatibilityStatusModal";
+
+const choiceRows = (modal: any) => modal.props.children[1].props.children;
 
 afterEach(() => {
   Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
@@ -78,7 +82,7 @@ describe("compatibility status selector", () => {
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith(100);
 
     const modal = CompatibilityStatusModal({ appId: 100, closeModal: vi.fn() }) as any;
-    const labels = modal.props.children[1].map((row: any) => row.props.children.props.children);
+    const labels = choiceRows(modal).map((row: any) => row.props.children.props.children);
     expect(labels).toEqual([
       "Selected: Automatic (Valve: Verified)",
       "Verified",
@@ -168,7 +172,7 @@ describe("compatibility status selector", () => {
 
     const modalElement = (ui.showModal as any).mock.calls[0]?.[0] as any;
     const modal = modalElement.type(modalElement.props) as any;
-    const labels = modal.props.children[1].map((row: any) => row.props.children.props.children);
+    const labels = choiceRows(modal).map((row: any) => row.props.children.props.children);
     expect(labels[0]).toBe("Selected: Automatic (Valve: Playable)");
     expect(backend.saveMetadata).toHaveBeenCalledWith(500, {
       ...richRecord,
@@ -180,5 +184,35 @@ describe("compatibility status selector", () => {
       ...richRecord,
       deck_compat_override: 3,
     });
+  });
+
+  it("groups choices into native vertical gamepad flow and restores menu focus on close", async () => {
+    const launcher = {} as EventTarget;
+
+    await openCompatibilityStatusModal(600, launcher);
+
+    const modalElement = (ui.showModal as any).mock.calls[0]?.[0] as any;
+    const modal = modalElement.type(modalElement.props) as any;
+    const choiceFlow = modal.props.children[1];
+    const rows = choiceRows(modal);
+
+    expect(choiceFlow.type).toBe("Focusable");
+    expect(choiceFlow.props["flow-children"]).toBe("vertical");
+    expect(choiceFlow.props.navEntryPreferPosition).toBe("preferred-child");
+    expect(rows.map((row: any) => row.props.children.props.children)).toEqual([
+      "Selected: Automatic",
+      "Verified",
+      "Playable",
+      "Unsupported",
+      "Unknown",
+    ]);
+    expect(rows.map((row: any) => row.props.children.props.preferredFocus)).toEqual([
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(ui.showModal).toHaveBeenCalledWith(expect.anything(), launcher);
   });
 });

@@ -1,4 +1,11 @@
-import { DialogButton, PanelSection, PanelSectionRow, showModal } from "@decky/ui";
+import {
+  DialogButton,
+  Focusable,
+  NavEntryPositionPreferences,
+  PanelSection,
+  PanelSectionRow,
+  showModal,
+} from "@decky/ui";
 import { useState } from "react";
 
 import { saveMetadata } from "./backend";
@@ -90,23 +97,29 @@ export const CompatibilityStatusModal = ({
           {"Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status."}
         </div>
       </PanelSectionRow>
-      {choices.map((choice) => (
-        <PanelSectionRow key={String(choice.value)}>
-          <DialogButton
-            focusable={true}
-            disabled={saving}
-            onClick={() => void save(choice.value)}
-            style={{ width: "100%", textAlign: "left" }}
-          >
-            {selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved)}
-          </DialogButton>
-        </PanelSectionRow>
-      ))}
+      <Focusable
+        flow-children="vertical"
+        navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
+      >
+        {choices.map((choice) => (
+          <PanelSectionRow key={String(choice.value)}>
+            <DialogButton
+              focusable={true}
+              preferredFocus={choice.value === null}
+              disabled={saving}
+              onClick={() => void save(choice.value)}
+              style={{ width: "100%", textAlign: "left" }}
+            >
+              {selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved)}
+            </DialogButton>
+          </PanelSectionRow>
+        ))}
+      </Focusable>
     </PanelSection>
   );
 };
 
-export const openCompatibilityStatusModal = async (appId: number) => {
+export const openCompatibilityStatusModal = async (appId: number, parent?: EventTarget) => {
   try {
     await ensureMetadataCache();
     if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
@@ -114,7 +127,8 @@ export const openCompatibilityStatusModal = async (appId: number) => {
     }
     let modal: ReturnType<typeof showModal> | undefined;
     modal = showModal(
-      <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />
+      <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />,
+      parent
     );
     return modal;
   } catch (error) {
