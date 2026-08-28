@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Non-Steam shortcuts can now use an explicit Steam Deck compatibility status.
+
+### Added
+
+- The non-Steam game context menu now includes **Compatibility status...**. Choose Automatic, Verified, Playable, Unsupported, or Unknown. Automatic uses the Valve category for the matched Steam app; ProtonDB is not a source.
+
 ## [0.3.8] - 2026-08-27
 
 SteamGridDB artwork now works with matched non-Steam games
