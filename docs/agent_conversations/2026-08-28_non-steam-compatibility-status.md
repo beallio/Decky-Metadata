@@ -85,3 +85,72 @@ Steam games.
   ready for the required human local installation. Do not mark the round
   complete until that install is done and the editor-dropdown live contract is
   verified with focused evidence below `/tmp/Decky-Metadata`.
+
+### Review round 07: stale-menu cleanup and selected-card indicators
+
+- The user reported two installed-runtime defects in `0.3.9+95a541d`: a stale
+  `Compatibility status...` context-menu entry and missing compatibility
+  indicators for selected shortcuts. The stale item was state retained in a
+  reused Steam menu array. The Library grid source suppresses Steam's native
+  indicator when `app.BIsModOrShortcut()` is true; Library Home keeps its
+  indicator in the third `GameCapsule` child slot.
+- The context-menu patch now removes both the current editor key and the legacy
+  `decky-metadata-compatibility` key before it inserts the single editor item.
+  Its regression test seeds the legacy key and proves it is removed without a
+  Steam restart.
+- Added the narrow Home and grid renderer patches in
+  `src/steam/libraryCompatibilityIndicators.tsx`. They use only the exact
+  shortcut overview and its effective category, retain the native no-status
+  result for Unknown or unresolved Automatic, do not spoof shortcut identity,
+  and unpatch both renderers on plugin dismount. The live target inspection
+  confirmed the current `GameCapsule` and `LibraryItemBox` predicates in
+  `/tmp/Decky-Metadata/steamui/unknown/assets/chunk~2dcc5aaf7.js`.
+- Renderer-level tests found and fixed a Home bug before deployment: the
+  wrapper discarded `fnItemRenderer` arguments, so it could not match the card
+  App ID. It now forwards those arguments. Tests also cover positive exact
+  shortcuts, Unknown and official no-op behavior, Home child preservation, and
+  unpatch cleanup.
+
+#### Review round 07 validation
+
+- `./run.sh scripts/decky doctor`, `./run.sh scripts/decky verify-change dev
+  --explain`, and `./run.sh scripts/decky doctor --deck` completed before the
+  fix. The Deck was reachable.
+- `./run.sh npm test -- --run src/steam/libraryCompatibilityIndicators.test.tsx
+  src/contextMenuPatch.test.tsx` passed (16 tests), then
+  `./run.sh npx tsc --noEmit` passed.
+- `scripts/orchestration/run-quality-gates` passed after the change: rollup,
+  TypeScript, 330 frontend tests, Python compilation, and pytest. The review
+  note integrity check and `git diff --check` also passed.
+- `./run.sh scripts/decky verify-change dev --device --explain` rebuilt and
+  deployed the frontend. Deck logs recorded `steam patches installed` at
+  2026-08-28 12:24:58 PDT with no new compatibility-patch error. Its explicit
+  launch check remains deferred because no launch authorization was given.
+- Controller-driven Library validation used the committed `cdp.py` input and
+  focus probes on shortcut `2155012430` (Warhammer 40,000: Space Marine).
+  The Non-Steam grid and Library Home carousel each displayed Steam's Deck
+  device icon with the yellow Playable category icon. An official Library card
+  retained its native Deck/device icon and green Verified indicator.
+  Evidence: `/tmp/Decky-Metadata/screenshots/review-07-space-marine-selected-grid.png`,
+  `/tmp/Decky-Metadata/screenshots/review-07-library-home-space-marine.png`,
+  and `/tmp/Decky-Metadata/screenshots/review-07-library-all.png`.
+- The rendered Space Marine context menu contained exactly one `Decky
+  metadata...` item and no `Compatibility status...` item. The native editor
+  displayed `Automatic (Valve: Playable)` and the five required choices in
+  order. Evidence:
+  `/tmp/Decky-Metadata/screenshots/review-07-space-marine-context-menu.png`,
+  `/tmp/Decky-Metadata/screenshots/review-07-context-menu-editor-focus.png`,
+  and `/tmp/Decky-Metadata/screenshots/review-07-editor-compatibility-options.png`.
+- Saving Verified changed the shortcut packed category from `10` (Playable) to
+  `15` (Verified) and refreshed both the Home carousel and grid to the green
+  Verified icon. Saving Automatic restored packed category `10` and the yellow
+  Playable indicator. Evidence:
+  `/tmp/Decky-Metadata/screenshots/review-07-library-home-space-marine-verified.png`,
+  `/tmp/Decky-Metadata/screenshots/review-07-space-marine-verified-grid.png`,
+  and `/tmp/Decky-Metadata/screenshots/review-07-space-marine-automatic-restored-grid.png`.
+- `./run.sh scripts/decky package-push --build --push` built
+  `Decky-Metadata.zip` version `0.3.9+fe51539`, reported `LOCAL_VALIDATION
+  PASS`, `PACKAGE_CREATED PASS`, and `DELIVERY PASS`, and copied it to the
+  Deck for human local installation. The tool correctly reported
+  `INSTALLED_STATE REINSTALL_REQUIRED`; the live frontend deploy above ran the
+  same commit while the full ZIP awaits the Decky reinstall action.
