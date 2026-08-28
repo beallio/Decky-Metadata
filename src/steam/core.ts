@@ -154,6 +154,27 @@ export const getOverview = (appId: number): SteamOverview | null => {
   }
 };
 
+/**
+ * Resolve an overview by its own AppID without passing through plugin patches.
+ * This is required for writes: GetAppOverviewByAppID intentionally aliases a
+ * matched Steam AppID to its shortcut on the rich-details path.
+ */
+export const getNativeOverview = (appId: number): SteamOverview | null => {
+  const nativeAppId = Number(appId);
+  if (!Number.isFinite(nativeAppId) || nativeAppId <= 0) return null;
+  try {
+    const allApps = appStore?.allApps;
+    const entries = Array.isArray(allApps)
+      ? allApps
+      : allApps && typeof allApps === "object"
+        ? Object.values(allApps)
+        : [];
+    return entries.find((overview: any) => Number(overview?.appid) === nativeAppId) ?? null;
+  } catch (_error) {
+    return null;
+  }
+};
+
 export const steamAppIdForApp = (appId: number): number =>
   Number(metadataCache[String(appId)]?.steam_appid) || 0;
 

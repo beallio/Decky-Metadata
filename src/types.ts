@@ -180,6 +180,7 @@ export type SteamInternals = {
   };
   appStore: {
     GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
+    allApps?: SteamOverview[] | Record<string, SteamOverview>;
   };
   appDetailsStore: object;
   appActivityStore?: object;

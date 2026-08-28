@@ -11,6 +11,7 @@ import {
   cleanTitle,
   currentRoutePath,
   gameDetailAppIdFromPath,
+  getNativeOverview,
   getOverview,
   isCurrentGameDetailRoute,
   isNonSteamApp,
@@ -158,10 +159,10 @@ const packedCompatibilityValue = (overview: any): number => {
   return Number.isFinite(packed) ? packed : 0;
 };
 
-const restoreCompatibilityBaseline = (appId: number, overview = getOverview(appId)): boolean => {
+const restoreCompatibilityBaseline = (appId: number, overview = getNativeOverview(appId)): boolean => {
   const key = String(appId);
   if (
-    !isNonSteamApp(overview) ||
+    !isNativeNonSteamShortcut(overview) ||
     !Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)
   ) {
     return false;
@@ -191,13 +192,6 @@ export const restoreAllCompatibilityBaselines = () => {
  */
 export const refreshCompatibilitySurfaces = (appId: number) => {
   const revision = ++metadataState.compatibilityRevision;
-  try {
-    window.dispatchEvent(
-      new CustomEvent("decky-metadata:compatibility-updated", { detail: { appId, revision } })
-    );
-  } catch (_error) {
-    // Event dispatch is best effort when SteamUI is not fully available.
-  }
   try {
     const history = (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
     const location = history?.location;
@@ -285,8 +279,8 @@ export const startMetadataBootstrap = (): Unpatch => {
 };
 
 export const applyMetadata = (appId: number) => {
-  const overview = getOverview(appId);
-  if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview)) return;
+  const overview = getNativeOverview(appId);
+  if (!isNativeNonSteamShortcut(overview)) return;
   const metadata = metadataCache[String(appId)];
   if (!metadata) {
     restoreCompatibilityBaseline(appId, overview);

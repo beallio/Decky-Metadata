@@ -1,8 +1,8 @@
 /*
  * Decky Metadata - library context-menu integration.
  *
- * Adds a single "Decky metadata..." entry to the per-game context menu in
- * the Steam library, for non-Steam shortcuts.
+ * Adds Decky Metadata and compatibility-status entries to the per-game
+ * context menu in the Steam library, for non-Steam shortcuts.
  *
  * The technique used here to resolve and patch Steam's internal
  * LibraryContextMenu class is derived from the decky-steamgriddb plugin by the
@@ -35,8 +35,7 @@ import {
 import { FC } from "react";
 
 import {
-  getOverview,
-  isNonSteamApp,
+  getNativeOverview,
   isNativeNonSteamShortcut,
   patchInstallStatus,
   hasSteamInternals,
@@ -174,8 +173,8 @@ const removeOurEntry = (items: any[]): boolean => {
 
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items: any[], appId: number): boolean => {
-  const overview = getOverview(appId);
-  if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview)) return false;
+  const overview = getNativeOverview(appId);
+  if (!isNativeNonSteamShortcut(overview)) return false;
 
   const propertiesIndex = items.findIndex((node) =>
     findInReactTree(
@@ -194,7 +193,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
     >
       {"Decky metadata..."}
     </MenuItem>,
-    <MenuItem key={COMPATIBILITY_ENTRY_KEY} onSelected={() => openCompatibilityStatusModal(appId)}>
+    <MenuItem key={COMPATIBILITY_ENTRY_KEY} onSelected={() => void openCompatibilityStatusModal(appId)}>
       {"Compatibility status..."}
     </MenuItem>
   );

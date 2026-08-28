@@ -63,9 +63,10 @@ const decky = vi.hoisted(() => {
 });
 
 const steam = vi.hoisted(() => ({
-  getOverview: vi.fn((appId: number) => ({ appid: appId })),
-  isNonSteamApp: vi.fn(() => true),
-  isNativeNonSteamShortcut: vi.fn(() => true),
+  getOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true })),
+  getNativeOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true })),
+  isNonSteamApp: vi.fn((overview: any) => Number(overview?.app_type) === 1073741824),
+  isNativeNonSteamShortcut: vi.fn((overview: any) => Number(overview?.app_type) === 1073741824),
   hasSteamInternals: vi.fn(() => true),
   patchInstallStatus: { contextMenu: "pending" },
 }));
@@ -84,6 +85,7 @@ vi.mock("@decky/ui", () => ({
 
 vi.mock("./steam/core", () => ({
   getOverview: steam.getOverview,
+  getNativeOverview: steam.getNativeOverview,
   isNonSteamApp: steam.isNonSteamApp,
   isNativeNonSteamShortcut: steam.isNativeNonSteamShortcut,
   hasSteamInternals: steam.hasSteamInternals,
@@ -154,8 +156,10 @@ function injectedTarget(items: any[]): string | undefined {
 describe("contextMenuPatch", () => {
   beforeEach(() => {
     decky.navigate.mockClear();
-    steam.isNonSteamApp.mockReturnValue(true);
-    steam.isNativeNonSteamShortcut.mockReturnValue(true);
+    steam.getOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
+    steam.getNativeOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
+    steam.isNonSteamApp.mockImplementation((overview: any) => Number(overview?.app_type) === 1073741824);
+    steam.isNativeNonSteamShortcut.mockImplementation((overview: any) => Number(overview?.app_type) === 1073741824);
     compatibilityModal.open.mockClear();
   });
 
@@ -204,16 +208,20 @@ describe("contextMenuPatch", () => {
   });
 
   it("does not add either Decky Metadata entry for official Steam games", () => {
-    steam.isNonSteamApp.mockReturnValue(false);
-    steam.isNativeNonSteamShortcut.mockReturnValue(false);
+    const officialAppId = 55150;
+    const shortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
+    const official = { appid: officialAppId, app_type: 0, BIsShortcut: () => false };
+    steam.getOverview.mockReturnValue(shortcut as any);
+    steam.getNativeOverview.mockReturnValue(official as any);
     const { LibraryContextMenu, MenuBody } = makeMenuStack();
     contextMenuPatch(LibraryContextMenu);
 
-    const menu = new LibraryContextMenu(100).render();
+    const menu = new LibraryContextMenu(officialAppId).render();
     menu.type();
     const items = new MenuBody().render().props.children[0];
 
     expect(items.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
     expect(items.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)).toBeUndefined();
+    expect(steam.getNativeOverview).toHaveBeenCalledWith(officialAppId);
   });
 });

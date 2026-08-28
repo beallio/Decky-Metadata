@@ -5,11 +5,11 @@ import { saveMetadata } from "./backend";
 import { metadataTemplate } from "./metadataForm";
 import {
   appName,
-  getOverview,
+  getNativeOverview,
   isNativeNonSteamShortcut,
   metadataCache,
 } from "./steam/core";
-import { applyMetadata, refreshCompatibilitySurfaces } from "./steam/metadataPatch";
+import { applyMetadata, ensureMetadataCache, refreshCompatibilitySurfaces } from "./steam/metadataPatch";
 import { toastError, toastSuccess } from "./toast";
 import { DeckCompatibilityCategory } from "./types";
 
@@ -33,7 +33,8 @@ export const saveCompatibilityOverride = async (
   appId: number,
   override: CompatibilityChoice
 ) => {
-  if (!isNativeNonSteamShortcut(getOverview(appId))) {
+  await ensureMetadataCache();
+  if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
     throw new Error("Compatibility status is available only for non-Steam games.");
   }
   const metadata = metadataCache[String(appId)] || metadataTemplate(appName(appId));
@@ -105,10 +106,19 @@ export const CompatibilityStatusModal = ({
   );
 };
 
-export const openCompatibilityStatusModal = (appId: number) => {
-  let modal: ReturnType<typeof showModal> | undefined;
-  modal = showModal(
-    <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />
-  );
-  return modal;
+export const openCompatibilityStatusModal = async (appId: number) => {
+  try {
+    await ensureMetadataCache();
+    if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
+      throw new Error("Compatibility status is available only for non-Steam games.");
+    }
+    let modal: ReturnType<typeof showModal> | undefined;
+    modal = showModal(
+      <CompatibilityStatusModal appId={appId} closeModal={() => modal?.Close()} />
+    );
+    return modal;
+  } catch (error) {
+    toastError("Compatibility status", String(error));
+    return undefined;
+  }
 };

@@ -1328,6 +1328,28 @@ const getOverview = (appId) => {
         return null;
     }
 };
+/**
+ * Resolve an overview by its own AppID without passing through plugin patches.
+ * This is required for writes: GetAppOverviewByAppID intentionally aliases a
+ * matched Steam AppID to its shortcut on the rich-details path.
+ */
+const getNativeOverview = (appId) => {
+    const nativeAppId = Number(appId);
+    if (!Number.isFinite(nativeAppId) || nativeAppId <= 0)
+        return null;
+    try {
+        const allApps = appStore?.allApps;
+        const entries = Array.isArray(allApps)
+            ? allApps
+            : allApps && typeof allApps === "object"
+                ? Object.values(allApps)
+                : [];
+        return entries.find((overview) => Number(overview?.appid) === nativeAppId) ?? null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
 const steamAppIdForApp = (appId) => Number(metadataCache[String(appId)]?.steam_appid) || 0;
 const safeDecodeURIComponent = (value) => {
     try {
@@ -1874,9 +1896,9 @@ const packedCompatibilityValue = (overview) => {
     const packed = Number(overview?.steam_hw_compat_category_packed);
     return Number.isFinite(packed) ? packed : 0;
 };
-const restoreCompatibilityBaseline = (appId, overview = getOverview(appId)) => {
+const restoreCompatibilityBaseline = (appId, overview = getNativeOverview(appId)) => {
     const key = String(appId);
-    if (!isNonSteamApp(overview) ||
+    if (!isNativeNonSteamShortcut(overview) ||
         !Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
         return false;
     }
@@ -1904,12 +1926,6 @@ const restoreAllCompatibilityBaselines = () => {
  */
 const refreshCompatibilitySurfaces = (appId) => {
     const revision = ++metadataState.compatibilityRevision;
-    try {
-        window.dispatchEvent(new CustomEvent("decky-metadata:compatibility-updated", { detail: { appId, revision } }));
-    }
-    catch (_error) {
-        // Event dispatch is best effort when SteamUI is not fully available.
-    }
     try {
         const history = globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
         const location = history?.location;
@@ -1993,8 +2009,8 @@ const startMetadataBootstrap = () => {
     };
 };
 const applyMetadata = (appId) => {
-    const overview = getOverview(appId);
-    if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview))
+    const overview = getNativeOverview(appId);
+    if (!isNativeNonSteamShortcut(overview))
         return;
     const metadata = metadataCache[String(appId)];
     if (!metadata) {
@@ -4840,7 +4856,8 @@ const choices = [
 const compatibilityLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
 const isCompatibilityCategory = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 const saveCompatibilityOverride = async (appId, override) => {
-    if (!isNativeNonSteamShortcut(getOverview(appId))) {
+    await ensureMetadataCache();
+    if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
         throw new Error("Compatibility status is available only for non-Steam games.");
     }
     const metadata = metadataCache[String(appId)] || metadataTemplate(appName(appId));
@@ -4850,7 +4867,7 @@ const saveCompatibilityOverride = async (appId, override) => {
     });
     metadataCache[String(appId)] = saved;
     applyMetadata(appId);
-    refreshCompatibilitySurfaces(appId);
+    refreshCompatibilitySurfaces();
     return saved;
 };
 const choiceLabel = (choice, resolved) => {
@@ -4885,10 +4902,20 @@ const CompatibilityStatusModal = ({ appId, closeModal, }) => {
     };
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Compatibility status", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { color: "#cbd5e1", fontSize: "14px", lineHeight: 1.4 }, children: "Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status." }) }), choices.map((choice) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { focusable: true, disabled: saving, onClick: () => void save(choice.value), style: { width: "100%", textAlign: "left" }, children: selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved) }) }, String(choice.value))))] }));
 };
-const openCompatibilityStatusModal = (appId) => {
-    let modal;
-    modal = DFL.showModal(SP_JSX.jsx(CompatibilityStatusModal, { appId: appId, closeModal: () => modal?.Close() }));
-    return modal;
+const openCompatibilityStatusModal = async (appId) => {
+    try {
+        await ensureMetadataCache();
+        if (!isNativeNonSteamShortcut(getNativeOverview(appId))) {
+            throw new Error("Compatibility status is available only for non-Steam games.");
+        }
+        let modal;
+        modal = DFL.showModal(SP_JSX.jsx(CompatibilityStatusModal, { appId: appId, closeModal: () => modal?.Close() }));
+        return modal;
+    }
+    catch (error) {
+        toastError("Compatibility status", String(error));
+        return undefined;
+    }
 };
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
@@ -4985,12 +5012,12 @@ const removeOurEntry = (items) => {
 };
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items, appId) => {
-    const overview = getOverview(appId);
-    if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview))
+    const overview = getNativeOverview(appId);
+    if (!isNativeNonSteamShortcut(overview))
         return false;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openCompatibilityStatusModal(appId), children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => void openCompatibilityStatusModal(appId), children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
     return true;
 };
 const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
@@ -7477,7 +7504,7 @@ const MetadataPage = () => {
             await removeMetadata(appId);
             delete metadataCache[String(appId)];
             applyMetadata(appId);
-            refreshCompatibilitySurfaces(appId);
+            refreshCompatibilitySurfaces();
             setFormMetadata(metadataTemplate(appName(appId)));
             toastSuccess("Removed", "Metadata removed");
         }

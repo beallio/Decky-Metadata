@@ -26,6 +26,7 @@ import {
   applyMetadata,
   effectiveCompatibilityCategory,
   installMetadataPatches,
+  refreshCompatibilitySurfaces,
   refreshMetadataCache,
   restoreAllCompatibilityBaselines,
 } from "./metadataPatch";
@@ -84,6 +85,7 @@ afterEach(() => {
   metadataState.bypassCounter = 0;
   metadataState.routeShield = null;
   metadataState.compatibilityBaselines = {};
+  metadataState.compatibilityRevision = 0;
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appDetailsStore;
   delete (globalThis as Record<string, unknown>).Router;
@@ -193,6 +195,7 @@ const installCompatibilityOverview = (appId: number, packed: number, nonSteam = 
   };
   const host = globalThis as Record<string, unknown>;
   host.appStore = {
+    allApps: [overview],
     GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
   };
   host.appDetailsStore = {};
@@ -259,5 +262,69 @@ describe("compatibility metadata application", () => {
     applyMetadata(appId);
 
     expect(overview.steam_hw_compat_category_packed).toBe(0x57);
+  });
+
+  it("does not follow a patched official AppID alias when applying or restoring", () => {
+    const officialAppId = 55150;
+    const shortcutAppId = 2155012430;
+    const official = {
+      appid: officialAppId,
+      app_type: 0,
+      BIsShortcut: () => false,
+      BIsModOrShortcut: () => false,
+      steam_hw_compat_category_packed: 0x5a,
+    };
+    const shortcut = {
+      appid: shortcutAppId,
+      app_type: 1073741824,
+      BIsShortcut: () => true,
+      BIsModOrShortcut: () => true,
+      steam_hw_compat_category_packed: 0x6b,
+    };
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [official, shortcut],
+      GetAppOverviewByAppID: (appId: number) =>
+        appId === officialAppId ? shortcut : appId === shortcutAppId ? shortcut : null,
+    };
+    host.appDetailsStore = {};
+    metadataCache[String(officialAppId)] = compatibilityMetadata(3, 0) as any;
+    metadataState.compatibilityBaselines[String(officialAppId)] = 0x0f;
+
+    applyMetadata(officialAppId);
+    restoreAllCompatibilityBaselines();
+
+    expect(official.steam_hw_compat_category_packed).toBe(0x5a);
+    expect(shortcut.steam_hw_compat_category_packed).toBe(0x6b);
+  });
+
+  it("replaces the current route with its complete location to refresh compatibility surfaces", () => {
+    const replace = vi.fn();
+    const host = globalThis as Record<string, unknown>;
+    host.Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: {
+            location: {
+              pathname: "/routes/library/app/2155012430",
+              search: "?tab=GameInfo",
+              hash: "#compatibility",
+              state: { source: "test" },
+            },
+            replace,
+          },
+        },
+      },
+    };
+
+    expect(refreshCompatibilitySurfaces(2155012430)).toBe(1);
+    expect(replace).toHaveBeenCalledWith(
+      "/routes/library/app/2155012430?tab=GameInfo#compatibility",
+      { source: "test", deckyMetadataCompatibilityRevision: 1 }
+    );
+  });
+
+  it("does not fail when Steam's router history is absent", () => {
+    expect(() => refreshCompatibilitySurfaces(2155012430)).not.toThrow();
   });
 });

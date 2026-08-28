@@ -74,3 +74,28 @@ describe("currentRoutePath", () => {
     }
   });
 });
+
+describe("getNativeOverview", () => {
+  it("uses the exact allApps entry instead of a patched AppID getter alias", () => {
+    const host = globalThis as Record<string, unknown>;
+    const originalAppStore = host.appStore;
+    const officialAppId = 55150;
+    const shortcutAppId = 2155012430;
+    const officialOverview = { appid: officialAppId, app_type: 0 };
+    const shortcutOverview = { appid: shortcutAppId, app_type: 1073741824 };
+    host.appStore = {
+      allApps: [officialOverview, shortcutOverview],
+      GetAppOverviewByAppID: (appId: number) =>
+        appId === officialAppId ? shortcutOverview : null,
+    };
+
+    try {
+      expect(core.getOverview(officialAppId)).toBe(shortcutOverview);
+      expect(core.getNativeOverview(officialAppId)).toBe(officialOverview);
+      expect(core.getNativeOverview(shortcutAppId)).toBe(shortcutOverview);
+    } finally {
+      if (originalAppStore === undefined) delete host.appStore;
+      else host.appStore = originalAppStore;
+    }
+  });
+});
