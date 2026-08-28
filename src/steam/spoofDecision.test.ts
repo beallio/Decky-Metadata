@@ -7,6 +7,7 @@ const base = {
   bypassCounter: 0,
   hasCache: true,
   path: "/library/app/123456",
+  isCurrentMatchedDetail: true,
   consumeShield: () => false,
 };
 
@@ -41,8 +42,8 @@ describe("decideBIsModOrShortcut", () => {
     expect(consumeShield).not.toHaveBeenCalled();
   });
 
-  it("in-call truth window outranks the home special case", () => {
-    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, path: "/library/home" });
+  it("in-call truth window outranks outside-detail pass-through", () => {
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, isCurrentMatchedDetail: false });
     expect(d).toMatchObject({ finalRet: true, reason: "in-call-truth" });
   });
 
@@ -65,8 +66,8 @@ describe("decideBIsModOrShortcut", () => {
     expect(consumeShield).not.toHaveBeenCalled();
   });
 
-  it("uncached passthrough on the home route does not spoof", () => {
-    const d = decideBIsModOrShortcut({ ...base, hasCache: false, path: "/library/home" });
+  it("uncached passthrough outside a detail route does not spoof", () => {
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, isCurrentMatchedDetail: false });
     expect(d).toMatchObject({ finalRet: true, reason: "not-matched" });
   });
 
@@ -85,9 +86,24 @@ describe("decideBIsModOrShortcut", () => {
     expect(d).toMatchObject({ finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true });
   });
 
-  it("spoofs false on the home route when the shield misses", () => {
-    const d = decideBIsModOrShortcut({ ...base, path: "/library/home" });
-    expect(d).toMatchObject({ finalRet: false, reason: "home-special-case", shieldConsulted: true, shieldHit: false });
+  it("passes through outside the current matched detail without consulting the shield", () => {
+    const consumeShield = vi.fn(() => true);
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedDetail: false, consumeShield });
+    expect(d).toMatchObject({
+      finalRet: true,
+      reason: "outside-current-detail",
+      shieldConsulted: false,
+      shieldHit: false,
+      nextBypassCounter: 4,
+    });
+    expect(consumeShield).not.toHaveBeenCalled();
+  });
+
+  it("keeps a different shortcut native while another matched detail is active", () => {
+    const consumeShield = vi.fn(() => true);
+    const d = decideBIsModOrShortcut({ ...base, isCurrentMatchedDetail: false, consumeShield });
+    expect(d).toMatchObject({ finalRet: true, reason: "outside-current-detail", shieldConsulted: false });
+    expect(consumeShield).not.toHaveBeenCalled();
   });
 
   it("spoofs false by default (normal-shortcut)", () => {
