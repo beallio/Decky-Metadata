@@ -25,9 +25,14 @@ From the Quick Access Menu, you can see how many games were found, refresh missi
 
 ## Edit metadata from a game's menu
 
-Open a non-Steam game's context menu and choose the metadata editor to search for a match or adjust its details yourself. You can also pin a Steam app ID when you know exactly which Steam game belongs with the shortcut.
+Open a non-Steam game's context menu and choose **Decky metadata...** to search
+for a match or adjust its details yourself. You can also pin a Steam app ID when
+you know exactly which Steam game belongs with the shortcut.
 
-The same menu has **Compatibility status...**. Select Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut. Automatic shows and uses the Valve status for the matched Steam game when it is available. ProtonDB is not a compatibility source in Decky Metadata.
+The metadata editor includes a **Compatibility status** dropdown. Select
+Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut.
+Automatic shows and uses the Valve status for the matched Steam game when it is
+available. ProtonDB is not a compatibility source in Decky Metadata.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 

@@ -5,7 +5,8 @@ Date: 2026-08-28
 ## Objective
 
 Implement the `non-steam-compatibility-status` plan. Add a per-shortcut
-compatibility selector that does not change official Steam games.
+compatibility dropdown to the metadata editor. It does not change official
+Steam games.
 
 ## Changes
 
@@ -16,9 +17,9 @@ compatibility selector that does not change official Steam games.
   Unknown choice.
 - Added effective-category precedence and low-nibble baseline restoration.
   The plugin restores the original category on metadata removal and dismount.
-- Added the context-menu selector and native Decky modal. It uses the existing
-  `save_metadata` RPC and does not update cache or runtime state after a failed
-  save.
+- Added a native Decky `DropdownItem` to the existing `Decky metadata...`
+  editor. It uses the existing `save_metadata` RPC and does not update cache or
+  runtime state after a failed save.
 - Used one plugin-owned compatibility revision signal and a same-route history
   replacement to request a normal SteamUI render without replacing an app-store
   object.
@@ -37,19 +38,32 @@ compatibility selector that does not change official Steam games.
 - Removed the unused compatibility event. Same-route history replacement is
   the sole refresh mechanism, with its path, query, hash, state, and
   missing-router behavior covered by tests.
-- Corrected the context-menu patch header to describe both injected entries.
+- Corrected the context-menu patch header to describe the one injected entry.
+
+### Review round 05: editor dropdown cutover
+
+- The user replaced the separate compatibility context-menu item and modal
+  with a dropdown in the existing metadata editor. The menu now has one
+  deduplicated `Decky metadata...` entry.
+- Deleted the modal component and its tests. No compatibility-menu key, modal
+  export, or modal focus code remains.
+- Added the native dropdown with the required order: Automatic, Verified,
+  Playable, Unsupported, and Unknown. Automatic displays the resolved Valve
+  category when one exists. Numeric `0` stays an explicit Unknown choice.
+- The normal Save action now writes the complete editor record, updates the
+  cache and effective compatibility state, and requests the safe SteamUI
+  refresh only after `save_metadata` succeeds. A failed save leaves persisted,
+  cached, and runtime compatibility unchanged.
 
 ## Validation
 
 - `./run.sh uv run --with pytest -- pytest -q tests/test_steam_appid_override.py tests/test_deck_compat.py` — passed (15 tests).
 - `./run.sh npm test -- --run src/steam/metadataPatch.test.ts` — passed (15 tests).
-- `./run.sh npm test -- --run src/compatibilityStatusModal.test.tsx src/contextMenuPatch.test.tsx` — passed (7 tests).
+- `./run.sh npm test -- src/MetadataPage.test.tsx src/contextMenuPatch.test.tsx` — passed (8 tests): native option order, Automatic and explicit Unknown display, successful save and refresh, failed-save safety, one menu entry, App-ID isolation, and official-game exclusion.
+- `./run.sh npx tsc --noEmit` and `./run.sh npm run build` — passed after the editor dropdown cutover.
 - `./run.sh scripts/orchestration-hooks/quality-gates` — passed after all source and documentation changes (312 frontend tests and all backend tests).
 - `./run.sh scripts/decky doctor --deck` at 2026-08-28 07:19 PDT — the Deck was offline. The required device verification and screenshot/JSON evidence remain outstanding. Do not create the round-complete marker until they pass.
-- Review-round targeted validation — `./run.sh npx tsc --noEmit` and
-  `./run.sh npx vitest run src/steam/core.test.ts src/contextMenuPatch.test.tsx
-  src/compatibilityStatusModal.test.tsx src/steam/metadataPatch.test.ts` passed
-  (59 tests).
+- Prior modal validation is superseded by the editor-dropdown validation above.
 - `./run.sh scripts/orchestration/run-quality-gates` and the local stage of
   `./run.sh scripts/decky verify-change dev --device --explain` passed:
   build, type check, 317 frontend tests, and backend pytest all passed.

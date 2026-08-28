@@ -1,8 +1,8 @@
 /*
  * Decky Metadata - library context-menu integration.
  *
- * Adds Decky Metadata and compatibility-status entries to the per-game
- * context menu in the Steam library, for non-Steam shortcuts.
+ * Adds a Decky Metadata entry to the per-game context menu in the Steam
+ * library, for non-Steam shortcuts.
  *
  * The technique used here to resolve and patch Steam's internal
  * LibraryContextMenu class is derived from the decky-steamgriddb plugin by the
@@ -40,14 +40,12 @@ import {
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
-import { openCompatibilityStatusModal } from "./compatibilityStatusModal";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "decky-metadata-edit";
-const COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
-const ENTRY_KEYS = new Set([ENTRY_KEY, COMPATIBILITY_ENTRY_KEY]);
+const ENTRY_KEYS = new Set([ENTRY_KEY]);
 
 let contextMenuTraceEnabled = false;
 export const setContextMenuTraceEnabled = (enabled: boolean) => {
@@ -192,12 +190,6 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
       {"Decky metadata..."}
-    </MenuItem>,
-    <MenuItem
-      key={COMPATIBILITY_ENTRY_KEY}
-      onSelected={() => void openCompatibilityStatusModal(appId)}
-    >
-      {"Compatibility status..."}
     </MenuItem>
   );
   return true;
