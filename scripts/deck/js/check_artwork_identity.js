@@ -2,6 +2,8 @@
 // Vars: SHORTCUT_APPID, MATCHED_APPID.
 // The bounded icon request may populate Steam's in-memory icon-data cache.
 (async () => {
+  const ICON_HYDRATION_DEADLINE_MS = 15000;
+  const ICON_HYDRATION_POLL_INTERVAL_MS = 250;
   const shortcutAppId = Number(__SHORTCUT_APPID__);
   const matchedAppId = Number(__MATCHED_APPID__);
   const startedAt = Date.now();
@@ -37,7 +39,9 @@
   let iconValueHash = null;
   let iconRequestError = false;
   let iconAttempts = 0;
-  for (; iconAttempts < 20 && !iconResolved; iconAttempts += 1) {
+  const iconDeadline = Date.now() + ICON_HYDRATION_DEADLINE_MS;
+  for (;;) {
+    iconAttempts += 1;
     try {
       const candidate = appStore?.GetIconURLForApp?.(overview);
       iconResolved = typeof candidate === "string" && candidate.length > 0;
@@ -46,7 +50,11 @@
       iconRequestError = true;
       break;
     }
-    if (!iconResolved && iconAttempts < 19) await new Promise((resolve) => setTimeout(resolve, 250));
+    if (iconResolved || Date.now() >= iconDeadline) break;
+    await new Promise((resolve) => setTimeout(
+      resolve,
+      Math.min(ICON_HYDRATION_POLL_INTERVAL_MS, iconDeadline - Date.now())
+    ));
   }
   return JSON.stringify({
     routeScope,
@@ -64,6 +72,7 @@
     iconValueHash,
     iconRequestError,
     iconAttempts,
+    iconDeadlineMs: ICON_HYDRATION_DEADLINE_MS,
     artwork: {
       vertical: candidates(appStore?.GetCustomVerticalCapsuleURLs),
       landscape: candidates(appStore?.GetCustomLandcapeImageURLs),

@@ -102,8 +102,8 @@ matched app IDs before it opens a tunnel or calls CDP.
 
 It never writes or reapplies artwork, changes a plugin setting, navigates,
 selects an item, dispatches input, or launches a game. Steam can populate its
-in-memory icon-data cache during up to 20 polls over five seconds; this is the
-only expected Steam state change. Inspect the Library Home sidebar and the
+in-memory icon-data cache during fixed 250 ms polls for up to 15 seconds; this
+is the only expected Steam state change. Inspect the Library Home sidebar and the
 Capsule, Wide Capsule, Hero, Logo, logo position, and square-capsule
 presentation visually after the smoke. Close and verify the dedicated tunnel
 after capturing the screenshot.

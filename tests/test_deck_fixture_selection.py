@@ -208,8 +208,10 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "iconHashPresent" in probe
     assert "iconDataPresent" in probe
     assert "iconResolved" in probe
-    assert "iconAttempts < 20" in probe
-    assert "setTimeout(resolve, 250)" in probe
+    assert "const ICON_HYDRATION_DEADLINE_MS = 15000;" in probe
+    assert "const ICON_HYDRATION_POLL_INTERVAL_MS = 250;" in probe
+    assert "iconDeadlineMs" in probe
+    assert "Math.min(ICON_HYDRATION_POLL_INTERVAL_MS, iconDeadline - Date.now())" in probe
     assert "artwork" in probe
     assert "elapsedMs" in probe
     for forbidden in (
@@ -223,13 +225,86 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "--capture-artwork-files" in smoke
     assert "shortcut and matched appids must differ" in smoke
     assert "fileHashSetUnchanged" in smoke
-    assert "1 <= data[\"iconAttempts\"] <= 20" in smoke
+    assert "data[\"iconDeadlineMs\"] != 15000" in smoke
+    assert "1 <= data[\"iconAttempts\"] <= 61" in smoke
     assert "/tmp/Decky-Metadata" in smoke
     assert '"status": "started"' in smoke
     assert '"status": "pending-validation"' in smoke
     assert "shortcut identity" in smoke
     assert "icon resolver" in smoke
     assert "raw" not in "\n".join(_serialized_objects(probe)).lower()
+
+
+def _run_artwork_identity_probe(probe: str, hydration_delay_ms: int | None) -> dict:
+    source = probe.replace("__SHORTCUT_APPID__", "2155012430").replace("__MATCHED_APPID__", "55150")
+    hydration_expression = "false" if hydration_delay_ms is None else f"now >= {hydration_delay_ms}"
+    runner = f"""
+let now = 0;
+let iconCalls = 0;
+Date.now = () => now;
+globalThis.setTimeout = (callback, delay) => {{ now += delay; callback(); return 0; }};
+const overview = {{
+  appid: 2155012430,
+  app_type: 1073741824,
+  BIsShortcut: () => true,
+  BIsModOrShortcut: () => true,
+}};
+globalThis.window = {{ location: {{ pathname: "/library/home" }} }};
+globalThis.appStore = {{
+  GetAppOverviewByAppID: () => overview,
+  GetIconURLForApp: () => {{ iconCalls += 1; return {hydration_expression} ? "icon://hydrated" : null; }},
+  GetCustomVerticalCapsuleURLs: () => [],
+  GetCustomLandcapeImageURLs: () => [],
+  GetCustomHeroImageURLs: () => [],
+  GetCustomLogoImageURLs: () => [],
+}};
+{source}.then((payload) => process.stdout.write(payload)).catch((error) => {{
+  process.stderr.write(String(error.message));
+  process.exit(1);
+}});
+"""
+    completed = subprocess.run(
+        ["node", "-e", runner],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=3,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return json.loads(completed.stdout)
+
+
+def test_artwork_identity_probe_waits_past_five_seconds_within_its_fixed_deadline():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+
+    hydrated = _run_artwork_identity_probe(probe, hydration_delay_ms=5250)
+
+    assert hydrated["iconResolved"] is True
+    assert hydrated["elapsedMs"] == 5250
+    assert hydrated["iconDeadlineMs"] == 15000
+    assert hydrated["iconAttempts"] == 22
+
+    five_second_deadline = probe.replace(
+        "const ICON_HYDRATION_DEADLINE_MS = 15000;",
+        "const ICON_HYDRATION_DEADLINE_MS = 5000;",
+    )
+    too_short = _run_artwork_identity_probe(five_second_deadline, hydration_delay_ms=5250)
+    assert too_short["iconResolved"] is False
+    assert too_short["elapsedMs"] == 5000
+
+
+def test_artwork_identity_probe_stops_an_unresolved_icon_at_the_exact_deadline():
+    root = Path(__file__).parents[1]
+    probe = (root / "scripts/deck/js/check_artwork_identity.js").read_text()
+
+    unresolved = _run_artwork_identity_probe(probe, hydration_delay_ms=None)
+
+    assert unresolved["iconResolved"] is False
+    assert unresolved["iconRequestError"] is False
+    assert unresolved["elapsedMs"] == 15000
+    assert unresolved["iconDeadlineMs"] == 15000
+    assert unresolved["iconAttempts"] == 61
 
 
 def _artwork_file_hashes(count: int = 6) -> list[str]:
@@ -280,6 +355,7 @@ print(json.dumps({
     \"iconResolved\": True,
     \"iconRequestError\": False,
     \"iconAttempts\": 2,
+    \"iconDeadlineMs\": 15000,
     \"artwork\": {kind: {\"count\": 0, \"hashes\": []} for kind in (\"vertical\", \"landscape\", \"hero\", \"logo\")},
     \"elapsedMs\": 20,
 }))

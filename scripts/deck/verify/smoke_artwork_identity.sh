@@ -165,7 +165,7 @@ required = (
     "routeScope", "shortcutAppId", "matchedAppId", "requestedObjectAppId",
     "matchedObjectAppId", "aliasSameObject", "isShortcut", "isModOrShortcut",
     "iconHashPresent", "iconDataPresent", "iconResolved", "iconRequestError",
-    "iconAttempts", "artwork", "elapsedMs",
+    "iconAttempts", "iconDeadlineMs", "artwork", "elapsedMs",
 )
 missing = [name for name in required if name not in data]
 if missing:
@@ -184,7 +184,9 @@ if data["isModOrShortcut"] is not (expected_identity == "true"):
     raise SystemExit("FAIL: shortcut identity does not match the requested route scope")
 if data["iconRequestError"] or not data["iconResolved"]:
     raise SystemExit("FAIL: icon resolver stayed null after its bounded request")
-if not isinstance(data["iconAttempts"], int) or not 1 <= data["iconAttempts"] <= 20:
+if data["iconDeadlineMs"] != 15000:
+    raise SystemExit("FAIL: icon resolver deadline does not match the permanent bound")
+if not isinstance(data["iconAttempts"], int) or not 1 <= data["iconAttempts"] <= 61:
     raise SystemExit("FAIL: icon resolver attempt count is outside its bound")
 for kind in ("vertical", "landscape", "hero", "logo"):
     candidate = data["artwork"].get(kind)
