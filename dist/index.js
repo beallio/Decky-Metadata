@@ -1248,6 +1248,7 @@ const metadataState = {
     loadingScreenshots: new Set(),
     appliedMetadataRef: {},
     compatibilityBaselines: {},
+    compatibilityRevision: 0,
     lastObservedGameDetailAppId: 0,
     routeShield: null,
 };
@@ -1859,12 +1860,12 @@ const ensureDetailsOverviewSafeFields = (appId) => {
         // Best-effort guard only; never block Steam's native bootstrap.
     }
 };
-const isCompatibilityCategory = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+const isCompatibilityCategory$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 const effectiveCompatibilityCategory = (metadata) => {
-    if (isCompatibilityCategory(metadata?.deck_compat_override)) {
+    if (isCompatibilityCategory$1(metadata?.deck_compat_override)) {
         return metadata.deck_compat_override;
     }
-    if (isCompatibilityCategory(metadata?.deck_compat_category)) {
+    if (isCompatibilityCategory$1(metadata?.deck_compat_category)) {
         return metadata.deck_compat_category;
     }
     return null;
@@ -1894,6 +1895,37 @@ const restoreAllCompatibilityBaselines = () => {
     Object.keys(metadataState.compatibilityBaselines).forEach((key) => {
         restoreCompatibilityBaseline(Number(key));
     });
+};
+/**
+ * Request one normal Steam route render after a user compatibility change.
+ * This keeps the existing overview object in place, so matched Game Info data
+ * is retained while both the library card and an open Game Info route observe
+ * the new packed category.
+ */
+const refreshCompatibilitySurfaces = (appId) => {
+    const revision = ++metadataState.compatibilityRevision;
+    try {
+        window.dispatchEvent(new CustomEvent("decky-metadata:compatibility-updated", { detail: { appId, revision } }));
+    }
+    catch (_error) {
+        // Event dispatch is best effort when SteamUI is not fully available.
+    }
+    try {
+        const history = globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+        const location = history?.location;
+        const pathname = location?.pathname;
+        if (typeof history?.replace === "function" && typeof pathname === "string" && pathname) {
+            const path = `${pathname}${location.search || ""}${location.hash || ""}`;
+            history.replace(path, {
+                ...(location.state || {}),
+                deckyMetadataCompatibilityRevision: revision,
+            });
+        }
+    }
+    catch (_error) {
+        // Do not interrupt a user action when a Steam client does not expose history.replace.
+    }
+    return revision;
 };
 const applyCompatibilityCategory = (appId, overview, category) => {
     if (category === null) {
@@ -4708,9 +4740,161 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
+var StoreCategory;
+(function (StoreCategory) {
+    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
+    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
+    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
+    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
+    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
+    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
+    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
+    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
+    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
+    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
+    StoreCategory[StoreCategory["LocalCoOp"] = 392] = "LocalCoOp";
+})(StoreCategory || (StoreCategory = {}));
+const CATEGORY_LABELS = {
+    [StoreCategory.SinglePlayer]: "Single-player",
+    [StoreCategory.MultiPlayer]: "Multiplayer",
+    [StoreCategory.CoOp]: "Co-op",
+    [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
+    [StoreCategory.OnlineCoOp]: "Online co-op",
+    [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
+    [StoreCategory.LocalCoOp]: "Local co-op",
+    [StoreCategory.SplitScreen]: "Split screen",
+    [StoreCategory.FullController]: "Full controller support",
+    [StoreCategory.MMO]: "MMO",
+    [StoreCategory.Achievements]: "Achievements",
+};
+
+const parseSteamAppId = (input) => {
+    const s = String(input || "").trim();
+    if (!s)
+        return 0;
+    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
+        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
+        s.match(/[?&]appid=(\d+)/i) ||
+        s.match(/\bapp\/(\d+)\b/i);
+    const parsed = Number(match?.[1] || 0);
+    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
+        ? parsed
+        : 0;
+};
+const metadataTemplate = (title) => ({
+    title,
+    id: title,
+    source: "Manual",
+    source_url: "",
+    description: "",
+    short_description: "",
+    developers: [],
+    publishers: [],
+    release_date: null,
+    rating: null,
+    store_categories: [StoreCategory.SinglePlayer],
+    steam_dlc_appids: [],
+    has_points_shop: false,
+    genres: [],
+    features: [],
+    screenshots: [],
+});
+const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
+const textToPersons = (value) => value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, url: "" }));
+const epochToDate = (value) => {
+    if (!value)
+        return "";
+    const date = new Date(value * 1000);
+    if (Number.isNaN(date.getTime()))
+        return "";
+    return date.toISOString().slice(0, 10);
+};
+const dateToEpoch = (value) => {
+    if (!value.trim())
+        return null;
+    const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
+    if (Number.isNaN(timestamp))
+        return null;
+    return Math.floor(timestamp / 1000);
+};
+const parseRating = (value) => {
+    if (!value.trim())
+        return null;
+    const number = Number(value);
+    if (!Number.isFinite(number))
+        return null;
+    return Math.max(0, Math.min(100, Math.round(number)));
+};
+
+const choices = [
+    { value: null, label: "Automatic" },
+    { value: 3, label: "Verified" },
+    { value: 2, label: "Playable" },
+    { value: 1, label: "Unsupported" },
+    { value: 0, label: "Unknown" },
+];
+const compatibilityLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
+const isCompatibilityCategory = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+const saveCompatibilityOverride = async (appId, override) => {
+    if (!isNativeNonSteamShortcut(getOverview(appId))) {
+        throw new Error("Compatibility status is available only for non-Steam games.");
+    }
+    const metadata = metadataCache[String(appId)] || metadataTemplate(appName(appId));
+    const saved = await saveMetadata(appId, {
+        ...metadata,
+        deck_compat_override: override,
+    });
+    metadataCache[String(appId)] = saved;
+    applyMetadata(appId);
+    refreshCompatibilitySurfaces(appId);
+    return saved;
+};
+const choiceLabel = (choice, resolved) => {
+    if (choice !== null)
+        return compatibilityLabel(choice);
+    return resolved === null ? "Automatic" : `Automatic (Valve: ${compatibilityLabel(resolved)})`;
+};
+const CompatibilityStatusModal = ({ appId, closeModal, }) => {
+    const [saving, setSaving] = SP_REACT.useState(false);
+    const metadata = metadataCache[String(appId)];
+    const selected = isCompatibilityCategory(metadata?.deck_compat_override)
+        ? metadata.deck_compat_override
+        : null;
+    const resolved = isCompatibilityCategory(metadata?.deck_compat_category)
+        ? metadata.deck_compat_category
+        : null;
+    const save = async (choice) => {
+        if (saving)
+            return;
+        setSaving(true);
+        try {
+            await saveCompatibilityOverride(appId, choice);
+            toastSuccess("Compatibility status", "Compatibility status saved");
+            closeModal();
+        }
+        catch (error) {
+            toastError("Compatibility status", String(error));
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Compatibility status", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { color: "#cbd5e1", fontSize: "14px", lineHeight: 1.4 }, children: "Choose how this non-Steam game appears in Steam. Automatic uses Valve's matched status." }) }), choices.map((choice) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DialogButton, { focusable: true, disabled: saving, onClick: () => void save(choice.value), style: { width: "100%", textAlign: "left" }, children: selected === choice.value ? `Selected: ${choiceLabel(choice.value, resolved)}` : choiceLabel(choice.value, resolved) }) }, String(choice.value))))] }));
+};
+const openCompatibilityStatusModal = (appId) => {
+    let modal;
+    modal = DFL.showModal(SP_JSX.jsx(CompatibilityStatusModal, { appId: appId, closeModal: () => modal?.Close() }));
+    return modal;
+};
+
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
+const ENTRY_KEYS = new Set([ENTRY_KEY, COMPATIBILITY_ENTRY_KEY]);
 let contextMenuTraceEnabled = false;
 const setContextMenuTraceEnabled = (enabled) => {
     contextMenuTraceEnabled = enabled;
@@ -4801,11 +4985,12 @@ const removeOurEntry = (items) => {
 };
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items, appId) => {
-    if (!isNonSteamApp(getOverview(appId)))
+    const overview = getOverview(appId);
+    if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview))
         return false;
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY), SP_JSX.jsx(DFL.MenuItem, { onSelected: () => openCompatibilityStatusModal(appId), children: "Compatibility status..." }, COMPATIBILITY_ENTRY_KEY));
     return true;
 };
 const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
@@ -6915,96 +7100,6 @@ const getGamepadTextArea = () => {
     return cached;
 };
 
-var StoreCategory;
-(function (StoreCategory) {
-    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
-    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
-    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
-    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
-    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
-    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
-    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
-    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
-    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
-    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
-    StoreCategory[StoreCategory["LocalCoOp"] = 392] = "LocalCoOp";
-})(StoreCategory || (StoreCategory = {}));
-const CATEGORY_LABELS = {
-    [StoreCategory.SinglePlayer]: "Single-player",
-    [StoreCategory.MultiPlayer]: "Multiplayer",
-    [StoreCategory.CoOp]: "Co-op",
-    [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
-    [StoreCategory.OnlineCoOp]: "Online co-op",
-    [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
-    [StoreCategory.LocalCoOp]: "Local co-op",
-    [StoreCategory.SplitScreen]: "Split screen",
-    [StoreCategory.FullController]: "Full controller support",
-    [StoreCategory.MMO]: "MMO",
-    [StoreCategory.Achievements]: "Achievements",
-};
-
-const parseSteamAppId = (input) => {
-    const s = String(input || "").trim();
-    if (!s)
-        return 0;
-    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
-        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
-        s.match(/[?&]appid=(\d+)/i) ||
-        s.match(/\bapp\/(\d+)\b/i);
-    const parsed = Number(match?.[1] || 0);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-        ? parsed
-        : 0;
-};
-const metadataTemplate = (title) => ({
-    title,
-    id: title,
-    source: "Manual",
-    source_url: "",
-    description: "",
-    short_description: "",
-    developers: [],
-    publishers: [],
-    release_date: null,
-    rating: null,
-    store_categories: [StoreCategory.SinglePlayer],
-    steam_dlc_appids: [],
-    has_points_shop: false,
-    genres: [],
-    features: [],
-    screenshots: [],
-});
-const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
-const textToPersons = (value) => value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({ name, url: "" }));
-const epochToDate = (value) => {
-    if (!value)
-        return "";
-    const date = new Date(value * 1000);
-    if (Number.isNaN(date.getTime()))
-        return "";
-    return date.toISOString().slice(0, 10);
-};
-const dateToEpoch = (value) => {
-    if (!value.trim())
-        return null;
-    const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
-    if (Number.isNaN(timestamp))
-        return null;
-    return Math.floor(timestamp / 1000);
-};
-const parseRating = (value) => {
-    if (!value.trim())
-        return null;
-    const number = Number(value);
-    if (!Number.isFinite(number))
-        return null;
-    return Math.max(0, Math.min(100, Math.round(number)));
-};
-
 const editorRootClassName = "decky-metadata-editor";
 const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 const editorToolbarClearance = 104;
@@ -7381,6 +7476,8 @@ const MetadataPage = () => {
         try {
             await removeMetadata(appId);
             delete metadataCache[String(appId)];
+            applyMetadata(appId);
+            refreshCompatibilitySurfaces(appId);
             setFormMetadata(metadataTemplate(appName(appId)));
             toastSuccess("Removed", "Metadata removed");
         }

@@ -25,6 +25,7 @@ import {
   getOverview,
   isNonSteamApp,
   metadataCache,
+  refreshCompatibilitySurfaces,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
@@ -268,6 +269,8 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
+      applyMetadata(appId);
+      refreshCompatibilitySurfaces(appId);
       setFormMetadata(metadataTemplate(appName(appId)));
       toastSuccess("Removed", "Metadata removed");
     } catch (error) {

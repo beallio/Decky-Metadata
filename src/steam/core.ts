@@ -52,6 +52,8 @@ export const metadataState: {
   appliedMetadataRef: Record<string, MetadataData>;
   /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /** Bumps when a compatibility choice needs Steam's current route to render again. */
+  compatibilityRevision: number;
   lastObservedGameDetailAppId: number;
   routeShield: {
     appId: number;
@@ -69,6 +71,7 @@ export const metadataState: {
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
 };

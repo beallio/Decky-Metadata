@@ -581,7 +581,18 @@ class Plugin:
     ) -> MetadataRecord:
         with self._data_guard():
             self._load_data()
-            cleaned = self._sanitize_metadata(metadata)
+            next_metadata = dict(metadata)
+            existing = self._data["metadata"].get(str(app_id))
+            if (
+                isinstance(existing, dict)
+                and "deck_compat_override" in existing
+                and "deck_compat_override" not in next_metadata
+            ):
+                # Ordinary editor and scan saves should not silently reset a
+                # user's choice. Passing null remains the explicit Automatic
+                # request because it keeps the key present.
+                next_metadata["deck_compat_override"] = existing["deck_compat_override"]
+            cleaned = self._sanitize_metadata(next_metadata)
             cleaned["updated_at"] = now()
             self._data["metadata"][str(app_id)] = cleaned
             self._save_data()

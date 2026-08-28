@@ -4,6 +4,7 @@ export {
   effectiveCompatibilityCategory,
   ensureMetadataCache,
   refreshMetadataCache,
+  refreshCompatibilitySurfaces,
   restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
   tryEnrichScreenshotsForApp,

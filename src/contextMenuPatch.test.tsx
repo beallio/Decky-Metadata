@@ -62,6 +62,16 @@ const decky = vi.hoisted(() => {
   };
 });
 
+const steam = vi.hoisted(() => ({
+  getOverview: vi.fn((appId: number) => ({ appid: appId })),
+  isNonSteamApp: vi.fn(() => true),
+  isNativeNonSteamShortcut: vi.fn(() => true),
+  hasSteamInternals: vi.fn(() => true),
+  patchInstallStatus: { contextMenu: "pending" },
+}));
+
+const compatibilityModal = vi.hoisted(() => ({ open: vi.fn() }));
+
 vi.mock("@decky/ui", () => ({
   afterPatch: decky.afterPatch,
   fakeRenderComponent: () => ({ type: {} }),
@@ -73,18 +83,23 @@ vi.mock("@decky/ui", () => ({
 }));
 
 vi.mock("./steam/core", () => ({
-  getOverview: vi.fn((appId: number) => ({ appid: appId })),
-  isNonSteamApp: () => true,
-  hasSteamInternals: () => true,
-  patchInstallStatus: { contextMenu: "pending" },
+  getOverview: steam.getOverview,
+  isNonSteamApp: steam.isNonSteamApp,
+  isNativeNonSteamShortcut: steam.isNativeNonSteamShortcut,
+  hasSteamInternals: steam.hasSteamInternals,
+  patchInstallStatus: steam.patchInstallStatus,
 }));
 
 vi.mock("./log", () => ({ info: vi.fn(), warn: vi.fn() }));
 vi.mock("./backend", () => ({ frontendLog: vi.fn(() => Promise.resolve()) }));
+vi.mock("./compatibilityStatusModal", () => ({
+  openCompatibilityStatusModal: compatibilityModal.open,
+}));
 
 import contextMenuPatch from "./contextMenuPatch";
 
 const ENTRY_KEY = "decky-metadata-edit";
+const COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
 
 /**
  * Build a fake LibraryContextMenu whose shape mirrors what the patch walks:
@@ -139,6 +154,9 @@ function injectedTarget(items: any[]): string | undefined {
 describe("contextMenuPatch", () => {
   beforeEach(() => {
     decky.navigate.mockClear();
+    steam.isNonSteamApp.mockReturnValue(true);
+    steam.isNativeNonSteamShortcut.mockReturnValue(true);
+    compatibilityModal.open.mockClear();
   });
 
   it("navigates to the game whose menu is currently open, not the first one", () => {
@@ -158,5 +176,44 @@ describe("contextMenuPatch", () => {
     new LibraryContextMenu(200).render();
     const itemsB = new MenuBody().render().props.children[0];
     expect(injectedTarget(itemsB)).toBe("/decky-metadata/200");
+  });
+
+  it("adds one adjacent compatibility selector above Properties for each non-Steam game", () => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack();
+    contextMenuPatch(LibraryContextMenu);
+
+    const menu = new LibraryContextMenu(100).render();
+    menu.type();
+    const firstItems = new MenuBody().render().props.children[0];
+    const firstKeys = firstItems.map((item: any) => item?.key);
+
+    expect(firstKeys.filter((key: string) => key === ENTRY_KEY)).toHaveLength(1);
+    expect(firstKeys.filter((key: string) => key === COMPATIBILITY_ENTRY_KEY)).toHaveLength(1);
+    expect(firstKeys.indexOf(ENTRY_KEY)).toBeLessThan(firstKeys.indexOf(COMPATIBILITY_ENTRY_KEY));
+    expect(firstKeys.indexOf(COMPATIBILITY_ENTRY_KEY)).toBeLessThan(firstKeys.indexOf("properties"));
+
+    const secondItems = new MenuBody().render().props.children[0];
+    expect(secondItems.filter((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)).toHaveLength(1);
+    secondItems.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)?.props.onSelected();
+    expect(compatibilityModal.open).toHaveBeenLastCalledWith(100);
+
+    new LibraryContextMenu(200).render();
+    const otherItems = new MenuBody().render().props.children[0];
+    otherItems.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)?.props.onSelected();
+    expect(compatibilityModal.open).toHaveBeenLastCalledWith(200);
+  });
+
+  it("does not add either Decky Metadata entry for official Steam games", () => {
+    steam.isNonSteamApp.mockReturnValue(false);
+    steam.isNativeNonSteamShortcut.mockReturnValue(false);
+    const { LibraryContextMenu, MenuBody } = makeMenuStack();
+    contextMenuPatch(LibraryContextMenu);
+
+    const menu = new LibraryContextMenu(100).render();
+    menu.type();
+    const items = new MenuBody().render().props.children[0];
+
+    expect(items.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
+    expect(items.find((item: any) => item?.key === COMPATIBILITY_ENTRY_KEY)).toBeUndefined();
   });
 });

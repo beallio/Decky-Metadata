@@ -183,6 +183,38 @@ export const restoreAllCompatibilityBaselines = () => {
   });
 };
 
+/**
+ * Request one normal Steam route render after a user compatibility change.
+ * This keeps the existing overview object in place, so matched Game Info data
+ * is retained while both the library card and an open Game Info route observe
+ * the new packed category.
+ */
+export const refreshCompatibilitySurfaces = (appId: number) => {
+  const revision = ++metadataState.compatibilityRevision;
+  try {
+    window.dispatchEvent(
+      new CustomEvent("decky-metadata:compatibility-updated", { detail: { appId, revision } })
+    );
+  } catch (_error) {
+    // Event dispatch is best effort when SteamUI is not fully available.
+  }
+  try {
+    const history = (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+    const location = history?.location;
+    const pathname = location?.pathname;
+    if (typeof history?.replace === "function" && typeof pathname === "string" && pathname) {
+      const path = `${pathname}${location.search || ""}${location.hash || ""}`;
+      history.replace(path, {
+        ...(location.state || {}),
+        deckyMetadataCompatibilityRevision: revision,
+      });
+    }
+  } catch (_error) {
+    // Do not interrupt a user action when a Steam client does not expose history.replace.
+  }
+  return revision;
+};
+
 const applyCompatibilityCategory = (
   appId: number,
   overview: any,

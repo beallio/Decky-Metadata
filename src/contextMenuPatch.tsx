@@ -37,15 +37,18 @@ import { FC } from "react";
 import {
   getOverview,
   isNonSteamApp,
+  isNativeNonSteamShortcut,
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
+import { openCompatibilityStatusModal } from "./compatibilityStatusModal";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
 // Stable keys for the entries we inject, so we can find and de-duplicate them.
 const ENTRY_KEY = "decky-metadata-edit";
-const ENTRY_KEYS = new Set([ENTRY_KEY]);
+const COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
+const ENTRY_KEYS = new Set([ENTRY_KEY, COMPATIBILITY_ENTRY_KEY]);
 
 let contextMenuTraceEnabled = false;
 export const setContextMenuTraceEnabled = (enabled: boolean) => {
@@ -171,7 +174,8 @@ const removeOurEntry = (items: any[]): boolean => {
 
 /** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
 const insertOurEntry = (items: any[], appId: number): boolean => {
-  if (!isNonSteamApp(getOverview(appId))) return false;
+  const overview = getOverview(appId);
+  if (!isNonSteamApp(overview) || !isNativeNonSteamShortcut(overview)) return false;
 
   const propertiesIndex = items.findIndex((node) =>
     findInReactTree(
@@ -189,6 +193,9 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
       {"Decky metadata..."}
+    </MenuItem>,
+    <MenuItem key={COMPATIBILITY_ENTRY_KEY} onSelected={() => openCompatibilityStatusModal(appId)}>
+      {"Compatibility status..."}
     </MenuItem>
   );
   return true;

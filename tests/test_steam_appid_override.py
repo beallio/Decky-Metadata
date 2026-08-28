@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import nullcontext
 
 import main
 from tests._plugin import make_plugin
@@ -92,3 +93,41 @@ def test_fetched_metadata_merge_keeps_manual_compatibility_override_with_or_with
 
     assert unpinned["deck_compat_override"] == 0
     assert pinned["deck_compat_override"] == 2
+
+
+def test_manual_save_and_scan_preserve_existing_compatibility_override() -> None:
+    plugin = make_plugin()
+    plugin._data = {
+        "metadata": {
+            "123": {
+                "title": "Manual shortcut",
+                "description": "",
+                "store_categories": [],
+                "deck_compat_override": 0,
+            }
+        }
+    }
+    plugin._data_guard = lambda: nullcontext()
+    plugin._load_data = lambda: None
+    plugin._save_data = lambda: None
+
+    manually_saved = asyncio.run(
+        plugin.save_metadata(
+            123,
+            {"title": "Manual shortcut", "description": "", "store_categories": []},
+        )
+    )
+    assert manually_saved["deck_compat_override"] == 0
+
+    asyncio.run(
+        plugin._save_scan_pipeline_metadata(
+            123,
+            {
+                "title": "Scanned shortcut",
+                "description": "Fetched",
+                "store_categories": [],
+                "deck_compat_category": 3,
+            },
+        )
+    )
+    assert plugin._data["metadata"]["123"]["deck_compat_override"] == 0
