@@ -95,13 +95,6 @@ Controller Settings can show recommended, official, and community layouts from
 the matching Steam game. Your own layouts and Steam's templates remain
 available.
 
-Search shows layouts for your added game and the Steam game it matches. It does
-not mix in layouts from unrelated games.
-
-On Legion Go S, matching layouts remain available with Steam's controller filter
-turned on. **Show All** keeps the tab you were already viewing. Normal Steam Deck
-behavior is unchanged.
-
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
 
 ## Updates and help
@@ -109,9 +102,8 @@ behavior is unchanged.
 Use the Decky Metadata panel in the Quick Access Menu to check for updates and
 view recent logs.
 
-If you report a problem, include the recent logs and the versions shown in the
-**Versions** panel. For a controller-layout problem, also include the controller
-name and number shown there.
+If you report a problem, include recent logs and the versions shown in the
+**Versions** panel.
 
 Want to test changes before the next stable release? Use the rolling
 [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build).
