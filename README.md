@@ -1,83 +1,129 @@
 # Decky Metadata
 
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
-[![CI](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml/badge.svg)](https://github.com/beallio/Decky-Metadata/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
-<!-- Badges may require GitHub authentication while this repository is private. -->
+Decky Metadata makes games you added to Steam feel like a natural part of your
+library. It finds the matching Steam game and adds useful details, news,
+community posts, and controller layouts.
 
-Decky Metadata helps your non-Steam games feel at home in your Steam library. On SteamOS and Steam Deck, it finds the details a shortcut is missing, brings in content from the matching Steam game, and gives you simple controls through Decky Loader.
+![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20260718)
 
-![Decky Metadata Quick Access Menu panels](assets/decky-metadata-qam.png?cacheBuster=20260718)
+## What it can add
+
+For a non-Steam game, Decky Metadata can add:
+
+- Descriptions, developers, publishers, release dates, ratings, and screenshots
+- A Steam Deck compatibility status
+- Steam news and community posts
+- Controller layouts from the matching Steam game
+- Useful Steam links in Game Info
+
+Your custom artwork from SteamGridDB stays in place.
 
 ## Install
 
-Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then download `Decky-Metadata.zip` and sideload it with Decky's developer-mode plugin installer. You can also copy the ZIP asset's URL and paste it into Decky's install-from-URL flow.
+You need SteamOS Gaming Mode and Decky Loader.
 
-Want to try changes before the next stable release? The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build) is the testing channel, so it may be less stable.
+1. Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest).
+2. Download `Decky-Metadata.zip`. Do not unzip it.
+3. Open the Quick Access Menu and select Decky.
+4. Open Decky Loader settings, then select **Developer**.
+5. Under **Install Plugin from ZIP File**, select **Browse**.
+6. Choose `Decky-Metadata.zip`, then select **Install**.
 
-## Find the details your games are missing
+Decky Metadata will appear in the Decky menu after installation.
 
-Decky Metadata can match detected non-Steam games and fill in descriptions, developers, publishers, release dates, ratings, screenshots, and other Steam details. It also keeps a local list of games Steam no longer sells, so removed store pages can still be matched by title.
+## Get started
 
-From the Quick Access Menu, you can see how many games were found, refresh missing metadata, clear saved matches, update the list of delisted games, view recent logs, turn on debug logging, check for and install Decky Metadata updates, and check your Decky Metadata, Decky Loader, and SteamOS versions. The Versions panel also reports connected controller types (for example `Steam Deck (4)` and `Legion Go S (102)`), which helps confirm whether Legion Go S-compatible layouts are expected to appear.
+Open Decky Metadata from the Quick Access Menu. From there, you can find missing
+metadata, clear saved matches, update the list of games that Steam no longer
+sells, view logs, and check for plugin updates.
 
+To work with one game:
 
-## Edit metadata from a game's menu
+1. Open the game's menu.
+2. Select **Decky metadata...**.
+3. Search for the correct Steam game or change the details yourself.
+4. Select **Save** when you finish.
 
-Open a non-Steam game's context menu and choose **Decky metadata...** to search
-for a match or adjust its details yourself. You can also pin a Steam app ID when
-you know exactly which Steam game belongs with the shortcut.
+If a game matched incorrectly, clear the match and choose the correct one.
 
-The metadata editor includes a **Compatibility status** dropdown. Select
-Automatic, Verified, Playable, Unsupported, or Unknown for that shortcut.
-Automatic shows and uses the Valve status for the matched Steam game when it is
-available. ProtonDB is not a compatibility source in Decky Metadata.
+## Set the compatibility status
+
+The **Decky metadata...** editor includes a **Compatibility status** setting.
+Choose Automatic, Verified, Playable, Unsupported, or Unknown.
+
+Automatic uses Steam's status for the matching game when one is available. It
+does not use ProtonDB.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
 ## See more in Game Info
 
-For a matched shortcut, the Game Info tab can show the Steam game's artwork, description, developer, publisher, release date, and Steam Deck compatibility.
+After a game is matched, Game Info can show its artwork, description, developer,
+publisher, release date, and Steam Deck compatibility.
 
 ![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
 
-The buttons at the bottom also point to useful pages for the matched Steam game. The Store Page stays available while the game is listed, and known DLC and Points Shop links open the right Steam pages. Links that do not make sense for a non-Steam shortcut are left out.
-
-Decky Metadata works with SteamGridDB custom artwork. A matched non-Steam shortcut keeps its own Library Home icon and custom capsule, hero, and logo artwork, while its matched Game Info page still receives the extra Steam details.
+Game Info can also show links to the Steam store, DLC, and Points Shop when they
+are available. Links that do not apply to the game are left out.
 
 ![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20260717)
 
-## Browse Steam Community content
+## Keep your custom artwork
 
-Matched shortcuts can show content from the Steam game's Community page. If Steam's usual page is empty, Decky Metadata looks for fresh Community posts, and can fall back to IGN screenshots when Steam has no cards to show.
+Decky Metadata works with custom artwork from SteamGridDB. Your Library Home
+icon, capsule, hero, and logo stay in place while Game Info receives the extra
+Steam details.
+
+## See community posts and news
+
+Your added game can show posts from the matching Steam Community page. If Steam
+has no cards to show, Decky Metadata can use screenshots from IGN instead.
 
 ![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
 
-## Use layouts from the matched Steam game
-
-Controller Settings can include recommended, official, and community layouts from the matching Steam game. Your shortcut's personal layouts and Steam's general templates stay available, and you still preview and choose layouts through Steam's normal controls.
-
-For the verified Legion Go S integrated controller (type `102`), compatible matched-game layouts remain available while Steam's normal visible controller-type filter stays enabled. Other controller types keep Steam's requested source filter.
-
-When you choose **Show All** on that verified Legion controller, Decky Metadata preserves the chooser tab you were already using if it is still available. It does not force Community Layouts: Your Layouts, Templates, Official Layouts, Community Layouts, and Search retain Steam's normal behavior. Steam Deck and other native controller paths are unchanged.
-
-On a non-Steam shortcut, Search shows only that game's layouts and its matched Steam game's layouts, and nothing from unrelated games.
-
-![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
-
-## Keep up with Steam activity
-
-When a non-Steam shortcut matches a Steam game, Decky Metadata brings that game's news and announcements into Steam's normal Activity area. The feed refreshes automatically when you open the matched game's details.
+News and announcements from the matching Steam game can also appear in the
+normal Activity area.
 
 ![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
 
-## License & Credits
+## Use Steam controller layouts
 
-Decky Metadata is licensed under the **GNU General Public License v3.0 or later** (see `LICENSE`).
+Controller Settings can show recommended, official, and community layouts from
+the matching Steam game. Your own layouts and Steam's templates remain
+available.
 
-Decky Metadata is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata) by ZazaMastro. Full credit and thanks to the original author and contributors.
+Search shows layouts for your added game and the Steam game it matches. It does
+not mix in layouts from unrelated games.
 
-Decky Metadata was bootstrapped from the [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template). Full credit and thanks to the Steam Deck Homebrew contributors.
+On Legion Go S, matching layouts remain available with Steam's controller filter
+turned on. **Show All** keeps the tab you were already viewing. Normal Steam Deck
+behavior is unchanged.
 
-The library context-menu integration (`src/contextMenuPatch.tsx`) is derived from the [decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) plugin by the SteamGridDB project, which is licensed under the GPL-3.0. Full credit and thanks to its authors and contributors.
+![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
+
+## Updates and help
+
+Use the Decky Metadata panel in the Quick Access Menu to check for updates and
+view recent logs.
+
+If you report a problem, include the recent logs and the versions shown in the
+**Versions** panel. For a controller-layout problem, also include the controller
+name and number shown there.
+
+Want to test changes before the next stable release? Use the rolling
+[`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build).
+Testing builds may be less stable.
+
+## License and credits
+
+Decky Metadata is licensed under the [GNU General Public License v3.0 or later](LICENSE).
+
+It is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata)
+by ZazaMastro and started from the
+[Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template).
+The game-menu integration is based on
+[decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) by the
+SteamGridDB project.
