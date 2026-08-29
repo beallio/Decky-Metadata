@@ -4,14 +4,14 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Non-Steam shortcuts can now use an explicit Steam Deck compatibility status.
+## [0.3.9] - 2026-08-28
+
+Set the compatibility status for non-Steam games
 
 ### Added
 
-- The **Decky metadata...** editor for a non-Steam game now includes a
-  **Compatibility status** dropdown. Choose Automatic, Verified, Playable,
-  Unsupported, or Unknown. Automatic uses the Valve category for the matched
-  Steam app; ProtonDB is not a source.
+- The **Decky metadata...** editor now lets you choose Automatic, Verified,
+  Playable, Unsupported, or Unknown for non-Steam games.
 
 ## [0.3.8] - 2026-08-27
 
