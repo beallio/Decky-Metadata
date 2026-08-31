@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-08-30
+
+Compatibility badges now load automatically
+
 ### Fixed
 
 - Non-Steam compatibility badges now appear as soon as saved metadata loads and remain correct after plugin or SteamUI reloads; selecting each game is no longer required.
