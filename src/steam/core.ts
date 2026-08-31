@@ -76,6 +76,30 @@ export const metadataState: {
   routeShield: null,
 };
 
+const compatibilityRevisionListeners = new Set<() => void>();
+
+export const compatibilityRevisionSnapshot = () =>
+  metadataState.compatibilityRevision;
+
+export const subscribeCompatibilityRevision = (listener: () => void): Unpatch => {
+  compatibilityRevisionListeners.add(listener);
+  return () => {
+    compatibilityRevisionListeners.delete(listener);
+  };
+};
+
+export const notifyCompatibilityRevision = () => {
+  const revision = ++metadataState.compatibilityRevision;
+  compatibilityRevisionListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // One failed card update must not block other compatibility indicators.
+    }
+  });
+  return revision;
+};
+
 export const cleanTitle = (value: string) =>
   String(value || "")
     .replace(/[\u2122\u00ae\u00a9]/g, "")

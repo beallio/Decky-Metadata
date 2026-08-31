@@ -25,6 +25,7 @@ import {
   historyStateFromArgs,
   isNonSteamApp,
   metadataCache,
+  notifyCompatibilityRevision,
   patchInstallStatus,
   patchMethod,
   rewriteSteamLinkToMatchedApp,
@@ -33,8 +34,13 @@ import {
 } from "./core";
 
 let ensureMetadataCacheFn: () => Promise<void> = async () => undefined;
-export const configureActivityMetadataLoader = (ensureMetadataCache: () => Promise<void>) => {
+let applyMetadataFn: (appId: number) => boolean = () => false;
+export const configureActivityMetadataLoader = (
+  ensureMetadataCache: () => Promise<void>,
+  applyMetadata: (appId: number) => boolean,
+) => {
   ensureMetadataCacheFn = ensureMetadataCache;
+  applyMetadataFn = applyMetadata;
 };
 
 const activityRefreshGate = createActivityRefreshGate();
@@ -53,7 +59,14 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
       const newsKey = (metadata?: MetadataData | null) =>
         JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
       const changed = newsKey(previous) !== newsKey(refreshed);
+      const compatibilityChanged =
+        previous?.deck_compat_override !== refreshed.deck_compat_override ||
+        previous?.deck_compat_category !== refreshed.deck_compat_category;
       metadataCache[String(appId)] = refreshed;
+      if (compatibilityChanged) {
+        applyMetadataFn(appId);
+        notifyCompatibilityRevision();
+      }
       if (changed) await refreshDeckyNativeActivityForApp(appId);
     } catch (error) {
       log.info("activity", "per-app news refresh failed", error);
