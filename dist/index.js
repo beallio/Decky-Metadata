@@ -1252,6 +1252,26 @@ const metadataState = {
     lastObservedGameDetailAppId: 0,
     routeShield: null,
 };
+const compatibilityRevisionListeners = new Set();
+const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
+const subscribeCompatibilityRevision = (listener) => {
+    compatibilityRevisionListeners.add(listener);
+    return () => {
+        compatibilityRevisionListeners.delete(listener);
+    };
+};
+const notifyCompatibilityRevision = () => {
+    const revision = ++metadataState.compatibilityRevision;
+    compatibilityRevisionListeners.forEach((listener) => {
+        try {
+            listener();
+        }
+        catch {
+            // One failed card update must not block other compatibility indicators.
+        }
+    });
+    return revision;
+};
 const cleanTitle = (value) => String(value || "")
     .replace(/[\u2122\u00ae\u00a9]/g, "")
     .replace(/\s+/g, " ")
@@ -1919,18 +1939,21 @@ const restoreAllCompatibilityBaselines = () => {
     });
 };
 /**
- * Request one normal Steam route render after a user compatibility change.
- * This keeps the existing overview object in place, so matched Game Info data
- * is retained while both the library card and an open Game Info route observe
- * the new packed category.
+ * Force one render of an already-mounted Library surface after the indicator
+ * patch installs. Cards rendered by the old renderer then acquire the owned,
+ * revision-subscribed badge slot without replacing their overview objects.
  */
-const refreshCompatibilitySurfaces = (appId) => {
-    const revision = ++metadataState.compatibilityRevision;
+const refreshCompatibilitySurfaces = () => {
+    const revision = notifyCompatibilityRevision();
     try {
         const history = globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
         const location = history?.location;
         const pathname = location?.pathname;
-        if (typeof history?.replace === "function" && typeof pathname === "string" && pathname) {
+        const isLibrarySurface = typeof pathname === "string" && /(?:^|\/)library(?:\/|$)/.test(pathname);
+        if (typeof history?.replace === "function" &&
+            typeof pathname === "string" &&
+            pathname &&
+            isLibrarySurface) {
             const path = `${pathname}${location.search || ""}${location.hash || ""}`;
             history.replace(path, {
                 ...(location.state || {}),
@@ -1938,15 +1961,14 @@ const refreshCompatibilitySurfaces = (appId) => {
             });
         }
     }
-    catch (_error) {
+    catch {
         // Do not interrupt a user action when a Steam client does not expose history.replace.
     }
     return revision;
 };
 const applyCompatibilityCategory = (appId, overview, category) => {
     if (category === null) {
-        restoreCompatibilityBaseline(appId, overview);
-        return;
+        return restoreCompatibilityBaseline(appId, overview);
     }
     try {
         const key = String(appId);
@@ -1956,11 +1978,15 @@ const applyCompatibilityCategory = (appId, overview, category) => {
         }
         // bits 0-1 = steam_deck_compat_category; bits 2-3 = Steam's verified-filter copy.
         // Keep bits >= 4 from Steam's original packed state.
-        overview.steam_hw_compat_category_packed =
-            (previousPacked & -16) | category | (category << 2);
+        const nextPacked = (previousPacked & -16) | category | (category << 2);
+        if (nextPacked === previousPacked)
+            return false;
+        overview.steam_hw_compat_category_packed = nextPacked;
+        return packedCompatibilityValue(overview) === nextPacked;
     }
-    catch (_error) {
+    catch {
         // Steam objects are not always writable during early bootstrap.
+        return false;
     }
 };
 const refreshMetadataCache = async () => {
@@ -1974,6 +2000,7 @@ const refreshMetadataCache = async () => {
     Object.assign(metadataCache, all || {});
     metadataState.metadataLoaded = true;
     affectedAppIds.forEach((key) => applyMetadata(Number(key)));
+    notifyCompatibilityRevision();
 };
 const ensureMetadataCache = async () => {
     if (metadataState.metadataLoaded)
@@ -1993,7 +2020,12 @@ const startMetadataBootstrap = () => {
             return;
         try {
             await ensureMetadataCache();
-            Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
+            let compatibilityChanged = false;
+            Object.keys(metadataCache).forEach((key) => {
+                compatibilityChanged = applyMetadata(Number(key)) || compatibilityChanged;
+            });
+            if (compatibilityChanged)
+                notifyCompatibilityRevision();
         }
         catch (error) {
             warn("bridge", "metadata bootstrap failed", error);
@@ -2011,17 +2043,17 @@ const startMetadataBootstrap = () => {
 const applyMetadata = (appId) => {
     const overview = getNativeOverview(appId);
     if (!isNativeNonSteamShortcut(overview))
-        return;
+        return false;
     const metadata = metadataCache[String(appId)];
     if (!metadata) {
-        restoreCompatibilityBaseline(appId, overview);
-        return;
+        return restoreCompatibilityBaseline(appId, overview);
     }
+    let compatibilityChanged = false;
     try {
         if (typeof metadata.rating === "number") {
             overview.metacritic_score = metadata.rating;
         }
-        applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+        compatibilityChanged = applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
         if (!overview.m_setStoreCategories) {
             overview.m_setStoreCategories = new Set();
         }
@@ -2029,12 +2061,12 @@ const applyMetadata = (appId) => {
             overview.m_setStoreCategories.add(Number(category));
         });
     }
-    catch (_error) {
+    catch {
         // Steam objects are not always writable during early bootstrap.
     }
     const appData = appDetailsStore?.GetAppData?.(appId);
     if (!appData)
-        return;
+        return compatibilityChanged;
     ensureDetailsOverviewSafeFields(appId);
     const screenshots = steamScreenshotsFromMetadata(appId, metadata);
     reassertMatchedAppData(appData, metadata, screenshots);
@@ -2071,6 +2103,7 @@ const applyMetadata = (appId) => {
             // Cache writes can fail if the page has not finished creating app data.
         }
     }
+    return compatibilityChanged;
 };
 const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots || [])
     .filter((image) => image?.url)
@@ -2103,7 +2136,7 @@ const tryFetchMetadataForApp = async (appId) => {
         if (metadata) {
             metadataCache[String(appId)] = metadata;
             applyMetadata(appId);
-            window.dispatchEvent(new Event("decky-metadata:updated"));
+            notifyCompatibilityRevision();
         }
     }
     finally {
@@ -2132,7 +2165,7 @@ const tryEnrichScreenshotsForApp = async (appId) => {
             });
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
-            window.dispatchEvent(new Event("decky-metadata:updated"));
+            notifyCompatibilityRevision();
         }
     }
     catch (error) {
@@ -2805,8 +2838,10 @@ const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) =>
 };
 
 let ensureMetadataCacheFn = async () => undefined;
-const configureActivityMetadataLoader = (ensureMetadataCache) => {
+let applyMetadataFn = () => false;
+const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => {
     ensureMetadataCacheFn = ensureMetadataCache;
+    applyMetadataFn = applyMetadata;
 };
 const activityRefreshGate = createActivityRefreshGate();
 const maybeRefreshSteamNewsForApp = (appId) => {
@@ -2825,7 +2860,13 @@ const maybeRefreshSteamNewsForApp = (appId) => {
                 return;
             const newsKey = (metadata) => JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
             const changed = newsKey(previous) !== newsKey(refreshed);
+            const compatibilityChanged = previous?.deck_compat_override !== refreshed.deck_compat_override ||
+                previous?.deck_compat_category !== refreshed.deck_compat_category;
             metadataCache[String(appId)] = refreshed;
+            if (compatibilityChanged) {
+                applyMetadataFn(appId);
+                notifyCompatibilityRevision();
+            }
             if (changed)
                 await refreshDeckyNativeActivityForApp(appId);
         }
@@ -4175,15 +4216,14 @@ const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadat
     return category === null || category === 0 ? null : category;
 };
 const childrenOf = (element) => {
-    const children = element?.props?.children;
+    const children = element.props.children;
     return Array.isArray(children) ? children : [children];
 };
 const hasIndicator = (children, indicator, key) => children.some((child) => SP_REACT.isValidElement(child) && (child.type === indicator || child.key === key));
-const decorateCarouselCompatibility = (output, indicator, className, category, overview) => {
-    if (!category || !SP_REACT.isValidElement(output))
+function decorateCarouselCompatibility(output, indicator, className, overview) {
+    if (!SP_REACT.isValidElement(output))
         return output;
-    const element = output;
-    const children = childrenOf(element);
+    const children = childrenOf(output);
     if (hasIndicator(children, indicator, HOME_INDICATOR_KEY))
         return output;
     // Steam's GameCapsule places compatibility after its in-library marker. A
@@ -4194,23 +4234,24 @@ const decorateCarouselCompatibility = (output, indicator, className, category, o
     const remainingChildren = nativeCompatibilitySlot === false
         ? children.slice(3)
         : children.slice(2);
-    return SP_REACT.cloneElement(element, {
+    const decorated = SP_REACT.cloneElement(output, {
         children: [
             ...children.slice(0, 2),
             SP_REACT.createElement(indicator, { key: HOME_INDICATOR_KEY, display: DECK_DISPLAY, overview, className }),
             ...remainingChildren,
         ],
     });
-};
+    // `isValidElement` proves T is this React element while preserving callers' concrete type.
+    return decorated;
+}
 const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassName, overview) => {
     if (!SP_REACT.isValidElement(node))
         return node;
-    const element = node;
-    if (element.props?.className === iconRowClassName) {
-        const children = childrenOf(element);
+    if (node.props.className === iconRowClassName) {
+        const children = childrenOf(node);
         if (hasIndicator(children, indicator, GRID_INDICATOR_KEY))
             return node;
-        return SP_REACT.cloneElement(element, {
+        return SP_REACT.cloneElement(node, {
             children: [
                 ...children,
                 SP_REACT.createElement(indicator, {
@@ -4222,22 +4263,21 @@ const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassNa
             ],
         });
     }
-    const originalChildren = element.props?.children;
+    const originalChildren = node.props.children;
     if (originalChildren === undefined)
         return node;
     const children = childrenOf(node);
     const decoratedChildren = children.map((child) => decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview));
     if (decoratedChildren.every((child, index) => child === children[index]))
         return node;
-    return SP_REACT.cloneElement(element, {
+    return SP_REACT.cloneElement(node, {
         children: Array.isArray(originalChildren) ? decoratedChildren : decoratedChildren[0],
     });
 };
-const decorateGridCompatibility = (output, indicator, iconRowClassName, indicatorClassName, category, overview) => {
-    if (!category || !SP_REACT.isValidElement(output))
-        return output;
-    return decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
-};
+function decorateGridCompatibility(output, indicator, iconRowClassName, indicatorClassName, overview) {
+    const decorated = decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
+    return decorated;
+}
 const resolveTargets = (dependencies) => {
     const findChild = (predicate) => {
         try {
@@ -4330,6 +4370,16 @@ const defaultDependencies = {
     getOverview,
     metadataForApp: (appId) => metadataCache[String(appId)],
     isNativeNonSteamShortcut,
+    refreshCompatibilitySurfaces,
+    useCompatibilityRevision: (subscribe) => {
+        const [, setRevision] = SP_REACT.useState(compatibilityRevisionSnapshot);
+        SP_REACT.useEffect(() => {
+            const update = () => setRevision(compatibilityRevisionSnapshot());
+            const unsubscribe = subscribe(update);
+            update();
+            return unsubscribe;
+        }, [subscribe]);
+    },
 };
 const reportInstalled = (resolutionAttempts) => {
     try {
@@ -4372,6 +4422,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     let homeUnpatch;
     let gridUnpatch;
     let retryId;
+    const indicatorUnsubscribers = new Set();
     let resolutionAttempts = 0;
     let installed = false;
     let cleaned = false;
@@ -4388,6 +4439,15 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         const gridCleanup = gridUnpatch;
         homeUnpatch = undefined;
         gridUnpatch = undefined;
+        indicatorUnsubscribers.forEach((unsubscribe) => {
+            try {
+                unsubscribe();
+            }
+            catch {
+                // Continue releasing the remaining mounted indicator subscriptions.
+            }
+        });
+        indicatorUnsubscribers.clear();
         try {
             homeCleanup?.();
         }
@@ -4404,6 +4464,23 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     // Register before resolving lazy Library modules so dismount always cancels
     // an outstanding retry, even when no renderer has been patched yet.
     unpatchers.push(cleanup);
+    const subscribeIndicator = (listener) => {
+        if (!active)
+            return () => undefined;
+        let subscribed = true;
+        const unsubscribe = subscribeCompatibilityRevision(() => {
+            if (active)
+                listener();
+        });
+        indicatorUnsubscribers.add(unsubscribe);
+        return () => {
+            if (!subscribed)
+                return;
+            subscribed = false;
+            indicatorUnsubscribers.delete(unsubscribe);
+            unsubscribe();
+        };
+    };
     const installWhenTargetsResolve = () => {
         if (!active || installed)
             return;
@@ -4426,15 +4503,32 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             }
             return;
         }
-        const decorateForApp = (appId, output, decorate, renderedOverview) => {
-            const overview = renderedOverview ?? dependencies.getOverview(appId);
+        const ReactiveCompatibilityIndicator = (props) => {
+            dependencies.useCompatibilityRevision(subscribeIndicator);
+            if (!active)
+                return null;
+            const appId = Number(props.overview?.appid);
             const category = resolveLibraryCompatibilityIndicator({
                 renderedAppId: appId,
-                overview,
+                overview: props.overview,
                 metadata: dependencies.metadataForApp(appId),
                 isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
             });
-            return decorate(output, category, overview);
+            if (!category)
+                return null;
+            return SP_REACT.createElement(targets.indicator, {
+                display: DECK_DISPLAY,
+                overview: props.overview,
+                className: props.className,
+            });
+        };
+        const decorateForApp = (appId, output, decorate, renderedOverview) => {
+            const overview = renderedOverview ?? dependencies.getOverview(appId);
+            if (Number(overview?.appid) !== Number(appId) ||
+                !dependencies.isNativeNonSteamShortcut(overview)) {
+                return output;
+            }
+            return decorate(output, overview);
         };
         const carouselWrapper = (props) => {
             const output = targets.carousel(props);
@@ -4444,7 +4538,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             // The top-level `appid` remains a supported fallback for the alternate
             // renderer shape used by older clients.
             const appId = Number(props?.appid ?? props?.app?.appid);
-            return decorateForApp(appId, output, (card, category, overview) => decorateCarouselCompatibility(card, targets.indicator, targets.homeClassName, category, overview));
+            return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
         };
         try {
             homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
@@ -4463,7 +4557,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 cleanup();
                 return;
             }
-            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, category, overview) => decorateGridCompatibility(card, targets.indicator, targets.gridIconsClassName, targets.gridIndicatorClassName, category, overview), args[0]?.app));
+            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app));
             if (typeof gridUnpatch !== "function") {
                 cleanup();
                 return;
@@ -4475,6 +4569,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         installed = true;
         reportInstalled(resolutionAttempts);
+        dependencies.refreshCompatibilitySurfaces();
     };
     installWhenTargetsResolve();
 };
@@ -5740,7 +5835,8 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             }
                         }
                         void ensureMetadataCache().then(() => {
-                            applyMetadata(appId);
+                            if (applyMetadata(appId))
+                                notifyCompatibilityRevision();
                             void tryEnrichScreenshotsForApp(appId);
                             void tryFetchMetadataForApp(appId);
                         });
@@ -5768,7 +5864,8 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     if (appId && isNonSteamApp(overview)) {
                         metadataState.lastObservedGameDetailAppId = appId;
                         void ensureMetadataCache().then(() => {
-                            applyMetadata(appId);
+                            if (applyMetadata(appId))
+                                notifyCompatibilityRevision();
                         });
                         void refreshDeckyNativeActivityForApp(appId);
                         return ret;
@@ -6799,7 +6896,7 @@ const reportControllerLayoutFailure = (failure) => {
     void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
 };
 const installSteamPatches = () => {
-    configureActivityMetadataLoader(ensureMetadataCache);
+    configureActivityMetadataLoader(ensureMetadataCache, applyMetadata);
     const unpatchers = [];
     let patchesCancelled = false;
     let installStarted = false;
@@ -7781,6 +7878,7 @@ const MetadataPage = () => {
                 setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
             }
             applyMetadata(appId);
+            refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
         }
         catch (error) {
@@ -7810,6 +7908,7 @@ const MetadataPage = () => {
                 return;
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
+            refreshCompatibilitySurfaces();
             setFormMetadata(saved);
             setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
             toastSuccess("Saved", "Metadata saved");

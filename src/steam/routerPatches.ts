@@ -14,6 +14,7 @@ import {
   isNonSteamApp,
   metadataCache,
   metadataState,
+  notifyCompatibilityRevision,
   overviewFromReactTree,
   patchMethod,
   safeAfterPatch,
@@ -32,7 +33,7 @@ import { resolveQuickLinkResources } from "./quickLinkResources";
 
 type RouterPatchDeps = {
   ensureMetadataCache: () => Promise<void>;
-  applyMetadata: (appId: number) => void;
+  applyMetadata: (appId: number) => boolean;
   tryEnrichScreenshotsForApp: (appId: number) => Promise<void>;
   tryFetchMetadataForApp: (appId: number) => Promise<void>;
   refreshDeckyNativeActivityForApp: (appId: number) => Promise<any>;
@@ -257,7 +258,7 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
               }
             }
             void ensureMetadataCache().then(() => {
-              applyMetadata(appId);
+              if (applyMetadata(appId)) notifyCompatibilityRevision();
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
             });
@@ -286,7 +287,7 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           if (appId && isNonSteamApp(overview)) {
             metadataState.lastObservedGameDetailAppId = appId;
             void ensureMetadataCache().then(() => {
-              applyMetadata(appId);
+              if (applyMetadata(appId)) notifyCompatibilityRevision();
             });
             void refreshDeckyNativeActivityForApp(appId);
             return ret;

@@ -18,6 +18,7 @@ import {
   isNativeNonSteamShortcut,
   isNonSteamAppWithoutPatchedMethod,
   metadataCache,
+  notifyCompatibilityRevision,
   patchMethod,
   safeAfterPatch,
   consumeRouteShield,
@@ -185,25 +186,31 @@ export const restoreAllCompatibilityBaselines = () => {
 };
 
 /**
- * Request one normal Steam route render after a user compatibility change.
- * This keeps the existing overview object in place, so matched Game Info data
- * is retained while both the library card and an open Game Info route observe
- * the new packed category.
+ * Force one render of an already-mounted Library surface after the indicator
+ * patch installs. Cards rendered by the old renderer then acquire the owned,
+ * revision-subscribed badge slot without replacing their overview objects.
  */
-export const refreshCompatibilitySurfaces = (appId: number) => {
-  const revision = ++metadataState.compatibilityRevision;
+export const refreshCompatibilitySurfaces = () => {
+  const revision = notifyCompatibilityRevision();
   try {
     const history = (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
     const location = history?.location;
     const pathname = location?.pathname;
-    if (typeof history?.replace === "function" && typeof pathname === "string" && pathname) {
+    const isLibrarySurface =
+      typeof pathname === "string" && /(?:^|\/)library(?:\/|$)/.test(pathname);
+    if (
+      typeof history?.replace === "function" &&
+      typeof pathname === "string" &&
+      pathname &&
+      isLibrarySurface
+    ) {
       const path = `${pathname}${location.search || ""}${location.hash || ""}`;
       history.replace(path, {
         ...(location.state || {}),
         deckyMetadataCompatibilityRevision: revision,
       });
     }
-  } catch (_error) {
+  } catch {
     // Do not interrupt a user action when a Steam client does not expose history.replace.
   }
   return revision;
@@ -215,8 +222,7 @@ const applyCompatibilityCategory = (
   category: DeckCompatibilityCategory | null
 ) => {
   if (category === null) {
-    restoreCompatibilityBaseline(appId, overview);
-    return;
+    return restoreCompatibilityBaseline(appId, overview);
   }
   try {
     const key = String(appId);
@@ -226,10 +232,14 @@ const applyCompatibilityCategory = (
     }
     // bits 0-1 = steam_deck_compat_category; bits 2-3 = Steam's verified-filter copy.
     // Keep bits >= 4 from Steam's original packed state.
-    overview.steam_hw_compat_category_packed =
+    const nextPacked =
       (previousPacked & ~0xf) | category | (category << 2);
-  } catch (_error) {
+    if (nextPacked === previousPacked) return false;
+    overview.steam_hw_compat_category_packed = nextPacked;
+    return packedCompatibilityValue(overview) === nextPacked;
+  } catch {
     // Steam objects are not always writable during early bootstrap.
+    return false;
   }
 };
 
@@ -244,6 +254,7 @@ export const refreshMetadataCache = async () => {
   Object.assign(metadataCache, all || {});
   metadataState.metadataLoaded = true;
   affectedAppIds.forEach((key) => applyMetadata(Number(key)));
+  notifyCompatibilityRevision();
 };
 
 export const ensureMetadataCache = async () => {
@@ -263,7 +274,11 @@ export const startMetadataBootstrap = (): Unpatch => {
     if (cancelled) return;
     try {
       await ensureMetadataCache();
-      Object.keys(metadataCache).forEach((key) => applyMetadata(Number(key)));
+      let compatibilityChanged = false;
+      Object.keys(metadataCache).forEach((key) => {
+        compatibilityChanged = applyMetadata(Number(key)) || compatibilityChanged;
+      });
+      if (compatibilityChanged) notifyCompatibilityRevision();
     } catch (error) {
       log.warn("bridge", "metadata bootstrap failed", error);
     }
@@ -280,30 +295,34 @@ export const startMetadataBootstrap = (): Unpatch => {
 
 export const applyMetadata = (appId: number) => {
   const overview = getNativeOverview(appId);
-  if (!isNativeNonSteamShortcut(overview)) return;
+  if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
   if (!metadata) {
-    restoreCompatibilityBaseline(appId, overview);
-    return;
+    return restoreCompatibilityBaseline(appId, overview);
   }
 
+  let compatibilityChanged = false;
   try {
     if (typeof metadata.rating === "number") {
       overview.metacritic_score = metadata.rating;
     }
-    applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+    compatibilityChanged = applyCompatibilityCategory(
+      appId,
+      overview,
+      effectiveCompatibilityCategory(metadata),
+    );
     if (!overview.m_setStoreCategories) {
       overview.m_setStoreCategories = new Set<number>();
     }
     metadata.store_categories?.forEach((category) => {
       overview.m_setStoreCategories.add(Number(category));
     });
-  } catch (_error) {
+  } catch {
     // Steam objects are not always writable during early bootstrap.
   }
 
   const appData = appDetailsStore?.GetAppData?.(appId);
-  if (!appData) return;
+  if (!appData) return compatibilityChanged;
   ensureDetailsOverviewSafeFields(appId);
 
   const screenshots = steamScreenshotsFromMetadata(appId, metadata);
@@ -357,6 +376,7 @@ export const applyMetadata = (appId: number) => {
       // Cache writes can fail if the page has not finished creating app data.
     }
   }
+  return compatibilityChanged;
 };
 
 const steamScreenshotsFromMetadata = (appId: number, metadata: MetadataData) =>
@@ -390,7 +410,7 @@ export const tryFetchMetadataForApp = async (appId: number) => {
     if (metadata) {
       metadataCache[String(appId)] = metadata;
       applyMetadata(appId);
-      window.dispatchEvent(new Event("decky-metadata:updated"));
+      notifyCompatibilityRevision();
     }
   } finally {
     metadataState.loadingMetadata.delete(appId);
@@ -420,7 +440,7 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
       });
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
-      window.dispatchEvent(new Event("decky-metadata:updated"));
+      notifyCompatibilityRevision();
     }
   } catch (error) {
     log.warn("bridge", "screenshot enrichment failed", error);

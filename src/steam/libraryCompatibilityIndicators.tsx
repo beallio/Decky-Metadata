@@ -1,9 +1,21 @@
 import { findModuleChild } from "@decky/ui";
-import { cloneElement, createElement, isValidElement } from "react";
+import { cloneElement, createElement, isValidElement, useEffect, useState } from "react";
+import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
-import { effectiveCompatibilityCategory } from "./metadataPatch";
-import { getOverview, isNativeNonSteamShortcut, metadataCache, safeAfterPatch, Unpatch } from "./core";
+import {
+  effectiveCompatibilityCategory,
+  refreshCompatibilitySurfaces,
+} from "./metadataPatch";
+import {
+  compatibilityRevisionSnapshot,
+  getOverview,
+  isNativeNonSteamShortcut,
+  metadataCache,
+  safeAfterPatch,
+  subscribeCompatibilityRevision,
+  Unpatch,
+} from "./core";
 
 const DECK_DISPLAY = 1;
 
@@ -34,6 +46,7 @@ export type LibraryCompatibilityIndicatorDependencies = {
   findModulesBySource: ModuleSourceCandidatesFinder;
   patchHomeRenderer: (module: any, handler: (args: any[], output: any) => any) => Unpatch;
   patchGridRenderer: (component: any, handler: (args: any[], output: any) => any) => Unpatch;
+  refreshCompatibilitySurfaces: () => void;
   scheduleRetry: (callback: () => void, delayMs: number) => number;
   cancelRetry: (retryId: number) => void;
   retryIntervalMs: number;
@@ -41,6 +54,7 @@ export type LibraryCompatibilityIndicatorDependencies = {
   getOverview: (appId: number) => any;
   metadataForApp: (appId: number) => MetadataData | undefined;
   isNativeNonSteamShortcut: (overview: any) => boolean;
+  useCompatibilityRevision: (subscribe: (listener: () => void) => Unpatch) => void;
 };
 
 type LibraryCompatibilityTargets = {
@@ -120,24 +134,39 @@ export const resolveLibraryCompatibilityIndicator = ({
   return category === null || category === 0 ? null : category;
 };
 
-const childrenOf = (element: any): any[] => {
-  const children = element?.props?.children;
+type CompatibilityCardProps = {
+  children?: ReactNode;
+  className?: string;
+};
+
+const childrenOf = (element: ReactElement<CompatibilityCardProps>): ReactNode[] => {
+  const children = element.props.children;
   return Array.isArray(children) ? children : [children];
 };
 
-const hasIndicator = (children: any[], indicator: any, key: string) =>
+const hasIndicator = (children: ReactNode[], indicator: ElementType, key: string) =>
   children.some((child) => isValidElement(child) && (child.type === indicator || child.key === key));
 
-export const decorateCarouselCompatibility = (
-  output: any,
-  indicator: any,
+export function decorateCarouselCompatibility(
+  output: ReactElement<CompatibilityCardProps>,
+  indicator: ElementType,
   className: string,
-  category: number | null,
-  overview?: any,
-) => {
-  if (!category || !isValidElement(output)) return output;
-  const element = output as any;
-  const children = childrenOf(element);
+  overview?: unknown,
+): ReactElement<CompatibilityCardProps>;
+export function decorateCarouselCompatibility<T>(
+  output: T,
+  indicator: ElementType,
+  className: string,
+  overview?: unknown,
+): T;
+export function decorateCarouselCompatibility<T>(
+  output: T,
+  indicator: ElementType,
+  className: string,
+  overview?: unknown,
+): T {
+  if (!isValidElement<CompatibilityCardProps>(output)) return output;
+  const children = childrenOf(output);
   if (hasIndicator(children, indicator, HOME_INDICATOR_KEY)) return output;
 
   // Steam's GameCapsule places compatibility after its in-library marker. A
@@ -148,28 +177,29 @@ export const decorateCarouselCompatibility = (
   const remainingChildren = nativeCompatibilitySlot === false
     ? children.slice(3)
     : children.slice(2);
-  return cloneElement(element, {
+  const decorated = cloneElement(output, {
     children: [
       ...children.slice(0, 2),
       createElement(indicator, { key: HOME_INDICATOR_KEY, display: DECK_DISPLAY, overview, className }),
       ...remainingChildren,
     ],
   });
-};
+  // `isValidElement` proves T is this React element while preserving callers' concrete type.
+  return decorated as unknown as T;
+}
 
 const decorateGridIconRow = (
-  node: any,
-  indicator: any,
+  node: ReactNode,
+  indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
-  overview: any,
-): any => {
-  if (!isValidElement(node)) return node;
-  const element = node as any;
-  if (element.props?.className === iconRowClassName) {
-    const children = childrenOf(element);
+  overview: unknown,
+): ReactNode => {
+  if (!isValidElement<CompatibilityCardProps>(node)) return node;
+  if (node.props.className === iconRowClassName) {
+    const children = childrenOf(node);
     if (hasIndicator(children, indicator, GRID_INDICATOR_KEY)) return node;
-    return cloneElement(element, {
+    return cloneElement(node, {
       children: [
         ...children,
         createElement(indicator, {
@@ -182,29 +212,48 @@ const decorateGridIconRow = (
     });
   }
 
-  const originalChildren = element.props?.children;
+  const originalChildren = node.props.children;
   if (originalChildren === undefined) return node;
   const children = childrenOf(node);
   const decoratedChildren = children.map((child) =>
     decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview)
   );
   if (decoratedChildren.every((child, index) => child === children[index])) return node;
-  return cloneElement(element, {
+  return cloneElement(node, {
     children: Array.isArray(originalChildren) ? decoratedChildren : decoratedChildren[0],
   });
 };
 
-export const decorateGridCompatibility = (
-  output: any,
-  indicator: any,
+export function decorateGridCompatibility(
+  output: ReactElement<CompatibilityCardProps>,
+  indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
-  category: number | null,
-  overview?: any,
-) => {
-  if (!category || !isValidElement(output)) return output;
-  return decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
-};
+  overview?: unknown,
+): ReactElement<CompatibilityCardProps>;
+export function decorateGridCompatibility<T>(
+  output: T,
+  indicator: ElementType,
+  iconRowClassName: string,
+  indicatorClassName: string,
+  overview?: unknown,
+): T;
+export function decorateGridCompatibility<T>(
+  output: T,
+  indicator: ElementType,
+  iconRowClassName: string,
+  indicatorClassName: string,
+  overview?: unknown,
+): T {
+  const decorated = decorateGridIconRow(
+    output as ReactNode,
+    indicator,
+    iconRowClassName,
+    indicatorClassName,
+    overview,
+  );
+  return decorated as unknown as T;
+}
 
 const resolveTargets = (
   dependencies: Pick<
@@ -319,6 +368,16 @@ const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
   getOverview,
   metadataForApp: (appId) => metadataCache[String(appId)],
   isNativeNonSteamShortcut,
+  refreshCompatibilitySurfaces,
+  useCompatibilityRevision: (subscribe) => {
+    const [, setRevision] = useState(compatibilityRevisionSnapshot);
+    useEffect(() => {
+      const update = () => setRevision(compatibilityRevisionSnapshot());
+      const unsubscribe = subscribe(update);
+      update();
+      return unsubscribe;
+    }, [subscribe]);
+  },
 };
 
 const reportInstalled = (resolutionAttempts: number) => {
@@ -369,6 +428,7 @@ export const installLibraryCompatibilityIndicators = (
   let homeUnpatch: Unpatch | undefined;
   let gridUnpatch: Unpatch | undefined;
   let retryId: number | undefined;
+  const indicatorUnsubscribers = new Set<Unpatch>();
   let resolutionAttempts = 0;
   let installed = false;
   let cleaned = false;
@@ -384,6 +444,14 @@ export const installLibraryCompatibilityIndicators = (
     const gridCleanup = gridUnpatch;
     homeUnpatch = undefined;
     gridUnpatch = undefined;
+    indicatorUnsubscribers.forEach((unsubscribe) => {
+      try {
+        unsubscribe();
+      } catch {
+        // Continue releasing the remaining mounted indicator subscriptions.
+      }
+    });
+    indicatorUnsubscribers.clear();
     try {
       homeCleanup?.();
     } catch {
@@ -399,6 +467,20 @@ export const installLibraryCompatibilityIndicators = (
   // an outstanding retry, even when no renderer has been patched yet.
   unpatchers.push(cleanup);
 
+  const subscribeIndicator = (listener: () => void): Unpatch => {
+    if (!active) return () => undefined;
+    let subscribed = true;
+    const unsubscribe = subscribeCompatibilityRevision(() => {
+      if (active) listener();
+    });
+    indicatorUnsubscribers.add(unsubscribe);
+    return () => {
+      if (!subscribed) return;
+      subscribed = false;
+      indicatorUnsubscribers.delete(unsubscribe);
+      unsubscribe();
+    };
+  };
   const installWhenTargetsResolve = () => {
     if (!active || installed) return;
     resolutionAttempts += 1;
@@ -420,20 +502,41 @@ export const installLibraryCompatibilityIndicators = (
       return;
     }
 
-    const decorateForApp = (
-      appId: number,
-      output: any,
-      decorate: (output: any, category: number | null, overview: any) => any,
-      renderedOverview?: any,
-    ) => {
-      const overview = renderedOverview ?? dependencies.getOverview(appId);
+    const ReactiveCompatibilityIndicator = (props: {
+      overview?: { appid?: unknown };
+      className?: string;
+    }) => {
+      dependencies.useCompatibilityRevision(subscribeIndicator);
+      if (!active) return null;
+      const appId = Number(props.overview?.appid);
       const category = resolveLibraryCompatibilityIndicator({
         renderedAppId: appId,
-        overview,
+        overview: props.overview,
         metadata: dependencies.metadataForApp(appId),
         isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
       });
-      return decorate(output, category, overview);
+      if (!category) return null;
+      return createElement(targets.indicator, {
+        display: DECK_DISPLAY,
+        overview: props.overview,
+        className: props.className,
+      });
+    };
+
+    const decorateForApp = (
+      appId: number,
+      output: unknown,
+      decorate: (output: unknown, overview: unknown) => unknown,
+      renderedOverview?: { appid?: unknown },
+    ) => {
+      const overview = renderedOverview ?? dependencies.getOverview(appId);
+      if (
+        Number(overview?.appid) !== Number(appId) ||
+        !dependencies.isNativeNonSteamShortcut(overview)
+      ) {
+        return output;
+      }
+      return decorate(output, overview);
     };
 
     const carouselWrapper = (props: any) => {
@@ -446,11 +549,10 @@ export const installLibraryCompatibilityIndicators = (
       return decorateForApp(
         appId,
         output,
-        (card, category, overview) => decorateCarouselCompatibility(
+        (card, overview) => decorateCarouselCompatibility(
           card,
-          targets.indicator,
+          ReactiveCompatibilityIndicator,
           targets.homeClassName,
-          category,
           overview,
         ),
       );
@@ -480,12 +582,11 @@ export const installLibraryCompatibilityIndicators = (
         (args, output) => decorateForApp(
           Number(args[0]?.app?.appid),
           output,
-          (card, category, overview) => decorateGridCompatibility(
+          (card, overview) => decorateGridCompatibility(
             card,
-            targets.indicator,
+            ReactiveCompatibilityIndicator,
             targets.gridIconsClassName,
             targets.gridIndicatorClassName,
-            category,
             overview,
           ),
           args[0]?.app,
@@ -501,6 +602,7 @@ export const installLibraryCompatibilityIndicators = (
     }
     installed = true;
     reportInstalled(resolutionAttempts);
+    dependencies.refreshCompatibilitySurfaces();
   };
 
   installWhenTargetsResolve();
