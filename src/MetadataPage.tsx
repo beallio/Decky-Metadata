@@ -232,7 +232,7 @@ export const MetadataPage = () => {
       metadataCache[String(appId)] = saved;
       setFormMetadata(saved);
       applyMetadata(appId);
-      refreshCompatibilitySurfaces(appId);
+      refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
       toastError("Save failed", String(error));
@@ -270,6 +270,7 @@ export const MetadataPage = () => {
         setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
       }
       applyMetadata(appId);
+      refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
       toastError("Save failed", String(error));
@@ -296,6 +297,7 @@ export const MetadataPage = () => {
       if (!saved) return;
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
+      refreshCompatibilitySurfaces();
       setFormMetadata(saved);
       setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
       toastSuccess("Saved", "Metadata saved");
@@ -313,7 +315,7 @@ export const MetadataPage = () => {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
       applyMetadata(appId);
-      refreshCompatibilitySurfaces(appId);
+      refreshCompatibilitySurfaces();
       setFormMetadata(metadataTemplate(appName(appId)));
       toastSuccess("Removed", "Metadata removed");
     } catch (error) {

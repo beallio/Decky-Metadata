@@ -148,7 +148,7 @@ describe("MetadataPage compatibility status", () => {
     );
     expect(steam.metadataCache["100"]).toBe(saved);
     expect(steam.applyMetadata).toHaveBeenCalledWith(100);
-    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith(100);
+    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
     expect(dropdown(renderPage()).props.selectedOption).toBe(0);
   });

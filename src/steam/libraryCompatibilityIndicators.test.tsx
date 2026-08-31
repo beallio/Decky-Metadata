@@ -1,5 +1,30 @@
-import { createElement, Fragment } from "react";
+import * as ReactModule from "react";
 import { describe, expect, it, vi } from "vitest";
+
+const { createElement, Fragment } = ReactModule;
+
+const reactHooks = vi.hoisted(() => ({
+  effects: [] as Array<() => void | (() => void)>,
+  effectDependencies: [] as Array<readonly unknown[] | undefined>,
+  setRevision: vi.fn(),
+  useEffect: vi.fn((
+    effect: () => void | (() => void),
+    dependencies?: readonly unknown[],
+  ) => {
+    reactHooks.effects.push(effect);
+    reactHooks.effectDependencies.push(dependencies);
+  }),
+  useState: vi.fn((initial: number | (() => number)) => [
+    typeof initial === "function" ? initial() : initial,
+    reactHooks.setRevision,
+  ] as const),
+}));
+
+vi.mock("react", async (importOriginal) => ({
+  ...await importOriginal<typeof ReactModule>(),
+  useEffect: reactHooks.useEffect,
+  useState: reactHooks.useState,
+}));
 
 vi.mock("@decky/api", () => ({
   callable: vi.fn(() => vi.fn()),
@@ -15,8 +40,10 @@ import {
   decorateCarouselCompatibility,
   decorateGridCompatibility,
   installLibraryCompatibilityIndicators,
+  type LibraryCompatibilityIndicatorDependencies,
   resolveLibraryCompatibilityIndicator,
 } from "./libraryCompatibilityIndicators";
+import { notifyCompatibilityRevision } from "./core";
 
 const nativeShortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
 const officialGame = { appid: 55150, app_type: 0, BIsShortcut: () => false };
@@ -58,7 +85,7 @@ describe("Library card compatibility decoration", () => {
 
   it("adds Steam's native indicator to the Home carousel at its native slot", () => {
     const output = createElement("div", {}, "art", "in-library", false, "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat", 3);
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat");
     const children = decorated.props.children as unknown[];
 
     expect(children).toHaveLength(4);
@@ -71,7 +98,7 @@ describe("Library card compatibility decoration", () => {
 
   it("keeps a non-placeholder Home child when Steam changes the card shape", () => {
     const output = createElement("div", {}, "art", "in-library", "new-native-child", "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat", 3);
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat");
 
     expect(decorated.props.children).toMatchObject([
       "art",
@@ -89,7 +116,7 @@ describe("Library card compatibility decoration", () => {
       createElement("div", { className: "outside" }, "outside"),
       createElement("div", { className: "grid-icons" }, "existing"),
     );
-    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, "grid-icons", "grid-compat", 2);
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, "grid-icons", "grid-compat");
     const gridIcons = (decorated.props.children as any[])[1];
     const children = gridIcons.props.children as unknown[];
 
@@ -120,15 +147,8 @@ describe("Library card compatibility decoration", () => {
       createElement("div", { className: "outside" }, "keep"),
     );
 
-    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat", 3)).toBe(output);
-    expect(decorateGridCompatibility(gridOutput, CompatibilityIndicator, "grid-icons", "grid-compat", 2)).toBe(gridOutput);
-  });
-
-  it("does not alter a card when no effective status should be displayed", () => {
-    const output = createElement("div", {}, "unchanged");
-
-    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat", null)).toBe(output);
-    expect(decorateGridCompatibility(output, CompatibilityIndicator, "grid-icons", "grid-compat", null)).toBe(output);
+    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat")).toBe(output);
+    expect(decorateGridCompatibility(gridOutput, CompatibilityIndicator, "grid-icons", "grid-compat")).toBe(gridOutput);
   });
 });
 
@@ -142,10 +162,13 @@ describe("installLibraryCompatibilityIndicators", () => {
     findModulesBySource?: (fragments: string[]) => any[];
     enableSourceFallbacks?: boolean;
     useLiveChildRendererTargets?: boolean;
+    useDefaultRevisionHook?: boolean;
     useMemoGridTarget?: boolean;
     patchHomeRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
     patchGridRenderer?: (component: any, handler: (args: any[], output: any) => any) => () => void;
+    refreshCompatibilitySurfaces?: () => void;
     metadataForApp?: (appId: number) => any;
+    useCompatibilityRevision?: LibraryCompatibilityIndicatorDependencies["useCompatibilityRevision"];
     getOverview?: (appId: number) => any;
     isNativeNonSteamShortcut?: (overview: any) => boolean;
     homeResolution?: () => "valid" | "missing" | "ambiguous";
@@ -171,6 +194,9 @@ describe("installLibraryCompatibilityIndicators", () => {
       ? { type: gridRenderer }
       : Object.assign(function grid() { return null; }, { type: gridRenderer });
     const indicator = () => null;
+    const useCompatibilityRevision = options.useCompatibilityRevision ?? vi.fn();
+    const refreshCompatibilitySurfaces =
+      options.refreshCompatibilitySurfaces ?? vi.fn();
     let homeHandler: ((args: any[], output: any) => any) | undefined;
     let gridHandler: ((args: any[], output: any) => any) | undefined;
     const unpatchHomeRenderer = vi.fn(() => { homeHandler = undefined; });
@@ -248,6 +274,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       findModulesBySource: options.findModulesBySource ?? defaultFindModulesBySource,
       patchHomeRenderer: options.patchHomeRenderer ?? patchHomeRenderer,
       patchGridRenderer: options.patchGridRenderer ?? patchGridRenderer,
+      refreshCompatibilitySurfaces,
       scheduleRetry,
       cancelRetry,
       retryIntervalMs: options.retryIntervalMs ?? 500,
@@ -255,6 +282,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
       metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
       isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
+      ...(options.useDefaultRevisionHook ? {} : { useCompatibilityRevision }),
     });
 
     return {
@@ -262,6 +290,8 @@ describe("installLibraryCompatibilityIndicators", () => {
       grid,
       home,
       indicator,
+      useCompatibilityRevision,
+      refreshCompatibilitySurfaces,
       unpatchers,
       get homeHandler() { return homeHandler; },
       get gridHandler() { return gridHandler; },
@@ -309,25 +339,119 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
     expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
     expect(harness.scheduleRetry).not.toHaveBeenCalled();
+    expect(harness.refreshCompatibilitySurfaces).toHaveBeenCalledOnce();
 
     const first = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const second = renderHomeCapsule(harness.homeHandler!, harness.carousel, alternateShortcut.appid);
     const repeat = first.capsule.type(first.capsule.props);
 
-    expect(first.output.props.children[2]).toMatchObject({
+    const firstSlot = first.output.props.children[2];
+    const secondSlot = second.output.props.children[2];
+    expect(firstSlot.type(firstSlot.props)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
-    expect(second.output.props.children[2]).toMatchObject({
+    expect(secondSlot.type(secondSlot.props)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: alternateShortcut, className: "home-compat" },
     });
-    expect(repeat.props.children.filter((child: any) => child?.type === harness.indicator)).toHaveLength(1);
+    expect(repeat.props.children[2].type).toBe(firstSlot.type);
 
     harness.unpatchers[0]();
     expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
     expect(harness.unpatchGridRenderer).toHaveBeenCalledOnce();
     expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
+  });
+
+  it("keeps Home and grid badge slots reactive when metadata arrives after their first render", () => {
+    let metadata: Parameters<typeof resolveLibraryCompatibilityIndicator>[0]["metadata"];
+    const useCompatibilityRevision = vi.fn();
+    const harness = makeHarness({
+      metadataForApp: () => metadata,
+      useCompatibilityRevision,
+    });
+
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    const homeSlot = home.output.props.children[2];
+    expect(homeSlot.type).not.toBe(harness.indicator);
+    expect(homeSlot.type(homeSlot.props)).toBeNull();
+
+    const gridOutput = createElement(
+      "div",
+      {},
+      createElement("div", { className: "grid-icons" }, "existing"),
+    );
+    const decoratedGrid = harness.gridHandler!([{ app: nativeShortcut }], gridOutput);
+    const gridIcons = decoratedGrid.props.children;
+    const gridSlot = gridIcons.props.children[1];
+    expect(gridSlot.type).toBe(homeSlot.type);
+    expect(gridSlot.type(gridSlot.props)).toBeNull();
+
+    metadata = { deck_compat_override: 3 };
+    expect(homeSlot.type(homeSlot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+    expect(gridSlot.type(gridSlot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "grid-compat" },
+    });
+    expect(useCompatibilityRevision).toHaveBeenCalledTimes(4);
+
+    harness.unpatchers[0]();
+  });
+
+  it("disconnects mounted badge subscribers when the Steam patch is removed", () => {
+    const listener = vi.fn();
+    let unsubscribe: (() => void) | undefined;
+    const harness = makeHarness({
+      useCompatibilityRevision: (subscribe) => {
+        unsubscribe ??= subscribe(listener);
+      },
+    });
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    const homeSlot = home.output.props.children[2];
+    homeSlot.type(homeSlot.props);
+
+    notifyCompatibilityRevision();
+    expect(listener).toHaveBeenCalledOnce();
+
+    harness.unpatchers[0]();
+    notifyCompatibilityRevision();
+    expect(listener).toHaveBeenCalledOnce();
+    unsubscribe?.();
+  });
+
+  it("wires the production revision hook through subscribe, update, and unmount", () => {
+    reactHooks.effects.length = 0;
+    reactHooks.effectDependencies.length = 0;
+    reactHooks.setRevision.mockClear();
+    reactHooks.useEffect.mockClear();
+    reactHooks.useState.mockClear();
+    const harness = makeHarness({ useDefaultRevisionHook: true });
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    const homeSlot = home.output.props.children[2];
+
+    homeSlot.type(homeSlot.props);
+    homeSlot.type(homeSlot.props);
+    expect(reactHooks.useState).toHaveBeenCalledTimes(2);
+    expect(reactHooks.useEffect).toHaveBeenCalledTimes(2);
+    const firstDependencies = reactHooks.effectDependencies[0];
+    const secondDependencies = reactHooks.effectDependencies[1];
+    expect(firstDependencies).toHaveLength(1);
+    expect(secondDependencies).toHaveLength(1);
+    expect(firstDependencies?.[0]).toBe(secondDependencies?.[0]);
+    const cleanup = reactHooks.effects[0]();
+    expect(cleanup).toEqual(expect.any(Function));
+    expect(reactHooks.setRevision).toHaveBeenCalledOnce();
+
+    notifyCompatibilityRevision();
+    expect(reactHooks.setRevision).toHaveBeenCalledTimes(2);
+
+    if (typeof cleanup === "function") cleanup();
+    notifyCompatibilityRevision();
+    expect(reactHooks.setRevision).toHaveBeenCalledTimes(2);
+    harness.unpatchers[0]();
   });
 
   it("uses the live carousel app prop when the renderer does not provide a top-level App ID", () => {
@@ -344,7 +468,8 @@ describe("installLibraryCompatibilityIndicators", () => {
     const capsule = patchedHome.props.fnItemRenderer({ app: nativeShortcut }).props.children;
     const output = capsule.type(capsule.props);
 
-    expect(output.props.children[2]).toMatchObject({
+    const slot = output.props.children[2];
+    expect(slot.type(slot.props)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
@@ -410,12 +535,13 @@ describe("installLibraryCompatibilityIndicators", () => {
     const rerendered = renderHomeCapsule(second.homeHandler!, second.carousel, nativeShortcut.appid);
 
     expect(cached.type(cached.props).props.children[2]).toBe(false);
-    expect(rerendered.output.props.children.filter((child: any) => child?.type === second.indicator)).toHaveLength(1);
+    const reinstalledSlot = rerendered.output.props.children[2];
+    expect(reinstalledSlot.type(reinstalledSlot.props).type).toBe(second.indicator);
     expect(rerendered.capsule.type).not.toBe(cached.type);
     second.unpatchers[0]();
   });
 
-  it("does not change Home or grid output for an unresolved shortcut or an official game", () => {
+  it("mounts inert owned slots for unresolved shortcuts and leaves official games unchanged", () => {
     const harness = makeHarness({
       getOverview: (appId) => appId === nativeShortcut.appid ? nativeShortcut : officialGame,
       metadataForApp: () => ({ deck_compat_override: 0 } as any),
@@ -423,10 +549,13 @@ describe("installLibraryCompatibilityIndicators", () => {
     });
 
     const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
-    expect(home.output.props.children[2]).toBe(false);
+    const homeSlot = home.output.props.children[2];
+    expect(homeSlot.type(homeSlot.props)).toBeNull();
 
     const gridOutput = createElement("div", {}, createElement("div", { className: "grid-icons" }, "existing"));
-    expect(harness.gridHandler!([{ app: nativeShortcut }], gridOutput)).toBe(gridOutput);
+    const decoratedGrid = harness.gridHandler!([{ app: nativeShortcut }], gridOutput);
+    const gridSlot = decoratedGrid.props.children.props.children[1];
+    expect(gridSlot.type(gridSlot.props)).toBeNull();
     expect(harness.gridHandler!([{ app: officialGame }], gridOutput)).toBe(gridOutput);
 
     harness.unpatchers[0]();

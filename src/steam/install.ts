@@ -60,7 +60,7 @@ const reportControllerLayoutFailure = (failure: ControllerLayoutFailure): void =
 };
 
 export const installSteamPatches = (): Unpatch => {
-  configureActivityMetadataLoader(ensureMetadataCache);
+  configureActivityMetadataLoader(ensureMetadataCache, applyMetadata);
   const unpatchers: Unpatch[] = [];
   let patchesCancelled = false;
   let installStarted = false;

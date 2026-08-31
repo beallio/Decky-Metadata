@@ -21,13 +21,19 @@ vi.mock("../backend", () => ({
 }));
 vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
-import { metadataCache, metadataState } from "./core";
+import {
+  compatibilityRevisionSnapshot,
+  metadataCache,
+  metadataState,
+  subscribeCompatibilityRevision,
+} from "./core";
 import {
   applyMetadata,
   effectiveCompatibilityCategory,
   installMetadataPatches,
   refreshCompatibilitySurfaces,
   refreshMetadataCache,
+  startMetadataBootstrap,
   restoreAllCompatibilityBaselines,
 } from "./metadataPatch";
 
@@ -85,6 +91,8 @@ afterEach(() => {
   metadataState.bypassCounter = 0;
   metadataState.routeShield = null;
   metadataState.compatibilityBaselines = {};
+  metadataState.metadataLoaded = false;
+  metadataState.metadataLoadPromise = null;
   metadataState.compatibilityRevision = 0;
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appDetailsStore;
@@ -92,6 +100,7 @@ afterEach(() => {
   delete (globalThis as Record<string, unknown>).window;
   mocks.afterPatch.mockClear();
   mocks.getAllMetadata.mockReset();
+  vi.useRealTimers();
 });
 
 describe("installMetadataPatches BIsModOrShortcut wiring", () => {
@@ -214,9 +223,9 @@ describe("compatibility metadata application", () => {
     const overview = installCompatibilityOverview(appId, 0xab);
     metadataCache[String(appId)] = compatibilityMetadata(null, category) as any;
 
-    applyMetadata(appId);
-
+    expect(applyMetadata(appId)).toBe(true);
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0 | category | (category << 2));
+    expect(applyMetadata(appId)).toBe(false);
   });
 
   it("restores the original packed low nibble after metadata removal", () => {
@@ -241,6 +250,61 @@ describe("compatibility metadata application", () => {
     await refreshMetadataCache();
 
     expect(overview.steam_hw_compat_category_packed).toBe(0x4d);
+  });
+
+  it("publishes one revision after a cache refresh applies the complete batch", async () => {
+    const appId = 9250;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    mocks.getAllMetadata.mockResolvedValue({
+      [appId]: compatibilityMetadata(2, null),
+    });
+    const observedPackedValues: number[] = [];
+    const unsubscribe = subscribeCompatibilityRevision(() => {
+      observedPackedValues.push(overview.steam_hw_compat_category_packed);
+    });
+
+    await refreshMetadataCache();
+
+    expect(compatibilityRevisionSnapshot()).toBe(1);
+    expect(observedPackedValues).toEqual([0xaa]);
+    unsubscribe();
+
+    await refreshMetadataCache();
+    expect(observedPackedValues).toEqual([0xaa]);
+  });
+
+  it("publishes once when a delayed bootstrap tick can finally write compatibility", async () => {
+    vi.useFakeTimers();
+    const appId = 9260;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    let packed = 0xa0;
+    let writable = false;
+    Object.defineProperty(overview, "steam_hw_compat_category_packed", {
+      configurable: true,
+      get: () => packed,
+      set: (value: number) => {
+        if (!writable) throw new Error("overview is not writable yet");
+        packed = value;
+      },
+    });
+    mocks.getAllMetadata.mockResolvedValue({
+      [appId]: compatibilityMetadata(2, null),
+    });
+    (globalThis as Record<string, unknown>).window = globalThis;
+
+    const stop = startMetadataBootstrap();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(compatibilityRevisionSnapshot()).toBe(1);
+    expect(packed).toBe(0xa0);
+
+    writable = true;
+    await vi.advanceTimersByTimeAsync(500);
+    expect(packed).toBe(0xaa);
+    expect(compatibilityRevisionSnapshot()).toBe(2);
+
+    await vi.advanceTimersByTimeAsync(500);
+    expect(compatibilityRevisionSnapshot()).toBe(2);
+    stop();
   });
 
   it("restores every plugin-mutated shortcut during dismount cleanup", () => {
@@ -317,14 +381,31 @@ describe("compatibility metadata application", () => {
       },
     };
 
-    expect(refreshCompatibilitySurfaces(2155012430)).toBe(1);
+    expect(refreshCompatibilitySurfaces()).toBe(1);
     expect(replace).toHaveBeenCalledWith(
       "/routes/library/app/2155012430?tab=GameInfo#compatibility",
       { source: "test", deckyMetadataCompatibilityRevision: 1 }
     );
   });
 
+  it("notifies without replacing the real metadata save route", () => {
+    const replace = vi.fn();
+    (globalThis as Record<string, unknown>).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: {
+            location: { pathname: "/decky-metadata/100" },
+            replace,
+          },
+        },
+      },
+    };
+
+    expect(refreshCompatibilitySurfaces()).toBe(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it("does not fail when Steam's router history is absent", () => {
-    expect(() => refreshCompatibilitySurfaces(2155012430)).not.toThrow();
+    expect(() => refreshCompatibilitySurfaces()).not.toThrow();
   });
 });

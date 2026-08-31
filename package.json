@@ -1,6 +1,6 @@
 {
   "name": "decky-metadata",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
