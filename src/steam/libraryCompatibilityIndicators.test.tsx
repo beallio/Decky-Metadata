@@ -708,7 +708,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
-  it("keeps mounted Home discovery active when recompute publishes a replacement renderer", () => {
+  it("wraps the newest renderer when recompute publishes a replacement renderer", () => {
     let cards: any[] = [];
     const document = browserDocument(() => cards);
     const restoreBridge = installBrowserBridge(document);
@@ -737,12 +737,9 @@ describe("installLibraryCompatibilityIndicators", () => {
     try {
       cards = [card];
       harness.runNextRetry();
-      expect(grid.props.cellRenderer).toBe(replacementRenderer);
-      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
-
-      harness.runNextRetry();
       expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
       expect(harness.pendingRetries.size).toBe(0);
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
       expectPlayableCachedHomeCard(harness, grid);
       harness.unpatchers[0]();
       expect(grid.props.cellRenderer).toBe(replacementRenderer);

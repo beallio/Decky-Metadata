@@ -4883,6 +4883,13 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                     mountedHomeGrids.delete(grid);
                 }
             });
+            // Steam can publish a replacement native renderer while recomputing its
+            // cached item output. Rewrap that newest renderer after the invalidation
+            // so the current grid, not only a future render, owns the indicator.
+            grids.forEach((grid) => {
+                const previous = mountedHomeGrids.get(grid);
+                installCachedHomeCellRenderer(grid, previous?.discovered ?? false);
+            });
             const hasWrapper = hasMountedHomeCellRendererWrapper(true);
             if (hasWrapper)
                 cancelMountedHomeDiscoveryRetry();
