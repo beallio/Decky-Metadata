@@ -109,6 +109,13 @@ type LibraryCompatibilityTargets = {
   gridIndicatorClassName: string;
 };
 
+type MountedHomeGrid = {
+  original: any;
+  wrapper: any;
+  discovered: boolean;
+  restore: () => void;
+};
+
 /**
  * Decky's module finder sees the observer/memo export, not LibraryItemBox's
  * renderer source. Query only webpack factory text, then load its one match.
@@ -484,7 +491,7 @@ export const installLibraryCompatibilityIndicators = (
   let homeCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
   const mountedHomeCarousels = new Set<any>();
-  const mountedHomeGrids = new Map<any, { original: any; wrapper: any; discovered: boolean }>();
+  const mountedHomeGrids = new Map<any, MountedHomeGrid>();
   const homeRefCallbacks = new Map<any, (instance: any) => void>();
   let resolutionAttempts = 0;
   let homeDiscoveryAttempts = 0;
@@ -514,10 +521,10 @@ export const installLibraryCompatibilityIndicators = (
       // Continue teardown if Steam has already removed the subscription.
     }
     mountedHomeCarousels.clear();
-    mountedHomeGrids.forEach(({ original, wrapper }, grid) => {
+    mountedHomeGrids.forEach(({ restore, wrapper }, grid) => {
       try {
         if (grid?.props?.cellRenderer === wrapper) {
-          grid.props.cellRenderer = original;
+          restore();
           grid.recomputeGridSize?.();
         }
       } catch {
@@ -686,12 +693,54 @@ export const installLibraryCompatibilityIndicators = (
         previous.discovered = previous.discovered || discovered;
         return true;
       }
-      const wrapper = (...args: any[]) =>
-        wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
+      const wrapRenderer = (renderer: any) => (...args: any[]) =>
+        wrapCarouselElement(renderer(...args), targets.carousel, carouselWrapper);
+      const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
       try {
+        if (descriptor?.configurable) {
+          const record: MountedHomeGrid = {
+            original,
+            wrapper: wrapRenderer(original),
+            discovered,
+            restore: () => {
+              if (grid?.props?.cellRenderer !== record.wrapper) return;
+              Object.defineProperty(grid.props, "cellRenderer", {
+                configurable: true,
+                enumerable: descriptor.enumerable ?? true,
+                writable: true,
+                value: record.original,
+              });
+            },
+          };
+          Object.defineProperty(grid.props, "cellRenderer", {
+            configurable: true,
+            enumerable: descriptor.enumerable ?? true,
+            get: () => record.wrapper,
+            set: (next) => {
+              if (next === record.wrapper || typeof next !== "function") return;
+              record.original = next;
+              record.wrapper = wrapRenderer(next);
+            },
+          });
+          if (grid.props.cellRenderer !== record.wrapper) {
+            record.restore();
+            return false;
+          }
+          mountedHomeGrids.set(grid, record);
+          return true;
+        }
+        const wrapper = wrapRenderer(original);
+        const record: MountedHomeGrid = {
+          original,
+          wrapper,
+          discovered,
+          restore: () => {
+            if (grid?.props?.cellRenderer === wrapper) grid.props.cellRenderer = record.original;
+          },
+        };
         grid.props.cellRenderer = wrapper;
         if (grid.props.cellRenderer !== wrapper) return false;
-        mountedHomeGrids.set(grid, { original, wrapper, discovered });
+        mountedHomeGrids.set(grid, record);
         return true;
       } catch {
         // A changed virtual-grid target is left untouched and is not retried.

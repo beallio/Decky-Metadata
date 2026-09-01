@@ -708,6 +708,33 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("rewraps a React replacement after mounted-card discovery and restores it on cleanup", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, originalRenderer);
+
+    try {
+      cards = [mounted.card];
+      harness.runNextRetry();
+      mounted.grid.props.cellRenderer = replacementRenderer;
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
   it("wraps the newest renderer when recompute publishes a replacement renderer", () => {
     let cards: any[] = [];
     const document = browserDocument(() => cards);

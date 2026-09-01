@@ -4641,10 +4641,10 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             // Continue teardown if Steam has already removed the subscription.
         }
         mountedHomeCarousels.clear();
-        mountedHomeGrids.forEach(({ original, wrapper }, grid) => {
+        mountedHomeGrids.forEach(({ restore, wrapper }, grid) => {
             try {
                 if (grid?.props?.cellRenderer === wrapper) {
-                    grid.props.cellRenderer = original;
+                    restore();
                     grid.recomputeGridSize?.();
                 }
             }
@@ -4802,12 +4802,57 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 previous.discovered = previous.discovered || discovered;
                 return true;
             }
-            const wrapper = (...args) => wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
+            const wrapRenderer = (renderer) => (...args) => wrapCarouselElement(renderer(...args), targets.carousel, carouselWrapper);
+            const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
             try {
+                if (descriptor?.configurable) {
+                    const record = {
+                        original,
+                        wrapper: wrapRenderer(original),
+                        discovered,
+                        restore: () => {
+                            if (grid?.props?.cellRenderer !== record.wrapper)
+                                return;
+                            Object.defineProperty(grid.props, "cellRenderer", {
+                                configurable: true,
+                                enumerable: descriptor.enumerable ?? true,
+                                writable: true,
+                                value: record.original,
+                            });
+                        },
+                    };
+                    Object.defineProperty(grid.props, "cellRenderer", {
+                        configurable: true,
+                        enumerable: descriptor.enumerable ?? true,
+                        get: () => record.wrapper,
+                        set: (next) => {
+                            if (next === record.wrapper || typeof next !== "function")
+                                return;
+                            record.original = next;
+                            record.wrapper = wrapRenderer(next);
+                        },
+                    });
+                    if (grid.props.cellRenderer !== record.wrapper) {
+                        record.restore();
+                        return false;
+                    }
+                    mountedHomeGrids.set(grid, record);
+                    return true;
+                }
+                const wrapper = wrapRenderer(original);
+                const record = {
+                    original,
+                    wrapper,
+                    discovered,
+                    restore: () => {
+                        if (grid?.props?.cellRenderer === wrapper)
+                            grid.props.cellRenderer = record.original;
+                    },
+                };
                 grid.props.cellRenderer = wrapper;
                 if (grid.props.cellRenderer !== wrapper)
                     return false;
-                mountedHomeGrids.set(grid, { original, wrapper, discovered });
+                mountedHomeGrids.set(grid, record);
                 return true;
             }
             catch {
