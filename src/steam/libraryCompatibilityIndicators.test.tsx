@@ -421,7 +421,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     delete (globalThis as any).Router;
   });
 
-  it("bypasses an already-mounted Home virtual-grid cache through its bounded card ancestor", () => {
+  it("bypasses the Big Picture cache through SteamUI's mounted browser document", () => {
     const harness = makeHarness();
     let cacheInvalidated = false;
     const staleItem = createElement(
@@ -444,10 +444,31 @@ describe("installLibraryCompatibilityIndicators", () => {
       return: { type: harness.home, elementType: harness.home, return: null },
     };
     const card = { "__reactFiber$test": fiber };
-    const previousDocument = (globalThis as any).document;
-    (globalThis as any).document = {
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const sharedContextDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const bigPictureDocument = {
       querySelector: vi.fn(() => card),
       querySelectorAll: vi.fn(() => [card]),
+    };
+    const fallbackDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    host.document = sharedContextDocument;
+    host.parent = { document: sharedContextDocument };
+    host.top = { document: sharedContextDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: bigPictureDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: fallbackDocument } },
+      },
     };
 
     try {
@@ -455,6 +476,9 @@ describe("installLibraryCompatibilityIndicators", () => {
 
       expect(recomputeGridSize).toHaveBeenCalledOnce();
       expect(grid.props.cellRenderer).not.toBe(originalCellRenderer);
+      expect(sharedContextDocument.querySelector).not.toHaveBeenCalled();
+      expect(fallbackDocument.querySelector).not.toHaveBeenCalled();
+      expect(bigPictureDocument.querySelector).toHaveBeenCalledWith("[data-id]");
       const visibleItem: any = grid.props.cellRenderer({});
       const visibleCapsule = visibleItem.props.children;
       const visibleOutput = visibleCapsule.type(visibleCapsule.props);
@@ -487,7 +511,71 @@ describe("installLibraryCompatibilityIndicators", () => {
       notifyCompatibilityRevision();
       expect(recomputeGridSize).toHaveBeenCalledTimes(callsAfterCleanup);
     } finally {
-      (globalThis as any).document = previousDocument;
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
+  it("uses SteamUI's Gamepad browser document when the main browser has no cards", () => {
+    const harness = makeHarness();
+    const originalCellRenderer = vi.fn((_args: any) => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const recomputeGridSize = vi.fn();
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const gamepadDocument = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+    host.document = emptyDocument;
+    host.parent = { document: emptyDocument };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: emptyDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: gamepadDocument } },
+      },
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(emptyDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(gamepadDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleCapsule: any = visibleItem.props.children;
+      const visibleSlot = visibleCapsule.type(visibleCapsule.props).props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(originalCellRenderer);
+    } finally {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
     }
   });
 

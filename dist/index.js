@@ -4297,6 +4297,27 @@ const steamUiWindow = () => {
     return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
 };
 const steamUiCardDocument = () => {
+    // SharedJSContext does not own Big Picture's DOM. Steam exposes the mounted
+    // browser document through this same-window bridge instead. Prefer the
+    // established MainWindow path, while retaining the Gamepad-specific form
+    // seen on older/current SteamUI builds.
+    try {
+        const windowStore = globalThis?.SteamUIStore?.m_WindowStore;
+        const browserWindows = [
+            windowStore?.MainWindowInstance?.m_BrowserWindow,
+            windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+        ];
+        for (const browserWindow of browserWindows) {
+            const document = browserWindow?.document;
+            if (typeof document?.querySelector === "function" &&
+                !!document.querySelector("[data-id]")) {
+                return document;
+            }
+        }
+    }
+    catch {
+        // A changed Steam window bridge must leave the optional cache patch inert.
+    }
     const candidates = [globalThis];
     try {
         const currentWindow = globalThis;

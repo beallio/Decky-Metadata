@@ -30,10 +30,13 @@ the game details page, changing focus or tabs, or replacing the current route.
   writable `OnAppOverviewChange` input patch remains the lifecycle boundary;
   when the optional update hook cannot be installed, it emits one deferred
   revision after the native input batch instead of aborting all Steam patches.
-- The attempted Home cache bypass remains a same-context-only fallback. It
-  starts from rendered `[data-id]` cards, but SharedJSContext has no access to
-  the Big Picture document or its mounted `m_refGrid` instance. It therefore
-  cannot fulfill the persistent already-mounted-card requirement on this Deck.
+- The mounted-card cache bypass uses the established SteamUI browser-window
+  bridge: `SteamUIStore.m_WindowStore.MainWindowInstance.m_BrowserWindow.document`,
+  with `GamepadUIMainWindowInstance.m_BrowserWindow.document` as the compatible
+  fallback. It finds only rendered `[data-id]` cards, walks each card's React
+  ancestors to the existing `m_refGrid` with the exact VBC fingerprint, wraps
+  its current native renderer, and recomputes the grid. It does not navigate,
+  change focus, enumerate a MobX store, or use a route replacement.
 
 ## Failed alternatives
 
@@ -41,9 +44,9 @@ the game details page, changing focus or tabs, or replacing the current route.
   VirtualizedBoxCarousel item cache.
 - Adding only a ref to future Home output did not help an already-mounted
   carousel because the ref was never adopted.
-- Cross-context component object identity did not match the Big Picture card
-  fiber. The production boundary therefore uses the existing strict source
-  fingerprint instead.
+- Cross-context component object identity does not match the Big Picture card
+  fiber. The production boundary uses the established browser-document bridge
+  plus the existing strict VBC source fingerprint instead.
 
 ## Test-first evidence
 
@@ -63,35 +66,48 @@ the game details page, changing focus or tabs, or replacing the current route.
   the replacement renderer was not rewrapped, a prototype clone did not run
   the AppOverview constructor, and a read-only `UpdateAppOverview` aborted
   patch installation. The corrected Home/metadata suites pass 66 tests.
-- The final local quality gate passes: TypeScript, bundle, all 26 Vitest files
-  (370 tests), Python compilation, pytest, and the review-note deletion guard.
+- The round-02 bridge regression puts cards only in
+  `MainWindowInstance.m_BrowserWindow.document`; the SharedJSContext global,
+  parent, top, and Gamepad fallback documents have no cards. A compatibility
+  revision then wraps the stale renderer, recomputes the grid, renders the
+  native Playable indicator, and restores the native renderer on teardown. A
+  second focused test proves the Gamepad browser-document fallback. The focused
+  suite passes 39 tests.
+- The final local quality gate passes: TypeScript, Rollup, all 26 Vitest files
+  (371 tests), Python byte-compilation, pytest, version guard, and the
+  review-note deletion guard. The shared `/tmp` quota was full during earlier
+  attempts; only generated npm, Node compile, pytest-temp, and Python bytecode
+  caches below `/tmp/Decky-Metadata` were cleared before the successful rerun.
 
 ## Live Deck evidence
 
-- The Space Marine fixture is shortcut `2155012430`. Before the final live
-  retry, its exact native overview reported packed `10`, derived category `2`,
-  and native shortcut identity `true` while its selected Home card still lacked
-  the yellow badge. This confirms the planned stale-card regression.
-- On 2026-09-01, the Deck was reachable and the feature bundle was deployed.
-  Before the runtime-hook repair, `installSteamPatches` aborted on the read-only
-  `UpdateAppOverview` method, leaving the Home card unpatched. After the repair,
-  Deck logs confirmed `library compatibility indicators installed` and `steam
-  patches installed` with 93 teardown handlers.
-- The unresolved runtime boundary is now explicit: SharedJSContext reports
-  zero `[data-id]` cards for its global, parent, and top documents, while the
-  Big Picture target owns the selected fixture card. A runtime-only,
-  constructor-safe replacement of exact `m_mapApps[2155012430]` kept packed
-  `10`, category `2`, and native shortcut identity, but did not rerender the
-  cached Home card or show the badge. No persistent metadata was changed.
-- The no-launch smoke ran. Re-render churn and community fallback passed;
-  quick-links and controller-layout Community checks failed on existing
-  delisted-fixture drift (no rich rendered metadata and zero source Community
-  layouts), not on this change. The full `scripts/decky capture` copy failed
-  because `/tmp` reached its per-user quota while copying historic logs. The
-  session-created partial diagnostics were moved to the local Trash; source
-  logs on the Deck were not changed.
-- Home/grid PNGs, the two-minute replacement check, negative controls, and a
-  passing no-launch smoke cannot be claimed. A sanctioned Steam cache
-  invalidation API reachable from SharedJSContext, or explicit approval to use
-  the current bounded Big Picture DOM/fiber instance path, is required before
-  this plan can complete.
+- On 2026-09-01, `scripts/decky doctor --deck` confirmed Deck reachability and
+  `scripts/decky verify-change dev --device --explain` rebuilt, deployed, and
+  hard-reloaded the frontend. The corrected bridge was therefore running before
+  the visual check; no persistent metadata was changed.
+- Space Marine is shortcut `2155012430`. The visible Library Home card showed
+  Steam's Deck icon and yellow Playable indicator after the hard reload and
+  again more than two minutes later. The retained screenshot is
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/home-after-hard-reload.png`.
+  Its same-time machine-readable probe is
+  `home-after-hard-reload-state.json`: packed `10`, derived category `2`, and
+  native shortcut identity `true`.
+- Steam's browser history object remained stale at
+  `/routes/library/app/2312439508` while the Big Picture surface visibly showed
+  Library Home. The browser bridge still exposed its document, but the stale
+  route object could not be used as the visual-card identity oracle. The
+  screenshot is the user-visible evidence for the selected Space Marine card.
+- The direct `/library/collection/nonsteam` navigation reached Steam's Library
+  tab strip, but its grid stayed blank in this session, so the Space Marine grid
+  badge could not be visually verified. No fixture detail route was opened for
+  this attempt. A native AppOverview replacement, negative controls, and a
+  retained grid PNG consequently remain unverified; this record does not claim
+  them as passing.
+- `scripts/deck/verify/run_all.sh --no-launch` passed quick-links, rerender,
+  community, and all controller-layout behavior checks. Its final controller
+  JSON write failed with `OSError: [Errno 122] Disk quota exceeded`, so the
+  aggregate smoke command returned failure despite the completed behavior
+  checks. `scripts/decky capture` hit the same `/tmp` quota while copying its
+  diagnostic inputs. Exact output is retained in
+  `persistent-compatibility-badge-refresh/no-launch-smoke.log` and
+  `capture-error.log`; no source logs or persistent metadata were changed.
