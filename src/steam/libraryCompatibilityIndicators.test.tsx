@@ -657,6 +657,44 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("discovers a current Home grid from its focused renderer signature", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const currentHomeGrid = {
+      render: function currentHomeGridRenderer() {
+        /* fnOnFocusedColumnChange */
+        return null;
+      },
+    };
+    const gridFiber = {
+      type: currentHomeGrid,
+      elementType: currentHomeGrid,
+      stateNode: { m_refGrid: grid },
+      return: null,
+    };
+    const card = { "__reactFiber$test": { stateNode: {}, return: gridFiber } };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expect(grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(grid.recomputeGridSize).toHaveBeenCalledOnce();
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
   it("does not schedule mounted Home discovery when synchronous card discovery installs a wrapper", () => {
     const nativeRenderer = vi.fn(() => createElement("section", {}));
     const mounted = mountedHomeCard({
