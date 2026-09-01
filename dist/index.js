@@ -2017,10 +2017,41 @@ const applyCompatibilityToIncomingOverview = (overview) => {
 };
 /**
  * A direct metadata change has no native AppOverview notification. Replace
- * only the exact current map entry with the same prototype and fields so the
+ * only the exact current map entry with a fresh native instance so the
  * observable map publishes the completed category. This is a single get/set,
  * never a map scan or a write through an official-AppID alias.
  */
+const createCompatibilityReplacement = (overview) => {
+    const prototype = Object.getPrototypeOf(overview);
+    const NativeOverview = overview?.constructor;
+    if (!prototype || typeof NativeOverview !== "function")
+        return null;
+    try {
+        // Steam uses both observable and non-observable AppOverview classes. Run
+        // the native constructor so an observable replacement keeps its MobX
+        // initialization instead of inheriting a prototype without that state.
+        const replacement = new NativeOverview();
+        if (!replacement || Object.getPrototypeOf(replacement) !== prototype)
+            return null;
+        if (typeof overview.BHasObservables === "function" &&
+            typeof replacement.BHasObservables === "function" &&
+            overview.BHasObservables() !== replacement.BHasObservables()) {
+            return null;
+        }
+        Object.keys(overview).forEach((key) => {
+            // This native debug callback is initialized by the constructor and is
+            // bound to that instance. Keep the replacement's own callback.
+            if (key !== "LOG_CHANGE")
+                replacement[key] = overview[key];
+        });
+        replacement.RestorePreservedState?.(overview.GetPreservedState?.());
+        return replacement;
+    }
+    catch {
+        // A changed native constructor leaves the original map entry untouched.
+        return null;
+    }
+};
 const publishCompatibilityReplacement = (appId, overview) => {
     try {
         const overviews = appStore?.m_mapApps;
@@ -2030,10 +2061,10 @@ const publishCompatibilityReplacement = (appId, overview) => {
             overviews.get(appId) !== overview) {
             return;
         }
-        const prototype = Object.getPrototypeOf(overview);
-        if (!prototype)
+        const replacement = createCompatibilityReplacement(overview);
+        if (!replacement)
             return;
-        overviews.set(appId, Object.assign(Object.create(prototype), overview));
+        overviews.set(appId, replacement);
     }
     catch {
         // A changed Steam map leaves the native overview in place; never retry.
@@ -4698,10 +4729,14 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             return false;
         };
         const installCachedHomeCellRenderer = (grid) => {
-            if (mountedHomeGrids.has(grid))
-                return;
             const original = grid?.props?.cellRenderer;
             if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function")
+                return;
+            const previous = mountedHomeGrids.get(grid);
+            // React can publish a new native renderer on an already-mounted grid.
+            // Preserve that newest renderer as the cleanup target, rather than
+            // leaving the old wrapper registered after it has been replaced.
+            if (previous?.wrapper === original)
                 return;
             const wrapper = (...args) => wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
             try {

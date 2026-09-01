@@ -421,6 +421,65 @@ describe("compatibility metadata application", () => {
     unsubscribe();
   });
 
+  it.each([false, true])("publishes a constructor-initialized %s AppOverview replacement", (observable) => {
+    const appId = observable ? 9452 : 9451;
+    let constructions = 0;
+    class TestAppOverview {
+      LOG_CHANGE: { owner: number };
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      constructor() {
+        const owner = ++constructions;
+        this.LOG_CHANGE = { owner };
+        Object.defineProperty(this, "constructorState", {
+          configurable: false,
+          enumerable: false,
+          value: { owner },
+        });
+      }
+
+      BHasObservables() {
+        return observable;
+      }
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      nativeApi() {
+        return `${this.appid}:${this.steam_hw_compat_category_packed}`;
+      }
+    }
+
+    const original = new TestAppOverview();
+    const overviews = new Map([[appId, original]]);
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [original],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? original : null,
+    };
+    host.appDetailsStore = {};
+    metadataCache[String(appId)] = compatibilityMetadata(2, null) as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+
+    const replacement = overviews.get(appId) as TestAppOverview;
+    expect(replacement).toBeInstanceOf(TestAppOverview);
+    expect(replacement).not.toBe(original);
+    expect(constructions).toBe(2);
+    expect(replacement.BHasObservables()).toBe(observable);
+    expect(replacement.nativeApi()).toBe(`${appId}:170`);
+    expect(replacement.LOG_CHANGE.owner).toBe(2);
+    expect((replacement as any).constructorState).toEqual({ owner: 2 });
+  });
+
   it.each([
     ["an official Steam game", false, undefined],
     ["missing metadata", true, undefined],

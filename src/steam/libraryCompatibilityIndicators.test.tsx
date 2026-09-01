@@ -464,8 +464,25 @@ describe("installLibraryCompatibilityIndicators", () => {
         props: { display: 1, overview: nativeShortcut, className: "home-compat" },
       });
 
+      // React can replace this prop after the initial cached-card wrapper was
+      // installed. A later compatibility revision must wrap the newest native
+      // renderer, and teardown must restore that newest renderer.
+      const replacementNativeRenderer = vi.fn(() => freshItem());
+      grid.props.cellRenderer = replacementNativeRenderer;
+      notifyCompatibilityRevision();
+
+      expect(grid.props.cellRenderer).not.toBe(replacementNativeRenderer);
+      const replacementVisibleItem: any = grid.props.cellRenderer({});
+      const replacementVisibleCapsule = replacementVisibleItem.props.children;
+      const replacementVisibleOutput = replacementVisibleCapsule.type(replacementVisibleCapsule.props);
+      const replacementVisibleSlot = replacementVisibleOutput.props.children[2];
+      expect(replacementVisibleSlot.type(replacementVisibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
       harness.unpatchers[0]();
-      expect(grid.props.cellRenderer).toBe(originalCellRenderer);
+      expect(grid.props.cellRenderer).toBe(replacementNativeRenderer);
       const callsAfterCleanup = recomputeGridSize.mock.calls.length;
       notifyCompatibilityRevision();
       expect(recomputeGridSize).toHaveBeenCalledTimes(callsAfterCleanup);

@@ -268,10 +268,40 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
 
 /**
  * A direct metadata change has no native AppOverview notification. Replace
- * only the exact current map entry with the same prototype and fields so the
+ * only the exact current map entry with a fresh native instance so the
  * observable map publishes the completed category. This is a single get/set,
  * never a map scan or a write through an official-AppID alias.
  */
+const createCompatibilityReplacement = (overview: any) => {
+  const prototype = Object.getPrototypeOf(overview);
+  const NativeOverview = overview?.constructor;
+  if (!prototype || typeof NativeOverview !== "function") return null;
+  try {
+    // Steam uses both observable and non-observable AppOverview classes. Run
+    // the native constructor so an observable replacement keeps its MobX
+    // initialization instead of inheriting a prototype without that state.
+    const replacement = new NativeOverview();
+    if (!replacement || Object.getPrototypeOf(replacement) !== prototype) return null;
+    if (
+      typeof overview.BHasObservables === "function" &&
+      typeof replacement.BHasObservables === "function" &&
+      overview.BHasObservables() !== replacement.BHasObservables()
+    ) {
+      return null;
+    }
+    Object.keys(overview).forEach((key) => {
+      // This native debug callback is initialized by the constructor and is
+      // bound to that instance. Keep the replacement's own callback.
+      if (key !== "LOG_CHANGE") replacement[key] = overview[key];
+    });
+    replacement.RestorePreservedState?.(overview.GetPreservedState?.());
+    return replacement;
+  } catch {
+    // A changed native constructor leaves the original map entry untouched.
+    return null;
+  }
+};
+
 const publishCompatibilityReplacement = (appId: number, overview: any) => {
   try {
     const overviews = appStore?.m_mapApps;
@@ -283,9 +313,9 @@ const publishCompatibilityReplacement = (appId: number, overview: any) => {
     ) {
       return;
     }
-    const prototype = Object.getPrototypeOf(overview);
-    if (!prototype) return;
-    overviews.set(appId, Object.assign(Object.create(prototype), overview));
+    const replacement = createCompatibilityReplacement(overview);
+    if (!replacement) return;
+    overviews.set(appId, replacement);
   } catch {
     // A changed Steam map leaves the native overview in place; never retry.
   }

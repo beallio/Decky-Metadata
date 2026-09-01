@@ -639,9 +639,13 @@ export const installLibraryCompatibilityIndicators = (
       return false;
     };
     const installCachedHomeCellRenderer = (grid: any) => {
-      if (mountedHomeGrids.has(grid)) return;
       const original = grid?.props?.cellRenderer;
       if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function") return;
+      const previous = mountedHomeGrids.get(grid);
+      // React can publish a new native renderer on an already-mounted grid.
+      // Preserve that newest renderer as the cleanup target, rather than
+      // leaving the old wrapper registered after it has been replaced.
+      if (previous?.wrapper === original) return;
       const wrapper = (...args: any[]) =>
         wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
       try {
