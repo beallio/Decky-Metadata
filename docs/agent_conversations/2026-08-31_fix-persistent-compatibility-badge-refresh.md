@@ -81,33 +81,110 @@ the game details page, changing focus or tabs, or replacing the current route.
 
 ## Live Deck evidence
 
-- On 2026-09-01, `scripts/decky doctor --deck` confirmed Deck reachability and
-  `scripts/decky verify-change dev --device --explain` rebuilt, deployed, and
-  hard-reloaded the frontend. The corrected bridge was therefore running before
-  the visual check; no persistent metadata was changed.
-- Space Marine is shortcut `2155012430`. The visible Library Home card showed
-  Steam's Deck icon and yellow Playable indicator after the hard reload and
-  again more than two minutes later. The retained screenshot is
-  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/home-after-hard-reload.png`.
-  Its same-time machine-readable probe is
-  `home-after-hard-reload-state.json`: packed `10`, derived category `2`, and
-  native shortcut identity `true`.
-- Steam's browser history object remained stale at
-  `/routes/library/app/2312439508` while the Big Picture surface visibly showed
-  Library Home. The browser bridge still exposed its document, but the stale
-  route object could not be used as the visual-card identity oracle. The
-  screenshot is the user-visible evidence for the selected Space Marine card.
-- The direct `/library/collection/nonsteam` navigation reached Steam's Library
-  tab strip, but its grid stayed blank in this session, so the Space Marine grid
-  badge could not be visually verified. No fixture detail route was opened for
-  this attempt. A native AppOverview replacement, negative controls, and a
-  retained grid PNG consequently remain unverified; this record does not claim
-  them as passing.
-- `scripts/deck/verify/run_all.sh --no-launch` passed quick-links, rerender,
-  community, and all controller-layout behavior checks. Its final controller
-  JSON write failed with `OSError: [Errno 122] Disk quota exceeded`, so the
-  aggregate smoke command returned failure despite the completed behavior
-  checks. `scripts/decky capture` hit the same `/tmp` quota while copying its
-  diagnostic inputs. Exact output is retained in
-  `persistent-compatibility-badge-refresh/no-launch-smoke.log` and
-  `capture-error.log`; no source logs or persistent metadata were changed.
+### Review-round 03 correction and adopted evidence
+
+- The earlier description of
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/home-after-hard-reload.png`
+  was incorrect. The PNG is a blank Library Collections view and contains no
+  game card; it is retained only as a failed-attempt artifact and is not visual
+  badge evidence.
+- The independent reviewer opened `/library/home` without first opening a game
+  details route. The valid retained Home evidence is
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/reviewer-home.png`.
+  It shows Space Marine, shortcut `2155012430`, with its yellow native Playable
+  indicator more than ten minutes after the feature deploy.
+- The reviewer then selected the exact `Non-Steam18` Library tab with the
+  committed click/input tooling and sent three Down inputs. The valid retained
+  grid evidence is
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/reviewer-nonsteam-grid-space-marine.png`.
+  It shows the same yellow indicator for Space Marine. The adjacent Transformers
+  Fall of Cybertron card is unresolved Automatic and has no indicator.
+- The bounded rendered-card fiber check also found that official Brotato and
+  Teenage Mutant Ninja Turtles cards retained their native indicators and had no
+  `decky-metadata-compatibility-*` React key. The check did not enumerate any
+  Steam or MobX store from a React walk.
+
+The review results, in a machine-readable form, are:
+
+```json
+{
+  "home": {
+    "appId": 2155012430,
+    "nativeShortcut": true,
+    "packedCompatibility": 10,
+    "effectiveCategory": 2,
+    "indicator": "yellow Playable",
+    "png": "reviewer-home.png"
+  },
+  "nonSteamGrid": {
+    "appId": 2155012430,
+    "nativeShortcut": true,
+    "packedCompatibility": 10,
+    "effectiveCategory": 2,
+    "indicator": "yellow Playable",
+    "png": "reviewer-nonsteam-grid-space-marine.png"
+  },
+  "unresolvedAutomatic": {
+    "title": "Transformers Fall of Cybertron",
+    "indicator": false
+  },
+  "officialGames": {
+    "titles": ["Brotato", "Teenage Mutant Ninja Turtles"],
+    "nativeIndicatorPreserved": true,
+    "deckyMetadataCompatibilityReactKey": false
+  }
+}
+```
+
+The committed command forms for a repeat of that bounded check are:
+
+```bash
+T="Steam Big Picture Mode"
+scripts/deck/cdp.py eval SharedJSContext @scripts/deck/js/nav.js --var ROUTE=/library/home
+scripts/deck/cdp.py eval "$T" @scripts/deck/js/fiber_walk.js --var TEXT="Space Marine"
+scripts/deck/cdp.py screenshot /tmp/Decky-Metadata/persistent-compatibility-badge-refresh/reviewer-home.png "$T"
+scripts/deck/cdp.py eval SharedJSContext @scripts/deck/js/nav.js --var ROUTE=/library/collection/nonsteam
+scripts/deck/cdp.py eval "$T" @scripts/deck/js/click_by_label.js --var LABEL=Non-Steam18
+scripts/deck/cdp.py input "$T" down down down
+scripts/deck/cdp.py eval "$T" @scripts/deck/js/fiber_walk.js --var TEXT="Space Marine"
+scripts/deck/cdp.py screenshot /tmp/Decky-Metadata/persistent-compatibility-badge-refresh/reviewer-nonsteam-grid-space-marine.png "$T"
+```
+
+The exact native-shortcut category values are also recorded in the contemporary
+`home-after-hard-reload-state.json` probe. Its image pairing is invalid, so the
+values above are adopted together with the valid reviewer screenshots rather
+than using that blank PNG as a visual oracle.
+
+### Round-03 recovery attempt
+
+- The full local quality gate recorded at
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/quality-gates-final.log`
+  passed TypeScript, Rollup, 26 Vitest files / 371 tests, Python
+  byte-compilation, pytest, the version guard, and the review-note deletion
+  guard. The documentation correction was then rerun through the same gate;
+  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/quality-gates-round03.log`
+  ends with `quality-gates: OK`, `no deleted review notes`, and `quality gates
+  passed`.
+- The first `scripts/deck/verify/run_all.sh --no-launch` and
+  `./run.sh scripts/decky capture` attempts failed because the user `/tmp`
+  quota was exhausted. To recover space, only regenerable paths below
+  `/tmp/Decky-Metadata` were removed: Python/Node/pytest caches,
+  `diagnostics/` capture copies, and `steamui/unknown` snapshots. Deck source
+  logs, persistent metadata, screenshots, and reviewer evidence were retained.
+- After recovery, `df -h /tmp` reported 675M filesystem free and the user quota
+  reported 2308M used of 2387M. The exact retry command,
+  `./run.sh scripts/deck/verify/run_all.sh --no-launch`, no longer hit quota but
+  stopped immediately with `ssh: connect to host 10.168.168.20 port 22: No route
+  to host`. `./run.sh scripts/decky doctor --deck` likewise reports optional
+  Deck reachability as offline.
+- `./run.sh scripts/decky capture` then passed the quota boundary but failed to
+  parse an empty metadata response with `json.decoder.JSONDecodeError`.
+  Its diagnostic directory is
+  `/tmp/Decky-Metadata/diagnostics/20260901T155955Z`. The current dedicated
+  tunnel was explicitly closed with `scripts/deck/tunnel.sh down`; the follow-up
+  `scripts/deck/tunnel.sh status` reports `tunnel: down`.
+
+The aggregate smoke command and final capture must be rerun successfully after
+the Deck is reachable again. The current live-device outage prevents completion
+of those two required gates; no round-complete marker is claimed for this
+attempt.
