@@ -363,6 +363,222 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
   });
 
+  it("refreshes a Home card cached before patch installation without replacing the current route", () => {
+    const replace = vi.fn();
+    (globalThis as any).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: {
+            location: { pathname: "/routes/library/home" },
+            replace,
+          },
+        },
+      },
+    };
+    const harness = makeHarness();
+    const cachedCapsule = createElement(harness.carousel, { appid: nativeShortcut.appid });
+    let cachedItem: any = createElement("section", {}, cachedCapsule);
+    const recomputeGridSize = vi.fn(() => {
+      cachedItem = undefined;
+    });
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { appid: item.appid }),
+      ),
+    });
+    const patchedHome = harness.homeHandler!([], homeOutput) as any;
+    const mountedCarouselRef = patchedHome.ref;
+
+    // This is the current, already-mounted VBC instance. Its item output was
+    // cached before the plugin patched the Home renderer.
+    if (typeof mountedCarouselRef === "function") {
+      mountedCarouselRef({ m_refGrid: { recomputeGridSize } });
+    }
+    const visibleItem = cachedItem ?? patchedHome.props.fnItemRenderer({ appid: nativeShortcut.appid });
+    const visibleCapsule = visibleItem.props.children;
+    const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+    const visibleSlot = visibleOutput.props.children[2];
+
+    expect(visibleSlot).toMatchObject({
+      type: expect.any(Function),
+    });
+    expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+    expect(replace).not.toHaveBeenCalled();
+
+    notifyCompatibilityRevision();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+
+    mountedCarouselRef?.(null);
+    harness.unpatchers[0]();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+    delete (globalThis as any).Router;
+  });
+
+  it("bypasses the Big Picture cache through SteamUI's mounted browser document", () => {
+    const harness = makeHarness();
+    let cacheInvalidated = false;
+    const staleItem = createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const freshItem = () => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const originalCellRenderer = vi.fn((_args: any) => cacheInvalidated ? freshItem() : staleItem);
+    const recomputeGridSize = vi.fn(() => {
+      cacheInvalidated = true;
+    });
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const sharedContextDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const bigPictureDocument = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+    const fallbackDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    host.document = sharedContextDocument;
+    host.parent = { document: sharedContextDocument };
+    host.top = { document: sharedContextDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: bigPictureDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: fallbackDocument } },
+      },
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      expect(grid.props.cellRenderer).not.toBe(originalCellRenderer);
+      expect(sharedContextDocument.querySelector).not.toHaveBeenCalled();
+      expect(fallbackDocument.querySelector).not.toHaveBeenCalled();
+      expect(bigPictureDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleCapsule = visibleItem.props.children;
+      const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+      const visibleSlot = visibleOutput.props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      // React can replace this prop after the initial cached-card wrapper was
+      // installed. A later compatibility revision must wrap the newest native
+      // renderer, and teardown must restore that newest renderer.
+      const replacementNativeRenderer = vi.fn(() => freshItem());
+      grid.props.cellRenderer = replacementNativeRenderer;
+      notifyCompatibilityRevision();
+
+      expect(grid.props.cellRenderer).not.toBe(replacementNativeRenderer);
+      const replacementVisibleItem: any = grid.props.cellRenderer({});
+      const replacementVisibleCapsule = replacementVisibleItem.props.children;
+      const replacementVisibleOutput = replacementVisibleCapsule.type(replacementVisibleCapsule.props);
+      const replacementVisibleSlot = replacementVisibleOutput.props.children[2];
+      expect(replacementVisibleSlot.type(replacementVisibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementNativeRenderer);
+      const callsAfterCleanup = recomputeGridSize.mock.calls.length;
+      notifyCompatibilityRevision();
+      expect(recomputeGridSize).toHaveBeenCalledTimes(callsAfterCleanup);
+    } finally {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
+  it("uses SteamUI's Gamepad browser document when the main browser has no cards", () => {
+    const harness = makeHarness();
+    const originalCellRenderer = vi.fn((_args: any) => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const recomputeGridSize = vi.fn();
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const gamepadDocument = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+    host.document = emptyDocument;
+    host.parent = { document: emptyDocument };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: emptyDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: gamepadDocument } },
+      },
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(emptyDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(gamepadDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleCapsule: any = visibleItem.props.children;
+      const visibleSlot = visibleCapsule.type(visibleCapsule.props).props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(originalCellRenderer);
+    } finally {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
   it("keeps Home and grid badge slots reactive when metadata arrives after their first render", () => {
     let metadata: Parameters<typeof resolveLibraryCompatibilityIndicator>[0]["metadata"];
     const useCompatibilityRevision = vi.fn();
