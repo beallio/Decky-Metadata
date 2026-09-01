@@ -155,36 +155,18 @@ The exact native-shortcut category values are also recorded in the contemporary
 values above are adopted together with the valid reviewer screenshots rather
 than using that blank PNG as a visual oracle.
 
-### Round-03 recovery attempt
+### Round-04 final device gate
 
-- The full local quality gate recorded at
-  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/quality-gates-final.log`
-  passed TypeScript, Rollup, 26 Vitest files / 371 tests, Python
-  byte-compilation, pytest, the version guard, and the review-note deletion
-  guard. The documentation correction was then rerun through the same gate;
-  `/tmp/Decky-Metadata/persistent-compatibility-badge-refresh/quality-gates-round03.log`
-  ends with `quality-gates: OK`, `no deleted review notes`, and `quality gates
-  passed`.
-- The first `scripts/deck/verify/run_all.sh --no-launch` and
-  `./run.sh scripts/decky capture` attempts failed because the user `/tmp`
-  quota was exhausted. To recover space, only regenerable paths below
-  `/tmp/Decky-Metadata` were removed: Python/Node/pytest caches,
-  `diagnostics/` capture copies, and `steamui/unknown` snapshots. Deck source
-  logs, persistent metadata, screenshots, and reviewer evidence were retained.
-- After recovery, `df -h /tmp` reported 675M filesystem free and the user quota
-  reported 2308M used of 2387M. The exact retry command,
-  `./run.sh scripts/deck/verify/run_all.sh --no-launch`, no longer hit quota but
-  stopped immediately with `ssh: connect to host 10.168.168.20 port 22: No route
-  to host`. `./run.sh scripts/decky doctor --deck` likewise reports optional
-  Deck reachability as offline.
-- `./run.sh scripts/decky capture` then passed the quota boundary but failed to
-  parse an empty metadata response with `json.decoder.JSONDecodeError`.
-  Its diagnostic directory is
-  `/tmp/Decky-Metadata/diagnostics/20260901T155955Z`. The current dedicated
-  tunnel was explicitly closed with `scripts/deck/tunnel.sh down`; the follow-up
-  `scripts/deck/tunnel.sh status` reports `tunnel: down`.
+- The final `./run.sh scripts/deck/verify/run_all.sh --no-launch` smoke passed
+  after the Deck was awake. The quick-links, re-render churn, Community, and
+  controller-layout checks passed; the launch smoke was intentionally skipped.
+- The controller-layout result is retained at
+  `/tmp/Decky-Metadata/verification/20260901T162939Z/controller-layouts.json`.
+- The final `./run.sh scripts/decky capture` completed successfully. Its
+  diagnostics are at `/tmp/Decky-Metadata/diagnostics/20260901T163025Z`.
+- Dedicated tunnel cleanup completed successfully: `scripts/deck/tunnel.sh
+  status` reported `tunnel: down`.
 
-The aggregate smoke command and final capture must be rerun successfully after
-the Deck is reachable again. The current live-device outage prevents completion
-of those two required gates; no round-complete marker is claimed for this
-attempt.
+The final smoke and capture gates are complete. Together with the retained
+Home, non-Steam grid, native-category, and negative-control evidence above,
+they complete the required live-device verification for this change.
