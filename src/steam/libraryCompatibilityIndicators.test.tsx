@@ -575,6 +575,50 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("uses SteamUI's webpack bridge when the plugin global has no window store", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = browserDocument(() => []);
+    const mainDocument = browserDocument(() => [mounted.card]);
+    host.document = emptyDocument;
+    host.parent = {
+      webpackChunksteamui: [],
+      document: emptyDocument,
+      SteamUIStore: {
+        m_WindowStore: {
+          MainWindowInstance: { m_BrowserWindow: { document: mainDocument } },
+        },
+      },
+    };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = undefined;
+
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    try {
+      expect(mainDocument.querySelectorAll).toHaveBeenCalledOnce();
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(harness.scheduleRetry).not.toHaveBeenCalled();
+    } finally {
+      harness.unpatchers[0]();
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
   it("retries mounted Home discovery when cards appear after startup patch installation", () => {
     let cards: any[] = [];
     const document = browserDocument(() => cards);
