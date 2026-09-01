@@ -421,6 +421,51 @@ describe("compatibility metadata application", () => {
     unsubscribe();
   });
 
+  it("continues compatibility installation when UpdateAppOverview is read-only", async () => {
+    const appId = 9453;
+    const initial = installCompatibilityOverview(appId, 0xab);
+    metadataCache[String(appId)] = compatibilityMetadata(2, null) as any;
+    applyMetadata(appId);
+
+    let currentOverview: any = initial;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? currentOverview : null,
+    } as Record<string, any>;
+    Object.defineProperty(appStore, "UpdateAppOverview", {
+      configurable: true,
+      writable: false,
+      value: (incoming: any) => {
+        appInfoStore.OnAppOverviewChange([incoming]);
+        currentOverview = {
+          ...initial,
+          steam_hw_compat_category_packed: incoming.steam_hw_compat_category_packed(),
+        };
+        appStore.allApps = [currentOverview];
+        return currentOverview;
+      },
+    });
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    unpatchers = [];
+
+    expect(() => installMetadataPatches(unpatchers)).not.toThrow();
+    const observedRevisions: number[] = [];
+    const unsubscribe = subscribeCompatibilityRevision(() => {
+      observedRevisions.push(currentOverview.steam_hw_compat_category_packed);
+    });
+
+    expect(appStore.UpdateAppOverview(incomingOverview(appId, 0))).toBe(currentOverview);
+    await Promise.resolve();
+
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
+    expect(observedRevisions).toEqual([0x0a]);
+    unsubscribe();
+  });
+
   it.each([false, true])("publishes a constructor-initialized %s AppOverview replacement", (observable) => {
     const appId = observable ? 9452 : 9451;
     let constructions = 0;

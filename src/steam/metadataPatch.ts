@@ -536,6 +536,18 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   if (!overviewProto || !detailsProto) return;
 
   let incomingCompatibilityChanged = false;
+  let updateOverviewPatched = false;
+  let fallbackRevisionQueued = false;
+  const publishFallbackCompatibilityRevision = () => {
+    if (fallbackRevisionQueued) return;
+    fallbackRevisionQueued = true;
+    queueMicrotask(() => {
+      fallbackRevisionQueued = false;
+      if (!incomingCompatibilityChanged) return;
+      incomingCompatibilityChanged = false;
+      notifyCompatibilityRevision();
+    });
+  };
   if (infoStore?.OnAppOverviewChange) {
     unpatchers.push(
       patchMethod(infoStore, "OnAppOverviewChange", (_thisValue, original, args) => {
@@ -544,20 +556,32 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           (changed: boolean, overview: any) => applyCompatibilityToIncomingOverview(overview) || changed,
           incomingCompatibilityChanged,
         );
-        return original(...args);
+        const result = original(...args);
+        // Some Steam builds expose UpdateAppOverview as a read-only native
+        // method. Publish once in a microtask after this input batch instead
+        // of allowing that optional lifecycle hook to abort every Steam patch.
+        if (!updateOverviewPatched && incomingCompatibilityChanged) {
+          publishFallbackCompatibilityRevision();
+        }
+        return result;
       })
     );
   }
 
   if (appStore?.UpdateAppOverview) {
-    unpatchers.push(
-      patchMethod(appStore, "UpdateAppOverview", (_thisValue, original, args) => {
-        incomingCompatibilityChanged = false;
-        const result = original(...args);
-        if (incomingCompatibilityChanged) notifyCompatibilityRevision();
-        return result;
-      })
-    );
+    try {
+      unpatchers.push(
+        patchMethod(appStore, "UpdateAppOverview", (_thisValue, original, args) => {
+          incomingCompatibilityChanged = false;
+          const result = original(...args);
+          if (incomingCompatibilityChanged) notifyCompatibilityRevision();
+          return result;
+        })
+      );
+      updateOverviewPatched = true;
+    } catch (error) {
+      log.warn("bridge", "UpdateAppOverview patch unavailable; using input-batch revision", error);
+    }
   }
 
   // GetAppData is the narrowest durable boundary around native details
