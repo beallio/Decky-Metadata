@@ -363,6 +363,117 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
   });
 
+  it("refreshes a Home card cached before patch installation without replacing the current route", () => {
+    const replace = vi.fn();
+    (globalThis as any).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: {
+            location: { pathname: "/routes/library/home" },
+            replace,
+          },
+        },
+      },
+    };
+    const harness = makeHarness();
+    const cachedCapsule = createElement(harness.carousel, { appid: nativeShortcut.appid });
+    let cachedItem: any = createElement("section", {}, cachedCapsule);
+    const recomputeGridSize = vi.fn(() => {
+      cachedItem = undefined;
+    });
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { appid: item.appid }),
+      ),
+    });
+    const patchedHome = harness.homeHandler!([], homeOutput) as any;
+    const mountedCarouselRef = patchedHome.ref;
+
+    // This is the current, already-mounted VBC instance. Its item output was
+    // cached before the plugin patched the Home renderer.
+    if (typeof mountedCarouselRef === "function") {
+      mountedCarouselRef({ m_refGrid: { recomputeGridSize } });
+    }
+    const visibleItem = cachedItem ?? patchedHome.props.fnItemRenderer({ appid: nativeShortcut.appid });
+    const visibleCapsule = visibleItem.props.children;
+    const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+    const visibleSlot = visibleOutput.props.children[2];
+
+    expect(visibleSlot).toMatchObject({
+      type: expect.any(Function),
+    });
+    expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+    expect(replace).not.toHaveBeenCalled();
+
+    notifyCompatibilityRevision();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+
+    mountedCarouselRef?.(null);
+    harness.unpatchers[0]();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+    delete (globalThis as any).Router;
+  });
+
+  it("bypasses an already-mounted Home virtual-grid cache through its bounded card ancestor", () => {
+    const harness = makeHarness();
+    let cacheInvalidated = false;
+    const staleItem = createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const freshItem = () => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const originalCellRenderer = vi.fn((_args: any) => cacheInvalidated ? freshItem() : staleItem);
+    const recomputeGridSize = vi.fn(() => {
+      cacheInvalidated = true;
+    });
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const previousDocument = (globalThis as any).document;
+    (globalThis as any).document = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      expect(grid.props.cellRenderer).not.toBe(originalCellRenderer);
+      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleCapsule = visibleItem.props.children;
+      const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+      const visibleSlot = visibleOutput.props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(originalCellRenderer);
+      const callsAfterCleanup = recomputeGridSize.mock.calls.length;
+      notifyCompatibilityRevision();
+      expect(recomputeGridSize).toHaveBeenCalledTimes(callsAfterCleanup);
+    } finally {
+      (globalThis as any).document = previousDocument;
+    }
+  });
+
   it("keeps Home and grid badge slots reactive when metadata arrives after their first render", () => {
     let metadata: Parameters<typeof resolveLibraryCompatibilityIndicator>[0]["metadata"];
     const useCompatibilityRevision = vi.fn();

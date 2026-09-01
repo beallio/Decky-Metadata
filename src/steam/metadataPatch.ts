@@ -6,6 +6,7 @@ import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert"
 import { DeckCompatibilityCategory, MetadataData } from "../types";
 import * as log from "../log";
 import {
+  NON_STEAM_APP_TYPE,
   Unpatch,
   appName,
   cleanTitle,
@@ -185,35 +186,9 @@ export const restoreAllCompatibilityBaselines = () => {
   });
 };
 
-/**
- * Force one render of an already-mounted Library surface after the indicator
- * patch installs. Cards rendered by the old renderer then acquire the owned,
- * revision-subscribed badge slot without replacing their overview objects.
- */
+/** Publish a compatibility revision without disturbing Steam navigation state. */
 export const refreshCompatibilitySurfaces = () => {
-  const revision = notifyCompatibilityRevision();
-  try {
-    const history = (globalThis as any)?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
-    const location = history?.location;
-    const pathname = location?.pathname;
-    const isLibrarySurface =
-      typeof pathname === "string" && /(?:^|\/)library(?:\/|$)/.test(pathname);
-    if (
-      typeof history?.replace === "function" &&
-      typeof pathname === "string" &&
-      pathname &&
-      isLibrarySurface
-    ) {
-      const path = `${pathname}${location.search || ""}${location.hash || ""}`;
-      history.replace(path, {
-        ...(location.state || {}),
-        deckyMetadataCompatibilityRevision: revision,
-      });
-    }
-  } catch {
-    // Do not interrupt a user action when a Steam client does not expose history.replace.
-  }
-  return revision;
+  return notifyCompatibilityRevision();
 };
 
 const applyCompatibilityCategory = (
@@ -240,6 +215,79 @@ const applyCompatibilityCategory = (
   } catch {
     // Steam objects are not always writable during early bootstrap.
     return false;
+  }
+};
+
+/**
+ * Apply only compatibility data to an exact native overview object. Steam can
+ * replace this non-observable object between callers, so the app-store getter
+ * uses this same helper before it returns a replacement to SteamUI.
+ */
+const applyCompatibilityToOverview = (appId: number, overview: any) => {
+  if (Number(overview?.appid) !== Number(appId) || !isNativeNonSteamShortcut(overview)) {
+    return false;
+  }
+  const metadata = metadataCache[String(appId)];
+  return applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+};
+
+/**
+ * Steam sends AppOverview protobufs to appInfoStore before it creates and
+ * publishes a replacement native object. Patch that input, rather than a
+ * getter after publication, so the native object starts with the effective
+ * category even though this field is non-observable.
+ */
+const applyCompatibilityToIncomingOverview = (overview: any) => {
+  const appId = Number(overview?.appid?.());
+  if (!Number.isFinite(appId) || appId <= 0) return false;
+  const current = getNativeOverview(appId);
+  const isIncomingShortcut = Number(overview?.app_type?.()) === NON_STEAM_APP_TYPE;
+  if (!isIncomingShortcut && !isNativeNonSteamShortcut(current)) return false;
+
+  const category = effectiveCompatibilityCategory(metadataCache[String(appId)]);
+  if (category === null) return false;
+  const packed = Number(overview?.steam_hw_compat_category_packed?.());
+  if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
+    return false;
+  }
+  const key = String(appId);
+  if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
+    metadataState.compatibilityBaselines[key] = current
+      ? packedCompatibilityValue(current) & 0xf
+      : packed & 0xf;
+  }
+  const nextPacked = (packed & ~0xf) | category | (category << 2);
+  if (nextPacked === packed) return false;
+  try {
+    overview.set_steam_hw_compat_category_packed(nextPacked);
+    return Number(overview.steam_hw_compat_category_packed()) === nextPacked;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * A direct metadata change has no native AppOverview notification. Replace
+ * only the exact current map entry with the same prototype and fields so the
+ * observable map publishes the completed category. This is a single get/set,
+ * never a map scan or a write through an official-AppID alias.
+ */
+const publishCompatibilityReplacement = (appId: number, overview: any) => {
+  try {
+    const overviews = appStore?.m_mapApps;
+    if (
+      !overviews ||
+      typeof overviews.get !== "function" ||
+      typeof overviews.set !== "function" ||
+      overviews.get(appId) !== overview
+    ) {
+      return;
+    }
+    const prototype = Object.getPrototypeOf(overview);
+    if (!prototype) return;
+    overviews.set(appId, Object.assign(Object.create(prototype), overview));
+  } catch {
+    // A changed Steam map leaves the native overview in place; never retry.
   }
 };
 
@@ -298,7 +346,9 @@ export const applyMetadata = (appId: number) => {
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
   if (!metadata) {
-    return restoreCompatibilityBaseline(appId, overview);
+    const restored = restoreCompatibilityBaseline(appId, overview);
+    if (restored) publishCompatibilityReplacement(appId, overview);
+    return restored;
   }
 
   let compatibilityChanged = false;
@@ -306,11 +356,7 @@ export const applyMetadata = (appId: number) => {
     if (typeof metadata.rating === "number") {
       overview.metacritic_score = metadata.rating;
     }
-    compatibilityChanged = applyCompatibilityCategory(
-      appId,
-      overview,
-      effectiveCompatibilityCategory(metadata),
-    );
+    compatibilityChanged = applyCompatibilityToOverview(appId, overview);
     if (!overview.m_setStoreCategories) {
       overview.m_setStoreCategories = new Set<number>();
     }
@@ -322,7 +368,10 @@ export const applyMetadata = (appId: number) => {
   }
 
   const appData = appDetailsStore?.GetAppData?.(appId);
-  if (!appData) return compatibilityChanged;
+  if (!appData) {
+    if (compatibilityChanged) publishCompatibilityReplacement(appId, overview);
+    return compatibilityChanged;
+  }
   ensureDetailsOverviewSafeFields(appId);
 
   const screenshots = steamScreenshotsFromMetadata(appId, metadata);
@@ -376,6 +425,7 @@ export const applyMetadata = (appId: number) => {
       // Cache writes can fail if the page has not finished creating app data.
     }
   }
+  if (compatibilityChanged) publishCompatibilityReplacement(appId, overview);
   return compatibilityChanged;
 };
 
@@ -452,7 +502,33 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
 export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   const overviewProto = appStore?.allApps?.[0]?.__proto__;
   const detailsProto = appDetailsStore?.__proto__;
+  const infoStore = (globalThis as any).appInfoStore;
   if (!overviewProto || !detailsProto) return;
+
+  let incomingCompatibilityChanged = false;
+  if (infoStore?.OnAppOverviewChange) {
+    unpatchers.push(
+      patchMethod(infoStore, "OnAppOverviewChange", (_thisValue, original, args) => {
+        const incoming = Array.isArray(args[0]) ? args[0] : [];
+        incomingCompatibilityChanged = incoming.reduce(
+          (changed: boolean, overview: any) => applyCompatibilityToIncomingOverview(overview) || changed,
+          incomingCompatibilityChanged,
+        );
+        return original(...args);
+      })
+    );
+  }
+
+  if (appStore?.UpdateAppOverview) {
+    unpatchers.push(
+      patchMethod(appStore, "UpdateAppOverview", (_thisValue, original, args) => {
+        incomingCompatibilityChanged = false;
+        const result = original(...args);
+        if (incomingCompatibilityChanged) notifyCompatibilityRevision();
+        return result;
+      })
+    );
+  }
 
   // GetAppData is the narrowest durable boundary around native details
   // replacements. Populate a new matched-shortcut details object before any
@@ -491,9 +567,10 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
       patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
         const requestedAppId = Number(args[0]);
         const result = original(...args);
-        if (result || !Number.isFinite(requestedAppId) || requestedAppId <= 0) {
+        if (!Number.isFinite(requestedAppId) || requestedAppId <= 0) {
           return result;
         }
+        if (result) return result;
         const shortcutAppId = shortcutAppIdForSteamAppId(requestedAppId);
         if (!shortcutAppId || shortcutAppId === requestedAppId) return result;
         try {

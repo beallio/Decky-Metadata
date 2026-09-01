@@ -96,6 +96,7 @@ afterEach(() => {
   metadataState.compatibilityRevision = 0;
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appDetailsStore;
+  delete (globalThis as Record<string, unknown>).appInfoStore;
   delete (globalThis as Record<string, unknown>).Router;
   delete (globalThis as Record<string, unknown>).window;
   mocks.afterPatch.mockClear();
@@ -193,6 +194,18 @@ const compatibilityMetadata = (category?: number | null, override?: number | nul
   deck_compat_category: category,
   deck_compat_override: override,
 });
+
+const incomingOverview = (appId: number, packed: number, nonSteam = true) => {
+  let currentPacked = packed;
+  return {
+    appid: () => appId,
+    app_type: () => nonSteam ? 1073741824 : 0,
+    steam_hw_compat_category_packed: () => currentPacked,
+    set_steam_hw_compat_category_packed: (nextPacked: number) => {
+      currentPacked = nextPacked;
+    },
+  };
+};
 
 const installCompatibilityOverview = (appId: number, packed: number, nonSteam = true) => {
   const overview = {
@@ -362,7 +375,83 @@ describe("compatibility metadata application", () => {
     expect(shortcut.steam_hw_compat_category_packed).toBe(0x6b);
   });
 
-  it("replaces the current route with its complete location to refresh compatibility surfaces", () => {
+  it("reapplies a positive category to a native AppOverview replacement before Steam publishes it", () => {
+    const appId = 9450;
+    const initial = installCompatibilityOverview(appId, 0xab);
+    metadataCache[String(appId)] = compatibilityMetadata(2, null) as any;
+    applyMetadata(appId);
+
+    let currentOverview: any = initial;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? currentOverview : null,
+      UpdateAppOverview: (incoming: any) => {
+        appInfoStore.OnAppOverviewChange([incoming]);
+        currentOverview = {
+          ...initial,
+          steam_hw_compat_category_packed: incoming.steam_hw_compat_category_packed(),
+        };
+        appStore.allApps = [currentOverview];
+        return currentOverview;
+      },
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    const replacementInput = incomingOverview(appId, 0);
+    const observedRevisions: number[] = [];
+    const unsubscribe = subscribeCompatibilityRevision(() => {
+      observedRevisions.push(currentOverview.steam_hw_compat_category_packed);
+    });
+
+    expect((host.appStore as any).UpdateAppOverview(replacementInput)).toBe(currentOverview);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
+    expect(observedRevisions).toEqual([0x0a]);
+
+    (host.appStore as any).UpdateAppOverview(incomingOverview(appId, 0x0a));
+    expect(observedRevisions).toEqual([0x0a]);
+
+    restoreAllCompatibilityBaselines();
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0b);
+    unsubscribe();
+  });
+
+  it.each([
+    ["an official Steam game", false, undefined],
+    ["missing metadata", true, undefined],
+    ["unresolved Automatic metadata", true, compatibilityMetadata(null, null)],
+    ["explicit Unknown metadata", true, compatibilityMetadata(null, 0)],
+  ])("does not publish a replacement compatibility change for %s", (_label, native, metadata) => {
+    const appId = 9460;
+    const currentOverview = installCompatibilityOverview(appId, 0, native);
+    if (metadata) metadataCache[String(appId)] = metadata as any;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = host.appStore as any;
+    appStore.UpdateAppOverview = (incoming: any) => {
+      appInfoStore.OnAppOverviewChange([incoming]);
+      return currentOverview;
+    };
+    host.appInfoStore = appInfoStore;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+    const observedRevisions: number[] = [];
+    const unsubscribe = subscribeCompatibilityRevision(() => {
+      observedRevisions.push(currentOverview.steam_hw_compat_category_packed);
+    });
+
+    expect(appStore.UpdateAppOverview(incomingOverview(appId, 0, native))).toBe(currentOverview);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0);
+    expect(observedRevisions).toEqual([]);
+    unsubscribe();
+  });
+
+  it("publishes a revision without replacing the current route", () => {
     const replace = vi.fn();
     const host = globalThis as Record<string, unknown>;
     host.Router = {
@@ -375,26 +464,6 @@ describe("compatibility metadata application", () => {
               hash: "#compatibility",
               state: { source: "test" },
             },
-            replace,
-          },
-        },
-      },
-    };
-
-    expect(refreshCompatibilitySurfaces()).toBe(1);
-    expect(replace).toHaveBeenCalledWith(
-      "/routes/library/app/2155012430?tab=GameInfo#compatibility",
-      { source: "test", deckyMetadataCompatibilityRevision: 1 }
-    );
-  });
-
-  it("notifies without replacing the real metadata save route", () => {
-    const replace = vi.fn();
-    (globalThis as Record<string, unknown>).Router = {
-      WindowStore: {
-        GamepadUIMainWindowInstance: {
-          m_history: {
-            location: { pathname: "/decky-metadata/100" },
             replace,
           },
         },

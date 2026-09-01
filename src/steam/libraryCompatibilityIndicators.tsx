@@ -40,6 +40,20 @@ const steamUiWindow = () => {
   ) ?? globalThis;
 };
 
+const steamUiCardDocument = () => {
+  const candidates: any[] = [globalThis];
+  try {
+    const currentWindow = globalThis as any;
+    candidates.push(currentWindow.parent, currentWindow.top);
+  } catch {
+    // A cross-origin frame can still use its own document when it has cards.
+  }
+  return candidates.find((candidate) =>
+    typeof candidate?.document?.querySelector === "function" &&
+    !!candidate.document.querySelector("[data-id]")
+  )?.document;
+};
+
 export type LibraryCompatibilityIndicatorDependencies = {
   findModuleChild: ModuleFinder;
   findModuleBySource: ModuleSourceFinder;
@@ -415,6 +429,14 @@ const wrapCarouselElement = (node: any, carousel: any, wrapper: any): any => {
   });
 };
 
+const assignRef = (ref: any, value: any) => {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref && typeof ref === "object") {
+    ref.current = value;
+  }
+};
+
 /**
  * Add compatibility indicators at the two native Library card renderers.
  * The patch calls only those renderers. It never walks MobX state.
@@ -428,7 +450,11 @@ export const installLibraryCompatibilityIndicators = (
   let homeUnpatch: Unpatch | undefined;
   let gridUnpatch: Unpatch | undefined;
   let retryId: number | undefined;
+  let homeCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
+  const mountedHomeCarousels = new Set<any>();
+  const mountedHomeGrids = new Map<any, { original: any; wrapper: any }>();
+  const homeRefCallbacks = new Map<any, (instance: any) => void>();
   let resolutionAttempts = 0;
   let installed = false;
   let cleaned = false;
@@ -444,6 +470,26 @@ export const installLibraryCompatibilityIndicators = (
     const gridCleanup = gridUnpatch;
     homeUnpatch = undefined;
     gridUnpatch = undefined;
+    const cacheCleanup = homeCacheUnsubscribe;
+    homeCacheUnsubscribe = undefined;
+    try {
+      cacheCleanup?.();
+    } catch {
+      // Continue teardown if Steam has already removed the subscription.
+    }
+    mountedHomeCarousels.clear();
+    mountedHomeGrids.forEach(({ original, wrapper }, grid) => {
+      try {
+        if (grid?.props?.cellRenderer === wrapper) {
+          grid.props.cellRenderer = original;
+          grid.recomputeGridSize?.();
+        }
+      } catch {
+        // A disposed virtual grid does not need an additional cleanup pass.
+      }
+    });
+    mountedHomeGrids.clear();
+    homeRefCallbacks.clear();
     indicatorUnsubscribers.forEach((unsubscribe) => {
       try {
         unsubscribe();
@@ -558,6 +604,114 @@ export const installLibraryCompatibilityIndicators = (
       );
     };
 
+    const homeFiberFor = (element: any) => {
+      try {
+        const key = Object.keys(element).find((name) =>
+          name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$")
+        );
+        return key ? element[key] : null;
+      } catch {
+        return null;
+      }
+    };
+    const isHomeCarouselFiber = (fiber: any) => {
+      let current = fiber;
+      for (let depth = 0; current && depth < 24; depth += 1, current = current.return) {
+        if (current.type === targets.home || current.elementType === targets.home) return true;
+        try {
+          const candidate = current.type ?? current.elementType;
+          const render = typeof candidate?.render === "function"
+            ? candidate.render
+            : typeof candidate === "function"
+              ? candidate
+              : undefined;
+          const source = typeof render === "function" ? render.toString() : "";
+          if (
+            source.includes("VBC_") &&
+            source.includes("fnOnFocusedColumnChange")
+          ) {
+            return true;
+          }
+        } catch {
+          // Keep the bounded walk fail-closed when Steam lazily swaps a type.
+        }
+      }
+      return false;
+    };
+    const installCachedHomeCellRenderer = (grid: any) => {
+      if (mountedHomeGrids.has(grid)) return;
+      const original = grid?.props?.cellRenderer;
+      if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function") return;
+      const wrapper = (...args: any[]) =>
+        wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
+      try {
+        grid.props.cellRenderer = wrapper;
+        if (grid.props.cellRenderer !== wrapper) return;
+        mountedHomeGrids.set(grid, { original, wrapper });
+      } catch {
+        // A changed virtual-grid target is left untouched and is not retried.
+      }
+    };
+    const discoverMountedHomeCarousels = () => {
+      try {
+        const document = steamUiCardDocument();
+        const cards = document?.querySelectorAll?.("[data-id]");
+        if (!cards) return;
+        for (const card of Array.from(cards) as any[]) {
+          let fiber = homeFiberFor(card);
+          for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
+            const carousel = fiber.stateNode;
+            if (
+              carousel?.m_refGrid &&
+              isHomeCarouselFiber(fiber)
+            ) {
+              mountedHomeCarousels.add(carousel);
+              installCachedHomeCellRenderer(carousel.m_refGrid);
+              break;
+            }
+          }
+        }
+      } catch {
+        // DOM/fiber access is optional; new cards still use the renderer patch.
+      }
+    };
+    const refreshMountedHomeCarousels = () => {
+      discoverMountedHomeCarousels();
+      const grids = new Set<any>();
+      mountedHomeCarousels.forEach((carousel) => {
+        const grid = carousel?.m_refGrid;
+        if (typeof grid?.recomputeGridSize === "function") {
+          grids.add(grid);
+        } else {
+          mountedHomeCarousels.delete(carousel);
+        }
+      });
+      mountedHomeGrids.forEach((_value, grid) => grids.add(grid));
+      grids.forEach((grid) => {
+        try {
+          grid.recomputeGridSize();
+        } catch {
+          mountedHomeGrids.delete(grid);
+        }
+      });
+    };
+    const homeRefFor = (originalRef: any) => {
+      const existing = homeRefCallbacks.get(originalRef);
+      if (existing) return existing;
+      const callback = (instance: any) => {
+        try {
+          assignRef(originalRef, instance);
+        } catch {
+          // A host ref must not prevent Steam's native carousel from mounting.
+        }
+        if (!instance || !active) return;
+        mountedHomeCarousels.add(instance);
+        refreshMountedHomeCarousels();
+      };
+      homeRefCallbacks.set(originalRef, callback);
+      return callback;
+    };
+
     try {
       homeUnpatch = dependencies.patchHomeRenderer(
         targets.home,
@@ -568,6 +722,7 @@ export const installLibraryCompatibilityIndicators = (
           if (typeof homeProps?.fnItemRenderer !== "function") return output;
           const originalRenderer = homeProps.fnItemRenderer;
           return cloneElement(homeOutput as any, {
+            ref: homeRefFor((homeOutput as any).ref),
             fnItemRenderer: (...itemArgs: any[]) =>
               wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
           });
@@ -601,6 +756,8 @@ export const installLibraryCompatibilityIndicators = (
       return;
     }
     installed = true;
+    homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
+    refreshMountedHomeCarousels();
     reportInstalled(resolutionAttempts);
     dependencies.refreshCompatibilitySurfaces();
   };
