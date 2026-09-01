@@ -674,8 +674,11 @@ describe("installLibraryCompatibilityIndicators", () => {
         return null;
       },
     };
+    const currentFiberType = function currentFiberType() {
+      return null;
+    };
     const gridFiber = {
-      type: currentHomeGrid,
+      type: currentFiberType,
       elementType: currentHomeGrid,
       stateNode: { m_refGrid: grid },
       return: null,

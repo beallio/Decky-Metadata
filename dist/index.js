@@ -4782,24 +4782,25 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 if (current.type === targets.home || current.elementType === targets.home)
                     return true;
                 try {
-                    const candidate = current.type ?? current.elementType;
-                    const render = typeof candidate?.render === "function"
-                        ? candidate.render
-                        : typeof candidate === "function"
-                            ? candidate
-                            : undefined;
-                    const source = typeof render === "function" ? render.toString() : "";
-                    if (source.includes("VBC_") &&
-                        source.includes("fnOnFocusedColumnChange")) {
-                        return true;
-                    }
-                    // Steam can replace the Home renderer with a wrapper after module
-                    // resolution. That wrapper removes the VBC_ source token, but the
-                    // mounted current Home grid still exposes its focused-column callback
-                    // and the exact m_refGrid we need to own.
-                    if (source.includes("fnOnFocusedColumnChange") &&
-                        current.stateNode?.m_refGrid) {
-                        return true;
+                    for (const candidate of [current.type, current.elementType]) {
+                        const render = typeof candidate?.render === "function"
+                            ? candidate.render
+                            : typeof candidate === "function"
+                                ? candidate
+                                : undefined;
+                        const source = typeof render === "function" ? render.toString() : "";
+                        if (source.includes("VBC_") &&
+                            source.includes("fnOnFocusedColumnChange")) {
+                            return true;
+                        }
+                        // Steam can replace the Home renderer with a wrapper after module
+                        // resolution. That wrapper removes the VBC_ source token, but the
+                        // mounted current Home grid still exposes its focused-column callback
+                        // and the exact m_refGrid we need to own.
+                        if (source.includes("fnOnFocusedColumnChange") &&
+                            current.stateNode?.m_refGrid) {
+                            return true;
+                        }
                     }
                 }
                 catch {
