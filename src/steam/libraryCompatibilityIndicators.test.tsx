@@ -695,6 +695,43 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("uses the mounted Home carousel type when its module target differs", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const mountedCarousel = function mountedCarousel() {
+      return createElement("div", {}, "art", "in-library", false, "footer");
+    };
+    const currentFiberType = function currentFiberType() {
+      return null;
+    };
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(mountedCarousel, { app: nativeShortcut }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const gridFiber = {
+      type: currentFiberType,
+      elementType: mountedCarousel,
+      memoizedProps: { app: nativeShortcut },
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": { stateNode: {}, return: gridFiber } };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
   it("does not schedule mounted Home discovery when synchronous card discovery installs a wrapper", () => {
     const nativeRenderer = vi.fn(() => createElement("section", {}));
     const mounted = mountedHomeCard({

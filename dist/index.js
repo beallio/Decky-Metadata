@@ -4573,8 +4573,8 @@ const wrapCarouselElement = (node, carousel, wrapper) => {
     if (!SP_REACT.isValidElement(node))
         return node;
     const element = node;
-    if (element.type === carousel) {
-        return SP_REACT.createElement(wrapper, { ...element.props, key: element.key });
+    if (carousel(element.type)) {
+        return SP_REACT.createElement(wrapper(element.type), { ...element.props, key: element.key });
     }
     const originalChildren = element.props?.children;
     if (originalChildren === undefined)
@@ -4610,6 +4610,8 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     const indicatorUnsubscribers = new Set();
     const mountedHomeCarousels = new Set();
     const mountedHomeGrids = new Map();
+    const mountedHomeCarouselTypes = new Set();
+    const mountedHomeCarouselWrappers = new Map();
     const homeRefCallbacks = new Map();
     let resolutionAttempts = 0;
     let homeDiscoveryAttempts = 0;
@@ -4653,6 +4655,8 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             }
         });
         mountedHomeGrids.clear();
+        mountedHomeCarouselTypes.clear();
+        mountedHomeCarouselWrappers.clear();
         homeRefCallbacks.clear();
         indicatorUnsubscribers.forEach((unsubscribe) => {
             try {
@@ -4745,16 +4749,24 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             }
             return decorate(output, overview);
         };
-        const carouselWrapper = (props) => {
-            const output = targets.carousel(props);
-            if (!active)
-                return output;
-            // Steam's live Home renderer passes the shortcut overview as `app`.
-            // The top-level `appid` remains a supported fallback for the alternate
-            // renderer shape used by older clients.
-            const appId = Number(props?.appid ?? props?.app?.appid);
-            return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+        const carouselWrapperFor = (carousel) => {
+            const existing = mountedHomeCarouselWrappers.get(carousel);
+            if (existing)
+                return existing;
+            const wrapper = (props) => {
+                const output = carousel(props);
+                if (!active)
+                    return output;
+                // Steam's live Home renderer passes the shortcut overview as `app`.
+                // The top-level `appid` remains a supported fallback for the alternate
+                // renderer shape used by older clients.
+                const appId = Number(props?.appid ?? props?.app?.appid);
+                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+            };
+            mountedHomeCarouselWrappers.set(carousel, wrapper);
+            return wrapper;
         };
+        const isMountedHomeCarousel = (carousel) => carousel === targets.carousel || mountedHomeCarouselTypes.has(carousel);
         const homeFiberFor = (element) => {
             try {
                 const key = Object.keys(element).find((name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"));
@@ -4810,7 +4822,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 previous.discovered = previous.discovered || discovered;
                 return true;
             }
-            const wrapRenderer = (renderer) => (...args) => wrapCarouselElement(renderer(...args), targets.carousel, carouselWrapper);
+            const wrapRenderer = (renderer) => (...args) => wrapCarouselElement(renderer(...args), isMountedHomeCarousel, carouselWrapperFor);
             const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
             try {
                 // Steam can inherit this renderer through the props prototype rather
@@ -4895,6 +4907,17 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 for (const card of Array.from(cards)) {
                     let fiber = homeFiberFor(card);
                     for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
+                        const appId = Number(fiber.memoizedProps?.app?.appid ?? fiber.memoizedProps?.appid);
+                        if (Number.isFinite(appId) && appId > 0) {
+                            // The mounted Home card can come from a newer Steam module
+                            // generation than the cached module export. Retain its exact
+                            // app-bearing component identities for this bounded card renderer.
+                            [fiber.type, fiber.elementType].forEach((component) => {
+                                if (typeof component === "function" || typeof component === "object") {
+                                    mountedHomeCarouselTypes.add(component);
+                                }
+                            });
+                        }
                         const carousel = fiber.stateNode;
                         if (carousel?.m_refGrid &&
                             isHomeCarouselFiber(fiber)) {
@@ -4999,7 +5022,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 const originalRenderer = homeProps.fnItemRenderer;
                 return SP_REACT.cloneElement(homeOutput, {
                     ref: homeRefFor(homeOutput.ref),
-                    fnItemRenderer: (...itemArgs) => wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+                    fnItemRenderer: (...itemArgs) => wrapCarouselElement(originalRenderer(...itemArgs), isMountedHomeCarousel, carouselWrapperFor),
                 });
             });
             if (typeof homeUnpatch !== "function") {
