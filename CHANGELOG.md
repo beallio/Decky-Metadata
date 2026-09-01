@@ -9,6 +9,7 @@ Compatibility badges remain visible after plugin or SteamUI reload without selec
 ### Fixed
 
 - Non-Steam Playable, Verified, and Unsupported badges now refresh on already-mounted Library Home and grid cards after a plugin or SteamUI reload.
+- Home compatibility badges now recover when cards mount after a Steam JavaScript-context restart.
 
 ## [0.3.10] - 2026-08-30
 

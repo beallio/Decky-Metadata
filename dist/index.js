@@ -4536,6 +4536,8 @@ const defaultDependencies = {
     cancelRetry: (retryId) => window.clearTimeout(retryId),
     retryIntervalMs: 500,
     maxResolutionAttempts: 240,
+    homeDiscoveryIntervalMs: 500,
+    maxHomeDiscoveryAttempts: 60,
     getOverview,
     metadataForApp: (appId) => metadataCache[String(appId)],
     isNativeNonSteamShortcut,
@@ -4599,12 +4601,14 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     let homeUnpatch;
     let gridUnpatch;
     let retryId;
+    let homeDiscoveryRetryId;
     let homeCacheUnsubscribe;
     const indicatorUnsubscribers = new Set();
     const mountedHomeCarousels = new Set();
     const mountedHomeGrids = new Map();
     const homeRefCallbacks = new Map();
     let resolutionAttempts = 0;
+    let homeDiscoveryAttempts = 0;
     let installed = false;
     let cleaned = false;
     const cleanup = () => {
@@ -4615,6 +4619,10 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         if (retryId !== undefined) {
             dependencies.cancelRetry(retryId);
             retryId = undefined;
+        }
+        if (homeDiscoveryRetryId !== undefined) {
+            dependencies.cancelRetry(homeDiscoveryRetryId);
+            homeDiscoveryRetryId = undefined;
         }
         const homeCleanup = homeUnpatch;
         const gridCleanup = gridUnpatch;
@@ -4777,32 +4785,39 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             return false;
         };
         const installCachedHomeCellRenderer = (grid) => {
+            if (!active)
+                return false;
             const original = grid?.props?.cellRenderer;
             if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function")
-                return;
+                return false;
             const previous = mountedHomeGrids.get(grid);
             // React can publish a new native renderer on an already-mounted grid.
             // Preserve that newest renderer as the cleanup target, rather than
             // leaving the old wrapper registered after it has been replaced.
             if (previous?.wrapper === original)
-                return;
+                return true;
             const wrapper = (...args) => wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
             try {
                 grid.props.cellRenderer = wrapper;
                 if (grid.props.cellRenderer !== wrapper)
-                    return;
+                    return false;
                 mountedHomeGrids.set(grid, { original, wrapper });
+                return true;
             }
             catch {
                 // A changed virtual-grid target is left untouched and is not retried.
+                return false;
             }
         };
         const discoverMountedHomeCarousels = () => {
+            if (!active)
+                return false;
+            let installedWrapper = false;
             try {
                 const document = steamUiCardDocument();
                 const cards = document?.querySelectorAll?.("[data-id]");
                 if (!cards)
-                    return;
+                    return false;
                 for (const card of Array.from(cards)) {
                     let fiber = homeFiberFor(card);
                     for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
@@ -4810,7 +4825,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                         if (carousel?.m_refGrid &&
                             isHomeCarouselFiber(fiber)) {
                             mountedHomeCarousels.add(carousel);
-                            installCachedHomeCellRenderer(carousel.m_refGrid);
+                            installedWrapper = installCachedHomeCellRenderer(carousel.m_refGrid) || installedWrapper;
                             break;
                         }
                     }
@@ -4819,13 +4834,23 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             catch {
                 // DOM/fiber access is optional; new cards still use the renderer patch.
             }
+            return installedWrapper;
+        };
+        const cancelMountedHomeDiscoveryRetry = () => {
+            if (homeDiscoveryRetryId === undefined)
+                return;
+            dependencies.cancelRetry(homeDiscoveryRetryId);
+            homeDiscoveryRetryId = undefined;
         };
         const refreshMountedHomeCarousels = () => {
-            discoverMountedHomeCarousels();
+            if (!active)
+                return false;
+            let installedWrapper = discoverMountedHomeCarousels();
             const grids = new Set();
             mountedHomeCarousels.forEach((carousel) => {
                 const grid = carousel?.m_refGrid;
                 if (typeof grid?.recomputeGridSize === "function") {
+                    installedWrapper = installCachedHomeCellRenderer(grid) || installedWrapper;
                     grids.add(grid);
                 }
                 else {
@@ -4841,6 +4866,9 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                     mountedHomeGrids.delete(grid);
                 }
             });
+            if (installedWrapper)
+                cancelMountedHomeDiscoveryRetry();
+            return installedWrapper;
         };
         const homeRefFor = (originalRef) => {
             const existing = homeRefCallbacks.get(originalRef);
@@ -4860,6 +4888,23 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             };
             homeRefCallbacks.set(originalRef, callback);
             return callback;
+        };
+        const scheduleMountedHomeDiscoveryRetry = () => {
+            if (!active ||
+                homeDiscoveryRetryId !== undefined ||
+                mountedHomeGrids.size > 0 ||
+                homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts) {
+                return;
+            }
+            homeDiscoveryRetryId = dependencies.scheduleRetry(() => {
+                if (!active)
+                    return;
+                homeDiscoveryRetryId = undefined;
+                homeDiscoveryAttempts += 1;
+                if (refreshMountedHomeCarousels())
+                    return;
+                scheduleMountedHomeDiscoveryRetry();
+            }, dependencies.homeDiscoveryIntervalMs);
         };
         try {
             homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
@@ -4891,9 +4936,11 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         installed = true;
         homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
-        refreshMountedHomeCarousels();
+        const installedMountedHomeWrapper = refreshMountedHomeCarousels();
         reportInstalled(resolutionAttempts);
         dependencies.refreshCompatibilitySurfaces();
+        if (!installedMountedHomeWrapper)
+            scheduleMountedHomeDiscoveryRetry();
     };
     installWhenTargetsResolve();
 };

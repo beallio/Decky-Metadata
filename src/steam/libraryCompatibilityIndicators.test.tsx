@@ -175,6 +175,8 @@ describe("installLibraryCompatibilityIndicators", () => {
     throwSourceLookups?: number;
     retryIntervalMs?: number;
     maxResolutionAttempts?: number;
+    homeDiscoveryIntervalMs?: number;
+    maxHomeDiscoveryAttempts?: number;
   } = {}) => {
     const carousel = function carousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
@@ -279,6 +281,8 @@ describe("installLibraryCompatibilityIndicators", () => {
       cancelRetry,
       retryIntervalMs: options.retryIntervalMs ?? 500,
       maxResolutionAttempts: options.maxResolutionAttempts ?? 3,
+      homeDiscoveryIntervalMs: options.homeDiscoveryIntervalMs ?? 0,
+      maxHomeDiscoveryAttempts: options.maxHomeDiscoveryAttempts ?? 0,
       getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
       metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
       isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
@@ -329,6 +333,59 @@ describe("installLibraryCompatibilityIndicators", () => {
     const tree = patchedHome.props.fnItemRenderer({ appid });
     const capsule = tree.props.children;
     return { capsule, output: capsule.type(capsule.props) };
+  };
+
+  const mountedHomeCard = (harness: any, cellRenderer: any) => {
+    const recomputeGridSize = vi.fn();
+    const grid = { props: { cellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    return {
+      card: { "__reactFiber$test": fiber },
+      grid,
+      recomputeGridSize,
+    };
+  };
+
+  const browserDocument = (cards: () => any[]) => ({
+    querySelector: vi.fn(() => cards()[0] ?? null),
+    querySelectorAll: vi.fn(() => cards()),
+  });
+
+  const installBrowserBridge = (document: any) => {
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = browserDocument(() => []);
+    host.document = emptyDocument;
+    host.parent = { document: emptyDocument };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: emptyDocument } },
+      },
+    };
+    return () => {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    };
+  };
+
+  const expectPlayableCachedHomeCard = (harness: any, grid: any) => {
+    const visibleItem: any = grid.props.cellRenderer({});
+    const capsule = visibleItem.props.children;
+    const slot = capsule.type(capsule.props).props.children[2];
+    expect(slot.type(slot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
   };
 
   it("uses a faithful two-phase Home wrapper, prevents App-ID bleed and duplicate badges, and makes cached cards inert on cleanup", () => {
@@ -515,6 +572,133 @@ describe("installLibraryCompatibilityIndicators", () => {
       host.parent = previousParent;
       host.top = previousTop;
       host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
+  it("retries mounted Home discovery when cards appear after startup patch installation", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const metadataForApp = vi.fn(() => ({ deck_compat_override: 3 } as any));
+    const harness = makeHarness({
+      metadataForApp,
+      homeDiscoveryIntervalMs: 7,
+      maxHomeDiscoveryAttempts: 2,
+    });
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, nativeRenderer);
+
+    try {
+      expect(document.querySelector).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).toHaveBeenCalledWith(expect.any(Function), 7);
+      expect(mounted.grid.props.cellRenderer).toBe(nativeRenderer);
+
+      cards = [mounted.card];
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(0);
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      expect(metadataForApp).toHaveBeenCalledOnce();
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("does not schedule mounted Home discovery when synchronous card discovery installs a wrapper", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).not.toHaveBeenCalled();
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("wraps a React replacement from the retry window and restores its newest native renderer", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, originalRenderer);
+
+    try {
+      mounted.grid.props.cellRenderer = replacementRenderer;
+      cards = [mounted.card];
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("cancels mounted Home discovery and keeps its raced callback inert after cleanup", () => {
+    const document = browserDocument(() => []);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const queryCallsAfterInstall = document.querySelector.mock.calls.length;
+
+    try {
+      harness.unpatchers[0]();
+      expect(harness.cancelRetry).toHaveBeenCalledWith(1);
+      expect(harness.pendingRetries.size).toBe(0);
+      harness.runScheduledRetry(1);
+      expect(document.querySelector.mock.calls).toHaveLength(queryCallsAfterInstall);
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("stops unresolved mounted Home discovery at its configured attempt limit", () => {
+    const document = browserDocument(() => []);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      harness.runNextRetry();
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      harness.runNextRetry();
+      expect(harness.pendingRetries.size).toBe(0);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+      expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
     }
   });
 
