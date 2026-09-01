@@ -697,7 +697,11 @@ export const installLibraryCompatibilityIndicators = (
         wrapCarouselElement(renderer(...args), targets.carousel, carouselWrapper);
       const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
       try {
-        if (descriptor?.configurable) {
+        // Steam can inherit this renderer through the props prototype rather
+        // than publishing an own descriptor. Define an own accessor in both
+        // cases so a later React assignment cannot silently replace the
+        // wrapper between discovery retries.
+        if (!descriptor || descriptor.configurable) {
           const record: MountedHomeGrid = {
             original,
             wrapper: wrapRenderer(original),
@@ -706,7 +710,7 @@ export const installLibraryCompatibilityIndicators = (
               if (grid?.props?.cellRenderer !== record.wrapper) return;
               Object.defineProperty(grid.props, "cellRenderer", {
                 configurable: true,
-                enumerable: descriptor.enumerable ?? true,
+                enumerable: descriptor?.enumerable ?? true,
                 writable: true,
                 value: record.original,
               });
@@ -714,7 +718,7 @@ export const installLibraryCompatibilityIndicators = (
           };
           Object.defineProperty(grid.props, "cellRenderer", {
             configurable: true,
-            enumerable: descriptor.enumerable ?? true,
+            enumerable: descriptor?.enumerable ?? true,
             get: () => record.wrapper,
             set: (next) => {
               if (next === record.wrapper || typeof next !== "function") return;

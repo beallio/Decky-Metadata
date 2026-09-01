@@ -735,6 +735,40 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("owns an inherited Home cell renderer when React replaces it after discovery", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const props = Object.create({ cellRenderer: originalRenderer });
+    const grid = { props, recomputeGridSize: vi.fn() };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+      grid.props.cellRenderer = replacementRenderer;
+
+      expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, grid);
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
   it("wraps the newest renderer when recompute publishes a replacement renderer", () => {
     let cards: any[] = [];
     const document = browserDocument(() => cards);
