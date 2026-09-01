@@ -664,6 +664,49 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("keeps mounted Home discovery active when recompute publishes a replacement renderer", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    let replaceOnRecompute = true;
+    const recomputeGridSize = vi.fn(() => {
+      if (replaceOnRecompute) {
+        replaceOnRecompute = false;
+        grid.props.cellRenderer = replacementRenderer;
+      }
+    });
+    const grid = { props: { cellRenderer: originalRenderer }, recomputeGridSize };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+      expect(grid.props.cellRenderer).toBe(replacementRenderer);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+
+      harness.runNextRetry();
+      expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expect(harness.pendingRetries.size).toBe(0);
+      expectPlayableCachedHomeCard(harness, grid);
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
   it("cancels mounted Home discovery and keeps its raced callback inert after cleanup", () => {
     const document = browserDocument(() => []);
     const restoreBridge = installBrowserBridge(document);

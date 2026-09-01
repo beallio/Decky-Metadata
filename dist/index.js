@@ -4809,10 +4809,21 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 return false;
             }
         };
+        const hasMountedHomeCellRendererWrapper = () => {
+            for (const [grid, { wrapper }] of mountedHomeGrids) {
+                try {
+                    if (grid?.props?.cellRenderer === wrapper)
+                        return true;
+                }
+                catch {
+                    // A disposed virtual grid cannot keep a mounted wrapper alive.
+                }
+            }
+            return false;
+        };
         const discoverMountedHomeCarousels = () => {
             if (!active)
                 return false;
-            let installedWrapper = false;
             try {
                 const document = steamUiCardDocument();
                 const cards = document?.querySelectorAll?.("[data-id]");
@@ -4825,7 +4836,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                         if (carousel?.m_refGrid &&
                             isHomeCarouselFiber(fiber)) {
                             mountedHomeCarousels.add(carousel);
-                            installedWrapper = installCachedHomeCellRenderer(carousel.m_refGrid) || installedWrapper;
+                            installCachedHomeCellRenderer(carousel.m_refGrid);
                             break;
                         }
                     }
@@ -4834,7 +4845,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             catch {
                 // DOM/fiber access is optional; new cards still use the renderer patch.
             }
-            return installedWrapper;
+            return hasMountedHomeCellRendererWrapper();
         };
         const cancelMountedHomeDiscoveryRetry = () => {
             if (homeDiscoveryRetryId === undefined)
@@ -4845,12 +4856,12 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         const refreshMountedHomeCarousels = () => {
             if (!active)
                 return false;
-            let installedWrapper = discoverMountedHomeCarousels();
+            discoverMountedHomeCarousels();
             const grids = new Set();
             mountedHomeCarousels.forEach((carousel) => {
                 const grid = carousel?.m_refGrid;
                 if (typeof grid?.recomputeGridSize === "function") {
-                    installedWrapper = installCachedHomeCellRenderer(grid) || installedWrapper;
+                    installCachedHomeCellRenderer(grid);
                     grids.add(grid);
                 }
                 else {
@@ -4866,9 +4877,10 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                     mountedHomeGrids.delete(grid);
                 }
             });
-            if (installedWrapper)
+            const hasWrapper = hasMountedHomeCellRendererWrapper();
+            if (hasWrapper)
                 cancelMountedHomeDiscoveryRetry();
-            return installedWrapper;
+            return hasWrapper;
         };
         const homeRefFor = (originalRef) => {
             const existing = homeRefCallbacks.get(originalRef);
@@ -4892,7 +4904,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         const scheduleMountedHomeDiscoveryRetry = () => {
             if (!active ||
                 homeDiscoveryRetryId !== undefined ||
-                mountedHomeGrids.size > 0 ||
+                hasMountedHomeCellRendererWrapper() ||
                 homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts) {
                 return;
             }

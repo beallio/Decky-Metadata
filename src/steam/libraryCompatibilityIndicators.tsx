@@ -691,9 +691,18 @@ export const installLibraryCompatibilityIndicators = (
         return false;
       }
     };
+    const hasMountedHomeCellRendererWrapper = () => {
+      for (const [grid, { wrapper }] of mountedHomeGrids) {
+        try {
+          if (grid?.props?.cellRenderer === wrapper) return true;
+        } catch {
+          // A disposed virtual grid cannot keep a mounted wrapper alive.
+        }
+      }
+      return false;
+    };
     const discoverMountedHomeCarousels = () => {
       if (!active) return false;
-      let installedWrapper = false;
       try {
         const document = steamUiCardDocument();
         const cards = document?.querySelectorAll?.("[data-id]");
@@ -707,7 +716,7 @@ export const installLibraryCompatibilityIndicators = (
               isHomeCarouselFiber(fiber)
             ) {
               mountedHomeCarousels.add(carousel);
-              installedWrapper = installCachedHomeCellRenderer(carousel.m_refGrid) || installedWrapper;
+              installCachedHomeCellRenderer(carousel.m_refGrid);
               break;
             }
           }
@@ -715,7 +724,7 @@ export const installLibraryCompatibilityIndicators = (
       } catch {
         // DOM/fiber access is optional; new cards still use the renderer patch.
       }
-      return installedWrapper;
+      return hasMountedHomeCellRendererWrapper();
     };
     const cancelMountedHomeDiscoveryRetry = () => {
       if (homeDiscoveryRetryId === undefined) return;
@@ -724,12 +733,12 @@ export const installLibraryCompatibilityIndicators = (
     };
     const refreshMountedHomeCarousels = () => {
       if (!active) return false;
-      let installedWrapper = discoverMountedHomeCarousels();
+      discoverMountedHomeCarousels();
       const grids = new Set<any>();
       mountedHomeCarousels.forEach((carousel) => {
         const grid = carousel?.m_refGrid;
         if (typeof grid?.recomputeGridSize === "function") {
-          installedWrapper = installCachedHomeCellRenderer(grid) || installedWrapper;
+          installCachedHomeCellRenderer(grid);
           grids.add(grid);
         } else {
           mountedHomeCarousels.delete(carousel);
@@ -743,8 +752,9 @@ export const installLibraryCompatibilityIndicators = (
           mountedHomeGrids.delete(grid);
         }
       });
-      if (installedWrapper) cancelMountedHomeDiscoveryRetry();
-      return installedWrapper;
+      const hasWrapper = hasMountedHomeCellRendererWrapper();
+      if (hasWrapper) cancelMountedHomeDiscoveryRetry();
+      return hasWrapper;
     };
     const homeRefFor = (originalRef: any) => {
       const existing = homeRefCallbacks.get(originalRef);
@@ -767,7 +777,7 @@ export const installLibraryCompatibilityIndicators = (
       if (
         !active ||
         homeDiscoveryRetryId !== undefined ||
-        mountedHomeGrids.size > 0 ||
+        hasMountedHomeCellRendererWrapper() ||
         homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts
       ) {
         return;
