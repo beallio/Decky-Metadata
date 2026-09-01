@@ -4784,7 +4784,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             }
             return false;
         };
-        const installCachedHomeCellRenderer = (grid) => {
+        const installCachedHomeCellRenderer = (grid, discovered = false) => {
             if (!active)
                 return false;
             const original = grid?.props?.cellRenderer;
@@ -4794,14 +4794,16 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             // React can publish a new native renderer on an already-mounted grid.
             // Preserve that newest renderer as the cleanup target, rather than
             // leaving the old wrapper registered after it has been replaced.
-            if (previous?.wrapper === original)
+            if (previous?.wrapper === original) {
+                previous.discovered = previous.discovered || discovered;
                 return true;
+            }
             const wrapper = (...args) => wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
             try {
                 grid.props.cellRenderer = wrapper;
                 if (grid.props.cellRenderer !== wrapper)
                     return false;
-                mountedHomeGrids.set(grid, { original, wrapper });
+                mountedHomeGrids.set(grid, { original, wrapper, discovered });
                 return true;
             }
             catch {
@@ -4809,10 +4811,10 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 return false;
             }
         };
-        const hasMountedHomeCellRendererWrapper = () => {
-            for (const [grid, { wrapper }] of mountedHomeGrids) {
+        const hasMountedHomeCellRendererWrapper = (requireDiscovered = false) => {
+            for (const [grid, { wrapper, discovered }] of mountedHomeGrids) {
                 try {
-                    if (grid?.props?.cellRenderer === wrapper)
+                    if ((!requireDiscovered || discovered) && grid?.props?.cellRenderer === wrapper)
                         return true;
                 }
                 catch {
@@ -4836,7 +4838,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                         if (carousel?.m_refGrid &&
                             isHomeCarouselFiber(fiber)) {
                             mountedHomeCarousels.add(carousel);
-                            installCachedHomeCellRenderer(carousel.m_refGrid);
+                            installCachedHomeCellRenderer(carousel.m_refGrid, true);
                             break;
                         }
                     }
@@ -4845,7 +4847,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             catch {
                 // DOM/fiber access is optional; new cards still use the renderer patch.
             }
-            return hasMountedHomeCellRendererWrapper();
+            return hasMountedHomeCellRendererWrapper(true);
         };
         const cancelMountedHomeDiscoveryRetry = () => {
             if (homeDiscoveryRetryId === undefined)
@@ -4877,7 +4879,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                     mountedHomeGrids.delete(grid);
                 }
             });
-            const hasWrapper = hasMountedHomeCellRendererWrapper();
+            const hasWrapper = hasMountedHomeCellRendererWrapper(true);
             if (hasWrapper)
                 cancelMountedHomeDiscoveryRetry();
             return hasWrapper;
@@ -4904,7 +4906,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         const scheduleMountedHomeDiscoveryRetry = () => {
             if (!active ||
                 homeDiscoveryRetryId !== undefined ||
-                hasMountedHomeCellRendererWrapper() ||
+                hasMountedHomeCellRendererWrapper(true) ||
                 homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts) {
                 return;
             }

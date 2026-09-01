@@ -480,7 +480,7 @@ export const installLibraryCompatibilityIndicators = (
   let homeCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
   const mountedHomeCarousels = new Set<any>();
-  const mountedHomeGrids = new Map<any, { original: any; wrapper: any }>();
+  const mountedHomeGrids = new Map<any, { original: any; wrapper: any; discovered: boolean }>();
   const homeRefCallbacks = new Map<any, (instance: any) => void>();
   let resolutionAttempts = 0;
   let homeDiscoveryAttempts = 0;
@@ -670,7 +670,7 @@ export const installLibraryCompatibilityIndicators = (
       }
       return false;
     };
-    const installCachedHomeCellRenderer = (grid: any) => {
+    const installCachedHomeCellRenderer = (grid: any, discovered = false) => {
       if (!active) return false;
       const original = grid?.props?.cellRenderer;
       if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function") return false;
@@ -678,23 +678,26 @@ export const installLibraryCompatibilityIndicators = (
       // React can publish a new native renderer on an already-mounted grid.
       // Preserve that newest renderer as the cleanup target, rather than
       // leaving the old wrapper registered after it has been replaced.
-      if (previous?.wrapper === original) return true;
+      if (previous?.wrapper === original) {
+        previous.discovered = previous.discovered || discovered;
+        return true;
+      }
       const wrapper = (...args: any[]) =>
         wrapCarouselElement(original(...args), targets.carousel, carouselWrapper);
       try {
         grid.props.cellRenderer = wrapper;
         if (grid.props.cellRenderer !== wrapper) return false;
-        mountedHomeGrids.set(grid, { original, wrapper });
+        mountedHomeGrids.set(grid, { original, wrapper, discovered });
         return true;
       } catch {
         // A changed virtual-grid target is left untouched and is not retried.
         return false;
       }
     };
-    const hasMountedHomeCellRendererWrapper = () => {
-      for (const [grid, { wrapper }] of mountedHomeGrids) {
+    const hasMountedHomeCellRendererWrapper = (requireDiscovered = false) => {
+      for (const [grid, { wrapper, discovered }] of mountedHomeGrids) {
         try {
-          if (grid?.props?.cellRenderer === wrapper) return true;
+          if ((!requireDiscovered || discovered) && grid?.props?.cellRenderer === wrapper) return true;
         } catch {
           // A disposed virtual grid cannot keep a mounted wrapper alive.
         }
@@ -716,7 +719,7 @@ export const installLibraryCompatibilityIndicators = (
               isHomeCarouselFiber(fiber)
             ) {
               mountedHomeCarousels.add(carousel);
-              installCachedHomeCellRenderer(carousel.m_refGrid);
+              installCachedHomeCellRenderer(carousel.m_refGrid, true);
               break;
             }
           }
@@ -724,7 +727,7 @@ export const installLibraryCompatibilityIndicators = (
       } catch {
         // DOM/fiber access is optional; new cards still use the renderer patch.
       }
-      return hasMountedHomeCellRendererWrapper();
+      return hasMountedHomeCellRendererWrapper(true);
     };
     const cancelMountedHomeDiscoveryRetry = () => {
       if (homeDiscoveryRetryId === undefined) return;
@@ -752,7 +755,7 @@ export const installLibraryCompatibilityIndicators = (
           mountedHomeGrids.delete(grid);
         }
       });
-      const hasWrapper = hasMountedHomeCellRendererWrapper();
+      const hasWrapper = hasMountedHomeCellRendererWrapper(true);
       if (hasWrapper) cancelMountedHomeDiscoveryRetry();
       return hasWrapper;
     };
@@ -777,7 +780,7 @@ export const installLibraryCompatibilityIndicators = (
       if (
         !active ||
         homeDiscoveryRetryId !== undefined ||
-        hasMountedHomeCellRendererWrapper() ||
+        hasMountedHomeCellRendererWrapper(true) ||
         homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts
       ) {
         return;

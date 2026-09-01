@@ -707,6 +707,45 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
+  it("keeps mounted-card discovery active when an adopted Home ref wraps a non-card grid", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const refRenderer = vi.fn(() => createElement("section", {}));
+    const refGrid = { props: { cellRenderer: refRenderer }, recomputeGridSize: vi.fn() };
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { appid: item.appid }),
+      ),
+    });
+    const adoptedHome = harness.homeHandler!([], homeOutput) as any;
+    const cardRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, cardRenderer);
+
+    try {
+      adoptedHome.props.ref({ m_refGrid: refGrid });
+      expect(refGrid.props.cellRenderer).not.toBe(refRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.cancelRetry).not.toHaveBeenCalledWith(1);
+
+      cards = [mounted.card];
+      harness.runNextRetry();
+      expect(mounted.grid.props.cellRenderer).not.toBe(cardRenderer);
+      expect(harness.pendingRetries.size).toBe(0);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
   it("cancels mounted Home discovery and keeps its raced callback inert after cleanup", () => {
     const document = browserDocument(() => []);
     const restoreBridge = installBrowserBridge(document);
