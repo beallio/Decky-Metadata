@@ -536,7 +536,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       expect(sharedContextDocument.querySelector).not.toHaveBeenCalled();
       expect(fallbackDocument.querySelector).not.toHaveBeenCalled();
       expect(bigPictureDocument.querySelector).toHaveBeenCalledWith("[data-id]");
-      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleItem: any = (grid.props.cellRenderer as any)({});
       const visibleCapsule = visibleItem.props.children;
       const visibleOutput = visibleCapsule.type(visibleCapsule.props);
       const visibleSlot = visibleOutput.props.children[2];
@@ -609,7 +609,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     try {
       expect(mainDocument.querySelectorAll).toHaveBeenCalledOnce();
       expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
-      expect(harness.scheduleRetry).not.toHaveBeenCalled();
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
     } finally {
       harness.unpatchers[0]();
       host.document = previousDocument;
@@ -647,8 +647,8 @@ describe("installLibraryCompatibilityIndicators", () => {
 
       expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
       expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
-      expect(harness.pendingRetries.size).toBe(0);
-      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
       expectPlayableCachedHomeCard(harness, mounted.grid);
       expect(metadataForApp).toHaveBeenCalledOnce();
     } finally {
@@ -735,7 +735,115 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
-  it("does not schedule mounted Home discovery when synchronous card discovery installs a wrapper", () => {
+  it("uses the mounted card data ID to find its nested live carousel fiber", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const mountedCarousel = function mountedCarousel() {
+      return createElement("div", {}, "art", "in-library", false, "footer");
+    };
+    const currentHomeGrid = {
+      render: function currentHomeGridRenderer() {
+        /* fnOnFocusedColumnChange */
+        return null;
+      },
+    };
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(mountedCarousel, { app: nativeShortcut }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const gridFiber = {
+      type: function currentGridFiberType() { return null; },
+      elementType: currentHomeGrid,
+      memoizedProps: {},
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: {},
+        child: {
+          type: mountedCarousel,
+          elementType: mountedCarousel,
+          memoizedProps: { appid: nativeShortcut.appid },
+          return: null,
+        },
+        return: {
+          type: function outerCardFiberType() { return null; },
+          elementType: function outerCardElementType() { return null; },
+          memoizedProps: {},
+          return: gridFiber,
+        },
+      },
+      getAttribute: vi.fn((name: string) => name === "data-id" ? String(nativeShortcut.appid) : null),
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("does not wrap object component markers retained from a mounted Home card", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const objectMarker = ReactModule.memo((_props: { app?: unknown }) => null);
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(objectMarker, { app: nativeShortcut }),
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        child: {
+          type: objectMarker,
+          elementType: objectMarker,
+          memoizedProps: { app: nativeShortcut },
+          sibling: {
+            type: harness.carousel,
+            elementType: harness.carousel,
+            memoizedProps: { appid: nativeShortcut.appid },
+            return: null,
+          },
+          return: null,
+        },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+      getAttribute: vi.fn((name: string) => name === "data-id" ? String(nativeShortcut.appid) : null),
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      const visibleItem: any = (grid.props.cellRenderer as any)({});
+      const [objectElement, capsule]: any[] = visibleItem.props.children;
+      expect(objectElement.type).toBe(objectMarker);
+      const slot = (capsule.type as any)(capsule.props).props.children[2];
+      expect(slot.type(slot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("keeps mounted Home discovery live after synchronous card discovery installs a wrapper", () => {
     const nativeRenderer = vi.fn(() => createElement("section", {}));
     const mounted = mountedHomeCard({
       home: {
@@ -752,9 +860,100 @@ describe("installLibraryCompatibilityIndicators", () => {
     try {
       expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
       expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
-      expect(harness.scheduleRetry).not.toHaveBeenCalled();
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
     } finally {
       harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("leaves an intact mounted Home wrapper alone during a later liveness observation", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      const installedWrapper = mounted.grid.props.cellRenderer;
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).toBe(installedWrapper);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("keeps an active mounted Home wrapper through discovery exhaustion and restores it on cleanup", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 1 });
+
+    try {
+      const installedWrapper = mounted.grid.props.cellRenderer;
+      harness.runNextRetry();
+
+      expect(harness.pendingRetries.size).toBe(0);
+      expect(mounted.grid.props.cellRenderer).toBe(installedWrapper);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(nativeRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("retains a grid props replacement after discovery exhaustion and restores its newest renderer", () => {
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, originalRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 1 });
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+
+    try {
+      harness.runNextRetry();
+      expect(harness.pendingRetries.size).toBe(0);
+
+      mounted.grid.props = { cellRenderer: replacementRenderer };
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
       restoreBridge();
     }
   });
@@ -778,6 +977,40 @@ describe("installLibraryCompatibilityIndicators", () => {
       harness.runNextRetry();
 
       expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("observes a new grid props object after an early mounted-card wrapper", () => {
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, originalRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+
+    try {
+      expect(harness.pendingRetries.size).toBe(1);
+      mounted.grid.props = { cellRenderer: replacementRenderer };
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
       expectPlayableCachedHomeCard(harness, mounted.grid);
       harness.unpatchers[0]();
       expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
@@ -877,8 +1110,8 @@ describe("installLibraryCompatibilityIndicators", () => {
       cards = [card];
       harness.runNextRetry();
       expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
-      expect(harness.pendingRetries.size).toBe(0);
-      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
       expectPlayableCachedHomeCard(harness, grid);
       harness.unpatchers[0]();
       expect(grid.props.cellRenderer).toBe(replacementRenderer);
@@ -918,7 +1151,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       cards = [mounted.card];
       harness.runNextRetry();
       expect(mounted.grid.props.cellRenderer).not.toBe(cardRenderer);
-      expect(harness.pendingRetries.size).toBe(0);
+      expect(harness.pendingRetries.size).toBe(1);
       expectPlayableCachedHomeCard(harness, mounted.grid);
     } finally {
       harness.unpatchers[0]();
