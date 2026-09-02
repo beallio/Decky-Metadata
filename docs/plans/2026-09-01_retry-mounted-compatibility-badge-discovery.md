@@ -27,15 +27,19 @@ JavaScript-context restart, that call can run before Steam mounts Home cards.
 Later metadata bootstrap passes do not notify because the packed category is
 already correct, so mounted-card discovery never runs again.
 
-Add one bounded, teardown-safe mounted-Home discovery retry. After successful
-renderer patch installation and the initial synchronous discovery, retry every
-500 milliseconds only while no Home grid renderer has been wrapped, for at most
-60 attempts (30 seconds). Stop immediately after a wrapper is installed. Keep
-module-target resolution and mounted-card discovery as separate retry
-lifecycles and timer IDs. Cleanup must cancel both timers and make any raced
-callback inert. Exhaustion must leave Steam behavior unchanged and stop all
-background work. Do not navigate, change focus or tabs, publish artificial
-metadata revisions, poll AppOverview stores, or add a MutationObserver.
+Add one bounded, teardown-safe mounted-Home discovery liveness window. After
+successful renderer patch installation and the initial synchronous discovery,
+observe mounted Home cards every 500 milliseconds for 60 attempts (30 seconds).
+If the current grid renderer is native, wrap the newest renderer and recompute
+the grid. Do not end the observation window after the first wrapper
+installation: live validation proved that React can replace the grid's props
+object and restore a native bound renderer after an earlier successful wrap.
+Stop after the bounded window expires. Keep module-target resolution and
+mounted-card discovery as separate retry lifecycles and timer IDs. Cleanup must
+cancel both timers and make any raced callback inert. Exhaustion must stop all
+background work while preserving any active wrapper and its normal cleanup.
+Do not navigate, change focus or tabs, publish artificial metadata revisions,
+poll AppOverview stores, or add a MutationObserver.
 
 Use the existing browser bridge, bounded fiber walk, scheduler dependencies,
 and renderer cleanup behavior. Relevant files are
@@ -43,6 +47,26 @@ and renderer cleanup behavior. Relevant files are
 `src/steam/libraryCompatibilityIndicators.test.tsx`, `dist/index.js`,
 `dist/index.js.map`, `CHANGELOG.md`, and a dated session record. Do not change
 `metadataPatch.ts`; live evidence shows compatibility data is already correct.
+
+### Runtime safety update
+
+Live validation of the first implementation exposed two additional current
+Steam boundaries. Retaining object React element types made the wrapper call an
+object and crashed SteamUI with `TypeError: carousel is not a function`.
+Decky Metadata was disabled through Loader recovery and SteamUI returned to
+Home. The corrected callable-only guard passed its focused regression and full
+quality gate.
+
+The exact corrected bundle was then enabled on an already-mounted Home screen.
+It did not crash, but after the discovery window the Space Marine grid again
+held Steam's native `bound CellRenderer`; its `cellRenderer` property was a
+plain writable/configurable value, and the card had no plugin compatibility
+component or badge. The live fiber still had `m_refGrid` at depth 11 with
+`fnOnFocusedColumnChange`, and its depth-13 ancestor retained the `VBC_` plus
+`fnOnFocusedColumnChange` fingerprint. This proves that a successful early
+wrapper installation is not terminal: React can later replace the grid props
+object. Keep Decky Metadata disabled until a new bundle covers this replacement
+and passes the full no-navigation restart proof.
 
 **Slug used throughout this plan:** `retry-mounted-compatibility-badge-discovery`
 
@@ -172,35 +196,39 @@ git commit -m "docs(plan): add retry-mounted-compatibility-badge-discovery imple
      milliseconds and 60 attempts.
    - Keep the existing module-resolution `retryId` and attempt count unchanged.
      Use a distinct mounted-discovery timer ID and attempt count.
-   - Let mounted discovery report success only after
-     `installCachedHomeCellRenderer` has installed and recorded a wrapper. Do
-     not treat card presence, a fiber match, or a grid reference alone as
-     success.
+   - Let each mounted-discovery observation report whether the current
+     `cellRenderer` is the recorded wrapper. Card presence, a fiber match, or a
+     grid reference alone is not success. A successful wrap is also not a
+     terminal lifecycle result because React can publish a replacement props
+     object later in the bounded startup window.
    - After successful module patch installation, keep the current subscription,
      synchronous refresh, install diagnostic, and compatibility revision in
-     their existing order. Schedule the first discovery retry only if those
-     paths complete without recording a wrapper. Each retry callback checks
-     `active`, clears its timer ID, refreshes mounted Home carousels, stops on
-     wrapper success, and otherwise schedules the next attempt only while below
+     their existing order. Schedule the first discovery observation after those
+     paths complete and continue observations for the full configured attempt
+     window. Each callback checks `active`, clears its timer ID, refreshes
+     mounted Home carousels, and schedules the next observation only while below
      the configured limit.
-   - Any successful mounted-grid discovery, whether it comes from the initial
-     refresh, compatibility subscription, adopted Home ref, or retry callback,
-     must cancel a pending mounted-discovery timer and stop further retries.
-   - Do not publish compatibility revisions from the retry. Recomputing the
-     newly wrapped grid is the only required refresh.
+   - On every observation, leave an intact recorded wrapper unchanged. If React
+     replaced the grid props or `cellRenderer`, wrap the newest native renderer,
+     update the cleanup target, and recompute that grid. Do not publish a
+     compatibility revision from the observation.
    - Cleanup cancels both target-resolution and mounted-discovery timers before
      restoring grid renderers. A callback that races cleanup must not query the
      document, wrap a grid, recompute it, or schedule another callback.
 
 3. Add permanent boundary and cleanup tests.
-   - Prove immediate mounted-card discovery installs the wrapper and schedules
-     no mounted-discovery retry.
-   - Prove cards that appear after installation are discovered on retry and
-     stop further scheduling after success.
-   - Prove a React replacement of `cellRenderer` during the retry window is
-     wrapped from the newest native renderer and cleanup restores that renderer.
-   - Prove cleanup cancels a pending mounted-discovery retry and a saved raced
-     callback is inert.
+   - Prove immediate mounted-card discovery installs the wrapper and still
+     schedules bounded liveness observations.
+   - Prove cards that appear after installation are discovered on observation.
+   - Prove a React replacement of `cellRenderer` during the observation window
+     is wrapped from the newest native renderer and cleanup restores that
+     renderer.
+   - Prove a wrapper installed early in the window is not treated as terminal:
+     replace the grid props object with a new native `cellRenderer`, run a later
+     observation, and assert that the newest renderer is wrapped and restored
+     by cleanup.
+   - Prove cleanup cancels a pending mounted-discovery observation and a saved
+     raced callback is inert.
    - Prove unresolved mounted discovery stops at the configured attempt limit
      with no pending callback and no renderer mutation.
    - Keep existing target-resolution retry, browser bridge fallback, App-ID
