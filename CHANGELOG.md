@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-09-01
+
 Compatibility badges remain visible after plugin or SteamUI reload without selecting each game.
 
 ### Fixed
