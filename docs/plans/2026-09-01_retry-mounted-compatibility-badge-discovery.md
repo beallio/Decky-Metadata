@@ -68,6 +68,37 @@ wrapper installation is not terminal: React can later replace the grid props
 object. Keep Decky Metadata disabled until a new bundle covers this replacement
 and passes the full no-navigation restart proof.
 
+### Second live boundary
+
+The full-window implementation still failed its runtime contract. Bundle
+`4eef6ddac5993837d4231a067160e03940cfca47543fff66b44ea8ee126f0f47`
+was byte-identical locally and on the Deck. After enabling it and performing one
+successful `RestartJSContext`, Decky Metadata was active and SteamUI did not
+crash, but the grid still exposed native `bound CellRenderer` with a plain
+writable/configurable descriptor after the 30-second window. The card had no
+compatibility component.
+
+The discovery inputs were all present in the same SharedJSContext realm:
+
+- the bridged Main and Gamepad documents were both `/library/home`, each with
+  34 cards and shortcut `2155012430`;
+- the card exposed its React fiber;
+- `m_refGrid` was at depth 11, its type contained
+  `fnOnFocusedColumnChange`, and the depth-13 ancestor contained both `VBC_`
+  and `fnOnFocusedColumnChange`;
+- `recomputeGridSize` and `cellRenderer` were callable, the props object was
+  extensible, and a reversible accessor definition on `cellRenderer`
+  succeeded.
+
+Therefore, do not make another speculative renderer-shape change. First add
+temporary structured frontend diagnostics for each bounded observation:
+attempt number, selected document URL/card count, discovered grid count, and
+each wrapper-install outcome. Reproduce the no-navigation restart once and use
+that evidence to fix the exact skipped or reverted branch. Remove the temporary
+diagnostics before the final commit, retain a concise failure summary in the
+session record, rerun the focused and full gates, and keep the plugin disabled
+between controlled device trials.
+
 **Slug used throughout this plan:** `retry-mounted-compatibility-badge-discovery`
 
 ---
