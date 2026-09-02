@@ -175,6 +175,8 @@ describe("installLibraryCompatibilityIndicators", () => {
     throwSourceLookups?: number;
     retryIntervalMs?: number;
     maxResolutionAttempts?: number;
+    homeDiscoveryIntervalMs?: number;
+    maxHomeDiscoveryAttempts?: number;
   } = {}) => {
     const carousel = function carousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
@@ -279,6 +281,8 @@ describe("installLibraryCompatibilityIndicators", () => {
       cancelRetry,
       retryIntervalMs: options.retryIntervalMs ?? 500,
       maxResolutionAttempts: options.maxResolutionAttempts ?? 3,
+      homeDiscoveryIntervalMs: options.homeDiscoveryIntervalMs ?? 0,
+      maxHomeDiscoveryAttempts: options.maxHomeDiscoveryAttempts ?? 0,
       getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
       metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
       isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
@@ -331,6 +335,59 @@ describe("installLibraryCompatibilityIndicators", () => {
     return { capsule, output: capsule.type(capsule.props) };
   };
 
+  const mountedHomeCard = (harness: any, cellRenderer: any) => {
+    const recomputeGridSize = vi.fn();
+    const grid = { props: { cellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    return {
+      card: { "__reactFiber$test": fiber },
+      grid,
+      recomputeGridSize,
+    };
+  };
+
+  const browserDocument = (cards: () => any[]) => ({
+    querySelector: vi.fn(() => cards()[0] ?? null),
+    querySelectorAll: vi.fn(() => cards()),
+  });
+
+  const installBrowserBridge = (document: any) => {
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = browserDocument(() => []);
+    host.document = emptyDocument;
+    host.parent = { document: emptyDocument };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: emptyDocument } },
+      },
+    };
+    return () => {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    };
+  };
+
+  const expectPlayableCachedHomeCard = (harness: any, grid: any) => {
+    const visibleItem: any = grid.props.cellRenderer({});
+    const capsule = visibleItem.props.children;
+    const slot = capsule.type(capsule.props).props.children[2];
+    expect(slot.type(slot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+  };
+
   it("uses a faithful two-phase Home wrapper, prevents App-ID bleed and duplicate badges, and makes cached cards inert on cleanup", () => {
     const harness = makeHarness({
       metadataForApp: (appId) => ({ deck_compat_override: appId === nativeShortcut.appid ? 3 : 2 } as any),
@@ -361,6 +418,844 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
     expect(harness.unpatchGridRenderer).toHaveBeenCalledOnce();
     expect(first.capsule.type(first.capsule.props).props.children[2]).toBe(false);
+  });
+
+  it("refreshes a Home card cached before patch installation without replacing the current route", () => {
+    const replace = vi.fn();
+    (globalThis as any).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: {
+            location: { pathname: "/routes/library/home" },
+            replace,
+          },
+        },
+      },
+    };
+    const harness = makeHarness();
+    const cachedCapsule = createElement(harness.carousel, { appid: nativeShortcut.appid });
+    let cachedItem: any = createElement("section", {}, cachedCapsule);
+    const recomputeGridSize = vi.fn(() => {
+      cachedItem = undefined;
+    });
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { appid: item.appid }),
+      ),
+    });
+    const patchedHome = harness.homeHandler!([], homeOutput) as any;
+    const mountedCarouselRef = patchedHome.ref;
+
+    // This is the current, already-mounted VBC instance. Its item output was
+    // cached before the plugin patched the Home renderer.
+    if (typeof mountedCarouselRef === "function") {
+      mountedCarouselRef({ m_refGrid: { recomputeGridSize } });
+    }
+    const visibleItem = cachedItem ?? patchedHome.props.fnItemRenderer({ appid: nativeShortcut.appid });
+    const visibleCapsule = visibleItem.props.children;
+    const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+    const visibleSlot = visibleOutput.props.children[2];
+
+    expect(visibleSlot).toMatchObject({
+      type: expect.any(Function),
+    });
+    expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+    expect(replace).not.toHaveBeenCalled();
+
+    notifyCompatibilityRevision();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+
+    mountedCarouselRef?.(null);
+    harness.unpatchers[0]();
+    notifyCompatibilityRevision();
+    expect(recomputeGridSize).toHaveBeenCalledTimes(3);
+    delete (globalThis as any).Router;
+  });
+
+  it("bypasses the Big Picture cache through SteamUI's mounted browser document", () => {
+    const harness = makeHarness();
+    let cacheInvalidated = false;
+    const staleItem = createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const freshItem = () => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    );
+    const originalCellRenderer = vi.fn((_args: any) => cacheInvalidated ? freshItem() : staleItem);
+    const recomputeGridSize = vi.fn(() => {
+      cacheInvalidated = true;
+    });
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const sharedContextDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const bigPictureDocument = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+    const fallbackDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    host.document = sharedContextDocument;
+    host.parent = { document: sharedContextDocument };
+    host.top = { document: sharedContextDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: bigPictureDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: fallbackDocument } },
+      },
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      expect(grid.props.cellRenderer).not.toBe(originalCellRenderer);
+      expect(sharedContextDocument.querySelector).not.toHaveBeenCalled();
+      expect(fallbackDocument.querySelector).not.toHaveBeenCalled();
+      expect(bigPictureDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      const visibleItem: any = (grid.props.cellRenderer as any)({});
+      const visibleCapsule = visibleItem.props.children;
+      const visibleOutput = visibleCapsule.type(visibleCapsule.props);
+      const visibleSlot = visibleOutput.props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      // React can replace this prop after the initial cached-card wrapper was
+      // installed. A later compatibility revision must wrap the newest native
+      // renderer, and teardown must restore that newest renderer.
+      const replacementNativeRenderer = vi.fn(() => freshItem());
+      grid.props.cellRenderer = replacementNativeRenderer;
+      notifyCompatibilityRevision();
+
+      expect(grid.props.cellRenderer).not.toBe(replacementNativeRenderer);
+      const replacementVisibleItem: any = grid.props.cellRenderer({});
+      const replacementVisibleCapsule = replacementVisibleItem.props.children;
+      const replacementVisibleOutput = replacementVisibleCapsule.type(replacementVisibleCapsule.props);
+      const replacementVisibleSlot = replacementVisibleOutput.props.children[2];
+      expect(replacementVisibleSlot.type(replacementVisibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementNativeRenderer);
+      const callsAfterCleanup = recomputeGridSize.mock.calls.length;
+      notifyCompatibilityRevision();
+      expect(recomputeGridSize).toHaveBeenCalledTimes(callsAfterCleanup);
+    } finally {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
+  it("uses SteamUI's webpack bridge when the plugin global has no window store", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = browserDocument(() => []);
+    const mainDocument = browserDocument(() => [mounted.card]);
+    host.document = emptyDocument;
+    host.parent = {
+      webpackChunksteamui: [],
+      document: emptyDocument,
+      SteamUIStore: {
+        m_WindowStore: {
+          MainWindowInstance: { m_BrowserWindow: { document: mainDocument } },
+        },
+      },
+    };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = undefined;
+
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    try {
+      expect(mainDocument.querySelectorAll).toHaveBeenCalledOnce();
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    } finally {
+      harness.unpatchers[0]();
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
+  });
+
+  it("retries mounted Home discovery when cards appear after startup patch installation", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const metadataForApp = vi.fn(() => ({ deck_compat_override: 3 } as any));
+    const harness = makeHarness({
+      metadataForApp,
+      homeDiscoveryIntervalMs: 7,
+      maxHomeDiscoveryAttempts: 2,
+    });
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, nativeRenderer);
+
+    try {
+      expect(document.querySelector).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).toHaveBeenCalledWith(expect.any(Function), 7);
+      expect(mounted.grid.props.cellRenderer).toBe(nativeRenderer);
+
+      cards = [mounted.card];
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      expect(metadataForApp).toHaveBeenCalledOnce();
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("discovers a current Home grid from its focused renderer signature", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const currentHomeGrid = {
+      render: function currentHomeGridRenderer() {
+        /* fnOnFocusedColumnChange */
+        return null;
+      },
+    };
+    const currentFiberType = function currentFiberType() {
+      return null;
+    };
+    const gridFiber = {
+      type: currentFiberType,
+      elementType: currentHomeGrid,
+      stateNode: { m_refGrid: grid },
+      return: null,
+    };
+    const card = { "__reactFiber$test": { stateNode: {}, return: gridFiber } };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expect(grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(grid.recomputeGridSize).toHaveBeenCalledOnce();
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("uses the mounted Home carousel type when its module target differs", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const mountedCarousel = function mountedCarousel() {
+      return createElement("div", {}, "art", "in-library", false, "footer");
+    };
+    const currentFiberType = function currentFiberType() {
+      return null;
+    };
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(mountedCarousel, { app: nativeShortcut }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const gridFiber = {
+      type: currentFiberType,
+      elementType: mountedCarousel,
+      memoizedProps: { app: nativeShortcut },
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": { stateNode: {}, return: gridFiber } };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("uses the mounted card data ID to find its nested live carousel fiber", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const mountedCarousel = function mountedCarousel() {
+      return createElement("div", {}, "art", "in-library", false, "footer");
+    };
+    const currentHomeGrid = {
+      render: function currentHomeGridRenderer() {
+        /* fnOnFocusedColumnChange */
+        return null;
+      },
+    };
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(mountedCarousel, { app: nativeShortcut }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const gridFiber = {
+      type: function currentGridFiberType() { return null; },
+      elementType: currentHomeGrid,
+      memoizedProps: {},
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: {},
+        child: {
+          type: mountedCarousel,
+          elementType: mountedCarousel,
+          memoizedProps: { appid: nativeShortcut.appid },
+          return: null,
+        },
+        return: {
+          type: function outerCardFiberType() { return null; },
+          elementType: function outerCardElementType() { return null; },
+          memoizedProps: {},
+          return: gridFiber,
+        },
+      },
+      getAttribute: vi.fn((name: string) => name === "data-id" ? String(nativeShortcut.appid) : null),
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      expectPlayableCachedHomeCard(harness, grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("does not wrap object component markers retained from a mounted Home card", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const objectMarker = ReactModule.memo((_props: { app?: unknown }) => null);
+    const nativeRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(objectMarker, { app: nativeShortcut }),
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const grid = { props: { cellRenderer: nativeRenderer }, recomputeGridSize: vi.fn() };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        child: {
+          type: objectMarker,
+          elementType: objectMarker,
+          memoizedProps: { app: nativeShortcut },
+          sibling: {
+            type: harness.carousel,
+            elementType: harness.carousel,
+            memoizedProps: { appid: nativeShortcut.appid },
+            return: null,
+          },
+          return: null,
+        },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+      getAttribute: vi.fn((name: string) => name === "data-id" ? String(nativeShortcut.appid) : null),
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+
+      const visibleItem: any = (grid.props.cellRenderer as any)({});
+      const [objectElement, capsule]: any[] = visibleItem.props.children;
+      expect(objectElement.type).toBe(objectMarker);
+      const slot = (capsule.type as any)(capsule.props).props.children[2];
+      expect(slot.type(slot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("keeps mounted Home discovery live after synchronous card discovery installs a wrapper", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      expect(mounted.grid.props.cellRenderer).not.toBe(nativeRenderer);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("leaves an intact mounted Home wrapper alone during a later liveness observation", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      const installedWrapper = mounted.grid.props.cellRenderer;
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).toBe(installedWrapper);
+      expect(mounted.recomputeGridSize).toHaveBeenCalledOnce();
+      expect(harness.pendingRetries.size).toBe(1);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("keeps an active mounted Home wrapper through discovery exhaustion and restores it on cleanup", () => {
+    const nativeRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, nativeRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 1 });
+
+    try {
+      const installedWrapper = mounted.grid.props.cellRenderer;
+      harness.runNextRetry();
+
+      expect(harness.pendingRetries.size).toBe(0);
+      expect(mounted.grid.props.cellRenderer).toBe(installedWrapper);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(nativeRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("retains a grid props replacement after discovery exhaustion and restores its newest renderer", () => {
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, originalRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 1 });
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+
+    try {
+      harness.runNextRetry();
+      expect(harness.pendingRetries.size).toBe(0);
+
+      mounted.grid.props = { cellRenderer: replacementRenderer };
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("wraps a React replacement from the retry window and restores its newest native renderer", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, originalRenderer);
+
+    try {
+      mounted.grid.props.cellRenderer = replacementRenderer;
+      cards = [mounted.card];
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("observes a new grid props object after an early mounted-card wrapper", () => {
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const mounted = mountedHomeCard({
+      home: {
+        render: function mountedHomeRenderer() {
+          /* VBC_ fnOnFocusedColumnChange */
+          return null;
+        },
+      },
+    }, originalRenderer);
+    const document = browserDocument(() => [mounted.card]);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+
+    try {
+      expect(harness.pendingRetries.size).toBe(1);
+      mounted.grid.props = { cellRenderer: replacementRenderer };
+      harness.runNextRetry();
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("rewraps a React replacement after mounted-card discovery and restores it on cleanup", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, originalRenderer);
+
+    try {
+      cards = [mounted.card];
+      harness.runNextRetry();
+      mounted.grid.props.cellRenderer = replacementRenderer;
+
+      expect(mounted.grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+      harness.unpatchers[0]();
+      expect(mounted.grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("owns an inherited Home cell renderer when React replaces it after discovery", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const props = Object.create({ cellRenderer: originalRenderer });
+    const grid = { props, recomputeGridSize: vi.fn() };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+      grid.props.cellRenderer = replacementRenderer;
+
+      expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expectPlayableCachedHomeCard(harness, grid);
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("wraps the newest renderer when recompute publishes a replacement renderer", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const originalRenderer = vi.fn(() => createElement("section", {}));
+    const replacementRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    let replaceOnRecompute = true;
+    const recomputeGridSize = vi.fn(() => {
+      if (replaceOnRecompute) {
+        replaceOnRecompute = false;
+        grid.props.cellRenderer = replacementRenderer;
+      }
+    });
+    const grid = { props: { cellRenderer: originalRenderer }, recomputeGridSize };
+    const card = {
+      "__reactFiber$test": {
+        stateNode: { m_refGrid: grid },
+        return: { type: harness.home, elementType: harness.home, return: null },
+      },
+    };
+
+    try {
+      cards = [card];
+      harness.runNextRetry();
+      expect(grid.props.cellRenderer).not.toBe(replacementRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      expectPlayableCachedHomeCard(harness, grid);
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(replacementRenderer);
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("keeps mounted-card discovery active when an adopted Home ref wraps a non-card grid", () => {
+    let cards: any[] = [];
+    const document = browserDocument(() => cards);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const refRenderer = vi.fn(() => createElement("section", {}));
+    const refGrid = { props: { cellRenderer: refRenderer }, recomputeGridSize: vi.fn() };
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: any) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { appid: item.appid }),
+      ),
+    });
+    const adoptedHome = harness.homeHandler!([], homeOutput) as any;
+    const cardRenderer = vi.fn(() => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const mounted = mountedHomeCard(harness, cardRenderer);
+
+    try {
+      adoptedHome.props.ref({ m_refGrid: refGrid });
+      expect(refGrid.props.cellRenderer).not.toBe(refRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
+      expect(harness.cancelRetry).not.toHaveBeenCalledWith(1);
+
+      cards = [mounted.card];
+      harness.runNextRetry();
+      expect(mounted.grid.props.cellRenderer).not.toBe(cardRenderer);
+      expect(harness.pendingRetries.size).toBe(1);
+      expectPlayableCachedHomeCard(harness, mounted.grid);
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("cancels mounted Home discovery and keeps its raced callback inert after cleanup", () => {
+    const document = browserDocument(() => []);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+    const queryCallsAfterInstall = document.querySelector.mock.calls.length;
+
+    try {
+      harness.unpatchers[0]();
+      expect(harness.cancelRetry).toHaveBeenCalledWith(1);
+      expect(harness.pendingRetries.size).toBe(0);
+      harness.runScheduledRetry(1);
+      expect(document.querySelector.mock.calls).toHaveLength(queryCallsAfterInstall);
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    } finally {
+      restoreBridge();
+    }
+  });
+
+  it("stops unresolved mounted Home discovery at its configured attempt limit", () => {
+    const document = browserDocument(() => []);
+    const restoreBridge = installBrowserBridge(document);
+    const harness = makeHarness({ maxHomeDiscoveryAttempts: 2 });
+
+    try {
+      expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+      harness.runNextRetry();
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      harness.runNextRetry();
+      expect(harness.pendingRetries.size).toBe(0);
+      expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+      expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+      expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
+    } finally {
+      harness.unpatchers[0]();
+      restoreBridge();
+    }
+  });
+
+  it("uses SteamUI's Gamepad browser document when the main browser has no cards", () => {
+    const harness = makeHarness();
+    const originalCellRenderer = vi.fn((_args: any) => createElement(
+      "section",
+      {},
+      createElement(harness.carousel, { appid: nativeShortcut.appid }),
+    ));
+    const recomputeGridSize = vi.fn();
+    const grid = { props: { cellRenderer: originalCellRenderer }, recomputeGridSize };
+    const fiber = {
+      stateNode: { m_refGrid: grid },
+      return: { type: harness.home, elementType: harness.home, return: null },
+    };
+    const card = { "__reactFiber$test": fiber };
+    const host = globalThis as any;
+    const previousDocument = host.document;
+    const previousParent = host.parent;
+    const previousTop = host.top;
+    const previousSteamUiStore = host.SteamUIStore;
+    const emptyDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => []),
+    };
+    const gamepadDocument = {
+      querySelector: vi.fn(() => card),
+      querySelectorAll: vi.fn(() => [card]),
+    };
+    host.document = emptyDocument;
+    host.parent = { document: emptyDocument };
+    host.top = { document: emptyDocument };
+    host.SteamUIStore = {
+      m_WindowStore: {
+        MainWindowInstance: { m_BrowserWindow: { document: emptyDocument } },
+        GamepadUIMainWindowInstance: { m_BrowserWindow: { document: gamepadDocument } },
+      },
+    };
+
+    try {
+      notifyCompatibilityRevision();
+
+      expect(emptyDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(gamepadDocument.querySelector).toHaveBeenCalledWith("[data-id]");
+      expect(recomputeGridSize).toHaveBeenCalledOnce();
+      const visibleItem: any = grid.props.cellRenderer({});
+      const visibleCapsule: any = visibleItem.props.children;
+      const visibleSlot = visibleCapsule.type(visibleCapsule.props).props.children[2];
+      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+        type: harness.indicator,
+        props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+      });
+
+      harness.unpatchers[0]();
+      expect(grid.props.cellRenderer).toBe(originalCellRenderer);
+    } finally {
+      host.document = previousDocument;
+      host.parent = previousParent;
+      host.top = previousTop;
+      host.SteamUIStore = previousSteamUiStore;
+    }
   });
 
   it("keeps Home and grid badge slots reactive when metadata arrives after their first render", () => {

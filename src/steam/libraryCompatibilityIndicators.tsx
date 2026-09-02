@@ -40,6 +40,46 @@ const steamUiWindow = () => {
   ) ?? globalThis;
 };
 
+const steamUiCardDocument = () => {
+  // SharedJSContext does not own Big Picture's DOM. Steam exposes the mounted
+  // browser document through this same-window bridge instead. Decky can run in
+  // an isolated global, so inspect its SteamUI/webpack parent before falling
+  // back to the local document. Retain the Gamepad-specific form seen on
+  // older/current SteamUI builds.
+  const contexts = new Set<any>([globalThis, steamUiWindow()]);
+  try {
+    const currentWindow = globalThis as any;
+    contexts.add(currentWindow.parent);
+    contexts.add(currentWindow.top);
+  } catch {
+    // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
+  }
+  try {
+    for (const context of contexts) {
+      const windowStore = context?.SteamUIStore?.m_WindowStore;
+      const browserWindows = [
+        windowStore?.MainWindowInstance?.m_BrowserWindow,
+        windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+      ];
+      for (const browserWindow of browserWindows) {
+        const document = browserWindow?.document;
+        if (
+          typeof document?.querySelector === "function" &&
+          !!document.querySelector("[data-id]")
+        ) {
+          return document;
+        }
+      }
+    }
+  } catch {
+    // A changed Steam window bridge must leave the optional cache patch inert.
+  }
+  return Array.from(contexts).find((candidate) =>
+    typeof candidate?.document?.querySelector === "function" &&
+    !!candidate.document.querySelector("[data-id]")
+  )?.document;
+};
+
 export type LibraryCompatibilityIndicatorDependencies = {
   findModuleChild: ModuleFinder;
   findModuleBySource: ModuleSourceFinder;
@@ -51,6 +91,8 @@ export type LibraryCompatibilityIndicatorDependencies = {
   cancelRetry: (retryId: number) => void;
   retryIntervalMs: number;
   maxResolutionAttempts: number;
+  homeDiscoveryIntervalMs: number;
+  maxHomeDiscoveryAttempts: number;
   getOverview: (appId: number) => any;
   metadataForApp: (appId: number) => MetadataData | undefined;
   isNativeNonSteamShortcut: (overview: any) => boolean;
@@ -65,6 +107,14 @@ type LibraryCompatibilityTargets = {
   homeClassName: string;
   gridIconsClassName: string;
   gridIndicatorClassName: string;
+};
+
+type MountedHomeGrid = {
+  original: any;
+  wrapper: any;
+  discovered: boolean;
+  needsRecompute: boolean;
+  restore: () => boolean;
 };
 
 /**
@@ -365,6 +415,8 @@ const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
   cancelRetry: (retryId) => window.clearTimeout(retryId),
   retryIntervalMs: 500,
   maxResolutionAttempts: 240,
+  homeDiscoveryIntervalMs: 500,
+  maxHomeDiscoveryAttempts: 60,
   getOverview,
   metadataForApp: (appId) => metadataCache[String(appId)],
   isNativeNonSteamShortcut,
@@ -401,8 +453,8 @@ const reportInstalled = (resolutionAttempts: number) => {
 const wrapCarouselElement = (node: any, carousel: any, wrapper: any): any => {
   if (!isValidElement(node)) return node;
   const element = node as any;
-  if (element.type === carousel) {
-    return createElement(wrapper, { ...element.props, key: element.key });
+  if (carousel(element.type)) {
+    return createElement(wrapper(element.type), { ...element.props, key: element.key });
   }
 
   const originalChildren = element.props?.children;
@@ -413,6 +465,14 @@ const wrapCarouselElement = (node: any, carousel: any, wrapper: any): any => {
   return cloneElement(element, {
     children: Array.isArray(originalChildren) ? wrappedChildren : wrappedChildren[0],
   });
+};
+
+const assignRef = (ref: any, value: any) => {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref && typeof ref === "object") {
+    ref.current = value;
+  }
 };
 
 /**
@@ -428,8 +488,16 @@ export const installLibraryCompatibilityIndicators = (
   let homeUnpatch: Unpatch | undefined;
   let gridUnpatch: Unpatch | undefined;
   let retryId: number | undefined;
+  let homeDiscoveryRetryId: number | undefined;
+  let homeCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
+  const mountedHomeCarousels = new Set<any>();
+  const mountedHomeGrids = new Map<any, MountedHomeGrid>();
+  const mountedHomeCarouselTypes = new Set<any>();
+  const mountedHomeCarouselWrappers = new Map<any, any>();
+  const homeRefCallbacks = new Map<any, (instance: any) => void>();
   let resolutionAttempts = 0;
+  let homeDiscoveryAttempts = 0;
   let installed = false;
   let cleaned = false;
   const cleanup = () => {
@@ -440,10 +508,35 @@ export const installLibraryCompatibilityIndicators = (
       dependencies.cancelRetry(retryId);
       retryId = undefined;
     }
+    if (homeDiscoveryRetryId !== undefined) {
+      dependencies.cancelRetry(homeDiscoveryRetryId);
+      homeDiscoveryRetryId = undefined;
+    }
     const homeCleanup = homeUnpatch;
     const gridCleanup = gridUnpatch;
     homeUnpatch = undefined;
     gridUnpatch = undefined;
+    const cacheCleanup = homeCacheUnsubscribe;
+    homeCacheUnsubscribe = undefined;
+    try {
+      cacheCleanup?.();
+    } catch {
+      // Continue teardown if Steam has already removed the subscription.
+    }
+    mountedHomeCarousels.clear();
+    mountedHomeGrids.forEach(({ restore }, grid) => {
+      try {
+        if (restore()) {
+          grid.recomputeGridSize?.();
+        }
+      } catch {
+        // A disposed virtual grid does not need an additional cleanup pass.
+      }
+    });
+    mountedHomeGrids.clear();
+    mountedHomeCarouselTypes.clear();
+    mountedHomeCarouselWrappers.clear();
+    homeRefCallbacks.clear();
     indicatorUnsubscribers.forEach((unsubscribe) => {
       try {
         unsubscribe();
@@ -539,23 +632,342 @@ export const installLibraryCompatibilityIndicators = (
       return decorate(output, overview);
     };
 
-    const carouselWrapper = (props: any) => {
-      const output = targets.carousel(props);
-      if (!active) return output;
-      // Steam's live Home renderer passes the shortcut overview as `app`.
-      // The top-level `appid` remains a supported fallback for the alternate
-      // renderer shape used by older clients.
-      const appId = Number(props?.appid ?? props?.app?.appid);
-      return decorateForApp(
-        appId,
-        output,
-        (card, overview) => decorateCarouselCompatibility(
-          card,
-          ReactiveCompatibilityIndicator,
-          targets.homeClassName,
-          overview,
-        ),
-      );
+    const carouselWrapperFor = (carousel: any) => {
+      const existing = mountedHomeCarouselWrappers.get(carousel);
+      if (existing) return existing;
+      const wrapper = (props: any) => {
+        const output = carousel(props);
+        if (!active) return output;
+        // Steam's live Home renderer passes the shortcut overview as `app`.
+        // The top-level `appid` remains a supported fallback for the alternate
+        // renderer shape used by older clients.
+        const appId = Number(props?.appid ?? props?.app?.appid);
+        return decorateForApp(
+          appId,
+          output,
+          (card, overview) => decorateCarouselCompatibility(
+            card,
+            ReactiveCompatibilityIndicator,
+            targets.homeClassName,
+            overview,
+          ),
+        );
+      };
+      mountedHomeCarouselWrappers.set(carousel, wrapper);
+      return wrapper;
+    };
+    const isMountedHomeCarousel = (carousel: any) =>
+      carousel === targets.carousel || mountedHomeCarouselTypes.has(carousel);
+
+    const homeFiberFor = (element: any) => {
+      try {
+        const key = Object.keys(element).find((name) =>
+          name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$")
+        );
+        return key ? element[key] : null;
+      } catch {
+        return null;
+      }
+    };
+    const isHomeCarouselFiber = (fiber: any) => {
+      let current = fiber;
+      for (let depth = 0; current && depth < 24; depth += 1, current = current.return) {
+        if (current.type === targets.home || current.elementType === targets.home) return true;
+        try {
+          for (const candidate of [current.type, current.elementType]) {
+            const render = typeof candidate?.render === "function"
+              ? candidate.render
+              : typeof candidate === "function"
+                ? candidate
+                : undefined;
+            const source = typeof render === "function" ? render.toString() : "";
+            if (
+              source.includes("VBC_") &&
+              source.includes("fnOnFocusedColumnChange")
+            ) {
+              return true;
+            }
+            // Steam can replace the Home renderer with a wrapper after module
+            // resolution. That wrapper removes the VBC_ source token, but the
+            // mounted current Home grid still exposes its focused-column callback
+            // and the exact m_refGrid we need to own.
+            if (
+              source.includes("fnOnFocusedColumnChange") &&
+              current.stateNode?.m_refGrid
+            ) {
+              return true;
+            }
+          }
+        } catch {
+          // Keep the bounded walk fail-closed when Steam lazily swaps a type.
+        }
+      }
+      return false;
+    };
+    const installCachedHomeCellRenderer = (grid: any, discovered = false) => {
+      if (!active) return "unavailable";
+      const original = grid?.props?.cellRenderer;
+      if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function") {
+        return "unavailable";
+      }
+      const previous = mountedHomeGrids.get(grid);
+      // React can publish a new native renderer on an already-mounted grid.
+      // Preserve that newest renderer as the cleanup target, rather than
+      // leaving the old wrapper registered after it has been replaced.
+      if (previous?.wrapper === original) {
+        previous.discovered = previous.discovered || discovered;
+        if (previous.needsRecompute) {
+          previous.needsRecompute = false;
+          return "wrapped";
+        }
+        return "intact";
+      }
+      const wrapRenderer = (renderer: any) => (...args: any[]) =>
+        wrapCarouselElement(renderer(...args), isMountedHomeCarousel, carouselWrapperFor);
+      const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
+      try {
+        // Steam can inherit this renderer through the props prototype rather
+        // than publishing an own descriptor. Define an own accessor in both
+        // cases so a later React assignment cannot silently replace the
+        // wrapper between discovery retries.
+        if (!descriptor || descriptor.configurable) {
+          const gridPropsDescriptor = Object.getOwnPropertyDescriptor(grid, "props");
+          const canRetainPropsReplacement = Boolean(
+            gridPropsDescriptor?.configurable && gridPropsDescriptor.writable,
+          );
+          let currentProps = grid.props;
+          let record: MountedHomeGrid;
+          const retainRenderer = (props: any) => {
+            const nextOriginal = props?.cellRenderer;
+            const nextDescriptor = Object.getOwnPropertyDescriptor(props ?? {}, "cellRenderer");
+            if (
+              typeof nextOriginal !== "function" ||
+              (nextDescriptor && !nextDescriptor.configurable)
+            ) {
+              return false;
+            }
+            record.original = nextOriginal;
+            record.wrapper = wrapRenderer(nextOriginal);
+            Object.defineProperty(props, "cellRenderer", {
+              configurable: true,
+              enumerable: nextDescriptor?.enumerable ?? true,
+              get: () => record.wrapper,
+              set: (next) => {
+                if (next === record.wrapper || typeof next !== "function") return;
+                record.original = next;
+                record.wrapper = wrapRenderer(next);
+                record.needsRecompute = true;
+              },
+            });
+            return props.cellRenderer === record.wrapper;
+          };
+          record = {
+            original,
+            wrapper: wrapRenderer(original),
+            discovered,
+            needsRecompute: false,
+            restore: () => {
+              if (currentProps?.cellRenderer !== record.wrapper) return false;
+              Object.defineProperty(currentProps, "cellRenderer", {
+                configurable: true,
+                enumerable: true,
+                writable: true,
+                value: record.original,
+              });
+              if (canRetainPropsReplacement) {
+                Object.defineProperty(grid, "props", {
+                  ...gridPropsDescriptor,
+                  value: currentProps,
+                });
+              }
+              return true;
+            },
+          };
+          if (canRetainPropsReplacement) {
+            Object.defineProperty(grid, "props", {
+              configurable: true,
+              enumerable: gridPropsDescriptor?.enumerable ?? true,
+              get: () => currentProps,
+              set: (nextProps) => {
+                currentProps = nextProps;
+                if (!active || nextProps?.cellRenderer === record.wrapper) return;
+                if (retainRenderer(nextProps)) record.needsRecompute = true;
+              },
+            });
+          }
+          if (!retainRenderer(currentProps)) {
+            record.restore();
+            return "unavailable";
+          }
+          mountedHomeGrids.set(grid, record);
+          return "wrapped";
+        }
+        const wrapper = wrapRenderer(original);
+        const record: MountedHomeGrid = {
+          original,
+          wrapper,
+          discovered,
+          needsRecompute: false,
+          restore: () => {
+            if (grid?.props?.cellRenderer !== wrapper) return false;
+            grid.props.cellRenderer = record.original;
+            return true;
+          },
+        };
+        grid.props.cellRenderer = wrapper;
+        if (grid.props.cellRenderer !== wrapper) return "unavailable";
+        mountedHomeGrids.set(grid, record);
+        return "wrapped";
+      } catch {
+        // A changed virtual-grid target is left untouched and is not retried.
+        return "unavailable";
+      }
+    };
+    const hasMountedHomeCellRendererWrapper = (requireDiscovered = false) => {
+      for (const [grid, { wrapper, discovered }] of mountedHomeGrids) {
+        try {
+          if ((!requireDiscovered || discovered) && grid?.props?.cellRenderer === wrapper) return true;
+        } catch {
+          // A disposed virtual grid cannot keep a mounted wrapper alive.
+        }
+      }
+      return false;
+    };
+    const retainMountedHomeCarouselTypes = (root: any, cardAppId: number) => {
+      const pending = [root];
+      const seen = new Set<any>();
+      let visited = 0;
+      while (pending.length > 0 && visited < 96) {
+        const fiber = pending.pop();
+        if (!fiber || seen.has(fiber)) continue;
+        seen.add(fiber);
+        visited += 1;
+        const appId = Number(fiber.memoizedProps?.app?.appid ?? fiber.memoizedProps?.appid);
+        const hasCardIdentity = Number.isFinite(cardAppId) && cardAppId > 0;
+        if (
+          Number.isFinite(appId) &&
+          appId > 0 &&
+          (!hasCardIdentity || appId === cardAppId)
+        ) {
+          [fiber.type, fiber.elementType].forEach((component) => {
+            if (typeof component === "function") {
+              mountedHomeCarouselTypes.add(component);
+            }
+          });
+        }
+        if (fiber.child) pending.push(fiber.child);
+        if (fiber.sibling) pending.push(fiber.sibling);
+      }
+    };
+    const discoverMountedHomeCarousels = () => {
+      const discoveredGrids = new Set<any>();
+      if (!active) return discoveredGrids;
+      try {
+        const document = steamUiCardDocument();
+        const cards = document?.querySelectorAll?.("[data-id]");
+        if (!cards) return discoveredGrids;
+        for (const card of Array.from(cards) as any[]) {
+          const cardAppId = Number(card?.getAttribute?.("data-id"));
+          let fiber = homeFiberFor(card);
+          retainMountedHomeCarouselTypes(fiber, cardAppId);
+          for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
+            const appId = Number(fiber.memoizedProps?.app?.appid ?? fiber.memoizedProps?.appid);
+            if (Number.isFinite(appId) && appId > 0) {
+              // The mounted Home card can come from a newer Steam module
+              // generation than the cached module export. Retain its exact
+              // app-bearing component identities for this bounded card renderer.
+              [fiber.type, fiber.elementType].forEach((component) => {
+                if (typeof component === "function") {
+                  mountedHomeCarouselTypes.add(component);
+                }
+              });
+            }
+            const carousel = fiber.stateNode;
+            if (
+              carousel?.m_refGrid &&
+              isHomeCarouselFiber(fiber)
+            ) {
+              mountedHomeCarousels.add(carousel);
+              discoveredGrids.add(carousel.m_refGrid);
+              break;
+            }
+          }
+        }
+      } catch {
+        // DOM/fiber access is optional; new cards still use the renderer patch.
+      }
+      return discoveredGrids;
+    };
+    const refreshMountedHomeCarousels = (refreshExisting = true) => {
+      if (!active) return false;
+      const discoveredGrids = discoverMountedHomeCarousels();
+      const grids = new Set<any>();
+      mountedHomeCarousels.forEach((carousel) => {
+        const grid = carousel?.m_refGrid;
+        if (typeof grid?.recomputeGridSize === "function") {
+          grids.add(grid);
+        } else {
+          mountedHomeCarousels.delete(carousel);
+        }
+      });
+      mountedHomeGrids.forEach((_value, grid) => grids.add(grid));
+      const gridsToRecompute = new Set<any>();
+      grids.forEach((grid) => {
+        const previous = mountedHomeGrids.get(grid);
+        const outcome = installCachedHomeCellRenderer(
+          grid,
+          discoveredGrids.has(grid) || previous?.discovered === true,
+        );
+        if (refreshExisting || outcome === "wrapped") gridsToRecompute.add(grid);
+      });
+      gridsToRecompute.forEach((grid) => {
+        try {
+          grid.recomputeGridSize();
+        } catch {
+          mountedHomeGrids.delete(grid);
+        }
+      });
+      // Steam can publish a replacement native renderer while recomputing its
+      // cached item output. Rewrap that newest renderer after the invalidation
+      // so the current grid, not only a future render, owns the indicator.
+      gridsToRecompute.forEach((grid) => {
+        const previous = mountedHomeGrids.get(grid);
+        installCachedHomeCellRenderer(grid, previous?.discovered ?? false);
+      });
+      return hasMountedHomeCellRendererWrapper(true);
+    };
+    const homeRefFor = (originalRef: any) => {
+      const existing = homeRefCallbacks.get(originalRef);
+      if (existing) return existing;
+      const callback = (instance: any) => {
+        try {
+          assignRef(originalRef, instance);
+        } catch {
+          // A host ref must not prevent Steam's native carousel from mounting.
+        }
+        if (!instance || !active) return;
+        mountedHomeCarousels.add(instance);
+        refreshMountedHomeCarousels();
+      };
+      homeRefCallbacks.set(originalRef, callback);
+      return callback;
+    };
+
+    const scheduleMountedHomeDiscoveryRetry = () => {
+      if (
+        !active ||
+        homeDiscoveryRetryId !== undefined ||
+        homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts
+      ) {
+        return;
+      }
+      homeDiscoveryRetryId = dependencies.scheduleRetry(() => {
+        if (!active) return;
+        homeDiscoveryRetryId = undefined;
+        homeDiscoveryAttempts += 1;
+        refreshMountedHomeCarousels(false);
+        scheduleMountedHomeDiscoveryRetry();
+      }, dependencies.homeDiscoveryIntervalMs);
     };
 
     try {
@@ -568,8 +980,9 @@ export const installLibraryCompatibilityIndicators = (
           if (typeof homeProps?.fnItemRenderer !== "function") return output;
           const originalRenderer = homeProps.fnItemRenderer;
           return cloneElement(homeOutput as any, {
+            ref: homeRefFor((homeOutput as any).ref),
             fnItemRenderer: (...itemArgs: any[]) =>
-              wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+              wrapCarouselElement(originalRenderer(...itemArgs), isMountedHomeCarousel, carouselWrapperFor),
           });
         },
       );
@@ -601,8 +1014,11 @@ export const installLibraryCompatibilityIndicators = (
       return;
     }
     installed = true;
+    homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
+    refreshMountedHomeCarousels();
     reportInstalled(resolutionAttempts);
     dependencies.refreshCompatibilitySurfaces();
+    scheduleMountedHomeDiscoveryRetry();
   };
 
   installWhenTargetsResolve();

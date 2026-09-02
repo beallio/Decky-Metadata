@@ -1938,33 +1938,9 @@ const restoreAllCompatibilityBaselines = () => {
         restoreCompatibilityBaseline(Number(key));
     });
 };
-/**
- * Force one render of an already-mounted Library surface after the indicator
- * patch installs. Cards rendered by the old renderer then acquire the owned,
- * revision-subscribed badge slot without replacing their overview objects.
- */
+/** Publish a compatibility revision without disturbing Steam navigation state. */
 const refreshCompatibilitySurfaces = () => {
-    const revision = notifyCompatibilityRevision();
-    try {
-        const history = globalThis?.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
-        const location = history?.location;
-        const pathname = location?.pathname;
-        const isLibrarySurface = typeof pathname === "string" && /(?:^|\/)library(?:\/|$)/.test(pathname);
-        if (typeof history?.replace === "function" &&
-            typeof pathname === "string" &&
-            pathname &&
-            isLibrarySurface) {
-            const path = `${pathname}${location.search || ""}${location.hash || ""}`;
-            history.replace(path, {
-                ...(location.state || {}),
-                deckyMetadataCompatibilityRevision: revision,
-            });
-        }
-    }
-    catch {
-        // Do not interrupt a user action when a Steam client does not expose history.replace.
-    }
-    return revision;
+    return notifyCompatibilityRevision();
 };
 const applyCompatibilityCategory = (appId, overview, category) => {
     if (category === null) {
@@ -1987,6 +1963,111 @@ const applyCompatibilityCategory = (appId, overview, category) => {
     catch {
         // Steam objects are not always writable during early bootstrap.
         return false;
+    }
+};
+/**
+ * Apply only compatibility data to an exact native overview object. Steam can
+ * replace this non-observable object between callers, so the app-store getter
+ * uses this same helper before it returns a replacement to SteamUI.
+ */
+const applyCompatibilityToOverview = (appId, overview) => {
+    if (Number(overview?.appid) !== Number(appId) || !isNativeNonSteamShortcut(overview)) {
+        return false;
+    }
+    const metadata = metadataCache[String(appId)];
+    return applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+};
+/**
+ * Steam sends AppOverview protobufs to appInfoStore before it creates and
+ * publishes a replacement native object. Patch that input, rather than a
+ * getter after publication, so the native object starts with the effective
+ * category even though this field is non-observable.
+ */
+const applyCompatibilityToIncomingOverview = (overview) => {
+    const appId = Number(overview?.appid?.());
+    if (!Number.isFinite(appId) || appId <= 0)
+        return false;
+    const current = getNativeOverview(appId);
+    const isIncomingShortcut = Number(overview?.app_type?.()) === NON_STEAM_APP_TYPE;
+    if (!isIncomingShortcut && !isNativeNonSteamShortcut(current))
+        return false;
+    const category = effectiveCompatibilityCategory(metadataCache[String(appId)]);
+    if (category === null)
+        return false;
+    const packed = Number(overview?.steam_hw_compat_category_packed?.());
+    if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
+        return false;
+    }
+    const key = String(appId);
+    if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
+        metadataState.compatibilityBaselines[key] = current
+            ? packedCompatibilityValue(current) & 0xf
+            : packed & 0xf;
+    }
+    const nextPacked = (packed & -16) | category | (category << 2);
+    if (nextPacked === packed)
+        return false;
+    try {
+        overview.set_steam_hw_compat_category_packed(nextPacked);
+        return Number(overview.steam_hw_compat_category_packed()) === nextPacked;
+    }
+    catch {
+        return false;
+    }
+};
+/**
+ * A direct metadata change has no native AppOverview notification. Replace
+ * only the exact current map entry with a fresh native instance so the
+ * observable map publishes the completed category. This is a single get/set,
+ * never a map scan or a write through an official-AppID alias.
+ */
+const createCompatibilityReplacement = (overview) => {
+    const prototype = Object.getPrototypeOf(overview);
+    const NativeOverview = overview?.constructor;
+    if (!prototype || typeof NativeOverview !== "function")
+        return null;
+    try {
+        // Steam uses both observable and non-observable AppOverview classes. Run
+        // the native constructor so an observable replacement keeps its MobX
+        // initialization instead of inheriting a prototype without that state.
+        const replacement = new NativeOverview();
+        if (!replacement || Object.getPrototypeOf(replacement) !== prototype)
+            return null;
+        if (typeof overview.BHasObservables === "function" &&
+            typeof replacement.BHasObservables === "function" &&
+            overview.BHasObservables() !== replacement.BHasObservables()) {
+            return null;
+        }
+        Object.keys(overview).forEach((key) => {
+            // This native debug callback is initialized by the constructor and is
+            // bound to that instance. Keep the replacement's own callback.
+            if (key !== "LOG_CHANGE")
+                replacement[key] = overview[key];
+        });
+        replacement.RestorePreservedState?.(overview.GetPreservedState?.());
+        return replacement;
+    }
+    catch {
+        // A changed native constructor leaves the original map entry untouched.
+        return null;
+    }
+};
+const publishCompatibilityReplacement = (appId, overview) => {
+    try {
+        const overviews = appStore?.m_mapApps;
+        if (!overviews ||
+            typeof overviews.get !== "function" ||
+            typeof overviews.set !== "function" ||
+            overviews.get(appId) !== overview) {
+            return;
+        }
+        const replacement = createCompatibilityReplacement(overview);
+        if (!replacement)
+            return;
+        overviews.set(appId, replacement);
+    }
+    catch {
+        // A changed Steam map leaves the native overview in place; never retry.
     }
 };
 const refreshMetadataCache = async () => {
@@ -2046,14 +2127,17 @@ const applyMetadata = (appId) => {
         return false;
     const metadata = metadataCache[String(appId)];
     if (!metadata) {
-        return restoreCompatibilityBaseline(appId, overview);
+        const restored = restoreCompatibilityBaseline(appId, overview);
+        if (restored)
+            publishCompatibilityReplacement(appId, overview);
+        return restored;
     }
     let compatibilityChanged = false;
     try {
         if (typeof metadata.rating === "number") {
             overview.metacritic_score = metadata.rating;
         }
-        compatibilityChanged = applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+        compatibilityChanged = applyCompatibilityToOverview(appId, overview);
         if (!overview.m_setStoreCategories) {
             overview.m_setStoreCategories = new Set();
         }
@@ -2065,8 +2149,11 @@ const applyMetadata = (appId) => {
         // Steam objects are not always writable during early bootstrap.
     }
     const appData = appDetailsStore?.GetAppData?.(appId);
-    if (!appData)
+    if (!appData) {
+        if (compatibilityChanged)
+            publishCompatibilityReplacement(appId, overview);
         return compatibilityChanged;
+    }
     ensureDetailsOverviewSafeFields(appId);
     const screenshots = steamScreenshotsFromMetadata(appId, metadata);
     reassertMatchedAppData(appData, metadata, screenshots);
@@ -2103,6 +2190,8 @@ const applyMetadata = (appId) => {
             // Cache writes can fail if the page has not finished creating app data.
         }
     }
+    if (compatibilityChanged)
+        publishCompatibilityReplacement(appId, overview);
     return compatibilityChanged;
 };
 const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots || [])
@@ -2178,8 +2267,53 @@ const tryEnrichScreenshotsForApp = async (appId) => {
 const installMetadataPatches = (unpatchers) => {
     const overviewProto = appStore?.allApps?.[0]?.__proto__;
     const detailsProto = appDetailsStore?.__proto__;
+    const infoStore = globalThis.appInfoStore;
     if (!overviewProto || !detailsProto)
         return;
+    let incomingCompatibilityChanged = false;
+    let updateOverviewPatched = false;
+    let fallbackRevisionQueued = false;
+    const publishFallbackCompatibilityRevision = () => {
+        if (fallbackRevisionQueued)
+            return;
+        fallbackRevisionQueued = true;
+        queueMicrotask(() => {
+            fallbackRevisionQueued = false;
+            if (!incomingCompatibilityChanged)
+                return;
+            incomingCompatibilityChanged = false;
+            notifyCompatibilityRevision();
+        });
+    };
+    if (infoStore?.OnAppOverviewChange) {
+        unpatchers.push(patchMethod(infoStore, "OnAppOverviewChange", (_thisValue, original, args) => {
+            const incoming = Array.isArray(args[0]) ? args[0] : [];
+            incomingCompatibilityChanged = incoming.reduce((changed, overview) => applyCompatibilityToIncomingOverview(overview) || changed, incomingCompatibilityChanged);
+            const result = original(...args);
+            // Some Steam builds expose UpdateAppOverview as a read-only native
+            // method. Publish once in a microtask after this input batch instead
+            // of allowing that optional lifecycle hook to abort every Steam patch.
+            if (!updateOverviewPatched && incomingCompatibilityChanged) {
+                publishFallbackCompatibilityRevision();
+            }
+            return result;
+        }));
+    }
+    if (appStore?.UpdateAppOverview) {
+        try {
+            unpatchers.push(patchMethod(appStore, "UpdateAppOverview", (_thisValue, original, args) => {
+                incomingCompatibilityChanged = false;
+                const result = original(...args);
+                if (incomingCompatibilityChanged)
+                    notifyCompatibilityRevision();
+                return result;
+            }));
+            updateOverviewPatched = true;
+        }
+        catch (error) {
+            warn("bridge", "UpdateAppOverview patch unavailable; using input-batch revision", error);
+        }
+    }
     // GetAppData is the narrowest durable boundary around native details
     // replacements. Populate a new matched-shortcut details object before any
     // SteamUI caller can observe the transient shortcut-only version. The
@@ -2210,9 +2344,11 @@ const installMetadataPatches = (unpatchers) => {
         unpatchers.push(patchMethod(appStore, "GetAppOverviewByAppID", (_thisValue, original, args) => {
             const requestedAppId = Number(args[0]);
             const result = original(...args);
-            if (result || !Number.isFinite(requestedAppId) || requestedAppId <= 0) {
+            if (!Number.isFinite(requestedAppId) || requestedAppId <= 0) {
                 return result;
             }
+            if (result)
+                return result;
             const shortcutAppId = shortcutAppIdForSteamAppId(requestedAppId);
             if (!shortcutAppId || shortcutAppId === requestedAppId)
                 return result;
@@ -4160,6 +4296,43 @@ const steamUiWindow = () => {
     }
     return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
 };
+const steamUiCardDocument = () => {
+    // SharedJSContext does not own Big Picture's DOM. Steam exposes the mounted
+    // browser document through this same-window bridge instead. Decky can run in
+    // an isolated global, so inspect its SteamUI/webpack parent before falling
+    // back to the local document. Retain the Gamepad-specific form seen on
+    // older/current SteamUI builds.
+    const contexts = new Set([globalThis, steamUiWindow()]);
+    try {
+        const currentWindow = globalThis;
+        contexts.add(currentWindow.parent);
+        contexts.add(currentWindow.top);
+    }
+    catch {
+        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
+    }
+    try {
+        for (const context of contexts) {
+            const windowStore = context?.SteamUIStore?.m_WindowStore;
+            const browserWindows = [
+                windowStore?.MainWindowInstance?.m_BrowserWindow,
+                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+            ];
+            for (const browserWindow of browserWindows) {
+                const document = browserWindow?.document;
+                if (typeof document?.querySelector === "function" &&
+                    !!document.querySelector("[data-id]")) {
+                    return document;
+                }
+            }
+        }
+    }
+    catch {
+        // A changed Steam window bridge must leave the optional cache patch inert.
+    }
+    return Array.from(contexts).find((candidate) => typeof candidate?.document?.querySelector === "function" &&
+        !!candidate.document.querySelector("[data-id]"))?.document;
+};
 /**
  * Decky's module finder sees the observer/memo export, not LibraryItemBox's
  * renderer source. Query only webpack factory text, then load its one match.
@@ -4367,6 +4540,8 @@ const defaultDependencies = {
     cancelRetry: (retryId) => window.clearTimeout(retryId),
     retryIntervalMs: 500,
     maxResolutionAttempts: 240,
+    homeDiscoveryIntervalMs: 500,
+    maxHomeDiscoveryAttempts: 60,
     getOverview,
     metadataForApp: (appId) => metadataCache[String(appId)],
     isNativeNonSteamShortcut,
@@ -4398,8 +4573,8 @@ const wrapCarouselElement = (node, carousel, wrapper) => {
     if (!SP_REACT.isValidElement(node))
         return node;
     const element = node;
-    if (element.type === carousel) {
-        return SP_REACT.createElement(wrapper, { ...element.props, key: element.key });
+    if (carousel(element.type)) {
+        return SP_REACT.createElement(wrapper(element.type), { ...element.props, key: element.key });
     }
     const originalChildren = element.props?.children;
     if (originalChildren === undefined)
@@ -4412,6 +4587,14 @@ const wrapCarouselElement = (node, carousel, wrapper) => {
         children: Array.isArray(originalChildren) ? wrappedChildren : wrappedChildren[0],
     });
 };
+const assignRef = (ref, value) => {
+    if (typeof ref === "function") {
+        ref(value);
+    }
+    else if (ref && typeof ref === "object") {
+        ref.current = value;
+    }
+};
 /**
  * Add compatibility indicators at the two native Library card renderers.
  * The patch calls only those renderers. It never walks MobX state.
@@ -4422,8 +4605,16 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     let homeUnpatch;
     let gridUnpatch;
     let retryId;
+    let homeDiscoveryRetryId;
+    let homeCacheUnsubscribe;
     const indicatorUnsubscribers = new Set();
+    const mountedHomeCarousels = new Set();
+    const mountedHomeGrids = new Map();
+    const mountedHomeCarouselTypes = new Set();
+    const mountedHomeCarouselWrappers = new Map();
+    const homeRefCallbacks = new Map();
     let resolutionAttempts = 0;
+    let homeDiscoveryAttempts = 0;
     let installed = false;
     let cleaned = false;
     const cleanup = () => {
@@ -4435,10 +4626,37 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             dependencies.cancelRetry(retryId);
             retryId = undefined;
         }
+        if (homeDiscoveryRetryId !== undefined) {
+            dependencies.cancelRetry(homeDiscoveryRetryId);
+            homeDiscoveryRetryId = undefined;
+        }
         const homeCleanup = homeUnpatch;
         const gridCleanup = gridUnpatch;
         homeUnpatch = undefined;
         gridUnpatch = undefined;
+        const cacheCleanup = homeCacheUnsubscribe;
+        homeCacheUnsubscribe = undefined;
+        try {
+            cacheCleanup?.();
+        }
+        catch {
+            // Continue teardown if Steam has already removed the subscription.
+        }
+        mountedHomeCarousels.clear();
+        mountedHomeGrids.forEach(({ restore }, grid) => {
+            try {
+                if (restore()) {
+                    grid.recomputeGridSize?.();
+                }
+            }
+            catch {
+                // A disposed virtual grid does not need an additional cleanup pass.
+            }
+        });
+        mountedHomeGrids.clear();
+        mountedHomeCarouselTypes.clear();
+        mountedHomeCarouselWrappers.clear();
+        homeRefCallbacks.clear();
         indicatorUnsubscribers.forEach((unsubscribe) => {
             try {
                 unsubscribe();
@@ -4530,15 +4748,339 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             }
             return decorate(output, overview);
         };
-        const carouselWrapper = (props) => {
-            const output = targets.carousel(props);
+        const carouselWrapperFor = (carousel) => {
+            const existing = mountedHomeCarouselWrappers.get(carousel);
+            if (existing)
+                return existing;
+            const wrapper = (props) => {
+                const output = carousel(props);
+                if (!active)
+                    return output;
+                // Steam's live Home renderer passes the shortcut overview as `app`.
+                // The top-level `appid` remains a supported fallback for the alternate
+                // renderer shape used by older clients.
+                const appId = Number(props?.appid ?? props?.app?.appid);
+                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+            };
+            mountedHomeCarouselWrappers.set(carousel, wrapper);
+            return wrapper;
+        };
+        const isMountedHomeCarousel = (carousel) => carousel === targets.carousel || mountedHomeCarouselTypes.has(carousel);
+        const homeFiberFor = (element) => {
+            try {
+                const key = Object.keys(element).find((name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"));
+                return key ? element[key] : null;
+            }
+            catch {
+                return null;
+            }
+        };
+        const isHomeCarouselFiber = (fiber) => {
+            let current = fiber;
+            for (let depth = 0; current && depth < 24; depth += 1, current = current.return) {
+                if (current.type === targets.home || current.elementType === targets.home)
+                    return true;
+                try {
+                    for (const candidate of [current.type, current.elementType]) {
+                        const render = typeof candidate?.render === "function"
+                            ? candidate.render
+                            : typeof candidate === "function"
+                                ? candidate
+                                : undefined;
+                        const source = typeof render === "function" ? render.toString() : "";
+                        if (source.includes("VBC_") &&
+                            source.includes("fnOnFocusedColumnChange")) {
+                            return true;
+                        }
+                        // Steam can replace the Home renderer with a wrapper after module
+                        // resolution. That wrapper removes the VBC_ source token, but the
+                        // mounted current Home grid still exposes its focused-column callback
+                        // and the exact m_refGrid we need to own.
+                        if (source.includes("fnOnFocusedColumnChange") &&
+                            current.stateNode?.m_refGrid) {
+                            return true;
+                        }
+                    }
+                }
+                catch {
+                    // Keep the bounded walk fail-closed when Steam lazily swaps a type.
+                }
+            }
+            return false;
+        };
+        const installCachedHomeCellRenderer = (grid, discovered = false) => {
             if (!active)
-                return output;
-            // Steam's live Home renderer passes the shortcut overview as `app`.
-            // The top-level `appid` remains a supported fallback for the alternate
-            // renderer shape used by older clients.
-            const appId = Number(props?.appid ?? props?.app?.appid);
-            return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+                return "unavailable";
+            const original = grid?.props?.cellRenderer;
+            if (typeof original !== "function" || typeof grid?.recomputeGridSize !== "function") {
+                return "unavailable";
+            }
+            const previous = mountedHomeGrids.get(grid);
+            // React can publish a new native renderer on an already-mounted grid.
+            // Preserve that newest renderer as the cleanup target, rather than
+            // leaving the old wrapper registered after it has been replaced.
+            if (previous?.wrapper === original) {
+                previous.discovered = previous.discovered || discovered;
+                if (previous.needsRecompute) {
+                    previous.needsRecompute = false;
+                    return "wrapped";
+                }
+                return "intact";
+            }
+            const wrapRenderer = (renderer) => (...args) => wrapCarouselElement(renderer(...args), isMountedHomeCarousel, carouselWrapperFor);
+            const descriptor = Object.getOwnPropertyDescriptor(grid.props, "cellRenderer");
+            try {
+                // Steam can inherit this renderer through the props prototype rather
+                // than publishing an own descriptor. Define an own accessor in both
+                // cases so a later React assignment cannot silently replace the
+                // wrapper between discovery retries.
+                if (!descriptor || descriptor.configurable) {
+                    const gridPropsDescriptor = Object.getOwnPropertyDescriptor(grid, "props");
+                    const canRetainPropsReplacement = Boolean(gridPropsDescriptor?.configurable && gridPropsDescriptor.writable);
+                    let currentProps = grid.props;
+                    let record;
+                    const retainRenderer = (props) => {
+                        const nextOriginal = props?.cellRenderer;
+                        const nextDescriptor = Object.getOwnPropertyDescriptor(props ?? {}, "cellRenderer");
+                        if (typeof nextOriginal !== "function" ||
+                            (nextDescriptor && !nextDescriptor.configurable)) {
+                            return false;
+                        }
+                        record.original = nextOriginal;
+                        record.wrapper = wrapRenderer(nextOriginal);
+                        Object.defineProperty(props, "cellRenderer", {
+                            configurable: true,
+                            enumerable: nextDescriptor?.enumerable ?? true,
+                            get: () => record.wrapper,
+                            set: (next) => {
+                                if (next === record.wrapper || typeof next !== "function")
+                                    return;
+                                record.original = next;
+                                record.wrapper = wrapRenderer(next);
+                                record.needsRecompute = true;
+                            },
+                        });
+                        return props.cellRenderer === record.wrapper;
+                    };
+                    record = {
+                        original,
+                        wrapper: wrapRenderer(original),
+                        discovered,
+                        needsRecompute: false,
+                        restore: () => {
+                            if (currentProps?.cellRenderer !== record.wrapper)
+                                return false;
+                            Object.defineProperty(currentProps, "cellRenderer", {
+                                configurable: true,
+                                enumerable: true,
+                                writable: true,
+                                value: record.original,
+                            });
+                            if (canRetainPropsReplacement) {
+                                Object.defineProperty(grid, "props", {
+                                    ...gridPropsDescriptor,
+                                    value: currentProps,
+                                });
+                            }
+                            return true;
+                        },
+                    };
+                    if (canRetainPropsReplacement) {
+                        Object.defineProperty(grid, "props", {
+                            configurable: true,
+                            enumerable: gridPropsDescriptor?.enumerable ?? true,
+                            get: () => currentProps,
+                            set: (nextProps) => {
+                                currentProps = nextProps;
+                                if (!active || nextProps?.cellRenderer === record.wrapper)
+                                    return;
+                                if (retainRenderer(nextProps))
+                                    record.needsRecompute = true;
+                            },
+                        });
+                    }
+                    if (!retainRenderer(currentProps)) {
+                        record.restore();
+                        return "unavailable";
+                    }
+                    mountedHomeGrids.set(grid, record);
+                    return "wrapped";
+                }
+                const wrapper = wrapRenderer(original);
+                const record = {
+                    original,
+                    wrapper,
+                    discovered,
+                    needsRecompute: false,
+                    restore: () => {
+                        if (grid?.props?.cellRenderer !== wrapper)
+                            return false;
+                        grid.props.cellRenderer = record.original;
+                        return true;
+                    },
+                };
+                grid.props.cellRenderer = wrapper;
+                if (grid.props.cellRenderer !== wrapper)
+                    return "unavailable";
+                mountedHomeGrids.set(grid, record);
+                return "wrapped";
+            }
+            catch {
+                // A changed virtual-grid target is left untouched and is not retried.
+                return "unavailable";
+            }
+        };
+        const hasMountedHomeCellRendererWrapper = (requireDiscovered = false) => {
+            for (const [grid, { wrapper, discovered }] of mountedHomeGrids) {
+                try {
+                    if ((!requireDiscovered || discovered) && grid?.props?.cellRenderer === wrapper)
+                        return true;
+                }
+                catch {
+                    // A disposed virtual grid cannot keep a mounted wrapper alive.
+                }
+            }
+            return false;
+        };
+        const retainMountedHomeCarouselTypes = (root, cardAppId) => {
+            const pending = [root];
+            const seen = new Set();
+            let visited = 0;
+            while (pending.length > 0 && visited < 96) {
+                const fiber = pending.pop();
+                if (!fiber || seen.has(fiber))
+                    continue;
+                seen.add(fiber);
+                visited += 1;
+                const appId = Number(fiber.memoizedProps?.app?.appid ?? fiber.memoizedProps?.appid);
+                const hasCardIdentity = Number.isFinite(cardAppId) && cardAppId > 0;
+                if (Number.isFinite(appId) &&
+                    appId > 0 &&
+                    (!hasCardIdentity || appId === cardAppId)) {
+                    [fiber.type, fiber.elementType].forEach((component) => {
+                        if (typeof component === "function") {
+                            mountedHomeCarouselTypes.add(component);
+                        }
+                    });
+                }
+                if (fiber.child)
+                    pending.push(fiber.child);
+                if (fiber.sibling)
+                    pending.push(fiber.sibling);
+            }
+        };
+        const discoverMountedHomeCarousels = () => {
+            const discoveredGrids = new Set();
+            if (!active)
+                return discoveredGrids;
+            try {
+                const document = steamUiCardDocument();
+                const cards = document?.querySelectorAll?.("[data-id]");
+                if (!cards)
+                    return discoveredGrids;
+                for (const card of Array.from(cards)) {
+                    const cardAppId = Number(card?.getAttribute?.("data-id"));
+                    let fiber = homeFiberFor(card);
+                    retainMountedHomeCarouselTypes(fiber, cardAppId);
+                    for (let depth = 0; fiber && depth < 24; depth += 1, fiber = fiber.return) {
+                        const appId = Number(fiber.memoizedProps?.app?.appid ?? fiber.memoizedProps?.appid);
+                        if (Number.isFinite(appId) && appId > 0) {
+                            // The mounted Home card can come from a newer Steam module
+                            // generation than the cached module export. Retain its exact
+                            // app-bearing component identities for this bounded card renderer.
+                            [fiber.type, fiber.elementType].forEach((component) => {
+                                if (typeof component === "function") {
+                                    mountedHomeCarouselTypes.add(component);
+                                }
+                            });
+                        }
+                        const carousel = fiber.stateNode;
+                        if (carousel?.m_refGrid &&
+                            isHomeCarouselFiber(fiber)) {
+                            mountedHomeCarousels.add(carousel);
+                            discoveredGrids.add(carousel.m_refGrid);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch {
+                // DOM/fiber access is optional; new cards still use the renderer patch.
+            }
+            return discoveredGrids;
+        };
+        const refreshMountedHomeCarousels = (refreshExisting = true) => {
+            if (!active)
+                return false;
+            const discoveredGrids = discoverMountedHomeCarousels();
+            const grids = new Set();
+            mountedHomeCarousels.forEach((carousel) => {
+                const grid = carousel?.m_refGrid;
+                if (typeof grid?.recomputeGridSize === "function") {
+                    grids.add(grid);
+                }
+                else {
+                    mountedHomeCarousels.delete(carousel);
+                }
+            });
+            mountedHomeGrids.forEach((_value, grid) => grids.add(grid));
+            const gridsToRecompute = new Set();
+            grids.forEach((grid) => {
+                const previous = mountedHomeGrids.get(grid);
+                const outcome = installCachedHomeCellRenderer(grid, discoveredGrids.has(grid) || previous?.discovered === true);
+                if (refreshExisting || outcome === "wrapped")
+                    gridsToRecompute.add(grid);
+            });
+            gridsToRecompute.forEach((grid) => {
+                try {
+                    grid.recomputeGridSize();
+                }
+                catch {
+                    mountedHomeGrids.delete(grid);
+                }
+            });
+            // Steam can publish a replacement native renderer while recomputing its
+            // cached item output. Rewrap that newest renderer after the invalidation
+            // so the current grid, not only a future render, owns the indicator.
+            gridsToRecompute.forEach((grid) => {
+                const previous = mountedHomeGrids.get(grid);
+                installCachedHomeCellRenderer(grid, previous?.discovered ?? false);
+            });
+            return hasMountedHomeCellRendererWrapper(true);
+        };
+        const homeRefFor = (originalRef) => {
+            const existing = homeRefCallbacks.get(originalRef);
+            if (existing)
+                return existing;
+            const callback = (instance) => {
+                try {
+                    assignRef(originalRef, instance);
+                }
+                catch {
+                    // A host ref must not prevent Steam's native carousel from mounting.
+                }
+                if (!instance || !active)
+                    return;
+                mountedHomeCarousels.add(instance);
+                refreshMountedHomeCarousels();
+            };
+            homeRefCallbacks.set(originalRef, callback);
+            return callback;
+        };
+        const scheduleMountedHomeDiscoveryRetry = () => {
+            if (!active ||
+                homeDiscoveryRetryId !== undefined ||
+                homeDiscoveryAttempts >= dependencies.maxHomeDiscoveryAttempts) {
+                return;
+            }
+            homeDiscoveryRetryId = dependencies.scheduleRetry(() => {
+                if (!active)
+                    return;
+                homeDiscoveryRetryId = undefined;
+                homeDiscoveryAttempts += 1;
+                refreshMountedHomeCarousels(false);
+                scheduleMountedHomeDiscoveryRetry();
+            }, dependencies.homeDiscoveryIntervalMs);
         };
         try {
             homeUnpatch = dependencies.patchHomeRenderer(targets.home, (_args, output) => {
@@ -4550,7 +5092,8 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                     return output;
                 const originalRenderer = homeProps.fnItemRenderer;
                 return SP_REACT.cloneElement(homeOutput, {
-                    fnItemRenderer: (...itemArgs) => wrapCarouselElement(originalRenderer(...itemArgs), targets.carousel, carouselWrapper),
+                    ref: homeRefFor(homeOutput.ref),
+                    fnItemRenderer: (...itemArgs) => wrapCarouselElement(originalRenderer(...itemArgs), isMountedHomeCarousel, carouselWrapperFor),
                 });
             });
             if (typeof homeUnpatch !== "function") {
@@ -4568,8 +5111,11 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
             return;
         }
         installed = true;
+        homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
+        refreshMountedHomeCarousels();
         reportInstalled(resolutionAttempts);
         dependencies.refreshCompatibilitySurfaces();
+        scheduleMountedHomeDiscoveryRetry();
     };
     installWhenTargetsResolve();
 };
