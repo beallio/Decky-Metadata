@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Local builds can move directly to a published stable release.
+
+### Fixed
+
+- A local `X.Y.Z+<hash>` build now recognizes and can install the canonical stable `X.Y.Z` release, while development prereleases remain manual-only.
+
 ## [0.3.11] - 2026-09-01
 
 Compatibility badges remain visible after plugin or SteamUI reload without selecting each game.
