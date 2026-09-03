@@ -54,6 +54,18 @@ variant markers. The reported cases are `Prototype` and `Prototype 2`.
 
 ## Final quality gate
 
+- Routing check: `./run.sh scripts/decky doctor` reported `OVERALL WARN`.
+  Its output is `/tmp/Decky-Metadata/marker-word-title-matching-doctor.log`.
+  The warnings were pre-existing and unrelated to this change (the capture-time
+  dirty tree, cache policy, repository-local `node_modules`, and stale local
+  package).
+- Routing check: `./run.sh scripts/decky verify-change dev --explain` reported
+  `STATUS PASS`. Its output is
+  `/tmp/Decky-Metadata/marker-word-title-matching-verify-change.log`.
+- Before any production edit, `./run.sh npm run build` completed successfully
+  (output: `/tmp/Decky-Metadata/marker-word-title-matching-bundle-build.log`),
+  then `git diff --exit-code -- dist/index.js dist/index.js.map` exited 0. This
+  confirmed there was no pre-existing `dist/` drift to include in this change.
 - `./scripts/orchestration-hooks/quality-gates` exited 0: TypeScript completed
   without diagnostics, Rollup built successfully, Vitest passed 26 files / 390
   tests, Python byte-compilation completed, and pytest passed 477 tests. Its
