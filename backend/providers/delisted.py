@@ -172,7 +172,7 @@ def resolve_delisted_appid_for_title(title: str, apps: list[Any] | None) -> int:
             if ratio < 0.72:
                 continue
             score = int(ratio * 500)
-        if matching.is_non_primary_steam_title(name):
+        if matching.is_non_primary_steam_title(name, clean):
             score -= 800
         candidate_numbers = set(re.findall(r"\d+", candidate))
         if candidate_numbers - query_numbers:

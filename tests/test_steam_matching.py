@@ -75,6 +75,59 @@ def test_steam_appid_matching_rejects_variant_only_result(monkeypatch) -> None:
     assert plugin._resolve_steam_appid_for_title("Some Game") == (None, "")
 
 
+def test_steam_appid_matching_resolves_prototype_when_every_title_word_is_a_marker(monkeypatch) -> None:
+    plugin = make_plugin()
+    stub_store_search(
+        monkeypatch,
+        plugin,
+        [
+            {"id": 700002, "name": "Prototype 2"},
+            {"id": 700003, "name": "Prototype Demo"},
+            {"id": 700001, "name": "Prototype"},
+        ],
+    )
+
+    assert plugin._resolve_steam_appid_for_title("Prototype") == (
+        700001,
+        "https://store.steampowered.com/app/700001/",
+    )
+
+
+def test_steam_appid_matching_resolves_prototype_sequel_without_collapsing_to_base_game(monkeypatch) -> None:
+    plugin = make_plugin()
+    stub_store_search(
+        monkeypatch,
+        plugin,
+        [
+            {"id": 700002, "name": "Prototype 2"},
+            {"id": 700003, "name": "Prototype Demo"},
+            {"id": 700001, "name": "Prototype"},
+        ],
+    )
+
+    assert plugin._resolve_steam_appid_for_title("Prototype 2") == (
+        700002,
+        "https://store.steampowered.com/app/700002/",
+    )
+
+
+def test_steam_appid_matching_resolves_test_drive_unlimited_despite_test_marker_pattern(monkeypatch) -> None:
+    plugin = make_plugin()
+    stub_store_search(
+        monkeypatch,
+        plugin,
+        [
+            {"id": 700012, "name": "Test Drive Unlimited 2"},
+            {"id": 700011, "name": "Test Drive Unlimited"},
+        ],
+    )
+
+    assert plugin._resolve_steam_appid_for_title("Test Drive Unlimited") == (
+        700011,
+        "https://store.steampowered.com/app/700011/",
+    )
+
+
 def test_steam_appid_matching_ignores_generated_store_url_cache_but_trusts_source_url(monkeypatch) -> None:
     plugin = make_plugin()
     calls = stub_store_search(monkeypatch, plugin, [{"id": 123, "name": "X"}])

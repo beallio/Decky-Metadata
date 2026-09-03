@@ -1,6 +1,7 @@
 import asyncio
 
 import main
+from backend.providers.delisted import resolve_delisted_appid_for_title
 
 
 def make_plugin(tmp_path, monkeypatch):
@@ -77,6 +78,12 @@ def test_resolve_delisted_appid_matches_fuzzy_title_without_network(tmp_path, mo
 
     assert plugin._resolve_delisted_appid_for_title("Transformers Devastation") == 338930
     assert plugin._resolve_delisted_appid_for_title("Halo Infinite") == 0
+
+
+def test_delisted_resolver_matches_prototype_when_every_title_word_is_a_marker():
+    rows = [[700001, "Prototype"], [700002, "Prototype 2"]]
+
+    assert resolve_delisted_appid_for_title("Prototype", rows) == 700001
 
 
 def test_scan_missing_uses_delisted_tier_before_ign(tmp_path, monkeypatch):
