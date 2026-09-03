@@ -78,24 +78,39 @@ CONSOLE_TITLE_SUFFIXES = frozenset(
 )
 
 
+def _remove_words_unless_last_letter_erased(pattern: str, text: str) -> str:
+    stripped = re.sub(pattern, " ", text)
+    if re.search(r"[a-z]", text) and not re.search(r"[a-z]", stripped):
+        return text
+    return stripped
+
+
+# The three word removals preserve a title's last ASCII letter; bracket removal
+# deliberately remains unguarded. See protondb-decky's src/lib/matchTitle.ts.
 def normalise_match_title(title: str) -> str:
     text = html.unescape(str(title or "")).casefold()
     text = re.sub(r"[\u2122\u00ae\u00a9]", "", text)
     text = re.sub(r"\[[^\]]+\]|\([^\)]*\)", " ", text)
-    text = re.sub(r"\b(the|a|an)\b", " ", text)
-    text = re.sub(r"\b(remaster(ed)?|hd|definitive|ultimate|complete|goty|edition)\b", " ", text)
-    text = re.sub(
+    text = _remove_words_unless_last_letter_erased(r"\b(the|a|an)\b", text)
+    text = _remove_words_unless_last_letter_erased(
+        r"\b(remaster(ed)?|hd|definitive|ultimate|complete|goty|edition)\b", text
+    )
+    text = _remove_words_unless_last_letter_erased(
         r"\b(usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b",
-        " ",
         text,
     )
     text = re.sub(r"[^a-z0-9]+", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
-def is_non_primary_steam_title(name: str) -> bool:
+def is_non_primary_steam_title(name: str, query: str = "") -> bool:
     text = html.unescape(str(name or "")).casefold()
-    return any(re.search(pattern, text, re.I) for pattern in NON_PRIMARY_STEAM_TITLE_PATTERNS)
+    query_text = html.unescape(str(query or "")).casefold()
+    return any(
+        re.search(pattern, text, re.I)
+        and not (query_text and re.search(pattern, query_text, re.I))
+        for pattern in NON_PRIMARY_STEAM_TITLE_PATTERNS
+    )
 
 
 def distinctive_tokens_present(query_norm: str, candidate_norm: str) -> bool:

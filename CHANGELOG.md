@@ -9,6 +9,7 @@ Local builds can move directly to a published stable release.
 ### Fixed
 
 - A local `X.Y.Z+<hash>` build now recognizes and can install the canonical stable `X.Y.Z` release, while development prereleases remain manual-only.
+- Games whose titles are made up of words like `Prototype` or `Test` now match their Steam store entry, so they receive Steam details, news, compatibility, and quick links.
 
 ## [0.3.11] - 2026-09-01
 
