@@ -64,6 +64,9 @@ does not use ProtonDB.
 After a game is matched, Game Info can show its artwork, description, developer,
 publisher, release date, and Steam Deck compatibility.
 
+A game whose title is made up only of words like `Prototype` now matches its
+Steam entry automatically.
+
 ![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
 
 Game Info can also show links to the Steam store, DLC, and Points Shop when they

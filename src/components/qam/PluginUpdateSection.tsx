@@ -116,6 +116,8 @@ export function PluginUpdateSection({
 
   const isLocalBuild = effectiveCurrentVersion.includes("+");
   const isDeckyAvailable = isDeckyInstallerAvailable();
+  const canInstallCandidate =
+    isDeckyAvailable && (!isLocalBuild || candidate?.channel === "stable");
 
   const getActionText = (c: PluginUpdateCandidate) => {
     switch (c.action) {
@@ -253,8 +255,8 @@ export function PluginUpdateSection({
         </PanelSectionRow>
       )}
 
-      {/* Local +build packages are intentionally never handed to Decky. */}
-      {candidate && isDeckyAvailable && !isLocalBuild && (
+      {/* A local +build may hand off only to a canonical stable release. */}
+      {candidate && canInstallCandidate && (
         <PanelSectionRow>
             <ButtonItem
               layout="below"
@@ -277,12 +279,12 @@ export function PluginUpdateSection({
         </PanelSectionRow>
       )}
 
-      {candidate && (!isDeckyAvailable || isLocalBuild) && (
+      {candidate && !canInstallCandidate && (
         <PanelSectionRow>
           <Field focusable={true} highlightOnFocus={true} padding="standard">
             <div style={{ color: "#f87171", fontSize: "13px", marginBottom: "8px" }}>
-              {isLocalBuild
-                ? "Local builds cannot self-update. Install this release manually from GitHub Releases."
+              {isLocalBuild && candidate.channel !== "stable"
+                ? "Local builds can only self-update to a stable release. Install this development release manually from GitHub Releases."
                 : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases."}
             </div>
           </Field>

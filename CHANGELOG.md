@@ -4,6 +4,15 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-09-04
+
+Fix stable installs from local builds and marker-word title matching
+
+### Fixed
+
+- A local `X.Y.Z+<hash>` build now recognizes and can install the canonical stable `X.Y.Z` release, while development prereleases remain manual-only.
+- Games whose titles are made up of words like `Prototype` or `Test` now match their Steam store entry, so they receive Steam details, news, compatibility, and quick links.
+
 ## [0.3.11] - 2026-09-01
 
 Compatibility badges remain visible after plugin or SteamUI reload without selecting each game.

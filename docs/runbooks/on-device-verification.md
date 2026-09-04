@@ -205,15 +205,34 @@ mechanism (match the wrapper in `getGamepadNavigationTrees()` and call
 
 ## Self-update: verifying / driving updates on-device
 
-The self-update panel only works on a **release build**. The on-device dev loop
-installs `X.Y.Z+<hash>` **local** builds, which are deliberately non-updatable
-(`isLocalBuild`, plus `+build` metadata out-ranks any same-base `-dev.g…`
-prerelease), so the panel shows "(Local Build)" and hides Install. To use or test
-the updater you must first put the Deck on a real release build:
+The self-update panel treats `X.Y.Z+<hash>` as a **local** build. A local build
+may hand off to a canonical stable release with the same or a newer base version,
+but it cannot install a development prerelease. This protects an active
+development build from automatic prerelease replacement while giving the device
+a direct path back to a published stable release.
+
+To verify the same-base stable handoff:
 
 ```bash
-# 1. Move off the local build onto a release (Decky's own installer; confirm the
-#    on-device prompt). Downgrade is fine — the local +hash build has a higher base.
+# 1. Install a local package whose base matches a published stable release.
+./run.sh scripts/decky package-push --build --push
+
+# 2. Install /home/deck/Downloads/Decky-Metadata.zip through:
+#    Decky Settings -> Developer -> Install Plugin from ZIP File -> Browse
+# 3. Open Decky Metadata and select Check now.
+# 4. Confirm "Move to Stable vX.Y.Z", approve Decky's update prompt, then capture.
+./run.sh scripts/decky capture
+```
+
+The capture must report the installed canonical `X.Y.Z` version without
+`+<hash>`. A lower stable release is not offered. A development candidate remains
+manual-only while the local build is installed.
+
+To verify a published development-prerelease update, first put the Deck on a real
+release build:
+
+```bash
+# 1. Move onto a release (Decky's own installer; confirm the on-device prompt).
 scripts/deck/install_release.sh v0.3.1
 
 # 2. In the panel, enable "Receive development releases", then Check now. A newer
@@ -235,22 +254,16 @@ version scheme is what keeps them honest:
 
 - `+build` is semver **build metadata** — "built from this commit" — and is
   *ignored for precedence*. It correctly describes a working-copy build that may
-  not correspond to anything published, and the `+` is the exact signal the panel
-  uses to refuse auto-updating it. That protection matters: without it, an
-  auto-update could silently overwrite the build you are actively debugging.
+  not correspond to anything published. The `+` marker blocks development-channel
+  installation but permits an explicit handoff to a canonical stable release.
 - `-dev.g<sha>` is a semver **pre-release identifier** — it *does* affect
   precedence and announces "this is a distributable pre-release." That is only
   true of builds published through CI (`dev-release.yml`).
 
-Aligning the two (stamping local builds `-dev.g<sha>`) would drop the `+` marker,
-making local builds auto-updatable, so CI's build of a newer sha could replace the
-one on your bench mid-iteration, and two local shas would trigger spurious "update
-available" offers. The cost of keeping them distinct is small — you can't test the
-updater on a local build, so you install a release build first (`install_release.sh`,
-one command). That trade (a rare deliberate step vs. a standing footgun) is why the
-schemes stay separate. Only align them for a dedicated always-latest QA device — and
-even then, do it by installing published dev prereleases through the updater, not by
-changing the local build scheme.
+Do not stamp local builds as `-dev.g<sha>`. That would remove the local-build
+marker and let CI's build of another commit replace the build under test. Use a
+published release for development-prerelease testing, and use the stable handoff
+to leave a local build.
 
 ## Debugging beyond the suite
 

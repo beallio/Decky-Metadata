@@ -181,7 +181,15 @@ def select_candidate(
             if not best_ver.is_dev and installed_version.is_dev and best_base == installed_base:
                 action = "move_to_stable"
         elif best_ver == installed_version:
-            if best_ver.is_dev and installed_version.is_dev:
+            if (
+                best_candidate.channel == "stable"
+                and not best_ver.is_dev
+                and best_ver.build_metadata is None
+                and installed_version.build_metadata is not None
+            ):
+                is_upgrade = True
+                action = "move_to_stable"
+            elif best_ver.is_dev and installed_version.is_dev:
                 if best_candidate.version != installed_version_str:
                     is_upgrade = True
                     action = "update"

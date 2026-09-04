@@ -29,10 +29,13 @@ vi.mock("../../updater/deckyInstaller", () => ({
 import { isDeckyInstallerAvailable } from "../../updater/deckyInstaller";
 import { PluginUpdateSection } from "./PluginUpdateSection";
 
-const candidate = (action: "update" | "downgrade_to_stable" = "update") => ({
+const candidate = (
+  action: "update" | "move_to_stable" | "downgrade_to_stable" = "update",
+  channel: "stable" | "development" = "stable",
+) => ({
   version: "0.4.0",
   tag: "v0.4.0",
-  channel: "stable" as const,
+  channel,
   artifact_url: "zip",
   sha256: "a".repeat(64),
   release_url: "release",
@@ -90,13 +93,26 @@ describe("PluginUpdateSection", () => {
     };
   });
 
-  it("suppresses self-install for a local build", () => {
+  it("allows a local build to install a stable release", () => {
     controller.effectiveCurrentVersion = "0.3.1+local";
+    controller.candidate = candidate("move_to_stable");
     const tree = render("0.3.1+local");
     expect(text(tree)).toContain("(Local Build)");
-    expect(text(tree)).toContain("Local builds cannot self-update");
+    expect(text(tree)).not.toContain("Local builds can only self-update");
+    const button = children(tree).find(
+      (node) => node.type === "ButtonItem" && text(node).includes("Move to Stable")
+    );
+    button.props.onClick();
+    expect(controller.install).toHaveBeenCalledWith(controller.candidate);
+  });
+
+  it("keeps development releases manual-only for a local build", () => {
+    controller.effectiveCurrentVersion = "0.3.1+local";
+    controller.candidate = candidate("update", "development");
+    const tree = render("0.3.1+local");
+    expect(text(tree)).toContain("Local builds can only self-update to a stable release");
     expect(children(tree).filter((node) => node.type === "ButtonItem").map(text)).not.toContain(
-      "Update to v0.4.0"
+      "Install development build v0.4.0"
     );
   });
 

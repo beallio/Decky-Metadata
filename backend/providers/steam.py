@@ -576,7 +576,7 @@ def resolve_steam_appid_for_title(
             if ratio < 0.72:
                 continue
             score += int(ratio * 500)
-        if matching.is_non_primary_steam_title(name):
+        if matching.is_non_primary_steam_title(name, clean_title):
             score -= 800
         query_numbers = set(re.findall(r"\d+", normalised_query))
         candidate_numbers = set(re.findall(r"\d+", normalised_name))
