@@ -75,6 +75,20 @@ describe("currentRoutePath", () => {
   });
 });
 
+describe("normalizedTabText", () => {
+  it("ignores trademark marks so a rendered store name still matches its cleaned metadata title", () => {
+    const rendered = core.normalizedTabText("STAR WARS\u2122: The Force Unleashed\u2122 II");
+    const storedTitle = core.normalizedTabText("STAR WARS: The Force Unleashed II");
+    expect(rendered).toContain(storedTitle);
+  });
+
+  it("ignores registered and copyright marks the same way", () => {
+    expect(core.normalizedTabText("Warhammer 40,000\u00ae: Space Marine\u00a9")).toContain(
+      core.normalizedTabText("Warhammer 40,000: Space Marine")
+    );
+  });
+});
+
 describe("getNativeOverview", () => {
   it("uses the exact allApps entry instead of a patched AppID getter alias", () => {
     const host = globalThis as Record<string, unknown>;

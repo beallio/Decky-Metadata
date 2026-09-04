@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Steam page-title matching now ignores trademark, registered, and copyright marks consistently, so cleaned metadata titles can still identify games whose rendered Steam names contain those symbols.
+
 ## [0.3.12] - 2026-09-04
 
 Fix stable installs from local builds and marker-word title matching
