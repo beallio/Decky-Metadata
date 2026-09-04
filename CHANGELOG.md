@@ -4,7 +4,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Local builds can move directly to a published stable release.
+## [0.3.12] - 2026-09-04
+
+Fix stable installs from local builds and marker-word title matching
 
 ### Fixed
 
