@@ -86,6 +86,9 @@ const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
 const clearMetadataCache = callable("clear_metadata_cache");
+const getShortcutNameManagement = callable("get_shortcut_name_management");
+const saveShortcutNameState = callable("save_shortcut_name_state");
+const clearShortcutNameState = callable("clear_shortcut_name_state");
 const refreshDelistedIndex = callable("refresh_delisted_index");
 const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
@@ -124,6 +127,7 @@ var backend = /*#__PURE__*/Object.freeze({
     checkForPluginUpdate: checkForPluginUpdate,
     clearMetadataCache: clearMetadataCache,
     clearPendingUpdateInstall: clearPendingUpdateInstall,
+    clearShortcutNameState: clearShortcutNameState,
     confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
     enrichSteamApp: enrichSteamApp,
     fetchMetadata: fetchMetadata,
@@ -139,6 +143,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
+    getShortcutNameManagement: getShortcutNameManagement,
     getSystemVersions: getSystemVersions,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
@@ -148,6 +153,7 @@ var backend = /*#__PURE__*/Object.freeze({
     removeMetadata: removeMetadata,
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
+    saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setDebugLogging: setDebugLogging,
@@ -2580,6 +2586,80 @@ const allNonSteamGames = async () => {
         // Optional fallback.
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const POLL_INTERVAL_MS = 100;
+const POLL_TIMEOUT_MS = 3000;
+const positiveAppId = (value) => {
+    const appId = Number(value);
+    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
+};
+/**
+ * Read Steam's native shortcut name without going through the metadata alias
+ * or the title cleaner. Only surrounding whitespace is presentation noise.
+ */
+const nativeShortcutName = (appId) => {
+    if (!positiveAppId(appId))
+        return null;
+    const overview = getNativeOverview(appId);
+    if (!overview || !isNativeNonSteamShortcut(overview))
+        return null;
+    return typeof overview.display_name === "string" ? overview.display_name.trim() : null;
+};
+const classifyShortcutNameState = (currentName, state) => {
+    if (!state)
+        return "unmanaged";
+    if (currentName === state.applied_name)
+        return "managed";
+    if (currentName === state.original_name)
+        return "restored";
+    return "diverged";
+};
+/**
+ * Request one native rename and wait for Steam's own overview to report it.
+ * SetShortcutName returns undefined, so it is never proof of success.
+ */
+const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
+    const normalizedAppId = positiveAppId(appId);
+    const expected = typeof expectedCurrent === "string" ? expectedCurrent.trim() : "";
+    const requested = typeof target === "string" ? target.trim() : "";
+    if (!normalizedAppId)
+        return Promise.reject(new Error("invalid shortcut app ID"));
+    if (!requested)
+        return Promise.reject(new Error("shortcut name target is empty"));
+    const current = nativeShortcutName(normalizedAppId);
+    if (current === null)
+        return Promise.reject(new Error("native shortcut is unavailable"));
+    if (current !== expected)
+        return Promise.reject(new Error("shortcut name changed before rename"));
+    const setName = steamInternals().SteamClient?.Apps?.SetShortcutName;
+    if (typeof setName !== "function") {
+        return Promise.reject(new Error("Steam shortcut name API is unavailable"));
+    }
+    try {
+        setName(normalizedAppId, requested);
+    }
+    catch (error) {
+        return Promise.reject(new Error(`Steam shortcut name API failed: ${String(error)}`));
+    }
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const finish = (callback) => {
+            clearInterval(interval);
+            callback();
+        };
+        const poll = () => {
+            if (nativeShortcutName(normalizedAppId) === requested) {
+                finish(() => resolve(requested));
+                return;
+            }
+            if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+                finish(() => reject(new Error("Steam shortcut name update timeout")));
+            }
+        };
+        const interval = setInterval(poll, POLL_INTERVAL_MS);
+        poll();
+    });
 };
 
 const TITLE = "Decky Metadata";
@@ -8348,6 +8428,12 @@ const MetadataPage = () => {
     const [results, setResults] = SP_REACT.useState([]);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [steamAppIdText, setSteamAppIdText] = SP_REACT.useState("");
+    const [shortcutManagement, setShortcutManagement] = SP_REACT.useState(null);
+    const [shortcutManagementError, setShortcutManagementError] = SP_REACT.useState(false);
+    const [currentShortcutName, setCurrentShortcutName] = SP_REACT.useState(null);
+    const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
+    const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
+    const steamNameBackfillAppIdRef = SP_REACT.useRef(null);
     const setFormMetadata = SP_REACT.useCallback((next) => {
         setMetadata(next);
         setDeveloperText(personsToText(next.developers));
@@ -8355,14 +8441,75 @@ const MetadataPage = () => {
         setReleaseText(epochToDate(next.release_date));
         setRatingText(next.rating == null ? "" : String(next.rating));
     }, []);
+    const loadShortcutManagement = SP_REACT.useCallback(async () => {
+        try {
+            const management = await getShortcutNameManagement(appId);
+            setShortcutManagement(management);
+            setShortcutManagementError(false);
+            setCurrentShortcutName(nativeShortcutName(appId));
+            return management;
+        }
+        catch (_error) {
+            setShortcutManagement(null);
+            setShortcutManagementError(true);
+            setCurrentShortcutName(nativeShortcutName(appId));
+            return null;
+        }
+    }, [appId]);
     const load = SP_REACT.useCallback(async () => {
-        const saved = await getMetadata(appId);
-        setFormMetadata(saved || metadataTemplate(appName(appId)));
-        setSteamAppIdText(saved?.steam_appid ? String(saved.steam_appid) : "");
+        const [metadataResult, managementResult] = await Promise.allSettled([
+            getMetadata(appId),
+            getShortcutNameManagement(appId),
+        ]);
+        if (metadataResult.status === "fulfilled") {
+            const saved = metadataResult.value;
+            setFormMetadata(saved || metadataTemplate(appName(appId)));
+            setSteamAppIdText(saved?.steam_appid ? String(saved.steam_appid) : "");
+        }
+        if (managementResult.status === "fulfilled") {
+            setShortcutManagement(managementResult.value);
+            setShortcutManagementError(false);
+        }
+        else {
+            setShortcutManagement(null);
+            setShortcutManagementError(true);
+        }
+        setCurrentShortcutName(nativeShortcutName(appId));
     }, [appId, setFormMetadata]);
     SP_REACT.useEffect(() => {
         void load();
     }, [load]);
+    SP_REACT.useEffect(() => {
+        steamNameBackfillAppIdRef.current = null;
+        setSteamNameLoading(false);
+        setSteamNameUnavailable(false);
+    }, [appId]);
+    SP_REACT.useEffect(() => {
+        const steamAppId = Number(metadata.steam_appid);
+        if (steamNameBackfillAppIdRef.current === appId ||
+            !Number.isInteger(steamAppId) ||
+            steamAppId <= 0 ||
+            Boolean(metadata.steam_store_name)) {
+            return;
+        }
+        steamNameBackfillAppIdRef.current = appId;
+        setSteamNameLoading(true);
+        setSteamNameUnavailable(false);
+        void enrichSteamApp(appId)
+            .then((enriched) => {
+            if (!enriched?.steam_store_name) {
+                setSteamNameUnavailable(true);
+                return;
+            }
+            metadataCache[String(appId)] = enriched;
+            setFormMetadata(enriched);
+            setSteamAppIdText(enriched.steam_appid ? String(enriched.steam_appid) : "");
+        })
+            .catch(() => {
+            setSteamNameUnavailable(true);
+        })
+            .finally(() => setSteamNameLoading(false));
+    }, [appId, metadata.steam_appid, metadata.steam_store_name, setFormMetadata]);
     SP_REACT.useEffect(() => {
         const scrollViewport = editorRootRef.current?.parentElement;
         if (!scrollViewport)
@@ -8413,12 +8560,19 @@ const MetadataPage = () => {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
+        if (busy)
+            return;
         setBusy(true);
         try {
             const parsed = parseSteamAppId(steamAppIdText);
+            const savedSteamAppId = Number(normalizedMetadata.steam_appid) || null;
+            const steamAppIdChanged = parsed !== savedSteamAppId;
             const next = {
                 ...normalizedMetadata,
                 steam_appid: parsed || null,
+                // A proposal is valid only for the Steam match that supplied it.
+                // Clear it before enrichment so a failed request cannot reuse stale data.
+                steam_store_name: steamAppIdChanged ? "" : normalizedMetadata.steam_store_name,
                 steam_store_url: parsed
                     ? `https://store.steampowered.com/app/${parsed}/`
                     : "",
@@ -8426,6 +8580,8 @@ const MetadataPage = () => {
             const saved = await saveMetadata(appId, next);
             metadataCache[String(appId)] = saved;
             setFormMetadata(saved);
+            steamNameBackfillAppIdRef.current = appId;
+            setSteamNameUnavailable(false);
             const enriched = await enrichSteamApp(appId);
             if (enriched) {
                 metadataCache[String(appId)] = enriched;
@@ -8497,6 +8653,111 @@ const MetadataPage = () => {
             setBusy(false);
         }
     };
+    const steamAppId = Number(metadata.steam_appid);
+    const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
+    const steamStoreName = typeof metadata.steam_store_name === "string"
+        ? metadata.steam_store_name.trim()
+        : "";
+    const shortcutStatus = classifyShortcutNameState(currentShortcutName, shortcutManagement?.state);
+    const canUseSteamName = Boolean(!busy &&
+        shortcutManagement?.eligible &&
+        (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
+        currentShortcutName &&
+        hasSteamMatch &&
+        steamStoreName &&
+        currentShortcutName !== steamStoreName);
+    const useSteamName = async () => {
+        if (!canUseSteamName || !shortcutManagement || !currentShortcutName)
+            return;
+        const current = nativeShortcutName(appId);
+        if (current !== currentShortcutName) {
+            toastError("Shortcut name changed", "Steam changed this shortcut before it could be renamed.");
+            await loadShortcutManagement();
+            return;
+        }
+        setBusy(true);
+        try {
+            // State is durable before the native request so the original spelling
+            // survives an app crash, timeout, or Steam-side error.
+            const state = await saveShortcutNameState(appId, current, steamStoreName, steamAppId);
+            const observed = await setShortcutNameAndWait(appId, current, steamStoreName);
+            setCurrentShortcutName(observed);
+            setShortcutManagement({ ...shortcutManagement, state });
+            toastSuccess("Shortcut name updated", "Steam confirmed the new shortcut name.");
+        }
+        catch (error) {
+            toastError("Shortcut name was not updated", String(error));
+            await loadShortcutManagement();
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const restoreOriginalShortcutName = async () => {
+        const state = shortcutManagement?.state;
+        if (!state || busy)
+            return;
+        const current = nativeShortcutName(appId);
+        if (current !== state.applied_name) {
+            toastError("Shortcut name changed", "Steam changed this shortcut before it could be restored.");
+            await loadShortcutManagement();
+            return;
+        }
+        setBusy(true);
+        try {
+            const observed = await setShortcutNameAndWait(appId, state.applied_name, state.original_name);
+            setCurrentShortcutName(observed);
+            try {
+                await clearShortcutNameState(appId);
+            }
+            catch (error) {
+                await loadShortcutManagement();
+                toastError("Shortcut name restored", `Steam restored the name, but saved history could not be cleared: ${String(error)}`);
+                return;
+            }
+            setShortcutManagement({ ...shortcutManagement, state: null });
+            toastSuccess("Shortcut name restored", "Steam confirmed the original shortcut name.");
+        }
+        catch (error) {
+            toastError("Shortcut name was not restored", String(error));
+            await loadShortcutManagement();
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const forgetShortcutNameHistory = async () => {
+        if (busy)
+            return;
+        setBusy(true);
+        try {
+            await clearShortcutNameState(appId);
+            setShortcutManagement((current) => current ? { ...current, state: null } : current);
+            toastSuccess("Saved name history forgotten", "Steam did not change the shortcut name.");
+        }
+        catch (error) {
+            toastError("Saved name history was not cleared", String(error));
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const showUseSteamNameModal = () => {
+        if (!canUseSteamName || !currentShortcutName)
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Use Steam name?", strOKButtonText: "Use Steam name", onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Change “${currentShortcutName}” to “${steamStoreName}”?` }) }));
+    };
+    const showRestoreShortcutNameModal = () => {
+        const state = shortcutManagement?.state;
+        if (!state || busy)
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Restore original shortcut name?", strOKButtonText: "Restore original name", onOK: () => void restoreOriginalShortcutName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Restore “${state.original_name}”?` }) }));
+    };
+    const showForgetShortcutNameHistoryModal = () => {
+        if (busy)
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Forget saved name history?", strOKButtonText: "Forget history", onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name." }) }));
+    };
     const toggleCategory = (category, checked) => {
         setMetadata((prev) => {
             const next = new Set(prev.store_categories || []);
@@ -8524,7 +8785,7 @@ const MetadataPage = () => {
                                                 })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => setMetadata((prev) => ({
                                 ...prev,
                                 deck_compat_override: compatibilityStatusValue(option.data),
-                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";

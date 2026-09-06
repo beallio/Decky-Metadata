@@ -47,12 +47,30 @@ class MetadataRecord(TypedDict, total=False):
     features: list[str]
     screenshots: list[dict[str, Any]]
     steam_appid: int | None
+    steam_store_name: str
     steam_dlc_appids: list[int]
     has_points_shop: bool
     steam_store_url: str
     steam_news: list[dict[str, Any]]
     steam_news_enriched_at: int
     updated_at: int
+
+
+class ShortcutNameState(TypedDict):
+    """The durable, plugin-owned restore history for one native shortcut."""
+
+    original_name: str
+    applied_name: str
+    steam_appid: int
+    updated_at: int
+
+
+class ShortcutNameManagement(TypedDict):
+    """Safe management context exposed to the editor without VDF details."""
+
+    eligible: bool
+    reason: str
+    state: ShortcutNameState | None
 
 import decky
 
@@ -614,6 +632,143 @@ class Plugin:
         _plog("cache", "metadata cache cleared", count=cleared)
         return {"ok": True, "cleared": cleared}
 
+    @staticmethod
+    def _positive_shortcut_app_id(value: Any) -> int | None:
+        """Normalize a native shortcut ID without accepting bools or negatives."""
+        if isinstance(value, bool):
+            return None
+        try:
+            app_id = int(value)
+        except Exception:
+            return None
+        if not 0 < app_id <= 0xFFFFFFFF:
+            return None
+        return app_id
+
+    @staticmethod
+    def _safe_shortcut_name(value: Any) -> str | None:
+        if not isinstance(value, str):
+            return None
+        if not value or "\x00" in value or len(value) > 512:
+            return None
+        return value
+
+    @classmethod
+    def _stored_shortcut_name_state(cls, value: Any) -> ShortcutNameState | None:
+        if not isinstance(value, dict):
+            return None
+        original_name = cls._safe_shortcut_name(value.get("original_name"))
+        applied_name = cls._safe_shortcut_name(value.get("applied_name"))
+        steam_appid = cls._positive_shortcut_app_id(value.get("steam_appid"))
+        try:
+            updated_at = int(value.get("updated_at"))
+        except Exception:
+            updated_at = 0
+        if not original_name or not applied_name or not steam_appid or updated_at < 0:
+            return None
+        return {
+            "original_name": original_name,
+            "applied_name": applied_name,
+            "steam_appid": steam_appid,
+            "updated_at": updated_at,
+        }
+
+    def _shortcut_name_eligibility_sync(self, app_id: int) -> str:
+        """Return only the safe eligibility reason for an exact native shortcut."""
+        for shortcut in self._read_steam_shortcuts():
+            if not isinstance(shortcut, dict):
+                continue
+            raw_app_id = shortcut.get("appid_raw")
+            # `appid_raw` exists only if the VDF had an explicit id. The
+            # parser stores high-bit shortcut IDs as signed values, so compare
+            # the unsigned representation rather than insisting raw > 0.
+            if raw_app_id in (None, ""):
+                candidate = self._positive_shortcut_app_id(shortcut.get("appid"))
+                if candidate == app_id:
+                    return "derived_shortcut_id"
+                continue
+            if isinstance(raw_app_id, bool):
+                continue
+            try:
+                normalized_raw = int(raw_app_id) & 0xFFFFFFFF
+            except Exception:
+                continue
+            if normalized_raw == app_id:
+                return "ready"
+        return "shortcut_not_found"
+
+    async def get_shortcut_name_management(self, app_id: int) -> ShortcutNameManagement:
+        normalized_app_id = self._positive_shortcut_app_id(app_id)
+        if not normalized_app_id:
+            return {"eligible": False, "reason": "shortcut_not_found", "state": None}
+        reason = await asyncio.to_thread(
+            self._shortcut_name_eligibility_sync, normalized_app_id
+        )
+        self._load_data()
+        state = self._stored_shortcut_name_state(
+            (self._data.get("shortcut_names") or {}).get(str(normalized_app_id))
+        )
+        return {"eligible": reason == "ready", "reason": reason, "state": state}
+
+    async def save_shortcut_name_state(
+        self, app_id: int, original_name: str, applied_name: str, steam_appid: int
+    ) -> ShortcutNameState:
+        normalized_app_id = self._positive_shortcut_app_id(app_id)
+        original = self._safe_shortcut_name(original_name)
+        applied = self._safe_shortcut_name(applied_name)
+        matched_steam_appid = self._positive_shortcut_app_id(steam_appid)
+        if not normalized_app_id or not original or not applied or not matched_steam_appid:
+            _plog("shortcut_names", "state rejected", app_id=app_id, outcome="invalid")
+            raise ValueError("invalid shortcut name state")
+        reason = await asyncio.to_thread(
+            self._shortcut_name_eligibility_sync, normalized_app_id
+        )
+        if reason != "ready":
+            _plog("shortcut_names", "state rejected", app_id=normalized_app_id, outcome=reason)
+            raise ValueError(reason)
+        with self._data_guard():
+            self._load_data()
+            record = (self._data.get("metadata") or {}).get(str(normalized_app_id))
+            if not isinstance(record, dict):
+                _plog("shortcut_names", "state rejected", app_id=normalized_app_id, outcome="metadata_missing")
+                raise ValueError("metadata mismatch")
+            if (
+                self._safe_int(record.get("steam_appid")) != matched_steam_appid
+                or record.get("steam_store_name") != applied
+            ):
+                _plog("shortcut_names", "state rejected", app_id=normalized_app_id, outcome="metadata_mismatch")
+                raise ValueError("metadata mismatch")
+            states = self._data.setdefault("shortcut_names", {})
+            if not isinstance(states, dict):
+                states = {}
+                self._data["shortcut_names"] = states
+            existing = self._stored_shortcut_name_state(states.get(str(normalized_app_id)))
+            state: ShortcutNameState = {
+                "original_name": existing["original_name"] if existing else original,
+                "applied_name": applied,
+                "steam_appid": matched_steam_appid,
+                "updated_at": now(),
+            }
+            states[str(normalized_app_id)] = state
+            self._save_data()
+        _plog("shortcut_names", "state saved", app_id=normalized_app_id, outcome="saved")
+        return state
+
+    async def clear_shortcut_name_state(self, app_id: int) -> dict[str, bool]:
+        normalized_app_id = self._positive_shortcut_app_id(app_id)
+        if not normalized_app_id:
+            raise ValueError("invalid shortcut app id")
+        with self._data_guard():
+            self._load_data()
+            states = self._data.setdefault("shortcut_names", {})
+            if not isinstance(states, dict):
+                states = {}
+                self._data["shortcut_names"] = states
+            states.pop(str(normalized_app_id), None)
+            self._save_data()
+        _plog("shortcut_names", "state cleared", app_id=normalized_app_id, outcome="cleared")
+        return {"ok": True}
+
     async def frontend_log(self, area="ui", message="", fields=None, level="debug") -> bool:
         try:
             clean_fields = fields if isinstance(fields, dict) else {}
@@ -649,6 +804,7 @@ class Plugin:
             return merged
         for key in (
             "steam_appid",
+            "steam_store_name",
             "steam_store_url",
             "steam_store_state",
             "deck_compat_category",
@@ -1223,6 +1379,15 @@ class Plugin:
         )
 
         steam_appid = self._safe_int(metadata.get("steam_appid"))
+        raw_steam_store_name = metadata.get("steam_store_name")
+        steam_store_name = ""
+        if (
+            isinstance(raw_steam_store_name, str)
+            and raw_steam_store_name
+            and "\x00" not in raw_steam_store_name
+            and len(raw_steam_store_name) <= 512
+        ):
+            steam_store_name = matching.clean_game_title(raw_steam_store_name)
         steam_store_state = str(metadata.get("steam_store_state") or "").strip().lower()
         if steam_store_state not in {"available", "delisted", "unknown"}:
             steam_store_state = "unknown"
@@ -1255,6 +1420,7 @@ class Plugin:
             ],
             "screenshots": self._sanitize_screenshots(metadata.get("screenshots")),
             "steam_appid": steam_appid,
+            "steam_store_name": steam_store_name,
             "steam_dlc_appids": steam_dlc_appids,
             "has_points_shop": has_points_shop,
             "steam_store_state": steam_store_state,

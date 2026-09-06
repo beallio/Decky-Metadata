@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- The per-game **Decky metadata...** editor can preview and confirm Steam's cleaned shortcut name, then restore the exact original shortcut name. Names never change automatically.
+
 ### Fixed
 
 - Steam page-title matching now ignores trademark, registered, and copyright marks consistently, so cleaned metadata titles can still identify games whose rendered Steam names contain those symbols.

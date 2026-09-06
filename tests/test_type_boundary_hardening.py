@@ -91,7 +91,7 @@ def test_sanitize_metadata_matches_record_shape():
 
 
 def test_load_save_round_trip_byte_stable(tmp_path):
-    """A load→save round-trip must be byte-stable (JSON shape unchanged)."""
+    """A legacy round-trip adds only the required empty shortcut-name map."""
     main, _ = _make_plugin()
     from pathlib import Path
 
@@ -127,6 +127,8 @@ def test_load_save_round_trip_byte_stable(tmp_path):
     storage.save_data(data_file, loaded_data)
     round_tripped = data_file.read_text(encoding="utf-8")
 
-    assert json.loads(original_text) == json.loads(round_tripped), (
-        "Load→save round-trip changed the JSON shape"
+    expected = json.loads(original_text)
+    expected["shortcut_names"] = {}
+    assert json.loads(round_tripped) == expected, (
+        "Load→save round-trip changed unrelated legacy settings"
     )

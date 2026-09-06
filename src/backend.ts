@@ -7,6 +7,8 @@ import {
   PluginUpdateCandidate,
   RevalidateResult,
   ScanProgress,
+  ShortcutNameManagement,
+  ShortcutNameState,
   UpdateChannel,
   UpdateCheckContext,
   UpdateCheckResult,
@@ -31,6 +33,17 @@ export const removeMetadata = callable<
 >("remove_metadata");
 export const clearMetadataCache = callable<[], { ok: boolean; cleared?: number }>(
   "clear_metadata_cache"
+);
+export const getShortcutNameManagement = callable<
+  [appId: number],
+  ShortcutNameManagement
+>("get_shortcut_name_management");
+export const saveShortcutNameState = callable<
+  [appId: number, originalName: string, appliedName: string, steamAppId: number],
+  ShortcutNameState
+>("save_shortcut_name_state");
+export const clearShortcutNameState = callable<[appId: number], { ok: boolean }>(
+  "clear_shortcut_name_state"
 );
 export const refreshDelistedIndex = callable<
   [],

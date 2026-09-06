@@ -18,6 +18,7 @@ export {
   appName,
   cleanTitle,
   getOverview,
+  getNativeOverview,
   hasActivityStore,
   hasSteamInternals,
   isNonSteamApp,
@@ -27,4 +28,9 @@ export {
   rewriteSteamLinkToMatchedApp,
   steamAppIdForApp,
 } from "./steam/core";
+export {
+  classifyShortcutNameState,
+  nativeShortcutName,
+  setShortcutNameAndWait,
+} from "./steam/shortcutNames";
 export { installSteamPatches } from "./steam/install";
