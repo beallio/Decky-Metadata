@@ -35,3 +35,17 @@ added for Steam's controller navigation; the actual Deck surface is the proof.
 Evidence: `/tmp/Decky-Metadata/shortcut-name-controller-focus.json`,
 `/tmp/Decky-Metadata/shortcut-name-focus-no-action.png`, and
 `/tmp/Decky-Metadata/shortcut-name-focus-action.png`.
+
+## Background follow-up
+
+Removed the shortcut-name field's gray fill at the user's request. Its background
+is now transparent in both focus states, matching the editor. Reused the existing
+border-only focus styling for a visible controller selection outline. Only the
+field's class/highlight setting and scoped editor CSS changed.
+
+Verified on the Deck that 27 D-pad steps reach the field, its computed background
+is transparent while selected and unselected, and the next down selects Use Steam
+name. Captured both states in `/tmp/Decky-Metadata/shortcut-name-background.json`
+and its referenced screenshots. No game or rename action was started. Final
+quality gates again passed all 432 frontend tests, type-check, build, Python
+syntax, and pytest.

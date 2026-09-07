@@ -1169,9 +1169,9 @@ export const MetadataPage = () => {
           <PanelSectionRow>
             <div style={rowStackStyle}>
               <Field
-                className={editorFocusTargetClassName}
+                className={`${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`}
                 focusable={true}
-                highlightOnFocus={true}
+                highlightOnFocus={false}
                 childrenLayout="below"
                 padding="none"
                 bottomSeparator="none"

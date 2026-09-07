@@ -189,13 +189,18 @@ export const editorScopedCss = `
   box-sizing: border-box;
 }
 
+.decky-metadata-editor .decky-metadata-editor__shortcut-name {
+  background: transparent !important;
+}
+
 /*
- * Search results: the default DialogButton focus fill washes out the result
- * text. Replace it with a border-only highlight (no background fill) so the
- * title and description stay readable when the row is selected.
+ * Keep search results and shortcut-name text readable with a border-only
+ * focus highlight instead of Steam's default filled background.
  */
 .decky-metadata-editor .decky-metadata-editor__result:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__result.gpfocus {
+.decky-metadata-editor .decky-metadata-editor__result.gpfocus,
+.decky-metadata-editor .decky-metadata-editor__shortcut-name:focus-visible,
+.decky-metadata-editor .decky-metadata-editor__shortcut-name.gpfocus {
   background: transparent !important;
   color: white !important;
   outline: 3px solid white !important;

@@ -10,7 +10,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
-- The **Shortcut name** section is now selectable with a controller, so users can scroll to its name and status text even when no rename action is available.
+- The **Shortcut name** section is now selectable with a controller, so users can scroll to its name and status text even when no rename action is available. Its background matches the editor, with an outline to show controller focus.
 - Removing metadata now clears that shortcut's injected Activity news immediately, without a SteamUI reload.
 - Steam page-title matching now ignores trademark, registered, and copyright marks consistently, so cleaned metadata titles can still identify games whose rendered Steam names contain those symbols.
 
