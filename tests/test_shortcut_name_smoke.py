@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 
-def fixture(tmp_path: Path) -> Path:
+def fixture(tmp_path: Path, management_helper: str | None = None) -> Path:
     root = tmp_path / "fixture"
     verify = root / "scripts/deck/verify"
     js = root / "scripts/deck/js"
@@ -32,12 +32,13 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
     tunnel.write_text("#!/usr/bin/env bash\nexit 0\n")
     tunnel.chmod(0o755)
     (root / "scripts/deck/cdp.py").write_text(
-        """import base64, json, os, sys
+        """import base64, json, os, subprocess, sys
 from pathlib import Path
 
 path = Path(os.environ["FAKE_STATE"])
+original = os.environ.get("FAKE_ORIGINAL", "Original")
 def load():
-    return json.loads(path.read_text()) if path.exists() else {"current": "Original", "state": False, "pending": 0}
+    return json.loads(path.read_text()) if path.exists() else {"current": original, "state": False, "pending": 0, "management_pending": 0}
 def save(data):
     path.write_text(json.dumps(data))
 def b64(value):
@@ -48,7 +49,19 @@ def variables(args):
     return dict(item.split("=", 1) for index, item in enumerate(args) if index and args[index - 1] == "--var")
 
 args = sys.argv[1:]
-if args[:1] in (["reload"], ["wait-ready"]):
+if args[:1] == ["reload"]:
+    if args[1:] != ["SharedJSContext"]:
+        raise SystemExit("reload must target SharedJSContext")
+    data = load()
+    data["shared_reloads"] = data.get("shared_reloads", 0) + 1
+    save(data)
+    raise SystemExit()
+if args[:1] == ["wait-ready"]:
+    data = load()
+    if not data.get("shared_reloads"):
+        raise SystemExit("wait-ready requires a SharedJSContext reload")
+    data["ready_waits"] = data.get("ready_waits", 0) + 1
+    save(data)
     raise SystemExit()
 if args[:1] != ["eval"]:
     raise SystemExit("unexpected fake CDP command")
@@ -65,12 +78,53 @@ if "shortcut_name_probe.js" in source:
     current = data["current"]
     print(json.dumps({"native": True, "running": False, "hasCurrent": True, "currentB64": b64(current), "sortAsB64": b64("sort"), "matchesTarget": current == target}))
 elif "check_shortcut_name_management.js" in source:
-    print(json.dumps({"ok": True, "reason": "ready", "hasState": data["state"]}))
+    if data.get("management_pending", 0):
+        data["management_pending"] -= 1
+        if not data["management_pending"]:
+            data["state"] = False
+        save(data)
+    if os.environ.get("FAKE_MISSING_LOADER") == "1":
+        print(json.dumps({"ok": False, "reason": "loader_unavailable", "hasState": False}))
+    else:
+        helper = Path(source[1:]).read_text().replace("__APPID__", vars["APPID"])
+        response = {"eligible": True, "reason": "ready", "state": {} if data["state"] else None}
+        harness = '''
+const expectedAppId = %s;
+const response = %s;
+const api = {
+  call: function(route, ...args) {
+    if (this !== api) throw new Error("backend call receiver was lost");
+    if (route !== "get_shortcut_name_management" || args.length !== 1 ||
+        typeof args[0] !== "number" || args[0] !== expectedAppId) {
+      throw new Error("backend call must receive exactly one scalar app id");
+    }
+    return Promise.resolve(response);
+  },
+};
+const loader = {
+  connect: function(version, pluginName) {
+    if (this !== loader) throw new Error("loader connect receiver was lost");
+    if ((version !== 1 && version !== 2) || pluginName !== "Decky Metadata") {
+      throw new Error("wrong plugin connection");
+    }
+    return api;
+  },
+};
+global.window = { __DECKY_SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED_deckyLoaderAPIInit: loader };
+Promise.resolve(eval(%s)).then(
+  (value) => process.stdout.write(String(value)),
+  (error) => { console.error(error.message); process.exit(1); },
+);
+''' % (json.dumps(int(vars["APPID"])), json.dumps(response), json.dumps(helper))
+        completed = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        if completed.returncode:
+            raise SystemExit(completed.stderr.strip() or "management helper failed")
+        print(completed.stdout)
 elif "restore_shortcut_name.js" in source:
     if os.environ.get("FAKE_CLEANUP_FAIL") == "1":
         print("FAIL: forced cleanup failure")
     else:
-        data.update(current="Original", state=False, rename=False)
+        data.update(current=original, state=False, rename=False)
         save(data)
         print("cleanup requested")
 elif "click_by_label.js" in source:
@@ -79,7 +133,10 @@ elif "click_modal_label.js" in source:
     if vars.get("LABEL") == "Use Steam name":
         data.update(state=True, rename=True, pending=int(os.environ.get("FAKE_DELAYED_POLLS", "0")))
     elif vars.get("LABEL") == "Restore original name" and os.environ.get("FAKE_POST_RENAME_FAILURE") != "1":
-        data.update(current="Original", state=False, rename=False)
+        delay = int(os.environ.get("FAKE_DELAYED_HISTORY_POLLS", "0"))
+        data.update(current=original, rename=False, management_pending=delay)
+        if not delay:
+            data["state"] = False
     save(data)
     print("clicked")
 else:
@@ -87,12 +144,15 @@ else:
 """
     )
     for name in ("shortcut_name_probe.js", "check_shortcut_name_management.js", "restore_shortcut_name.js", "click_by_label.js", "click_modal_label.js", "nav.js"):
-        (js / name).write_text("// fake")
+        source = (ROOT / "scripts/deck/js" / name).read_text()
+        if name == "check_shortcut_name_management.js" and management_helper is not None:
+            source = management_helper
+        (js / name).write_text(source)
     return smoke
 
 
-def run(tmp_path: Path, *args: str, **overrides: str):
-    smoke = fixture(tmp_path)
+def run(tmp_path: Path, *args: str, management_helper: str | None = None, **overrides: str):
+    smoke = fixture(tmp_path, management_helper)
     state = tmp_path / "state.json"
     evidence_root = Path("/tmp/Decky-Metadata/pytest-shortcut-name-smoke") / tmp_path.name
     completed = subprocess.run(
@@ -135,6 +195,18 @@ def test_smoke_polls_delayed_ui_success(tmp_path: Path):
     assert payload["sortAsRestored"] is True
 
 
+def test_smoke_waits_for_delayed_history_clear_and_shared_context_checkpoints(tmp_path: Path):
+    completed, state, _evidence = run(
+        tmp_path, "2312439508", "Expected", FAKE_DELAYED_HISTORY_POLLS="3"
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(state.read_text())
+    assert payload["state"] is False
+    assert payload["shared_reloads"] == 2
+    assert payload["ready_waits"] == 2
+
+
 def test_smoke_runs_absent_control_and_forced_restore_failures_through_real_path(tmp_path: Path):
     absent, state, _evidence = run(tmp_path, "2312439508", "Expected", FAKE_ABSENT_CONTROL="1")
     assert absent.returncode != 0
@@ -154,3 +226,49 @@ def test_smoke_reports_cleanup_failure(tmp_path: Path):
 
     assert completed.returncode != 0
     assert "FAIL: cleanup could not restore the exact original shortcut name and sort_as" in completed.stderr
+
+
+def test_smoke_executes_the_management_helper_and_rejects_bad_rpc_contracts(tmp_path: Path):
+    missing_loader, _state, _evidence = run(
+        tmp_path, "2312439508", "Expected", FAKE_MISSING_LOADER="1"
+    )
+    assert missing_loader.returncode != 0
+    assert "backend eligibility is not ready (loader_unavailable)" in missing_loader.stderr
+
+    helper = (ROOT / "scripts/deck/js/check_shortcut_name_management.js").read_text()
+    wrong_shape = helper.replace(
+        'api.call.call(api, "get_shortcut_name_management", appId)',
+        'api.call.call(api, "get_shortcut_name_management", [appId])',
+    )
+    bad_call, _state, _evidence = run(
+        tmp_path, "2312439508", "Expected", management_helper=wrong_shape
+    )
+    assert bad_call.returncode != 0
+    assert "backend eligibility is not ready (rpc_failed)" in bad_call.stderr
+
+
+def test_smoke_restores_a_whitespace_bearing_name_after_a_forced_failure(tmp_path: Path):
+    original = "  Original ™  "
+    completed, state, _evidence = run(
+        tmp_path,
+        "2312439508",
+        "Expected",
+        FAKE_ORIGINAL=original,
+        FAKE_POST_RENAME_FAILURE="1",
+    )
+
+    assert completed.returncode != 0
+    assert "FAIL: after UI restore did not return the exact original shortcut name" in completed.stderr
+    assert json.loads(state.read_text())["current"] == original
+
+
+def test_smoke_uses_the_plugin_scoped_rpc_and_reloads_its_owning_context():
+    helper = (ROOT / "scripts/deck/js/check_shortcut_name_management.js").read_text()
+    probe = (ROOT / "scripts/deck/js/shortcut_name_probe.js").read_text()
+    smoke = (ROOT / "scripts/deck/verify/smoke_shortcut_name.sh").read_text()
+
+    assert "deckyLoaderAPIInit" in helper
+    assert 'api.call.call(api, "get_shortcut_name_management", appId)' in helper
+    assert "[appId]" not in helper
+    assert smoke.count("cdp reload SharedJSContext") == 2
+    assert "overview.display_name.trim()" not in probe

@@ -12,16 +12,17 @@
       overview.BIsShortcut?.() === true
     )
   );
-  const current = typeof overview?.display_name === "string" ? overview.display_name.trim() : "";
+  const current = typeof overview?.display_name === "string" ? overview.display_name : "";
+  const hasUsableCurrent = Boolean(current.trim());
   const running = apps.some((entry) => {
     try { return entry?.BIsRunning?.() === true; } catch (_) { return false; }
   });
   return JSON.stringify({
     native,
     running,
-    hasCurrent: Boolean(current),
+    hasCurrent: hasUsableCurrent,
     currentB64: b64(current),
     sortAsB64: b64(overview?.sort_as ?? overview?.sortAs ?? ""),
-    matchesTarget: Boolean(current) && b64(current) === targetB64,
+    matchesTarget: hasUsableCurrent && b64(current) === targetB64,
   });
 })()

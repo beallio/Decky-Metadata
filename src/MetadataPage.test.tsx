@@ -573,4 +573,129 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({ title: "New editor", steam_store_name: "" }));
   });
+
+  it("hydrates untouched fields without discarding an edit made before metadata loads", async () => {
+    effects.enabled = true;
+    const pendingMetadata = deferred<any>();
+    const saved = makeMetadata({
+      title: "Saved title",
+      description: "Saved description",
+      steam_appid: 15200,
+      steam_store_name: "Saved Steam name",
+    });
+    backend.getMetadata.mockReturnValue(pendingMetadata.promise);
+    backend.getShortcutNameManagement.mockResolvedValue(shortcutState());
+
+    renderPage();
+    const loading = effects.callbacks[0]();
+    walk(renderPage(), (node) => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "New title" } });
+    pendingMetadata.resolve(saved);
+    await loading;
+    await flushAsyncWork();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "New title",
+      description: "Saved description",
+      steam_appid: 15200,
+      steam_store_name: "Saved Steam name",
+    }));
+    backend.saveMetadata.mockResolvedValue(saved);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      title: "New title",
+      steam_appid: 15200,
+      steam_store_name: "Saved Steam name",
+    }));
+  });
+
+  it("keeps a newer title edit while applying the saved Steam identity", async () => {
+    const pendingSave = deferred<any>();
+    const saved = makeMetadata({ steam_appid: 15200, steam_store_name: "New Steam name" });
+    configureShortcutPanel({ metadata: { title: "Old title", steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[8] = "15200";
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockResolvedValue(saved);
+    backend.enrichSteamApp.mockResolvedValue(saved);
+
+    const apply = action(renderPage(), "Apply Steam App ID").props.onClick();
+    walk(renderPage(), (node) => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "New title" } });
+    pendingSave.resolve(saved);
+    await apply;
+    await flushAsyncWork();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "New title",
+      steam_appid: 15200,
+      steam_store_name: "New Steam name",
+    }));
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      title: "New title",
+      steam_appid: 15200,
+    }));
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      title: "New title",
+      steam_appid: 15200,
+    }));
+  });
+
+  it("normalizes a cleared Steam ID and completes its consumer-visible refresh", async () => {
+    configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[8] = "";
+    const cleared = makeMetadata({ steam_appid: null, steam_store_name: "", steam_store_url: "" });
+    backend.saveMetadata.mockResolvedValue(cleared);
+    backend.enrichSteamApp.mockResolvedValue(null);
+
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
+    expect(state.values[8]).toBe("");
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100);
+    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
+  });
+
+  it("does not let an old rename operation overwrite a later A editor entry", async () => {
+    const nativeWrite = deferred<string>();
+    const firstA = { original_name: "First A", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 1 };
+    const returningA = { original_name: "Returning A", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 2 };
+    configureShortcutPanel({ management: { state: null }, current: "First A" });
+    steam.nativeShortcutName.mockReturnValue("First A");
+    backend.saveShortcutNameState.mockResolvedValue(firstA);
+    steam.setShortcutNameAndWait.mockReturnValue(nativeWrite.promise);
+
+    action(renderPage(), "Use Steam name").props.onClick();
+    ui.showModal.mock.calls[0][0].props.onOK();
+    await flushAsyncWork();
+
+    route.appid = "101";
+    renderPage();
+    state.values[9] = shortcutState({ state: { original_name: "B original", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 1 } });
+    state.values[11] = "Shared Steam name";
+    route.appid = "100";
+    renderPage();
+    state.values[9] = shortcutState({ state: returningA });
+    state.values[11] = "Shared Steam name";
+
+    nativeWrite.resolve("Shared Steam name");
+    await flushAsyncWork();
+
+    expect(state.values[9]).toEqual(shortcutState({ state: returningA }));
+    expect(toast.toastSuccess).not.toHaveBeenCalledWith("Shortcut name updated", expect.any(String));
+  });
+
+  it("ignores a stale name-operation modal callback after navigation", () => {
+    configureShortcutPanel({ current: "First A" });
+    action(renderPage(), "Use Steam name").props.onClick();
+    const oldModal = ui.showModal.mock.calls[0][0];
+
+    route.appid = "101";
+    renderPage();
+    oldModal.props.onOK();
+
+    expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
+    expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
+  });
 });

@@ -101,6 +101,37 @@ if bool(payload.get("hasState")) != (sys.argv[2] == "true"):
 PY
 }
 
+management_matches() { # management_matches <json> <has-state:true|false>
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+try:
+    payload = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(2)
+if payload.get("ok") is not True:
+    raise SystemExit(2)
+raise SystemExit(0 if bool(payload.get("hasState")) == (sys.argv[2] == "true") else 1)
+PY
+}
+
+wait_for_management() { # wait_for_management <has-state:true|false> <phase>
+  local wanted="$1" phase="$2" payload="" result=0
+  for _ in {1..30}; do
+    payload="$(management)" || fail "$phase: management RPC failed"
+    result=0
+    management_matches "$payload" "$wanted" || result=$?
+    if [[ "$result" == 0 ]]; then
+      printf %s "$payload"
+      return 0
+    fi
+    if [[ "$result" != 1 ]]; then
+      assert_management "$payload" "$wanted" "$phase"
+    fi
+    sleep 0.1
+  done
+  assert_management "$payload" "$wanted" "$phase"
+}
+
 is_exact_original() { # is_exact_original <json>
   python3 - "$1" "$original_b64" "$original_sort_b64" <<'PY'
 import json, sys
@@ -186,7 +217,7 @@ renamed="$(wait_for_target true "after UI rename")"
 assert_probe "$renamed" true "after UI rename"
 assert_management "$(management)" true "after UI rename"
 
-cdp reload "$BPM_TARGET" >/dev/null
+cdp reload SharedJSContext >/dev/null
 cdp wait-ready --timeout 30 >/dev/null
 after_reload="$(wait_for_target true "after rename reload")"
 assert_probe "$after_reload" true "after rename reload"
@@ -206,9 +237,9 @@ if payload.get("currentB64") != sys.argv[2]:
 if payload.get("sortAsB64") != sys.argv[3]:
     raise SystemExit("FAIL: UI restore changed sort_as")
 PY
-assert_management "$(management)" false "after UI restore"
+wait_for_management false "after UI restore" >/dev/null
 
-cdp reload "$BPM_TARGET" >/dev/null
+cdp reload SharedJSContext >/dev/null
 cdp wait-ready --timeout 30 >/dev/null
 final_probe="$(wait_for_exact_original "after restore reload")"
 python3 - "$final_probe" "$original_b64" "$original_sort_b64" "$evidence" "$shortcut_appid" <<'PY'

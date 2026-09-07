@@ -128,3 +128,54 @@ Round-01 `scripts/decky doctor --deck` checks report the optional Deck offline
 for both `steamdeck` and `steamdeck-legos`. No installation, smoke, focus test,
 or release claim is made by this follow-up until the hosts are reachable and the
 required local-ZIP GUI installer is available.
+
+## Review round 02 follow-up
+
+- The editor now merges a delayed initial metadata response field by field: a
+  field changed after the request started remains local, while untouched fields
+  (including the pinned Steam match) hydrate from storage. A later normal Save
+  therefore cannot erase a match that arrived after a user began typing.
+- Applying a Steam App ID now reconciles the saved Steam-owned identity into
+  the current form and cache without replacing newer editable fields. Clearing
+  an ID uses `null` consistently, so the completion path still refreshes
+  compatibility surfaces and reports the saved result without starting a
+  needless enrichment request.
+- Every editor visit carries a monotonic entry token. Rename, restore, forget,
+  delayed management reloads, modal callbacks, toasts, and busy completion use
+  that token. A first visit to A cannot put its history into a later A after
+  navigating A/B/A, even when the applied names are identical.
+- The shortcut smoke now uses the installed `@decky/api` source contract:
+  `deckyLoaderAPIInit.connect(version, "Decky Metadata")` followed by the
+  connection's scalar `call(route, appId)`. Its fixture executes the real
+  helper with receiver and argument validation rather than recognizing a
+  helper filename. It also polls delayed history clearing separately from the
+  native restore, reloads `SharedJSContext` before persistence probes, and
+  preserves the raw display name for snapshot, comparison, and cleanup.
+
+Round-02 red/green evidence:
+
+- New editor cases first failed for delayed hydration, delayed Steam-ID save,
+  clear-to-null completion, and A/B/A rename state. They pass after the
+  reconciliation and entry-token changes.
+- The RPC/reload/probe contract test first failed against the old detached
+  loader call and Big Picture reload. The corrected smoke fixture passes
+  delayed history clear, missing-loader, wrong-argument, and whitespace-name
+  forced-cleanup cases.
+- `./run.sh npx tsc --noEmit` — passed.
+- `./run.sh npx vitest run src/MetadataPage.test.tsx` — 28 passed.
+- `./run.sh uv run --with pytest -- pytest -q tests/test_shortcut_name_smoke.py`
+  — 8 passed.
+- `bash -n scripts/deck/verify/smoke_shortcut_name.sh` and `git diff --check`
+  — passed.
+- `./run.sh scripts/orchestration/run-quality-gates` — passed: 423 frontend
+  tests and 505 backend tests collected.
+
+The earlier statement that the ZIP flow was blocked because a human click is
+inherently required was inaccurate. The historic package/capture results above
+remain a record of that attempt, but the technical blocker for current device
+acceptance is reachability and authorization, not an unavoidable manual click.
+This round ran read-only `scripts/decky doctor --deck` checks for `steamdeck`
+and `steamdeck-legos`; both report the optional Deck offline. No full-ZIP
+installation, persistent mutation, focus test, controller-cache query, or
+launch was attempted without explicit per-device authorization. Those required
+acceptance checks remain pending and are not represented as approval.
