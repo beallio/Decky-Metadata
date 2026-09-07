@@ -4,15 +4,22 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Add Steam shortcut names and fix stale Activity news
+
 ### Added
 
-- The per-game **Decky metadata...** editor can preview and confirm Steam's cleaned shortcut name, then restore the exact original shortcut name. Names never change automatically.
+- **Use Steam's name for a non-Steam shortcut.** The per-game **Decky metadata...** editor shows the current shortcut name beside the official Steam name for its saved match. Select **Use Steam name** to preview and confirm the change. Names never change automatically.
+- **Restore the original shortcut name.** After a confirmed rename, use **Restore original name** to return to the saved original. If another tool changes the name, the editor reports the conflict instead of overwriting it.
 
 ### Fixed
 
-- The **Shortcut name** section is now selectable with a controller, so users can scroll to its name and status text even when no rename action is available. Its background matches the editor, with an outline to show controller focus.
-- Removing metadata now clears that shortcut's injected Activity news immediately, without a SteamUI reload.
-- Steam page-title matching now ignores trademark, registered, and copyright marks consistently, so cleaned metadata titles can still identify games whose rendered Steam names contain those symbols.
+- **Activity news clears when metadata is removed.** **Remove metadata → Save → Done** now removes that shortcut's injected news without a SteamUI reload or plugin uninstall. Other games' Activity remains unchanged. Fix for [issue #3](https://github.com/beallio/Decky-Metadata/issues/3).
+- **Controller access to shortcut names.** The name/status section is selectable with the D-pad even when no rename action is available. It scrolls fully into view and uses the editor's background with an outline for controller focus.
+- **Steam title matching.** Page-title matching now ignores trademark, registered, and copyright marks consistently, so those symbols do not prevent a saved match from being recognized.
+
+### Shortcut-name controls
+
+![Current and Steam shortcut names with the Use Steam name action](https://raw.githubusercontent.com/beallio/Decky-Metadata/v0.3.13/assets/decky-metadata-shortcut-name.png)
 
 ## [0.3.12] - 2026-09-04
 
