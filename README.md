@@ -56,6 +56,8 @@ changes shortcut names automatically.
 The **Shortcut name** section is selectable with the D-pad, even when no rename
 action is available.
 
+![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=20260907)
+
 ## Set the compatibility status
 
 The **Decky metadata...** editor includes a **Compatibility status** setting.
