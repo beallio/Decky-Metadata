@@ -34,3 +34,17 @@ news, while preserving Steam Activity and other shortcuts.
   `/tmp/Decky-Metadata/clear-removed-activity-news-device`.
 - The launch check is intentionally unverified. No game was running before,
   during, or after verification.
+
+## Review follow-up
+
+- Tightened the focused Activity regression so absent and empty metadata call
+  the refresh path before the patched getter runs. It now observes the original
+  native getter, which catches a stale injected store value directly.
+- Added the same-target ownership control: an unmarked native Activity object
+  remains visible while removal clears only the plugin-owned object. Positive
+  checks now assert the original, other-shortcut, and restored news titles.
+- The review's `refresh` mutation failed as intended: 1 failing and 31 passing
+  focused tests, at the original getter's stale injected object. Its `ownership`
+  mutation also failed as intended: 1 failing and 31 passing focused tests, at
+  the same-target native object. Without either mutation, both focused files
+  passed all 32 tests.

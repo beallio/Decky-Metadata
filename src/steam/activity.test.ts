@@ -56,6 +56,8 @@ const makeNewsMetadata = (title: string, gid: string): MetadataData => ({
   }],
 });
 
+const activityNewsTitle = (activity: any) => activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GetNameWithFallback?.();
+
 const installShortcut = (appId: number) => {
   const overview = {
     appid: appId,
@@ -152,6 +154,7 @@ describe("native Activity metadata removal", () => {
         return this.m_mapAppActivity.get(appId);
       },
     };
+    const originalGetAppActivity = store.GetAppActivity;
     (globalThis as Record<string, unknown>).appActivityStore = store;
     const unpatchers: Array<() => void> = [];
     installNativeActivityStorePatch(unpatchers);
@@ -161,31 +164,35 @@ describe("native Activity metadata removal", () => {
     await refreshDeckyNativeActivityForApp(appId, store);
     await refreshDeckyNativeActivityForApp(otherNewsAppId, store);
 
-    expect(store.GetAppActivity(appId)).toMatchObject({ __deckyNativeActivity: true });
-    expect(store.GetAppActivity(otherNewsAppId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(activityNewsTitle(store.GetAppActivity(appId))).toBe("Old plugin card");
+    expect(activityNewsTitle(store.GetAppActivity(otherNewsAppId))).toBe("Other plugin card");
     expect(store.GetAppActivity(nativeSteamAppId)).toBe(nativeSteamActivity);
 
     delete metadataCache[String(appId)];
-    expect(store.GetAppActivity(appId)).toBeUndefined();
-    expect(deckyNativeActivityCache().has(appId)).toBe(false);
     await refreshDeckyNativeActivityForApp(appId, store);
 
-    expect(store.GetAppActivity(appId)).toBeUndefined();
-    expect(store.GetAppActivity(otherNewsAppId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(originalGetAppActivity.call(store, appId)).toBeUndefined();
+    expect(activityNewsTitle(store.GetAppActivity(otherNewsAppId))).toBe("Other plugin card");
     expect(store.GetAppActivity(nativeSteamAppId)).toBe(nativeSteamActivity);
 
     metadataCache[String(appId)] = makeNewsMetadata("Old plugin card", "12345678901234567");
     await refreshDeckyNativeActivityForApp(appId, store);
     metadataCache[String(appId)] = makeMetadata(null, null);
-    expect(store.GetAppActivity(appId)).toBeUndefined();
-    expect(deckyNativeActivityCache().has(appId)).toBe(false);
     await refreshDeckyNativeActivityForApp(appId, store);
 
-    expect(store.GetAppActivity(appId)).toBeUndefined();
+    expect(originalGetAppActivity.call(store, appId)).toBeUndefined();
+    metadataCache[String(appId)] = makeNewsMetadata("Old plugin card", "12345678901234567");
+    await refreshDeckyNativeActivityForApp(appId, store);
+    const nativeTargetActivity = { nativeTargetActivity: true };
+    store.m_mapAppActivity.set(appId, nativeTargetActivity);
+    delete metadataCache[String(appId)];
+    await refreshDeckyNativeActivityForApp(appId, store);
+
+    expect(originalGetAppActivity.call(store, appId)).toBe(nativeTargetActivity);
     metadataCache[String(appId)] = makeNewsMetadata("Restored plugin card", "32345678901234567");
     await refreshDeckyNativeActivityForApp(appId, store);
-    expect(store.GetAppActivity(appId)).toMatchObject({ __deckyNativeActivity: true });
-    expect(store.GetAppActivity(otherNewsAppId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(activityNewsTitle(store.GetAppActivity(appId))).toBe("Restored plugin card");
+    expect(activityNewsTitle(store.GetAppActivity(otherNewsAppId))).toBe("Other plugin card");
     expect(store.GetAppActivity(nativeSteamAppId)).toBe(nativeSteamActivity);
 
     unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
