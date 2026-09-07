@@ -94,6 +94,7 @@ has no cards to show, Decky Metadata can use screenshots from IGN instead.
 
 News and announcements from the matching Steam game can also appear in the
 normal Activity area.
+Removing metadata also removes that game's injected Activity news immediately.
 
 ![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
 
