@@ -168,6 +168,14 @@ const normalizedSteamAppId = (value: unknown): number | null => {
   return Number.isInteger(appId) && appId > 0 ? appId : null;
 };
 
+type FormTextSnapshot = {
+  developerText: string;
+  publisherText: string;
+  releaseText: string;
+  ratingText: string;
+  steamAppIdText: string;
+};
+
 export const MetadataPage = () => {
   const editorRootRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
@@ -283,6 +291,42 @@ export const MetadataPage = () => {
   const setSteamAppIdInput = useCallback((value: string) => {
     steamAppIdTextRef.current = value;
     setSteamAppIdText(value);
+  }, []);
+
+  /**
+   * A backend response owns every field that the user did not change while it
+   * was pending. Later local edits win, so the form and cache stay aligned
+   * with the full enriched record without overwriting active input.
+   */
+  const reconcileMetadataResponse = useCallback((
+    response: MetadataData,
+    baselineMetadata: MetadataData,
+    baselineText: FormTextSnapshot,
+  ): MetadataData => {
+    const reconciled = mergeHydratedMetadata(response, baselineMetadata, metadataRef.current);
+    metadataRef.current = reconciled;
+    setMetadata(reconciled);
+    if (developerTextRef.current === baselineText.developerText) {
+      const value = personsToText(reconciled.developers);
+      developerTextRef.current = value;
+      setDeveloperText(value);
+    }
+    if (publisherTextRef.current === baselineText.publisherText) {
+      const value = personsToText(reconciled.publishers);
+      publisherTextRef.current = value;
+      setPublisherText(value);
+    }
+    if (releaseTextRef.current === baselineText.releaseText) {
+      const value = epochToDate(reconciled.release_date);
+      releaseTextRef.current = value;
+      setReleaseText(value);
+    }
+    if (ratingTextRef.current === baselineText.ratingText) {
+      const value = reconciled.rating == null ? "" : String(reconciled.rating);
+      ratingTextRef.current = value;
+      setRatingText(value);
+    }
+    return reconciled;
   }, []);
 
   const beginBusy = useCallback((entryToken: number) => {
@@ -405,7 +449,14 @@ export const MetadataPage = () => {
     steamNameBackfillEntryRef.current = editorEntryToken;
     const requestedEntry = editorEntryToken;
     const requestedSteamAppId = steamAppId;
-    const requestedRevision = formRevisionRef.current;
+    const requestedMetadata = metadataRef.current;
+    const requestedText: FormTextSnapshot = {
+      developerText: developerTextRef.current,
+      publisherText: publisherTextRef.current,
+      releaseText: releaseTextRef.current,
+      ratingText: ratingTextRef.current,
+      steamAppIdText: steamAppIdTextRef.current,
+    };
     setSteamNameLoading(true);
     setSteamNameUnavailable(false);
     void enrichSteamApp(appId)
@@ -413,23 +464,25 @@ export const MetadataPage = () => {
         const current = metadataRef.current;
         if (
           !isCurrentEditorEntry(requestedEntry) ||
-          formRevisionRef.current !== requestedRevision ||
-          Number(current.steam_appid) !== requestedSteamAppId
+          normalizedSteamAppId(current.steam_appid) !== requestedSteamAppId
         ) {
           return;
         }
-        if (!enriched?.steam_store_name) {
+        if (!enriched) {
           setSteamNameUnavailable(true);
           return;
         }
-        metadataCache[String(appId)] = enriched;
-        setFormMetadata(enriched);
-        setSteamAppIdInput(enriched.steam_appid ? String(enriched.steam_appid) : "");
+        const reconciled = reconcileMetadataResponse(enriched, requestedMetadata, requestedText);
+        metadataCache[String(appId)] = reconciled;
+        if (steamAppIdTextRef.current === requestedText.steamAppIdText) {
+          setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
+        }
+        if (!reconciled.steam_store_name) setSteamNameUnavailable(true);
       })
       .catch(() => {
         if (
           isCurrentEditorEntry(requestedEntry) &&
-          formRevisionRef.current === requestedRevision
+          normalizedSteamAppId(metadataRef.current.steam_appid) === requestedSteamAppId
         ) {
           setSteamNameUnavailable(true);
         }
@@ -443,7 +496,7 @@ export const MetadataPage = () => {
     isCurrentEditorEntry,
     metadata.steam_appid,
     metadata.steam_store_name,
-    setFormMetadata,
+    reconcileMetadataResponse,
   ]);
 
   useEffect(() => {
@@ -508,6 +561,14 @@ export const MetadataPage = () => {
     }
     const requestedEntry = editorEntryToken;
     if (!beginBusy(requestedEntry)) return;
+    const saveBaselineMetadata = metadataRef.current;
+    const saveBaselineText: FormTextSnapshot = {
+      developerText: developerTextRef.current,
+      publisherText: publisherTextRef.current,
+      releaseText: releaseTextRef.current,
+      ratingText: ratingTextRef.current,
+      steamAppIdText: steamAppIdTextRef.current,
+    };
     try {
       const parsed = normalizedSteamAppId(parseSteamAppId(steamAppIdText));
       const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
@@ -526,18 +587,17 @@ export const MetadataPage = () => {
       if (!isCurrentEditorEntry(requestedEntry)) {
         return;
       }
-      // A save acknowledgement owns only the Steam-match identity. Preserve
-      // edits made while the request was in flight so a later Save cannot
-      // restore the old match (or discard a new title).
-      const reconcileSteamIdentity = (response: MetadataData): MetadataData => ({
-        ...metadataRef.current,
-        steam_appid: normalizedSteamAppId(response.steam_appid),
-        steam_store_name: typeof response.steam_store_name === "string" ? response.steam_store_name : "",
-        steam_store_url: typeof response.steam_store_url === "string" ? response.steam_store_url : "",
-      });
-      const reconciled = reconcileSteamIdentity(saved);
-      metadataRef.current = reconciled;
-      setMetadata(reconciled);
+      // Keep the local values as they existed just before this acknowledgement.
+      // They are the only edits that can predate the enrichment request below.
+      const metadataAtSaveAcknowledgement = metadataRef.current;
+      // A save acknowledgement owns the Steam match. Reconcile all untouched
+      // fields from it while preserving edits made during the request.
+      const reconciled = reconcileMetadataResponse({
+        ...saved,
+        steam_appid: normalizedSteamAppId(saved.steam_appid),
+        steam_store_name: typeof saved.steam_store_name === "string" ? saved.steam_store_name : "",
+        steam_store_url: typeof saved.steam_store_url === "string" ? saved.steam_store_url : "",
+      }, saveBaselineMetadata, saveBaselineText);
       metadataCache[String(appId)] = reconciled;
       if (steamAppIdTextRef.current === steamAppIdText) {
         setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
@@ -550,22 +610,41 @@ export const MetadataPage = () => {
         toastSuccess("Saved", "Metadata saved");
         return;
       }
-      const enrichmentRevision = formRevisionRef.current;
+      const enrichmentBaselineMetadata = metadataRef.current;
+      const enrichmentBaselineText: FormTextSnapshot = {
+        // Text fields can be locally edited without changing metadataRef.
+        // Keep edits that happened before this enrichment started too.
+        ...saveBaselineText,
+      };
       const enriched = await enrichSteamApp(appId);
       if (
         !isCurrentEditorEntry(requestedEntry) ||
-        formRevisionRef.current !== enrichmentRevision ||
         normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed
       ) {
         return;
       }
       if (enriched) {
-        const enrichedIdentity = reconcileSteamIdentity(enriched);
-        metadataRef.current = enrichedIdentity;
-        setMetadata(enrichedIdentity);
-        metadataCache[String(appId)] = enrichedIdentity;
+        const normalizedEnriched: MetadataData = {
+          ...enriched,
+          steam_appid: normalizedSteamAppId(enriched.steam_appid),
+          steam_store_name: typeof enriched.steam_store_name === "string" ? enriched.steam_store_name : "",
+          steam_store_url: typeof enriched.steam_store_url === "string" ? enriched.steam_store_url : "",
+        };
+        // Edits made while saving predate the enrichment baseline, so restore
+        // them before merging any newer edits from the enrichment interval.
+        const enrichedWithEarlierEdits = mergeHydratedMetadata(
+          normalizedEnriched,
+          saveBaselineMetadata,
+          metadataAtSaveAcknowledgement,
+        );
+        const enrichedMetadata = reconcileMetadataResponse(
+          enrichedWithEarlierEdits,
+          enrichmentBaselineMetadata,
+          enrichmentBaselineText,
+        );
+        metadataCache[String(appId)] = enrichedMetadata;
         if (steamAppIdTextRef.current === steamAppIdText) {
-          setSteamAppIdInput(enrichedIdentity.steam_appid ? String(enrichedIdentity.steam_appid) : "");
+          setSteamAppIdInput(enrichedMetadata.steam_appid ? String(enrichedMetadata.steam_appid) : "");
         }
       } else {
         if (steamAppIdTextRef.current === steamAppIdText) {
@@ -712,9 +791,11 @@ export const MetadataPage = () => {
     if (!beginBusy(requestedEntry)) return;
     try {
       const observed = await setShortcutNameAndWait(appId, state.applied_name, state.original_name);
-      if (!isCurrentEditorEntry(requestedEntry)) return;
-      setCurrentShortcutName(observed);
+      if (isCurrentEditorEntry(requestedEntry)) setCurrentShortcutName(observed);
       try {
+        // The native restore is already complete. Clear the history for this
+        // captured shortcut even if the user navigated to another editor while
+        // Steam was confirming it; entry guards below protect only that UI.
         await clearShortcutNameState(appId);
       } catch (error) {
         if (!isCurrentEditorEntry(requestedEntry)) return;

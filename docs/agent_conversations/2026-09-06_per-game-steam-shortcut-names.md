@@ -179,3 +179,45 @@ and `steamdeck-legos`; both report the optional Deck offline. No full-ZIP
 installation, persistent mutation, focus test, controller-cache query, or
 launch was attempted without explicit per-device authorization. Those required
 acceptance checks remain pending and are not represented as approval.
+
+## Review round 03 follow-up
+
+- Steam enrichment now reconciles the complete successful response into the
+  editor form and cache. It keeps only values that the user changed while the
+  Steam-ID save or enrichment request was pending. This includes the companion
+  developer, publisher, release-date, and rating text fields, so a later Save
+  cannot overwrite descriptions, compatibility data, categories, DLC, or other
+  untouched Steam fields with stale form data.
+- A confirmed restore now clears history for the captured shortcut AppID even
+  when the user navigates away before Steam reports the native result. Entry
+  tokens still prevent the older operation from changing the later editor's
+  form, management state, toast, or busy state. A failed cleanup retains the
+  original shortcut's safe restored-history record without affecting the later
+  editor.
+
+Round-03 red/green evidence:
+
+- The new delayed-operation assertions first failed: full enrichment was
+  reduced to identity fields, a legacy backfill discarded all non-edited Steam
+  fields, and both A-to-B restore cases returned before clearing A's history.
+- `./run.sh npx vitest run src/MetadataPage.test.tsx` — 32 passed.
+- `./run.sh npx tsc --noEmit` — passed.
+- `./run.sh scripts/orchestration/run-quality-gates` — passed: 27 frontend
+  files / 427 tests, Rollup build, Python byte-compile, and the complete pytest
+  suite. A direct `./run.sh uv run --with pytest -- pytest -q` rerun passed.
+- `./run.sh scripts/orchestration/check-review-notes-not-deleted` and
+  `git diff --check` — passed.
+
+Current device acceptance state:
+
+- Fresh read-only checks found `steamdeck` reachable and `steamdeck-legos`
+  offline. The current local package was built and copied to the reachable
+  Deck's Downloads directory: local validation, package creation, and delivery
+  passed; Decky reports `INSTALLED_STATE REINSTALL_REQUIRED` and its installed
+  manifest remains version `0.3.12`.
+- The required `decky-local-zip-gui-install` skill is not available in this
+  session, and the repository has no supported unattended replacement for the
+  Deck Developer UI ZIP confirmation. The delivered ZIP was not installed.
+  Therefore the persistent editor smoke, focus/cancel checks, safe-surface
+  checks, controller smoke, and all `steamdeck-legos` install/UI checks remain
+  unverified. No direct VDF write, automatic rename, or game launch was used.

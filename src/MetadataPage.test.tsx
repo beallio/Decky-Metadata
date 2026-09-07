@@ -499,7 +499,7 @@ describe("MetadataPage compatibility status", () => {
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
   });
 
-  it("discards a delayed legacy backfill after an unsaved form edit", async () => {
+  it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
     effects.enabled = true;
     const oldResponse = deferred<any>();
     configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
@@ -509,11 +509,25 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "Unsaved edit" } });
-    oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
+    oldResponse.resolve(makeMetadata({
+      title: "Steam title",
+      description: "Steam description",
+      developers: [{ name: "Steam developer", url: "" }],
+      steam_appid: 15100,
+      steam_store_name: "Old Steam Name",
+    }));
     await flushAsyncWork();
 
-    expect(state.values[0]).toEqual(expect.objectContaining({ title: "Unsaved edit", steam_store_name: "" }));
-    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "Unsaved edit",
+      description: "Steam description",
+      steam_store_name: "Old Steam Name",
+    }));
+    expect(state.values[1]).toBe("Steam developer");
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      title: "Unsaved edit",
+      description: "Steam description",
+    }));
   });
 
   it("discards a delayed legacy backfill after the user changes Steam ID", async () => {
@@ -640,6 +654,132 @@ describe("MetadataPage compatibility status", () => {
     }));
   });
 
+  it("reconciles every untouched field from a successful Steam enrichment", async () => {
+    const pendingEnrichment = deferred<any>();
+    const saved = makeMetadata({
+      title: "Before enrichment",
+      description: "Old description",
+      steam_appid: 15200,
+      steam_store_name: "",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+    });
+    const enriched = makeMetadata({
+      title: "Steam title",
+      description: "Steam description",
+      short_description: "Steam summary",
+      developers: [{ name: "Steam developer", url: "" }],
+      publishers: [{ name: "Steam publisher", url: "" }],
+      release_date: 1700000000,
+      rating: 92,
+      store_categories: [1, 2],
+      steam_appid: 15200,
+      steam_store_name: "Steam title",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+      steam_dlc_appids: [10, 20],
+      has_points_shop: true,
+      deck_compat_category: 3,
+    });
+    configureShortcutPanel({ metadata: { title: "Before enrichment", description: "Old description" } });
+    state.values[8] = "15200";
+    backend.saveMetadata.mockResolvedValueOnce(saved).mockResolvedValueOnce(enriched);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    await flushAsyncWork();
+    expect(backend.enrichSteamApp).toHaveBeenCalledWith(100);
+    pendingEnrichment.resolve(enriched);
+    await applying;
+
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "Steam title",
+      description: "Steam description",
+      short_description: "Steam summary",
+      developers: [{ name: "Steam developer", url: "" }],
+      publishers: [{ name: "Steam publisher", url: "" }],
+      release_date: 1700000000,
+      rating: 92,
+      store_categories: [1, 2],
+      steam_dlc_appids: [10, 20],
+      has_points_shop: true,
+      deck_compat_category: 3,
+    }));
+    expect(state.values[1]).toBe("Steam developer");
+    expect(state.values[2]).toBe("Steam publisher");
+    expect(state.values[3]).toBe("2023-11-14");
+    expect(state.values[4]).toBe("92");
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      description: "Steam description",
+      steam_dlc_appids: [10, 20],
+    }));
+
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      title: "Steam title",
+      description: "Steam description",
+      steam_dlc_appids: [10, 20],
+      deck_compat_category: 3,
+    }));
+  });
+
+  it("keeps a concurrent title edit while reconciling untouched Steam enrichment fields", async () => {
+    const pendingEnrichment = deferred<any>();
+    const saved = makeMetadata({
+      title: "Before enrichment",
+      description: "Old description",
+      steam_appid: 15200,
+      steam_store_name: "",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+    });
+    const enriched = makeMetadata({
+      title: "Steam title",
+      description: "Steam description",
+      short_description: "Steam summary",
+      developers: [{ name: "Steam developer", url: "" }],
+      steam_appid: 15200,
+      steam_store_name: "Steam title",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+      steam_dlc_appids: [10],
+      has_points_shop: true,
+      deck_compat_category: 2,
+    });
+    const savedUserEdit = { ...enriched, title: "My title" };
+    configureShortcutPanel({ metadata: { title: "Before enrichment", description: "Old description" } });
+    state.values[8] = "15200";
+    backend.saveMetadata.mockResolvedValueOnce(saved).mockResolvedValueOnce(savedUserEdit);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    await flushAsyncWork();
+    walk(renderPage(), (node) => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "My title" } });
+    pendingEnrichment.resolve(enriched);
+    await applying;
+
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "My title",
+      description: "Steam description",
+      short_description: "Steam summary",
+      developers: [{ name: "Steam developer", url: "" }],
+      steam_dlc_appids: [10],
+      deck_compat_category: 2,
+    }));
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      title: "My title",
+      description: "Steam description",
+    }));
+
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      title: "My title",
+      description: "Steam description",
+      steam_dlc_appids: [10],
+    }));
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "My title",
+      description: "Steam description",
+    }));
+  });
+
   it("normalizes a cleared Steam ID and completes its consumer-visible refresh", async () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
     state.values[8] = "";
@@ -697,5 +837,74 @@ describe("MetadataPage compatibility status", () => {
 
     expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
     expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
+  });
+
+  it("clears captured restore history after navigation without changing the new editor", async () => {
+    const nativeRestore = deferred<string>();
+    const managedA = { original_name: "A original", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 1 };
+    const managedB = { original_name: "B original", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 2 };
+    const history = new Map([[100, managedA], [101, managedB]]);
+    configureShortcutPanel({ management: { state: managedA }, current: "Shared Steam name", status: "managed" });
+    steam.nativeShortcutName.mockReturnValue("Shared Steam name");
+    steam.setShortcutNameAndWait.mockReturnValue(nativeRestore.promise);
+    backend.clearShortcutNameState.mockImplementation(async (id: number) => {
+      history.delete(id);
+      return { ok: true };
+    });
+
+    action(renderPage(), "Restore original name").props.onClick();
+    ui.showModal.mock.calls[0][0].props.onOK();
+    await flushAsyncWork();
+
+    route.appid = "101";
+    renderPage();
+    const bMetadata = makeMetadata({ title: "B metadata", description: "B description" });
+    state.values[0] = bMetadata;
+    state.values[9] = shortcutState({ state: managedB });
+    state.values[11] = "Shared Steam name";
+    nativeRestore.resolve("A original");
+    await flushAsyncWork();
+
+    expect(backend.clearShortcutNameState).toHaveBeenCalledWith(100);
+    expect(history.has(100)).toBe(false);
+    expect(history.get(101)).toEqual(managedB);
+    expect(state.values[0]).toBe(bMetadata);
+    expect(state.values[9]).toEqual(shortcutState({ state: managedB }));
+    expect(toast.toastSuccess).not.toHaveBeenCalledWith("Shortcut name restored", expect.any(String));
+  });
+
+  it("keeps captured restore history after cleanup failure without changing the new editor", async () => {
+    const nativeRestore = deferred<string>();
+    const managedA = { original_name: "A original", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 1 };
+    const managedB = { original_name: "B original", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 2 };
+    const history = new Map([[100, managedA], [101, managedB]]);
+    configureShortcutPanel({ management: { state: managedA }, current: "Shared Steam name", status: "managed" });
+    steam.nativeShortcutName.mockReturnValue("Shared Steam name");
+    steam.setShortcutNameAndWait.mockReturnValue(nativeRestore.promise);
+    backend.clearShortcutNameState.mockImplementation(async (id: number) => {
+      if (id === 100) throw new Error("storage unavailable");
+      history.delete(id);
+      return { ok: true };
+    });
+
+    action(renderPage(), "Restore original name").props.onClick();
+    ui.showModal.mock.calls[0][0].props.onOK();
+    await flushAsyncWork();
+
+    route.appid = "101";
+    renderPage();
+    const bMetadata = makeMetadata({ title: "B metadata", description: "B description" });
+    state.values[0] = bMetadata;
+    state.values[9] = shortcutState({ state: managedB });
+    state.values[11] = "Shared Steam name";
+    nativeRestore.resolve("A original");
+    await flushAsyncWork();
+
+    expect(backend.clearShortcutNameState).toHaveBeenCalledWith(100);
+    expect(history.get(100)).toEqual(managedA);
+    expect(history.get(101)).toEqual(managedB);
+    expect(state.values[0]).toBe(bMetadata);
+    expect(state.values[9]).toEqual(shortcutState({ state: managedB }));
+    expect(toast.toastError).not.toHaveBeenCalledWith("Shortcut name restored", expect.any(String));
   });
 });
