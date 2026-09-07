@@ -255,3 +255,21 @@ Device installation and persistent UI verification are recorded after the
 corrected package is built and installed. No direct VDF write, bulk rename,
 automatic rename, global setting, second context-menu item, or game launch is
 introduced by this round.
+
+Round-04 device checkpoint:
+
+- Read-only doctor checks found `steamdeck` reachable and `steamdeck-legos`
+  offline. `steamdeck` accepted the corrected package delivery:
+  `Decky-Metadata.zip` was built as `0.3.13+69a6941`, local validation and
+  copy both passed, and `scripts/decky status --deck` confirms that the local
+  package represents `HEAD`.
+- Decky reports `INSTALLED_STATE REINSTALL_REQUIRED`. The required
+  `decky-local-zip-gui-install` skill is not available in this session, and
+  `scripts/decky` has no supported unattended GUI-install command. The new ZIP
+  was therefore not installed through QAM; no UI rename/restore, forced
+  cleanup, focus trace, safe-surface smoke, controller smoke, cache query, or
+  game launch was run against an older installed build.
+- This is an unverified device gate, not a passing live result. The Steam Deck
+  needs the local ZIP installed through Decky Loader before the persistent
+  smoke can run. Legion Go S needs to be reachable before its package install
+  and smoke can run.
