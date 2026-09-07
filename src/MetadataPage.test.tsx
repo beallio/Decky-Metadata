@@ -44,6 +44,7 @@ vi.mock("@decky/ui", () => ({
   afterPatch: vi.fn(),
   findInReactTree: vi.fn(),
   DropdownItem: "DropdownItem",
+  Field: "Field",
   Focusable: "Focusable",
   Navigation: { NavigateBack: vi.fn() },
   PanelSection: "PanelSection",
