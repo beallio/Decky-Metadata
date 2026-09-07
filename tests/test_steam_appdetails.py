@@ -72,6 +72,7 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
     ]
     assert details == {
         "title": "Assassin's Creed: Director's Cut Edition",
+        "steam_store_name": "Assassin's Creed: Director's Cut Edition",
         "description": "Detailed Steam description.",
         "short_description": "Short store description.",
         "developers": [{"name": "Ubisoft Montreal", "url": ""}],
@@ -94,6 +95,71 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
     }
 
 
+def test_steam_appdetails_keeps_a_cleaned_steam_owned_name(monkeypatch) -> None:
+    """The rename proposal is Steam-owned, not the editable title field."""
+    plugin = make_plugin()
+    appid = 32430
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {
+            str(appid): {
+                "success": True,
+                "data": {"name": "STAR WARS™: The Force Unleashed™ II"},
+            }
+        },
+    )
+
+    details = plugin._steam_appdetails_for_appid(appid)
+
+    assert details is not None
+    # Keep the old appdetails title contract unchanged for metadata editing.
+    assert details["title"] == "STAR WARS™: The Force Unleashed™ II"
+    assert details["steam_store_name"] == "STAR WARS: The Force Unleashed II"
+
+
+def test_enrichment_persists_a_cleaned_steam_owned_name_from_real_provider(monkeypatch) -> None:
+    """Use the real provider path so a mocked wrapper cannot hide a regression."""
+    plugin = make_plugin()
+    appid = 32430
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (
+            appid,
+            f"https://store.steampowered.com/app/{appid}/",
+            [],
+        ),
+    )
+    monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", lambda _appid: None)
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {
+            str(appid): {
+                "success": True,
+                "data": {"name": "STAR WARS™: The Force Unleashed™ II"},
+            }
+        },
+    )
+
+    enriched = plugin._metadata_with_steam_news_sync(
+        {"title": "IGN title", "description": "IGN description", "store_categories": []},
+        "IGN title",
+    )
+
+    assert enriched["steam_store_name"] == "STAR WARS: The Force Unleashed II"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [None, 1, "", "bad\x00name", "x" * 513],
+)
+def test_sanitize_metadata_rejects_unusable_steam_store_names(value: Any) -> None:
+    plugin = make_plugin()
+    assert plugin._sanitize_metadata({"steam_store_name": value})["steam_store_name"] == ""
+
+
 def test_steam_appdetails_success_emits_empty_availability_fields(monkeypatch) -> None:
     plugin = make_plugin()
     appid = 15100
@@ -107,6 +173,7 @@ def test_steam_appdetails_success_emits_empty_availability_fields(monkeypatch) -
 
     assert plugin._steam_appdetails_for_appid(appid) == {
         "title": "No extras",
+        "steam_store_name": "No extras",
         "steam_dlc_appids": [],
         "has_points_shop": False,
     }

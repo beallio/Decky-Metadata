@@ -49,6 +49,15 @@ To work with one game:
 
 If a game matched incorrectly, clear the match and choose the correct one.
 
+After you save a valid Steam match, the same **Decky metadata...** editor can
+show Steam's cleaned shortcut name. You can preview the change, confirm it,
+and later restore the exact original shortcut name. Decky Metadata never
+changes shortcut names automatically.
+The **Shortcut name** section is selectable with the D-pad, even when no rename
+action is available.
+
+![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=20260907)
+
 ## Set the compatibility status
 
 The **Decky metadata...** editor includes a **Compatibility status** setting.
@@ -89,6 +98,7 @@ has no cards to show, Decky Metadata can use screenshots from IGN instead.
 
 News and announcements from the matching Steam game can also appear in the
 normal Activity area.
+Removing metadata also removes that game's injected Activity news immediately.
 
 ![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
 

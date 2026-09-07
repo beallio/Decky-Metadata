@@ -4,6 +4,25 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-09-07
+
+Add Steam shortcut names and fix stale Activity news
+
+### Added
+
+- **Use Steam's name for a non-Steam shortcut.** The per-game **Decky metadata...** editor shows the current shortcut name beside the official Steam name for its saved match. Select **Use Steam name** to preview and confirm the change. Names never change automatically.
+- **Restore the original shortcut name.** After a confirmed rename, use **Restore original name** to return to the saved original. If another tool changes the name, the editor reports the conflict instead of overwriting it.
+
+### Fixed
+
+- **Activity news clears when metadata is removed.** **Remove metadata → Save → Done** now removes that shortcut's injected news without a SteamUI reload or plugin uninstall. Other games' Activity remains unchanged. Fix for [issue #3](https://github.com/beallio/Decky-Metadata/issues/3).
+- **Controller access to shortcut names.** The name/status section is selectable with the D-pad even when no rename action is available. It scrolls fully into view and uses the editor's background with an outline for controller focus.
+- **Steam title matching.** Page-title matching now ignores trademark, registered, and copyright marks consistently, so those symbols do not prevent a saved match from being recognized.
+
+### Shortcut-name controls
+
+![Current and Steam shortcut names with the Use Steam name action](https://raw.githubusercontent.com/beallio/Decky-Metadata/v0.3.13/assets/decky-metadata-shortcut-name.png)
+
 ## [0.3.12] - 2026-09-04
 
 Fix stable installs from local builds and marker-word title matching

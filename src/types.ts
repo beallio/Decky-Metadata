@@ -93,6 +93,8 @@ export type MetadataData = {
   features?: string[];
   screenshots?: MetadataScreenshot[];
   steam_appid?: number | null;
+  /** Steam's own cleaned display name, kept separate from editable title data. */
+  steam_store_name?: string;
   steam_dlc_appids: number[];
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";
@@ -176,6 +178,7 @@ export type MetadataNews = {
 export type SteamInternals = {
   SteamClient: {
     Input?: SteamInputBoundary;
+    Apps?: SteamAppsBoundary;
     [key: string]: unknown;
   };
   appStore: {
@@ -205,6 +208,24 @@ export type SteamInternals = {
 /** Minimal Steam Input bridge used to request controller configuration data. */
 export type SteamInputBoundary = {
   QueryControllerConfigsForApp?: (...args: unknown[]) => unknown;
+};
+
+/** Minimal native shortcut-name write surface exposed by Steam Client. */
+export type SteamAppsBoundary = {
+  SetShortcutName?: (appId: number, name: string) => void;
+};
+
+export type ShortcutNameState = {
+  original_name: string;
+  applied_name: string;
+  steam_appid: number;
+  updated_at: number;
+};
+
+export type ShortcutNameManagement = {
+  eligible: boolean;
+  reason: "ready" | "shortcut_not_found" | "derived_shortcut_id";
+  state: ShortcutNameState | null;
 };
 
 export type SteamControllerStoreBoundary = {

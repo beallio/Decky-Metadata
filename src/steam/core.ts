@@ -100,9 +100,17 @@ export const notifyCompatibilityRevision = () => {
   return revision;
 };
 
+/**
+ * Trademark, registered, and copyright marks appear in official Steam store
+ * names but not in persisted metadata titles, which are already stripped.
+ * Every title comparison must erase them, so `cleanTitle` and
+ * `normalizedTabText` share this one definition instead of drifting apart.
+ */
+const TRADEMARK_MARKS = /[\u2122\u00ae\u00a9]/g;
+
 export const cleanTitle = (value: string) =>
   String(value || "")
-    .replace(/[\u2122\u00ae\u00a9]/g, "")
+    .replace(TRADEMARK_MARKS, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -531,7 +539,11 @@ export const deepQuerySelectorAll = (selector: string, root: Document | ShadowRo
 };
 
 export const normalizedTabText = (value: string) =>
-  String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase();
+  String(value || "")
+    .replace(TRADEMARK_MARKS, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
 
 export const patchMethod = (
   target: any,

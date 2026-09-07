@@ -10,6 +10,7 @@ import * as log from "../log";
 import { createActivityRefreshGate } from "./activityRefreshGate";
 import {
   DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY,
+  DECKY_NATIVE_ACTIVITY_WINDOW_KEY,
   Unpatch,
   activityAppIdFromUrl,
   currentGameDetailAppId,
@@ -817,14 +818,31 @@ const makeDeckyNativeActivity = (appId: number, metadata: MetadataData) => {
   };
 };
 
+export const clearDeckyNativeActivityForApp = (appId: number, store?: any) => {
+  if (!appId) return;
+  const cache = (globalThis as any)[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] as Map<number, unknown> | undefined;
+  if (cache?.has(appId)) cache.delete(appId);
+  const appActivityStore = store || (globalThis as any).appActivityStore;
+  try {
+    const activities = appActivityStore?.m_mapAppActivity;
+    const stored = activities?.get?.(appId);
+    if (stored?.__deckyNativeActivity) activities.delete?.(appId);
+  } catch (_error) {
+    // A changed Steam store shape can still fall back to the cleared cache.
+  }
+};
+
 const getDeckyNativeActivityForApp = (appId: number) => {
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
   void maybeRefreshSteamNewsForApp(appId);
+  const metadata = metadataCache[String(appId)];
+  if (!metadata || !metadata.steam_news?.length) {
+    clearDeckyNativeActivityForApp(appId);
+    return null;
+  }
   const cached = deckyNativeActivityCache().get(appId);
   if (cached) return cached;
-  const metadata = metadataCache[String(appId)];
-  if (!metadata) return null;
   const native = makeDeckyNativeActivity(appId, metadata);
   if (native) deckyNativeActivityCache().set(appId, native);
   return native;
@@ -834,10 +852,16 @@ export const refreshDeckyNativeActivityForApp = async (appId: number, store?: an
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
   await ensureMetadataCacheFn();
-  let metadata = metadataCache[String(appId)];
-  if (!metadata) return null;
-  const native = metadata ? makeDeckyNativeActivity(appId, metadata) : null;
-  if (!native) return null;
+  const metadata = metadataCache[String(appId)];
+  if (!metadata) {
+    clearDeckyNativeActivityForApp(appId, store);
+    return null;
+  }
+  const native = makeDeckyNativeActivity(appId, metadata);
+  if (!native) {
+    clearDeckyNativeActivityForApp(appId, store);
+    return null;
+  }
   deckyNativeActivityCache().set(appId, native);
   const appActivityStore = store || (globalThis as any).appActivityStore;
   try {

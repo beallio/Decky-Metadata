@@ -14,5 +14,5 @@
     "description": "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
     "image": "https://raw.githubusercontent.com/beallio/Decky-Metadata/main/assets/decky-metadata-controller-layouts.png?cacheBuster=20260717"
   },
-  "version": "0.3.12"
+  "version": "0.3.13"
 }

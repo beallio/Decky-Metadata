@@ -23,10 +23,12 @@ vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import {
   compatibilityRevisionSnapshot,
+  deckyNativeActivityCache,
   metadataCache,
   metadataState,
   subscribeCompatibilityRevision,
 } from "./core";
+import { refreshDeckyNativeActivityForApp } from "./activity";
 import {
   applyMetadata,
   effectiveCompatibilityCategory,
@@ -94,7 +96,9 @@ afterEach(() => {
   metadataState.metadataLoaded = false;
   metadataState.metadataLoadPromise = null;
   metadataState.compatibilityRevision = 0;
+  deckyNativeActivityCache().clear();
   delete (globalThis as Record<string, unknown>).appStore;
+  delete (globalThis as Record<string, unknown>).appActivityStore;
   delete (globalThis as Record<string, unknown>).appDetailsStore;
   delete (globalThis as Record<string, unknown>).appInfoStore;
   delete (globalThis as Record<string, unknown>).Router;
@@ -195,6 +199,19 @@ const compatibilityMetadata = (category?: number | null, override?: number | nul
   deck_compat_override: override,
 });
 
+const activityMetadata = (title: string, gid: string, steamNews = true) => ({
+  ...compatibilityMetadata(null, null),
+  steam_appid: 55150,
+  steam_news: steamNews ? [{
+    id: gid,
+    gid,
+    title,
+    summary: `${title} summary`,
+    date: 1700000000,
+    url: `https://store.steampowered.com/news/app/55150/view/${gid}`,
+  }] : [],
+});
+
 const incomingOverview = (appId: number, packed: number, nonSteam = true) => {
   let currentPacked = packed;
   return {
@@ -263,6 +280,35 @@ describe("compatibility metadata application", () => {
     await refreshMetadataCache();
 
     expect(overview.steam_hw_compat_category_packed).toBe(0x4d);
+  });
+
+  it("clears injected Activity when removal or an empty save applies metadata", async () => {
+    const appId = 9220;
+    installCompatibilityOverview(appId, 0xa0);
+    const store = {
+      m_mapAppActivity: new Map<number, any>(),
+    };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+
+    metadataCache[String(appId)] = activityMetadata("Old plugin card", "12345678901234567") as any;
+    await refreshDeckyNativeActivityForApp(appId, store);
+    expect(store.m_mapAppActivity.get(appId)).toMatchObject({ __deckyNativeActivity: true });
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
+
+    metadataCache[String(appId)] = activityMetadata("Old plugin card", "12345678901234567") as any;
+    await refreshDeckyNativeActivityForApp(appId, store);
+    mocks.getAllMetadata.mockResolvedValue({});
+    await refreshMetadataCache();
+    expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
+
+    metadataCache[String(appId)] = activityMetadata("Old plugin card", "12345678901234567") as any;
+    await refreshDeckyNativeActivityForApp(appId, store);
+    metadataCache[String(appId)] = activityMetadata("", "", false) as any;
+    applyMetadata(appId);
+    expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
   });
 
   it("publishes one revision after a cache refresh applies the complete batch", async () => {

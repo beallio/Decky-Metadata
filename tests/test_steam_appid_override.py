@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import nullcontext
+from threading import Event
 
 import main
 from tests._plugin import make_plugin
@@ -77,6 +78,53 @@ def test_enrich_steam_app_returns_none_for_unknown_app() -> None:
 
     assert asyncio.run(plugin.enrich_steam_app(999)) is None
     assert plugin._data == {"metadata": {}}
+
+
+def test_enrich_steam_app_discards_a_late_result_after_a_newer_editor_save() -> None:
+    """A slow appdetails call must never restore the snapshot it started with."""
+    plugin = make_plugin()
+    plugin._data = {"metadata": {}}
+    plugin._load_data = lambda: None
+    plugin._save_data = lambda: None
+    started = Event()
+    release = Event()
+
+    original = {
+        "title": "Original",
+        "description": "Old description",
+        "steam_appid": 15100,
+        "steam_store_name": "Old Steam Name",
+        "store_categories": [],
+    }
+    newer = {
+        "title": "New user edit",
+        "description": "New description",
+        "steam_appid": 15200,
+        "steam_store_name": "",
+        "store_categories": [],
+    }
+
+    async def exercise() -> None:
+        await plugin.save_metadata(123, original)
+
+        def delayed_enrichment(metadata, _title):
+            started.set()
+            assert release.wait(timeout=2)
+            return {**metadata, "steam_store_name": "Old Steam Name"}
+
+        plugin._metadata_with_steam_news_sync = delayed_enrichment
+        pending = asyncio.create_task(plugin.enrich_steam_app(123))
+        await asyncio.to_thread(started.wait, 2)
+        await plugin.save_metadata(123, newer)
+        release.set()
+        assert await pending is None
+
+    asyncio.run(exercise())
+    saved = asyncio.run(plugin.get_metadata(123))
+    assert saved is not None
+    assert saved["title"] == "New user edit"
+    assert saved["steam_appid"] == 15200
+    assert saved["steam_store_name"] == ""
 
 
 def test_fetched_metadata_merge_keeps_manual_compatibility_override_with_or_without_pin() -> None:

@@ -1,5 +1,6 @@
 import { findModuleChild } from "@decky/ui";
 import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
+import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
@@ -375,6 +376,9 @@ export const applyMetadata = (appId: number) => {
   const overview = getNativeOverview(appId);
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
+  if (!metadata || !metadata.steam_news?.length) {
+    clearDeckyNativeActivityForApp(appId);
+  }
   if (!metadata) {
     const restored = restoreCompatibilityBaseline(appId, overview);
     if (restored) publishCompatibilityReplacement(appId, overview);

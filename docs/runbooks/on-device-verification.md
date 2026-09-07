@@ -62,6 +62,50 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Per-game shortcut-name rename and restore
+
+`smoke_shortcut_name.sh` is an explicit, persistent-but-reverted editor smoke.
+It uses the visible **Use Steam name** and **Restore original name** controls;
+it does not use `SetShortcutName` as the normal test path. It captures the
+native name and `sort_as`, confirms the renamed value after a SteamUI reload,
+then confirms the exact original value and `sort_as` again after a second
+reload. A trap restores the captured native name through Steam's API if an
+assertion after arming cleanup fails, verifies the exact original name and
+`sort_as`, and reports an explicit cleanup failure if it cannot restore them.
+The command stores only app IDs,
+booleans, timestamps, and SHA-256 name hashes below `/tmp/Decky-Metadata`.
+
+This smoke changes one real shortcut briefly. Get explicit approval for the
+current device and fixture before running it. Do not add it to `run_all.sh`.
+First install the complete local ZIP through Decky Loader's **Install Plugin
+from ZIP File** UI, then run the known listed fixture with a separate tunnel:
+
+```bash
+DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
+  scripts/deck/verify/smoke_shortcut_name.sh \
+  2312439508 "Assassin's Creed: Director's Cut Edition"
+
+DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
+  scripts/deck/verify/smoke_shortcut_name.sh \
+  2312439508 "Assassin's Creed: Director's Cut Edition"
+```
+
+The script fails before mutation unless the app ID is a native shortcut, no
+game reports as running, the plugin RPC reports explicit-ID eligibility, the
+saved state is initially unmanaged, and the expected Steam name is non-empty
+and different. Before each editor and confirmation-modal click, it polls for
+up to five seconds. A known unavailable condition reports its specific reason;
+an unfinished metadata or modal render reports that it is still loading. The
+repository fixture tests run the same smoke command with
+bounded fake-CDP transport responses. They cover argument parsing, an equal current/target
+preflight, unavailable and delayed editor/modal controls, delayed native observation, and a failed
+cleanup request. The emergency cleanup helper calls Steam through its Apps
+receiver and preserves the exact captured name, including edge whitespace; no
+fixed-error mode is accepted as smoke evidence. After a successful
+live run, capture the editor under `/tmp/Decky-Metadata/` and use
+`gpfocus_dump.js`, `focus_order.js`, and D-pad input to check initial focus,
+visual order, modal cancellation, and focus return to the launching control.
+
 ### Library Home artwork identity
 
 For a matched non-Steam shortcut with SteamGridDB artwork, first open Library
