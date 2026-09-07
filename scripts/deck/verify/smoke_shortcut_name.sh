@@ -2,35 +2,26 @@
 # Persistent-but-reverted UI smoke for per-game Steam shortcut names.
 #
 #   smoke_shortcut_name.sh <shortcut-appid> <expected-cleaned-steam-name>
-#   smoke_shortcut_name.sh --fixture-test <missing-appid|empty-target|equal-target|absent-control>
 #
 # Normal writes go only through the visible editor controls. The trap uses the
 # native API solely to restore the captured name after an assertion failure.
 set -euo pipefail
 
-fixture_test() {
-  case "${1:-}" in
-    missing-appid) printf 'FAIL: shortcut app ID is required\n' >&2; return 2 ;;
-    empty-target) printf 'FAIL: expected Steam name is required\n' >&2; return 2 ;;
-    equal-target) printf 'FAIL: expected Steam name already matches current shortcut name\n' >&2; return 2 ;;
-    absent-control) printf 'FAIL: editor never exposed expected control\n' >&2; return 2 ;;
-    *) printf 'FAIL: unknown shortcut-name fixture test\n' >&2; return 2 ;;
-  esac
-}
-
-if [[ "${1:-}" == "--fixture-test" ]]; then
-  fixture_test "${2:-}"
-  exit $?
-fi
+input_fail() { printf 'FAIL: %s\n' "$1" >&2; exit 2; }
 
 shortcut_appid="${1:-}"
 expected_name="${2:-}"
-[[ "$shortcut_appid" =~ ^[1-9][0-9]*$ ]] || fixture_test missing-appid
-[[ -n "$expected_name" ]] || fixture_test empty-target
+[[ "$shortcut_appid" =~ ^[1-9][0-9]*$ ]] || input_fail "shortcut app ID is required"
+[[ -n "$expected_name" ]] || input_fail "expected Steam name is required"
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
-evidence_dir="/tmp/Decky-Metadata/per-game-steam-shortcut-names"
+evidence_root="${SMOKE_SHORTCUT_NAME_EVIDENCE_DIR:-/tmp/Decky-Metadata/per-game-steam-shortcut-names}"
+[[ "$evidence_root" == /tmp/Decky-Metadata/* ]] || fail "evidence path must be below /tmp/Decky-Metadata"
+device_label="${DECKY_DECK_HOST:-local}"
+device_label="$(printf %s "$device_label" | tr -cd '[:alnum:]._-')"
+[[ -n "$device_label" ]] || device_label="local"
+evidence_dir="$evidence_root/$device_label"
 mkdir -p "$evidence_dir"
 evidence="$evidence_dir/shortcut-name-${shortcut_appid}.json"
 expected_b64="$(printf %s "$expected_name" | base64 | tr -d '\n')"
@@ -68,6 +59,37 @@ if bool(payload.get("matchesTarget")) != want_target:
 PY
 }
 
+probe_matches_target() { # probe_matches_target <json> <want-target:true|false>
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+try:
+    payload = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(2)
+if not payload.get("native") or payload.get("running") or not payload.get("hasCurrent"):
+    raise SystemExit(2)
+raise SystemExit(0 if bool(payload.get("matchesTarget")) == (sys.argv[2] == "true") else 1)
+PY
+}
+
+wait_for_target() { # wait_for_target <want-target:true|false> <phase>
+  local want_target="$1" phase="$2" payload="" result=0
+  for _ in {1..30}; do
+    payload="$(probe)" || fail "$phase: native shortcut probe failed"
+    result=0
+    probe_matches_target "$payload" "$want_target" || result=$?
+    if [[ "$result" == 0 ]]; then
+      printf %s "$payload"
+      return 0
+    fi
+    if [[ "$result" != 1 ]]; then
+      assert_probe "$payload" "$want_target" "$phase"
+    fi
+    sleep 0.1
+  done
+  assert_probe "$payload" "$want_target" "$phase"
+}
+
 assert_management() { # assert_management <json> <has-state:true|false> <phase>
   python3 - "$1" "$2" "$3" <<'PY'
 import json, sys
@@ -79,25 +101,61 @@ if bool(payload.get("hasState")) != (sys.argv[2] == "true"):
 PY
 }
 
-cleanup() {
-  status=$?
-  if [[ "$restore_armed" == 1 && -n "$original_b64" ]]; then
-    cdp eval SharedJSContext "@$JS_DIR/restore_shortcut_name.js" \
-      --var "APPID=$shortcut_appid" --var "NAME_B64=$original_b64" >/dev/null || true
-    for _ in {1..30}; do
-      current="$(probe || true)"
-      if python3 - "$current" "$original_b64" <<'PY'
+is_exact_original() { # is_exact_original <json>
+  python3 - "$1" "$original_b64" "$original_sort_b64" <<'PY'
 import json, sys
 try:
-    raise SystemExit(0 if json.loads(sys.argv[1]).get("currentB64") == sys.argv[2] else 1)
+    payload = json.loads(sys.argv[1])
 except Exception:
     raise SystemExit(1)
+raise SystemExit(0 if payload.get("currentB64") == sys.argv[2] and payload.get("sortAsB64") == sys.argv[3] else 1)
 PY
-      then
+}
+
+wait_for_exact_original() { # wait_for_exact_original <phase>
+  local phase="$1" payload=""
+  for _ in {1..30}; do
+    payload="$(probe)" || fail "$phase: native shortcut probe failed"
+    if is_exact_original "$payload"; then
+      printf %s "$payload"
+      return 0
+    fi
+    sleep 0.1
+  done
+  python3 - "$payload" "$original_b64" "$original_sort_b64" "$phase" <<'PY'
+import json, sys
+payload = json.loads(sys.argv[1])
+if payload.get("currentB64") != sys.argv[2]:
+    raise SystemExit(f"FAIL: {sys.argv[4]} did not return the exact original shortcut name")
+raise SystemExit(f"FAIL: {sys.argv[4]} changed sort_as")
+PY
+}
+
+cleanup() {
+  status=$?
+  cleanup_failed=0
+  if [[ "$restore_armed" == 1 && -n "$original_b64" ]]; then
+    cleanup_request="$(cdp eval SharedJSContext "@$JS_DIR/restore_shortcut_name.js" \
+      --var "APPID=$shortcut_appid" --var "NAME_B64=$original_b64" 2>&1)" || cleanup_failed=1
+    if [[ "$cleanup_request" == FAIL:* ]]; then
+      cleanup_failed=1
+    fi
+    restored=0
+    for _ in {1..30}; do
+      current="$(probe || true)"
+      if is_exact_original "$current"; then
+        restored=1
         break
       fi
       sleep 0.1
     done
+    if [[ "$restored" != 1 ]]; then
+      cleanup_failed=1
+    fi
+  fi
+  if [[ "$cleanup_failed" == 1 ]]; then
+    printf 'FAIL: cleanup could not restore the exact original shortcut name and sort_as\n' >&2
+    exit 1
   fi
   exit "$status"
 }
@@ -124,13 +182,13 @@ click_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_by_label.js" --var 'LABEL
 modal_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_modal_label.js" --var 'LABEL=Use Steam name')"
 [[ "$modal_result" != FAIL:* ]] || fail "editor never exposed expected control"
 
-renamed="$(probe)"
+renamed="$(wait_for_target true "after UI rename")"
 assert_probe "$renamed" true "after UI rename"
 assert_management "$(management)" true "after UI rename"
 
 cdp reload "$BPM_TARGET" >/dev/null
 cdp wait-ready --timeout 30 >/dev/null
-after_reload="$(probe)"
+after_reload="$(wait_for_target true "after rename reload")"
 assert_probe "$after_reload" true "after rename reload"
 
 nav "/decky-metadata/$shortcut_appid"
@@ -139,7 +197,7 @@ restore_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_by_label.js" --var 'LAB
 modal_restore="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_modal_label.js" --var 'LABEL=Restore original name')"
 [[ "$modal_restore" != FAIL:* ]] || fail "editor never exposed expected control"
 
-restored="$(probe)"
+restored="$(wait_for_exact_original "after UI restore")"
 python3 - "$restored" "$original_b64" "$original_sort_b64" <<'PY'
 import json, sys
 payload = json.loads(sys.argv[1])
@@ -152,7 +210,7 @@ assert_management "$(management)" false "after UI restore"
 
 cdp reload "$BPM_TARGET" >/dev/null
 cdp wait-ready --timeout 30 >/dev/null
-final_probe="$(probe)"
+final_probe="$(wait_for_exact_original "after restore reload")"
 python3 - "$final_probe" "$original_b64" "$original_sort_b64" "$evidence" "$shortcut_appid" <<'PY'
 import base64, hashlib, json, sys, time
 payload = json.loads(sys.argv[1])

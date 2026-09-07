@@ -30,6 +30,7 @@ import {
   cleanTitle,
   classifyShortcutNameState,
   getOverview,
+  hasShortcutNameApi,
   isNonSteamApp,
   metadataCache,
   nativeShortcutName,
@@ -189,8 +190,14 @@ export const MetadataPage = () => {
   const [steamNameLoading, setSteamNameLoading] = useState(false);
   const [steamNameUnavailable, setSteamNameUnavailable] = useState(false);
   const steamNameBackfillAppIdRef = useRef<number | null>(null);
+  const editorEntryRef = useRef(appId);
+  const metadataRef = useRef(metadata);
+  const formRevisionRef = useRef(0);
+  const busyRef = useRef(false);
 
   const setFormMetadata = useCallback((next: MetadataData) => {
+    formRevisionRef.current += 1;
+    metadataRef.current = next;
     setMetadata(next);
     setDeveloperText(personsToText(next.developers));
     setPublisherText(personsToText(next.publishers));
@@ -198,14 +205,42 @@ export const MetadataPage = () => {
     setRatingText(next.rating == null ? "" : String(next.rating));
   }, []);
 
+  const updateMetadata = useCallback((updater: (current: MetadataData) => MetadataData) => {
+    formRevisionRef.current += 1;
+    setMetadata((current) => {
+      const next = updater(current);
+      metadataRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const markFormEdited = useCallback(() => {
+    formRevisionRef.current += 1;
+  }, []);
+
+  const beginBusy = useCallback(() => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
+    setBusy(true);
+    return true;
+  }, []);
+
+  const endBusy = useCallback(() => {
+    busyRef.current = false;
+    setBusy(false);
+  }, []);
+
   const loadShortcutManagement = useCallback(async () => {
+    const requestedEntry = appId;
     try {
       const management = await getShortcutNameManagement(appId);
+      if (editorEntryRef.current !== requestedEntry) return null;
       setShortcutManagement(management);
       setShortcutManagementError(false);
       setCurrentShortcutName(nativeShortcutName(appId));
       return management;
     } catch (_error) {
+      if (editorEntryRef.current !== requestedEntry) return null;
       setShortcutManagement(null);
       setShortcutManagementError(true);
       setCurrentShortcutName(nativeShortcutName(appId));
@@ -214,11 +249,17 @@ export const MetadataPage = () => {
   }, [appId]);
 
   const load = useCallback(async () => {
+    const requestedEntry = appId;
+    const requestedRevision = formRevisionRef.current;
     const [metadataResult, managementResult] = await Promise.allSettled([
       getMetadata(appId),
       getShortcutNameManagement(appId),
     ]);
-    if (metadataResult.status === "fulfilled") {
+    if (editorEntryRef.current !== requestedEntry) return;
+    if (
+      metadataResult.status === "fulfilled" &&
+      formRevisionRef.current === requestedRevision
+    ) {
       const saved = metadataResult.value;
       setFormMetadata(saved || metadataTemplate(appName(appId)));
       setSteamAppIdText(saved?.steam_appid ? String(saved.steam_appid) : "");
@@ -238,6 +279,7 @@ export const MetadataPage = () => {
   }, [load]);
 
   useEffect(() => {
+    editorEntryRef.current = appId;
     steamNameBackfillAppIdRef.current = null;
     setSteamNameLoading(false);
     setSteamNameUnavailable(false);
@@ -254,10 +296,21 @@ export const MetadataPage = () => {
       return;
     }
     steamNameBackfillAppIdRef.current = appId;
+    const requestedEntry = appId;
+    const requestedSteamAppId = steamAppId;
+    const requestedRevision = formRevisionRef.current;
     setSteamNameLoading(true);
     setSteamNameUnavailable(false);
     void enrichSteamApp(appId)
       .then((enriched) => {
+        const current = metadataRef.current;
+        if (
+          editorEntryRef.current !== requestedEntry ||
+          formRevisionRef.current !== requestedRevision ||
+          Number(current.steam_appid) !== requestedSteamAppId
+        ) {
+          return;
+        }
         if (!enriched?.steam_store_name) {
           setSteamNameUnavailable(true);
           return;
@@ -267,9 +320,16 @@ export const MetadataPage = () => {
         setSteamAppIdText(enriched.steam_appid ? String(enriched.steam_appid) : "");
       })
       .catch(() => {
-        setSteamNameUnavailable(true);
+        if (
+          editorEntryRef.current === requestedEntry &&
+          formRevisionRef.current === requestedRevision
+        ) {
+          setSteamNameUnavailable(true);
+        }
       })
-      .finally(() => setSteamNameLoading(false));
+      .finally(() => {
+        if (editorEntryRef.current === requestedEntry) setSteamNameLoading(false);
+      });
   }, [appId, metadata.steam_appid, metadata.steam_store_name, setFormMetadata]);
 
   useEffect(() => {
@@ -304,10 +364,17 @@ export const MetadataPage = () => {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
     }
-    if (busy) return;
-    setBusy(true);
+    if (!beginBusy()) return;
+    const requestedEntry = appId;
+    const requestedRevision = formRevisionRef.current;
     try {
       const saved = await saveMetadata(appId, normalizedMetadata);
+      if (
+        editorEntryRef.current !== requestedEntry ||
+        formRevisionRef.current !== requestedRevision
+      ) {
+        return;
+      }
       metadataCache[String(appId)] = saved;
       setFormMetadata(saved);
       applyMetadata(appId);
@@ -316,7 +383,7 @@ export const MetadataPage = () => {
     } catch (error) {
       toastError("Save failed", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
@@ -325,8 +392,9 @@ export const MetadataPage = () => {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
     }
-    if (busy) return;
-    setBusy(true);
+    if (!beginBusy()) return;
+    const requestedEntry = appId;
+    const requestedRevision = formRevisionRef.current;
     try {
       const parsed = parseSteamAppId(steamAppIdText);
       const savedSteamAppId = Number(normalizedMetadata.steam_appid) || null;
@@ -342,11 +410,25 @@ export const MetadataPage = () => {
           : "",
       };
       const saved = await saveMetadata(appId, next);
+      if (
+        editorEntryRef.current !== requestedEntry ||
+        formRevisionRef.current !== requestedRevision
+      ) {
+        return;
+      }
       metadataCache[String(appId)] = saved;
       setFormMetadata(saved);
       steamNameBackfillAppIdRef.current = appId;
       setSteamNameUnavailable(false);
+      const enrichmentRevision = formRevisionRef.current;
       const enriched = await enrichSteamApp(appId);
+      if (
+        editorEntryRef.current !== requestedEntry ||
+        formRevisionRef.current !== enrichmentRevision ||
+        (Number(metadataRef.current.steam_appid) || null) !== parsed
+      ) {
+        return;
+      }
       if (enriched) {
         metadataCache[String(appId)] = enriched;
         setFormMetadata(enriched);
@@ -362,26 +444,34 @@ export const MetadataPage = () => {
     } catch (error) {
       toastError("Save failed", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
   const search = async () => {
-    setBusy(true);
+    if (!beginBusy()) return;
     try {
       setResults(await searchMetadata(query, 8));
     } catch (error) {
       toastError("Save failed", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
   const applyResult = async (result: MetadataSearchResult) => {
-    setBusy(true);
+    if (!beginBusy()) return;
+    const requestedEntry = appId;
+    const requestedRevision = formRevisionRef.current;
     try {
       const saved = await applyFetchedMetadata(appId, result.slug || result.url);
       if (!saved) return;
+      if (
+        editorEntryRef.current !== requestedEntry ||
+        formRevisionRef.current !== requestedRevision
+      ) {
+        return;
+      }
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
       refreshCompatibilitySurfaces();
@@ -391,24 +481,25 @@ export const MetadataPage = () => {
     } catch (error) {
       toastError("Fetch failed", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
   const removeCurrent = async () => {
-    if (busy) return;
-    setBusy(true);
+    if (!beginBusy()) return;
+    const requestedEntry = appId;
     try {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
       applyMetadata(appId);
       refreshCompatibilitySurfaces();
+      if (editorEntryRef.current !== requestedEntry) return;
       setFormMetadata(metadataTemplate(appName(appId)));
       toastSuccess("Removed", "Metadata removed");
     } catch (error) {
       toastError("Remove failed", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
@@ -423,23 +514,25 @@ export const MetadataPage = () => {
   );
   const canUseSteamName = Boolean(
     !busy &&
+    !shortcutManagementError &&
     shortcutManagement?.eligible &&
     (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
     currentShortcutName &&
     hasSteamMatch &&
     steamStoreName &&
-    currentShortcutName !== steamStoreName,
+    currentShortcutName !== steamStoreName &&
+    hasShortcutNameApi(),
   );
 
   const useSteamName = async () => {
-    if (!canUseSteamName || !shortcutManagement || !currentShortcutName) return;
+    if (!canUseSteamName || !shortcutManagement || !currentShortcutName || !hasShortcutNameApi()) return;
     const current = nativeShortcutName(appId);
     if (current !== currentShortcutName) {
       toastError("Shortcut name changed", "Steam changed this shortcut before it could be renamed.");
       await loadShortcutManagement();
       return;
     }
-    setBusy(true);
+    if (!beginBusy()) return;
     try {
       // State is durable before the native request so the original spelling
       // survives an app crash, timeout, or Steam-side error.
@@ -457,20 +550,20 @@ export const MetadataPage = () => {
       toastError("Shortcut name was not updated", String(error));
       await loadShortcutManagement();
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
   const restoreOriginalShortcutName = async () => {
     const state = shortcutManagement?.state;
-    if (!state || busy) return;
+    if (!state || busy || !hasShortcutNameApi()) return;
     const current = nativeShortcutName(appId);
     if (current !== state.applied_name) {
       toastError("Shortcut name changed", "Steam changed this shortcut before it could be restored.");
       await loadShortcutManagement();
       return;
     }
-    setBusy(true);
+    if (!beginBusy()) return;
     try {
       const observed = await setShortcutNameAndWait(appId, state.applied_name, state.original_name);
       setCurrentShortcutName(observed);
@@ -487,13 +580,12 @@ export const MetadataPage = () => {
       toastError("Shortcut name was not restored", String(error));
       await loadShortcutManagement();
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
   const forgetShortcutNameHistory = async () => {
-    if (busy) return;
-    setBusy(true);
+    if (!beginBusy()) return;
     try {
       await clearShortcutNameState(appId);
       setShortcutManagement((current) => current ? { ...current, state: null } : current);
@@ -501,7 +593,7 @@ export const MetadataPage = () => {
     } catch (error) {
       toastError("Saved name history was not cleared", String(error));
     } finally {
-      setBusy(false);
+      endBusy();
     }
   };
 
@@ -516,7 +608,7 @@ export const MetadataPage = () => {
 
   const showRestoreShortcutNameModal = () => {
     const state = shortcutManagement?.state;
-    if (!state || busy) return;
+    if (!state || busy || !hasShortcutNameApi()) return;
     showModal(
       <ConfirmModal strTitle="Restore original shortcut name?" strOKButtonText="Restore original name" onOK={() => void restoreOriginalShortcutName()}>
         <div style={compactTextStyle}>{`Restore “${state.original_name}”?`}</div>
@@ -525,7 +617,7 @@ export const MetadataPage = () => {
   };
 
   const showForgetShortcutNameHistoryModal = () => {
-    if (busy) return;
+    if (busy || busyRef.current) return;
     showModal(
       <ConfirmModal strTitle="Forget saved name history?" strOKButtonText="Forget history" onOK={() => void forgetShortcutNameHistory()}>
         <div style={compactTextStyle}>{"This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name."}</div>
@@ -535,7 +627,7 @@ export const MetadataPage = () => {
 
 
   const toggleCategory = (category: number, checked: boolean) => {
-    setMetadata((prev) => {
+    updateMetadata((prev) => {
       const next = new Set(prev.store_categories || []);
       if (checked) next.add(category);
       else next.delete(category);
@@ -650,7 +742,7 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   value={metadata.title}
                   onChange={(e) =>
-                    setMetadata((prev) => ({ ...prev, title: e.target.value }))
+                    updateMetadata((prev) => ({ ...prev, title: e.target.value }))
                   }
                   style={fieldStyle}
                 />
@@ -662,7 +754,7 @@ export const MetadataPage = () => {
                     className={editorFocusTargetClassName}
                     value={metadata.description}
                     onChange={(e) =>
-                      setMetadata((prev) => ({
+                      updateMetadata((prev) => ({
                         ...prev,
                         description: e.target.value,
                         short_description: e.target.value,
@@ -682,7 +774,7 @@ export const MetadataPage = () => {
                       tabIndex={0}
                       value={metadata.description}
                       onChange={(e) =>
-                        setMetadata((prev) => ({
+                        updateMetadata((prev) => ({
                           ...prev,
                           description: e.target.value,
                           short_description: e.target.value,
@@ -698,7 +790,10 @@ export const MetadataPage = () => {
                 <TextField
                   className={editorFocusTargetClassName}
                   value={developerText}
-                  onChange={(e) => setDeveloperText(e.target.value)}
+                  onChange={(e) => {
+                    markFormEdited();
+                    setDeveloperText(e.target.value);
+                  }}
                   style={fieldStyle}
                 />
               </div>
@@ -707,7 +802,10 @@ export const MetadataPage = () => {
                 <TextField
                   className={editorFocusTargetClassName}
                   value={publisherText}
-                  onChange={(e) => setPublisherText(e.target.value)}
+                  onChange={(e) => {
+                    markFormEdited();
+                    setPublisherText(e.target.value);
+                  }}
                   style={fieldStyle}
                 />
               </div>
@@ -717,7 +815,10 @@ export const MetadataPage = () => {
                   <TextField
                     className={editorFocusTargetClassName}
                     value={releaseText}
-                    onChange={(e) => setReleaseText(e.target.value)}
+                  onChange={(e) => {
+                    markFormEdited();
+                    setReleaseText(e.target.value);
+                  }}
                     style={fieldStyle}
                   />
                 </div>
@@ -726,7 +827,10 @@ export const MetadataPage = () => {
                   <TextField
                     className={editorFocusTargetClassName}
                     value={ratingText}
-                    onChange={(e) => setRatingText(e.target.value)}
+                  onChange={(e) => {
+                    markFormEdited();
+                    setRatingText(e.target.value);
+                  }}
                     style={fieldStyle}
                   />
                 </div>
@@ -745,7 +849,7 @@ export const MetadataPage = () => {
                   metadata.deck_compat_override
                 )}
                 onChange={(option) =>
-                  setMetadata((prev) => ({
+                  updateMetadata((prev) => ({
                     ...prev,
                     deck_compat_override: compatibilityStatusValue(option.data),
                   }))
@@ -790,7 +894,10 @@ export const MetadataPage = () => {
                 <TextField
                   className={editorFocusTargetClassName}
                   value={steamAppIdText}
-                  onChange={(e) => setSteamAppIdText(e.target.value)}
+                  onChange={(e) => {
+                    markFormEdited();
+                    setSteamAppIdText(e.target.value);
+                  }}
                   style={fieldStyle}
                 />
                 <FocusableButton
@@ -814,6 +921,7 @@ export const MetadataPage = () => {
               {steamNameLoading ? <div style={compactTextStyle}>{"Loading Steam name..."}</div> : null}
               {steamNameUnavailable ? <div style={compactTextStyle}>{"Steam did not return an official name"}</div> : null}
               {shortcutManagementError ? <div style={compactTextStyle}>{"Shortcut-name management is unavailable"}</div> : null}
+              {!shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? <div style={compactTextStyle}>{"Steam's native shortcut-name API is unavailable"}</div> : null}
               {!shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? <div style={compactTextStyle}>{"Steam shortcut was not found"}</div> : null}
               {!shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? <div style={compactTextStyle}>{"This shortcut has a derived ID and cannot be renamed safely"}</div> : null}
               {!shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? <div style={compactTextStyle}>{"Shortcut name already matches Steam"}</div> : null}
@@ -824,7 +932,7 @@ export const MetadataPage = () => {
                 </FocusableButton>
               ) : null}
               {shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (
-                <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={busy} onClick={showRestoreShortcutNameModal} style={editorAppIdButtonStyle}>
+                <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={busy || !hasShortcutNameApi()} onClick={showRestoreShortcutNameModal} style={editorAppIdButtonStyle}>
                   {"Restore original name"}
                 </FocusableButton>
               ) : null}

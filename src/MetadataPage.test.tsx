@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
+const route = vi.hoisted(() => ({ appid: "100" }));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
@@ -20,6 +21,7 @@ const steam = vi.hoisted(() => ({
   cleanTitle: vi.fn((value: string) => value.trim()),
   classifyShortcutNameState: vi.fn((_current: string | null, _state: any) => "unmanaged"),
   getOverview: vi.fn(() => ({ app_type: 1073741824, BIsShortcut: () => true })),
+  hasShortcutNameApi: vi.fn(() => true),
   isNonSteamApp: vi.fn(() => true),
   metadataCache: {} as Record<string, any>,
   nativeShortcutName: vi.fn(() => "Shortcut"),
@@ -49,7 +51,7 @@ vi.mock("@decky/ui", () => ({
   ScrollPanel: "ScrollPanel",
   TextField: "TextField",
   ToggleField: "ToggleField",
-  useParams: () => ({ appid: "100" }),
+  useParams: () => ({ appid: route.appid }),
   showModal: ui.showModal,
 }));
 
@@ -134,6 +136,16 @@ const flushAsyncWork = async () => {
   for (let index = 0; index < 8; index += 1) await Promise.resolve();
 };
 
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
 const shortcutState = (overrides: Record<string, unknown> = {}) => ({
   eligible: true,
   reason: "ready" as const,
@@ -175,8 +187,10 @@ describe("MetadataPage compatibility status", () => {
     steam.cleanTitle.mockImplementation((value: string) => value.trim());
     steam.getOverview.mockReturnValue({ app_type: 1073741824, BIsShortcut: () => true });
     steam.isNonSteamApp.mockReturnValue(true);
+    steam.hasShortcutNameApi.mockReturnValue(true);
     steam.classifyShortcutNameState.mockReturnValue("unmanaged");
     steam.nativeShortcutName.mockReturnValue("Shortcut");
+    route.appid = "100";
   });
 
   it("shows the native dropdown in the required order with Automatic's Valve status", () => {
@@ -376,6 +390,69 @@ describe("MetadataPage compatibility status", () => {
     expect(restore).toBeUndefined();
   });
 
+  it("keeps metadata editing available after a rejected management load and never offers a rename", async () => {
+    effects.enabled = true;
+    backend.getMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15100, steam_store_name: "Steam Name" }));
+    backend.getShortcutNameManagement.mockRejectedValue(new Error("backend unavailable"));
+    backend.saveMetadata.mockResolvedValue(makeMetadata());
+
+    renderPage();
+    await effects.callbacks[0]();
+    await flushAsyncWork();
+
+    const page = renderPage();
+    expect(text(page)).toContain("Shortcut-name management is unavailable");
+    expect(action(page, "Use Steam name")).toBeUndefined();
+    await saveButton(page).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.any(Object));
+    expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
+  });
+
+  it("reports an unavailable Steam API before rename and does not save history", () => {
+    configureShortcutPanel();
+    steam.hasShortcutNameApi.mockReturnValue(false);
+
+    const page = renderPage();
+    expect(text(page)).toContain("Steam's native shortcut-name API is unavailable");
+    expect(action(page, "Use Steam name")).toBeUndefined();
+    expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
+  });
+
+  it("keeps restore available after metadata removal", async () => {
+    const managed = { original_name: "Original", applied_name: "Steam Name", steam_appid: 15100, updated_at: 1 };
+    configureShortcutPanel({ management: { state: managed }, current: "Steam Name", status: "managed" });
+    backend.removeMetadata.mockResolvedValue({});
+
+    await action(renderPage(), "Remove metadata").props.onClick();
+
+    expect(action(renderPage(), "Restore original name")).toBeDefined();
+  });
+
+  it("excludes repeated confirmations and other editor actions while a rename is pending", async () => {
+    configureShortcutPanel();
+    steam.nativeShortcutName.mockReturnValue("Original");
+    const pendingState = deferred<any>();
+    backend.saveShortcutNameState.mockReturnValue(pendingState.promise);
+
+    action(renderPage(), "Use Steam name").props.onClick();
+    const modal = ui.showModal.mock.calls[0][0];
+    modal.props.onOK();
+    await Promise.resolve();
+    expect(backend.saveShortcutNameState).toHaveBeenCalledTimes(1);
+    expect(state.values[7]).toBe(true);
+    void saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+
+    modal.props.onOK();
+    expect(backend.saveShortcutNameState).toHaveBeenCalledTimes(1);
+
+    steam.setShortcutNameAndWait.mockResolvedValue("Steam Name");
+    pendingState.resolve({ original_name: "Original", applied_name: "Steam Name", steam_appid: 15100, updated_at: 1 });
+    await flushAsyncWork();
+    expect(state.values[7]).toBe(false);
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Shortcut name updated", expect.any(String));
+  });
+
   it("backfills a legacy Steam match exactly once and shows the returned proposal", async () => {
     effects.enabled = true;
     backend.getMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15100, steam_store_name: "" }));
@@ -420,5 +497,80 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
+  });
+
+  it("discards a delayed legacy backfill after an unsaved form edit", async () => {
+    effects.enabled = true;
+    const oldResponse = deferred<any>();
+    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
+
+    renderPage();
+    effects.callbacks[2]();
+    walk(renderPage(), (node) => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "Unsaved edit" } });
+    oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
+    await flushAsyncWork();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({ title: "Unsaved edit", steam_store_name: "" }));
+    expect(steam.metadataCache["100"]).toBeUndefined();
+  });
+
+  it("discards a delayed legacy backfill after the user changes Steam ID", async () => {
+    effects.enabled = true;
+    const oldResponse = deferred<any>();
+    const newer = makeMetadata({ title: "New match", steam_appid: 15200, steam_store_name: "New Steam Name" });
+    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    backend.enrichSteamApp.mockReturnValueOnce(oldResponse.promise).mockResolvedValueOnce(newer);
+    backend.saveMetadata.mockResolvedValue(makeMetadata({ title: "Original", steam_appid: 15200, steam_store_name: "" }));
+
+    renderPage();
+    effects.callbacks[2]();
+    const fields = walk(renderPage(), (node) => node.type === "TextField");
+    fields[fields.length - 1]
+      .props.onChange({ target: { value: "15200" } });
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
+    await flushAsyncWork();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: 15200, steam_store_name: "New Steam Name" }));
+  });
+
+  it("discards a delayed legacy backfill after metadata removal", async () => {
+    effects.enabled = true;
+    const oldResponse = deferred<any>();
+    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
+    backend.removeMetadata.mockResolvedValue({});
+
+    renderPage();
+    effects.callbacks[2]();
+    await action(renderPage(), "Remove metadata").props.onClick();
+    oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
+    await flushAsyncWork();
+
+    expect(state.values[0].title).toBe("Shortcut");
+    expect(state.values[0].steam_store_name).toBeUndefined();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+  });
+
+  it("discards a delayed legacy backfill after navigation to another shortcut", async () => {
+    effects.enabled = true;
+    const oldResponse = deferred<any>();
+    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
+
+    renderPage();
+    effects.callbacks[2]();
+    route.appid = "101";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    state.values[0] = makeMetadata({ title: "New editor", steam_appid: 15200, steam_store_name: "" });
+    oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
+    await flushAsyncWork();
+
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toEqual(expect.objectContaining({ title: "New editor", steam_store_name: "" }));
   });
 });

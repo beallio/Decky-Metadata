@@ -917,11 +917,31 @@ class Plugin:
         metadata = self._data["metadata"].get(key)
         if not isinstance(metadata, dict):
             return None
-        title = str(metadata.get("title") or "")
+        # The provider call runs outside the data lock. Keep an exact snapshot
+        # and only write its result if this record is still the same record
+        # when the call completes. Do not resurrect removed metadata or replace
+        # a newer manual Steam match with an old network response.
+        snapshot = dict(metadata)
+        title = str(snapshot.get("title") or "")
         enriched = await asyncio.to_thread(
-            self._metadata_with_steam_news_sync, metadata, title
+            self._metadata_with_steam_news_sync, snapshot, title
         )
-        return await self.save_metadata(app_id, enriched)
+        with self._data_guard():
+            self._load_data()
+            current = self._data["metadata"].get(key)
+            if not isinstance(current, dict) or current != snapshot:
+                _plog(
+                    "metadata",
+                    "steam enrichment discarded",
+                    app_id=app_id,
+                    outcome="stale",
+                )
+                return None
+            cleaned = self._sanitize_metadata(enriched)
+            cleaned["updated_at"] = now()
+            self._data["metadata"][key] = cleaned
+            self._save_data()
+        return cleaned
 
     async def refresh_delisted_index(self) -> dict[str, Any]:
         index = await asyncio.to_thread(self._ensure_delisted_index_sync, True)

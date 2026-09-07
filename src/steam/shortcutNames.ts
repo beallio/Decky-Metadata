@@ -22,6 +22,10 @@ export const nativeShortcutName = (appId: number): string | null => {
   return typeof overview.display_name === "string" ? overview.display_name.trim() : null;
 };
 
+/** True only when Steam exposes the native shortcut rename method. */
+export const hasShortcutNameApi = (): boolean =>
+  typeof steamInternals().SteamClient?.Apps?.SetShortcutName === "function";
+
 export const classifyShortcutNameState = (
   currentName: string | null,
   state: ShortcutNameState | null | undefined,
@@ -50,7 +54,7 @@ export const setShortcutNameAndWait = (
   if (current === null) return Promise.reject(new Error("native shortcut is unavailable"));
   if (current !== expected) return Promise.reject(new Error("shortcut name changed before rename"));
   const setName = steamInternals().SteamClient?.Apps?.SetShortcutName;
-  if (typeof setName !== "function") {
+  if (!hasShortcutNameApi() || typeof setName !== "function") {
     return Promise.reject(new Error("Steam shortcut name API is unavailable"));
   }
   try {

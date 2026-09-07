@@ -30,6 +30,7 @@ export {
 } from "./steam/core";
 export {
   classifyShortcutNameState,
+  hasShortcutNameApi,
   nativeShortcutName,
   setShortcutNameAndWait,
 } from "./steam/shortcutNames";

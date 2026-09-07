@@ -52,7 +52,7 @@ The required red baseline was recorded before production edits.
 Focused green checks after implementation:
 
 - `./run.sh uv run --with pytest -- pytest -q tests/test_steam_appdetails.py tests/test_shortcut_name_state.py` — 40 passed.
-- `./run.sh npx vitest run src/steam/shortcutNames.test.ts src/MetadataPage.test.tsx` — 23 passed in 2 files.
+- `./run.sh npx vitest run src/steam/shortcutNames.test.ts src/MetadataPage.test.tsx` — 31 passed in 2 files.
 
 Mutation controls all failed as required and were immediately restored:
 
@@ -68,8 +68,8 @@ Restored focused checks returned to the green tallies above. Full checks:
 
 - `./run.sh npx tsc --noEmit` — passed.
 - `./run.sh npm run build` — passed; `dist/index.js` and map regenerated.
-- `./run.sh uv run --with pytest -- pytest -q` — 496 collected tests passed.
-- `./run.sh npm test` — 27 files and 410 tests passed.
+- `./run.sh uv run --with pytest -- pytest -q` — 501 collected tests passed.
+- `./run.sh npm test` — 27 files and 418 tests passed.
 - `./run.sh scripts/orchestration/run-quality-gates` — passed.
 - `./run.sh scripts/orchestration/check-review-notes-not-deleted` — passed.
 - `./run.sh git diff --check` — passed.
@@ -95,3 +95,36 @@ screenshot, QAM focus trace, `run_all.sh`, or controller-tab smoke was run.
 The delivered Steam Deck ZIP is ready for that install. The plan's exclusions
 remain intact: no bulk rename, automatic rename, global setting, second
 context-menu item, direct VDF write, or game launch was implemented or used.
+
+## Review round 01 follow-up
+
+- Guarded `enrich_steam_app` at the persistence boundary. It now captures the
+  metadata record before the provider call and saves only if the same record
+  still exists at completion. A delayed-response test proves that a later user
+  save with a different Steam ID and title survives unchanged.
+- Guarded the editor's legacy name backfill by editor entry, Steam match, and
+  form revision. Delayed-response tests cover an unsaved edit, changed Steam
+  ID, metadata removal, and navigation to another shortcut. Late data is
+  discarded without replacing form state or cache data.
+- Added a synchronous busy lock so duplicate modal confirmation and another
+  editor action cannot overlap a pending rename. A rejected management load
+  disables name writes without disabling normal metadata save. The panel now
+  shows an unavailable native-API state before it offers a rename; managed
+  restore history remains visible.
+- Replaced fixed-error smoke modes with a bounded fake-CDP test harness that
+  executes the real shell script. It covers parsing, equal-target preflight,
+  absent control, delayed observed success, forced restore failure, and an
+  explicit cleanup failure. The real smoke now polls rename and restore
+  observations and places evidence below a device-specific path.
+
+Round-01 local checks:
+
+- `bash -n scripts/deck/verify/smoke_shortcut_name.sh` — passed.
+- Focused frontend: 31 tests passed in 2 files.
+- Focused backend/smoke checks: 49 passed.
+- `./run.sh npx tsc --noEmit` — passed.
+
+Round-01 `scripts/decky doctor --deck` checks report the optional Deck offline
+for both `steamdeck` and `steamdeck-legos`. No installation, smoke, focus test,
+or release claim is made by this follow-up until the hosts are reachable and the
+required local-ZIP GUI installer is available.
