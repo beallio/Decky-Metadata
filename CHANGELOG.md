@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-09-07
+
 Add Steam shortcut names and fix stale Activity news
 
 ### Added
