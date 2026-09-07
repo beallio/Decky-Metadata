@@ -225,6 +225,7 @@ export const MetadataPage = () => {
   const [currentShortcutName, setCurrentShortcutName] = useState<string | null>(null);
   const [steamNameLoading, setSteamNameLoading] = useState(false);
   const [steamNameUnavailable, setSteamNameUnavailable] = useState(false);
+  const [metadataHydratedEntry, setMetadataHydratedEntry] = useState<number | null>(null);
   const steamNameBackfillEntryRef = useRef<number | null>(null);
   const editorEntryRef = useRef({ appId, token: 0 });
   // The editor can visit A, B, then A again while an async operation from the
@@ -410,6 +411,12 @@ export const MetadataPage = () => {
           setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
         }
       }
+      // Backfill can only use the record that this entry's metadata RPC just
+      // returned. A route change otherwise leaves the prior form visible for
+      // one render while the new request is still pending.
+      setMetadataHydratedEntry(requestedEntry);
+    } else {
+      setMetadataHydratedEntry(null);
     }
     if (managementResult.status === "fulfilled") {
       setShortcutManagement(managementResult.value);
@@ -434,11 +441,13 @@ export const MetadataPage = () => {
   useEffect(() => {
     setSteamNameLoading(false);
     setSteamNameUnavailable(false);
+    setMetadataHydratedEntry(null);
   }, [appId]);
 
   useEffect(() => {
     const steamAppId = Number(metadata.steam_appid);
     if (
+      metadataHydratedEntry !== editorEntryToken ||
       steamNameBackfillEntryRef.current === editorEntryToken ||
       !Number.isInteger(steamAppId) ||
       steamAppId <= 0 ||
@@ -494,6 +503,7 @@ export const MetadataPage = () => {
     appId,
     editorEntryToken,
     isCurrentEditorEntry,
+    metadataHydratedEntry,
     metadata.steam_appid,
     metadata.steam_store_name,
     reconcileMetadataResponse,
@@ -720,8 +730,9 @@ export const MetadataPage = () => {
   const steamAppId = Number(metadata.steam_appid);
   const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
   const steamStoreName = typeof metadata.steam_store_name === "string"
-    ? metadata.steam_store_name.trim()
+    ? metadata.steam_store_name
     : "";
+  const hasSteamStoreName = Boolean(steamStoreName.trim());
   const shortcutStatus = classifyShortcutNameState(
     currentShortcutName,
     shortcutManagement?.state,
@@ -733,7 +744,7 @@ export const MetadataPage = () => {
     (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
     currentShortcutName &&
     hasSteamMatch &&
-    steamStoreName &&
+    hasSteamStoreName &&
     currentShortcutName !== steamStoreName &&
     hasShortcutNameApi(),
   );

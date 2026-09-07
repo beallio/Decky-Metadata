@@ -221,3 +221,37 @@ Current device acceptance state:
   Therefore the persistent editor smoke, focus/cancel checks, safe-surface
   checks, controller smoke, and all `steamdeck-legos` install/UI checks remain
   unverified. No direct VDF write, automatic rename, or game launch was used.
+
+## Review round 04 follow-up
+
+- The production native rename boundary and the emergency cleanup helper now
+  call `SetShortcutName` through Steam's `Apps` object. This preserves the
+  receiver required by the real binding instead of invoking a detached method.
+- Native shortcut names now remain byte-for-byte exact in the editor boundary:
+  leading and trailing whitespace is neither trimmed before state comparison
+  nor lost during restore. Empty or whitespace-only targets still fail before
+  any native write.
+- Legacy Steam-name backfill now begins only after the current editor entry's
+  metadata RPC hydrates its form. A stale A entry cannot consume B's one-time
+  backfill attempt while B is loading.
+- The persistent smoke polls each editor and confirmation-modal control before
+  clicking. It reports a known unavailable reason separately from an editor or
+  modal that is still loading. Its fake transport executes the actual cleanup
+  helper with a receiver-sensitive Apps mock.
+
+Round-04 red/green evidence:
+
+- New contracts first failed for trimmed native names, detached Apps calls,
+  the A-to-B pre-hydration backfill race, and missing editor/modal readiness
+  polling.
+- `./run.sh npx vitest run src/steam/shortcutNames.test.ts src/MetadataPage.test.tsx`
+  — 43 passed.
+- `./run.sh uv run --with pytest -- pytest -q tests/test_shortcut_name_smoke.py`
+  — 10 passed.
+- `bash -n scripts/deck/verify/smoke_shortcut_name.sh`,
+  `./run.sh npx tsc --noEmit`, and `./run.sh npm run build` — passed.
+
+Device installation and persistent UI verification are recorded after the
+corrected package is built and installed. No direct VDF write, bulk rename,
+automatic rename, global setting, second context-menu item, or game launch is
+introduced by this round.

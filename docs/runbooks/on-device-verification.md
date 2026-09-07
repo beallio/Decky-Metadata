@@ -93,10 +93,15 @@ DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
 The script fails before mutation unless the app ID is a native shortcut, no
 game reports as running, the plugin RPC reports explicit-ID eligibility, the
 saved state is initially unmanaged, and the expected Steam name is non-empty
-and different. The repository fixture tests run the same smoke command with
+and different. Before each editor and confirmation-modal click, it polls for
+up to five seconds. A known unavailable condition reports its specific reason;
+an unfinished metadata or modal render reports that it is still loading. The
+repository fixture tests run the same smoke command with
 bounded fake-CDP transport responses. They cover argument parsing, an equal current/target
-preflight, a missing visible control, delayed native observation, and a failed
-cleanup request; no fixed-error mode is accepted as smoke evidence. After a successful
+preflight, unavailable and delayed editor/modal controls, delayed native observation, and a failed
+cleanup request. The emergency cleanup helper calls Steam through its Apps
+receiver and preserves the exact captured name, including edge whitespace; no
+fixed-error mode is accepted as smoke evidence. After a successful
 live run, capture the editor under `/tmp/Decky-Metadata/` and use
 `gpfocus_dump.js`, `focus_order.js`, and D-pad input to check initial focus,
 visual order, modal cancellation, and focus return to the launching control.

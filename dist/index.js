@@ -2594,17 +2594,14 @@ const positiveAppId = (value) => {
     const appId = Number(value);
     return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
 };
-/**
- * Read Steam's native shortcut name without going through the metadata alias
- * or the title cleaner. Only surrounding whitespace is presentation noise.
- */
+/** Read Steam's native shortcut name without going through the metadata alias or title cleaner. */
 const nativeShortcutName = (appId) => {
     if (!positiveAppId(appId))
         return null;
     const overview = getNativeOverview(appId);
     if (!overview || !isNativeNonSteamShortcut(overview))
         return null;
-    return typeof overview.display_name === "string" ? overview.display_name.trim() : null;
+    return typeof overview.display_name === "string" ? overview.display_name : null;
 };
 /** True only when Steam exposes the native shortcut rename method. */
 const hasShortcutNameApi = () => typeof steamInternals().SteamClient?.Apps?.SetShortcutName === "function";
@@ -2623,23 +2620,23 @@ const classifyShortcutNameState = (currentName, state) => {
  */
 const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
     const normalizedAppId = positiveAppId(appId);
-    const expected = typeof expectedCurrent === "string" ? expectedCurrent.trim() : "";
-    const requested = typeof target === "string" ? target.trim() : "";
+    const expected = typeof expectedCurrent === "string" ? expectedCurrent : "";
+    const requested = typeof target === "string" ? target : "";
     if (!normalizedAppId)
         return Promise.reject(new Error("invalid shortcut app ID"));
-    if (!requested)
+    if (!requested.trim())
         return Promise.reject(new Error("shortcut name target is empty"));
     const current = nativeShortcutName(normalizedAppId);
     if (current === null)
         return Promise.reject(new Error("native shortcut is unavailable"));
     if (current !== expected)
         return Promise.reject(new Error("shortcut name changed before rename"));
-    const setName = steamInternals().SteamClient?.Apps?.SetShortcutName;
-    if (!hasShortcutNameApi() || typeof setName !== "function") {
+    const apps = steamInternals().SteamClient?.Apps;
+    if (!apps || typeof apps.SetShortcutName !== "function") {
         return Promise.reject(new Error("Steam shortcut name API is unavailable"));
     }
     try {
-        setName(normalizedAppId, requested);
+        apps.SetShortcutName.call(apps, normalizedAppId, requested);
     }
     catch (error) {
         return Promise.reject(new Error(`Steam shortcut name API failed: ${String(error)}`));
@@ -8455,6 +8452,7 @@ const MetadataPage = () => {
     const [currentShortcutName, setCurrentShortcutName] = SP_REACT.useState(null);
     const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
     const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
+    const [metadataHydratedEntry, setMetadataHydratedEntry] = SP_REACT.useState(null);
     const steamNameBackfillEntryRef = SP_REACT.useRef(null);
     const editorEntryRef = SP_REACT.useRef({ appId, token: 0 });
     // The editor can visit A, B, then A again while an async operation from the
@@ -8629,6 +8627,13 @@ const MetadataPage = () => {
                     setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
                 }
             }
+            // Backfill can only use the record that this entry's metadata RPC just
+            // returned. A route change otherwise leaves the prior form visible for
+            // one render while the new request is still pending.
+            setMetadataHydratedEntry(requestedEntry);
+        }
+        else {
+            setMetadataHydratedEntry(null);
         }
         if (managementResult.status === "fulfilled") {
             setShortcutManagement(managementResult.value);
@@ -8652,10 +8657,12 @@ const MetadataPage = () => {
     SP_REACT.useEffect(() => {
         setSteamNameLoading(false);
         setSteamNameUnavailable(false);
+        setMetadataHydratedEntry(null);
     }, [appId]);
     SP_REACT.useEffect(() => {
         const steamAppId = Number(metadata.steam_appid);
-        if (steamNameBackfillEntryRef.current === editorEntryToken ||
+        if (metadataHydratedEntry !== editorEntryToken ||
+            steamNameBackfillEntryRef.current === editorEntryToken ||
             !Number.isInteger(steamAppId) ||
             steamAppId <= 0 ||
             Boolean(metadata.steam_store_name)) {
@@ -8707,6 +8714,7 @@ const MetadataPage = () => {
         appId,
         editorEntryToken,
         isCurrentEditorEntry,
+        metadataHydratedEntry,
         metadata.steam_appid,
         metadata.steam_store_name,
         reconcileMetadataResponse,
@@ -8926,8 +8934,9 @@ const MetadataPage = () => {
     const steamAppId = Number(metadata.steam_appid);
     const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
     const steamStoreName = typeof metadata.steam_store_name === "string"
-        ? metadata.steam_store_name.trim()
+        ? metadata.steam_store_name
         : "";
+    const hasSteamStoreName = Boolean(steamStoreName.trim());
     const shortcutStatus = classifyShortcutNameState(currentShortcutName, shortcutManagement?.state);
     const canUseSteamName = Boolean(!entryBusy &&
         !shortcutManagementError &&
@@ -8935,7 +8944,7 @@ const MetadataPage = () => {
         (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
         currentShortcutName &&
         hasSteamMatch &&
-        steamStoreName &&
+        hasSteamStoreName &&
         currentShortcutName !== steamStoreName &&
         hasShortcutNameApi());
     const useSteamName = async () => {

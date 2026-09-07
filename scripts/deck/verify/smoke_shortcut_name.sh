@@ -38,6 +38,52 @@ management() {
   cdp eval SharedJSContext "@$JS_DIR/check_shortcut_name_management.js" --var "APPID=$shortcut_appid"
 }
 
+editor_control_status() { # editor_control_status <label>
+  cdp eval "$BPM_TARGET" "@$JS_DIR/shortcut_name_editor_status.js" --var "LABEL=$1"
+}
+
+modal_control_status() { # modal_control_status <label>
+  cdp eval "$BPM_TARGET" "@$JS_DIR/shortcut_name_modal_status.js" --var "LABEL=$1"
+}
+
+wait_for_control_status() { # wait_for_control_status <editor|modal> <label>
+  local kind="$1" label="$2" payload="" status="" reason=""
+  for _ in {1..50}; do
+    if [[ "$kind" == editor ]]; then
+      payload="$(editor_control_status "$label")" || fail "$kind control readiness probe failed"
+    else
+      payload="$(modal_control_status "$label")" || fail "$kind control readiness probe failed"
+    fi
+    read -r status reason < <(python3 - "$payload" <<'PY'
+import json, sys
+try:
+    payload = json.loads(sys.argv[1])
+    status = payload.get("status")
+    reason = payload.get("reason")
+    if status not in {"ready", "loading", "unavailable"} or not isinstance(reason, str):
+        raise ValueError
+    print(status, reason)
+except Exception:
+    print("invalid invalid_response")
+PY
+)
+    if [[ "$status" == ready ]]; then
+      return 0
+    fi
+    if [[ "$status" == unavailable ]]; then
+      fail "$kind control '$label' is unavailable ($reason)"
+    fi
+    if [[ "$status" != loading ]]; then
+      fail "$kind control '$label' readiness returned invalid data"
+    fi
+    sleep 0.1
+  done
+  fail "$kind control '$label' is still loading after 5 seconds ($reason)"
+}
+
+wait_for_editor_control() { wait_for_control_status editor "$1"; }
+wait_for_modal_control() { wait_for_control_status modal "$1"; }
+
 assert_probe() { # assert_probe <json> <want-target:true|false> <phase>
   python3 - "$1" "$2" "$3" "$expected_b64" <<'PY'
 import json, sys
@@ -208,10 +254,12 @@ assert_management "$(management)" false "preflight"
 restore_armed=1
 
 nav "/decky-metadata/$shortcut_appid"
+wait_for_editor_control "Use Steam name"
 click_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_by_label.js" --var 'LABEL=Use Steam name')"
-[[ "$click_result" != FAIL:* ]] || fail "editor never exposed expected control"
+[[ "$click_result" != FAIL:* ]] || fail "editor control 'Use Steam name' became unavailable after readiness"
+wait_for_modal_control "Use Steam name"
 modal_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_modal_label.js" --var 'LABEL=Use Steam name')"
-[[ "$modal_result" != FAIL:* ]] || fail "editor never exposed expected control"
+[[ "$modal_result" != FAIL:* ]] || fail "modal control 'Use Steam name' became unavailable after readiness"
 
 renamed="$(wait_for_target true "after UI rename")"
 assert_probe "$renamed" true "after UI rename"
@@ -223,10 +271,12 @@ after_reload="$(wait_for_target true "after rename reload")"
 assert_probe "$after_reload" true "after rename reload"
 
 nav "/decky-metadata/$shortcut_appid"
+wait_for_editor_control "Restore original name"
 restore_result="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_by_label.js" --var 'LABEL=Restore original name')"
-[[ "$restore_result" != FAIL:* ]] || fail "editor never exposed expected control"
+[[ "$restore_result" != FAIL:* ]] || fail "editor control 'Restore original name' became unavailable after readiness"
+wait_for_modal_control "Restore original name"
 modal_restore="$(cdp eval "$BPM_TARGET" "@$JS_DIR/click_modal_label.js" --var 'LABEL=Restore original name')"
-[[ "$modal_restore" != FAIL:* ]] || fail "editor never exposed expected control"
+[[ "$modal_restore" != FAIL:* ]] || fail "modal control 'Restore original name' became unavailable after readiness"
 
 restored="$(wait_for_exact_original "after UI restore")"
 python3 - "$restored" "$original_b64" "$original_sort_b64" <<'PY'

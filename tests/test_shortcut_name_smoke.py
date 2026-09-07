@@ -38,7 +38,14 @@ from pathlib import Path
 path = Path(os.environ["FAKE_STATE"])
 original = os.environ.get("FAKE_ORIGINAL", "Original")
 def load():
-    return json.loads(path.read_text()) if path.exists() else {"current": original, "state": False, "pending": 0, "management_pending": 0}
+    return json.loads(path.read_text()) if path.exists() else {
+        "current": original,
+        "state": False,
+        "pending": 0,
+        "management_pending": 0,
+        "editor_pending": int(os.environ.get("FAKE_DELAYED_EDITOR_READINESS", "0")),
+        "modal_pending": int(os.environ.get("FAKE_DELAYED_MODAL_READINESS", "0")),
+    }
 def save(data):
     path.write_text(json.dumps(data))
 def b64(value):
@@ -120,13 +127,48 @@ Promise.resolve(eval(%s)).then(
         if completed.returncode:
             raise SystemExit(completed.stderr.strip() or "management helper failed")
         print(completed.stdout)
+elif "shortcut_name_editor_status.js" in source:
+    if os.environ.get("FAKE_ABSENT_CONTROL") == "1":
+        print(json.dumps({"status": "unavailable", "reason": "control_absent"}))
+    elif data.get("editor_pending", 0):
+        data["editor_pending"] -= 1
+        save(data)
+        print(json.dumps({"status": "loading", "reason": "metadata_or_backfill_pending"}))
+    else:
+        print(json.dumps({"status": "ready", "reason": "control_ready"}))
+elif "shortcut_name_modal_status.js" in source:
+    if data.get("modal_pending", 0):
+        data["modal_pending"] -= 1
+        save(data)
+        print(json.dumps({"status": "loading", "reason": "modal_not_rendered"}))
+    else:
+        print(json.dumps({"status": "ready", "reason": "modal_control_ready"}))
 elif "restore_shortcut_name.js" in source:
     if os.environ.get("FAKE_CLEANUP_FAIL") == "1":
         print("FAIL: forced cleanup failure")
     else:
+        helper = Path(source[1:]).read_text().replace("__APPID__", vars["APPID"]).replace("__NAME_B64__", vars["NAME_B64"])
+        harness = '''
+const expectedAppId = %s;
+const expectedName = %s;
+let called = false;
+const apps = {
+  SetShortcutName: function(appId, name) {
+    if (this !== apps) throw new Error("Apps receiver was lost");
+    if (appId !== expectedAppId || name !== expectedName) throw new Error("wrong cleanup request");
+    called = true;
+  },
+};
+global.SteamClient = { Apps: apps };
+const result = eval(%s);
+if (result !== "cleanup requested" || !called) throw new Error("cleanup helper did not make the expected request");
+''' % (json.dumps(int(vars["APPID"])), json.dumps(original), json.dumps(helper))
+        completed = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        if completed.returncode:
+            raise SystemExit(completed.stderr.strip() or "receiver-sensitive cleanup transport rejected helper")
         data.update(current=original, state=False, rename=False)
         save(data)
-        print("cleanup requested")
+        print(completed.stdout or "cleanup requested")
 elif "click_by_label.js" in source:
     print("FAIL: absent" if os.environ.get("FAKE_ABSENT_CONTROL") == "1" else "clicked")
 elif "click_modal_label.js" in source:
@@ -143,7 +185,16 @@ else:
     print("{}")
 """
     )
-    for name in ("shortcut_name_probe.js", "check_shortcut_name_management.js", "restore_shortcut_name.js", "click_by_label.js", "click_modal_label.js", "nav.js"):
+    for name in (
+        "shortcut_name_probe.js",
+        "check_shortcut_name_management.js",
+        "restore_shortcut_name.js",
+        "shortcut_name_editor_status.js",
+        "shortcut_name_modal_status.js",
+        "click_by_label.js",
+        "click_modal_label.js",
+        "nav.js",
+    ):
         source = (ROOT / "scripts/deck/js" / name).read_text()
         if name == "check_shortcut_name_management.js" and management_helper is not None:
             source = management_helper
@@ -195,6 +246,19 @@ def test_smoke_polls_delayed_ui_success(tmp_path: Path):
     assert payload["sortAsRestored"] is True
 
 
+def test_smoke_waits_for_editor_and_modal_readiness_before_clicking(tmp_path: Path):
+    completed, _state, evidence = run(
+        tmp_path,
+        "2312439508",
+        "Expected",
+        FAKE_DELAYED_EDITOR_READINESS="3",
+        FAKE_DELAYED_MODAL_READINESS="2",
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(evidence.read_text())["status"] == "passed"
+
+
 def test_smoke_waits_for_delayed_history_clear_and_shared_context_checkpoints(tmp_path: Path):
     completed, state, _evidence = run(
         tmp_path, "2312439508", "Expected", FAKE_DELAYED_HISTORY_POLLS="3"
@@ -210,7 +274,7 @@ def test_smoke_waits_for_delayed_history_clear_and_shared_context_checkpoints(tm
 def test_smoke_runs_absent_control_and_forced_restore_failures_through_real_path(tmp_path: Path):
     absent, state, _evidence = run(tmp_path, "2312439508", "Expected", FAKE_ABSENT_CONTROL="1")
     assert absent.returncode != 0
-    assert "FAIL: editor never exposed expected control" in absent.stderr
+    assert "FAIL: editor control 'Use Steam name' is unavailable (control_absent)" in absent.stderr
     assert json.loads(state.read_text())["current"] == "Original"
 
     failed_restore, state, _evidence = run(tmp_path, "2312439508", "Expected", FAKE_POST_RENAME_FAILURE="1")
@@ -272,3 +336,26 @@ def test_smoke_uses_the_plugin_scoped_rpc_and_reloads_its_owning_context():
     assert "[appId]" not in helper
     assert smoke.count("cdp reload SharedJSContext") == 2
     assert "overview.display_name.trim()" not in probe
+    assert "wait_for_editor_control" in smoke
+    assert "wait_for_modal_control" in smoke
+
+
+def test_emergency_cleanup_helper_keeps_the_apps_receiver():
+    helper = (ROOT / "scripts/deck/js/restore_shortcut_name.js").read_text()
+    harness = """
+const apps = {
+  SetShortcutName: function(appId, name) {
+    if (this !== apps) throw new Error("Apps receiver was lost");
+    if (appId !== 2312439508 || name !== "  Original ™  ") throw new Error("wrong cleanup request");
+  },
+};
+global.SteamClient = { Apps: apps };
+const result = eval(%s);
+if (result !== "cleanup requested") throw new Error(String(result));
+""" % json.dumps(
+        helper.replace("__APPID__", "2312439508").replace(
+            "__NAME_B64__", "ICBPcmlnaW5hbCDihKIgIA=="
+        )
+    )
+    completed = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr

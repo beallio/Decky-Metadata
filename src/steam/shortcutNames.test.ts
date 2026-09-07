@@ -20,9 +20,15 @@ const shortcut = (display_name = "Original™") => ({
   BIsShortcut: () => true,
 });
 
-const installNativeStore = (overview: any, setShortcutName?: (appId: number, name: string) => void) => {
+const installNativeStore = (
+  overview: any,
+  appsOrSetter?: { SetShortcutName?: (appId: number, name: string) => void } | ((appId: number, name: string) => void),
+) => {
   (globalThis as any).appStore = { allApps: [overview] };
-  (globalThis as any).SteamClient = { Apps: { SetShortcutName: setShortcutName } };
+  const Apps = typeof appsOrSetter === "function"
+    ? { SetShortcutName: appsOrSetter }
+    : appsOrSetter || {};
+  (globalThis as any).SteamClient = { Apps };
 };
 
 describe("shortcut name Steam boundary", () => {
@@ -37,9 +43,9 @@ describe("shortcut name Steam boundary", () => {
     delete (globalThis as any).SteamClient;
   });
 
-  it("reads the native name verbatim except edge whitespace", () => {
+  it("reads the native name verbatim, including edge whitespace", () => {
     installNativeStore(shortcut("  Name™  "));
-    expect(nativeShortcutName(APP_ID)).toBe("Name™");
+    expect(nativeShortcutName(APP_ID)).toBe("  Name™  ");
   });
 
   it.each([
@@ -49,6 +55,11 @@ describe("shortcut name Steam boundary", () => {
     [{ original_name: "Original", applied_name: "Steam", steam_appid: 1, updated_at: 1 }, "Changed elsewhere", "Steam", "diverged"],
   ])("classifies saved state fail-closed", (state, current, _target, expected) => {
     expect(classifyShortcutNameState(current as string, state as any)).toBe(expected);
+  });
+
+  it("treats whitespace-only external edits as divergence", () => {
+    const state = { original_name: "  Original  ", applied_name: "Steam", steam_appid: 1, updated_at: 1 };
+    expect(classifyShortcutNameState("Original", state)).toBe("diverged");
   });
 
   it("rejects official apps, missing APIs, races, and empty targets without a native write", async () => {
@@ -77,6 +88,24 @@ describe("shortcut name Steam boundary", () => {
     await expect(pending).resolves.toBe("Steam™");
     expect(setShortcutName).toHaveBeenCalledTimes(1);
     expect(setShortcutName).toHaveBeenCalledWith(APP_ID, "Steam™");
+  });
+
+  it("keeps the Apps receiver and exact whitespace when restoring", async () => {
+    const overview = shortcut("Steam name");
+    const apps = {
+      SetShortcutName: vi.fn(function (this: unknown, appId: number, name: string) {
+        if (this !== apps) throw new Error("Apps receiver was lost");
+        expect(appId).toBe(APP_ID);
+        overview.display_name = name;
+      }),
+    };
+    installNativeStore(overview, apps);
+
+    await expect(
+      setShortcutNameAndWait(APP_ID, "Steam name", "  Original ™  "),
+    ).resolves.toBe("  Original ™  ");
+    expect(overview.display_name).toBe("  Original ™  ");
+    expect(apps.SetShortcutName).toHaveBeenCalledTimes(1);
   });
 
   it("times out when Steam never reports the requested name and never retries the write", async () => {

@@ -170,6 +170,9 @@ const configureShortcutPanel = (overrides: {
   state.values[9] = shortcutState(overrides.management);
   state.values[10] = overrides.managementError ?? false;
   state.values[11] = overrides.current ?? "Original";
+  // These direct-render tests model metadata that has already been hydrated
+  // for the initial editor entry. Real editor loads set this after the RPC.
+  state.values[14] = 0;
   steam.classifyShortcutNameState.mockReturnValue(overrides.status ?? "unmanaged");
 };
 
@@ -497,6 +500,42 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for the current entry metadata before starting its one-time backfill", async () => {
+    effects.enabled = true;
+    const listedMetadata = deferred<any>();
+    configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "" } });
+    backend.getMetadata.mockImplementation((id: number) =>
+      id === 101 ? listedMetadata.promise : new Promise(() => {}),
+    );
+    backend.getShortcutNameManagement.mockResolvedValue(shortcutState());
+    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+      steam_appid: 15100,
+      steam_store_name: "Steam Name",
+    }));
+
+    renderPage();
+    route.appid = "101";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    effects.callbacks[2]();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+
+    const loadingListed = effects.callbacks[0]();
+    listedMetadata.resolve(makeMetadata({ steam_appid: 15100, steam_store_name: "" }));
+    await loadingListed;
+    await flushAsyncWork();
+
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[2]();
+    await flushAsyncWork();
+
+    expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
+    expect(backend.enrichSteamApp).toHaveBeenCalledWith(101);
+    expect(text(renderPage())).toContain("Steam: Steam Name");
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {

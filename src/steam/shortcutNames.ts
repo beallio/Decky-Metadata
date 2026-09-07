@@ -11,15 +11,12 @@ const positiveAppId = (value: unknown): number | null => {
   return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
 };
 
-/**
- * Read Steam's native shortcut name without going through the metadata alias
- * or the title cleaner. Only surrounding whitespace is presentation noise.
- */
+/** Read Steam's native shortcut name without going through the metadata alias or title cleaner. */
 export const nativeShortcutName = (appId: number): string | null => {
   if (!positiveAppId(appId)) return null;
   const overview = getNativeOverview(appId);
   if (!overview || !isNativeNonSteamShortcut(overview)) return null;
-  return typeof overview.display_name === "string" ? overview.display_name.trim() : null;
+  return typeof overview.display_name === "string" ? overview.display_name : null;
 };
 
 /** True only when Steam exposes the native shortcut rename method. */
@@ -46,19 +43,19 @@ export const setShortcutNameAndWait = (
   target: string,
 ): Promise<string> => {
   const normalizedAppId = positiveAppId(appId);
-  const expected = typeof expectedCurrent === "string" ? expectedCurrent.trim() : "";
-  const requested = typeof target === "string" ? target.trim() : "";
+  const expected = typeof expectedCurrent === "string" ? expectedCurrent : "";
+  const requested = typeof target === "string" ? target : "";
   if (!normalizedAppId) return Promise.reject(new Error("invalid shortcut app ID"));
-  if (!requested) return Promise.reject(new Error("shortcut name target is empty"));
+  if (!requested.trim()) return Promise.reject(new Error("shortcut name target is empty"));
   const current = nativeShortcutName(normalizedAppId);
   if (current === null) return Promise.reject(new Error("native shortcut is unavailable"));
   if (current !== expected) return Promise.reject(new Error("shortcut name changed before rename"));
-  const setName = steamInternals().SteamClient?.Apps?.SetShortcutName;
-  if (!hasShortcutNameApi() || typeof setName !== "function") {
+  const apps = steamInternals().SteamClient?.Apps;
+  if (!apps || typeof apps.SetShortcutName !== "function") {
     return Promise.reject(new Error("Steam shortcut name API is unavailable"));
   }
   try {
-    setName(normalizedAppId, requested);
+    apps.SetShortcutName.call(apps, normalizedAppId, requested);
   } catch (error) {
     return Promise.reject(new Error(`Steam shortcut name API failed: ${String(error)}`));
   }
