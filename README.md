@@ -53,6 +53,8 @@ After you save a valid Steam match, the same **Decky metadata...** editor can
 show Steam's cleaned shortcut name. You can preview the change, confirm it,
 and later restore the exact original shortcut name. Decky Metadata never
 changes shortcut names automatically.
+The **Shortcut name** section is selectable with the D-pad, even when no rename
+action is available.
 
 ## Set the compatibility status
 
