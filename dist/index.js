@@ -86,6 +86,9 @@ const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
 const clearMetadataCache = callable("clear_metadata_cache");
+const getShortcutNameManagement = callable("get_shortcut_name_management");
+const saveShortcutNameState = callable("save_shortcut_name_state");
+const clearShortcutNameState = callable("clear_shortcut_name_state");
 const refreshDelistedIndex = callable("refresh_delisted_index");
 const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
@@ -124,6 +127,7 @@ var backend = /*#__PURE__*/Object.freeze({
     checkForPluginUpdate: checkForPluginUpdate,
     clearMetadataCache: clearMetadataCache,
     clearPendingUpdateInstall: clearPendingUpdateInstall,
+    clearShortcutNameState: clearShortcutNameState,
     confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
     enrichSteamApp: enrichSteamApp,
     fetchMetadata: fetchMetadata,
@@ -139,6 +143,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getScanProgress: getScanProgress,
+    getShortcutNameManagement: getShortcutNameManagement,
     getSystemVersions: getSystemVersions,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
@@ -148,6 +153,7 @@ var backend = /*#__PURE__*/Object.freeze({
     removeMetadata: removeMetadata,
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
+    saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setDebugLogging: setDebugLogging,
@@ -2580,6 +2586,79 @@ const allNonSteamGames = async () => {
         // Optional fallback.
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const POLL_INTERVAL_MS = 100;
+const POLL_TIMEOUT_MS = 3000;
+const positiveAppId = (value) => {
+    const appId = Number(value);
+    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
+};
+/** Read Steam's native shortcut name without going through the metadata alias or title cleaner. */
+const nativeShortcutName = (appId) => {
+    if (!positiveAppId(appId))
+        return null;
+    const overview = getNativeOverview(appId);
+    if (!overview || !isNativeNonSteamShortcut(overview))
+        return null;
+    return typeof overview.display_name === "string" ? overview.display_name : null;
+};
+/** True only when Steam exposes the native shortcut rename method. */
+const hasShortcutNameApi = () => typeof steamInternals().SteamClient?.Apps?.SetShortcutName === "function";
+const classifyShortcutNameState = (currentName, state) => {
+    if (!state)
+        return "unmanaged";
+    if (currentName === state.applied_name)
+        return "managed";
+    if (currentName === state.original_name)
+        return "restored";
+    return "diverged";
+};
+/**
+ * Request one native rename and wait for Steam's own overview to report it.
+ * SetShortcutName returns undefined, so it is never proof of success.
+ */
+const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
+    const normalizedAppId = positiveAppId(appId);
+    const expected = typeof expectedCurrent === "string" ? expectedCurrent : "";
+    const requested = typeof target === "string" ? target : "";
+    if (!normalizedAppId)
+        return Promise.reject(new Error("invalid shortcut app ID"));
+    if (!requested.trim())
+        return Promise.reject(new Error("shortcut name target is empty"));
+    const current = nativeShortcutName(normalizedAppId);
+    if (current === null)
+        return Promise.reject(new Error("native shortcut is unavailable"));
+    if (current !== expected)
+        return Promise.reject(new Error("shortcut name changed before rename"));
+    const apps = steamInternals().SteamClient?.Apps;
+    if (!apps || typeof apps.SetShortcutName !== "function") {
+        return Promise.reject(new Error("Steam shortcut name API is unavailable"));
+    }
+    try {
+        apps.SetShortcutName.call(apps, normalizedAppId, requested);
+    }
+    catch (error) {
+        return Promise.reject(new Error(`Steam shortcut name API failed: ${String(error)}`));
+    }
+    return new Promise((resolve, reject) => {
+        const startedAt = Date.now();
+        const finish = (callback) => {
+            clearInterval(interval);
+            callback();
+        };
+        const poll = () => {
+            if (nativeShortcutName(normalizedAppId) === requested) {
+                finish(() => resolve(requested));
+                return;
+            }
+            if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+                finish(() => reject(new Error("Steam shortcut name update timeout")));
+            }
+        };
+        const interval = setInterval(poll, POLL_INTERVAL_MS);
+        poll();
+    });
 };
 
 const TITLE = "Decky Metadata";
@@ -8305,6 +8384,26 @@ const compatibilityStatusDisplay = (override, resolved) => {
         ? "Automatic"
         : `Automatic (Valve: ${compatibilityStatusLabel(resolved)})`;
 };
+const metadataValuesEqual = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+/**
+ * A metadata load can complete after the user has begun editing. Keep each
+ * field changed since that request started, while still hydrating every field
+ * the user has not touched.
+ */
+const mergeHydratedMetadata = (saved, baseline, current) => {
+    const merged = { ...saved };
+    const keys = new Set([...Object.keys(saved), ...Object.keys(baseline), ...Object.keys(current)]);
+    for (const key of keys) {
+        if (!metadataValuesEqual(current[key], baseline[key])) {
+            merged[key] = current[key];
+        }
+    }
+    return merged;
+};
+const normalizedSteamAppId = (value) => {
+    const appId = Number(value);
+    return Number.isInteger(appId) && appId > 0 ? appId : null;
+};
 const MetadataPage = () => {
     const editorRootRef = SP_REACT.useRef(null);
     const descriptionRef = SP_REACT.useRef(null);
@@ -8348,21 +8447,278 @@ const MetadataPage = () => {
     const [results, setResults] = SP_REACT.useState([]);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [steamAppIdText, setSteamAppIdText] = SP_REACT.useState("");
+    const [shortcutManagement, setShortcutManagement] = SP_REACT.useState(null);
+    const [shortcutManagementError, setShortcutManagementError] = SP_REACT.useState(false);
+    const [currentShortcutName, setCurrentShortcutName] = SP_REACT.useState(null);
+    const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
+    const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
+    const [metadataHydratedEntry, setMetadataHydratedEntry] = SP_REACT.useState(null);
+    const steamNameBackfillEntryRef = SP_REACT.useRef(null);
+    const editorEntryRef = SP_REACT.useRef({ appId, token: 0 });
+    // The editor can visit A, B, then A again while an async operation from the
+    // first A is pending. App ID equality alone cannot distinguish those views.
+    if (editorEntryRef.current.appId !== appId) {
+        editorEntryRef.current = {
+            appId,
+            token: editorEntryRef.current.token + 1,
+        };
+    }
+    const editorEntryToken = editorEntryRef.current.token;
+    const metadataRef = SP_REACT.useRef(metadata);
+    const developerTextRef = SP_REACT.useRef(developerText);
+    const publisherTextRef = SP_REACT.useRef(publisherText);
+    const releaseTextRef = SP_REACT.useRef(releaseText);
+    const ratingTextRef = SP_REACT.useRef(ratingText);
+    const formRevisionRef = SP_REACT.useRef(0);
+    const busyRef = SP_REACT.useRef(false);
+    const busyEntryRef = SP_REACT.useRef(null);
+    const steamAppIdTextRef = SP_REACT.useRef(steamAppIdText);
+    // A null owner only exists during initial state hydration/tests and remains
+    // conservative. A known owner from another editor entry must not block this
+    // view or be cleared by its completion callback.
+    const entryBusy = busy && (busyEntryRef.current === null || busyEntryRef.current === editorEntryToken);
+    const isCurrentEditorEntry = SP_REACT.useCallback((token) => editorEntryRef.current.token === token, []);
     const setFormMetadata = SP_REACT.useCallback((next) => {
+        formRevisionRef.current += 1;
+        metadataRef.current = next;
         setMetadata(next);
-        setDeveloperText(personsToText(next.developers));
-        setPublisherText(personsToText(next.publishers));
-        setReleaseText(epochToDate(next.release_date));
-        setRatingText(next.rating == null ? "" : String(next.rating));
+        const nextDeveloperText = personsToText(next.developers);
+        const nextPublisherText = personsToText(next.publishers);
+        const nextReleaseText = epochToDate(next.release_date);
+        const nextRatingText = next.rating == null ? "" : String(next.rating);
+        developerTextRef.current = nextDeveloperText;
+        publisherTextRef.current = nextPublisherText;
+        releaseTextRef.current = nextReleaseText;
+        ratingTextRef.current = nextRatingText;
+        setDeveloperText(nextDeveloperText);
+        setPublisherText(nextPublisherText);
+        setReleaseText(nextReleaseText);
+        setRatingText(nextRatingText);
     }, []);
+    const updateMetadata = SP_REACT.useCallback((updater) => {
+        formRevisionRef.current += 1;
+        setMetadata((current) => {
+            const next = updater(current);
+            metadataRef.current = next;
+            return next;
+        });
+    }, []);
+    const markFormEdited = SP_REACT.useCallback(() => {
+        formRevisionRef.current += 1;
+    }, []);
+    const setSteamAppIdInput = SP_REACT.useCallback((value) => {
+        steamAppIdTextRef.current = value;
+        setSteamAppIdText(value);
+    }, []);
+    /**
+     * A backend response owns every field that the user did not change while it
+     * was pending. Later local edits win, so the form and cache stay aligned
+     * with the full enriched record without overwriting active input.
+     */
+    const reconcileMetadataResponse = SP_REACT.useCallback((response, baselineMetadata, baselineText) => {
+        const reconciled = mergeHydratedMetadata(response, baselineMetadata, metadataRef.current);
+        metadataRef.current = reconciled;
+        setMetadata(reconciled);
+        if (developerTextRef.current === baselineText.developerText) {
+            const value = personsToText(reconciled.developers);
+            developerTextRef.current = value;
+            setDeveloperText(value);
+        }
+        if (publisherTextRef.current === baselineText.publisherText) {
+            const value = personsToText(reconciled.publishers);
+            publisherTextRef.current = value;
+            setPublisherText(value);
+        }
+        if (releaseTextRef.current === baselineText.releaseText) {
+            const value = epochToDate(reconciled.release_date);
+            releaseTextRef.current = value;
+            setReleaseText(value);
+        }
+        if (ratingTextRef.current === baselineText.ratingText) {
+            const value = reconciled.rating == null ? "" : String(reconciled.rating);
+            ratingTextRef.current = value;
+            setRatingText(value);
+        }
+        return reconciled;
+    }, []);
+    const beginBusy = SP_REACT.useCallback((entryToken) => {
+        if (!isCurrentEditorEntry(entryToken))
+            return false;
+        if (busyRef.current && busyEntryRef.current === entryToken)
+            return false;
+        busyRef.current = true;
+        busyEntryRef.current = entryToken;
+        setBusy(true);
+        return true;
+    }, [isCurrentEditorEntry]);
+    const endBusy = SP_REACT.useCallback((entryToken) => {
+        if (busyEntryRef.current !== entryToken)
+            return;
+        busyRef.current = false;
+        busyEntryRef.current = null;
+        setBusy(false);
+    }, []);
+    const loadShortcutManagement = SP_REACT.useCallback(async () => {
+        const requestedEntry = editorEntryToken;
+        try {
+            const management = await getShortcutNameManagement(appId);
+            if (!isCurrentEditorEntry(requestedEntry))
+                return null;
+            setShortcutManagement(management);
+            setShortcutManagementError(false);
+            setCurrentShortcutName(nativeShortcutName(appId));
+            return management;
+        }
+        catch (_error) {
+            if (!isCurrentEditorEntry(requestedEntry))
+                return null;
+            setShortcutManagement(null);
+            setShortcutManagementError(true);
+            setCurrentShortcutName(nativeShortcutName(appId));
+            return null;
+        }
+    }, [appId, editorEntryToken, isCurrentEditorEntry]);
     const load = SP_REACT.useCallback(async () => {
-        const saved = await getMetadata(appId);
-        setFormMetadata(saved || metadataTemplate(appName(appId)));
-        setSteamAppIdText(saved?.steam_appid ? String(saved.steam_appid) : "");
-    }, [appId, setFormMetadata]);
+        const requestedEntry = editorEntryToken;
+        const requestedRevision = formRevisionRef.current;
+        const baselineMetadata = metadataRef.current;
+        const baselineDeveloperText = developerTextRef.current;
+        const baselinePublisherText = publisherTextRef.current;
+        const baselineReleaseText = releaseTextRef.current;
+        const baselineRatingText = ratingTextRef.current;
+        const baselineSteamAppIdText = steamAppIdTextRef.current;
+        const [metadataResult, managementResult] = await Promise.allSettled([
+            getMetadata(appId),
+            getShortcutNameManagement(appId),
+        ]);
+        if (!isCurrentEditorEntry(requestedEntry))
+            return;
+        if (metadataResult.status === "fulfilled") {
+            const saved = metadataResult.value || metadataTemplate(appName(appId));
+            if (formRevisionRef.current === requestedRevision) {
+                setFormMetadata(saved);
+                setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
+            }
+            else {
+                const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
+                metadataRef.current = hydrated;
+                setMetadata(hydrated);
+                if (developerTextRef.current === baselineDeveloperText) {
+                    const nextDeveloperText = personsToText(saved.developers);
+                    developerTextRef.current = nextDeveloperText;
+                    setDeveloperText(nextDeveloperText);
+                }
+                if (publisherTextRef.current === baselinePublisherText) {
+                    const nextPublisherText = personsToText(saved.publishers);
+                    publisherTextRef.current = nextPublisherText;
+                    setPublisherText(nextPublisherText);
+                }
+                if (releaseTextRef.current === baselineReleaseText) {
+                    const nextReleaseText = epochToDate(saved.release_date);
+                    releaseTextRef.current = nextReleaseText;
+                    setReleaseText(nextReleaseText);
+                }
+                if (ratingTextRef.current === baselineRatingText) {
+                    const nextRatingText = saved.rating == null ? "" : String(saved.rating);
+                    ratingTextRef.current = nextRatingText;
+                    setRatingText(nextRatingText);
+                }
+                if (steamAppIdTextRef.current === baselineSteamAppIdText) {
+                    setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
+                }
+            }
+            // Backfill can only use the record that this entry's metadata RPC just
+            // returned. A route change otherwise leaves the prior form visible for
+            // one render while the new request is still pending.
+            setMetadataHydratedEntry(requestedEntry);
+        }
+        else {
+            setMetadataHydratedEntry(null);
+        }
+        if (managementResult.status === "fulfilled") {
+            setShortcutManagement(managementResult.value);
+            setShortcutManagementError(false);
+        }
+        else {
+            setShortcutManagement(null);
+            setShortcutManagementError(true);
+        }
+        setCurrentShortcutName(nativeShortcutName(appId));
+    }, [
+        appId,
+        editorEntryToken,
+        isCurrentEditorEntry,
+        setFormMetadata,
+        setSteamAppIdInput,
+    ]);
     SP_REACT.useEffect(() => {
         void load();
     }, [load]);
+    SP_REACT.useEffect(() => {
+        setSteamNameLoading(false);
+        setSteamNameUnavailable(false);
+        setMetadataHydratedEntry(null);
+    }, [appId]);
+    SP_REACT.useEffect(() => {
+        const steamAppId = Number(metadata.steam_appid);
+        if (metadataHydratedEntry !== editorEntryToken ||
+            steamNameBackfillEntryRef.current === editorEntryToken ||
+            !Number.isInteger(steamAppId) ||
+            steamAppId <= 0 ||
+            Boolean(metadata.steam_store_name)) {
+            return;
+        }
+        steamNameBackfillEntryRef.current = editorEntryToken;
+        const requestedEntry = editorEntryToken;
+        const requestedSteamAppId = steamAppId;
+        const requestedMetadata = metadataRef.current;
+        const requestedText = {
+            developerText: developerTextRef.current,
+            publisherText: publisherTextRef.current,
+            releaseText: releaseTextRef.current,
+            ratingText: ratingTextRef.current,
+            steamAppIdText: steamAppIdTextRef.current,
+        };
+        setSteamNameLoading(true);
+        setSteamNameUnavailable(false);
+        void enrichSteamApp(appId)
+            .then((enriched) => {
+            const current = metadataRef.current;
+            if (!isCurrentEditorEntry(requestedEntry) ||
+                normalizedSteamAppId(current.steam_appid) !== requestedSteamAppId) {
+                return;
+            }
+            if (!enriched) {
+                setSteamNameUnavailable(true);
+                return;
+            }
+            const reconciled = reconcileMetadataResponse(enriched, requestedMetadata, requestedText);
+            metadataCache[String(appId)] = reconciled;
+            if (steamAppIdTextRef.current === requestedText.steamAppIdText) {
+                setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
+            }
+            if (!reconciled.steam_store_name)
+                setSteamNameUnavailable(true);
+        })
+            .catch(() => {
+            if (isCurrentEditorEntry(requestedEntry) &&
+                normalizedSteamAppId(metadataRef.current.steam_appid) === requestedSteamAppId) {
+                setSteamNameUnavailable(true);
+            }
+        })
+            .finally(() => {
+            if (isCurrentEditorEntry(requestedEntry))
+                setSteamNameLoading(false);
+        });
+    }, [
+        appId,
+        editorEntryToken,
+        isCurrentEditorEntry,
+        metadataHydratedEntry,
+        metadata.steam_appid,
+        metadata.steam_store_name,
+        reconcileMetadataResponse,
+    ]);
     SP_REACT.useEffect(() => {
         const scrollViewport = editorRootRef.current?.parentElement;
         if (!scrollViewport)
@@ -8390,11 +8746,16 @@ const MetadataPage = () => {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
-        if (busy)
+        const requestedEntry = editorEntryToken;
+        if (!beginBusy(requestedEntry))
             return;
-        setBusy(true);
+        const requestedRevision = formRevisionRef.current;
         try {
             const saved = await saveMetadata(appId, normalizedMetadata);
+            if (!isCurrentEditorEntry(requestedEntry) ||
+                formRevisionRef.current !== requestedRevision) {
+                return;
+            }
             metadataCache[String(appId)] = saved;
             setFormMetadata(saved);
             applyMetadata(appId);
@@ -8405,7 +8766,7 @@ const MetadataPage = () => {
             toastError("Save failed", String(error));
         }
         finally {
-            setBusy(false);
+            endBusy(requestedEntry);
         }
     };
     const applySteamAppId = async () => {
@@ -8413,27 +8774,89 @@ const MetadataPage = () => {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
-        setBusy(true);
+        const requestedEntry = editorEntryToken;
+        if (!beginBusy(requestedEntry))
+            return;
+        const saveBaselineMetadata = metadataRef.current;
+        const saveBaselineText = {
+            developerText: developerTextRef.current,
+            publisherText: publisherTextRef.current,
+            releaseText: releaseTextRef.current,
+            ratingText: ratingTextRef.current,
+            steamAppIdText: steamAppIdTextRef.current,
+        };
         try {
-            const parsed = parseSteamAppId(steamAppIdText);
+            const parsed = normalizedSteamAppId(parseSteamAppId(steamAppIdText));
+            const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
+            const steamAppIdChanged = parsed !== savedSteamAppId;
             const next = {
                 ...normalizedMetadata,
                 steam_appid: parsed || null,
+                // A proposal is valid only for the Steam match that supplied it.
+                // Clear it before enrichment so a failed request cannot reuse stale data.
+                steam_store_name: steamAppIdChanged ? "" : normalizedMetadata.steam_store_name,
                 steam_store_url: parsed
                     ? `https://store.steampowered.com/app/${parsed}/`
                     : "",
             };
             const saved = await saveMetadata(appId, next);
-            metadataCache[String(appId)] = saved;
-            setFormMetadata(saved);
+            if (!isCurrentEditorEntry(requestedEntry)) {
+                return;
+            }
+            // Keep the local values as they existed just before this acknowledgement.
+            // They are the only edits that can predate the enrichment request below.
+            const metadataAtSaveAcknowledgement = metadataRef.current;
+            // A save acknowledgement owns the Steam match. Reconcile all untouched
+            // fields from it while preserving edits made during the request.
+            const reconciled = reconcileMetadataResponse({
+                ...saved,
+                steam_appid: normalizedSteamAppId(saved.steam_appid),
+                steam_store_name: typeof saved.steam_store_name === "string" ? saved.steam_store_name : "",
+                steam_store_url: typeof saved.steam_store_url === "string" ? saved.steam_store_url : "",
+            }, saveBaselineMetadata, saveBaselineText);
+            metadataCache[String(appId)] = reconciled;
+            if (steamAppIdTextRef.current === steamAppIdText) {
+                setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
+            }
+            steamNameBackfillEntryRef.current = requestedEntry;
+            setSteamNameUnavailable(false);
+            if (parsed === null) {
+                applyMetadata(appId);
+                refreshCompatibilitySurfaces();
+                toastSuccess("Saved", "Metadata saved");
+                return;
+            }
+            const enrichmentBaselineMetadata = metadataRef.current;
+            const enrichmentBaselineText = {
+                // Text fields can be locally edited without changing metadataRef.
+                // Keep edits that happened before this enrichment started too.
+                ...saveBaselineText,
+            };
             const enriched = await enrichSteamApp(appId);
+            if (!isCurrentEditorEntry(requestedEntry) ||
+                normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed) {
+                return;
+            }
             if (enriched) {
-                metadataCache[String(appId)] = enriched;
-                setFormMetadata(enriched);
-                setSteamAppIdText(enriched.steam_appid ? String(enriched.steam_appid) : "");
+                const normalizedEnriched = {
+                    ...enriched,
+                    steam_appid: normalizedSteamAppId(enriched.steam_appid),
+                    steam_store_name: typeof enriched.steam_store_name === "string" ? enriched.steam_store_name : "",
+                    steam_store_url: typeof enriched.steam_store_url === "string" ? enriched.steam_store_url : "",
+                };
+                // Edits made while saving predate the enrichment baseline, so restore
+                // them before merging any newer edits from the enrichment interval.
+                const enrichedWithEarlierEdits = mergeHydratedMetadata(normalizedEnriched, saveBaselineMetadata, metadataAtSaveAcknowledgement);
+                const enrichedMetadata = reconcileMetadataResponse(enrichedWithEarlierEdits, enrichmentBaselineMetadata, enrichmentBaselineText);
+                metadataCache[String(appId)] = enrichedMetadata;
+                if (steamAppIdTextRef.current === steamAppIdText) {
+                    setSteamAppIdInput(enrichedMetadata.steam_appid ? String(enrichedMetadata.steam_appid) : "");
+                }
             }
             else {
-                setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
+                if (steamAppIdTextRef.current === steamAppIdText) {
+                    setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
+                }
             }
             applyMetadata(appId);
             refreshCompatibilitySurfaces();
@@ -8443,11 +8866,13 @@ const MetadataPage = () => {
             toastError("Save failed", String(error));
         }
         finally {
-            setBusy(false);
+            endBusy(requestedEntry);
         }
     };
     const search = async () => {
-        setBusy(true);
+        const requestedEntry = editorEntryToken;
+        if (!beginBusy(requestedEntry))
+            return;
         try {
             setResults(await searchMetadata(query, 8));
         }
@@ -8455,38 +8880,47 @@ const MetadataPage = () => {
             toastError("Save failed", String(error));
         }
         finally {
-            setBusy(false);
+            endBusy(requestedEntry);
         }
     };
     const applyResult = async (result) => {
-        setBusy(true);
+        const requestedEntry = editorEntryToken;
+        if (!beginBusy(requestedEntry))
+            return;
+        const requestedRevision = formRevisionRef.current;
         try {
             const saved = await applyFetchedMetadata(appId, result.slug || result.url);
             if (!saved)
                 return;
+            if (!isCurrentEditorEntry(requestedEntry) ||
+                formRevisionRef.current !== requestedRevision) {
+                return;
+            }
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
             refreshCompatibilitySurfaces();
             setFormMetadata(saved);
-            setSteamAppIdText(saved.steam_appid ? String(saved.steam_appid) : "");
+            setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
             toastSuccess("Saved", "Metadata saved");
         }
         catch (error) {
             toastError("Fetch failed", String(error));
         }
         finally {
-            setBusy(false);
+            endBusy(requestedEntry);
         }
     };
     const removeCurrent = async () => {
-        if (busy)
+        const requestedEntry = editorEntryToken;
+        if (!beginBusy(requestedEntry))
             return;
-        setBusy(true);
         try {
             await removeMetadata(appId);
             delete metadataCache[String(appId)];
             applyMetadata(appId);
             refreshCompatibilitySurfaces();
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
             setFormMetadata(metadataTemplate(appName(appId)));
             toastSuccess("Removed", "Metadata removed");
         }
@@ -8494,11 +8928,149 @@ const MetadataPage = () => {
             toastError("Remove failed", String(error));
         }
         finally {
-            setBusy(false);
+            endBusy(requestedEntry);
         }
     };
+    const steamAppId = Number(metadata.steam_appid);
+    const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
+    const steamStoreName = typeof metadata.steam_store_name === "string"
+        ? metadata.steam_store_name
+        : "";
+    const hasSteamStoreName = Boolean(steamStoreName.trim());
+    const shortcutStatus = classifyShortcutNameState(currentShortcutName, shortcutManagement?.state);
+    const canUseSteamName = Boolean(!entryBusy &&
+        !shortcutManagementError &&
+        shortcutManagement?.eligible &&
+        (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
+        currentShortcutName &&
+        hasSteamMatch &&
+        hasSteamStoreName &&
+        currentShortcutName !== steamStoreName &&
+        hasShortcutNameApi());
+    const useSteamName = async () => {
+        const requestedEntry = editorEntryToken;
+        if (!isCurrentEditorEntry(requestedEntry))
+            return;
+        if (!canUseSteamName || !shortcutManagement || !currentShortcutName || !hasShortcutNameApi())
+            return;
+        const current = nativeShortcutName(appId);
+        if (current !== currentShortcutName) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError("Shortcut name changed", "Steam changed this shortcut before it could be renamed.");
+                await loadShortcutManagement();
+            }
+            return;
+        }
+        if (!beginBusy(requestedEntry))
+            return;
+        try {
+            // State is durable before the native request so the original spelling
+            // survives an app crash, timeout, or Steam-side error.
+            const state = await saveShortcutNameState(appId, current, steamStoreName, steamAppId);
+            const observed = await setShortcutNameAndWait(appId, current, steamStoreName);
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            setCurrentShortcutName(observed);
+            setShortcutManagement({ ...shortcutManagement, state });
+            toastSuccess("Shortcut name updated", "Steam confirmed the new shortcut name.");
+        }
+        catch (error) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError("Shortcut name was not updated", String(error));
+                await loadShortcutManagement();
+            }
+        }
+        finally {
+            endBusy(requestedEntry);
+        }
+    };
+    const restoreOriginalShortcutName = async () => {
+        const requestedEntry = editorEntryToken;
+        if (!isCurrentEditorEntry(requestedEntry))
+            return;
+        const state = shortcutManagement?.state;
+        if (!state || entryBusy || !hasShortcutNameApi())
+            return;
+        const current = nativeShortcutName(appId);
+        if (current !== state.applied_name) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError("Shortcut name changed", "Steam changed this shortcut before it could be restored.");
+                await loadShortcutManagement();
+            }
+            return;
+        }
+        if (!beginBusy(requestedEntry))
+            return;
+        try {
+            const observed = await setShortcutNameAndWait(appId, state.applied_name, state.original_name);
+            if (isCurrentEditorEntry(requestedEntry))
+                setCurrentShortcutName(observed);
+            try {
+                // The native restore is already complete. Clear the history for this
+                // captured shortcut even if the user navigated to another editor while
+                // Steam was confirming it; entry guards below protect only that UI.
+                await clearShortcutNameState(appId);
+            }
+            catch (error) {
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return;
+                await loadShortcutManagement();
+                toastError("Shortcut name restored", `Steam restored the name, but saved history could not be cleared: ${String(error)}`);
+                return;
+            }
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            setShortcutManagement({ ...shortcutManagement, state: null });
+            toastSuccess("Shortcut name restored", "Steam confirmed the original shortcut name.");
+        }
+        catch (error) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError("Shortcut name was not restored", String(error));
+                await loadShortcutManagement();
+            }
+        }
+        finally {
+            endBusy(requestedEntry);
+        }
+    };
+    const forgetShortcutNameHistory = async () => {
+        const requestedEntry = editorEntryToken;
+        if (!isCurrentEditorEntry(requestedEntry) || !beginBusy(requestedEntry))
+            return;
+        try {
+            await clearShortcutNameState(appId);
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            setShortcutManagement((current) => current ? { ...current, state: null } : current);
+            toastSuccess("Saved name history forgotten", "Steam did not change the shortcut name.");
+        }
+        catch (error) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError("Saved name history was not cleared", String(error));
+            }
+        }
+        finally {
+            endBusy(requestedEntry);
+        }
+    };
+    const showUseSteamNameModal = () => {
+        if (!canUseSteamName || !currentShortcutName)
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Use Steam name?", strOKButtonText: "Use Steam name", onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Change “${currentShortcutName}” to “${steamStoreName}”?` }) }));
+    };
+    const showRestoreShortcutNameModal = () => {
+        const state = shortcutManagement?.state;
+        if (!state || entryBusy || !hasShortcutNameApi())
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Restore original shortcut name?", strOKButtonText: "Restore original name", onOK: () => void restoreOriginalShortcutName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Restore “${state.original_name}”?` }) }));
+    };
+    const showForgetShortcutNameHistoryModal = () => {
+        if (entryBusy || (busyRef.current && busyEntryRef.current === editorEntryToken))
+            return;
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Forget saved name history?", strOKButtonText: "Forget history", onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name." }) }));
+    };
     const toggleCategory = (category, checked) => {
-        setMetadata((prev) => {
+        updateMetadata((prev) => {
             const next = new Set(prev.store_categories || []);
             if (checked)
                 next.add(category);
@@ -8510,21 +9082,40 @@ const MetadataPage = () => {
     return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...editorSearchRowStyle,
                                     ...editorSearchInputRowSpacingStyle,
-                                }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: search, style: editorSearchButtonStyle, children: busy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                                }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [busy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !busy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => setMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => updateMetadata((prev) => ({
                                                 ...prev,
                                                 description: e.target.value,
                                                 short_description: e.target.value,
-                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => setMetadata((prev) => ({
+                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => updateMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,
-                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => setDeveloperText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => setPublisherText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => setReleaseText(e.target.value), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => setRatingText(e.target.value), style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => setMetadata((prev) => ({
+                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
+                                                markFormEdited();
+                                                developerTextRef.current = e.target.value;
+                                                setDeveloperText(e.target.value);
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
+                                                markFormEdited();
+                                                publisherTextRef.current = e.target.value;
+                                                setPublisherText(e.target.value);
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
+                                                        markFormEdited();
+                                                        releaseTextRef.current = e.target.value;
+                                                        setReleaseText(e.target.value);
+                                                    }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
+                                                        markFormEdited();
+                                                        ratingTextRef.current = e.target.value;
+                                                        setRatingText(e.target.value);
+                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
                                 ...prev,
                                 deck_compat_override: compatibilityStatusValue(option.data),
-                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => setSteamAppIdText(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: busy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) })] }) }));
+                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                                markFormEdited();
+                                                setSteamAppIdInput(e.target.value);
+                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";

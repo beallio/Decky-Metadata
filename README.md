@@ -49,6 +49,11 @@ To work with one game:
 
 If a game matched incorrectly, clear the match and choose the correct one.
 
+After you save a valid Steam match, the same **Decky metadata...** editor can
+show Steam's cleaned shortcut name. You can preview the change, confirm it,
+and later restore the exact original shortcut name. Decky Metadata never
+changes shortcut names automatically.
+
 ## Set the compatibility status
 
 The **Decky metadata...** editor includes a **Compatibility status** setting.

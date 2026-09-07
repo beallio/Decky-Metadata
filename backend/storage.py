@@ -13,6 +13,10 @@ PlogFn = Callable[..., None]
 def default_data() -> dict[str, Any]:
     return {
         "metadata": {},
+        # Name-management history is intentionally separate from editable
+        # metadata. Removing or refreshing metadata must never strand a user
+        # without the exact name required to restore a shortcut.
+        "shortcut_names": {},
         "settings": {
             "debug_logging": False,
         },
@@ -43,6 +47,9 @@ def load_data(
         return None
     merged = default_data()
     merged["metadata"].update(payload.get("metadata") or {})
+    shortcut_names = payload.get("shortcut_names")
+    if isinstance(shortcut_names, dict):
+        merged["shortcut_names"].update(shortcut_names)
     merged["settings"].update(payload.get("settings") or {})
     merged["update_settings"].update(payload.get("update_settings") or {})
     merged["update_check_cache"].update(payload.get("update_check_cache") or {})

@@ -337,6 +337,12 @@ def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: Pl
         title = str(data.get("name") or "").strip()
         if title:
             details["title"] = title
+            # Keep a Steam-owned spelling separate from editable provider
+            # metadata. `clean_game_title` preserves case and punctuation
+            # while removing only entities, marker glyphs, and excess space.
+            steam_store_name = matching.clean_game_title(title)
+            if steam_store_name:
+                details["steam_store_name"] = steam_store_name
 
         description = matching.clean_html_text(
             str(

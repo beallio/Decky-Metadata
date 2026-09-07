@@ -308,6 +308,7 @@ def test_apply_and_auto_fetch_save_merged_records_once(monkeypatch) -> None:
     existing = {
         "title": "Old",
         "steam_appid": 123,
+        "steam_store_name": "Steam-owned title",
         "steam_store_url": "https://store.steampowered.com/app/123/",
         "steam_store_state": "available",
         "deck_compat_category": 3,
@@ -335,6 +336,7 @@ def test_apply_and_auto_fetch_save_merged_records_once(monkeypatch) -> None:
     assert applied and automatic
     assert len(saved) == 2
     assert all(record["steam_appid"] == 123 for record in saved)
+    assert all(record["steam_store_name"] == "Steam-owned title" for record in saved)
     assert all(record["title"] == "IGN title" for record in saved)
 
 
