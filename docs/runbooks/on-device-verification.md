@@ -62,6 +62,53 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Compatibility defaults and Follow Valve
+
+This check changes real plugin settings and may change real shortcut status.
+Get explicit approval for the current Deck and disposable fixtures before any
+deploy, package push, QAM selection, metadata removal, or shortcut creation.
+Capture the native baseline first and restore every fixture and the original
+global setting at the end. Use a full package because this feature changes both
+the frontend and `main.py`:
+
+```bash
+./run.sh scripts/decky doctor --deck
+./run.sh scripts/deck/logs.sh audit --json
+./run.sh scripts/decky capture
+./run.sh scripts/decky package-push --build --push
+# Install /home/deck/Downloads/Decky-Metadata.zip with Decky Settings -> Developer -> Install Plugin from ZIP File.
+```
+
+Prepare four disposable fixtures: one matched shortcut with a known Valve
+category, one unmatched shortcut, one native shortcut with no metadata record,
+and one ordinary Steam game. Record their original packed category and visible
+Home/grid/Game Info state. Then, using the real QAM and editor controls:
+
+1. Set global **Verified**. Confirm matched, unmatched, and no-record shortcuts
+   show Verified; confirm the ordinary Steam game and its compatibility filter
+   membership do not change.
+2. Set a matched fixture to **Follow Valve** and confirm it shows its Valve
+   category while another shortcut stays Verified. Test unavailable data and
+   Valve Unknown; both must use native no-badge/original behavior as applicable.
+3. Set one fixed per-game status and confirm changing the global setting only
+   changes inheriting shortcuts. Return to Automatic and confirm an unmatched
+   inheriting shortcut returns to its captured native baseline.
+4. Verify a shortcut that appears after bootstrap inherits the current default
+   once its real native overview exists. Clear only disposable metadata and
+   confirm its Activity cleanup and inherited status.
+5. With already-mounted Home and grid cards visible, capture Home, grid, and
+   Game Info before and after each transition. Check Steam's actual
+   compatibility filter or collection membership, not only packed fields.
+6. Reload through committed tooling, confirm saved modes, then capture a
+   controlled plugin unload/reload that proves baseline restoration. Drive QAM
+   and editor order with `scripts/deck/cdp.py input`,
+   `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
+
+Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
+`scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with
+separate current approval. Restore the original setting, records, shortcuts,
+and debugger tunnel before recording results.
+
 ### Per-game shortcut-name rename and restore
 
 `smoke_shortcut_name.sh` is an explicit, persistent-but-reverted editor smoke.

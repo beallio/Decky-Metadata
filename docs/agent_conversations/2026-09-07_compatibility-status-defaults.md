@@ -1,0 +1,457 @@
+# Compatibility status defaults
+
+## Date
+
+2026-09-07
+
+## Objective
+
+Implement the `compatibility-status-defaults` plan. Add a persisted global
+compatibility default, retain per-game precedence, and add the explicit
+`Follow Valve` per-game policy.
+
+## Files changed
+
+- `main.py` and `backend/storage.py`
+- `src/types.ts`, `src/backend.ts`, `src/ContentPanel.tsx`, and
+  `src/MetadataPage.tsx`
+- `src/components/qam/MetadataSection.tsx`
+- `src/steam.ts`, `src/steam/core.ts`, `src/steam/metadataPatch.ts`, and
+  `src/steam/libraryCompatibilityIndicators.tsx`
+- Backend and frontend tests for storage, resolver precedence, cache changes,
+  QAM saves, library cards, and metadata editing
+- `README.md`, `CHANGELOG.md`, `docs/specs/compatibility-status.md`, and
+  `docs/runbooks/on-device-verification.md`
+- `dist/index.js` and its generated source map
+
+## Design decisions
+
+- The persisted global value is a numeric category or `null` for Automatic.
+  Invalid persisted values and invalid RPC input, including booleans, are not
+  accepted as categories.
+- Per-game numeric selections have first priority. `Follow Valve` uses only
+  a provider category and does not inherit the global value. If provider data
+  is unavailable, the plugin restores Steam's original value.
+- The global setting is confirmed only after a successful backend save. A
+  failed initial load or save leaves the existing runtime policy unchanged.
+- Steam App ID removal or replacement clears the cached provider category but
+  retains the explicit per-game policy. A later provider refresh also clears
+  stale provider data when the provider has no category.
+- One shared resolver serves metadata patches and library-card indicators.
+  Default changes use one linear pass over native app overviews and do not
+  create metadata records.
+
+## Evidence and validation
+
+### Routing and local validation
+
+- `scripts/decky doctor` completed with only the expected dirty-worktree,
+  cache, repository-local `node_modules`, and stale local-package warnings.
+- `./run.sh scripts/decky verify-change dev --explain` identified the plan as
+  a Steam UI change and required the standard local gate plus live-device
+  verification before a device deployment.
+- Focused frontend validation passed:
+  `./run.sh npm test -- src/steam/metadataPatch.test.ts src/steam/libraryCompatibilityIndicators.test.tsx src/MetadataPage.test.tsx src/ContentPanel.updateSettings.test.tsx`
+  (`4` suites, `134` tests).
+- Focused backend validation passed:
+  `./run.sh uv run --with pytest -- pytest -q tests/test_deck_compat.py tests/test_steam_appid_override.py`
+  (`22 passed`).
+- `./run.sh npx tsc --noEmit` passed before the final project gate.
+
+### Mutation control and performance check
+
+- In an isolated temporary worktree, changing `Follow Valve` to inherit the
+  global category caused two `metadataPatch` failures: one showed the global
+  category replacing the provider category, and one showed an unavailable
+  provider category applying a policy instead of restoring Steam's baseline.
+  The failing output is retained at
+  `/tmp/Decky-Metadata/compatibility-status-defaults-mutation-control.log`.
+- A temporary benchmark used the actual native-overview batch path for 1,000,
+  5,000, and 10,000 mixed-policy records. Apply/restore timings were about
+  `1.29/0.68 ms`, `2.36/2.25 ms`, and `3.67/4.63 ms`, respectively. The
+  temporary worktree was removed. The successful benchmark record is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-benchmark.log`.
+
+### Read-only Steam Deck preflight
+
+- `./run.sh scripts/decky doctor --deck` passed Deck reachability and
+  read-only state collection. It retained only local working-tree/cache and
+  package warnings.
+- `./run.sh scripts/decky capture` wrote
+  `/tmp/Decky-Metadata/diagnostics/20260907T214037Z`.
+- `./run.sh scripts/deck/logs.sh audit --json` synced current logs but reported
+  historical fatal groups, including prior Steam DNS-resolution failures and
+  existing plugin stack traces. No new bundle was deployed, so those records
+  are not evidence about this change.
+- No explicit authorization covered package push, plugin installation, setting
+  writes, fixture creation or deletion, Steam UI reload, or on-device QAM and
+  editor interaction. Those mutation steps and the device smoke suite were
+  deliberately not run.
+
+### Final project gate
+
+- `./run.sh scripts/orchestration/run-quality-gates` passed. It ran the
+  TypeScript check, regenerated the Rollup artifact, passed `27` Vitest files
+  / `445` tests, passed Python byte-compilation and pytest, and reported
+  `quality-gates: OK`.
+- The wrapper also ran
+  `scripts/orchestration/check-review-notes-not-deleted`, which reported
+  `no deleted review notes`.
+
+## Review round 02
+
+### Corrections
+
+- Added one shared plugin-lifetime generation. Late global-save acknowledgements,
+  settings loads, metadata loads, and bootstrap ticks cannot apply policy after
+  dismount. The mounted QAM subscribes to the shared confirmed-setting revision,
+  so it recovers after an initial load error when bootstrap later succeeds.
+- Restored bounded metadata-record retries during bootstrap and changed metadata
+  refresh to resolve native shortcuts once per batch. Global-only baseline IDs
+  no longer trigger one full library lookup each. A Follow Valve availability
+  change now publishes a revision even when native packed bits already match,
+  so mounted Home and grid badges update.
+- Scan saves now preserve the latest numeric or Follow Valve choice under the
+  data lock. Trusted scan data for a newly matched Steam App ID keeps its newly
+  fetched category, while an editor reassignment still clears an old category.
+- Provider lookups now distinguish failed/malformed responses from an
+  authoritative no-category response. A same-match failure retains a valid
+  cached category, including Unknown (0); no value transfers across matches.
+
+### Red-to-green and local validation
+
+- The review regressions first failed in
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round2-red-frontend.log`
+  (7 failures) and
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round2-red-backend.log`
+  (5 failures). Their focused replacements passed: 3 Vitest files / 106 tests
+  and 27 pytest tests.
+- `./run.sh scripts/orchestration/run-quality-gates` passed after the fixes:
+  TypeScript, Rollup, 27 Vitest files / 452 tests, Python compilation, pytest,
+  version drift, and review-note retention. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round2-quality-gates.log`.
+- The 5,000-shortcut empty-refresh regression exercises the actual numeric
+  global apply path followed by an empty metadata refresh. Ten focused runs
+  passed with 6-10 ms test bodies; output is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round2-empty-refresh-benchmark.log`.
+  The adjacent delayed-overview bootstrap regression covers metadata-first
+  arrival; the startup-default regression covers settings-first arrival. These
+  checks prove the entry-based path without a timing-sensitive CI assertion.
+
+### Authorized device validation and handoff
+
+- The user authorization in review 01 covered the full device matrix. Fresh
+  preflight passed Deck reachability and capture wrote
+  `/tmp/Decky-Metadata/diagnostics/20260907T221401Z`. The log audit at
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round2-log-audit.log`
+  reports historical DNS and older patch records before this build was installed.
+- `./run.sh scripts/decky package-push --build --push` passed local archive
+  validation, created and delivered `Decky-Metadata.zip` version
+  `0.3.14+4581c88`, and reported `INSTALLED_STATE REINSTALL_REQUIRED`.
+  `scripts/decky status --deck` confirms that the delivered local package
+  represents `HEAD` and the Deck is reachable.
+- The required `decky-local-zip-gui-install` skill is not available in this
+  session and this repository exposes no supported unattended local-ZIP install
+  command. Therefore the delivered ZIP is not installed yet. Do not claim the
+  QAM/editor, fixture, teardown, filter, controller-focus, or launch-smoke
+  checks passed; install `/home/deck/Downloads/Decky-Metadata.zip` with Decky
+  Settings -> Developer -> Install Plugin from ZIP File, then run the authorized
+  live matrix and restore fixtures/settings.
+
+## Review round 03
+
+### Corrections
+
+- Editor saves now clear a provider category when a Steam match is removed,
+  unless the caller explicitly supplies the same valid positive provider App
+  ID. The per-game Follow Valve or numeric choice remains unchanged.
+- A successful Valve response that omits `resolved_category` is malformed, not
+  an authoritative no-category response. Same-match malformed responses retain
+  a cached category, including Unknown (`0`); explicit `null` remains the
+  authoritative no-category case.
+- Route callbacks, per-app metadata fetches, screenshot enrichment, and
+  Activity refreshes now capture the shared plugin lifecycle. A continuation
+  that completes after dismount cannot mutate the cache, native overviews, or
+  start another request. A later mount receives a new lifecycle and works
+  normally.
+- Every retained compatibility baseline participates in the existing one-pass
+  refresh batch. A restoration that failed while an overview was read-only is
+  retried by a later empty refresh without returning to per-shortcut full
+  library scans.
+
+### Red-to-green and validation
+
+- New focused tests first failed as intended: five TypeScript failures in
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round3-vitest-red.log`
+  and four Python failures in
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round3-pytest-red.log`.
+  The Activity test's first post-fix attempt correctly exposed the existing
+  15-minute refresh gate; its focused failure record is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round3-activity-failure.log`.
+  The revised test uses a fresh app on the later lifecycle instead of bypassing
+  that production rate limit.
+- Focused validation passed: 3 Vitest files / 52 tests and 32 backend tests
+  across `tests/test_deck_compat.py` and `tests/test_steam_appid_override.py`.
+- `./run.sh scripts/orchestration/run-quality-gates` passed after the
+  corrections: TypeScript, Rollup, 27 Vitest files / 457 tests, Python
+  compilation, pytest, and version-drift checking. Full output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round3-quality-gates.log`.
+  `scripts/orchestration/check-review-notes-not-deleted` also passed.
+- `./run.sh npm run package` produced the corrected local
+  `Decky-Metadata.zip` with packaged version `0.3.14+8d5ab42`; package output
+  is `/tmp/Decky-Metadata/compatibility-status-defaults-round3-package.log`.
+  The archive remains local. Per review round 02, the orchestrator retains
+  ownership of GUI installation and all live-device actions for this corrected
+  package.
+
+## Review round 04
+
+### Correction
+
+- The QAM root now takes its preferred summary focus only once per mounted
+  panel. A temporary ref detach before that first focus frame can still retry
+  initial focus. Later native ref attachments, including the global
+  compatibility dropdown popup return and confirmed-setting refresh, leave
+  focus on the launching dropdown. This keeps the existing native navigation
+  mechanism and preserves the summary's initial focus on a fresh QAM entry.
+
+### Red-to-green and validation
+
+- The new focused regression first failed with the root ref scheduling
+  preferred focus twice after reattachment; output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round4-focus-red.log`.
+  The corrected focused test passed with 7 tests.
+- `./run.sh scripts/orchestration/run-quality-gates` passed: TypeScript,
+  Rollup, 27 Vitest files / 458 tests, Python compilation, pytest, and version
+  checking. `./run.sh scripts/orchestration/check-review-notes-not-deleted`
+  and `git diff --check` also passed. Full gate output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round4-quality-gates.log`.
+- `./run.sh npm run package` produced the new local `Decky-Metadata.zip` with
+  packaged version `0.3.14+cae8568`; output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round4-package.log`.
+  It was not installed. The orchestrator retains all live Deck verification,
+  fixture restoration, and final acceptance work.
+
+### Post-review test correction and live boundary
+
+- Removed the mock-only focus test from
+  `src/ContentPanel.updateSettings.test.tsx`. It manually invoked a root ref
+  and asserted animation-frame and `BTakeFocus` call counts without opening a
+  dropdown or observing controller focus. No replacement unit test claims to
+  prove the real QAM focus behavior; that check remains part of Main's live
+  validation.
+- No production change or package was made for this test-only correction.
+- `./run.sh npm test -- src/ContentPanel.updateSettings.test.tsx` passed with
+  `1` test file / `6` tests. The complete
+  `./run.sh scripts/orchestration/run-quality-gates` pass reported `27` Vitest
+  files / `457` tests, TypeScript, Rollup, Python compilation, pytest, and
+  version checking. Review-note retention and `git diff --check` also passed.
+- Main's live evidence root is
+  `/tmp/Decky-Metadata/compat-defaults-live-4wys8ngy/`. The baseline file is
+  `restricted/settings-before.json` with mode `0600`.
+- The last confirmed installed version was `0.3.14+4581c88`. Installation of
+  final `0.3.14+cae8568` was started through the GUI but was not confirmed
+  after the Deck lost network connectivity.
+- Before the connectivity failure, runtime checks passed for global
+  inheritance, matched and unmatched Follow Valve, Valve Unknown, fixed
+  Unsupported and Unknown, metadata removal, a late-added no-record shortcut,
+  and unchanged regular Steam categories. A native-grid screenshot shows a
+  green check on a focused inheriting card.
+- The temporary global setting is Unsupported (`1`). App IDs `2312439508`,
+  `3462906031`, and `3015223078` use Follow Valve; their original overrides
+  were `null`, `null`, and `2`, respectively. The disposable native shortcut
+  `3168609012` still displays as `true`: its test metadata was removed, but
+  the native shortcut still requires removal. The original global baseline was
+  Automatic because the key was absent.
+- Restoration must change only these settings and fixtures. Do not replace the
+  whole settings file, and verify the original shortcut set and compatibility
+  values after restoration. Device connectivity, final install confirmation,
+  corrected controller-focus behavior, final smoke checks, and restoration
+  remain blocked; this implementer round has no device-action permission.
+
+## Review round 05
+
+### Correction
+
+- The global dropdown now arms a module-scoped, one-shot return intent through
+  its supported `onMenuWillOpen(showMenu)` lifecycle. It arms before invoking
+  the native menu, so both selecting an option and cancelling the native popup
+  take the same return path without changing the existing save callback.
+- The QAM entry handoff consumes that intent before it tries native focus. It
+  finds the dropdown's `button[role="combobox"]` in the returned QAM content
+  and calls the established gamepad-navigation `BTakeFocus` path. It uses no
+  raw DOM focus, timeout, or polling. While the intent is pending, the root
+  does not select the preferred summary entry; a fresh QAM entry with no
+  intent still starts at that summary.
+- The intent clears when consumed and at both plugin lifecycle start and
+  dismount. An unsuccessful native lookup therefore cannot direct a later,
+  unrelated QAM entry to the global dropdown.
+
+### Local validation and package handoff
+
+- `./run.sh npm test -- src/ContentPanel.updateSettings.test.tsx
+  src/components/qam/MetadataSection.test.tsx` passed: 2 files / 8 tests. The
+  coverage observes initial-summary focus, a remounted popup return reaching
+  the native combobox exactly once, a later fresh entry returning to the
+  summary, and lifecycle ordering before the native menu opens.
+- `./run.sh npx tsc --noEmit`, `git diff --check`, and the full
+  `./run.sh scripts/orchestration/run-quality-gates` passed. The full gate
+  regenerated the committed bundle, passed 28 Vitest files / 459 tests, and
+  passed Python compilation and pytest. Review-note retention also passed.
+- Commit `0a4ac3c` (`fix(qam): restore compatibility dropdown focus`) contains
+  the code, tests, and regenerated bundle. `./run.sh npm run package` created
+  `/home/beallio/Dropbox/Scripts/Decky-Metadata/Decky-Metadata.zip` with
+  packaged version `0.3.14+0a4ac3c`.
+- This round performed no Deck action. Main retains ownership of ZIP install,
+  real select/cancel controller-focus validation, launch verification, and
+  fixture/settings restoration.
+
+## Review round 06
+
+### Native popup return correction
+
+- The global dropdown now only arms its module-scoped return state in
+  `onMenuWillOpen`. Steam's native `ToggleMenu()` supplies the one `ShowMenu()`
+  call, so the plugin no longer opens the popup twice.
+- Return state distinguishes a native popup opening from a completed return.
+  A control ref detach records the hidden QAM content, and the returned QAM
+  document's `visibilitychange` to `visible` starts the cancel handoff. A
+  successful global save separately starts the selection handoff after the
+  backend has confirmed and rendered the new policy.
+- Both paths use only the existing gamepad-navigation `BTakeFocus()` API. They
+  wait through a bounded native render transition, require focus to remain on
+  the combobox for three frames, then consume the return state. There is no
+  DOM `.focus()`, `setTimeout`, or unbounded poll.
+- Removed the rejected mock/ref tests from
+  `src/ContentPanel.updateSettings.test.tsx` and
+  `src/components/qam/MetadataSection.test.tsx`. The retained settings,
+  persistence, error, and policy tests remain. Native menu return behavior is
+  proved on the Deck instead of by test doubles.
+
+### Local validation
+
+- `./run.sh npm test -- src/ContentPanel.updateSettings.test.tsx` passed:
+  1 Vitest file / 6 tests.
+- `./run.sh npx tsc --noEmit` passed.
+- `./run.sh scripts/orchestration/run-quality-gates` passed. It regenerated
+  `dist/`, passed 27 Vitest files / 457 tests, Python byte-compilation,
+  pytest, version checks, and review-note retention. Full output is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round06-final-quality-gates.log`.
+
+### Authorized focused Deck verification
+
+- Frontend-only focus iterations used the review-authorized dedicated
+  `CDP_PORT=18088` connection and `scripts/deck/deploy.sh`; no fixtures,
+  metadata records, shortcuts, or unrelated plugin settings were changed.
+- A fresh Decky Metadata entry focused the summary. A native popup cancel
+  returned focus to `Automatic — use matched Steam status`. Selecting
+  `Verified` returned focus to the `Verified` combobox. Selecting Automatic
+  again returned focus to its combobox, and a later fresh entry again focused
+  the summary. The final global value is Automatic.
+- Screenshots are under
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round06-live/`, including
+  `visibility-after-cancel.png`, `selection-saved-after-verified.png`,
+  `long-selection-restored-automatic.png`, and
+  `final-genuine-fresh-entry.png`. The controller focus dumps were captured
+  with the committed `scripts/deck/cdp.py` and `js/gpfocus_dump.js` probes.
+- The dedicated `18088` tunnel must be closed after the local ZIP handoff.
+
+## Review round 07
+
+### Mounted Game Info correction
+
+- Reproduced the reported fault before validating the correction. From an
+  isolated worktree at the committed pre-change bundle, the real QAM
+  Automatic-to-Verified save for shortcut `2312439508` replaced the mounted
+  Game Info content with Steam's non-Steam placeholder. The screenshot is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round08-live/prechange-reproduced-automatic-to-verified.png`.
+- Compatibility updates now keep the exact native `AppOverview` object in the
+  app map. They mutate only its packed compatibility field, arm the existing
+  route-scoped shield for the exact matched detail route, and publish one
+  compatibility revision after the global batch. The mounted native Game Info
+  component listens for that revision and re-renders in place, so its rich
+  details state and the 64-bit shortcut identity remain intact.
+- Added regressions for identity-preserving compatibility mutation and the
+  mounted native Game Info refresh. The latter observes a real changed packed
+  category while the same enriched overview remains attached; it does not pin
+  source text or mock a dropdown flow.
+
+### Authorized Deck validation and restoration
+
+- Built and deployed the correction with `CDP_PORT=18088`. On the continuously
+  selected Game Info tab for `2312439508`, Verified to Automatic changed the
+  packed category from `15` to Valve Playable `10`, then Automatic to Verified
+  changed it back to `15`. Description, developer, publisher, quick links,
+  selected tab, and Steam Deck Compatibility content remained visible in both
+  directions. Screenshots are in
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round08-live/`.
+- Existing no-record shortcut `3245664592` (Heroic Games Launcher) changed
+  from native `0` under Automatic to `15` under Verified and returned to `0`.
+  The final restricted capture confirms `deck_compat_default: null`, 14
+  metadata records, and no metadata record for that shortcut:
+  `/tmp/Decky-Metadata/diagnostics/20260908T040224Z/`.
+- `MATCHED_APPID=2312439508` passed both committed device suites. The full
+  suite passed quick links, rerender churn, community fallback, and the real
+  launch smoke with a 64-bit game ID. The no-launch suite also passed the
+  controller-layout isolation check. Logs:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round08-full-device-suite.log`
+  and
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round08-nolaunch-device-suite.log`.
+- The focused Vitest run passed 2 files / 50 tests. The project quality gate
+  passed TypeScript, Rollup, 27 Vitest files / 459 tests, Python compilation,
+  pytest, version checks, and review-note retention. Full output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round08-quality-gates.log`.
+- Commit `445373d` (`fix(steam): preserve mounted game info on compatibility
+  updates`) contains the correction, tests, and regenerated bundle.
+  `./run.sh npm run package` produced
+  `Decky-Metadata.zip` with version `0.3.14+445373d`.
+
+## Review round 08
+
+### Correction
+
+- A compatibility revision now arms the existing route shield at the exact
+  mounted native Game Info `forceUpdate()` boundary. This covers a global
+  policy change even when Follow Valve or a fixed per-game category leaves the
+  packed value unchanged. The existing in-call launch-truth priority remains
+  unchanged.
+- SteamUI document lookup is now shared by card and Game Info consumers. It
+  searches the established SteamUI/webpack host bridge and its Main/Gamepad
+  browser documents before Decky's local document. A Game Info instance that
+  was mounted before the plugin hook can therefore be captured from the real
+  Big Picture document without a navigation or remount.
+- After each completed compatibility write batch, changed exact native
+  shortcuts are again published through Steam's native `m_mapApps` with a
+  constructor-valid replacement. This restores native compatibility-filter
+  invalidation while preserving constructor-owned state, the exact shortcut
+  AppID, and untouched official Steam entries. Packed writes complete before
+  the first map publication, and one plugin revision follows the batch.
+
+### Red-to-green and local package
+
+- The new focused regressions failed before the correction: the pre-mounted
+  split-document Game Info instance was not refreshed, and native map entries
+  kept their original identity after a compatibility write. The fixed focused
+  run passed `3` Vitest files / `109` tests. It covers Follow Valve and fixed
+  exceptions after an expired shield, the real patched classification path,
+  in-call launch truth, a pre-mounted Big Picture Game Info instance, and
+  batched native publication with an unchanged official title.
+- `./run.sh scripts/orchestration/run-quality-gates` passed: TypeScript,
+  Rollup, `27` Vitest files / `460` tests, Python byte-compilation, pytest,
+  version checks, and review-note retention. `git diff --check` and
+  `scripts/orchestration/check-review-notes-not-deleted` also passed.
+- Commit `1bc0a43` (`fix(steam): refresh native compatibility consumers`)
+  contains the source, tests, shared bridge, and regenerated bundle.
+  `./run.sh npm run package` produced the local
+  `Decky-Metadata.zip` with version `0.3.14+1bc0a43` and SHA-256
+  `6323d78e7f5603d3650c019a72acb35fc48b985d13d226bd02cb37b5149fe619`.
+
+### Device handoff
+
+- This correction round made no Deck call, package push, setting change,
+  fixture change, navigation action, or device smoke run. Main retains device
+  and power/network recovery ownership. The next live check must keep Great
+  on Deck mounted for Automatic -> Verified -> Automatic and require native
+  Verified shortcuts `4 -> 16 -> 4` with collection membership `34 -> 46 ->
+  34`, while confirming the mounted Game Info, a Follow Valve exception, a
+  fixed exception, and an ordinary Steam title remain correct.

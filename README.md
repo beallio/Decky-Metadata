@@ -60,11 +60,48 @@ action is available.
 
 ## Set the compatibility status
 
-The **Decky metadata...** editor includes a **Compatibility status** setting.
-Choose Automatic, Verified, Playable, Unsupported, or Unknown.
+In the Decky Metadata Quick Access Menu, use **Default compatibility status**
+to set the live default for every existing and new non-Steam shortcut, whether
+or not it has a Steam match:
 
-Automatic uses Steam's status for the matching game when one is available. It
-does not use ProtonDB.
+1. **Automatic — use matched Steam status**
+2. **Verified**
+3. **Playable**
+4. **Unsupported**
+5. **Unknown**
+
+Automatic is the initial setting. It uses the matched Steam category when one
+is available; otherwise it leaves the shortcut's original Steam status alone.
+The default changes existing cards as well as new shortcuts. It does not create
+metadata records or use ProtonDB.
+
+For one game, open **Decky metadata...** and use **Compatibility status**:
+
+1. **Use global default**
+2. **Follow Valve**
+3. **Verified**
+4. **Playable**
+5. **Unsupported**
+6. **Unknown**
+
+Per-game choices take priority. **Follow Valve** ignores the global default and
+uses only the current matched Steam category; with no category, it restores or
+keeps the original Steam status. A fixed per-game category always wins.
+**Unknown** is a real Valve category, but Steam shows it with no compatibility
+badge. These choices are user-selected labels, not Valve certification or a
+claim about emulator performance.
+
+| Situation | Result |
+| --- | --- |
+| Global Verified, matched or unmatched game using the default | Verified |
+| Follow Valve with Valve Playable | Playable |
+| Follow Valve with missing Valve data | Original Steam status |
+| Follow Valve with Valve Unknown | Unknown, with no badge |
+| Global Automatic | Matched category, or original Steam status if unavailable |
+| Changing the global default | Only games using **Use global default** change |
+
+See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
+for upgrade, persistence, and lifecycle details.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
