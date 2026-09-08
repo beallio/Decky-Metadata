@@ -10,6 +10,13 @@ from typing import Any, Callable
 PlogFn = Callable[..., None]
 
 
+def compatibility_default(value: Any) -> int | None:
+    """Return a valid global compatibility category, with Automatic as null."""
+    if value is None or isinstance(value, bool):
+        return None
+    return value if isinstance(value, int) and value in {0, 1, 2, 3} else None
+
+
 def default_data() -> dict[str, Any]:
     return {
         "metadata": {},
@@ -19,6 +26,7 @@ def default_data() -> dict[str, Any]:
         "shortcut_names": {},
         "settings": {
             "debug_logging": False,
+            "deck_compat_default": None,
         },
         "update_settings": {},
         "update_check_cache": {},
@@ -50,10 +58,20 @@ def load_data(
     shortcut_names = payload.get("shortcut_names")
     if isinstance(shortcut_names, dict):
         merged["shortcut_names"].update(shortcut_names)
-    merged["settings"].update(payload.get("settings") or {})
+    payload_settings = payload.get("settings")
+    if isinstance(payload_settings, dict):
+        merged["settings"].update(payload_settings)
     merged["update_settings"].update(payload.get("update_settings") or {})
     merged["update_check_cache"].update(payload.get("update_check_cache") or {})
     merged["settings"]["debug_logging"] = bool(merged["settings"].get("debug_logging", False))
+    if isinstance(payload_settings, dict) and "deck_compat_default" in payload_settings:
+        merged["settings"]["deck_compat_default"] = compatibility_default(
+            merged["settings"].get("deck_compat_default")
+        )
+    else:
+        # Missing is Automatic, but do not rewrite legacy settings merely
+        # because this newer key was introduced.
+        merged["settings"].pop("deck_compat_default", None)
     return merged, copy.deepcopy(merged), mtime_ns
 
 

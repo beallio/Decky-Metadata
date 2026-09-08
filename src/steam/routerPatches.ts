@@ -8,10 +8,14 @@ import {
   GAME_DETAIL_ROUTES,
   Unpatch,
   appIdFromReactTree,
+  compatibilityLifecycleSnapshot,
   currentGameDetailAppId,
+  currentRoutePath,
   gameDetailAppIdFromPath,
   getOverview,
   isNonSteamApp,
+  isCompatibilityLifecycleCurrent,
+  isCurrentGameDetailRoute,
   metadataCache,
   metadataState,
   notifyCompatibilityRevision,
@@ -20,8 +24,10 @@ import {
   safeAfterPatch,
   armRouteShield,
   clearRouteShield,
+  subscribeCompatibilityRevision,
 } from "./core";
 import { isBypassTraceEnabled } from "./metadataPatch";
+import { findSteamUiDocumentMatch } from "./steamUiHost";
 import {
   findChildElements,
   isInfoSectionBoundary,
@@ -47,6 +53,137 @@ const isNeverOnSteam = (appId: number): boolean => {
   } catch (_error) {
     return false;
   }
+};
+
+/**
+ * The native compatibility field is deliberately non-observable. Re-render
+ * only the mounted native Game Info class when that field changes. This keeps
+ * its exact AppOverview and the parent route's rich-details state intact.
+ */
+const installMountedGameInfoCompatibilityRefresh = (unpatchers: Unpatch[]) => {
+  const mounted = new Set<any>();
+  const maxAttempts = 5;
+  let attempts = 0;
+  let retryId: ReturnType<typeof setTimeout> | undefined;
+  let mountUnpatch: Unpatch | undefined;
+  let unsubscribe: Unpatch | undefined;
+  let restoreUnmount: Unpatch | undefined;
+
+  const isNativeGameInfo = (candidate: any) => {
+    const render = candidate?.prototype?.render;
+    if (
+      typeof candidate !== "function" ||
+      !candidate.prototype?.isReactComponent ||
+      typeof render !== "function"
+    ) {
+      return false;
+    }
+    const source = String(render);
+    return source.includes("BIsModOrShortcut") && source.includes("GetDescriptions");
+  };
+
+  const captureMountedGameInfo = () => {
+    try {
+      const label = "Steam Deck Compatibility";
+      const anchor = findSteamUiDocumentMatch((document) =>
+        Array.from(document.querySelectorAll("div")).find((element) =>
+          (element.textContent || "").includes(label) &&
+          !Array.from(element.children).some((child) => (child.textContent || "").includes(label))
+        )
+      );
+      if (!anchor) return;
+      const fiberKey = Object.getOwnPropertyNames(anchor).find((key) =>
+        key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$")
+      );
+      let fiber = fiberKey ? (anchor as any)[fiberKey] : null;
+      for (let depth = 0; fiber && depth < 16; depth += 1, fiber = fiber.return) {
+        const component = fiber.elementType || fiber.type;
+        if (isNativeGameInfo(component) && fiber.stateNode) mounted.add(fiber.stateNode);
+      }
+    } catch {
+      // Steam's private React fiber field is optional and must fail closed.
+    }
+  };
+
+  const refreshMountedGameInfo = () => {
+    // Steam can retain the Game Info tab across a plugin reload, before its
+    // componentDidMount hook was patched. Capture only that visible component
+    // from its DOM fiber; never enumerate a React or MobX object tree.
+    captureMountedGameInfo();
+    for (const instance of mounted) {
+      try {
+        const overview = instance?.props?.overview;
+        const appId = Number(overview?.appid);
+        if (
+          !isNonSteamApp(overview) ||
+          !isCurrentGameDetailRoute(currentRoutePath(), appId) ||
+          typeof instance?.forceUpdate !== "function"
+        ) {
+          continue;
+        }
+        // A compatibility revision can leave this shortcut's packed category
+        // unchanged (Follow Valve or an explicit choice). Shield the actual
+        // native render boundary for every refresh, not only a bit mutation.
+        armRouteShield(appId, currentRoutePath(), "compatibility-revision");
+        instance.forceUpdate();
+      } catch {
+        // A stale native instance must not block the active Game Info view.
+      }
+    }
+  };
+
+  const tryInstall = () => {
+    retryId = undefined;
+    if (mountUnpatch) return;
+    attempts += 1;
+    const NativeGameInfo = findModuleChild((module: any) => {
+      if (typeof module !== "object") return undefined;
+      for (const prop in module) {
+        try {
+          if (isNativeGameInfo(module[prop])) return module[prop];
+        } catch {
+          continue;
+        }
+      }
+      return undefined;
+    });
+    if (!NativeGameInfo?.prototype?.componentDidMount) {
+      if (attempts < maxAttempts) retryId = globalThis.setTimeout(tryInstall, 500);
+      return;
+    }
+    mountUnpatch = safeAfterPatch(
+      NativeGameInfo.prototype,
+      "componentDidMount",
+      function (this: any, _args: any[], ret: any) {
+        mounted.add(this);
+        return ret;
+      }
+    ).unpatch;
+    const originalUnmount = NativeGameInfo.prototype.componentWillUnmount;
+    try {
+      NativeGameInfo.prototype.componentWillUnmount = function (this: any, ...args: any[]) {
+        mounted.delete(this);
+        return typeof originalUnmount === "function" ? originalUnmount.apply(this, args) : undefined;
+      };
+      restoreUnmount = () => {
+        if (originalUnmount === undefined) delete NativeGameInfo.prototype.componentWillUnmount;
+        else NativeGameInfo.prototype.componentWillUnmount = originalUnmount;
+      };
+    } catch {
+      // The mount set is still bounded by this plugin's lifetime.
+    }
+    unsubscribe = subscribeCompatibilityRevision(refreshMountedGameInfo);
+    captureMountedGameInfo();
+  };
+
+  unpatchers.push(() => {
+    if (retryId !== undefined) globalThis.clearTimeout(retryId);
+    unsubscribe?.();
+    restoreUnmount?.();
+    mountUnpatch?.();
+    mounted.clear();
+  });
+  tryInstall();
 };
 
 // The quick-links row is not reachable from the route render tree. Steam's page
@@ -229,6 +366,7 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
 };
 
 export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPatchDeps) => {
+  installMountedGameInfoCompatibilityRefresh(unpatchers);
   const {
     ensureMetadataCache,
     applyMetadata,
@@ -245,6 +383,7 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
           const appOverview = overview || getOverview(appId);
           if (appId && isNonSteamApp(appOverview)) {
+            const lifecycleGeneration = compatibilityLifecycleSnapshot();
             const previousAppId = metadataState.lastObservedGameDetailAppId;
             metadataState.lastObservedGameDetailAppId = appId;
             if (metadataCache[String(appId)]) {
@@ -258,6 +397,7 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
               }
             }
             void ensureMetadataCache().then(() => {
+              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
               if (applyMetadata(appId)) notifyCompatibilityRevision();
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
@@ -285,8 +425,10 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appId = currentGameDetailAppId() || treeAppId;
           const overview = overviewFromReactTree(ret) || getOverview(appId);
           if (appId && isNonSteamApp(overview)) {
+            const lifecycleGeneration = compatibilityLifecycleSnapshot();
             metadataState.lastObservedGameDetailAppId = appId;
             void ensureMetadataCache().then(() => {
+              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
               if (applyMetadata(appId)) notifyCompatibilityRevision();
             });
             void refreshDeckyNativeActivityForApp(appId);

@@ -1,11 +1,16 @@
 export {
   allNonSteamGames,
   applyMetadata,
+  applyCompatibilityDefault,
+  beginCompatibilityLifecycle,
+  cancelCompatibilityDefaultLoad,
+  ensureCompatibilityDefault,
   effectiveCompatibilityCategory,
   ensureMetadataCache,
   refreshMetadataCache,
   refreshCompatibilitySurfaces,
   restoreAllCompatibilityBaselines,
+  setConfirmedCompatibilityDefault,
   startMetadataBootstrap,
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
@@ -16,6 +21,10 @@ export {
 } from "./steam/controllerTypes";
 export {
   appName,
+  compatibilityDefaultLoadedSnapshot,
+  compatibilityDefaultSnapshot,
+  compatibilityLifecycleSnapshot,
+  compatibilityRevisionSnapshot,
   cleanTitle,
   getOverview,
   getNativeOverview,
@@ -23,10 +32,12 @@ export {
   hasSteamInternals,
   isNonSteamApp,
   isNativeNonSteamShortcut,
+  isCompatibilityLifecycleCurrent,
   metadataCache,
   patchInstallStatus,
   rewriteSteamLinkToMatchedApp,
   steamAppIdForApp,
+  subscribeCompatibilityRevision,
 } from "./steam/core";
 export {
   classifyShortcutNameState,

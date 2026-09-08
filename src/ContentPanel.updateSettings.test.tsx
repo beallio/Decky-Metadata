@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -18,6 +18,7 @@ const backend = vi.hoisted(() => ({
   getUpdateSettings: vi.fn(),
   refreshDelistedIndex: vi.fn(),
   setAutomaticUpdateChecks: vi.fn(),
+  setCompatibilityDefault: vi.fn(),
   setDebugLogging: vi.fn(),
   setUpdateChannel: vi.fn(),
   startScanMissing: vi.fn(),
@@ -27,10 +28,16 @@ const steam = vi.hoisted(() => ({
   metadataCache: {} as Record<string, unknown>,
   refreshMetadataCache: vi.fn(),
   getConnectedControllerTypes: vi.fn(),
+  ensureCompatibilityDefault: vi.fn(),
+  setConfirmedCompatibilityDefault: vi.fn(),
+  compatibilityDefaultSnapshot: vi.fn(),
+  compatibilityDefaultLoadedSnapshot: vi.fn(),
+  compatibilityLifecycleSnapshot: vi.fn(),
+  isCompatibilityLifecycleCurrent: vi.fn(),
+  subscribeCompatibilityRevision: vi.fn(),
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
-
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -57,7 +64,7 @@ vi.mock("react", () => ({
 vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred" },
-  getGamepadNavigationTrees: vi.fn(() => []),
+  getGamepadNavigationTrees: vi.fn(),
   showModal: vi.fn(),
 }));
 vi.mock("./backend", () => backend);
@@ -110,6 +117,9 @@ const updateSection = (tree: any) =>
 const versionsSection = (tree: any) =>
   children(tree).find((node) => node.type === "VersionsSection");
 
+const metadataSection = (tree: any) =>
+  children(tree).find((node) => node.type === "MetadataSection");
+
 const runEffects = () => {
   for (const effect of [...harness.effects]) effect();
 };
@@ -126,11 +136,22 @@ describe("Content update settings", () => {
     harness.effects = [];
     games.loadGames.mockResolvedValue([]);
     steam.refreshMetadataCache.mockResolvedValue(undefined);
+    steam.ensureCompatibilityDefault.mockResolvedValue(null);
+    steam.setConfirmedCompatibilityDefault.mockImplementation((value: unknown) => value);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(null);
+    steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(false);
+    steam.compatibilityLifecycleSnapshot.mockReturnValue(1);
+    steam.isCompatibilityLifecycleCurrent.mockReturnValue(true);
+    steam.subscribeCompatibilityRevision.mockReturnValue(() => undefined);
     backend.getDebugLogging.mockResolvedValue(false);
     backend.getDelistedIndexStatus.mockResolvedValue({ count: 0, fetched_at: 0 });
     backend.getMissingMetadataCount.mockResolvedValue(0);
     backend.getPluginVersion.mockResolvedValue("0.3.1");
     backend.getSystemVersions.mockResolvedValue({ decky: "", steamos: "" });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("falls back to defaults and marks settings loaded after a failed envelope", async () => {
@@ -168,4 +189,81 @@ describe("Content update settings", () => {
     expect(rolledBack.props.updateChannel).toBe("development");
     expect(rolledBack.props.automaticUpdateChecks).toBe(false);
   });
+
+  it("keeps the global compatibility default disabled until it loads, then applies only a confirmed save", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    backend.setCompatibilityDefault.mockResolvedValue(2);
+    render();
+    runEffects();
+    await flushPromises();
+
+    const loaded = metadataSection(render());
+    expect(loaded.props.compatibilityDefault).toBe(3);
+    expect(loaded.props.compatibilityDefaultLoaded).toBe(true);
+    loaded.props.onCompatibilityDefaultChange(2);
+    await flushPromises();
+
+    expect(backend.setCompatibilityDefault).toHaveBeenCalledWith(2);
+    expect(steam.setConfirmedCompatibilityDefault).toHaveBeenCalledWith(2, 1);
+    expect(metadataSection(render()).props.compatibilityDefault).toBe(2);
+  });
+
+  it("keeps the confirmed global compatibility default after a failed save", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    backend.setCompatibilityDefault.mockRejectedValue(new Error("disk unavailable"));
+    render();
+    runEffects();
+    await flushPromises();
+
+    metadataSection(render()).props.onCompatibilityDefaultChange(2);
+    await flushPromises();
+
+    const afterFailure = metadataSection(render());
+    expect(afterFailure.props.compatibilityDefault).toBe(3);
+    expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
+    expect(steam.setConfirmedCompatibilityDefault).not.toHaveBeenCalled();
+  });
+
+  it("does not apply a late save acknowledgement after the shared plugin lifecycle ends", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    let resolveSave!: (value: 0 | 1 | 2 | 3 | null) => void;
+    backend.setCompatibilityDefault.mockReturnValue(new Promise((resolve) => {
+      resolveSave = resolve;
+    }));
+    render();
+    runEffects();
+    await flushPromises();
+
+    metadataSection(render()).props.onCompatibilityDefaultChange(2);
+    steam.isCompatibilityLifecycleCurrent.mockReturnValue(false);
+    resolveSave(2);
+    await flushPromises();
+
+    expect(steam.setConfirmedCompatibilityDefault).not.toHaveBeenCalled();
+    expect(metadataSection(render()).props.compatibilityDefault).toBe(3);
+  });
+
+  it("recovers the mounted QAM when bootstrap later confirms the shared setting", async () => {
+    steam.ensureCompatibilityDefault.mockRejectedValue(new Error("initial load failed"));
+    let notify!: () => void;
+    steam.subscribeCompatibilityRevision.mockImplementation((listener: () => void) => {
+      notify = listener;
+      return () => undefined;
+    });
+    render();
+    runEffects();
+    await flushPromises();
+    expect(metadataSection(render()).props.compatibilityDefaultLoaded).toBe(false);
+    expect(metadataSection(render()).props.compatibilityDefaultError).toContain("initial load failed");
+
+    steam.compatibilityDefaultSnapshot.mockReturnValue(2);
+    steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(true);
+    notify();
+
+    const recovered = metadataSection(render());
+    expect(recovered.props.compatibilityDefault).toBe(2);
+    expect(recovered.props.compatibilityDefaultLoaded).toBe(true);
+    expect(recovered.props.compatibilityDefaultError).toBe("");
+  });
+
 });

@@ -1,4 +1,4 @@
-import { ButtonItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
 
 import {
   ButtonLabel,
@@ -9,6 +9,18 @@ import {
 } from "../../styles";
 import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
+import type { DeckCompatibilityCategory } from "../../types";
+
+const compatibilityDefaultOptions: Array<{
+  data: DeckCompatibilityCategory | null;
+  label: string;
+}> = [
+  { data: null, label: "Automatic — use matched Steam status" },
+  { data: 3, label: "Verified" },
+  { data: 2, label: "Playable" },
+  { data: 1, label: "Unsupported" },
+  { data: 0, label: "Unknown" },
+];
 
 type MetadataSectionProps = {
   detectedCount: number;
@@ -18,8 +30,15 @@ type MetadataSectionProps = {
   scanMessage: string;
   scanStatusKind: StatusKind;
   cacheBusy: boolean;
+  compatibilityDefault: DeckCompatibilityCategory | null;
+  compatibilityDefaultLoaded: boolean;
+  compatibilityDefaultBusy: boolean;
+  compatibilityDefaultError: string;
   onRefreshMetadata: () => void;
   onClearCache: () => void;
+  onCompatibilityDefaultChange: (category: DeckCompatibilityCategory | null) => void;
+  onCompatibilityDefaultMenuWillOpen: () => void;
+  onCompatibilityDefaultControlRef: (element: HTMLDivElement | null) => void;
 };
 
 export function MetadataSection({
@@ -30,8 +49,15 @@ export function MetadataSection({
   scanMessage,
   scanStatusKind,
   cacheBusy,
+  compatibilityDefault,
+  compatibilityDefaultLoaded,
+  compatibilityDefaultBusy,
+  compatibilityDefaultError,
   onRefreshMetadata,
   onClearCache,
+  onCompatibilityDefaultChange,
+  onCompatibilityDefaultMenuWillOpen,
+  onCompatibilityDefaultControlRef,
 }: MetadataSectionProps) {
   return (
     <PanelSection title="Metadata">
@@ -55,6 +81,38 @@ export function MetadataSection({
               <b>{"Missing metadata"}:</b> {missingCount}
             </div>
           </div>
+        </Field>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div ref={onCompatibilityDefaultControlRef}>
+          <DropdownItem
+            label="Default compatibility status"
+            rgOptions={compatibilityDefaultOptions}
+            selectedOption={compatibilityDefault}
+            disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy}
+            onMenuWillOpen={() => {
+              onCompatibilityDefaultMenuWillOpen();
+            }}
+            onChange={(option) => onCompatibilityDefaultChange(option.data)}
+          />
+        </div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <Field
+          focusable={false}
+          childrenLayout="below"
+          padding="none"
+          bottomSeparator="none"
+        >
+          <div style={compactTextStyle}>
+            {"This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority."}
+          </div>
+          <div style={compactTextStyle}>
+            {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}
+          </div>
+          {compatibilityDefaultError ? (
+            <div style={inlineStatusStyle("error")}>{compatibilityDefaultError}</div>
+          ) : null}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>

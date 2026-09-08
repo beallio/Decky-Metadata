@@ -19,14 +19,17 @@ const steam = vi.hoisted(() => ({
   appName: vi.fn(() => "Shortcut"),
   applyMetadata: vi.fn(),
   cleanTitle: vi.fn((value: string) => value.trim()),
+  compatibilityDefaultSnapshot: vi.fn(() => null),
   classifyShortcutNameState: vi.fn((_current: string | null, _state: any) => "unmanaged"),
   getOverview: vi.fn(() => ({ app_type: 1073741824, BIsShortcut: () => true })),
   hasShortcutNameApi: vi.fn(() => true),
   isNonSteamApp: vi.fn(() => true),
+  ensureCompatibilityDefault: vi.fn(() => Promise.resolve(null)),
   metadataCache: {} as Record<string, any>,
   nativeShortcutName: vi.fn(() => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
   setShortcutNameAndWait: vi.fn(),
+  subscribeCompatibilityRevision: vi.fn(() => () => undefined),
 }));
 
 const toast = vi.hoisted(() => ({
@@ -197,21 +200,22 @@ describe("MetadataPage compatibility status", () => {
     route.appid = "100";
   });
 
-  it("shows the native dropdown in the required order with Automatic's Valve status", () => {
+  it("shows the native dropdown in the required order with global inheritance", () => {
     state.values[0] = makeMetadata({ deck_compat_category: 3 });
 
     const control = dropdown(renderPage());
 
     expect(control.props.label).toBe("Compatibility status");
     expect(control.props.rgOptions).toEqual([
-      { data: null, label: "Automatic" },
+      { data: null, label: "Use global default" },
+      { data: "valve", label: "Follow Valve" },
       { data: 3, label: "Verified" },
       { data: 2, label: "Playable" },
       { data: 1, label: "Unsupported" },
       { data: 0, label: "Unknown" },
     ]);
     expect(control.props.selectedOption).toBeNull();
-    expect(control.props.renderButtonValue()).toBe("Automatic (Valve: Verified)");
+    expect(control.props.renderButtonValue()).toBe("Use global default (Verified — from Valve)");
   });
 
   it("keeps explicit Unknown selected instead of treating zero as Automatic", () => {
@@ -221,6 +225,32 @@ describe("MetadataPage compatibility status", () => {
 
     expect(control.props.selectedOption).toBe(0);
     expect(control.props.renderButtonValue()).toBe("Unknown");
+  });
+
+  it("shows Follow Valve as a separate persisted per-game choice", async () => {
+    state.values[0] = makeMetadata({ deck_compat_category: 2 });
+    const saved = makeMetadata({ deck_compat_category: 2, deck_compat_override: "valve" });
+    backend.saveMetadata.mockResolvedValue(saved);
+
+    dropdown(renderPage()).props.onChange({ data: "valve" });
+    const page = renderPage();
+    expect(dropdown(page).props.selectedOption).toBe("valve");
+    expect(dropdown(page).props.renderButtonValue()).toBe("Follow Valve (Playable)");
+
+    await saveButton(page).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(
+      100,
+      expect.objectContaining({ deck_compat_override: "valve" }),
+    );
+  });
+
+  it("shows the selected numeric global default without claiming Valve supplied it", () => {
+    state.values[0] = makeMetadata({ deck_compat_category: 1 });
+    // Compatibility-default state is appended after the editor's existing
+    // state slots, preserving the legacy state-index fixture above.
+    state.values[15] = 3;
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
   });
 
   it("saves a dropdown change atomically and refreshes after success", async () => {

@@ -77,6 +77,9 @@ export type UpdateRpcResult<T> = T | UpdateRpcStatus;
 /** Steam's packed Deck compatibility category values. */
 export type DeckCompatibilityCategory = 0 | 1 | 2 | 3;
 
+/** A per-shortcut policy: inherit, follow current Valve data, or use a fixed category. */
+export type DeckCompatibilityOverride = DeckCompatibilityCategory | "valve" | null;
+
 export type MetadataData = {
   title: string;
   id: string | number;
@@ -99,8 +102,8 @@ export type MetadataData = {
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: DeckCompatibilityCategory | null;
-  /** A user-selected status. Null keeps the Valve-resolved category automatic. */
-  deck_compat_override?: DeckCompatibilityCategory | null;
+  /** A user-selected status. Null inherits the global default; "valve" bypasses it. */
+  deck_compat_override?: DeckCompatibilityOverride;
   steam_store_url?: string;
   steam_news?: MetadataNews[];
   steam_news_enriched_at?: number;

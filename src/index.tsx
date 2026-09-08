@@ -3,11 +3,15 @@ import { definePlugin, staticClasses } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
+import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import {
   installSteamPatches,
+  beginCompatibilityLifecycle,
+  cancelCompatibilityDefaultLoad,
+  ensureCompatibilityDefault,
   refreshMetadataCache,
   restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
@@ -16,10 +20,15 @@ import {
 const METADATA_ROUTE = "/decky-metadata/:appid";
 
 export default definePlugin(() => {
+  clearCompatibilityDropdownReturn();
+  beginCompatibilityLifecycle();
   void getDebugLogging()
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
   void refreshMetadataCache();
+  void ensureCompatibilityDefault().catch((error) =>
+    log.warn("bridge", "compatibility default load failed", error)
+  );
 
   let unpatchSteam: (() => void) | undefined;
   try {
@@ -54,6 +63,16 @@ export default definePlugin(() => {
         stopMetadataBootstrap?.();
       } catch (error) {
         log.error("patch", "metadata bootstrap stop failed", error);
+      }
+      try {
+        cancelCompatibilityDefaultLoad();
+      } catch (error) {
+        log.error("patch", "compatibility default load stop failed", error);
+      }
+      try {
+        clearCompatibilityDropdownReturn();
+      } catch (error) {
+        log.error("patch", "compatibility dropdown focus stop failed", error);
       }
       try {
         restoreAllCompatibilityBaselines();

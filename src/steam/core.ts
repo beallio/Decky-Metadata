@@ -1,5 +1,5 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
+import { DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
@@ -52,6 +52,14 @@ export const metadataState: {
   appliedMetadataRef: Record<string, MetadataData>;
   /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /** Confirmed global policy. Null is Automatic. */
+  compatibilityDefault: DeckCompatibilityCategory | null;
+  compatibilityDefaultLoaded: boolean;
+  /** Invalidates stale backend loads after a confirmed save or dismount. */
+  compatibilityDefaultGeneration: number;
+  /** Distinguishes one plugin mount from async work left by an older mount. */
+  compatibilityLifecycleGeneration: number;
+  compatibilityDefaultLoadPromise: Promise<DeckCompatibilityCategory | null> | null;
   /** Bumps when a compatibility choice needs Steam's current route to render again. */
   compatibilityRevision: number;
   lastObservedGameDetailAppId: number;
@@ -71,6 +79,11 @@ export const metadataState: {
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  compatibilityDefault: null,
+  compatibilityDefaultLoaded: false,
+  compatibilityDefaultGeneration: 0,
+  compatibilityLifecycleGeneration: 0,
+  compatibilityDefaultLoadPromise: null,
   compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
@@ -80,6 +93,16 @@ const compatibilityRevisionListeners = new Set<() => void>();
 
 export const compatibilityRevisionSnapshot = () =>
   metadataState.compatibilityRevision;
+
+export const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
+
+export const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
+
+export const compatibilityLifecycleSnapshot = () =>
+  metadataState.compatibilityLifecycleGeneration;
+
+export const isCompatibilityLifecycleCurrent = (generation: number) =>
+  generation === metadataState.compatibilityLifecycleGeneration;
 
 export const subscribeCompatibilityRevision = (listener: () => void): Unpatch => {
   compatibilityRevisionListeners.add(listener);

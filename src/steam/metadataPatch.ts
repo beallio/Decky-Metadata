@@ -1,5 +1,5 @@
 import { findModuleChild } from "@decky/ui";
-import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, saveMetadata } from "../backend";
+import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, getCompatibilityDefault, saveMetadata } from "../backend";
 import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
@@ -15,6 +15,7 @@ import {
   gameDetailAppIdFromPath,
   getNativeOverview,
   getOverview,
+  isCompatibilityLifecycleCurrent,
   isCurrentGameDetailRoute,
   isNonSteamApp,
   isNativeNonSteamShortcut,
@@ -146,10 +147,19 @@ const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCate
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 
 export const effectiveCompatibilityCategory = (
-  metadata: MetadataData | undefined
+  metadata: MetadataData | undefined,
+  globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
 ): DeckCompatibilityCategory | null => {
   if (isCompatibilityCategory(metadata?.deck_compat_override)) {
     return metadata.deck_compat_override;
+  }
+  if (metadata?.deck_compat_override === "valve") {
+    return isCompatibilityCategory(metadata.deck_compat_category)
+      ? metadata.deck_compat_category
+      : null;
+  }
+  if (isCompatibilityCategory(globalDefault)) {
+    return globalDefault;
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {
     return metadata.deck_compat_category;
@@ -182,8 +192,16 @@ const restoreCompatibilityBaseline = (appId: number, overview = getNativeOvervie
 };
 
 export const restoreAllCompatibilityBaselines = () => {
+  const overviews = new Map<number, any>();
+  try {
+    Array.from(appStore?.allApps || []).forEach((overview: any) => {
+      if (isNativeNonSteamShortcut(overview)) overviews.set(Number(overview.appid), overview);
+    });
+  } catch {
+    // A changed store leaves untouched baselines for a later native update.
+  }
   Object.keys(metadataState.compatibilityBaselines).forEach((key) => {
-    restoreCompatibilityBaseline(Number(key));
+    restoreCompatibilityBaseline(Number(key), overviews.get(Number(key)));
   });
 };
 
@@ -229,7 +247,162 @@ const applyCompatibilityToOverview = (appId: number, overview: any) => {
     return false;
   }
   const metadata = metadataCache[String(appId)];
-  return applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+  return applyCompatibilityCategory(
+    appId,
+    overview,
+    effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault),
+  );
+};
+
+type CompatibilityPublication = { appId: number; overview: any };
+
+const createCompatibilityReplacement = (overview: any) => {
+  const prototype = Object.getPrototypeOf(overview);
+  const NativeOverview = overview?.constructor;
+  if (!prototype || typeof NativeOverview !== "function") return null;
+  try {
+    // Publish through Steam's observable native map with a fresh native
+    // instance. Constructor-owned state must stay on that instance, while
+    // copied fields retain the exact shortcut identity and packed policy.
+    const replacement = new NativeOverview();
+    if (!replacement || Object.getPrototypeOf(replacement) !== prototype) return null;
+    if (
+      typeof overview.BHasObservables === "function" &&
+      typeof replacement.BHasObservables === "function" &&
+      overview.BHasObservables() !== replacement.BHasObservables()
+    ) {
+      return null;
+    }
+    Object.keys(overview).forEach((key) => {
+      if (key !== "LOG_CHANGE") replacement[key] = overview[key];
+    });
+    replacement.RestorePreservedState?.(overview.GetPreservedState?.());
+    return replacement;
+  } catch {
+    // A changed native constructor leaves the current map entry untouched.
+    return null;
+  }
+};
+
+/**
+ * Steam's compatibility collections observe m_mapApps, not the plugin's
+ * revision listeners. Publish only after a completed linear write batch.
+ */
+const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublication>) => {
+  try {
+    const overviews = appStore?.m_mapApps;
+    if (!overviews || typeof overviews.get !== "function" || typeof overviews.set !== "function") return;
+    for (const { appId, overview } of updates) {
+      // Never publish a stale entry, an alias, or an official Steam overview.
+      if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview)) continue;
+      const replacement = createCompatibilityReplacement(overview);
+      if (replacement) overviews.set(appId, replacement);
+    }
+  } catch {
+    // Steam can replace this private map during a batch. The current objects
+    // remain correct, and a later policy or metadata update can publish again.
+  }
+};
+
+const nativeShortcutOverviewsById = () => {
+  const overviews = new Map<number, any>();
+  try {
+    Array.from(appStore?.allApps || []).forEach((overview: any) => {
+      const appId = Number(overview?.appid);
+      if (Number.isFinite(appId) && appId > 0 && isNativeNonSteamShortcut(overview)) {
+        overviews.set(appId, overview);
+      }
+    });
+  } catch {
+    // Steam can replace its app list during bootstrap. The next bounded pass retries.
+  }
+  return overviews;
+};
+
+/** Apply the confirmed global policy in one linear pass over native shortcuts. */
+export const applyCompatibilityDefault = () => {
+  let changed = false;
+  const publications: CompatibilityPublication[] = [];
+  let overviews: any[] = [];
+  try {
+    overviews = Array.from(appStore?.allApps || []);
+  } catch {
+    return false;
+  }
+  overviews.forEach((overview) => {
+    const appId = Number(overview?.appid);
+    if (!Number.isFinite(appId) || appId <= 0) return;
+    if (applyCompatibilityToOverview(appId, overview)) {
+      changed = true;
+      publications.push({ appId, overview });
+    }
+  });
+  publishCompatibilityReplacements(publications);
+  return changed;
+};
+
+/** Commit only a backend-confirmed setting, and invalidate older loads first. */
+export const setConfirmedCompatibilityDefault = (
+  category: DeckCompatibilityCategory | null,
+  lifecycleGeneration = metadataState.compatibilityLifecycleGeneration,
+) => {
+  if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
+    return metadataState.compatibilityDefault;
+  }
+  const changedPolicy = metadataState.compatibilityDefault !== category || !metadataState.compatibilityDefaultLoaded;
+  metadataState.compatibilityDefaultGeneration += 1;
+  metadataState.compatibilityDefault = category;
+  metadataState.compatibilityDefaultLoaded = true;
+  const compatibilityChanged = applyCompatibilityDefault();
+  if (changedPolicy || compatibilityChanged) notifyCompatibilityRevision();
+  return category;
+};
+
+/** Start a new plugin lifetime and make unfinished work from the old one inert. */
+export const beginCompatibilityLifecycle = () => {
+  metadataState.compatibilityLifecycleGeneration += 1;
+  metadataState.compatibilityDefaultGeneration += 1;
+  metadataState.compatibilityDefault = null;
+  metadataState.compatibilityDefaultLoaded = false;
+  metadataState.compatibilityDefaultLoadPromise = null;
+  metadataState.metadataLoadPromise = null;
+  return metadataState.compatibilityLifecycleGeneration;
+};
+
+/** Load the shared setting once. A failed load remains an error, not Automatic. */
+export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCategory | null> => {
+  if (metadataState.compatibilityDefaultLoaded) return metadataState.compatibilityDefault;
+  if (!metadataState.compatibilityDefaultLoadPromise) {
+    const requestGeneration = metadataState.compatibilityDefaultGeneration;
+    const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
+    const request = getCompatibilityDefault().then((value) => {
+      const category = isCompatibilityCategory(value) ? value : null;
+      if (
+        requestGeneration !== metadataState.compatibilityDefaultGeneration ||
+        lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration
+      ) {
+        return metadataState.compatibilityDefault;
+      }
+      metadataState.compatibilityDefault = category;
+      metadataState.compatibilityDefaultLoaded = true;
+      applyCompatibilityDefault();
+      notifyCompatibilityRevision();
+      return category;
+    });
+    const loadPromise = request.finally(() => {
+      if (metadataState.compatibilityDefaultLoadPromise === loadPromise) {
+        metadataState.compatibilityDefaultLoadPromise = null;
+      }
+    });
+    metadataState.compatibilityDefaultLoadPromise = loadPromise;
+  }
+  return metadataState.compatibilityDefaultLoadPromise;
+};
+
+/** Make a late settings request inert when the plugin unloads. */
+export const cancelCompatibilityDefaultLoad = () => {
+  metadataState.compatibilityDefaultGeneration += 1;
+  metadataState.compatibilityLifecycleGeneration += 1;
 };
 
 /**
@@ -245,7 +418,10 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   const isIncomingShortcut = Number(overview?.app_type?.()) === NON_STEAM_APP_TYPE;
   if (!isIncomingShortcut && !isNativeNonSteamShortcut(current)) return false;
 
-  const category = effectiveCompatibilityCategory(metadataCache[String(appId)]);
+  const category = effectiveCompatibilityCategory(
+    metadataCache[String(appId)],
+    metadataState.compatibilityDefault,
+  );
   if (category === null) return false;
   const packed = Number(overview?.steam_hw_compat_category_packed?.());
   if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
@@ -267,73 +443,31 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   }
 };
 
-/**
- * A direct metadata change has no native AppOverview notification. Replace
- * only the exact current map entry with a fresh native instance so the
- * observable map publishes the completed category. This is a single get/set,
- * never a map scan or a write through an official-AppID alias.
- */
-const createCompatibilityReplacement = (overview: any) => {
-  const prototype = Object.getPrototypeOf(overview);
-  const NativeOverview = overview?.constructor;
-  if (!prototype || typeof NativeOverview !== "function") return null;
-  try {
-    // Steam uses both observable and non-observable AppOverview classes. Run
-    // the native constructor so an observable replacement keeps its MobX
-    // initialization instead of inheriting a prototype without that state.
-    const replacement = new NativeOverview();
-    if (!replacement || Object.getPrototypeOf(replacement) !== prototype) return null;
-    if (
-      typeof overview.BHasObservables === "function" &&
-      typeof replacement.BHasObservables === "function" &&
-      overview.BHasObservables() !== replacement.BHasObservables()
-    ) {
-      return null;
-    }
-    Object.keys(overview).forEach((key) => {
-      // This native debug callback is initialized by the constructor and is
-      // bound to that instance. Keep the replacement's own callback.
-      if (key !== "LOG_CHANGE") replacement[key] = overview[key];
-    });
-    replacement.RestorePreservedState?.(overview.GetPreservedState?.());
-    return replacement;
-  } catch {
-    // A changed native constructor leaves the original map entry untouched.
-    return null;
-  }
-};
-
-const publishCompatibilityReplacement = (appId: number, overview: any) => {
-  try {
-    const overviews = appStore?.m_mapApps;
-    if (
-      !overviews ||
-      typeof overviews.get !== "function" ||
-      typeof overviews.set !== "function" ||
-      overviews.get(appId) !== overview
-    ) {
-      return;
-    }
-    const replacement = createCompatibilityReplacement(overview);
-    if (!replacement) return;
-    overviews.set(appId, replacement);
-  } catch {
-    // A changed Steam map leaves the native overview in place; never retry.
-  }
-};
-
 export const refreshMetadataCache = async () => {
+  const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
+  const wasLoaded = metadataState.metadataLoaded;
   const all = await getAllMetadata();
+  if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) return;
+  const previousMetadata = { ...metadataCache };
   const affectedAppIds = new Set([
-    ...Object.keys(metadataCache),
-    ...Object.keys(metadataState.compatibilityBaselines),
+    ...Object.keys(previousMetadata),
     ...Object.keys(all || {}),
+    // A restoration can fail while Steam is replacing an overview. Keep each
+    // retained baseline in this one entry-based batch so a later refresh can
+    // restore it without reverting to one whole-library scan per shortcut.
+    ...Object.keys(metadataState.compatibilityBaselines),
   ]);
+  const policyChanged = [...affectedAppIds].some((key) =>
+    effectiveCompatibilityCategory(previousMetadata[key], metadataState.compatibilityDefault) !==
+    effectiveCompatibilityCategory((all || {})[key], metadataState.compatibilityDefault)
+  );
   Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
   Object.assign(metadataCache, all || {});
   metadataState.metadataLoaded = true;
-  affectedAppIds.forEach((key) => applyMetadata(Number(key)));
-  notifyCompatibilityRevision();
+  const compatibilityChanged = applyMetadataBatch(affectedAppIds);
+  // A first successful load must wake mounted cards even if Steam has not made
+  // its overview writable yet. Later no-op refreshes stay quiet.
+  if (compatibilityChanged || policyChanged || !wasLoaded) notifyCompatibilityRevision();
 };
 
 export const ensureMetadataCache = async () => {
@@ -349,40 +483,49 @@ export const ensureMetadataCache = async () => {
 export const startMetadataBootstrap = (): Unpatch => {
   let cancelled = false;
   let attempts = 0;
+  const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   const tick = async () => {
-    if (cancelled) return;
+    if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) return;
     try {
       await ensureMetadataCache();
-      let compatibilityChanged = false;
-      Object.keys(metadataCache).forEach((key) => {
-        compatibilityChanged = applyMetadata(Number(key)) || compatibilityChanged;
-      });
-      if (compatibilityChanged) notifyCompatibilityRevision();
+      if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) return;
+      try {
+        await ensureCompatibilityDefault();
+      } catch (error) {
+        // Metadata can still apply Valve/explicit choices while the setting is
+        // unavailable. The QAM keeps the load as an error and cannot save it.
+        log.warn("bridge", "compatibility default bootstrap failed", error);
+      }
+      if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) return;
+      const metadataChanged = applyMetadataBatch(Object.keys(metadataCache));
+      const compatibilityChanged = applyCompatibilityDefault();
+      if (metadataChanged || compatibilityChanged) notifyCompatibilityRevision();
     } catch (error) {
       log.warn("bridge", "metadata bootstrap failed", error);
     }
     attempts += 1;
-    if (!cancelled && attempts < 24) {
+    if (!cancelled && lifecycleGeneration === metadataState.compatibilityLifecycleGeneration && attempts < 24) {
       window.setTimeout(tick, 500);
     }
   };
   void tick();
   return () => {
     cancelled = true;
+    if (lifecycleGeneration === metadataState.compatibilityLifecycleGeneration) {
+      cancelCompatibilityDefaultLoad();
+    }
   };
 };
 
-export const applyMetadata = (appId: number) => {
-  const overview = getNativeOverview(appId);
+const applyMetadataToOverview = (appId: number, overview: any) => {
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
   if (!metadata || !metadata.steam_news?.length) {
     clearDeckyNativeActivityForApp(appId);
   }
   if (!metadata) {
-    const restored = restoreCompatibilityBaseline(appId, overview);
-    if (restored) publishCompatibilityReplacement(appId, overview);
-    return restored;
+    const compatibilityChanged = applyCompatibilityToOverview(appId, overview);
+    return compatibilityChanged;
   }
 
   let compatibilityChanged = false;
@@ -403,7 +546,6 @@ export const applyMetadata = (appId: number) => {
 
   const appData = appDetailsStore?.GetAppData?.(appId);
   if (!appData) {
-    if (compatibilityChanged) publishCompatibilityReplacement(appId, overview);
     return compatibilityChanged;
   }
   ensureDetailsOverviewSafeFields(appId);
@@ -459,7 +601,31 @@ export const applyMetadata = (appId: number) => {
       // Cache writes can fail if the page has not finished creating app data.
     }
   }
-  if (compatibilityChanged) publishCompatibilityReplacement(appId, overview);
+  return compatibilityChanged;
+};
+
+/** Apply metadata records through one native-app lookup, never one full scan per record. */
+const applyMetadataBatch = (appIds: Iterable<string | number>) => {
+  const overviews = nativeShortcutOverviewsById();
+  let compatibilityChanged = false;
+  const publications: CompatibilityPublication[] = [];
+  for (const appIdValue of appIds) {
+    const appId = Number(appIdValue);
+    if (!Number.isFinite(appId) || appId <= 0) continue;
+    const overview = overviews.get(appId);
+    if (overview && applyMetadataToOverview(appId, overview)) {
+      compatibilityChanged = true;
+      publications.push({ appId, overview });
+    }
+  }
+  publishCompatibilityReplacements(publications);
+  return compatibilityChanged;
+};
+
+export const applyMetadata = (appId: number) => {
+  const overview = getNativeOverview(appId);
+  const compatibilityChanged = applyMetadataToOverview(appId, overview);
+  if (compatibilityChanged && overview) publishCompatibilityReplacements([{ appId, overview }]);
   return compatibilityChanged;
 };
 
@@ -484,13 +650,16 @@ const steamScreenshotsFromMetadata = (appId: number, metadata: MetadataData) =>
     }));
 
 export const tryFetchMetadataForApp = async (appId: number) => {
+  const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   await ensureMetadataCache();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
   if (metadataCache[String(appId)] || metadataState.loadingMetadata.has(appId)) return;
   const overview = getOverview(appId);
   if (!isNonSteamApp(overview)) return;
   metadataState.loadingMetadata.add(appId);
   try {
     const metadata = await autoFetchMetadata(appId, appName(appId));
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
     if (metadata) {
       metadataCache[String(appId)] = metadata;
       applyMetadata(appId);
@@ -502,7 +671,9 @@ export const tryFetchMetadataForApp = async (appId: number) => {
 };
 
 export const tryEnrichScreenshotsForApp = async (appId: number) => {
+  const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   await ensureMetadataCache();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
   const metadata = metadataCache[String(appId)];
   if (
     !metadata ||
@@ -517,11 +688,13 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   metadataState.loadingScreenshots.add(appId);
   try {
     const refreshed = await fetchMetadata(source);
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
     if (refreshed?.screenshots?.length) {
       const saved = await saveMetadata(appId, {
         ...metadata,
         screenshots: refreshed.screenshots,
       });
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       metadataCache[String(appId)] = saved;
       applyMetadata(appId);
       notifyCompatibilityRevision();
@@ -661,7 +834,9 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
             return appData.descriptionsData;
           }
         } else {
+          const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
           void ensureMetadataCache().then(() => {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
             if (metadataCache[String(appId)]) {
               applyMetadata(appId);
               void tryEnrichScreenshotsForApp(appId);

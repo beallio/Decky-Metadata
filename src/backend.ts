@@ -2,6 +2,7 @@ import { callable } from "@decky/api";
 import {
   GameOption,
   CommunityFallbackPage,
+  DeckCompatibilityCategory,
   MetadataData,
   MetadataSearchResult,
   PluginUpdateCandidate,
@@ -118,6 +119,13 @@ export const getDebugLogging = callable<[], boolean>("get_debug_logging");
 export const setDebugLogging = callable<[enabled: boolean], boolean>(
   "set_debug_logging"
 );
+export const getCompatibilityDefault = callable<[], DeckCompatibilityCategory | null>(
+  "get_compatibility_default"
+);
+export const setCompatibilityDefault = callable<
+  [category: DeckCompatibilityCategory | null],
+  DeckCompatibilityCategory | null
+>("set_compatibility_default");
 export const checkForPluginUpdate = callable<
   [currentVersion: string, force: boolean],
   UpdateCheckResult
