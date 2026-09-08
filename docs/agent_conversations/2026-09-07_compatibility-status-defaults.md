@@ -455,3 +455,49 @@ compatibility default, retain per-game precedence, and add the explicit
   Verified shortcuts `4 -> 16 -> 4` with collection membership `34 -> 46 ->
   34`, while confirming the mounted Game Info, a Follow Valve exception, a
   fixed exception, and an ordinary Steam title remain correct.
+
+## Review round 10
+
+### Mounted observer-wrapped renderer discovery
+
+- Read the live renderer evidence at
+  `/tmp/Decky-Metadata/resumed-native-gameinfo-renderers.json`. The observed
+  native Game Info class has an observer-wrapped `prototype.render`, so its
+  wrapper source lacks the semantic fingerprint while `String(class)` retains
+  both `BIsModOrShortcut` and `GetDescriptions`.
+- Compatibility revision subscription now starts independently of module
+  discovery. Renderer identification retains the React-class and semantic
+  checks, first tests the render source, then uses the cached full-class source
+  fallback. A bounded scan of real Big Picture document `div` fibers captures
+  the mounted class even when the compatibility heading is absent in Steam's
+  placeholder view. It follows only explicit DOM and fiber-return links.
+- Once captured, the class receives mount/unmount lifecycle tracking. Cleanup
+  cancels retries, unsubscribes the revision callback, unpatches lifecycle
+  hooks, and drops captured instances. No compatibility policy, native filter,
+  launch-truth, or controller-focus behavior changed.
+
+### Local validation and package handoff
+
+- The requested behavioral regression was red before the correction:
+  `/tmp/Decky-Metadata/routerPatches-round10-red.log` records that a
+  module-finder miss and observer-wrapped renderer left the mounted Game Info
+  placeholder unchanged. The fixed focused command,
+  `./run.sh npm test -- src/steam/routerPatches.test.ts`, passed 1 Vitest file
+  / 6 tests. It proves a heading-free real-document fiber capture updates the
+  rendered content and category through the normal revision path and that
+  cleanup detaches that subscription.
+- `./run.sh scripts/orchestration/run-quality-gates` passed. It regenerated
+  `dist/`, passed TypeScript, Rollup, 27 Vitest files / 461 tests, Python
+  byte-compilation, pytest, version checks, and review-note retention. Full
+  output: `/tmp/Decky-Metadata/compatibility-status-defaults-round10-quality-gates.log`.
+  `git diff --check` and `scripts/orchestration/check-review-notes-not-deleted`
+  also passed.
+- Commit `d134ea4` (`fix(steam): discover mounted game info renderer`) contains
+  the focused source, test, and regenerated bundle. `./run.sh npm run package`
+  produced `Decky-Metadata.zip` with version `0.3.14+d134ea4` and SHA-256
+  `59b68e0cfe6caadf0f4a9f8ead5cc9de1edef317349071005f4c3bab5244621c`.
+- This correction round made no Deck connection, deploy, installation,
+  navigation, fixture, settings, or shortcut mutation. Main retains device
+  ownership for the next full-ZIP validation: mounted Game Info recovery from
+  the placeholder, unchanged Follow Valve and numeric exceptions, pre-mounted
+  reload behavior, and native collection checks.
