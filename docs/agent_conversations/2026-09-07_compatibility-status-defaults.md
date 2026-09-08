@@ -501,3 +501,41 @@ compatibility default, retain per-game precedence, and add the explicit
   ownership for the next full-ZIP validation: mounted Game Info recovery from
   the placeholder, unchanged Follow Valve and numeric exceptions, pre-mounted
   reload behavior, and native collection checks.
+
+## Review round 11
+
+### Native-publication frame handoff
+
+- The compatibility revision listener now coalesces work into one animation
+  frame from the real Steam browser document returned by the shared SteamUI
+  bridge. It does not capture a Game Info instance or arm the route shield
+  until that frame runs. The existing refresh then captures the current
+  mounted native renderer, verifies its native shortcut and active route,
+  arms the existing shield, and calls its native update method.
+- Cleanup cancels an outstanding frame through its owning browser window,
+  clears both frame references, then retains the existing unsubscribe,
+  lifecycle-unpatch, and mounted-instance cleanup. No fixed delay, polling,
+  filter-publication, category-policy, or device behavior was added.
+
+### Red-to-green and local package handoff
+
+- The requested regression was red before the correction:
+  `/tmp/Decky-Metadata/routerPatches-round11-red.log` records that the old
+  revision listener did not defer a native Game Info refresh. The focused
+  command `./run.sh npm test -- src/steam/routerPatches.test.ts` passed 1
+  Vitest file / 7 tests. Its replacement-view case sends Verified then
+  Playable revisions before native publication, replaces the visible native
+  instance, and verifies the rendered Game Info result is Playable after the
+  one queued main-window frame.
+- `./run.sh scripts/orchestration/run-quality-gates` passed: TypeScript,
+  Rollup, 27 Vitest files / 462 tests, Python byte-compilation, pytest,
+  version checks, and review-note retention. Full output is at
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round11-quality-gates.log`.
+  `git diff --check` passed before the gate.
+- `./run.sh npm run package` produced the local `Decky-Metadata.zip` with
+  version `0.3.14+2991f79` and SHA-256
+  `f50efb52930c3198ee0ce987ebaa823a95c004fe6b4eb1da17bae611a686f746`.
+  Commit `0139c86` (`fix(steam): defer native compatibility refresh`) contains
+  the source, regression, and regenerated bundle.
+  This round made no Deck connection, deployment, installation, setting,
+  fixture, navigation, or device smoke run. Main retains all live validation.
