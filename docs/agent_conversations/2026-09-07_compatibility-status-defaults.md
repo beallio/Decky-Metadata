@@ -589,3 +589,8 @@ compatibility default, retain per-game precedence, and add the explicit
   `/tmp/Decky-Metadata/verification/20260908T232102Z/`; recovery captures are
   `/tmp/Decky-Metadata/diagnostics/20260908T231238Z` and
   `/tmp/Decky-Metadata/diagnostics/20260908T231605Z`.
+- Commit `bd383f3` (`fix(steam): preserve compatibility reload state`) contains
+  the correction, regressions, generated bundle, and this implementation
+  record. `./run.sh scripts/decky package-push --build --push` created and
+  delivered `Decky-Metadata.zip` version `0.3.14+bd383f3`; archive validation
+  passed and the Deck reports `REINSTALL_REQUIRED` for the delivered local ZIP.
