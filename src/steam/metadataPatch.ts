@@ -255,6 +255,23 @@ const applyCompatibilityToOverview = (appId: number, overview: any) => {
 };
 
 type CompatibilityPublication = { appId: number; overview: any };
+const deferredCompatibilityPublications = new Map<number, CompatibilityPublication>();
+
+const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibilityBaselines";
+
+export const retainCompatibilityBaselinesForReload = () => {
+  const baselines = metadataState.compatibilityBaselines;
+  if (Object.keys(baselines).length === 0) return;
+  (globalThis as Record<string, unknown>)[RETAINED_COMPATIBILITY_BASELINES_KEY] = { ...baselines };
+};
+
+const resumeRetainedCompatibilityBaselines = () => {
+  const host = globalThis as Record<string, unknown>;
+  const retained = host[RETAINED_COMPATIBILITY_BASELINES_KEY];
+  if (!retained || typeof retained !== "object") return;
+  Object.assign(metadataState.compatibilityBaselines, retained);
+  delete host[RETAINED_COMPATIBILITY_BASELINES_KEY];
+};
 
 const createCompatibilityReplacement = (overview: any) => {
   const prototype = Object.getPrototypeOf(overview);
@@ -295,12 +312,42 @@ const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublica
     for (const { appId, overview } of updates) {
       // Never publish a stale entry, an alias, or an official Steam overview.
       if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview)) continue;
+      // Replacing the overview object underneath a selected native Game Info
+      // renderer can re-enter its retained observer during an in-place plugin
+      // reload. The packed field is already updated for the frame refresh;
+      // defer only this observable-map notification until the user leaves it.
+      if (isCurrentGameDetailRoute(currentRoutePath(), appId)) {
+        deferredCompatibilityPublications.set(appId, { appId, overview });
+        continue;
+      }
       const replacement = createCompatibilityReplacement(overview);
-      if (replacement) overviews.set(appId, replacement);
+      if (!replacement) continue;
+      // Another plugin can decorate the observable map setter and retain the
+      // native setter as `originalSet`. This replacement already copies every
+      // current native field, so re-entering a foreign decorator can replay
+      // its side effects against a live Game Info tree during plugin reload.
+      // Publish through the preserved native setter when it is explicitly
+      // available; it still emits the map replacement Steam filters observe.
+      const nativeSet = overviews.originalSet;
+      if (typeof nativeSet === "function" && nativeSet !== overviews.set) {
+        nativeSet.call(overviews, appId, replacement);
+      } else {
+        overviews.set(appId, replacement);
+      }
     }
   } catch {
     // Steam can replace this private map during a batch. The current objects
     // remain correct, and a later policy or metadata update can publish again.
+  }
+};
+
+/** Publish active-view updates after their native Game Info renderer unmounts. */
+export const flushDeferredCompatibilityPublications = () => {
+  const pending = Array.from(deferredCompatibilityPublications.values());
+  for (const publication of pending) {
+    if (isCurrentGameDetailRoute(currentRoutePath(), publication.appId)) continue;
+    deferredCompatibilityPublications.delete(publication.appId);
+    publishCompatibilityReplacements([publication]);
   }
 };
 
@@ -366,6 +413,7 @@ export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityDefaultLoaded = false;
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoadPromise = null;
+  resumeRetainedCompatibilityBaselines();
   return metadataState.compatibilityLifecycleGeneration;
 };
 

@@ -41,7 +41,7 @@ import {
   notifyCompatibilityRevision,
 } from "./core";
 import { installMetadataPatches, setConfirmedCompatibilityDefault } from "./metadataPatch";
-import { installRouterRenderPatches } from "./routerPatches";
+import { installNonSteamQuickLinkPolicy, installRouterRenderPatches } from "./routerPatches";
 
 afterEach(() => {
   mocks.routeHandlers.length = 0;
@@ -68,6 +68,81 @@ afterEach(() => {
 });
 
 describe("router compatibility publication", () => {
+  it("keeps retained quick-link wrappers single across a plugin reimport", () => {
+    const appId = 9713;
+    const overview = {
+      appid: appId,
+      app_type: 1073741824,
+      BIsShortcut: () => true,
+      BIsModOrShortcut: () => true,
+    };
+    const details = {};
+    const reactElement = Symbol.for("react.element");
+    const OriginalQuickLinks = () => null;
+    let quickLinksElement: any;
+    const OriginalInfoBoundary = () => quickLinksElement;
+    quickLinksElement = {
+      $$typeof: reactElement,
+      type: OriginalQuickLinks,
+      props: { overview, details, workshopVisible: false, marketPresence: false },
+    };
+    const infoBoundaryElement: any = {
+      $$typeof: reactElement,
+      type: OriginalInfoBoundary,
+      props: { overview, details, children: quickLinksElement },
+    };
+    const retainedInfoTree = {
+      $$typeof: reactElement,
+      type: "div",
+      props: { children: infoBoundaryElement },
+    };
+    class InfoSectionHost {
+      props = { name: "info" };
+
+      render() {
+        // Steam's section host exposes this stable native fingerprint.
+        void "RegisterSection";
+        return retainedInfoTree;
+      }
+    }
+    (InfoSectionHost.prototype as any).isReactComponent = {};
+    mocks.findModuleChild.mockImplementation((predicate: (module: unknown) => unknown) =>
+      predicate({ InfoSectionHost })
+    );
+    metadataCache[String(appId)] = { steam_appid: 55150 } as any;
+
+    const firstLifetime: Array<() => void> = [];
+    installNonSteamQuickLinkPolicy(firstLifetime);
+    new InfoSectionHost().render();
+    infoBoundaryElement.type({ overview, details });
+
+    expect(infoBoundaryElement.type).not.toBe(OriginalInfoBoundary);
+    expect(quickLinksElement.type).not.toBe(OriginalQuickLinks);
+    const firstInfoWrapper = infoBoundaryElement.type;
+    const firstQuickLinksWrapper = quickLinksElement.type;
+
+    // Decky reimports in place. Steam can retain this exact React tree after
+    // the first plugin lifetime has ended. Do not mutate a mounted element at
+    // teardown; the retained wrapper must delegate to the next lifetime.
+    firstLifetime.reverse().forEach((unpatch) => unpatch());
+
+    expect(infoBoundaryElement.type).toBe(firstInfoWrapper);
+    expect(quickLinksElement.type).toBe(firstQuickLinksWrapper);
+
+    const secondLifetime: Array<() => void> = [];
+    installNonSteamQuickLinkPolicy(secondLifetime);
+    new InfoSectionHost().render();
+    infoBoundaryElement.type({ overview, details });
+
+    // The current policy handles the retained tree without building another
+    // wrapper layer around the first lifetime's native component.
+    expect(infoBoundaryElement.type).toBe(firstInfoWrapper);
+    expect(quickLinksElement.type).toBe(firstQuickLinksWrapper);
+    secondLifetime.reverse().forEach((unpatch) => unpatch());
+    expect(infoBoundaryElement.type).toBe(firstInfoWrapper);
+    expect(quickLinksElement.type).toBe(firstQuickLinksWrapper);
+  });
+
   it.each([
     ["Follow Valve", "valve" as const],
     ["an explicit category", 3 as const],
@@ -184,8 +259,7 @@ describe("router compatibility publication", () => {
       tryFetchMetadataForApp: vi.fn(async () => undefined),
       refreshDeckyNativeActivityForApp: vi.fn(async () => null),
     });
-    expect(mocks.findModuleChild).toHaveBeenCalled();
-    expect(NativeGameInfo.prototype.componentDidMount).not.toBe(originalMount);
+    expect(NativeGameInfo.prototype.componentDidMount).toBe(originalMount);
     expect(isCurrentGameDetailRoute(currentRoutePath(), overview.appid)).toBe(true);
 
     armRouteShield(appId, currentRoutePath(), "pre-existing-render");
@@ -360,6 +434,8 @@ describe("router compatibility publication", () => {
       }
     }
     const overview = new NativeOverview();
+    const replacementOverview = new NativeOverview();
+    let currentOverview = overview;
     let visibleResult: { content: string; category: string } = {
       content: "non-Steam placeholder",
       category: "Unknown",
@@ -405,7 +481,11 @@ describe("router compatibility publication", () => {
       },
     };
     (globalThis as any).window = { location: { pathname: `/library/app/${appId}/tab/GameInfo` } };
-    (globalThis as any).appStore = { allApps: [overview] };
+    (globalThis as any).appStore = {
+      allApps: [overview],
+      GetAppOverviewByAppID: (requestedAppId: number) =>
+        requestedAppId === appId ? currentOverview : null,
+    };
     (globalThis as any).appDetailsStore = {};
     metadataState.compatibilityDefault = null;
     metadataState.compatibilityDefaultLoaded = true;
@@ -413,7 +493,7 @@ describe("router compatibility publication", () => {
     installMetadataPatches(metadataUnpatchers);
 
     const stale = new NativeGameInfo({ overview });
-    const replacement = new NativeGameInfo({ overview });
+    const replacement = new NativeGameInfo({ overview: replacementOverview });
     let currentFiber: Record<string, unknown> = {
       elementType: NativeGameInfo,
       stateNode: stale,
@@ -468,6 +548,8 @@ describe("router compatibility publication", () => {
     // queued refresh must capture and update this live instance, not `stale`.
     stale.componentWillUnmount();
     replacement.visible = true;
+    replacementOverview.steam_hw_compat_category_packed = overview.steam_hw_compat_category_packed;
+    currentOverview = replacementOverview;
     replacement.componentDidMount();
     currentFiber = { elementType: NativeGameInfo, stateNode: replacement, return: null };
 
@@ -475,6 +557,15 @@ describe("router compatibility publication", () => {
     queuedFrame(16);
 
     expect(visibleResult).toEqual({ content: "rich game info", category: "Playable" });
+
+    // A retained fiber from the previous plugin module must not receive a
+    // forced update after Steam has published a new overview object. That
+    // update can re-enter an unmounted observer wrapper during in-place reload.
+    currentFiber = { elementType: NativeGameInfo, stateNode: stale, return: null };
+    notifyCompatibilityRevision();
+    if (!queuedFrame) throw new Error("stale Game Info refresh was not deferred to the main window");
+    queuedFrame(32);
+    expect(stale.forceUpdate).not.toHaveBeenCalled();
     unpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });

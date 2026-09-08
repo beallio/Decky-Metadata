@@ -13,15 +13,53 @@ import {
   cancelCompatibilityDefaultLoad,
   ensureCompatibilityDefault,
   refreshMetadataCache,
+  retainCompatibilityBaselinesForReload,
   restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
 } from "./steam";
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
 
+const installInPlaceReloadGuard = (onFailedReload: () => void) => {
+  const loader = (globalThis as any).DeckyPluginLoader;
+  if (!loader || typeof loader.importPlugin !== "function") {
+    return { isPending: () => false, unpatch: () => undefined };
+  }
+  const original = loader.importPlugin;
+  let pending = false;
+  const guardedImport = async function (this: any, name: string, ...args: any[]) {
+    const isThisPlugin = name === "Decky Metadata";
+    if (isThisPlugin) pending = true;
+    try {
+      return await original.call(this, name, ...args);
+    } catch (error) {
+      if (isThisPlugin && pending) onFailedReload();
+      throw error;
+    } finally {
+      if (isThisPlugin) pending = false;
+    }
+  };
+  loader.importPlugin = guardedImport;
+  return {
+    isPending: () => pending,
+    unpatch: () => {
+      if (loader.importPlugin === guardedImport) loader.importPlugin = original;
+    },
+  };
+};
+
 export default definePlugin(() => {
   clearCompatibilityDropdownReturn();
   beginCompatibilityLifecycle();
+  let retainedReloadBaselines = false;
+  const reloadGuard = installInPlaceReloadGuard(() => {
+    if (!retainedReloadBaselines) return;
+    try {
+      restoreAllCompatibilityBaselines();
+    } finally {
+      retainedReloadBaselines = false;
+    }
+  });
   void getDebugLogging()
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
@@ -75,7 +113,12 @@ export default definePlugin(() => {
         log.error("patch", "compatibility dropdown focus stop failed", error);
       }
       try {
-        restoreAllCompatibilityBaselines();
+        if (reloadGuard.isPending()) {
+          retainCompatibilityBaselinesForReload();
+          retainedReloadBaselines = true;
+        } else {
+          restoreAllCompatibilityBaselines();
+        }
       } catch (error) {
         log.error("patch", "compatibility baseline restore failed", error);
       }
@@ -84,6 +127,7 @@ export default definePlugin(() => {
       } catch (error) {
         log.error("patch", "Steam unpatch failed", error);
       }
+      reloadGuard.unpatch();
       try {
         routerHook.removeRoute(METADATA_ROUTE);
       } catch (error) {

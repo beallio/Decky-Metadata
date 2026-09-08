@@ -37,6 +37,7 @@ import { refreshDeckyNativeActivityForApp } from "./activity";
 import {
   applyMetadata,
   effectiveCompatibilityCategory,
+  flushDeferredCompatibilityPublications,
   installMetadataPatches,
   applyCompatibilityDefault,
   beginCompatibilityLifecycle,
@@ -49,6 +50,7 @@ import {
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
   restoreAllCompatibilityBaselines,
+  retainCompatibilityBaselinesForReload,
 } from "./metadataPatch";
 
 type Overview = {
@@ -921,6 +923,153 @@ describe("compatibility metadata application", () => {
     expect(current.LOG_CHANGE.owner).toBe(2);
     expect((current as any).constructorState).toEqual({ owner: 2 });
     expect(restoreCalls).toBe(1);
+  });
+
+  it("publishes a compatibility replacement through a preserved native map setter", () => {
+    const appId = 9453;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const original = new NativeOverview();
+    const overviews: any = new Map([[appId, original]]);
+    const nativeSet = vi.fn((key: number, value: NativeOverview) =>
+      Map.prototype.set.call(overviews, key, value)
+    );
+    const foreignSet = vi.fn((key: number, value: NativeOverview) => nativeSet(key, value));
+    overviews.originalSet = nativeSet;
+    overviews.set = foreignSet;
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = { allApps: [original], m_mapApps: overviews };
+    host.appDetailsStore = {};
+    metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+
+    expect(foreignSet).not.toHaveBeenCalled();
+    expect(nativeSet).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
+    expect(overviews.get(appId)).not.toBe(original);
+    expect(overviews.get(appId).steam_hw_compat_category_packed).toBe(0xaf);
+  });
+
+  it("does not republish an unchanged default after a retained in-place reload", () => {
+    const appId = 9454;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const original = new NativeOverview();
+    const overviews = new Map<number, NativeOverview>([[appId, original]]);
+    const set = overviews.set.bind(overviews);
+    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [original],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
+    };
+    host.appDetailsStore = {};
+
+    setConfirmedCompatibilityDefault(3);
+    const published = overviews.get(appId) as NativeOverview;
+    host.appStore = {
+      ...(host.appStore as object),
+      allApps: [published],
+    };
+    expect(publish).toHaveBeenCalledTimes(1);
+
+    retainCompatibilityBaselinesForReload();
+    Object.keys(metadataState.compatibilityBaselines).forEach((key) =>
+      delete metadataState.compatibilityBaselines[key]
+    );
+    metadataState.compatibilityDefault = null;
+    metadataState.compatibilityDefaultLoaded = false;
+    beginCompatibilityLifecycle();
+    setConfirmedCompatibilityDefault(3);
+
+    expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(overviews.get(appId)).toBe(published);
+  });
+
+  it("defers the active Game Info replacement until the route changes", () => {
+    const appId = 9455;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const original = new NativeOverview();
+    const overviews = new Map<number, NativeOverview>([[appId, original]]);
+    const set = overviews.set.bind(overviews);
+    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [original],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
+    };
+    host.appDetailsStore = {};
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(original.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(publish).not.toHaveBeenCalled();
+    expect(overviews.get(appId)).toBe(original);
+
+    setRoute("/library/home");
+    flushDeferredCompatibilityPublications();
+
+    expect(publish).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
+    expect(overviews.get(appId)).not.toBe(original);
   });
 
   it("publishes only changed native shortcuts after a completed global batch", () => {

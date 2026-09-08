@@ -539,3 +539,53 @@ compatibility default, retain per-game precedence, and add the explicit
   the source, regression, and regenerated bundle.
   This round made no Deck connection, deployment, installation, setting,
   fixture, navigation, or device smoke run. Main retains all live validation.
+
+## Review round 12
+
+### Reload-lifetime correction
+
+- A Decky Loader in-place import now retains the original compatibility
+  baselines across the old module's dismount. The replacement module adopts
+  them before it loads the persisted default, so an unchanged setting does not
+  create another synthetic `AppOverview` publication. A failed replacement
+  import restores the retained baselines.
+- Retained Game Info fibers now reject a `forceUpdate` when their overview is
+  no longer the current native map entry. Retained quick-link wrappers delegate
+  to the current module lifetime rather than nesting wrappers or mutating a
+  mounted React element during teardown.
+- A changed packed compatibility value on the selected Game Info object is
+  rendered through the existing native-frame handoff, but its observable-map
+  replacement is deferred until a real history transition leaves that app. The
+  deferred transition still publishes the native map entry, so Steam's filter
+  consumers receive their invalidation without replacing the object below a
+  selected renderer.
+- When an installed plugin decorates `m_mapApps.set` and exposes its native
+  setter as `originalSet`, Decky Metadata uses that native setter only for its
+  fully copied synthetic replacement. This avoids replaying a foreign
+  decorator's side effects while retaining the native map publication.
+
+### Red-to-green and validation
+
+- New regressions cover a retained quick-link wrapper, a stale Game Info fiber,
+  publication through a preserved native setter, retained baseline adoption,
+  and deferring the active Game Info map replacement until navigation. The
+  focused command passed 2 Vitest files / 57 tests. The full quality gate
+  passed TypeScript, Rollup, 27 Vitest files / 466 tests, Python compilation,
+  pytest, and review-note retention.
+- Authorized Deck testing used the dedicated `CDP_PORT=18088` connection and
+  frontend-only deploy loop. On shortcut `2312439508`, two consecutive
+  Automatic -> Verified -> Automatic retained-reload cycles remained
+  responsive. The selected Game Info tab showed the expected category while
+  retaining rich details, Store Page, Community Hub, Discussions, and Guides.
+  The final restored global value is Automatic.
+- The active Automatic Game Info map object remained in place while selected.
+  After navigation to Library Home, the deferred native map publication
+  replaced that exact object with packed category `10`; returning to Game Info
+  remained Playable with all rich content intact.
+- `MATCHED_APPID=2312439508 scripts/deck/verify/run_all.sh` passed quick
+  links, rerender churn, community fallback, and the real launch smoke with a
+  64-bit game ID. The matching `--no-launch` suite passed those checks plus
+  controller-layout isolation. Evidence is under
+  `/tmp/Decky-Metadata/verification/20260908T232102Z/`; recovery captures are
+  `/tmp/Decky-Metadata/diagnostics/20260908T231238Z` and
+  `/tmp/Decky-Metadata/diagnostics/20260908T231605Z`.
