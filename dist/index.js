@@ -6545,12 +6545,15 @@ const isNeverOnSteam = (appId) => {
  */
 const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
     const mounted = new Set();
+    const lifecyclePatches = new Map();
+    const gameInfoClassification = new WeakMap();
     const maxAttempts = 5;
+    const maxFiberDepth = 16;
+    const maxDocumentCandidates = 1024;
     let attempts = 0;
+    let active = true;
     let retryId;
-    let mountUnpatch;
     let unsubscribe;
-    let restoreUnmount;
     const isNativeGameInfo = (candidate) => {
         const render = candidate?.prototype?.render;
         if (typeof candidate !== "function" ||
@@ -6558,29 +6561,91 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
             typeof render !== "function") {
             return false;
         }
-        const source = String(render);
-        return source.includes("BIsModOrShortcut") && source.includes("GetDescriptions");
+        if (gameInfoClassification.has(candidate))
+            return gameInfoClassification.get(candidate) === true;
+        try {
+            // Steam's observer wrapper replaces an instance's render method after
+            // first render. Its wrapper source loses these semantic tokens, while
+            // the class source keeps the original native render implementation.
+            const hasSemanticSource = (source) => source.includes("BIsModOrShortcut") && source.includes("GetDescriptions");
+            const result = hasSemanticSource(String(render)) || hasSemanticSource(String(candidate));
+            gameInfoClassification.set(candidate, result);
+            return result;
+        }
+        catch {
+            gameInfoClassification.set(candidate, false);
+            return false;
+        }
+    };
+    const trackNativeGameInfo = (NativeGameInfo) => {
+        if (lifecyclePatches.has(NativeGameInfo))
+            return;
+        const patches = [];
+        lifecyclePatches.set(NativeGameInfo, patches);
+        try {
+            if (typeof NativeGameInfo.prototype.componentDidMount === "function") {
+                patches.push(safeAfterPatch(NativeGameInfo.prototype, "componentDidMount", function (_args, ret) {
+                    if (active)
+                        mounted.add(this);
+                    return ret;
+                }).unpatch);
+            }
+            if (typeof NativeGameInfo.prototype.componentWillUnmount === "function") {
+                patches.push(safeAfterPatch(NativeGameInfo.prototype, "componentWillUnmount", function (_args, ret) {
+                    mounted.delete(this);
+                    return ret;
+                }).unpatch);
+            }
+        }
+        catch {
+            // The DOM/fiber path can still refresh an already-mounted native class.
+        }
+    };
+    const captureMountedGameInfoFromFiber = (start) => {
+        for (let depth = 0, fiber = start; fiber && depth < maxFiberDepth; depth += 1, fiber = fiber.return) {
+            const components = [fiber.elementType, fiber.type];
+            for (const component of components) {
+                if (!isNativeGameInfo(component))
+                    continue;
+                trackNativeGameInfo(component);
+                if (fiber.stateNode)
+                    mounted.add(fiber.stateNode);
+                return true;
+            }
+        }
+        return false;
     };
     const captureMountedGameInfo = () => {
         try {
             const label = "Steam Deck Compatibility";
-            const anchor = findSteamUiDocumentMatch((document) => Array.from(document.querySelectorAll("div")).find((element) => (element.textContent || "").includes(label) &&
-                !Array.from(element.children).some((child) => (child.textContent || "").includes(label))));
-            if (!anchor)
-                return;
-            const fiberKey = Object.getOwnPropertyNames(anchor).find((key) => key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$"));
-            let fiber = fiberKey ? anchor[fiberKey] : null;
-            for (let depth = 0; fiber && depth < 16; depth += 1, fiber = fiber.return) {
-                const component = fiber.elementType || fiber.type;
-                if (isNativeGameInfo(component) && fiber.stateNode)
-                    mounted.add(fiber.stateNode);
-            }
+            return findSteamUiDocumentMatch((document) => {
+                const elements = Array.from(document.querySelectorAll("div"));
+                const prioritized = elements.filter((element) => (element.textContent || "").includes(label) &&
+                    !Array.from(element.children).some((child) => (child.textContent || "").includes(label)));
+                // The rich view has the compatibility heading, but the failed native
+                // placeholder does not. Inspect a bounded set of real DOM fibers so a
+                // mounted placeholder can supply the same native renderer class.
+                const candidates = [...prioritized, ...elements.slice(0, maxDocumentCandidates)];
+                const inspected = new Set();
+                for (const element of candidates) {
+                    if (inspected.has(element))
+                        continue;
+                    inspected.add(element);
+                    const fiberKey = Object.getOwnPropertyNames(element).find((key) => key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$"));
+                    if (fiberKey && captureMountedGameInfoFromFiber(element[fiberKey]))
+                        return true;
+                }
+                return undefined;
+            });
         }
         catch {
             // Steam's private React fiber field is optional and must fail closed.
+            return undefined;
         }
     };
     const refreshMountedGameInfo = () => {
+        if (!active)
+            return;
         // Steam can retain the Game Info tab across a plugin reload, before its
         // componentDidMount hook was patched. Capture only that visible component
         // from its DOM fiber; never enumerate a React or MobX object tree.
@@ -6607,11 +6672,13 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
     };
     const tryInstall = () => {
         retryId = undefined;
-        if (mountUnpatch)
+        if (!active)
             return;
         attempts += 1;
         const NativeGameInfo = DFL.findModuleChild((module) => {
-            if (typeof module !== "object")
+            if (isNativeGameInfo(module))
+                return module;
+            if (!module || typeof module !== "object")
                 return undefined;
             for (const prop in module) {
                 try {
@@ -6624,42 +6691,24 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
             }
             return undefined;
         });
-        if (!NativeGameInfo?.prototype?.componentDidMount) {
+        if (NativeGameInfo)
+            trackNativeGameInfo(NativeGameInfo);
+        const captured = captureMountedGameInfo();
+        if (!NativeGameInfo && !captured) {
             if (attempts < maxAttempts)
                 retryId = globalThis.setTimeout(tryInstall, 500);
-            return;
         }
-        mountUnpatch = safeAfterPatch(NativeGameInfo.prototype, "componentDidMount", function (_args, ret) {
-            mounted.add(this);
-            return ret;
-        }).unpatch;
-        const originalUnmount = NativeGameInfo.prototype.componentWillUnmount;
-        try {
-            NativeGameInfo.prototype.componentWillUnmount = function (...args) {
-                mounted.delete(this);
-                return typeof originalUnmount === "function" ? originalUnmount.apply(this, args) : undefined;
-            };
-            restoreUnmount = () => {
-                if (originalUnmount === undefined)
-                    delete NativeGameInfo.prototype.componentWillUnmount;
-                else
-                    NativeGameInfo.prototype.componentWillUnmount = originalUnmount;
-            };
-        }
-        catch {
-            // The mount set is still bounded by this plugin's lifetime.
-        }
-        unsubscribe = subscribeCompatibilityRevision(refreshMountedGameInfo);
-        captureMountedGameInfo();
     };
     unpatchers.push(() => {
+        active = false;
         if (retryId !== undefined)
             globalThis.clearTimeout(retryId);
         unsubscribe?.();
-        restoreUnmount?.();
-        mountUnpatch?.();
+        lifecyclePatches.forEach((patches) => patches.reverse().forEach((unpatch) => unpatch()));
+        lifecyclePatches.clear();
         mounted.clear();
     });
+    unsubscribe = subscribeCompatibilityRevision(refreshMountedGameInfo);
     tryInstall();
 };
 // The quick-links row is not reachable from the route render tree. Steam's page

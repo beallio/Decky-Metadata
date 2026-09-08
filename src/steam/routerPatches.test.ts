@@ -195,6 +195,126 @@ describe("router compatibility publication", () => {
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });
 
+  it("refreshes a mounted observer-wrapped Game Info renderer found only through the real document fiber", () => {
+    const appId = 9711;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPerClientData() {
+        return {};
+      }
+    }
+    const overview = new NativeOverview();
+    const details = { GetDescriptions: () => ({ strSnippet: "rich details" }) };
+    class NativeGameInfo {
+      props: { overview: NativeOverview; details: typeof details };
+      forceUpdate = vi.fn(() => this.render());
+
+      constructor(props: { overview: NativeOverview; details: typeof details }) {
+        this.props = props;
+      }
+
+      componentDidMount() {}
+
+      componentWillUnmount() {}
+
+      render() {
+        this.props.overview.BIsModOrShortcut();
+        this.props.details.GetDescriptions();
+        const packedCategory = this.props.overview.steam_hw_compat_category_packed & 0x0f;
+        return packedCategory === 0x0f
+          ? { content: "rich game info", category: "Verified" }
+          : { content: "non-Steam placeholder", category: "Unknown" };
+      }
+    }
+    (NativeGameInfo.prototype as any).isReactComponent = {};
+    const nativeRender = NativeGameInfo.prototype.render;
+    Object.defineProperty(NativeGameInfo.prototype, "render", {
+      configurable: true,
+      writable: true,
+      value: function observerWrappedRender(this: NativeGameInfo) {
+        return nativeRender.call(this);
+      },
+    });
+    mocks.findModuleChild.mockReturnValue(undefined);
+    (globalThis as any).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: { location: { pathname: `/library/app/${appId}/tab/GameInfo` } },
+        },
+      },
+    };
+    (globalThis as any).window = { location: { pathname: `/library/app/${appId}/tab/GameInfo` } };
+    (globalThis as any).appStore = { allApps: [overview] };
+    (globalThis as any).appDetailsStore = {};
+    metadataCache[String(appId)] = {
+      steam_appid: 55150,
+      deck_compat_category: 3,
+    } as any;
+    metadataState.compatibilityDefault = null;
+    metadataState.compatibilityDefaultLoaded = true;
+    const metadataUnpatchers: Array<() => void> = [];
+    installMetadataPatches(metadataUnpatchers);
+
+    const mounted = new NativeGameInfo({ overview, details });
+    const fallbackParagraph = {
+      textContent: "This non-Steam game has no Game Info details.",
+      children: [],
+      __reactFiber$test: {
+        elementType: () => null,
+        stateNode: null,
+        return: {
+          elementType: NativeGameInfo,
+          stateNode: mounted,
+          return: null,
+        },
+      },
+    };
+    const bigPictureDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => [fallbackParagraph]),
+    };
+    (globalThis as any).document = { querySelector: vi.fn(() => null), querySelectorAll: vi.fn(() => []) };
+    (globalThis as any).parent = {
+      webpackChunksteamui: [],
+      SteamUIStore: {
+        m_WindowStore: {
+          MainWindowInstance: { m_BrowserWindow: { document: bigPictureDocument } },
+        },
+      },
+    };
+    (globalThis as any).top = { document: (globalThis as any).document };
+
+    const unpatchers: Array<() => void> = [];
+    installRouterRenderPatches(unpatchers, {
+      ensureMetadataCache: vi.fn(async () => undefined),
+      applyMetadata: vi.fn(() => false),
+      tryEnrichScreenshotsForApp: vi.fn(async () => undefined),
+      tryFetchMetadataForApp: vi.fn(async () => undefined),
+      refreshDeckyNativeActivityForApp: vi.fn(async () => null),
+    });
+
+    setConfirmedCompatibilityDefault(3);
+
+    expect(mounted.forceUpdate).toHaveBeenCalledOnce();
+    expect(mounted.forceUpdate).toHaveReturnedWith({ content: "rich game info", category: "Verified" });
+    expect(bigPictureDocument.querySelectorAll).toHaveBeenCalledWith("div");
+    unpatchers.reverse().forEach((unpatch) => unpatch());
+    notifyCompatibilityRevision();
+    expect(mounted.forceUpdate).toHaveBeenCalledOnce();
+    metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
+  });
+
   it.each([
     [false, 0],
     [true, 1],
