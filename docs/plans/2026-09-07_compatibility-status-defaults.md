@@ -4,9 +4,12 @@
 
 Implement [issue #12](https://github.com/beallio/Decky-Metadata/issues/12):
 let users select one compatibility default for their non-Steam library instead
-of editing each shortcut. The user approved a live policy for **existing and
-new shortcuts, matched and unmatched**, with a separate per-game **Follow
-Valve** option. This is not a creation-time default or a bulk metadata edit.
+of editing each shortcut. The policy covers **existing and new shortcuts,
+matched and unmatched**, with a separate per-game **Follow Valve** option.
+It is not a creation-time default or a bulk metadata edit. On 2026-09-08,
+the user approved deferring the active game's compatibility update until
+they leave Game Info. This timing rule supersedes the earlier immediate
+active-Game-Info refresh requirement.
 
 ### Agreed user interface and behavior
 
@@ -22,6 +25,19 @@ options in order:
 Automatic is the initial global setting. Help text must state that this
 setting applies to existing and new non-Steam shortcuts, including games with
 a Steam match, and that per-game choices take priority.
+
+Save the policy immediately after a successful backend write. Apply it to
+other eligible shortcuts immediately. If the current game's **Game Info**
+view is active, retain that game's currently applied compatibility state
+and rich view until the user leaves Game Info. A different tab, a different
+page/game, or opening the metadata editor ends that protection. Opening or
+closing QAM or a context-menu overlay alone does not.
+
+The active game's badge/filter state can therefore remain temporarily old.
+Apply the latest effective policy after the exit, and show it when the user
+returns. The context-menu **Decky metadata...** entry opens a separate editor
+route; an ordinary editor Save still applies its choice normally. Explain
+this distinction in QAM help, the README, and the scenario specification.
 
 In the existing per-game metadata editor, replace the old Automatic option.
 The **Compatibility status** options, in order, become:
@@ -298,10 +314,11 @@ and a failed/invalid global setter does not change the prior value.
    perform enrichment, network requests, full metadata application, or
    detail/activity mutations merely to change a global status.
 4. Apply the same policy through existing new/replacement overview hooks.
-   A shortcut added after the bootstrap window must still inherit the
-   default without opening its detail page or scanning metadata. VDF-only
-   IDs wait until a real native overview exists; never fabricate Steam
-   overview objects to cover them.
+   A shortcut added after bootstrap inherits the default when its native
+   overview exists. Preserve an active Game Info view's held compatibility
+   state through native overview replacement until its pending update is
+   released. VDF-only IDs wait for a real native overview; never fabricate
+   Steam overview objects or metadata records to cover them.
 5. Restructure the missing-metadata early return in `applyMetadata()` so
    it still clears removed Activity data but applies inherited
    compatibility. Retain metadata-dependent enrichment guards. Cache
@@ -313,22 +330,56 @@ and a failed/invalid global setter does not change the prior value.
    before mutation and reuse the established safe native publication path.
    Do not replace the current system with plain-object clones or broad
    store replacement based on superseded historical plans.
-7. Apply changed packed values before publishing the shared revision.
-   Notify once per global batch, not once per shortcut. Keep no-op updates
-   from causing replacement/write churn. Use the same resolved category
-   for mounted Home/grid badges and detail status. Unknown must remove a
-   prior badge, not leave a stale Verified indicator.
-8. Returning to global Automatic or selecting Follow Valve without a
-   resolved category restores the correct native baseline, not the last
-   injected global category. Dismount must restore every touched shortcut
-   and release setting listeners/callbacks. Make restoration use a linear
-   native-entry lookup strategy now that the touched set can be large.
+7. For eligible, non-deferred entries, apply changed packed values before
+   publishing the shared revision. Notify once per batch, not per shortcut.
+   Keep no-op updates from causing write/publication churn. Home/grid and
+   native compatibility filters must reflect the applied state; a protected
+   active game's state changes only when its deferred update is released.
+8. Returning to Automatic or following Valve without a resolved category
+   ultimately restores the native baseline, not a prior global category.
+   While Game Info is active, that change follows the same deferral rule.
+   Real plugin dismount is different: clear pending work and restore every
+   touched baseline immediately. Late callbacks must not reapply it.
+   Preserve the existing safe in-place reload handoff and linear restoration.
    Never enumerate MobX store instances within a render-phase tree walk.
 
-Acceptance: existing/no-record/new shortcuts receive the selected default
-without metadata creation; Follow Valve and numeric exceptions are honored;
-metadata removal preserves existing Activity cleanup; Steam-owned titles
-stay unchanged; mounted status clears and reappears without navigation.
+Acceptance: existing/no-record/new shortcuts receive the policy without
+metadata creation; per-game exceptions remain authoritative; ordinary Steam
+games remain unchanged. Other games and their native filters update
+immediately. The active Game Info view stays intact and keeps its applied
+status until exit, then receives the latest policy without a manual reload.
+
+### 2a. Defer active Game Info changes until the view exits
+
+1. Use the authoritative main-window route/tab state to identify the exact
+   active Game Info app. Do not mistake a QAM/context-menu overlay for an
+   exit, or defer every subsection merely because it belongs to the same
+   game. Reuse the current history/navigation subscription patterns.
+2. Keep pending work in memory, keyed by the exact native shortcut App ID.
+   Retain the currently applied compatibility nibble while that view is
+   protected. Do not overwrite it with the newly desired category just to
+   delay a later publication. Preserve unrelated packed bits.
+3. Queue only the need to recompute/apply; do not make an old captured
+   category authoritative. Repeated global changes collapse to the latest
+   effective policy. A later fixed per-game choice, Follow Valve selection,
+   match change, or removal must win when pending work is released.
+4. On leaving Game Info, resolve the current native overview and current
+   policy, release eligible pending updates in a bounded batch, and invalidate
+   native collections normally. If a different game's Game Info is entered,
+   do not transfer the old game's pending state to the new game.
+5. Native overview replacement while pending must retain the held state and
+   App ID. A deleted shortcut must not be recreated. On actual teardown,
+   clear the queue and cancel callbacks; an in-place reload must preserve or
+   reconstruct the pending intent from the saved policy and held native state
+   without forcing an active-view refresh.
+6. Remove live Game Info force-refresh, renderer-discovery, and timing
+   machinery that is no longer needed by this policy. Do not leave a second
+   immediate-update path alongside the deferred one. Retain ordinary metadata
+   rendering, safe launch classification, library badges, native publication,
+   and reload cleanup.
+7. Test the user-visible transition and latest-policy precedence, not private
+   queue length or callback counts. Confirm both same-game tab exit and opening
+   the metadata editor release the update, while closing QAM alone does not.
 
 ### 3. Add the QAM default and per-game Follow Valve option
 
@@ -400,26 +451,27 @@ Prove option presentation and controller order on the actual UI.
 
 This documentation is a required deliverable, not a follow-up:
 
-1. Update `README.md` under **Set the compatibility status**. Explain where
-   each dropdown lives, show both complete option lists, and state that
-   the default is live for existing/new and matched/unmatched shortcuts.
-   Explain Follow Valve versus inheritance, numeric exceptions, Unknown,
-   no-data fallback, and the user-selected-status caveat.
+1. Update `README.md` under **Set the compatibility status**. Show both
+   dropdowns and explain existing/new and matched/unmatched coverage.
+   Document save-now/apply-on-exit behavior for the active Game Info view,
+   immediate updates for other games, what counts as leaving the view, and
+   the context-menu-to-editor flow. Explain Follow Valve, fixed exceptions,
+   Unknown, no-data fallback, and the user-selected-status caveat.
 2. Add `docs/specs/compatibility-status.md` as the durable behavior
    reference. Include the stored data contract, upgrade mapping, exact
    resolution rules, lifecycle/cache-removal behavior, and **every row**
    of the scenario matrix below. Link it from the README. Use plain
    language for the user-facing section and a separate technical section
    for category values and persistence details.
-3. Put a concise subset of the scenario table directly in the README:
-   inherited Verified on matched/unmatched games; Follow Valve with
-   available/missing/Unknown Valve data; a fixed per-game exception;
-   global Automatic; and what changes when the default is edited.
-4. Update `docs/runbooks/on-device-verification.md` with reproducible
-   checks for global/default/Follow Valve transitions, baseline
-   restoration, no-record/new shortcuts, mounted badge/filter behavior,
-   and QAM/editor controller navigation. State mutation approval,
-   fixture baseline/restore, full-package install, and evidence rules.
+3. Put a concise scenario subset directly in the README: inherited Verified
+   on matched/unmatched games; Follow Valve with available/missing/Unknown
+   data; fixed exceptions; Automatic; and active-view deferral, including
+   multiple changes before exit and opening the metadata editor.
+4. Update the on-device runbook with deferred active-view, latest-policy,
+   native replacement/reload, no-record, native filter, and controller checks.
+   State mutation approval, fixture baseline/restore, full-package install,
+   and evidence requirements. Do not retain instructions that require the
+   active Game Info view to update immediately.
 5. Add the behavior to the existing `CHANGELOG.md` Unreleased section;
    do not roll a release or change package/plugin versions.
 6. After verification, record the implementation decisions, actual
@@ -467,9 +519,10 @@ producer commands behind pipelines or successful outer commands.
 ### Scenario matrix: required behavior and documentation
 
 `Original` means the untouched native shortcut status, normally Unknown.
-Rows apply to native non-Steam shortcuts unless they say otherwise.
-For state transitions, observe before and after without a manual route
-reload wherever the affected surface is already mounted.
+Rows apply to native non-Steam shortcuts unless they say otherwise. S01-S32
+describe the resolved outcome after an update is eligible to apply. The
+active-view timing and lifecycle rules in S33-S40 also apply; they supersede
+older expectations of an immediate active Game Info refresh.
 
 | ID | Global setting | Per-game choice / condition | Expected result |
 | --- | --- | --- | --- |
@@ -491,20 +544,28 @@ reload wherever the affected surface is already mounted.
 | S16 | Verified | Follow Valve; match exists but no category is available | Original, never inherited Verified. |
 | S17 | Any | Follow Valve; fetched category changes Playable to Verified | Changes to Verified after normal successful refresh; mode stays Follow Valve. |
 | S18 | Verified | Follow Valve; previously unavailable category later becomes Playable | Changes from Original to Playable; mode stays Follow Valve. |
-| S19 | Verified to Unsupported | One inheriting game, one Follow Valve game, one numeric exception | Only the inheriting game follows the global change; exceptions remain governed by their modes. |
-| S20 | Verified to Automatic | Inheriting game has Valve Playable | Returns to Playable. |
-| S21 | Verified to Automatic | Inheriting game has no Valve category | Restores Original, not the previous injected Verified value. |
+| S19 | Verified to Unsupported | One inheriting game, one Follow Valve game, one numeric exception | Only inheriting games follow the global change; the active Game Info game's update waits for exit. |
+| S20 | Verified to Automatic | Inheriting game has Valve Playable | Returns to Playable when eligible; wait for exit if its Game Info is active. |
+| S21 | Verified to Automatic | Inheriting game has no Valve category | Restores Original when eligible; do not retain the old global value after exit. |
 | S22 | Verified | Per-game switches Follow Valve to Use global default | Changes from Valve/Original to Verified after Save. |
 | S23 | Verified | Per-game switches Use global default to Follow Valve | Changes to Valve/Original after Save. |
 | S24 | Any | Metadata scan/enrichment/unrelated editor save | Preserve per-game numeric/valve choices; refresh only provider-owned data. |
 | S25 | Verified | Match removed/reassigned while Follow Valve is selected | Preserve Follow Valve; never reuse the old match's category as the new match's result. |
 | S26 | Verified | Metadata record removed or cache cleared | Removed choices revert to inheritance; global setting persists; removed injected Activity news stays cleared. |
-| S27 | Any | Plugin reload, then Steam overview replacement | Reload saved global and per-game policy and apply it to current exact native shortcuts. |
-| S28 | Any | Plugin dismount while callbacks are outstanding | Restore native baselines; late callbacks cannot reapply compatibility. |
+| S27 | Any | Plugin reload, then Steam overview replacement | Reload policy, retain/reconstruct active-view pending work, and apply it after exit without freezing or losing links. |
+| S28 | Any | Plugin dismount while callbacks or deferred updates exist | Clear pending work and restore native baselines; late callbacks cannot reapply compatibility. |
 | S29 | Any | Regular Steam game or official-AppID alias | No policy mutation, added badge, or changed compatibility-filter result. |
 | S30 | Any | Global save fails, or per-game Save fails/cancels | Last confirmed runtime and persisted policy remain unchanged; errors are visible for failures. |
 | S31 | Any | Old settings load completes after a newer successful choice | New confirmed choice remains effective; old response cannot revert it. |
 | S32 | Automatic / Follow Valve | Native baseline is nonzero and Valve data is missing | Preserve that original category and unrelated packed bits; do not fabricate Unknown. |
+| S33 | Automatic to Verified | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact. Leave for another tab/page, then return to see Verified. |
+| S34 | Several global changes | Same Game Info stays active throughout | Retain its old applied status; apply only the latest effective choice after exit. |
+| S35 | Changed global default | Close QAM or cancel a context-menu overlay while Game Info stays selected | Do not release the active game's pending update merely because the overlay closed. |
+| S36 | Changed global default | Open Decky metadata... from the active game's context menu | Editor navigation counts as exit. Apply pending policy, then let any explicit editor Save take priority; no stale pending value may overwrite it. |
+| S37 | Changed global default | Navigate from game A's Game Info to game B | Release A's pending update; do not apply it to B or leak A's state into B. |
+| S38 | Changed global default | Steam replaces an overview, or deletes a shortcut, while its update is pending | Preserve held status across replacement; apply to the current exact native object after exit; never recreate a deleted shortcut. |
+| S39 | Changed global default | Reload or unload while active-view work is pending | In-place reload retains/reconstructs the pending policy safely; actual unload clears it and restores baselines, with no late writes. |
+| S40 | Any global change | Active Game Info has an unchanged fixed/Follow Valve result | Preserve that result and avoid a forced active-view refresh. Other eligible games still update. |
 
 ### Local proof and controls
 
@@ -567,24 +628,26 @@ whole cache just to test S26.
    `scripts/decky package-push --build --push`, install the local ZIP
    through Decky's GUI using the local ZIP install skill, and verify the
    installed version with capture. A frontend-only deploy is insufficient.
-3. Use the actual QAM/editor controls to test inherited global Verified,
-   a matched Follow Valve exception, Follow Valve without available
-   metadata, a fixed numeric exception, and explicit Unknown. Capture
-   Home carousel, library grid, and game-detail/Game Info status changes,
-   including already-mounted cards; native packed bits alone are not
-   proof of the displayed result.
+3. Use actual controls to test global inheritance, Follow Valve, fixed
+   exceptions, and Unknown. Keep a matched Game Info view open while changing
+   the default: its current status and rich content must remain unchanged.
+   Close QAM alone and confirm it is still deferred. Then leave Game Info and
+   return; verify the latest status with its description and links intact.
+   Capture Home/grid and Game Info; packed bits alone are not visual proof.
 4. Check actual compatibility-filter/collection membership for the
    changed shortcuts and the unchanged regular Steam fixture. Require
    results consistent with Steam's native category semantics; do not
    claim filter correctness merely because the packed mirror is set.
-5. Change the global choice, then return to Automatic. Verify S19-S23
-   and ensure exceptions stay intact. With approved disposable fixtures,
-   verify a no-record shortcut and a shortcut added after bootstrap.
-   Use isolated/disposable data for destructive metadata-clear cases.
-6. Reload the plugin/SteamUI through committed tooling and verify saved
-   modes, then verify teardown restoration with controlled reload/unload
-   evidence. Do not count a Steam restart that independently resets all
-   state as proof that plugin dismount cleanup ran.
+5. Verify S19-S23 and S33-S40, including same-game tab exit, editor navigation,
+   repeated changes before exit, and unchanged per-game exceptions. Confirm
+   other games and their native filter membership update immediately, while
+   the active game's membership changes when its pending update is released.
+   Use approved disposable data for destructive cases.
+6. Reload through committed tooling with a pending change and verify it
+   survives safely without a forced active-view refresh. Test two in-place
+   reload cycles for responsiveness and intact links. Verify actual unload
+   clears pending work and restores baselines; a Steam restart alone is not
+   proof of plugin teardown cleanup.
 7. Drive `scripts/deck/cdp.py input` with
    `scripts/deck/js/gpfocus_dump.js` and
    `scripts/deck/js/focus_order.js`. Verify initial QAM focus, dropdown
