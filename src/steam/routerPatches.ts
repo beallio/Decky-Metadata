@@ -70,6 +70,8 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers: Unpatch[]) => {
   let attempts = 0;
   let active = true;
   let retryId: ReturnType<typeof setTimeout> | undefined;
+  let refreshFrame: number | undefined;
+  let refreshFrameOwner: Window | undefined;
   let unsubscribe: Unpatch | undefined;
 
   const isNativeGameInfo = (candidate: any) => {
@@ -202,6 +204,28 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers: Unpatch[]) => {
     }
   };
 
+  const scheduleMountedGameInfoRefresh = () => {
+    if (!active || refreshFrame !== undefined) return;
+    // The shared bridge orders Steam browser documents before Decky's shared
+    // context. Schedule on that real main browser window, never on QAM.
+    const mainWindow = findSteamUiDocumentMatch((document) => {
+      const candidate = document.defaultView;
+      return (
+        typeof candidate?.requestAnimationFrame === "function" &&
+        typeof candidate.cancelAnimationFrame === "function"
+      ) ? candidate : undefined;
+    });
+    if (!mainWindow) return;
+    refreshFrameOwner = mainWindow;
+    refreshFrame = mainWindow.requestAnimationFrame(() => {
+      refreshFrame = undefined;
+      refreshFrameOwner = undefined;
+      // Capture, route checks, shielding, and native publication must all see
+      // the instance Steam committed after the compatibility revision.
+      refreshMountedGameInfo();
+    });
+  };
+
   const tryInstall = () => {
     retryId = undefined;
     if (!active) return;
@@ -228,12 +252,17 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers: Unpatch[]) => {
   unpatchers.push(() => {
     active = false;
     if (retryId !== undefined) globalThis.clearTimeout(retryId);
+    if (refreshFrame !== undefined && refreshFrameOwner) {
+      refreshFrameOwner.cancelAnimationFrame(refreshFrame);
+    }
+    refreshFrame = undefined;
+    refreshFrameOwner = undefined;
     unsubscribe?.();
     lifecyclePatches.forEach((patches) => patches.reverse().forEach((unpatch) => unpatch()));
     lifecyclePatches.clear();
     mounted.clear();
   });
-  unsubscribe = subscribeCompatibilityRevision(refreshMountedGameInfo);
+  unsubscribe = subscribeCompatibilityRevision(scheduleMountedGameInfoRefresh);
   tryInstall();
 };
 

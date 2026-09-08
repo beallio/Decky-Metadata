@@ -151,7 +151,19 @@ describe("router compatibility publication", () => {
       },
     };
     const sharedDocument = { querySelector: vi.fn(() => null), querySelectorAll: vi.fn(() => []) };
-    const bigPictureDocument = { querySelector: vi.fn(() => null), querySelectorAll: vi.fn(() => [anchor]) };
+    let queuedFrame: FrameRequestCallback | undefined;
+    const mainWindow = {
+      requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
+        queuedFrame = callback;
+        return 17;
+      }),
+      cancelAnimationFrame: vi.fn(),
+    };
+    const bigPictureDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => [anchor]),
+      defaultView: mainWindow,
+    };
     (globalThis as any).document = sharedDocument;
     (globalThis as any).parent = {
       webpackChunksteamui: [],
@@ -184,6 +196,8 @@ describe("router compatibility publication", () => {
     expect(mounted.props.overview).toBe(overview);
 
     setConfirmedCompatibilityDefault(1);
+    if (!queuedFrame) throw new Error("native Game Info refresh was not deferred to the main window");
+    queuedFrame(16);
 
     expect(mounted.forceUpdate).toHaveBeenCalledOnce();
     expect(mounted.props.overview).toBe(overview);
@@ -280,9 +294,18 @@ describe("router compatibility publication", () => {
         },
       },
     };
+    let queuedFrame: FrameRequestCallback | undefined;
+    const mainWindow = {
+      requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
+        queuedFrame = callback;
+        return 23;
+      }),
+      cancelAnimationFrame: vi.fn(),
+    };
     const bigPictureDocument = {
       querySelector: vi.fn(() => null),
       querySelectorAll: vi.fn(() => [fallbackParagraph]),
+      defaultView: mainWindow,
     };
     (globalThis as any).document = { querySelector: vi.fn(() => null), querySelectorAll: vi.fn(() => []) };
     (globalThis as any).parent = {
@@ -305,6 +328,8 @@ describe("router compatibility publication", () => {
     });
 
     setConfirmedCompatibilityDefault(3);
+    if (!queuedFrame) throw new Error("native Game Info refresh was not deferred to the main window");
+    queuedFrame(16);
 
     expect(mounted.forceUpdate).toHaveBeenCalledOnce();
     expect(mounted.forceUpdate).toHaveReturnedWith({ content: "rich game info", category: "Verified" });
@@ -312,6 +337,145 @@ describe("router compatibility publication", () => {
     unpatchers.reverse().forEach((unpatch) => unpatch());
     notifyCompatibilityRevision();
     expect(mounted.forceUpdate).toHaveBeenCalledOnce();
+    metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
+  });
+
+  it("refreshes the replacement Game Info view after native publication settles", () => {
+    const appId = 9712;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPerClientData() {
+        return {};
+      }
+    }
+    const overview = new NativeOverview();
+    let visibleResult: { content: string; category: string } = {
+      content: "non-Steam placeholder",
+      category: "Unknown",
+    };
+    class NativeGameInfo {
+      props: { overview: NativeOverview };
+      details = { GetDescriptions: () => ({ strSnippet: "rich details" }) };
+      visible = false;
+      forceUpdate = vi.fn(() => {
+        const result = this.render();
+        if (this.visible) visibleResult = result;
+        return result;
+      });
+
+      constructor(props: { overview: NativeOverview }) {
+        this.props = props;
+      }
+
+      componentDidMount() {}
+
+      componentWillUnmount() {}
+
+      render() {
+        this.props.overview.BIsModOrShortcut();
+        this.details.GetDescriptions();
+        const category = this.props.overview.steam_hw_compat_category_packed & 0x0f;
+        return category === 0x0f
+          ? { content: "rich game info", category: "Verified" }
+          : category === 0x0a
+            ? { content: "rich game info", category: "Playable" }
+          : { content: "non-Steam placeholder", category: "Unknown" };
+      }
+    }
+    (NativeGameInfo.prototype as any).isReactComponent = {};
+    mocks.findModuleChild.mockImplementation((predicate: (module: unknown) => unknown) =>
+      predicate({ NativeGameInfo })
+    );
+    (globalThis as any).Router = {
+      WindowStore: {
+        GamepadUIMainWindowInstance: {
+          m_history: { location: { pathname: `/library/app/${appId}/tab/GameInfo` } },
+        },
+      },
+    };
+    (globalThis as any).window = { location: { pathname: `/library/app/${appId}/tab/GameInfo` } };
+    (globalThis as any).appStore = { allApps: [overview] };
+    (globalThis as any).appDetailsStore = {};
+    metadataState.compatibilityDefault = null;
+    metadataState.compatibilityDefaultLoaded = true;
+    const metadataUnpatchers: Array<() => void> = [];
+    installMetadataPatches(metadataUnpatchers);
+
+    const stale = new NativeGameInfo({ overview });
+    const replacement = new NativeGameInfo({ overview });
+    let currentFiber: Record<string, unknown> = {
+      elementType: NativeGameInfo,
+      stateNode: stale,
+      return: null,
+    };
+    const anchor = {
+      textContent: "Steam Deck Compatibility",
+      children: [],
+      get __reactFiber$test() {
+        return currentFiber;
+      },
+    };
+    let queuedFrame: FrameRequestCallback | undefined;
+    const mainWindow = {
+      requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
+        queuedFrame = callback;
+        return 41;
+      }),
+      cancelAnimationFrame: vi.fn(),
+    };
+    const bigPictureDocument = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn(() => [anchor]),
+      defaultView: mainWindow,
+    };
+    (globalThis as any).document = { querySelector: vi.fn(() => null), querySelectorAll: vi.fn(() => []) };
+    (globalThis as any).parent = {
+      webpackChunksteamui: [],
+      SteamUIStore: {
+        m_WindowStore: {
+          MainWindowInstance: { m_BrowserWindow: { document: bigPictureDocument } },
+        },
+      },
+    };
+    (globalThis as any).top = { document: (globalThis as any).document };
+
+    const unpatchers: Array<() => void> = [];
+    installRouterRenderPatches(unpatchers, {
+      ensureMetadataCache: vi.fn(async () => undefined),
+      applyMetadata: vi.fn(() => false),
+      tryEnrichScreenshotsForApp: vi.fn(async () => undefined),
+      tryFetchMetadataForApp: vi.fn(async () => null),
+      refreshDeckyNativeActivityForApp: vi.fn(async () => null),
+    });
+
+    setConfirmedCompatibilityDefault(3);
+    setConfirmedCompatibilityDefault(2);
+    expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x0a);
+    expect(mainWindow.requestAnimationFrame).toHaveBeenCalledOnce();
+
+    // Steam commits a replacement native view after the revision signal. The
+    // queued refresh must capture and update this live instance, not `stale`.
+    stale.componentWillUnmount();
+    replacement.visible = true;
+    replacement.componentDidMount();
+    currentFiber = { elementType: NativeGameInfo, stateNode: replacement, return: null };
+
+    if (!queuedFrame) throw new Error("native Game Info refresh was not deferred to the main window");
+    queuedFrame(16);
+
+    expect(visibleResult).toEqual({ content: "rich game info", category: "Playable" });
+    unpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });
 

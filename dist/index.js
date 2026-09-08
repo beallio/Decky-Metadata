@@ -6553,6 +6553,8 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
     let attempts = 0;
     let active = true;
     let retryId;
+    let refreshFrame;
+    let refreshFrameOwner;
     let unsubscribe;
     const isNativeGameInfo = (candidate) => {
         const render = candidate?.prototype?.render;
@@ -6670,6 +6672,27 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
             }
         }
     };
+    const scheduleMountedGameInfoRefresh = () => {
+        if (!active || refreshFrame !== undefined)
+            return;
+        // The shared bridge orders Steam browser documents before Decky's shared
+        // context. Schedule on that real main browser window, never on QAM.
+        const mainWindow = findSteamUiDocumentMatch((document) => {
+            const candidate = document.defaultView;
+            return (typeof candidate?.requestAnimationFrame === "function" &&
+                typeof candidate.cancelAnimationFrame === "function") ? candidate : undefined;
+        });
+        if (!mainWindow)
+            return;
+        refreshFrameOwner = mainWindow;
+        refreshFrame = mainWindow.requestAnimationFrame(() => {
+            refreshFrame = undefined;
+            refreshFrameOwner = undefined;
+            // Capture, route checks, shielding, and native publication must all see
+            // the instance Steam committed after the compatibility revision.
+            refreshMountedGameInfo();
+        });
+    };
     const tryInstall = () => {
         retryId = undefined;
         if (!active)
@@ -6703,12 +6726,17 @@ const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
         active = false;
         if (retryId !== undefined)
             globalThis.clearTimeout(retryId);
+        if (refreshFrame !== undefined && refreshFrameOwner) {
+            refreshFrameOwner.cancelAnimationFrame(refreshFrame);
+        }
+        refreshFrame = undefined;
+        refreshFrameOwner = undefined;
         unsubscribe?.();
         lifecyclePatches.forEach((patches) => patches.reverse().forEach((unpatch) => unpatch()));
         lifecyclePatches.clear();
         mounted.clear();
     });
-    unsubscribe = subscribeCompatibilityRevision(refreshMountedGameInfo);
+    unsubscribe = subscribeCompatibilityRevision(scheduleMountedGameInfoRefresh);
     tryInstall();
 };
 // The quick-links row is not reachable from the route render tree. Steam's page

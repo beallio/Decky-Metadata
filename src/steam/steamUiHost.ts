@@ -1,4 +1,4 @@
-type SteamUiDocument = Pick<Document, "querySelector" | "querySelectorAll">;
+type SteamUiDocument = Pick<Document, "querySelector" | "querySelectorAll" | "defaultView">;
 
 export const steamUiWindow = () => {
   const candidates: any[] = [globalThis];
