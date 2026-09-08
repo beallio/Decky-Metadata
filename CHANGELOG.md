@@ -8,9 +8,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 - **Library-wide compatibility defaults.** Choose Automatic, Verified,
   Playable, Unsupported, or Unknown in the Decky Metadata panel. The setting
-  applies immediately to existing and new non-Steam shortcuts, including ones
-  without saved metadata. Per-game choices now include **Use global default**
-  and **Follow Valve**.
+  applies to existing and new non-Steam shortcuts, including ones without
+  saved metadata. Other shortcuts update immediately; the current Game Info
+  game updates after its tab exits. Per-game choices now include **Use global
+  default** and **Follow Valve**.
 
 ## [0.3.13] - 2026-09-07
 

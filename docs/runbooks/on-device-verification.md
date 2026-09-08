@@ -93,15 +93,25 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
 3. Set one fixed per-game status and confirm changing the global setting only
    changes inheriting shortcuts. Return to Automatic and confirm an unmatched
    inheriting shortcut returns to its captured native baseline.
-4. Verify a shortcut that appears after bootstrap inherits the current default
+4. Keep a matched shortcut on **Game Info** with Automatic/Playable, set global
+   **Verified**, and close QAM. The active view must remain Playable with rich
+   content and links while other eligible shortcuts and their native filter
+   membership update. Change tabs and return to confirm Verified. Repeat back
+   to Automatic. Closing QAM or a context-menu overlay must not release the
+   held value; opening **Decky metadata...** must release it, and a later editor
+   Save must take priority. Repeat changes before exit and verify only the
+   latest result applies. Navigate from game A to game B, replace/delete only a
+   disposable pending fixture, and confirm no state leaks or recreation occur.
+5. Verify a shortcut that appears after bootstrap inherits the current default
    once its real native overview exists. Clear only disposable metadata and
    confirm its Activity cleanup and inherited status.
-5. With already-mounted Home and grid cards visible, capture Home, grid, and
+6. With already-mounted Home and grid cards visible, capture Home, grid, and
    Game Info before and after each transition. Check Steam's actual
    compatibility filter or collection membership, not only packed fields.
-6. Reload through committed tooling, confirm saved modes, then capture a
-   controlled plugin unload/reload that proves baseline restoration. Drive QAM
-   and editor order with `scripts/deck/cdp.py input`,
+7. Reload through committed tooling while Game Info has a held update. Confirm
+   it remains responsive, keeps links, and applies the current policy only
+   after exit. Capture a controlled real unload that clears held work and
+   restores baselines. Drive QAM and editor order with `scripts/deck/cdp.py input`,
    `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
 
 Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run

@@ -1024,7 +1024,7 @@ describe("compatibility metadata application", () => {
     expect(overviews.get(appId)).toBe(published);
   });
 
-  it("defers the active Game Info replacement until the route changes", () => {
+  it("holds an active Game Info compatibility value until the view exits", () => {
     const appId = 9455;
     class NativeOverview {
       appid = appId;
@@ -1059,9 +1059,11 @@ describe("compatibility metadata application", () => {
     host.appDetailsStore = {};
     setRoute(`/library/app/${appId}/tab/GameInfo`);
     metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
 
-    expect(applyMetadata(appId)).toBe(true);
-    expect(original.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(applyMetadata(appId)).toBe(false);
+    expect(original.steam_hw_compat_category_packed).toBe(0xa0);
     expect(publish).not.toHaveBeenCalled();
     expect(overviews.get(appId)).toBe(original);
 
@@ -1070,6 +1072,156 @@ describe("compatibility metadata application", () => {
 
     expect(publish).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
     expect(overviews.get(appId)).not.toBe(original);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaf);
+  });
+
+  it("holds the active Game Info status while other shortcuts use the latest policy", () => {
+    class NativeOverview {
+      appid = 0;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const activeAppId = 9456;
+    const otherAppId = 9457;
+    const active = new NativeOverview();
+    active.appid = activeAppId;
+    active.steam_hw_compat_category_packed = 0xa0;
+    const other = new NativeOverview();
+    other.appid = otherAppId;
+    other.steam_hw_compat_category_packed = 0xb0;
+    const overviews = new Map<number, NativeOverview>([
+      [activeAppId, active],
+      [otherAppId, other],
+    ]);
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [active, other],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (appId: number) => overviews.get(appId) ?? null,
+    };
+    host.appDetailsStore = {};
+    setRoute(`/library/app/${activeAppId}/tab/GameInfo`);
+
+    setConfirmedCompatibilityDefault(3);
+
+    expect(active.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+
+    host.appStore = {
+      ...(host.appStore as object),
+      allApps: [active, overviews.get(otherAppId)],
+    };
+    setConfirmedCompatibilityDefault(2);
+
+    expect(active.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0xba);
+
+    // Closing QAM leaves the exact Game Info tab selected, so the held status
+    // must not be released. The direct history location is authoritative even
+    // while currentRoutePath() still contains the stale Game Info route.
+    flushDeferredCompatibilityPublications(`/library/app/${activeAppId}/tab/GameInfo`);
+    expect(active.steam_hw_compat_category_packed).toBe(0xa0);
+
+    flushDeferredCompatibilityPublications(`/library/app/${activeAppId}/tab/Activity`);
+    expect(overviews.get(activeAppId)?.steam_hw_compat_category_packed).toBe(0xaa);
+  });
+
+  it("releases an active update with a newer editor choice instead of replaying the old default", () => {
+    const appId = 9458;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+
+    setConfirmedCompatibilityDefault(3);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+
+    // Navigating to the editor is a real Game Info exit. Its later Save must
+    // win over the global default that originally queued this update.
+    metadataCache[String(appId)] = compatibilityMetadata(null, 1) as any;
+    flushDeferredCompatibilityPublications(`/decky-metadata/${appId}`);
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa5);
+  });
+
+  it("keeps the held nibble on an incoming active-view replacement, then applies after exit", () => {
+    const appId = 9459;
+    const initial = installCompatibilityOverview(appId, 0x0a);
+    let currentOverview: any = initial;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? currentOverview : null,
+      UpdateAppOverview: (incoming: any) => {
+        appInfoStore.OnAppOverviewChange([incoming]);
+        currentOverview = {
+          ...currentOverview,
+          steam_hw_compat_category_packed: incoming.steam_hw_compat_category_packed(),
+        };
+        appStore.allApps = [currentOverview];
+        return currentOverview;
+      },
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    appStore.UpdateAppOverview(incomingOverview(appId, 0));
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
+
+    flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0f);
+  });
+
+  it("reconstructs a held update after an in-place reload without applying it during the view", () => {
+    const appId = 9460;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    setConfirmedCompatibilityDefault(3);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+
+    retainCompatibilityBaselinesForReload();
+    cancelCompatibilityDefaultLoad();
+    beginCompatibilityLifecycle();
+    metadataState.compatibilityDefault = 2;
+    metadataState.compatibilityDefaultLoaded = true;
+
+    flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
+  });
+
+  it("clears a held update on real teardown instead of writing it later", () => {
+    const appId = 9461;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    setConfirmedCompatibilityDefault(3);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+
+    cancelCompatibilityDefaultLoad();
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    flushDeferredCompatibilityPublications(`/library/home`);
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
   });
 
   it("publishes only changed native shortcuts after a completed global batch", () => {

@@ -75,6 +75,13 @@ is available; otherwise it leaves the shortcut's original Steam status alone.
 The default changes existing cards as well as new shortcuts. It does not create
 metadata records or use ProtonDB.
 
+Saving a default saves it immediately. Other eligible shortcuts update at once.
+If the current game's **Game Info** tab is open, that game's current status and
+rich Game Info stay in place until you leave the tab. Closing QAM or cancelling
+a context menu does not count as leaving. Switch to another tab, page, or game,
+or choose **Decky metadata...** to open the editor. The editor is an exit; a
+later editor Save uses its latest per-game choice.
+
 For one game, open **Decky metadata...** and use **Compatibility status**:
 
 1. **Use global default**
@@ -99,6 +106,7 @@ claim about emulator performance.
 | Follow Valve with Valve Unknown | Unknown, with no badge |
 | Global Automatic | Matched category, or original Steam status if unavailable |
 | Changing the global default | Only games using **Use global default** change |
+| Current Game Info tab during a default change | Keeps its current value until you leave; other games update now |
 
 See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
 for upgrade, persistence, and lifecycle details.

@@ -4,6 +4,7 @@ export {
   applyCompatibilityDefault,
   beginCompatibilityLifecycle,
   cancelCompatibilityDefaultLoad,
+  discardRetainedCompatibilityState,
   ensureCompatibilityDefault,
   effectiveCompatibilityCategory,
   ensureMetadataCache,

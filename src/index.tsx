@@ -11,6 +11,7 @@ import {
   installSteamPatches,
   beginCompatibilityLifecycle,
   cancelCompatibilityDefaultLoad,
+  discardRetainedCompatibilityState,
   ensureCompatibilityDefault,
   refreshMetadataCache,
   retainCompatibilityBaselinesForReload,
@@ -57,6 +58,7 @@ export default definePlugin(() => {
     try {
       restoreAllCompatibilityBaselines();
     } finally {
+      discardRetainedCompatibilityState();
       retainedReloadBaselines = false;
     }
   });
@@ -92,6 +94,17 @@ export default definePlugin(() => {
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
+      const reloading = reloadGuard.isPending();
+      // The bootstrap stopper invalidates the compatibility lifecycle. Retain
+      // the held Game Info intent before it does so during an in-place import.
+      try {
+        if (reloading) {
+          retainCompatibilityBaselinesForReload();
+          retainedReloadBaselines = true;
+        }
+      } catch (error) {
+        log.error("patch", "compatibility reload state retain failed", error);
+      }
       try {
         menuPatch?.unpatch?.();
       } catch (error) {
@@ -103,24 +116,21 @@ export default definePlugin(() => {
         log.error("patch", "metadata bootstrap stop failed", error);
       }
       try {
-        cancelCompatibilityDefaultLoad();
-      } catch (error) {
-        log.error("patch", "compatibility default load stop failed", error);
-      }
-      try {
         clearCompatibilityDropdownReturn();
       } catch (error) {
         log.error("patch", "compatibility dropdown focus stop failed", error);
       }
       try {
-        if (reloadGuard.isPending()) {
-          retainCompatibilityBaselinesForReload();
-          retainedReloadBaselines = true;
-        } else {
+        if (!reloading) {
           restoreAllCompatibilityBaselines();
         }
       } catch (error) {
         log.error("patch", "compatibility baseline restore failed", error);
+      }
+      try {
+        cancelCompatibilityDefaultLoad();
+      } catch (error) {
+        log.error("patch", "compatibility default load stop failed", error);
       }
       try {
         unpatchSteam?.();

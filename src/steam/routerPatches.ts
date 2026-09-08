@@ -24,10 +24,8 @@ import {
   safeAfterPatch,
   armRouteShield,
   clearRouteShield,
-  subscribeCompatibilityRevision,
 } from "./core";
 import { flushDeferredCompatibilityPublications, isBypassTraceEnabled } from "./metadataPatch";
-import { findSteamUiDocumentMatch } from "./steamUiHost";
 import {
   findChildElements,
   isInfoSectionBoundary,
@@ -53,178 +51,6 @@ const isNeverOnSteam = (appId: number): boolean => {
   } catch (_error) {
     return false;
   }
-};
-
-/**
- * The native compatibility field is deliberately non-observable. Re-render
- * only the mounted native Game Info class when that field changes. This keeps
- * its exact AppOverview and the parent route's rich-details state intact.
- */
-const installMountedGameInfoCompatibilityRefresh = (unpatchers: Unpatch[]) => {
-  const mounted = new Set<any>();
-  const gameInfoClassification = new WeakMap<Function, boolean>();
-  const maxAttempts = 5;
-  const maxFiberDepth = 16;
-  const maxDocumentCandidates = 1_024;
-  let attempts = 0;
-  let active = true;
-  let retryId: ReturnType<typeof setTimeout> | undefined;
-  let refreshFrame: number | undefined;
-  let refreshFrameOwner: Window | undefined;
-  let unsubscribe: Unpatch | undefined;
-
-  const isNativeGameInfo = (candidate: any) => {
-    const render = candidate?.prototype?.render;
-    if (
-      typeof candidate !== "function" ||
-      !candidate.prototype?.isReactComponent ||
-      typeof render !== "function"
-    ) {
-      return false;
-    }
-    if (gameInfoClassification.has(candidate)) return gameInfoClassification.get(candidate) === true;
-    try {
-      // Steam's observer wrapper replaces an instance's render method after
-      // first render. Its wrapper source loses these semantic tokens, while
-      // the class source keeps the original native render implementation.
-      const hasSemanticSource = (source: string) =>
-        source.includes("BIsModOrShortcut") && source.includes("GetDescriptions");
-      const result = hasSemanticSource(String(render)) || hasSemanticSource(String(candidate));
-      gameInfoClassification.set(candidate, result);
-      return result;
-    } catch {
-      gameInfoClassification.set(candidate, false);
-      return false;
-    }
-  };
-
-  const captureMountedGameInfoFromFiber = (start: any, captured: Set<any>) => {
-    for (let depth = 0, fiber = start; fiber && depth < maxFiberDepth; depth += 1, fiber = fiber.return) {
-      const components = [fiber.elementType, fiber.type];
-      for (const component of components) {
-        if (!isNativeGameInfo(component)) continue;
-        if (fiber.stateNode) captured.add(fiber.stateNode);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const captureMountedGameInfo = () => {
-    try {
-      const label = "Steam Deck Compatibility";
-      const captured = new Set<any>();
-      const found = findSteamUiDocumentMatch((document) => {
-        const elements = Array.from(document.querySelectorAll("div"));
-        const prioritized = elements.filter((element) =>
-          (element.textContent || "").includes(label) &&
-          !Array.from(element.children).some((child) => (child.textContent || "").includes(label))
-        );
-        // The rich view has the compatibility heading, but the failed native
-        // placeholder does not. Inspect a bounded set of real DOM fibers so a
-        // mounted placeholder can supply the same native renderer class.
-        const candidates = [...prioritized, ...elements.slice(0, maxDocumentCandidates)];
-        const inspected = new Set<any>();
-        for (const element of candidates) {
-          if (inspected.has(element)) continue;
-          inspected.add(element);
-          const fiberKey = Object.getOwnPropertyNames(element).find((key) =>
-            key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$")
-          );
-          if (fiberKey && captureMountedGameInfoFromFiber((element as any)[fiberKey], captured)) return true;
-        }
-        return undefined;
-      });
-      if (found) {
-        mounted.clear();
-        captured.forEach((instance) => mounted.add(instance));
-      }
-      return found;
-    } catch {
-      // Steam's private React fiber field is optional and must fail closed.
-      return undefined;
-    }
-  };
-
-  const refreshMountedGameInfo = () => {
-    if (!active) return;
-    // Steam can retain the Game Info tab across a plugin reload, before its
-    // componentDidMount hook was patched. Capture only that visible component
-    // from its DOM fiber; never enumerate a React or MobX object tree.
-    captureMountedGameInfo();
-    for (const instance of mounted) {
-      try {
-        const overview = instance?.props?.overview;
-        const appId = Number(overview?.appid);
-        if (
-          !isNonSteamApp(overview) ||
-          !isCurrentGameDetailRoute(currentRoutePath(), appId) ||
-          typeof instance?.forceUpdate !== "function"
-        ) {
-          continue;
-        }
-        // Steam replaces map entries when a compatibility batch publishes.
-        // After an in-place plugin reload, a retained fiber can still point to
-        // the old observer instance. Never force that stale instance: it can
-        // re-enter a wrapper from the unloaded plugin module and wedge SteamUI.
-        const currentOverview = getOverview(appId);
-        if (currentOverview && currentOverview !== overview) continue;
-        // A compatibility revision can leave this shortcut's packed category
-        // unchanged (Follow Valve or an explicit choice). Shield the actual
-        // native render boundary for every refresh, not only a bit mutation.
-        armRouteShield(appId, currentRoutePath(), "compatibility-revision");
-        instance.forceUpdate();
-      } catch {
-        // A stale native instance must not block the active Game Info view.
-      }
-    }
-  };
-
-  const scheduleMountedGameInfoRefresh = () => {
-    if (!active || refreshFrame !== undefined) return;
-    // The shared bridge orders Steam browser documents before Decky's shared
-    // context. Schedule on that real main browser window, never on QAM.
-    const mainWindow = findSteamUiDocumentMatch((document) => {
-      const candidate = document.defaultView;
-      return (
-        typeof candidate?.requestAnimationFrame === "function" &&
-        typeof candidate.cancelAnimationFrame === "function"
-      ) ? candidate : undefined;
-    });
-    if (!mainWindow) return;
-    refreshFrameOwner = mainWindow;
-    refreshFrame = mainWindow.requestAnimationFrame(() => {
-      refreshFrame = undefined;
-      refreshFrameOwner = undefined;
-      // Capture, route checks, shielding, and native publication must all see
-      // the instance Steam committed after the compatibility revision.
-      refreshMountedGameInfo();
-    });
-  };
-
-  const tryInstall = () => {
-    retryId = undefined;
-    if (!active) return;
-    attempts += 1;
-    const captured = captureMountedGameInfo();
-    if (!captured) {
-      if (attempts < maxAttempts) retryId = globalThis.setTimeout(tryInstall, 500);
-    }
-  };
-
-  unpatchers.push(() => {
-    active = false;
-    if (retryId !== undefined) globalThis.clearTimeout(retryId);
-    if (refreshFrame !== undefined && refreshFrameOwner) {
-      refreshFrameOwner.cancelAnimationFrame(refreshFrame);
-    }
-    refreshFrame = undefined;
-    refreshFrameOwner = undefined;
-    unsubscribe?.();
-    mounted.clear();
-  });
-  unsubscribe = subscribeCompatibilityRevision(scheduleMountedGameInfoRefresh);
-  tryInstall();
 };
 
 // The quick-links row is not reachable from the route render tree. Steam's page
@@ -452,7 +278,6 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
 };
 
 export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPatchDeps) => {
-  installMountedGameInfoCompatibilityRefresh(unpatchers);
   const {
     ensureMetadataCache,
     applyMetadata,
@@ -619,7 +444,10 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
   const listenToHistory = (history: any) => {
     try {
       const unlisten = history.listen((location: any) => {
-        flushDeferredCompatibilityPublications();
+        // This callback's new location is authoritative. currentRoutePath()
+        // can still contain the departing Game Info path while Steam commits
+        // its browser tokens, so it must not keep the held update queued.
+        flushDeferredCompatibilityPublications(String(location?.pathname || ""));
         armShieldForPath(location?.pathname || "", "listen", history);
       });
       if (typeof unlisten === "function") {

@@ -483,6 +483,18 @@ export const isCurrentGameDetailRoute = (routeContext: string, appId: number): b
   return foundCurrentDetail;
 };
 
+/**
+ * True only for the exact Game Info tab of this app. Other detail tabs share
+ * the app route, but leaving Game Info must release a held compatibility
+ * update instead of treating the whole app page as protected.
+ */
+export const isCurrentGameInfoRoute = (routeContext: string, appId: number): boolean => {
+  if (!isCurrentGameDetailRoute(routeContext, appId)) return false;
+  return String(routeContext || "").split(/\s+/).some((token) =>
+    /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token)
+  );
+};
+
 const appIdFromDom = () => {
   const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
   const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");

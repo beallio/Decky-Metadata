@@ -1708,6 +1708,16 @@ const isCurrentGameDetailRoute = (routeContext, appId) => {
     }
     return foundCurrentDetail;
 };
+/**
+ * True only for the exact Game Info tab of this app. Other detail tabs share
+ * the app route, but leaving Game Info must release a held compatibility
+ * update instead of treating the whole app page as protected.
+ */
+const isCurrentGameInfoRoute = (routeContext, appId) => {
+    if (!isCurrentGameDetailRoute(routeContext, appId))
+        return false;
+    return String(routeContext || "").split(/\s+/).some((token) => /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token));
+};
 const appIdFromDom = () => {
     const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
     const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
@@ -3559,33 +3569,96 @@ const applyCompatibilityCategory = (appId, overview, category) => {
         return false;
     }
 };
+const desiredCompatibilityNibble = (appId, heldNibble, category) => {
+    if (category === null) {
+        const baseline = metadataState.compatibilityBaselines[String(appId)];
+        return Number.isInteger(baseline) && baseline >= 0 && baseline <= 0xf
+            ? baseline
+            : heldNibble;
+    }
+    return category | (category << 2);
+};
+const deferredCompatibilityUpdates = new Map();
+/**
+ * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
+ * not change this main-window route, while another tab, page, game, or the
+ * metadata editor does.
+ */
+const deferActiveCompatibilityUpdate = (appId, heldNibble, category) => {
+    const existing = deferredCompatibilityUpdates.get(appId);
+    const held = existing?.heldNibble ?? heldNibble;
+    if (desiredCompatibilityNibble(appId, held, category) === held) {
+        // Repeated edits can return to the already visible state. There is then no
+        // stale mutation to replay after the user leaves Game Info.
+        deferredCompatibilityUpdates.delete(appId);
+        return false;
+    }
+    if (!existing)
+        deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
+    return true;
+};
 /**
  * Apply only compatibility data to an exact native overview object. Steam can
  * replace this non-observable object between callers, so the app-store getter
  * uses this same helper before it returns a replacement to SteamUI.
  */
-const applyCompatibilityToOverview = (appId, overview) => {
+const applyCompatibilityToOverview = (appId, overview, routeContext = currentRoutePath()) => {
     if (Number(overview?.appid) !== Number(appId) || !isNativeNonSteamShortcut(overview)) {
         return false;
     }
     const metadata = metadataCache[String(appId)];
-    return applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault));
+    const category = effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault);
+    if (isCurrentGameInfoRoute(routeContext, appId)) {
+        deferActiveCompatibilityUpdate(appId, packedCompatibilityValue(overview) & 0xf, category);
+        return false;
+    }
+    deferredCompatibilityUpdates.delete(appId);
+    return applyCompatibilityCategory(appId, overview, category);
 };
-const deferredCompatibilityPublications = new Map();
 const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibilityBaselines";
 const retainCompatibilityBaselinesForReload = () => {
     const baselines = metadataState.compatibilityBaselines;
-    if (Object.keys(baselines).length === 0)
+    if (Object.keys(baselines).length === 0 && deferredCompatibilityUpdates.size === 0)
         return;
-    globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY] = { ...baselines };
+    globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
+        baselines: { ...baselines },
+        deferred: Array.from(deferredCompatibilityUpdates.values()),
+    };
+};
+const discardRetainedCompatibilityState = () => {
+    delete globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY];
 };
 const resumeRetainedCompatibilityBaselines = () => {
     const host = globalThis;
     const retained = host[RETAINED_COMPATIBILITY_BASELINES_KEY];
     if (!retained || typeof retained !== "object")
         return;
-    Object.assign(metadataState.compatibilityBaselines, retained);
-    delete host[RETAINED_COMPATIBILITY_BASELINES_KEY];
+    const state = retained;
+    // Accept the bare baseline record written by the preceding plugin version so
+    // an in-place import from that version remains safe.
+    const baselines = state.baselines && typeof state.baselines === "object"
+        ? state.baselines
+        : retained;
+    Object.entries(baselines).forEach(([appId, value]) => {
+        if (Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 0xf) {
+            metadataState.compatibilityBaselines[appId] = Number(value);
+        }
+    });
+    if (Array.isArray(state.deferred)) {
+        state.deferred.forEach(({ appId, heldNibble }) => {
+            if (Number.isSafeInteger(appId) &&
+                Number(appId) > 0 &&
+                Number.isInteger(heldNibble) &&
+                Number(heldNibble) >= 0 &&
+                Number(heldNibble) <= 0xf) {
+                deferredCompatibilityUpdates.set(Number(appId), {
+                    appId: Number(appId),
+                    heldNibble: Number(heldNibble),
+                });
+            }
+        });
+    }
+    discardRetainedCompatibilityState();
 };
 const createCompatibilityReplacement = (overview) => {
     const prototype = Object.getPrototypeOf(overview);
@@ -3629,14 +3702,6 @@ const publishCompatibilityReplacements = (updates) => {
             // Never publish a stale entry, an alias, or an official Steam overview.
             if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview))
                 continue;
-            // Replacing the overview object underneath a selected native Game Info
-            // renderer can re-enter its retained observer during an in-place plugin
-            // reload. The packed field is already updated for the frame refresh;
-            // defer only this observable-map notification until the user leaves it.
-            if (isCurrentGameDetailRoute(currentRoutePath(), appId)) {
-                deferredCompatibilityPublications.set(appId, { appId, overview });
-                continue;
-            }
             const replacement = createCompatibilityReplacement(overview);
             if (!replacement)
                 continue;
@@ -3660,15 +3725,36 @@ const publishCompatibilityReplacements = (updates) => {
         // remain correct, and a later policy or metadata update can publish again.
     }
 };
-/** Publish active-view updates after their native Game Info renderer unmounts. */
-const flushDeferredCompatibilityPublications = () => {
-    const pending = Array.from(deferredCompatibilityPublications.values());
-    for (const publication of pending) {
-        if (isCurrentGameDetailRoute(currentRoutePath(), publication.appId))
+/**
+ * Recompute pending work after the main Game Info view exits. A history
+ * callback supplies its new location directly, because the joined route
+ * snapshot can still include the old Game Info path during navigation.
+ */
+const flushDeferredCompatibilityPublications = (routeContext = currentRoutePath()) => {
+    const publications = [];
+    let changed = false;
+    for (const { appId } of Array.from(deferredCompatibilityUpdates.values())) {
+        if (isCurrentGameInfoRoute(routeContext, appId))
             continue;
-        deferredCompatibilityPublications.delete(publication.appId);
-        publishCompatibilityReplacements([publication]);
+        const metadata = metadataCache[String(appId)];
+        // An inheriting shortcut cannot safely resolve until its persisted global
+        // default has loaded. Explicit and Follow Valve choices are independent.
+        if (!metadataState.compatibilityDefaultLoaded &&
+            !isCompatibilityCategory$1(metadata?.deck_compat_override) &&
+            metadata?.deck_compat_override !== "valve") {
+            continue;
+        }
+        deferredCompatibilityUpdates.delete(appId);
+        const overview = getNativeOverview(appId);
+        if (applyCompatibilityToOverview(appId, overview, routeContext)) {
+            changed = true;
+            publications.push({ appId, overview });
+        }
     }
+    publishCompatibilityReplacements(publications);
+    if (changed)
+        notifyCompatibilityRevision();
+    return changed;
 };
 const nativeShortcutOverviewsById = () => {
     const overviews = new Map();
@@ -3730,6 +3816,7 @@ const beginCompatibilityLifecycle = () => {
     metadataState.compatibilityDefaultLoaded = false;
     metadataState.compatibilityDefaultLoadPromise = null;
     metadataState.metadataLoadPromise = null;
+    deferredCompatibilityUpdates.clear();
     resumeRetainedCompatibilityBaselines();
     return metadataState.compatibilityLifecycleGeneration;
 };
@@ -3765,6 +3852,7 @@ const ensureCompatibilityDefault = async () => {
 const cancelCompatibilityDefaultLoad = () => {
     metadataState.compatibilityDefaultGeneration += 1;
     metadataState.compatibilityLifecycleGeneration += 1;
+    deferredCompatibilityUpdates.clear();
 };
 /**
  * Steam sends AppOverview protobufs to appInfoStore before it creates and
@@ -3781,12 +3869,31 @@ const applyCompatibilityToIncomingOverview = (overview) => {
     if (!isIncomingShortcut && !isNativeNonSteamShortcut(current))
         return false;
     const category = effectiveCompatibilityCategory(metadataCache[String(appId)], metadataState.compatibilityDefault);
-    if (category === null)
-        return false;
     const packed = Number(overview?.steam_hw_compat_category_packed?.());
     if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
         return false;
     }
+    if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+        const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
+        if (!deferActiveCompatibilityUpdate(appId, heldNibble, category))
+            return false;
+        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble;
+        if (held === undefined)
+            return false;
+        const heldPacked = (packed & -16) | held;
+        if (heldPacked === packed)
+            return false;
+        try {
+            overview.set_steam_hw_compat_category_packed(heldPacked);
+            return Number(overview.steam_hw_compat_category_packed()) === heldPacked;
+        }
+        catch {
+            return false;
+        }
+    }
+    deferredCompatibilityUpdates.delete(appId);
+    if (category === null)
+        return false;
     const key = String(appId);
     if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
         metadataState.compatibilityBaselines[key] = current
@@ -6586,174 +6693,6 @@ const isNeverOnSteam = (appId) => {
         return false;
     }
 };
-/**
- * The native compatibility field is deliberately non-observable. Re-render
- * only the mounted native Game Info class when that field changes. This keeps
- * its exact AppOverview and the parent route's rich-details state intact.
- */
-const installMountedGameInfoCompatibilityRefresh = (unpatchers) => {
-    const mounted = new Set();
-    const gameInfoClassification = new WeakMap();
-    const maxAttempts = 5;
-    const maxFiberDepth = 16;
-    const maxDocumentCandidates = 1024;
-    let attempts = 0;
-    let active = true;
-    let retryId;
-    let refreshFrame;
-    let refreshFrameOwner;
-    let unsubscribe;
-    const isNativeGameInfo = (candidate) => {
-        const render = candidate?.prototype?.render;
-        if (typeof candidate !== "function" ||
-            !candidate.prototype?.isReactComponent ||
-            typeof render !== "function") {
-            return false;
-        }
-        if (gameInfoClassification.has(candidate))
-            return gameInfoClassification.get(candidate) === true;
-        try {
-            // Steam's observer wrapper replaces an instance's render method after
-            // first render. Its wrapper source loses these semantic tokens, while
-            // the class source keeps the original native render implementation.
-            const hasSemanticSource = (source) => source.includes("BIsModOrShortcut") && source.includes("GetDescriptions");
-            const result = hasSemanticSource(String(render)) || hasSemanticSource(String(candidate));
-            gameInfoClassification.set(candidate, result);
-            return result;
-        }
-        catch {
-            gameInfoClassification.set(candidate, false);
-            return false;
-        }
-    };
-    const captureMountedGameInfoFromFiber = (start, captured) => {
-        for (let depth = 0, fiber = start; fiber && depth < maxFiberDepth; depth += 1, fiber = fiber.return) {
-            const components = [fiber.elementType, fiber.type];
-            for (const component of components) {
-                if (!isNativeGameInfo(component))
-                    continue;
-                if (fiber.stateNode)
-                    captured.add(fiber.stateNode);
-                return true;
-            }
-        }
-        return false;
-    };
-    const captureMountedGameInfo = () => {
-        try {
-            const label = "Steam Deck Compatibility";
-            const captured = new Set();
-            const found = findSteamUiDocumentMatch((document) => {
-                const elements = Array.from(document.querySelectorAll("div"));
-                const prioritized = elements.filter((element) => (element.textContent || "").includes(label) &&
-                    !Array.from(element.children).some((child) => (child.textContent || "").includes(label)));
-                // The rich view has the compatibility heading, but the failed native
-                // placeholder does not. Inspect a bounded set of real DOM fibers so a
-                // mounted placeholder can supply the same native renderer class.
-                const candidates = [...prioritized, ...elements.slice(0, maxDocumentCandidates)];
-                const inspected = new Set();
-                for (const element of candidates) {
-                    if (inspected.has(element))
-                        continue;
-                    inspected.add(element);
-                    const fiberKey = Object.getOwnPropertyNames(element).find((key) => key.startsWith("__reactFiber$") || key.startsWith("__reactInternalInstance$"));
-                    if (fiberKey && captureMountedGameInfoFromFiber(element[fiberKey], captured))
-                        return true;
-                }
-                return undefined;
-            });
-            if (found) {
-                mounted.clear();
-                captured.forEach((instance) => mounted.add(instance));
-            }
-            return found;
-        }
-        catch {
-            // Steam's private React fiber field is optional and must fail closed.
-            return undefined;
-        }
-    };
-    const refreshMountedGameInfo = () => {
-        if (!active)
-            return;
-        // Steam can retain the Game Info tab across a plugin reload, before its
-        // componentDidMount hook was patched. Capture only that visible component
-        // from its DOM fiber; never enumerate a React or MobX object tree.
-        captureMountedGameInfo();
-        for (const instance of mounted) {
-            try {
-                const overview = instance?.props?.overview;
-                const appId = Number(overview?.appid);
-                if (!isNonSteamApp(overview) ||
-                    !isCurrentGameDetailRoute(currentRoutePath(), appId) ||
-                    typeof instance?.forceUpdate !== "function") {
-                    continue;
-                }
-                // Steam replaces map entries when a compatibility batch publishes.
-                // After an in-place plugin reload, a retained fiber can still point to
-                // the old observer instance. Never force that stale instance: it can
-                // re-enter a wrapper from the unloaded plugin module and wedge SteamUI.
-                const currentOverview = getOverview(appId);
-                if (currentOverview && currentOverview !== overview)
-                    continue;
-                // A compatibility revision can leave this shortcut's packed category
-                // unchanged (Follow Valve or an explicit choice). Shield the actual
-                // native render boundary for every refresh, not only a bit mutation.
-                armRouteShield(appId, currentRoutePath(), "compatibility-revision");
-                instance.forceUpdate();
-            }
-            catch {
-                // A stale native instance must not block the active Game Info view.
-            }
-        }
-    };
-    const scheduleMountedGameInfoRefresh = () => {
-        if (!active || refreshFrame !== undefined)
-            return;
-        // The shared bridge orders Steam browser documents before Decky's shared
-        // context. Schedule on that real main browser window, never on QAM.
-        const mainWindow = findSteamUiDocumentMatch((document) => {
-            const candidate = document.defaultView;
-            return (typeof candidate?.requestAnimationFrame === "function" &&
-                typeof candidate.cancelAnimationFrame === "function") ? candidate : undefined;
-        });
-        if (!mainWindow)
-            return;
-        refreshFrameOwner = mainWindow;
-        refreshFrame = mainWindow.requestAnimationFrame(() => {
-            refreshFrame = undefined;
-            refreshFrameOwner = undefined;
-            // Capture, route checks, shielding, and native publication must all see
-            // the instance Steam committed after the compatibility revision.
-            refreshMountedGameInfo();
-        });
-    };
-    const tryInstall = () => {
-        retryId = undefined;
-        if (!active)
-            return;
-        attempts += 1;
-        const captured = captureMountedGameInfo();
-        if (!captured) {
-            if (attempts < maxAttempts)
-                retryId = globalThis.setTimeout(tryInstall, 500);
-        }
-    };
-    unpatchers.push(() => {
-        active = false;
-        if (retryId !== undefined)
-            globalThis.clearTimeout(retryId);
-        if (refreshFrame !== undefined && refreshFrameOwner) {
-            refreshFrameOwner.cancelAnimationFrame(refreshFrame);
-        }
-        refreshFrame = undefined;
-        refreshFrameOwner = undefined;
-        unsubscribe?.();
-        mounted.clear();
-    });
-    unsubscribe = subscribeCompatibilityRevision(scheduleMountedGameInfoRefresh);
-    tryInstall();
-};
 // The quick-links row is not reachable from the route render tree. Steam's page
 // host mounts Game Info through several function-component boundaries, so this
 // hooks the class that registers the info section. Its output contains the
@@ -6953,7 +6892,6 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
     tryInstall();
 };
 const installRouterRenderPatches = (unpatchers, deps) => {
-    installMountedGameInfoCompatibilityRefresh(unpatchers);
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
     GAME_DETAIL_ROUTES.forEach((route) => {
         const patch = routerHook.addPatch(route, (tree) => {
@@ -7114,7 +7052,10 @@ const installGameDetailReentryShield = (unpatchers) => {
     const listenToHistory = (history) => {
         try {
             const unlisten = history.listen((location) => {
-                flushDeferredCompatibilityPublications();
+                // This callback's new location is authoritative. currentRoutePath()
+                // can still contain the departing Game Info path while Steam commits
+                // its browser tokens, so it must not keep the held update queued.
+                flushDeferredCompatibilityPublications(String(location?.pathname || ""));
                 armShieldForPath(location?.pathname || "", "listen", history);
             });
             if (typeof unlisten === "function") {
@@ -9947,6 +9888,7 @@ var index = DFL.definePlugin(() => {
             restoreAllCompatibilityBaselines();
         }
         finally {
+            discardRetainedCompatibilityState();
             retainedReloadBaselines = false;
         }
     });
@@ -9978,6 +9920,18 @@ var index = DFL.definePlugin(() => {
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
+            const reloading = reloadGuard.isPending();
+            // The bootstrap stopper invalidates the compatibility lifecycle. Retain
+            // the held Game Info intent before it does so during an in-place import.
+            try {
+                if (reloading) {
+                    retainCompatibilityBaselinesForReload();
+                    retainedReloadBaselines = true;
+                }
+            }
+            catch (error$1) {
+                error("patch", "compatibility reload state retain failed", error$1);
+            }
             try {
                 menuPatch?.unpatch?.();
             }
@@ -9991,28 +9945,24 @@ var index = DFL.definePlugin(() => {
                 error("patch", "metadata bootstrap stop failed", error$1);
             }
             try {
-                cancelCompatibilityDefaultLoad();
-            }
-            catch (error$1) {
-                error("patch", "compatibility default load stop failed", error$1);
-            }
-            try {
                 clearCompatibilityDropdownReturn();
             }
             catch (error$1) {
                 error("patch", "compatibility dropdown focus stop failed", error$1);
             }
             try {
-                if (reloadGuard.isPending()) {
-                    retainCompatibilityBaselinesForReload();
-                    retainedReloadBaselines = true;
-                }
-                else {
+                if (!reloading) {
                     restoreAllCompatibilityBaselines();
                 }
             }
             catch (error$1) {
                 error("patch", "compatibility baseline restore failed", error$1);
+            }
+            try {
+                cancelCompatibilityDefaultLoad();
+            }
+            catch (error$1) {
+                error("patch", "compatibility default load stop failed", error$1);
             }
             try {
                 unpatchSteam?.();

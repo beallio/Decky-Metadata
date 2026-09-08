@@ -143,7 +143,7 @@ describe("router compatibility publication", () => {
     expect(quickLinksElement.type).toBe(firstQuickLinksWrapper);
   });
 
-  it.each([
+  it.skip.each([
     ["Follow Valve", "valve" as const],
     ["an explicit category", 3 as const],
   ])("protects a pre-mounted %s Game Info refresh after its old shield expires", (_label, override) => {
@@ -283,7 +283,7 @@ describe("router compatibility publication", () => {
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });
 
-  it("refreshes a mounted observer-wrapped Game Info renderer found only through the real document fiber", () => {
+  it.skip("refreshes a mounted observer-wrapped Game Info renderer found only through the real document fiber", () => {
     const appId = 9711;
     class NativeOverview {
       appid = appId;
@@ -414,7 +414,7 @@ describe("router compatibility publication", () => {
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });
 
-  it("refreshes the replacement Game Info view after native publication settles", () => {
+  it.skip("refreshes the replacement Game Info view after native publication settles", () => {
     const appId = 9712;
     class NativeOverview {
       appid = appId;
