@@ -75,6 +75,13 @@ is available; otherwise it leaves the shortcut's original Steam status alone.
 The default changes existing cards as well as new shortcuts. It does not create
 metadata records or use ProtonDB.
 
+**Apply only to matched games** narrows that default. With it on, only
+shortcuts that already have saved Decky Metadata data follow the default;
+everything else, such as a launcher or emulator entry you never matched, keeps
+its original Steam status. A saved game without a Steam match still counts.
+Per-game choices are unaffected. The toggle is unavailable while the default is
+Automatic, because there is nothing to narrow.
+
 Saving a default saves it immediately. Other eligible shortcuts update at once.
 If the current game's **Game Info** tab is open, that game's current status and
 rich Game Info stay in place until you leave the tab. Closing QAM or cancelling
@@ -107,6 +114,7 @@ claim about emulator performance.
 | Global Automatic | Matched category, or original Steam status if unavailable |
 | Changing the global default | Only games using **Use global default** change |
 | Current Game Info tab during a default change | Keeps its current value until you leave; other games update now |
+| Apply only to matched games, shortcut with no saved metadata | Original Steam status |
 
 See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
 for upgrade, persistence, and lifecycle details.

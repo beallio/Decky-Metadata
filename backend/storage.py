@@ -17,6 +17,11 @@ def compatibility_default(value: Any) -> int | None:
     return value if isinstance(value, int) and value in {0, 1, 2, 3} else None
 
 
+def compatibility_default_matched_only(value: Any) -> bool:
+    """Return the persisted default scope; anything but True means all shortcuts."""
+    return value is True
+
+
 def default_data() -> dict[str, Any]:
     return {
         "metadata": {},
@@ -27,6 +32,7 @@ def default_data() -> dict[str, Any]:
         "settings": {
             "debug_logging": False,
             "deck_compat_default": None,
+            "deck_compat_default_matched_only": False,
         },
         "update_settings": {},
         "update_check_cache": {},
@@ -64,14 +70,16 @@ def load_data(
     merged["update_settings"].update(payload.get("update_settings") or {})
     merged["update_check_cache"].update(payload.get("update_check_cache") or {})
     merged["settings"]["debug_logging"] = bool(merged["settings"].get("debug_logging", False))
-    if isinstance(payload_settings, dict) and "deck_compat_default" in payload_settings:
-        merged["settings"]["deck_compat_default"] = compatibility_default(
-            merged["settings"].get("deck_compat_default")
-        )
-    else:
-        # Missing is Automatic, but do not rewrite legacy settings merely
-        # because this newer key was introduced.
-        merged["settings"].pop("deck_compat_default", None)
+    for key, sanitize in (
+        ("deck_compat_default", compatibility_default),
+        ("deck_compat_default_matched_only", compatibility_default_matched_only),
+    ):
+        if isinstance(payload_settings, dict) and key in payload_settings:
+            merged["settings"][key] = sanitize(merged["settings"].get(key))
+        else:
+            # Missing means Automatic/all shortcuts, but do not rewrite legacy
+            # settings merely because a newer key was introduced.
+            merged["settings"].pop(key, None)
     return merged, copy.deepcopy(merged), mtime_ns
 
 

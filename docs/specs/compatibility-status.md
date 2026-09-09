@@ -4,7 +4,8 @@
 
 Decky Metadata can set a Steam compatibility category on native non-Steam
 shortcuts. The QAM **Default compatibility status** applies to existing and new
-shortcuts, including shortcuts that have no saved metadata.
+shortcuts, including shortcuts that have no saved metadata, unless the QAM
+**Apply only to matched games** toggle restricts it.
 Its choices are, in order: **Automatic — use matched Steam status**,
 **Verified**, **Playable**, **Unsupported**, and **Unknown**.
 
@@ -28,6 +29,15 @@ tab. Closing QAM or a context-menu overlay does not release it. A different
 tab, page, or game releases it; opening **Decky metadata...** is also an exit.
 The pending work then uses the latest default, match, and per-game choice, so a
 later editor Save wins over a formerly queued default.
+
+**Apply only to matched games** is off by default. When it is on, a numeric
+default applies only to shortcuts that have a saved metadata record; a record
+without a Steam match still counts. A shortcut with no record keeps its
+original Steam status. Fixed per-game categories and Follow Valve live in a
+record, so the scope never changes them. The toggle is unavailable while the
+default is Automatic, because there is no default to restrict; its saved value
+is kept. Turning the scope on or off applies the resulting policy at once,
+under the same active-Game-Info deferral as any other default change.
 
 ## Scenario reference
 
@@ -75,6 +85,13 @@ later editor Save wins over a formerly queued default.
 | S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
 | S39 | Changed global default | Plugin reload or unload while pending | In-place reload retains/reconstructs pending work; real unload clears it and restores baselines. |
 | S40 | Any global change | Active Game Info has unchanged fixed or Follow Valve result | Keep that result; do not force an active-view refresh. Other eligible games still update. |
+| S41 | Verified, matched only | Shortcut with no record | Original; no record is created. |
+| S42 | Verified, matched only | Record with no Steam match, Use global default | Verified. |
+| S43 | Verified, matched only | Fixed per-game or Follow Valve | Per-game result, unchanged by the scope. |
+| S44 | Verified, matched only -> off | Shortcut with no record | Verified again in the same pass. |
+| S45 | Automatic, matched only | Any shortcut | No visible change; the toggle is unavailable and its value persists. |
+| S46 | Verified | Scope changes while a Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
+| S47 | Verified, matched only | Record removed for an inheriting shortcut | Original; the shortcut leaves the default's scope. |
 
 ## Technical contract
 
@@ -85,6 +102,20 @@ booleans, load as Automatic. `get_compatibility_default()` and
 `set_compatibility_default(category)` return the persisted numeric-or-null
 value. The setter rejects any other input without changing the saved or
 in-memory value.
+
+Settings JSON stores `settings.deck_compat_default_matched_only` as a boolean.
+Missing, null, and any non-boolean persisted value load as `false`, and the
+key is not added to a legacy settings file merely because it exists now.
+`get_compatibility_default_matched_only()` returns the sanitized boolean;
+`set_compatibility_default_matched_only(enabled)` accepts only a real boolean
+and rejects anything else, including `0`, `1`, `"true"`, and null, without
+changing the saved or in-memory value. A failed write restores the previous
+state, including its absence.
+
+The frontend loads the numeric default and this scope as one policy before it
+reports the setting as loaded, so an inheriting shortcut is never resolved
+against a half-loaded policy. A confirmed scope change reuses the same single
+linear pass over native shortcut overviews as a confirmed default change.
 
 `MetadataData.deck_compat_override` and `MetadataRecord.deck_compat_override`
 store a number, `"valve"`, or null. Null or an omitted field means Use global

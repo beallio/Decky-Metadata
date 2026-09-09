@@ -126,6 +126,12 @@ export const setCompatibilityDefault = callable<
   [category: DeckCompatibilityCategory | null],
   DeckCompatibilityCategory | null
 >("set_compatibility_default");
+export const getCompatibilityDefaultMatchedOnly = callable<[], boolean>(
+  "get_compatibility_default_matched_only"
+);
+export const setCompatibilityDefaultMatchedOnly = callable<[enabled: boolean], boolean>(
+  "set_compatibility_default_matched_only"
+);
 export const checkForPluginUpdate = callable<
   [currentVersion: string, force: boolean],
   UpdateCheckResult

@@ -1,4 +1,4 @@
-import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
 
 import {
   ButtonLabel,
@@ -34,9 +34,12 @@ type MetadataSectionProps = {
   compatibilityDefaultLoaded: boolean;
   compatibilityDefaultBusy: boolean;
   compatibilityDefaultError: string;
+  compatibilityDefaultMatchedOnly: boolean;
+  compatibilityDefaultScopeBusy: boolean;
   onRefreshMetadata: () => void;
   onClearCache: () => void;
   onCompatibilityDefaultChange: (category: DeckCompatibilityCategory | null) => void;
+  onCompatibilityDefaultMatchedOnlyChange: (matchedOnly: boolean) => void;
   onCompatibilityDefaultMenuWillOpen: () => void;
   onCompatibilityDefaultControlRef: (element: HTMLDivElement | null) => void;
 };
@@ -53,9 +56,12 @@ export function MetadataSection({
   compatibilityDefaultLoaded,
   compatibilityDefaultBusy,
   compatibilityDefaultError,
+  compatibilityDefaultMatchedOnly,
+  compatibilityDefaultScopeBusy,
   onRefreshMetadata,
   onClearCache,
   onCompatibilityDefaultChange,
+  onCompatibilityDefaultMatchedOnlyChange,
   onCompatibilityDefaultMenuWillOpen,
   onCompatibilityDefaultControlRef,
 }: MetadataSectionProps) {
@@ -98,6 +104,21 @@ export function MetadataSection({
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
+        <ToggleField
+          label="Apply only to matched games"
+          description="Shortcuts without saved metadata keep their original Steam status."
+          bottomSeparator="none"
+          checked={compatibilityDefaultMatchedOnly}
+          disabled={
+            !compatibilityDefaultLoaded ||
+            compatibilityDefaultBusy ||
+            compatibilityDefaultScopeBusy ||
+            compatibilityDefault === null
+          }
+          onChange={onCompatibilityDefaultMatchedOnlyChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
         <Field
           focusable={false}
           childrenLayout="below"
@@ -105,7 +126,9 @@ export function MetadataSection({
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            {"This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority."}
+            {compatibilityDefaultMatchedOnly
+              ? "This applies now to existing and new non-Steam shortcuts that have saved metadata, including games with a Steam match. Per-game choices take priority."
+              : "This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority."}
           </div>
           <div style={compactTextStyle}>
             {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}

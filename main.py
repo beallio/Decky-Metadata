@@ -625,6 +625,41 @@ class Plugin:
                 raise
         return value
 
+    @staticmethod
+    def _compatibility_default_matched_only(value: Any) -> bool:
+        if not isinstance(value, bool):
+            raise ValueError("invalid compatibility default scope")
+        return value
+
+    async def get_compatibility_default_matched_only(self) -> bool:
+        if not self._load_data():
+            raise RuntimeError("compatibility default scope could not be loaded")
+        settings = self._data.get("settings")
+        value = settings.get("deck_compat_default_matched_only") if isinstance(settings, dict) else None
+        return storage.compatibility_default_matched_only(value)
+
+    async def set_compatibility_default_matched_only(self, enabled: Any) -> bool:
+        value = self._compatibility_default_matched_only(enabled)
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("compatibility default scope could not be loaded")
+            settings = self._data.setdefault("settings", {})
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "deck_compat_default_matched_only" in settings
+            previous = settings.get("deck_compat_default_matched_only")
+            settings["deck_compat_default_matched_only"] = value
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["deck_compat_default_matched_only"] = previous
+                else:
+                    settings.pop("deck_compat_default_matched_only", None)
+                raise
+        return value
+
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))

@@ -55,6 +55,8 @@ export const metadataState: {
   /** Confirmed global policy. Null is Automatic. */
   compatibilityDefault: DeckCompatibilityCategory | null;
   compatibilityDefaultLoaded: boolean;
+  /** True restricts the global default to shortcuts with a saved record. */
+  compatibilityDefaultMatchedOnly: boolean;
   /** Invalidates stale backend loads after a confirmed save or dismount. */
   compatibilityDefaultGeneration: number;
   /** Distinguishes one plugin mount from async work left by an older mount. */
@@ -81,6 +83,7 @@ export const metadataState: {
   compatibilityBaselines: {},
   compatibilityDefault: null,
   compatibilityDefaultLoaded: false,
+  compatibilityDefaultMatchedOnly: false,
   compatibilityDefaultGeneration: 0,
   compatibilityLifecycleGeneration: 0,
   compatibilityDefaultLoadPromise: null,
@@ -97,6 +100,9 @@ export const compatibilityRevisionSnapshot = () =>
 export const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
 
 export const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
+
+export const compatibilityDefaultMatchedOnlySnapshot = () =>
+  metadataState.compatibilityDefaultMatchedOnly;
 
 export const compatibilityLifecycleSnapshot = () =>
   metadataState.compatibilityLifecycleGeneration;

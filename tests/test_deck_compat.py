@@ -398,6 +398,72 @@ def test_failed_compatibility_default_save_keeps_the_confirmed_value(tmp_path, m
     assert asyncio.run(plugin.get_compatibility_default()) == 2
 
 
+def test_compatibility_default_scope_loads_non_boolean_values_as_disabled(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    plugin._data_file.write_text(
+        json.dumps(
+            {
+                "settings": {
+                    "debug_logging": True,
+                    "deck_compat_default": 3,
+                    "deck_compat_default_matched_only": "yes",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is False
+    assert asyncio.run(plugin.get_compatibility_default()) == 3
+    assert plugin._data["settings"]["debug_logging"] is True
+
+
+def test_legacy_settings_without_the_scope_key_are_not_rewritten(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    plugin._data_file.write_text(
+        json.dumps({"settings": {"debug_logging": False, "deck_compat_default": 2}}),
+        encoding="utf-8",
+    )
+
+    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is False
+    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
+
+
+def test_compatibility_default_scope_persists_and_rejects_invalid_writes(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+
+    assert asyncio.run(plugin.set_compatibility_default_matched_only(True)) is True
+    for invalid in (1, "true", None):
+        with pytest.raises(ValueError, match="invalid compatibility default scope"):
+            asyncio.run(plugin.set_compatibility_default_matched_only(invalid))
+
+    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is True
+    persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"]["deck_compat_default_matched_only"] is True
+
+    fresh = make_settings_plugin(tmp_path, monkeypatch)
+    assert asyncio.run(fresh.get_compatibility_default_matched_only()) is True
+
+
+def test_failed_compatibility_default_scope_save_keeps_the_confirmed_value(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.set_compatibility_default_matched_only(True))
+    original_save = plugin._save_data
+
+    def fail_save() -> None:
+        raise OSError("simulated write failure")
+
+    monkeypatch.setattr(plugin, "_save_data", fail_save)
+    with pytest.raises(OSError, match="simulated write failure"):
+        asyncio.run(plugin.set_compatibility_default_matched_only(False))
+
+    assert plugin._data["settings"]["deck_compat_default_matched_only"] is True
+    monkeypatch.setattr(plugin, "_save_data", original_save)
+    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is True
+
+
 def test_steam_appid_reassignment_clears_old_provider_category_and_keeps_follow_valve(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
     original = asyncio.run(
