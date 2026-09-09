@@ -792,3 +792,43 @@ compatibility default, retain per-game precedence, and add the explicit
   fixture, setting, or navigation command ran. Main retains the documented
   fixture baseline restoration and next live validation once connectivity is
   available.
+
+## Review round 18
+
+### Editor-return collection publication
+
+- Editor-originated compatibility writes still update the exact native overview
+  immediately, but now retain one publication request until the matching Game
+  Info route-render callback has armed its concrete return shield. That callback
+  then replaces the native `m_mapApps` entry once, so Steam compatibility
+  collections observe the update without classifying the returning view as a
+  non-Steam placeholder.
+- The request is app-ID keyed, retries if the observable map is temporarily
+  unavailable, survives an in-place reload, and is cleared on real teardown.
+  A missing native overview or an official alias is discarded rather than
+  recreated. This keeps a confirmed editor choice authoritative while retaining
+  the existing route, launch-identity, and cross-game guards.
+- The route-transition regression now proves both halves in the real order:
+  the first return render remains rich matched Game Info with Unsupported, and
+  its preserved native map setter receives exactly one replacement. The new
+  assertion first failed with zero publications, recorded in
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round18-tdd-failure.log`.
+
+### Validation and package handoff
+
+- `./run.sh npx tsc --noEmit` passed. The focused editor and compatibility run
+  passed `3` Vitest files / `98` tests (`4` existing skips):
+  `./run.sh npm test -- src/steam/metadataPatch.test.ts
+  src/steam/routerPatches.test.ts src/MetadataPage.test.tsx`.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript, Rollup,
+  `27` Vitest files / `473` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, and version checks. The independent review audit
+  reported `no deleted review notes`. Logs:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round18-quality-gates.log`
+  and `/tmp/Decky-Metadata/compatibility-status-defaults-round18-review-audit.log`.
+- `./run.sh npm run package` produced the ignored local
+  `Decky-Metadata.zip`, version `0.3.14+bc9a72e`, SHA-256
+  `9ecad00434285176cd93348c6e96b90dde8005a0c4f312bd5fc45154ceb6e86f`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round18-package.log`.
+  Per review 18, no Steam Deck, SSH, debugger, deployment, installation,
+  fixture, setting, or navigation command ran.
