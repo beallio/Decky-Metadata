@@ -3611,8 +3611,11 @@ const applyCompatibilityToOverview = (appId, overview, routeContext = currentRou
     if (isCurrentGameInfoRoute(routeContext, appId)) {
         const packed = packedCompatibilityValue(overview);
         const heldNibble = packed & 0xf;
-        deferActiveCompatibilityUpdate(appId, heldNibble, category);
+        // Read the retained held value before deferring. The helper can remove a
+        // pending entry when the latest policy returns to that held value, while a
+        // native replacement still needs the held nibble reconciled in place.
         const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        deferActiveCompatibilityUpdate(appId, held, category);
         const heldPacked = (packed & -16) | held;
         if (heldPacked === packed)
             return false;
@@ -3891,11 +3894,13 @@ const applyCompatibilityToIncomingOverview = (overview) => {
     }
     if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
         const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
-        deferActiveCompatibilityUpdate(appId, heldNibble, category);
+        // Keep the retained Game Info value stable even if the latest policy
+        // collapses the queued update and removes its map entry.
+        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        deferActiveCompatibilityUpdate(appId, held, category);
         // An unchanged effective policy does not need a deferred exit flush, but
         // Steam can still send a replacement with its native low nibble. Preserve
         // the currently held Game Info state on that incoming object either way.
-        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
         const heldPacked = (packed & -16) | held;
         if (heldPacked === packed)
             return false;
