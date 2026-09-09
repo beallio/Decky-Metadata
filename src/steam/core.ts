@@ -506,7 +506,7 @@ export const isCurrentMetadataEditorRoute = (routeContext: string, appId: number
       continue;
     }
 
-    const match = pathname.match(/^\/decky-metadata\/(\d+)\/?$/i);
+    const match = pathname.match(/^\/(?:routes\/)?decky-metadata\/(\d+)\/?$/i);
     if (!match) return false;
     const routeAppId = Number(match[1]);
     if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId) return false;

@@ -67,6 +67,7 @@ describe("isCurrentMatchedRenderRoute", () => {
     "/decky-metadata/55150?source=context-menu",
     "https://steamloopback.host/decky-metadata/55150?source=context-menu",
     "/decky-metadata/55150 ?source=context-menu #editor",
+    "/decky-metadata/55150 /routes/decky-metadata/55150 https://steamloopback.host/routes/decky-metadata/55150",
   ])("treats only this plugin editor route as this app's render detail: %s", (routeContext) => {
     const classifier = isCurrentMatchedRenderRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");
@@ -75,6 +76,7 @@ describe("isCurrentMatchedRenderRoute", () => {
 
   it.each([
     "/decky-metadata/55151",
+    "/routes/decky-metadata/55151 https://steamloopback.host/routes/decky-metadata/55151",
     "/decky-metadata/55150/extra",
     "/library/home",
     "/decky-metadata/55150 /library/app/55150",

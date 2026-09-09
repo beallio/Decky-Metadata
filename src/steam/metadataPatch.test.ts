@@ -70,16 +70,16 @@ const matchedShortcutAppId = 2155012430;
 const matchedSteamAppId = 55150;
 let unpatchers: Array<() => void> = [];
 
-const setRoute = (pathname: string, browserPathname = pathname) => {
+const setRoute = (pathname: string, browserPathname = pathname, browserHref?: string) => {
   const host = globalThis as Record<string, unknown>;
   host.Router = {
     WindowStore: { GamepadUIMainWindowInstance: { m_history: { location: { pathname } } } },
   };
-  host.window = { location: { pathname: browserPathname } };
+  host.window = { location: { pathname: browserPathname, href: browserHref } };
 };
 
-const installWithOverview = (route: string) => {
-  setRoute(route);
+const installWithOverview = (route: string, browserPathname = route, browserHref?: string) => {
+  setRoute(route, browserPathname, browserHref);
   const original = vi.fn(function (this: Overview) { return this === overview; });
   const overview = Object.assign(Object.create({
     BIsShortcut: () => true,
@@ -136,7 +136,11 @@ afterEach(() => {
 
 describe("installMetadataPatches BIsModOrShortcut wiring", () => {
   it("keeps the editor app's matched render identity through a packed-changing save", () => {
-    const { overview } = installWithOverview(`/decky-metadata/${matchedShortcutAppId}`);
+    const { overview } = installWithOverview(
+      `/decky-metadata/${matchedShortcutAppId}`,
+      `/routes/decky-metadata/${matchedShortcutAppId}`,
+      `https://steamloopback.host/routes/decky-metadata/${matchedShortcutAppId}`,
+    );
     Object.assign(overview, { steam_hw_compat_category_packed: 0xa0 });
     metadataCache[String(matchedShortcutAppId)] = compatibilityMetadata(3, 3) as any;
 
@@ -148,7 +152,11 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
   });
 
   it("keeps different and unmatched shortcuts native while an editor route is current", () => {
-    const { overview } = installWithOverview(`/decky-metadata/${matchedShortcutAppId}`);
+    const { overview } = installWithOverview(
+      `/decky-metadata/${matchedShortcutAppId}`,
+      `/routes/decky-metadata/${matchedShortcutAppId}`,
+      `https://steamloopback.host/routes/decky-metadata/${matchedShortcutAppId}`,
+    );
     const otherAppId = matchedShortcutAppId + 1;
     metadataCache[String(otherAppId)] = { steam_appid: matchedSteamAppId + 1 } as any;
 
