@@ -63,6 +63,7 @@ type Overview = {
   library_capsule?: string;
   library_hero?: string;
   library_logo?: string;
+  steam_hw_compat_category_packed?: number;
 };
 
 const matchedShortcutAppId = 2155012430;
@@ -134,6 +135,31 @@ afterEach(() => {
 });
 
 describe("installMetadataPatches BIsModOrShortcut wiring", () => {
+  it("keeps the editor app's matched render identity through a packed-changing save", () => {
+    const { overview } = installWithOverview(`/decky-metadata/${matchedShortcutAppId}`);
+    Object.assign(overview, { steam_hw_compat_category_packed: 0xa0 });
+    metadataCache[String(matchedShortcutAppId)] = compatibilityMetadata(3, 3) as any;
+
+    expect(applyMetadata(matchedShortcutAppId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    // Steam renders the rich matched Game Info tree only when this reports
+    // native-app identity for the exact editor app.
+    expect(overview.BIsModOrShortcut()).toBe(false);
+  });
+
+  it("keeps different and unmatched shortcuts native while an editor route is current", () => {
+    const { overview } = installWithOverview(`/decky-metadata/${matchedShortcutAppId}`);
+    const otherAppId = matchedShortcutAppId + 1;
+    metadataCache[String(otherAppId)] = { steam_appid: matchedSteamAppId + 1 } as any;
+
+    expect(overview.BIsModOrShortcut()).toBe(false);
+    overview.appid = otherAppId;
+    expect(overview.BIsModOrShortcut()).toBe(true);
+
+    delete metadataCache[String(otherAppId)];
+    expect(overview.BIsModOrShortcut()).toBe(true);
+  });
+
   it("passes Library Home shortcut identity through to Steam's icon resolver without artwork writes", () => {
     const { appStore, overview } = installWithOverview("/routes/library/home");
     const artworkBefore = { ...overview };

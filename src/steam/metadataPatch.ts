@@ -17,7 +17,7 @@ import {
   getNativeOverview,
   getOverview,
   isCompatibilityLifecycleCurrent,
-  isCurrentGameDetailRoute,
+  isCurrentMatchedRenderRoute,
   isCurrentGameInfoRoute,
   isNonSteamApp,
   isNativeNonSteamShortcut,
@@ -48,7 +48,7 @@ const traceBIsModDecision = (
   bypassCounterBefore: number,
   bypassCounterAfter: number,
   hasCache: boolean,
-  isCurrentMatchedDetail: boolean
+  isCurrentMatchedRenderRoute: boolean
 ) => {
   if (!bypassTraceEnabled) return;
   const now = Date.now();
@@ -65,7 +65,7 @@ const traceBIsModDecision = (
     bypassCounterBefore,
     bypassCounterAfter,
     hasCache,
-    isCurrentMatchedDetail,
+    isCurrentMatchedRenderRoute,
   }).catch(() => undefined);
 };
 
@@ -1130,7 +1130,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         const appId = Number(this?.appid);
         const path = currentRoutePath();
         const hasCache = !!metadataCache[String(appId)];
-        const isCurrentMatchedDetail = isCurrentGameDetailRoute(path, appId);
+        const isCurrentMatchedRender = isCurrentMatchedRenderRoute(path, appId);
         const bypassCounterBefore = metadataState.bypassCounter;
         const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
 
@@ -1141,7 +1141,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           originalRet: ret,
           bypassCounter: metadataState.bypassCounter,
           hasCache,
-          isCurrentMatchedDetail,
+          isCurrentMatchedRenderRoute: isCurrentMatchedRender,
           canRecoverStaleRoute: canRecoverStaleGameDetailRoute(path, appId),
           consumeShield: () => consumeRouteShield(appId),
         });
@@ -1161,7 +1161,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           bypassCounterBefore,
           metadataState.bypassCounter,
           hasCache,
-          isCurrentMatchedDetail
+          isCurrentMatchedRender
         );
         if (decision.reason === "truth-window") {
           traceBypassTruthWindowHit(appId, metadataState.bypassCounter);

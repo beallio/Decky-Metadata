@@ -484,6 +484,46 @@ export const isCurrentGameDetailRoute = (routeContext: string, appId: number): b
 };
 
 /**
+ * The metadata editor is a separate route, but Steam keeps the selected
+ * game's Game Info tree mounted beneath it. For that exact app only, render
+ * identity must stay matched while the editor saves a changed packed value.
+ * This is intentionally separate from Game Info deferral: entering the editor
+ * still releases any held compatibility update.
+ */
+export const isCurrentMetadataEditorRoute = (routeContext: string, appId: number): boolean => {
+  if (!Number.isSafeInteger(appId) || appId <= 0) return false;
+  const tokens = String(routeContext || "").trim().split(/\s+/);
+  let foundCurrentEditor = false;
+  for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+    const token = tokens[index];
+    if (!token) continue;
+    let pathname = token;
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token)) pathname = new URL(token).pathname;
+      else if (!token.startsWith("/")) continue;
+      pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+    } catch (_error) {
+      continue;
+    }
+
+    const match = pathname.match(/^\/decky-metadata\/(\d+)\/?$/i);
+    if (!match) return false;
+    const routeAppId = Number(match[1]);
+    if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId) return false;
+    foundCurrentEditor = true;
+  }
+  return foundCurrentEditor;
+};
+
+/**
+ * Render identity has one more valid route than compatibility deferral. The
+ * exact plugin editor is part of its selected app's still-mounted detail tree;
+ * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
+ */
+export const isCurrentMatchedRenderRoute = (routeContext: string, appId: number): boolean =>
+  isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
+
+/**
  * True only for the exact Game Info tab of this app. Other detail tabs share
  * the app route, but leaving Game Info must release a held compatibility
  * update instead of treating the whole app page as protected.

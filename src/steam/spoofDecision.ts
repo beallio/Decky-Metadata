@@ -26,7 +26,7 @@ export type SpoofInput = {
   originalRet: any;
   bypassCounter: number;
   hasCache: boolean;
-  isCurrentMatchedDetail: boolean;
+  isCurrentMatchedRenderRoute: boolean;
   /** A trusted history destination can bridge stale editor route tokens. */
   canRecoverStaleRoute?: boolean;
   // Consuming a shield hit is a side effect (decrements the hit budget), so
@@ -40,7 +40,7 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
     originalRet,
     bypassCounter,
     hasCache,
-    isCurrentMatchedDetail,
+    isCurrentMatchedRenderRoute,
     canRecoverStaleRoute = false,
     consumeShield,
   } = input;
@@ -72,18 +72,19 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
   }
 
   // Steam's Library Home, artwork resolvers, collections, controller pages,
-  // and sidebars share this overview prototype.  Only the current matched
-  // shortcut's Library detail page needs to appear native. A history listener
-  // can provide one narrow exception: its exact, matching destination may
-  // bridge stale editor tokens while the native Game Info tree re-enters.
-  if (isCurrentMatchedDetail || canRecoverStaleRoute) {
+  // and sidebars share this overview prototype. Only the current matched
+  // shortcut's Library detail page (or its exact still-mounted metadata
+  // editor route) needs to appear native. A history listener can provide one
+  // narrow exception: its exact, matching destination may bridge stale editor
+  // tokens while the native Game Info tree re-enters.
+  if (isCurrentMatchedRenderRoute || canRecoverStaleRoute) {
     const shieldHit = consumeShield();
     if (shieldHit) {
       return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
     }
   }
 
-  if (!isCurrentMatchedDetail) {
+  if (!isCurrentMatchedRenderRoute) {
     return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
   }
 

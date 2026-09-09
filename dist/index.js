@@ -1709,6 +1709,49 @@ const isCurrentGameDetailRoute = (routeContext, appId) => {
     return foundCurrentDetail;
 };
 /**
+ * The metadata editor is a separate route, but Steam keeps the selected
+ * game's Game Info tree mounted beneath it. For that exact app only, render
+ * identity must stay matched while the editor saves a changed packed value.
+ * This is intentionally separate from Game Info deferral: entering the editor
+ * still releases any held compatibility update.
+ */
+const isCurrentMetadataEditorRoute = (routeContext, appId) => {
+    if (!Number.isSafeInteger(appId) || appId <= 0)
+        return false;
+    const tokens = String(routeContext || "").trim().split(/\s+/);
+    let foundCurrentEditor = false;
+    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+        const token = tokens[index];
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        const match = pathname.match(/^\/decky-metadata\/(\d+)\/?$/i);
+        if (!match)
+            return false;
+        const routeAppId = Number(match[1]);
+        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
+            return false;
+        foundCurrentEditor = true;
+    }
+    return foundCurrentEditor;
+};
+/**
+ * Render identity has one more valid route than compatibility deferral. The
+ * exact plugin editor is part of its selected app's still-mounted detail tree;
+ * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
+ */
+const isCurrentMatchedRenderRoute = (routeContext, appId) => isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
+/**
  * True only for the exact Game Info tab of this app. Other detail tabs share
  * the app route, but leaving Game Info must release a held compatibility
  * update instead of treating the whole app page as protected.
@@ -3317,7 +3360,7 @@ const installCommunityFeedPatch = (unpatchers) => {
 // ordering bug here (the render shield consumed before the in-call truth
 // window), which only surfaced on-device.
 const decideBIsModOrShortcut = (input) => {
-    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, canRecoverStaleRoute = false, consumeShield, } = input;
+    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedRenderRoute, canRecoverStaleRoute = false, consumeShield, } = input;
     if (!isPatchedNonSteam) {
         return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
@@ -3342,17 +3385,18 @@ const decideBIsModOrShortcut = (input) => {
         return { finalRet: originalRet, reason: "not-matched", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
     // Steam's Library Home, artwork resolvers, collections, controller pages,
-    // and sidebars share this overview prototype.  Only the current matched
-    // shortcut's Library detail page needs to appear native. A history listener
-    // can provide one narrow exception: its exact, matching destination may
-    // bridge stale editor tokens while the native Game Info tree re-enters.
-    if (isCurrentMatchedDetail || canRecoverStaleRoute) {
+    // and sidebars share this overview prototype. Only the current matched
+    // shortcut's Library detail page (or its exact still-mounted metadata
+    // editor route) needs to appear native. A history listener can provide one
+    // narrow exception: its exact, matching destination may bridge stale editor
+    // tokens while the native Game Info tree re-enters.
+    if (isCurrentMatchedRenderRoute || canRecoverStaleRoute) {
         const shieldHit = consumeShield();
         if (shieldHit) {
             return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
         }
     }
-    if (!isCurrentMatchedDetail) {
+    if (!isCurrentMatchedRenderRoute) {
         return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
     const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
@@ -3433,7 +3477,7 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
-const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedDetail) => {
+const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedRenderRoute) => {
     if (!bypassTraceEnabled)
         return;
     const now = Date.now();
@@ -3451,7 +3495,7 @@ const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldS
         bypassCounterBefore,
         bypassCounterAfter,
         hasCache,
-        isCurrentMatchedDetail,
+        isCurrentMatchedRenderRoute,
     }).catch(() => undefined);
 };
 const setBypassTraceEnabled = (enabled) => {
@@ -4435,7 +4479,7 @@ const installMetadataPatches = (unpatchers) => {
             const appId = Number(this?.appid);
             const path = currentRoutePath();
             const hasCache = !!metadataCache[String(appId)];
-            const isCurrentMatchedDetail = isCurrentGameDetailRoute(path, appId);
+            const isCurrentMatchedRender = isCurrentMatchedRenderRoute(path, appId);
             const bypassCounterBefore = metadataState.bypassCounter;
             const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
             // The precedence rules live in decideBIsModOrShortcut (pure,
@@ -4445,7 +4489,7 @@ const installMetadataPatches = (unpatchers) => {
                 originalRet: ret,
                 bypassCounter: metadataState.bypassCounter,
                 hasCache,
-                isCurrentMatchedDetail,
+                isCurrentMatchedRenderRoute: isCurrentMatchedRender,
                 canRecoverStaleRoute: canRecoverStaleGameDetailRoute(path, appId),
                 consumeShield: () => consumeRouteShield(appId),
             });
@@ -4454,7 +4498,7 @@ const installMetadataPatches = (unpatchers) => {
                 ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
                 : shieldBefore;
             const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
-            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache, isCurrentMatchedDetail);
+            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache, isCurrentMatchedRender);
             if (decision.reason === "truth-window") {
                 traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
             }

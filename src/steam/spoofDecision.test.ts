@@ -7,7 +7,7 @@ const base = {
   bypassCounter: 0,
   hasCache: true,
   path: "/library/app/123456",
-  isCurrentMatchedDetail: true,
+  isCurrentMatchedRenderRoute: true,
   consumeShield: () => false,
 };
 
@@ -43,7 +43,7 @@ describe("decideBIsModOrShortcut", () => {
   });
 
   it("in-call truth window outranks outside-detail pass-through", () => {
-    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, isCurrentMatchedDetail: false });
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, isCurrentMatchedRenderRoute: false });
     expect(d).toMatchObject({ finalRet: true, reason: "in-call-truth" });
   });
 
@@ -67,7 +67,7 @@ describe("decideBIsModOrShortcut", () => {
   });
 
   it("uncached passthrough outside a detail route does not spoof", () => {
-    const d = decideBIsModOrShortcut({ ...base, hasCache: false, isCurrentMatchedDetail: false });
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, isCurrentMatchedRenderRoute: false });
     expect(d).toMatchObject({ finalRet: true, reason: "not-matched" });
   });
 
@@ -90,7 +90,7 @@ describe("decideBIsModOrShortcut", () => {
     const consumeShield = vi.fn(() => true);
     const d = decideBIsModOrShortcut({
       ...base,
-      isCurrentMatchedDetail: false,
+      isCurrentMatchedRenderRoute: false,
       canRecoverStaleRoute: true,
       consumeShield,
     });
@@ -100,7 +100,7 @@ describe("decideBIsModOrShortcut", () => {
 
   it("passes through outside the current matched detail without consulting the shield", () => {
     const consumeShield = vi.fn(() => true);
-    const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedDetail: false, consumeShield });
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedRenderRoute: false, consumeShield });
     expect(d).toMatchObject({
       finalRet: true,
       reason: "outside-current-detail",
@@ -113,7 +113,7 @@ describe("decideBIsModOrShortcut", () => {
 
   it("keeps a different shortcut native while another matched detail is active", () => {
     const consumeShield = vi.fn(() => true);
-    const d = decideBIsModOrShortcut({ ...base, isCurrentMatchedDetail: false, consumeShield });
+    const d = decideBIsModOrShortcut({ ...base, isCurrentMatchedRenderRoute: false, consumeShield });
     expect(d).toMatchObject({ finalRet: true, reason: "outside-current-detail", shieldConsulted: false });
     expect(consumeShield).not.toHaveBeenCalled();
   });
