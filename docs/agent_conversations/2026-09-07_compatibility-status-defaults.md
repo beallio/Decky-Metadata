@@ -913,3 +913,42 @@ compatibility default, retain per-game precedence, and add the explicit
   Per review 20, no Steam Deck, SSH, debugger, deployment, installation,
   fixture, setting, navigation, integration, push, release, or history rewrite
   command ran.
+
+## Review round 21
+
+### Render-route truth-window precedence
+
+- The live trace showed the finite route-shield hit budget can expire during
+  an editor-return render flood. The next `BIsModOrShortcut` call then took a
+  positive `GetPerClientData`/`BHasRecentlyLaunched` truth window and exposed
+  native shortcut identity to the current matched Game Info/editor render.
+- `decideBIsModOrShortcut()` now keeps that exact matched render spoofed after
+  a shield miss. It preserves the positive truth window for its intended
+  native caller and reports `render-route-truth-window`, distinct from a
+  `render-shield` hit. Only `withInCallTruth`'s `bypassCounter === -1` can
+  return native identity on the same render route, preserving launch behavior.
+- The red regression expected a shield-miss render with `bypassCounter: 4` to
+  spoof without decrementing the counter. It initially received native truth,
+  `truth-window`, and counter `3`; the failure is retained at
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round21-test-failure.log`.
+  After the fix, `./run.sh npm test -- src/steam/spoofDecision.test.ts` passed
+  `17` tests. The regressions also retain native identity for in-call truth,
+  unmatched shortcuts, other matched apps, and Home/controller/collection
+  routes.
+
+### Validation and package handoff
+
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript,
+  Rollup, `27` Vitest files / `487` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, version checks, and review-note retention. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round21-quality-gates.log`.
+  The separate `check-review-notes-not-deleted` audit also reported no deleted
+  review notes.
+- Commit `c1e3bbc` (`fix(steam): preserve render identity after shield expiry`)
+  was packaged locally. `./run.sh npm run package` produced the ignored
+  `Decky-Metadata.zip`, version `0.3.14+c1e3bbc`, SHA-256
+  `1bcac295ef4e7e424ec95ebacdecec74e4186e1d9b9e825da4cee3a4c311d9b9`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round21-package.log`.
+  Per review 21, no Steam Deck, SSH, debugger, deployment, installation,
+  fixture, setting, navigation, integration, push, release, or history rewrite
+  command ran; main retains the editor-return and launch-smoke checks.
