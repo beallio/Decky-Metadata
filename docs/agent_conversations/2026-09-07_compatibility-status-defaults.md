@@ -746,8 +746,8 @@ compatibility default, retain per-game precedence, and add the explicit
   byte-compilation, pytest, version checks, and review-note retention. Output:
   `/tmp/Decky-Metadata/compatibility-status-defaults-round16-quality-gates.log`.
 - `./run.sh npm run package` produced the ignored local
-  `Decky-Metadata.zip`, version `0.3.14+c0652f6`, SHA-256
-  `0f0550bf3824000a2b4efe55296103ff0d1dfdfc03b90b76c77cc8b13ef3c552`.
-  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round16-package.log`.
+  `Decky-Metadata.zip`, version `0.3.14+a7ce0aa`, SHA-256
+  `43404646ad5dd42855a91a3f0160ac12c8e85cd7f7562be47ce9b8e903fcba56`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round16-package-final.log`.
   This correction made no Deck connection, deployment, installation, fixture,
   setting, navigation, integration, push, release, or history rewrite.
