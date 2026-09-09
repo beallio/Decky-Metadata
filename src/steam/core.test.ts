@@ -9,6 +9,11 @@ const isCurrentGameDetailRoute = (routeContext: string, appId: number) =>
     | ((context: string, id: number) => boolean)
     | undefined;
 
+const isCurrentMatchedRenderRoute = (routeContext: string, appId: number) =>
+  (core as Record<string, unknown>).isCurrentMatchedRenderRoute as
+    | ((context: string, id: number) => boolean)
+    | undefined;
+
 describe("isCurrentGameDetailRoute", () => {
   it.each([
     "/library/app/55150",
@@ -51,6 +56,33 @@ describe("isCurrentGameDetailRoute", () => {
     "/routes/library/app/55150 /routes/app/55150/controllerconfigurator/layouts",
   ])("rejects a non-current or malformed route context: %s", (routeContext) => {
     const classifier = isCurrentGameDetailRoute(routeContext, 55150);
+    expect(typeof classifier).toBe("function");
+    expect(classifier?.(routeContext, 55150)).toBe(false);
+  });
+});
+
+describe("isCurrentMatchedRenderRoute", () => {
+  it.each([
+    "/decky-metadata/55150",
+    "/decky-metadata/55150?source=context-menu",
+    "https://steamloopback.host/decky-metadata/55150?source=context-menu",
+    "/decky-metadata/55150 ?source=context-menu #editor",
+    "/decky-metadata/55150 /routes/decky-metadata/55150 https://steamloopback.host/routes/decky-metadata/55150",
+  ])("treats only this plugin editor route as this app's render detail: %s", (routeContext) => {
+    const classifier = isCurrentMatchedRenderRoute(routeContext, 55150);
+    expect(typeof classifier).toBe("function");
+    expect(classifier?.(routeContext, 55150)).toBe(true);
+  });
+
+  it.each([
+    "/decky-metadata/55151",
+    "/routes/decky-metadata/55151 https://steamloopback.host/routes/decky-metadata/55151",
+    "/decky-metadata/55150/extra",
+    "/library/home",
+    "/decky-metadata/55150 /library/app/55150",
+    "/decky-metadata/55150 /decky-metadata/55151",
+  ])("does not treat another or ambiguous route as this app's render detail: %s", (routeContext) => {
+    const classifier = isCurrentMatchedRenderRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");
     expect(classifier?.(routeContext, 55150)).toBe(false);
   });

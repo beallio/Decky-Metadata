@@ -16,7 +16,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any, Awaitable, Callable, TypedDict
+from typing import Any, Awaitable, Callable, Literal, TypedDict
 
 
 class MetadataRecord(TypedDict, total=False):
@@ -41,7 +41,7 @@ class MetadataRecord(TypedDict, total=False):
     rating: int | None
     steam_store_state: str
     deck_compat_category: int | None
-    deck_compat_override: int | None
+    deck_compat_override: int | Literal["valve"] | None
     store_categories: list[int]
     genres: list[str]
     features: list[str]
@@ -586,6 +586,45 @@ class Plugin:
         _plog("load", "debug logging updated", level=logging.INFO, enabled=value)
         return value
 
+    @staticmethod
+    def _compatibility_default(value: Any) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int) or value not in {0, 1, 2, 3}:
+            raise ValueError("invalid compatibility default")
+        return value
+
+    async def get_compatibility_default(self) -> int | None:
+        if not self._load_data():
+            raise RuntimeError("compatibility default could not be loaded")
+        # storage.load_data already normalizes persisted values. Keep this
+        # validation here so a partial in-memory state cannot leak over RPC.
+        settings = self._data.get("settings")
+        value = settings.get("deck_compat_default") if isinstance(settings, dict) else None
+        return storage.compatibility_default(value)
+
+    async def set_compatibility_default(self, category: Any) -> int | None:
+        value = self._compatibility_default(category)
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("compatibility default could not be loaded")
+            settings = self._data.setdefault("settings", {})
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "deck_compat_default" in settings
+            previous = settings.get("deck_compat_default")
+            settings["deck_compat_default"] = value
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["deck_compat_default"] = previous
+                else:
+                    settings.pop("deck_compat_default", None)
+                raise
+        return value
+
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))
@@ -595,13 +634,26 @@ class Plugin:
         return self._data["metadata"]
 
     async def save_metadata(
-        self, app_id: int, metadata: dict[str, Any]
+        self,
+        app_id: int,
+        metadata: dict[str, Any],
+        *,
+        preserve_compat_override: bool = False,
+        trusted_provider_steam_appid: int | None = None,
     ) -> MetadataRecord:
         with self._data_guard():
             self._load_data()
             next_metadata = dict(metadata)
             existing = self._data["metadata"].get(str(app_id))
             if (
+                preserve_compat_override
+                and isinstance(existing, dict)
+                and "deck_compat_override" in existing
+            ):
+                # Scan data is provider-owned. It must not turn its sanitized
+                # null shell into an editor request to reset a saved choice.
+                next_metadata["deck_compat_override"] = existing["deck_compat_override"]
+            elif (
                 isinstance(existing, dict)
                 and "deck_compat_override" in existing
                 and "deck_compat_override" not in next_metadata
@@ -610,6 +662,27 @@ class Plugin:
                 # user's choice. Passing null remains the explicit Automatic
                 # request because it keeps the key present.
                 next_metadata["deck_compat_override"] = existing["deck_compat_override"]
+            existing_steam_appid = (
+                self._safe_int(existing.get("steam_appid"))
+                if isinstance(existing, dict)
+                else None
+            )
+            next_steam_appid = self._safe_int(next_metadata.get("steam_appid"))
+            trusted_provider_appid = self._safe_int(trusted_provider_steam_appid)
+            trusted_provider_match = (
+                trusted_provider_appid is not None
+                and trusted_provider_appid > 0
+                and trusted_provider_appid == next_steam_appid
+            )
+            if (
+                existing_steam_appid
+                and existing_steam_appid != next_steam_appid
+                and not trusted_provider_match
+            ):
+                # The fetched category belongs only to the old Steam match.
+                # Enrichment may later save a category for the newly confirmed
+                # match, but a reassignment/removal cannot retain this one.
+                next_metadata["deck_compat_category"] = None
             cleaned = self._sanitize_metadata(next_metadata)
             cleaned["updated_at"] = now()
             self._data["metadata"][str(app_id)] = cleaned
@@ -1193,7 +1266,12 @@ class Plugin:
     async def _save_scan_pipeline_metadata(
         self, app_id: int, metadata: dict[str, Any]
     ) -> None:
-        await self.save_metadata(app_id, metadata)
+        await self.save_metadata(
+            app_id,
+            metadata,
+            preserve_compat_override=True,
+            trusted_provider_steam_appid=self._safe_int(metadata.get("steam_appid")),
+        )
 
     async def _save_activity_pipeline_metadata(
         self, app_id: int, metadata: dict[str, Any]
@@ -1383,14 +1461,15 @@ class Plugin:
             deck_compat_category = None
 
         deck_compat_override = metadata.get("deck_compat_override")
-        try:
-            deck_compat_override = (
-                int(deck_compat_override) if deck_compat_override is not None else None
-            )
-        except Exception:
-            deck_compat_override = None
-        if deck_compat_override not in {0, 1, 2, 3}:
-            deck_compat_override = None
+        if deck_compat_override != "valve":
+            try:
+                deck_compat_override = (
+                    int(deck_compat_override) if deck_compat_override is not None else None
+                )
+            except Exception:
+                deck_compat_override = None
+            if deck_compat_override not in {0, 1, 2, 3}:
+                deck_compat_override = None
 
         title = self._clean_game_title(str(metadata.get("title") or ""))
         description = self._clean_html_text(str(metadata.get("description") or ""))
@@ -1473,9 +1552,21 @@ class Plugin:
         if steam_appid:
             next_metadata["steam_appid"] = steam_appid
             if include_details:
-                deck_compat_category = self._steam_deck_compat_for_appid(steam_appid)
-                if deck_compat_category is not None:
-                    next_metadata["deck_compat_category"] = deck_compat_category
+                lookup = self._steam_deck_compat_lookup_for_appid(steam_appid)
+                previous_steam_appid = self._safe_int(metadata.get("steam_appid"))
+                previous_category = self._safe_int(metadata.get("deck_compat_category"))
+                if lookup.status == "available":
+                    next_metadata["deck_compat_category"] = lookup.category
+                elif lookup.status == "unavailable":
+                    # Valve has answered for this match, but has no category.
+                    next_metadata["deck_compat_category"] = None
+                elif previous_steam_appid == steam_appid and previous_category in {0, 1, 2, 3}:
+                    # A transport or malformed-response failure is not proof
+                    # that a valid status for this unchanged match disappeared.
+                    next_metadata["deck_compat_category"] = previous_category
+                else:
+                    # Never carry a failed lookup across a changed Steam match.
+                    next_metadata["deck_compat_category"] = None
                 steam_details = self._steam_appdetails_for_appid(steam_appid)
                 if steam_details:
                     for key, value in steam_details.items():
@@ -1518,7 +1609,32 @@ class Plugin:
         return steam_provider.steam_news_image_candidates(contents, steam_appid)
 
     def _steam_deck_compat_for_appid(self, steam_appid: int) -> int | None:
-        return steam_provider.steam_deck_compat_for_appid(steam_appid, self._http_json, _plog)
+        lookup = steam_provider.steam_deck_compat_lookup_for_appid(
+            steam_appid, self._http_json, _plog
+        )
+        state = self.__dict__.setdefault(
+            "_deck_compat_lookup_state", threading.local()
+        )
+        state.latest = lookup
+        return lookup.category
+
+    def _steam_deck_compat_lookup_for_appid(
+        self, steam_appid: int
+    ) -> steam_provider.DeckCompatibilityLookup:
+        state = self.__dict__.setdefault(
+            "_deck_compat_lookup_state", threading.local()
+        )
+        state.latest = None
+        category = self._steam_deck_compat_for_appid(steam_appid)
+        lookup = state.latest
+        state.latest = None
+        if isinstance(lookup, steam_provider.DeckCompatibilityLookup):
+            return lookup
+        # Test and integration overrides that implement the older category-only
+        # method remain authoritative when they return a category or None.
+        if self._safe_int(category) in {0, 1, 2, 3}:
+            return steam_provider.DeckCompatibilityLookup("available", int(category))
+        return steam_provider.DeckCompatibilityLookup("unavailable", None)
 
     def _steam_appdetails_for_appid(self, steam_appid: int) -> dict[str, Any] | None:
         details = steam_provider.steam_appdetails_for_appid(steam_appid, self._http_json, _plog)

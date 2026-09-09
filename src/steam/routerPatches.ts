@@ -8,10 +8,14 @@ import {
   GAME_DETAIL_ROUTES,
   Unpatch,
   appIdFromReactTree,
+  compatibilityLifecycleSnapshot,
   currentGameDetailAppId,
+  currentRoutePath,
   gameDetailAppIdFromPath,
   getOverview,
   isNonSteamApp,
+  isCompatibilityLifecycleCurrent,
+  isCurrentGameDetailRoute,
   metadataCache,
   metadataState,
   notifyCompatibilityRevision,
@@ -21,7 +25,11 @@ import {
   armRouteShield,
   clearRouteShield,
 } from "./core";
-import { isBypassTraceEnabled } from "./metadataPatch";
+import {
+  flushDeferredCompatibilityPublications,
+  isBypassTraceEnabled,
+  publishDeferredEditorCompatibility,
+} from "./metadataPatch";
 import {
   findChildElements,
   isInfoSectionBoundary,
@@ -55,8 +63,22 @@ const isNeverOnSteam = (appId: number): boolean => {
 // function boundary whose render creates the native quick-links component.
 
 const NullQuickLinks = () => null;
-const infoSectionWrapperCache = new Map<any, any>();
-const nativeQuickLinksWrapperCache = new Map<any, any>();
+const QUICK_LINK_RUNTIME_KEY = "__deckyMetadataQuickLinkRuntime";
+
+type QuickLinkRuntime = {
+  owner: number;
+  renderInfoSection?: (original: any, props: any) => any;
+  renderQuickLinks?: (original: any, props: any) => any;
+};
+
+const quickLinkRuntime = (): QuickLinkRuntime => {
+  const host = globalThis as Record<string, unknown>;
+  const current = host[QUICK_LINK_RUNTIME_KEY] as QuickLinkRuntime | undefined;
+  if (current && typeof current === "object") return current;
+  const runtime: QuickLinkRuntime = { owner: 0 };
+  host[QUICK_LINK_RUNTIME_KEY] = runtime;
+  return runtime;
+};
 
 export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
   const maxAttempts = 5;
@@ -65,6 +87,14 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
   let retryId: number | undefined;
   let policyUnpatch: Unpatch | undefined;
   let quickLinkResources: ReturnType<typeof resolveQuickLinkResources> | undefined;
+  // Steam can retain these element objects while Decky replaces a plugin in
+  // place. Retained wrappers must call the current import's policy, rather
+  // than mutating a live React tree during the old import's teardown.
+  const runtime = quickLinkRuntime();
+  const runtimeOwner = runtime.owner + 1;
+  runtime.owner = runtimeOwner;
+  const infoSectionWrapperCache = new Map<any, any>();
+  const nativeQuickLinksWrapperCache = new Map<any, any>();
 
   const clearRetry = () => {
     if (retryId !== undefined) {
@@ -111,45 +141,83 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
   };
 
   const policyWrapperFor = (original: any) => {
+    // A retained React element can be rendered more than once before its
+    // parent remounts. Reusing its policy wrapper avoids an unbounded chain.
+    if (original?.__dmQuickLinksWrapper === true) return original;
     let wrapper = nativeQuickLinksWrapperCache.get(original);
     if (wrapper) return wrapper;
     wrapper = (props: any) => {
-      const nativeOutput = original(props);
-      try {
-        const appId = Number(props?.overview?.appid);
-        const metadata = metadataCache[String(appId)];
-        if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
-          return nativeOutput;
-        }
-        if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
-          warnPolicyFailure("matched quick-links output shape changed", { appId });
-          return nativeOutput;
-        }
-        quickLinkResources ??= resolveQuickLinkResources();
-        const links = transformMatchedQuickLinks(
-          nativeOutput.props.links,
-          {
-            isNonSteamShortcut: true,
-            steamAppid: Number(metadata.steam_appid),
-            steamStoreState: metadata.steam_store_state || "unknown",
-            hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
-            hasPointsShop: metadata.has_points_shop === true,
-          },
-          quickLinkResources,
-        );
-        return cloneElement(nativeOutput, { links });
-      } catch (error) {
-        warnPolicyFailure("matched quick-links transformation failed", {
-          appId: Number(props?.overview?.appid) || 0,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return nativeOutput;
-      }
+      const activePolicy = quickLinkRuntime().renderQuickLinks;
+      return activePolicy ? activePolicy(original, props) : original(props);
     };
     wrapper.__dmQuickLinksWrapper = true;
     nativeQuickLinksWrapperCache.set(original, wrapper);
     return wrapper;
   };
+
+  const renderQuickLinks = (original: any, props: any) => {
+    const nativeOutput = original(props);
+    try {
+      const appId = Number(props?.overview?.appid);
+      const metadata = metadataCache[String(appId)];
+      if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
+        return nativeOutput;
+      }
+      if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
+        warnPolicyFailure("matched quick-links output shape changed", { appId });
+        return nativeOutput;
+      }
+      quickLinkResources ??= resolveQuickLinkResources();
+      const links = transformMatchedQuickLinks(
+        nativeOutput.props.links,
+        {
+          isNonSteamShortcut: true,
+          steamAppid: Number(metadata.steam_appid),
+          steamStoreState: metadata.steam_store_state || "unknown",
+          hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
+          hasPointsShop: metadata.has_points_shop === true,
+        },
+        quickLinkResources,
+      );
+      return cloneElement(nativeOutput, { links });
+    } catch (error) {
+      warnPolicyFailure("matched quick-links transformation failed", {
+        appId: Number(props?.overview?.appid) || 0,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return nativeOutput;
+    }
+  };
+
+  const renderInfoSection = (original: any, props: any) => {
+    const rendered = original(props);
+    try {
+      const renderedAppId = Number(props?.overview?.appid);
+      const metadata = metadataCache[String(renderedAppId)];
+      if (!metadata || !isNonSteamApp(props?.overview)) return rendered;
+      const linkRows: any[] = [];
+      findChildElements(rendered, isQuickLinksElement, linkRows);
+      if (linkRows.length === 0) {
+        warnPolicyFailure("non-Steam quick-links row shape changed", {
+          appId: renderedAppId,
+        });
+      }
+      for (const row of linkRows) {
+        row.type = isNeverOnSteam(renderedAppId)
+          ? NullQuickLinks
+          : policyWrapperFor(row.type);
+      }
+    } catch (error) {
+      warnPolicyFailure("non-Steam quick-links section traversal failed", {
+        appId: Number(props?.overview?.appid) || 0,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return rendered;
+  };
+
+  runtime.renderQuickLinks = renderQuickLinks;
+  runtime.renderInfoSection = renderInfoSection;
 
   const tryInstall = () => {
     retryId = undefined;
@@ -179,30 +247,8 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
             let wrapper = infoSectionWrapperCache.get(original);
             if (!wrapper) {
               wrapper = (props: any) => {
-                const rendered = original(props);
-                try {
-                  const renderedAppId = Number(props?.overview?.appid);
-                  const metadata = metadataCache[String(renderedAppId)];
-                  if (!metadata || !isNonSteamApp(props?.overview)) return rendered;
-                  const linkRows: any[] = [];
-                  findChildElements(rendered, isQuickLinksElement, linkRows);
-                  if (linkRows.length === 0) {
-                    warnPolicyFailure("non-Steam quick-links row shape changed", {
-                      appId: renderedAppId,
-                    });
-                  }
-                  for (const row of linkRows) {
-                    row.type = isNeverOnSteam(renderedAppId)
-                      ? NullQuickLinks
-                      : policyWrapperFor(row.type);
-                  }
-                } catch (error) {
-                  warnPolicyFailure("non-Steam quick-links section traversal failed", {
-                    appId: Number(props?.overview?.appid) || 0,
-                    error: error instanceof Error ? error.message : String(error),
-                  });
-                }
-                return rendered;
+                const activePolicy = quickLinkRuntime().renderInfoSection;
+                return activePolicy ? activePolicy(original, props) : original(props);
               };
               wrapper.__dmQuickLinksWrapper = true;
               infoSectionWrapperCache.set(original, wrapper);
@@ -224,6 +270,13 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
     clearRetry();
     policyUnpatch?.();
     policyUnpatch = undefined;
+    if (runtime.owner === runtimeOwner) {
+      runtime.renderQuickLinks = undefined;
+      runtime.renderInfoSection = undefined;
+    }
+    infoSectionWrapperCache.clear();
+    nativeQuickLinksWrapperCache.clear();
+    quickLinkResources = undefined;
   });
   tryInstall();
 };
@@ -245,19 +298,33 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
           const appOverview = overview || getOverview(appId);
           if (appId && isNonSteamApp(appOverview)) {
+            const lifecycleGeneration = compatibilityLifecycleSnapshot();
             const previousAppId = metadataState.lastObservedGameDetailAppId;
             metadataState.lastObservedGameDetailAppId = appId;
             if (metadataCache[String(appId)]) {
-              armRouteShield(appId, route, "route-render");
+              // `route` is a Decky template (for example `:appid`), not an
+              // authoritative path. Replacing a history listener's concrete
+              // return shield with that template makes stale editor browser
+              // tokens fail the exact-app check during the first Game Info
+              // render. Keep the shield's identity concrete.
+              const shieldPath = route.replace(":appid", String(appId));
+              armRouteShield(appId, shieldPath, "route-render");
               if (isBypassTraceEnabled()) {
-                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
               }
+              // A completed editor Save wrote this overview directly while
+              // Steam still had editor route tokens. Publish its replacement
+              // only after this exact Game Info tree has re-entered under the
+              // concrete shield, so native collections update without losing
+              // the matched rich render.
+              publishDeferredEditorCompatibility(appId);
             } else {
               if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
               }
             }
             void ensureMetadataCache().then(() => {
+              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
               if (applyMetadata(appId)) notifyCompatibilityRevision();
               void tryEnrichScreenshotsForApp(appId);
               void tryFetchMetadataForApp(appId);
@@ -285,8 +352,10 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           const appId = currentGameDetailAppId() || treeAppId;
           const overview = overviewFromReactTree(ret) || getOverview(appId);
           if (appId && isNonSteamApp(overview)) {
+            const lifecycleGeneration = compatibilityLifecycleSnapshot();
             metadataState.lastObservedGameDetailAppId = appId;
             void ensureMetadataCache().then(() => {
+              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
               if (applyMetadata(appId)) notifyCompatibilityRevision();
             });
             void refreshDeckyNativeActivityForApp(appId);
@@ -391,6 +460,15 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
   const listenToHistory = (history: any) => {
     try {
       const unlisten = history.listen((location: any) => {
+        // This callback's new location is authoritative. currentRoutePath()
+        // can still contain the departing Game Info path while Steam commits
+        // its browser tokens, so it must not keep the held update queued. The
+        // callback's query and hash can carry the selected tab, so preserve
+        // them instead of falling back to stale browser tokens.
+        const routeContext = [location?.pathname, location?.search, location?.hash]
+          .filter(Boolean)
+          .join(" ");
+        flushDeferredCompatibilityPublications(routeContext);
         armShieldForPath(location?.pathname || "", "listen", history);
       });
       if (typeof unlisten === "function") {

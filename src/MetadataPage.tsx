@@ -28,20 +28,24 @@ import {
 import {
   appName,
   applyMetadata,
+  compatibilityDefaultSnapshot,
   cleanTitle,
   classifyShortcutNameState,
   getOverview,
   hasShortcutNameApi,
   isNonSteamApp,
   metadataCache,
+  ensureCompatibilityDefault,
   nativeShortcutName,
   refreshCompatibilitySurfaces,
   setShortcutNameAndWait,
+  subscribeCompatibilityRevision,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
   CATEGORY_LABELS,
   DeckCompatibilityCategory,
+  DeckCompatibilityOverride,
   MetadataData,
   MetadataSearchResult,
   ShortcutNameManagement,
@@ -102,13 +106,12 @@ const descriptionTextareaStyle: CSSProperties = {
   border: "1px solid rgba(255,255,255,0.18)",
 };
 
-type CompatibilityOverride = DeckCompatibilityCategory | null;
-
 const compatibilityStatusOptions: Array<{
-  data: CompatibilityOverride;
+  data: DeckCompatibilityOverride;
   label: string;
 }> = [
-  { data: null, label: "Automatic" },
+  { data: null, label: "Use global default" },
+  { data: "valve", label: "Follow Valve" },
   { data: 3, label: "Verified" },
   { data: 2, label: "Playable" },
   { data: 1, label: "Unsupported" },
@@ -128,17 +131,29 @@ const compatibilityStatusLabel = (category: DeckCompatibilityCategory): string =
     category
   ];
 
-const compatibilityStatusValue = (value: unknown): CompatibilityOverride =>
+const compatibilityStatusValue = (value: unknown): DeckCompatibilityOverride =>
+  value === "valve" || isCompatibilityCategory(value) ? value : null;
+
+const compatibilityCategoryValue = (value: unknown): DeckCompatibilityCategory | null =>
   isCompatibilityCategory(value) ? value : null;
 
 const compatibilityStatusDisplay = (
-  override: CompatibilityOverride,
-  resolved: CompatibilityOverride
+  override: DeckCompatibilityOverride,
+  valveCategory: DeckCompatibilityCategory | null,
+  globalDefault: DeckCompatibilityCategory | null,
 ): string => {
-  if (override !== null) return compatibilityStatusLabel(override);
-  return resolved === null
-    ? "Automatic"
-    : `Automatic (Valve: ${compatibilityStatusLabel(resolved)})`;
+  if (isCompatibilityCategory(override)) return compatibilityStatusLabel(override);
+  if (override === "valve") {
+    return valveCategory === null
+      ? "Follow Valve (unavailable — original Steam status)"
+      : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
+  }
+  if (globalDefault !== null) {
+    return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+  }
+  return valveCategory === null
+    ? "Use global default (Automatic — original Steam status)"
+    : `Use global default (${compatibilityStatusLabel(valveCategory)} — from Valve)`;
 };
 
 const metadataValuesEqual = (left: unknown, right: unknown): boolean =>
@@ -227,6 +242,9 @@ export const MetadataPage = () => {
   const [steamNameLoading, setSteamNameLoading] = useState(false);
   const [steamNameUnavailable, setSteamNameUnavailable] = useState(false);
   const [metadataHydratedEntry, setMetadataHydratedEntry] = useState<number | null>(null);
+  const [compatibilityDefault, setCompatibilityDefault] = useState<DeckCompatibilityCategory | null>(
+    compatibilityDefaultSnapshot(),
+  );
   const steamNameBackfillEntryRef = useRef<number | null>(null);
   const editorEntryRef = useRef({ appId, token: 0 });
   // The editor can visit A, B, then A again while an async operation from the
@@ -525,6 +543,18 @@ export const MetadataPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    void ensureCompatibilityDefault()
+      .then((value) => {
+        if (!cancelled) setCompatibilityDefault(value);
+      })
+      .catch(() => undefined);
+    return subscribeCompatibilityRevision(() => {
+      if (!cancelled) setCompatibilityDefault(compatibilityDefaultSnapshot());
+    });
+  }, []);
+
   const normalizedMetadata = useMemo<MetadataData>(
     () => ({
       ...metadata,
@@ -555,7 +585,7 @@ export const MetadataPage = () => {
       }
       metadataCache[String(appId)] = saved;
       setFormMetadata(saved);
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
@@ -589,6 +619,7 @@ export const MetadataPage = () => {
         steam_appid: parsed || null,
         // A proposal is valid only for the Steam match that supplied it.
         // Clear it before enrichment so a failed request cannot reuse stale data.
+        deck_compat_category: steamAppIdChanged ? null : normalizedMetadata.deck_compat_category,
         steam_store_name: steamAppIdChanged ? "" : normalizedMetadata.steam_store_name,
         steam_store_url: parsed
           ? `https://store.steampowered.com/app/${parsed}/`
@@ -616,7 +647,7 @@ export const MetadataPage = () => {
       steamNameBackfillEntryRef.current = requestedEntry;
       setSteamNameUnavailable(false);
       if (parsed === null) {
-        applyMetadata(appId);
+        applyMetadata(appId, { publishCompatibility: false });
         refreshCompatibilitySurfaces();
         toastSuccess("Saved", "Metadata saved");
         return;
@@ -662,7 +693,7 @@ export const MetadataPage = () => {
           setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
         }
       }
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
@@ -698,7 +729,7 @@ export const MetadataPage = () => {
         return;
       }
       metadataCache[String(appId)] = saved;
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);
       setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
@@ -716,7 +747,7 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setFormMetadata(metadataTemplate(appName(appId)));
@@ -1109,10 +1140,24 @@ export const MetadataPage = () => {
                 renderButtonValue={() =>
                   compatibilityStatusDisplay(
                     compatibilityStatusValue(metadata.deck_compat_override),
-                    compatibilityStatusValue(metadata.deck_compat_category)
+                    compatibilityCategoryValue(metadata.deck_compat_category),
+                    compatibilityDefault,
                   )
                 }
               />
+              <Field
+                focusable={false}
+                childrenLayout="below"
+                padding="none"
+                bottomSeparator="none"
+              >
+                <div style={compactTextStyle}>
+                  {"Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable."}
+                </div>
+                <div style={compactTextStyle}>
+                  {"Manual and default categories are your choices, not Valve certification or an emulator performance result."}
+                </div>
+              </Field>
             </PanelSectionRow>
           </PanelSection>
         ) : null}

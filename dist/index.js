@@ -110,6 +110,8 @@ const getSystemVersions = callable("get_system_versions");
 const getPluginLogs = callable("get_plugin_logs");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
+const getCompatibilityDefault = callable("get_compatibility_default");
+const setCompatibilityDefault = callable("set_compatibility_default");
 const checkForPluginUpdate = callable("check_for_plugin_update");
 const revalidatePluginUpdate = callable("revalidate_plugin_update");
 const recordUpdateInstallRequested = callable("record_update_install_requested");
@@ -135,6 +137,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
     getCommunityFallbackPage: getCommunityFallbackPage,
+    getCompatibilityDefault: getCompatibilityDefault,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
@@ -156,6 +159,7 @@ var backend = /*#__PURE__*/Object.freeze({
     saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
+    setCompatibilityDefault: setCompatibilityDefault,
     setDebugLogging: setDebugLogging,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -271,8 +275,17 @@ function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onT
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Logs", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "standard", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
 }
 
-function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, onRefreshMetadata, onClearCache, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: { ...compactTextStyle, paddingBottom: space.md }, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
+const compatibilityDefaultOptions = [
+    { data: null, label: "Automatic — use matched Steam status" },
+    { data: 3, label: "Verified" },
+    { data: 2, label: "Playable" },
+    { data: 1, label: "Unsupported" },
+    { data: 0, label: "Unknown" },
+];
+function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, onRefreshMetadata, onClearCache, onCompatibilityDefaultChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy, onMenuWillOpen: () => {
+                            onCompatibilityDefaultMenuWillOpen();
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: { ...compactTextStyle, paddingBottom: space.md }, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
@@ -1329,12 +1342,21 @@ const metadataState = {
     loadingScreenshots: new Set(),
     appliedMetadataRef: {},
     compatibilityBaselines: {},
+    compatibilityDefault: null,
+    compatibilityDefaultLoaded: false,
+    compatibilityDefaultGeneration: 0,
+    compatibilityLifecycleGeneration: 0,
+    compatibilityDefaultLoadPromise: null,
     compatibilityRevision: 0,
     lastObservedGameDetailAppId: 0,
     routeShield: null,
 };
 const compatibilityRevisionListeners = new Set();
 const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
+const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
+const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
+const compatibilityLifecycleSnapshot = () => metadataState.compatibilityLifecycleGeneration;
+const isCompatibilityLifecycleCurrent = (generation) => generation === metadataState.compatibilityLifecycleGeneration;
 const subscribeCompatibilityRevision = (listener) => {
     compatibilityRevisionListeners.add(listener);
     return () => {
@@ -1686,6 +1708,97 @@ const isCurrentGameDetailRoute = (routeContext, appId) => {
     }
     return foundCurrentDetail;
 };
+/**
+ * The metadata editor is a separate route, but Steam keeps the selected
+ * game's Game Info tree mounted beneath it. For that exact app only, render
+ * identity must stay matched while the editor saves a changed packed value.
+ * This is intentionally separate from Game Info deferral: entering the editor
+ * still releases any held compatibility update.
+ */
+const isCurrentMetadataEditorRoute = (routeContext, appId) => {
+    if (!Number.isSafeInteger(appId) || appId <= 0)
+        return false;
+    const tokens = String(routeContext || "").trim().split(/\s+/);
+    let foundCurrentEditor = false;
+    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+        const token = tokens[index];
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        const match = pathname.match(/^\/(?:routes\/)?decky-metadata\/(\d+)\/?$/i);
+        if (!match)
+            return false;
+        const routeAppId = Number(match[1]);
+        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
+            return false;
+        foundCurrentEditor = true;
+    }
+    return foundCurrentEditor;
+};
+/**
+ * Render identity has one more valid route than compatibility deferral. The
+ * exact plugin editor is part of its selected app's still-mounted detail tree;
+ * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
+ */
+const isCurrentMatchedRenderRoute = (routeContext, appId) => isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
+/**
+ * True only for the exact Game Info tab of this app. Other detail tabs share
+ * the app route, but leaving Game Info must release a held compatibility
+ * update instead of treating the whole app page as protected.
+ */
+const isCurrentGameInfoRoute = (routeContext, appId) => {
+    if (!isCurrentGameDetailRoute(routeContext, appId))
+        return false;
+    return String(routeContext || "").split(/\s+/).some((token) => /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token));
+};
+/**
+ * A history listener can confirm an exact Game Info return before Steam's
+ * window and browser route tokens leave the metadata editor.  Let that short
+ * re-entry shield cover only this app and only when the current tokens contain
+ * no explicit destination that conflicts with it.  Generic route templates
+ * and a shield for another app cannot recover a stale route.
+ */
+const canRecoverStaleGameDetailRoute = (routeContext, appId) => {
+    const shield = metadataState.routeShield;
+    if (!shield || shield.appId !== appId)
+        return false;
+    if (!isCurrentGameDetailRoute(shield.path, appId))
+        return false;
+    for (const token of String(routeContext || "").trim().split(/\s+/)) {
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
+            return false;
+        }
+        const routeAppId = gameDetailAppIdFromPath(pathname);
+        if (routeAppId && routeAppId !== appId)
+            return false;
+    }
+    return true;
+};
 const appIdFromDom = () => {
     const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
     const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
@@ -1903,6 +2016,9 @@ const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => 
 };
 const activityRefreshGate = createActivityRefreshGate();
 const maybeRefreshSteamNewsForApp = (appId) => {
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return;
     if (!appId || !isNonSteamApp(getOverview(appId)))
         return;
     const enrichedAt = Number(metadataCache[String(appId)]?.steam_news_enriched_at || 0);
@@ -1914,6 +2030,8 @@ const maybeRefreshSteamNewsForApp = (appId) => {
         try {
             const previous = metadataCache[String(appId)];
             const refreshed = await refreshSteamActivityForApp(appId);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
             if (!refreshed)
                 return;
             const newsKey = (metadata) => JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
@@ -2089,11 +2207,16 @@ const steamActivityNewsItemsFromMetadata = (appId, metadata) => uniqueSteamNewsF
     };
 });
 const steamActivityPayloadForApp = async (appId) => {
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
     void maybeRefreshSteamNewsForApp(appId);
     await ensureMetadataCacheFn();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
     let metadata = metadataCache[String(appId)];
     if (!metadata)
         return null;
@@ -2685,10 +2808,15 @@ const getDeckyNativeActivityForApp = (appId) => {
     return native;
 };
 const refreshDeckyNativeActivityForApp = async (appId, store) => {
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
     const overview = getOverview(appId);
     if (!appId || !isNonSteamApp(overview))
         return null;
     await ensureMetadataCacheFn();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
     const metadata = metadataCache[String(appId)];
     if (!metadata) {
         clearDeckyNativeActivityForApp(appId, store);
@@ -3232,7 +3360,7 @@ const installCommunityFeedPatch = (unpatchers) => {
 // ordering bug here (the render shield consumed before the in-call truth
 // window), which only surfaced on-device.
 const decideBIsModOrShortcut = (input) => {
-    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, consumeShield } = input;
+    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedRenderRoute, canRecoverStaleRoute = false, consumeShield, } = input;
     if (!isPatchedNonSteam) {
         return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
@@ -3257,15 +3385,33 @@ const decideBIsModOrShortcut = (input) => {
         return { finalRet: originalRet, reason: "not-matched", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
     // Steam's Library Home, artwork resolvers, collections, controller pages,
-    // and sidebars share this overview prototype.  Only the current matched
-    // shortcut's Library detail page needs to appear native.  Do not spend a
-    // render shield or truth-window budget outside that narrow route scope.
-    if (!isCurrentMatchedDetail) {
+    // and sidebars share this overview prototype. Only the current matched
+    // shortcut's Library detail page (or its exact still-mounted metadata
+    // editor route) needs to appear native. A history listener can provide one
+    // narrow exception: its exact, matching destination may bridge stale editor
+    // tokens while the native Game Info tree re-enters.
+    if (isCurrentMatchedRenderRoute || canRecoverStaleRoute) {
+        const shieldHit = consumeShield();
+        if (shieldHit) {
+            return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
+        }
+    }
+    if (!isCurrentMatchedRenderRoute) {
         return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
-    const shieldHit = consumeShield();
-    if (shieldHit) {
-        return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
+    // GetPerClientData and BHasRecentlyLaunched arm a short truth window for
+    // native callers outside this render path. It must not turn the current
+    // matched Game Info/editor render back into a shortcut when the optional
+    // shield has expired under a render flood. Keep the window intact for its
+    // intended native caller; only withInCallTruth (-1 above) outranks render.
+    if (bypassCounter > 0) {
+        return {
+            finalRet: false,
+            reason: "render-route-truth-window",
+            shieldConsulted: true,
+            shieldHit: false,
+            nextBypassCounter: bypassCounter,
+        };
     }
     const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
     const shouldBypass = nextBypassCounter > 0;
@@ -3345,7 +3491,7 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
-const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedDetail) => {
+const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedRenderRoute) => {
     if (!bypassTraceEnabled)
         return;
     const now = Date.now();
@@ -3363,7 +3509,7 @@ const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldS
         bypassCounterBefore,
         bypassCounterAfter,
         hasCache,
-        isCurrentMatchedDetail,
+        isCurrentMatchedRenderRoute,
     }).catch(() => undefined);
 };
 const setBypassTraceEnabled = (enabled) => {
@@ -3442,9 +3588,17 @@ const ensureDetailsOverviewSafeFields = (appId) => {
     }
 };
 const isCompatibilityCategory$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
-const effectiveCompatibilityCategory = (metadata) => {
+const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.compatibilityDefault) => {
     if (isCompatibilityCategory$1(metadata?.deck_compat_override)) {
         return metadata.deck_compat_override;
+    }
+    if (metadata?.deck_compat_override === "valve") {
+        return isCompatibilityCategory$1(metadata.deck_compat_category)
+            ? metadata.deck_compat_category
+            : null;
+    }
+    if (isCompatibilityCategory$1(globalDefault)) {
+        return globalDefault;
     }
     if (isCompatibilityCategory$1(metadata?.deck_compat_category)) {
         return metadata.deck_compat_category;
@@ -3473,8 +3627,18 @@ const restoreCompatibilityBaseline = (appId, overview = getNativeOverview(appId)
     }
 };
 const restoreAllCompatibilityBaselines = () => {
+    const overviews = new Map();
+    try {
+        Array.from(appStore?.allApps || []).forEach((overview) => {
+            if (isNativeNonSteamShortcut(overview))
+                overviews.set(Number(overview.appid), overview);
+        });
+    }
+    catch {
+        // A changed store leaves untouched baselines for a later native update.
+    }
     Object.keys(metadataState.compatibilityBaselines).forEach((key) => {
-        restoreCompatibilityBaseline(Number(key));
+        restoreCompatibilityBaseline(Number(key), overviews.get(Number(key)));
     });
 };
 /** Publish a compatibility revision without disturbing Steam navigation state. */
@@ -3504,17 +3668,348 @@ const applyCompatibilityCategory = (appId, overview, category) => {
         return false;
     }
 };
+const desiredCompatibilityNibble = (appId, heldNibble, category) => {
+    if (category === null) {
+        const baseline = metadataState.compatibilityBaselines[String(appId)];
+        return Number.isInteger(baseline) && baseline >= 0 && baseline <= 0xf
+            ? baseline
+            : heldNibble;
+    }
+    return category | (category << 2);
+};
+const deferredCompatibilityUpdates = new Map();
+// Editor writes must not replace Steam's observable overview map until the
+// matching Game Info route has rendered under its return shield. The direct
+// packed-field write is already complete; this set tracks only the delayed
+// collection/filter publication.
+const deferredEditorCompatibilityPublications = new Set();
+/**
+ * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
+ * not change this main-window route, while another tab, page, game, or the
+ * metadata editor does.
+ */
+const deferActiveCompatibilityUpdate = (appId, heldNibble, category) => {
+    const existing = deferredCompatibilityUpdates.get(appId);
+    const held = existing?.heldNibble ?? heldNibble;
+    if (desiredCompatibilityNibble(appId, held, category) === held) {
+        // Repeated edits can return to the already visible state. There is then no
+        // stale mutation to replay after the user leaves Game Info.
+        deferredCompatibilityUpdates.delete(appId);
+        return false;
+    }
+    if (!existing)
+        deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
+    return true;
+};
 /**
  * Apply only compatibility data to an exact native overview object. Steam can
  * replace this non-observable object between callers, so the app-store getter
  * uses this same helper before it returns a replacement to SteamUI.
  */
-const applyCompatibilityToOverview = (appId, overview) => {
+const applyCompatibilityToOverview = (appId, overview, routeContext = currentRoutePath()) => {
     if (Number(overview?.appid) !== Number(appId) || !isNativeNonSteamShortcut(overview)) {
         return false;
     }
     const metadata = metadataCache[String(appId)];
-    return applyCompatibilityCategory(appId, overview, effectiveCompatibilityCategory(metadata));
+    const category = effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault);
+    if (isCurrentGameInfoRoute(routeContext, appId)) {
+        const packed = packedCompatibilityValue(overview);
+        const heldNibble = packed & 0xf;
+        // Read the retained held value before deferring. The helper can remove a
+        // pending entry when the latest policy returns to that held value, while a
+        // native replacement still needs the held nibble reconciled in place.
+        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        deferActiveCompatibilityUpdate(appId, held, category);
+        const heldPacked = (packed & -16) | held;
+        if (heldPacked === packed)
+            return false;
+        try {
+            // Reload adoption can find a replacement native object after the old
+            // hook lifetime ended. Restore only the held view state in place: the
+            // pending policy still waits for Game Info to exit, and this active
+            // object must not be republished under a new identity.
+            overview.steam_hw_compat_category_packed = heldPacked;
+        }
+        catch {
+            // Steam can replace this private object while the active view is held.
+        }
+        return false;
+    }
+    deferredCompatibilityUpdates.delete(appId);
+    return applyCompatibilityCategory(appId, overview, category);
+};
+const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibilityBaselines";
+const retainCompatibilityBaselinesForReload = () => {
+    const baselines = metadataState.compatibilityBaselines;
+    if (Object.keys(baselines).length === 0 &&
+        deferredCompatibilityUpdates.size === 0 &&
+        deferredEditorCompatibilityPublications.size === 0)
+        return;
+    globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
+        baselines: { ...baselines },
+        deferred: Array.from(deferredCompatibilityUpdates.values()),
+        editorPublications: Array.from(deferredEditorCompatibilityPublications),
+    };
+};
+const discardRetainedCompatibilityState = () => {
+    delete globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY];
+};
+const resumeRetainedCompatibilityBaselines = () => {
+    const host = globalThis;
+    const retained = host[RETAINED_COMPATIBILITY_BASELINES_KEY];
+    if (!retained || typeof retained !== "object")
+        return;
+    const state = retained;
+    // Accept the bare baseline record written by the preceding plugin version so
+    // an in-place import from that version remains safe.
+    const baselines = state.baselines && typeof state.baselines === "object"
+        ? state.baselines
+        : retained;
+    Object.entries(baselines).forEach(([appId, value]) => {
+        if (Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 0xf) {
+            metadataState.compatibilityBaselines[appId] = Number(value);
+        }
+    });
+    if (Array.isArray(state.deferred)) {
+        state.deferred.forEach(({ appId, heldNibble }) => {
+            if (Number.isSafeInteger(appId) &&
+                Number(appId) > 0 &&
+                Number.isInteger(heldNibble) &&
+                Number(heldNibble) >= 0 &&
+                Number(heldNibble) <= 0xf) {
+                deferredCompatibilityUpdates.set(Number(appId), {
+                    appId: Number(appId),
+                    heldNibble: Number(heldNibble),
+                });
+            }
+        });
+    }
+    if (Array.isArray(state.editorPublications)) {
+        state.editorPublications.forEach((appId) => {
+            if (Number.isSafeInteger(appId) && Number(appId) > 0) {
+                deferredEditorCompatibilityPublications.add(Number(appId));
+            }
+        });
+    }
+    discardRetainedCompatibilityState();
+};
+const createCompatibilityReplacement = (overview) => {
+    const prototype = Object.getPrototypeOf(overview);
+    const NativeOverview = overview?.constructor;
+    if (!prototype || typeof NativeOverview !== "function")
+        return null;
+    try {
+        // Publish through Steam's observable native map with a fresh native
+        // instance. Constructor-owned state must stay on that instance, while
+        // copied fields retain the exact shortcut identity and packed policy.
+        const replacement = new NativeOverview();
+        if (!replacement || Object.getPrototypeOf(replacement) !== prototype)
+            return null;
+        if (typeof overview.BHasObservables === "function" &&
+            typeof replacement.BHasObservables === "function" &&
+            overview.BHasObservables() !== replacement.BHasObservables()) {
+            return null;
+        }
+        Object.keys(overview).forEach((key) => {
+            if (key !== "LOG_CHANGE")
+                replacement[key] = overview[key];
+        });
+        replacement.RestorePreservedState?.(overview.GetPreservedState?.());
+        return replacement;
+    }
+    catch {
+        // A changed native constructor leaves the current map entry untouched.
+        return null;
+    }
+};
+/**
+ * Steam's compatibility collections observe m_mapApps, not the plugin's
+ * revision listeners. Publish only after a completed linear write batch.
+ */
+const publishCompatibilityReplacements = (updates) => {
+    let published = false;
+    try {
+        const overviews = appStore?.m_mapApps;
+        if (!overviews || typeof overviews.get !== "function" || typeof overviews.set !== "function")
+            return false;
+        for (const { appId, overview } of updates) {
+            // Never publish a stale entry, an alias, or an official Steam overview.
+            if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview))
+                continue;
+            const replacement = createCompatibilityReplacement(overview);
+            if (!replacement)
+                continue;
+            // Another plugin can decorate the observable map setter and retain the
+            // native setter as `originalSet`. This replacement already copies every
+            // current native field, so re-entering a foreign decorator can replay
+            // its side effects against a live Game Info tree during plugin reload.
+            // Publish through the preserved native setter when it is explicitly
+            // available; it still emits the map replacement Steam filters observe.
+            const nativeSet = overviews.originalSet;
+            if (typeof nativeSet === "function" && nativeSet !== overviews.set) {
+                nativeSet.call(overviews, appId, replacement);
+            }
+            else {
+                overviews.set(appId, replacement);
+            }
+            published = true;
+        }
+    }
+    catch {
+        // Steam can replace this private map during a batch. The current objects
+        // remain correct, and a later policy or metadata update can publish again.
+    }
+    return published;
+};
+/**
+ * Complete one editor-originated Steam collection update after its exact Game
+ * Info tree has re-entered. The return shield is armed by the caller first so
+ * this map replacement cannot be classified as the non-Steam placeholder.
+ */
+const publishDeferredEditorCompatibility = (appId) => {
+    if (!deferredEditorCompatibilityPublications.has(appId))
+        return false;
+    const overview = getNativeOverview(appId);
+    if (!overview || !isNativeNonSteamShortcut(overview)) {
+        // A deleted shortcut or an official alias must never be recreated.
+        deferredEditorCompatibilityPublications.delete(appId);
+        return false;
+    }
+    if (!publishCompatibilityReplacements([{ appId, overview }]))
+        return false;
+    deferredEditorCompatibilityPublications.delete(appId);
+    return true;
+};
+/**
+ * Recompute pending work after the main Game Info view exits. A history
+ * callback supplies its new location directly, because the joined route
+ * snapshot can still include the old Game Info path during navigation.
+ */
+const flushDeferredCompatibilityPublications = (routeContext = currentRoutePath()) => {
+    const publications = [];
+    let changed = false;
+    for (const { appId } of Array.from(deferredCompatibilityUpdates.values())) {
+        if (isCurrentGameInfoRoute(routeContext, appId))
+            continue;
+        const metadata = metadataCache[String(appId)];
+        // An inheriting shortcut cannot safely resolve until its persisted global
+        // default has loaded. Explicit and Follow Valve choices are independent.
+        if (!metadataState.compatibilityDefaultLoaded &&
+            !isCompatibilityCategory$1(metadata?.deck_compat_override) &&
+            metadata?.deck_compat_override !== "valve") {
+            continue;
+        }
+        deferredCompatibilityUpdates.delete(appId);
+        const overview = getNativeOverview(appId);
+        if (applyCompatibilityToOverview(appId, overview, routeContext)) {
+            changed = true;
+            publications.push({ appId, overview });
+        }
+    }
+    publishCompatibilityReplacements(publications);
+    if (changed)
+        notifyCompatibilityRevision();
+    return changed;
+};
+const nativeShortcutOverviewsById = () => {
+    const overviews = new Map();
+    try {
+        Array.from(appStore?.allApps || []).forEach((overview) => {
+            const appId = Number(overview?.appid);
+            if (Number.isFinite(appId) && appId > 0 && isNativeNonSteamShortcut(overview)) {
+                overviews.set(appId, overview);
+            }
+        });
+    }
+    catch {
+        // Steam can replace its app list during bootstrap. The next bounded pass retries.
+    }
+    return overviews;
+};
+/** Apply the confirmed global policy in one linear pass over native shortcuts. */
+const applyCompatibilityDefault = () => {
+    let changed = false;
+    const publications = [];
+    let overviews = [];
+    try {
+        overviews = Array.from(appStore?.allApps || []);
+    }
+    catch {
+        return false;
+    }
+    overviews.forEach((overview) => {
+        const appId = Number(overview?.appid);
+        if (!Number.isFinite(appId) || appId <= 0)
+            return;
+        if (applyCompatibilityToOverview(appId, overview)) {
+            changed = true;
+            publications.push({ appId, overview });
+        }
+    });
+    publishCompatibilityReplacements(publications);
+    return changed;
+};
+/** Commit only a backend-confirmed setting, and invalidate older loads first. */
+const setConfirmedCompatibilityDefault = (category, lifecycleGeneration = metadataState.compatibilityLifecycleGeneration) => {
+    if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
+        return metadataState.compatibilityDefault;
+    }
+    const changedPolicy = metadataState.compatibilityDefault !== category || !metadataState.compatibilityDefaultLoaded;
+    metadataState.compatibilityDefaultGeneration += 1;
+    metadataState.compatibilityDefault = category;
+    metadataState.compatibilityDefaultLoaded = true;
+    const compatibilityChanged = applyCompatibilityDefault();
+    if (changedPolicy || compatibilityChanged)
+        notifyCompatibilityRevision();
+    return category;
+};
+/** Start a new plugin lifetime and make unfinished work from the old one inert. */
+const beginCompatibilityLifecycle = () => {
+    metadataState.compatibilityLifecycleGeneration += 1;
+    metadataState.compatibilityDefaultGeneration += 1;
+    metadataState.compatibilityDefault = null;
+    metadataState.compatibilityDefaultLoaded = false;
+    metadataState.compatibilityDefaultLoadPromise = null;
+    metadataState.metadataLoadPromise = null;
+    deferredCompatibilityUpdates.clear();
+    deferredEditorCompatibilityPublications.clear();
+    resumeRetainedCompatibilityBaselines();
+    return metadataState.compatibilityLifecycleGeneration;
+};
+/** Load the shared setting once. A failed load remains an error, not Automatic. */
+const ensureCompatibilityDefault = async () => {
+    if (metadataState.compatibilityDefaultLoaded)
+        return metadataState.compatibilityDefault;
+    if (!metadataState.compatibilityDefaultLoadPromise) {
+        const requestGeneration = metadataState.compatibilityDefaultGeneration;
+        const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
+        const request = getCompatibilityDefault().then((value) => {
+            const category = isCompatibilityCategory$1(value) ? value : null;
+            if (requestGeneration !== metadataState.compatibilityDefaultGeneration ||
+                lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
+                return metadataState.compatibilityDefault;
+            }
+            metadataState.compatibilityDefault = category;
+            metadataState.compatibilityDefaultLoaded = true;
+            applyCompatibilityDefault();
+            notifyCompatibilityRevision();
+            return category;
+        });
+        const loadPromise = request.finally(() => {
+            if (metadataState.compatibilityDefaultLoadPromise === loadPromise) {
+                metadataState.compatibilityDefaultLoadPromise = null;
+            }
+        });
+        metadataState.compatibilityDefaultLoadPromise = loadPromise;
+    }
+    return metadataState.compatibilityDefaultLoadPromise;
+};
+/** Make a late settings request inert when the plugin unloads. */
+const cancelCompatibilityDefaultLoad = () => {
+    metadataState.compatibilityDefaultGeneration += 1;
+    metadataState.compatibilityLifecycleGeneration += 1;
+    deferredCompatibilityUpdates.clear();
+    deferredEditorCompatibilityPublications.clear();
 };
 /**
  * Steam sends AppOverview protobufs to appInfoStore before it creates and
@@ -3530,13 +4025,34 @@ const applyCompatibilityToIncomingOverview = (overview) => {
     const isIncomingShortcut = Number(overview?.app_type?.()) === NON_STEAM_APP_TYPE;
     if (!isIncomingShortcut && !isNativeNonSteamShortcut(current))
         return false;
-    const category = effectiveCompatibilityCategory(metadataCache[String(appId)]);
-    if (category === null)
-        return false;
+    const category = effectiveCompatibilityCategory(metadataCache[String(appId)], metadataState.compatibilityDefault);
     const packed = Number(overview?.steam_hw_compat_category_packed?.());
     if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
         return false;
     }
+    if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+        const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
+        // Keep the retained Game Info value stable even if the latest policy
+        // collapses the queued update and removes its map entry.
+        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        deferActiveCompatibilityUpdate(appId, held, category);
+        // An unchanged effective policy does not need a deferred exit flush, but
+        // Steam can still send a replacement with its native low nibble. Preserve
+        // the currently held Game Info state on that incoming object either way.
+        const heldPacked = (packed & -16) | held;
+        if (heldPacked === packed)
+            return false;
+        try {
+            overview.set_steam_hw_compat_category_packed(heldPacked);
+            return Number(overview.steam_hw_compat_category_packed()) === heldPacked;
+        }
+        catch {
+            return false;
+        }
+    }
+    deferredCompatibilityUpdates.delete(appId);
+    if (category === null)
+        return false;
     const key = String(appId);
     if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
         metadataState.compatibilityBaselines[key] = current
@@ -3554,73 +4070,31 @@ const applyCompatibilityToIncomingOverview = (overview) => {
         return false;
     }
 };
-/**
- * A direct metadata change has no native AppOverview notification. Replace
- * only the exact current map entry with a fresh native instance so the
- * observable map publishes the completed category. This is a single get/set,
- * never a map scan or a write through an official-AppID alias.
- */
-const createCompatibilityReplacement = (overview) => {
-    const prototype = Object.getPrototypeOf(overview);
-    const NativeOverview = overview?.constructor;
-    if (!prototype || typeof NativeOverview !== "function")
-        return null;
-    try {
-        // Steam uses both observable and non-observable AppOverview classes. Run
-        // the native constructor so an observable replacement keeps its MobX
-        // initialization instead of inheriting a prototype without that state.
-        const replacement = new NativeOverview();
-        if (!replacement || Object.getPrototypeOf(replacement) !== prototype)
-            return null;
-        if (typeof overview.BHasObservables === "function" &&
-            typeof replacement.BHasObservables === "function" &&
-            overview.BHasObservables() !== replacement.BHasObservables()) {
-            return null;
-        }
-        Object.keys(overview).forEach((key) => {
-            // This native debug callback is initialized by the constructor and is
-            // bound to that instance. Keep the replacement's own callback.
-            if (key !== "LOG_CHANGE")
-                replacement[key] = overview[key];
-        });
-        replacement.RestorePreservedState?.(overview.GetPreservedState?.());
-        return replacement;
-    }
-    catch {
-        // A changed native constructor leaves the original map entry untouched.
-        return null;
-    }
-};
-const publishCompatibilityReplacement = (appId, overview) => {
-    try {
-        const overviews = appStore?.m_mapApps;
-        if (!overviews ||
-            typeof overviews.get !== "function" ||
-            typeof overviews.set !== "function" ||
-            overviews.get(appId) !== overview) {
-            return;
-        }
-        const replacement = createCompatibilityReplacement(overview);
-        if (!replacement)
-            return;
-        overviews.set(appId, replacement);
-    }
-    catch {
-        // A changed Steam map leaves the native overview in place; never retry.
-    }
-};
 const refreshMetadataCache = async () => {
+    const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
+    const wasLoaded = metadataState.metadataLoaded;
     const all = await getAllMetadata();
+    if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration)
+        return;
+    const previousMetadata = { ...metadataCache };
     const affectedAppIds = new Set([
-        ...Object.keys(metadataCache),
-        ...Object.keys(metadataState.compatibilityBaselines),
+        ...Object.keys(previousMetadata),
         ...Object.keys(all || {}),
+        // A restoration can fail while Steam is replacing an overview. Keep each
+        // retained baseline in this one entry-based batch so a later refresh can
+        // restore it without reverting to one whole-library scan per shortcut.
+        ...Object.keys(metadataState.compatibilityBaselines),
     ]);
+    const policyChanged = [...affectedAppIds].some((key) => effectiveCompatibilityCategory(previousMetadata[key], metadataState.compatibilityDefault) !==
+        effectiveCompatibilityCategory((all || {})[key], metadataState.compatibilityDefault));
     Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
     Object.assign(metadataCache, all || {});
     metadataState.metadataLoaded = true;
-    affectedAppIds.forEach((key) => applyMetadata(Number(key)));
-    notifyCompatibilityRevision();
+    const compatibilityChanged = applyMetadataBatch(affectedAppIds);
+    // A first successful load must wake mounted cards even if Steam has not made
+    // its overview writable yet. Later no-op refreshes stay quiet.
+    if (compatibilityChanged || policyChanged || !wasLoaded)
+        notifyCompatibilityRevision();
 };
 const ensureMetadataCache = async () => {
     if (metadataState.metadataLoaded)
@@ -3635,33 +4109,46 @@ const ensureMetadataCache = async () => {
 const startMetadataBootstrap = () => {
     let cancelled = false;
     let attempts = 0;
+    const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     const tick = async () => {
-        if (cancelled)
+        if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration)
             return;
         try {
             await ensureMetadataCache();
-            let compatibilityChanged = false;
-            Object.keys(metadataCache).forEach((key) => {
-                compatibilityChanged = applyMetadata(Number(key)) || compatibilityChanged;
-            });
-            if (compatibilityChanged)
+            if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration)
+                return;
+            try {
+                await ensureCompatibilityDefault();
+            }
+            catch (error) {
+                // Metadata can still apply Valve/explicit choices while the setting is
+                // unavailable. The QAM keeps the load as an error and cannot save it.
+                warn("bridge", "compatibility default bootstrap failed", error);
+            }
+            if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration)
+                return;
+            const metadataChanged = applyMetadataBatch(Object.keys(metadataCache));
+            const compatibilityChanged = applyCompatibilityDefault();
+            if (metadataChanged || compatibilityChanged)
                 notifyCompatibilityRevision();
         }
         catch (error) {
             warn("bridge", "metadata bootstrap failed", error);
         }
         attempts += 1;
-        if (!cancelled && attempts < 24) {
+        if (!cancelled && lifecycleGeneration === metadataState.compatibilityLifecycleGeneration && attempts < 24) {
             window.setTimeout(tick, 500);
         }
     };
     void tick();
     return () => {
         cancelled = true;
+        if (lifecycleGeneration === metadataState.compatibilityLifecycleGeneration) {
+            cancelCompatibilityDefaultLoad();
+        }
     };
 };
-const applyMetadata = (appId) => {
-    const overview = getNativeOverview(appId);
+const applyMetadataToOverview = (appId, overview) => {
     if (!isNativeNonSteamShortcut(overview))
         return false;
     const metadata = metadataCache[String(appId)];
@@ -3669,10 +4156,8 @@ const applyMetadata = (appId) => {
         clearDeckyNativeActivityForApp(appId);
     }
     if (!metadata) {
-        const restored = restoreCompatibilityBaseline(appId, overview);
-        if (restored)
-            publishCompatibilityReplacement(appId, overview);
-        return restored;
+        const compatibilityChanged = applyCompatibilityToOverview(appId, overview);
+        return compatibilityChanged;
     }
     let compatibilityChanged = false;
     try {
@@ -3692,8 +4177,6 @@ const applyMetadata = (appId) => {
     }
     const appData = appDetailsStore?.GetAppData?.(appId);
     if (!appData) {
-        if (compatibilityChanged)
-            publishCompatibilityReplacement(appId, overview);
         return compatibilityChanged;
     }
     ensureDetailsOverviewSafeFields(appId);
@@ -3732,8 +4215,37 @@ const applyMetadata = (appId) => {
             // Cache writes can fail if the page has not finished creating app data.
         }
     }
-    if (compatibilityChanged)
-        publishCompatibilityReplacement(appId, overview);
+    return compatibilityChanged;
+};
+/** Apply metadata records through one native-app lookup, never one full scan per record. */
+const applyMetadataBatch = (appIds) => {
+    const overviews = nativeShortcutOverviewsById();
+    let compatibilityChanged = false;
+    const publications = [];
+    for (const appIdValue of appIds) {
+        const appId = Number(appIdValue);
+        if (!Number.isFinite(appId) || appId <= 0)
+            continue;
+        const overview = overviews.get(appId);
+        if (overview && applyMetadataToOverview(appId, overview)) {
+            compatibilityChanged = true;
+            publications.push({ appId, overview });
+        }
+    }
+    publishCompatibilityReplacements(publications);
+    return compatibilityChanged;
+};
+const applyMetadata = (appId, options = {}) => {
+    const overview = getNativeOverview(appId);
+    const compatibilityChanged = applyMetadataToOverview(appId, overview);
+    if (compatibilityChanged && overview) {
+        if (options.publishCompatibility === false) {
+            deferredEditorCompatibilityPublications.add(appId);
+        }
+        else {
+            publishCompatibilityReplacements([{ appId, overview }]);
+        }
+    }
     return compatibilityChanged;
 };
 const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots || [])
@@ -3755,7 +4267,10 @@ const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots 
     bSpoiler: false,
 }));
 const tryFetchMetadataForApp = async (appId) => {
+    const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     await ensureMetadataCache();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return;
     if (metadataCache[String(appId)] || metadataState.loadingMetadata.has(appId))
         return;
     const overview = getOverview(appId);
@@ -3764,6 +4279,8 @@ const tryFetchMetadataForApp = async (appId) => {
     metadataState.loadingMetadata.add(appId);
     try {
         const metadata = await autoFetchMetadata(appId, appName(appId));
+        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            return;
         if (metadata) {
             metadataCache[String(appId)] = metadata;
             applyMetadata(appId);
@@ -3775,7 +4292,10 @@ const tryFetchMetadataForApp = async (appId) => {
     }
 };
 const tryEnrichScreenshotsForApp = async (appId) => {
+    const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     await ensureMetadataCache();
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return;
     const metadata = metadataCache[String(appId)];
     if (!metadata ||
         metadata.screenshots?.length ||
@@ -3789,11 +4309,15 @@ const tryEnrichScreenshotsForApp = async (appId) => {
     metadataState.loadingScreenshots.add(appId);
     try {
         const refreshed = await fetchMetadata(source);
+        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            return;
         if (refreshed?.screenshots?.length) {
             const saved = await saveMetadata(appId, {
                 ...metadata,
                 screenshots: refreshed.screenshots,
             });
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
             metadataCache[String(appId)] = saved;
             applyMetadata(appId);
             notifyCompatibilityRevision();
@@ -3924,7 +4448,10 @@ const installMetadataPatches = (unpatchers) => {
                 }
             }
             else {
+                const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
                 void ensureMetadataCache().then(() => {
+                    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                        return;
                     if (metadataCache[String(appId)]) {
                         applyMetadata(appId);
                         void tryEnrichScreenshotsForApp(appId);
@@ -3966,7 +4493,7 @@ const installMetadataPatches = (unpatchers) => {
             const appId = Number(this?.appid);
             const path = currentRoutePath();
             const hasCache = !!metadataCache[String(appId)];
-            const isCurrentMatchedDetail = isCurrentGameDetailRoute(path, appId);
+            const isCurrentMatchedRender = isCurrentMatchedRenderRoute(path, appId);
             const bypassCounterBefore = metadataState.bypassCounter;
             const shieldBefore = metadataState.routeShield ? { ...metadataState.routeShield } : null;
             // The precedence rules live in decideBIsModOrShortcut (pure,
@@ -3976,7 +4503,8 @@ const installMetadataPatches = (unpatchers) => {
                 originalRet: ret,
                 bypassCounter: metadataState.bypassCounter,
                 hasCache,
-                isCurrentMatchedDetail,
+                isCurrentMatchedRenderRoute: isCurrentMatchedRender,
+                canRecoverStaleRoute: canRecoverStaleGameDetailRoute(path, appId),
                 consumeShield: () => consumeRouteShield(appId),
             });
             metadataState.bypassCounter = decision.nextBypassCounter;
@@ -3984,7 +4512,7 @@ const installMetadataPatches = (unpatchers) => {
                 ? (metadataState.routeShield ? { ...metadataState.routeShield } : null)
                 : shieldBefore;
             const shieldState = { before: shieldBefore, after: shieldAfter, hit: decision.shieldHit };
-            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache, isCurrentMatchedDetail);
+            traceBIsModDecision(appId, path, ret, decision.finalRet, decision.reason, shieldState, bypassCounterBefore, metadataState.bypassCounter, hasCache, isCurrentMatchedRender);
             if (decision.reason === "truth-window") {
                 traceBypassTruthWindowHit(appId, metadataState.bypassCounter);
             }
@@ -4399,9 +4927,6 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
     });
 };
 
-const DECK_DISPLAY = 1;
-const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
-const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
 const steamUiWindow = () => {
     const candidates = [globalThis];
     try {
@@ -4413,12 +4938,10 @@ const steamUiWindow = () => {
     }
     return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
 };
-const steamUiCardDocument = () => {
-    // SharedJSContext does not own Big Picture's DOM. Steam exposes the mounted
-    // browser document through this same-window bridge instead. Decky can run in
-    // an isolated global, so inspect its SteamUI/webpack parent before falling
-    // back to the local document. Retain the Gamepad-specific form seen on
-    // older/current SteamUI builds.
+const steamUiDocuments = () => {
+    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
+    // host bridge for every consumer so cards and Game Info inspect one ordered,
+    // deduplicated set of real browser documents.
     const contexts = new Set([globalThis, steamUiWindow()]);
     try {
         const currentWindow = globalThis;
@@ -4428,6 +4951,7 @@ const steamUiCardDocument = () => {
     catch {
         // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
     }
+    const documents = new Set();
     try {
         for (const context of contexts) {
             const windowStore = context?.SteamUIStore?.m_WindowStore;
@@ -4437,18 +4961,41 @@ const steamUiCardDocument = () => {
             ];
             for (const browserWindow of browserWindows) {
                 const document = browserWindow?.document;
-                if (typeof document?.querySelector === "function" &&
-                    !!document.querySelector("[data-id]")) {
-                    return document;
-                }
+                if (typeof document?.querySelector === "function")
+                    documents.add(document);
             }
         }
     }
     catch {
-        // A changed Steam window bridge must leave the optional cache patch inert.
+        // Continue with context documents when a Steam private field changes.
     }
-    return Array.from(contexts).find((candidate) => typeof candidate?.document?.querySelector === "function" &&
-        !!candidate.document.querySelector("[data-id]"))?.document;
+    for (const context of contexts) {
+        const document = context?.document;
+        if (typeof document?.querySelector === "function")
+            documents.add(document);
+    }
+    return Array.from(documents);
+};
+/** Find an element in Steam's real browser documents, not only Decky's global. */
+const findSteamUiDocumentMatch = (finder) => {
+    for (const document of steamUiDocuments()) {
+        try {
+            const match = finder(document);
+            if (match !== undefined)
+                return match;
+        }
+        catch {
+            // Private DOM access is optional. Try the next known SteamUI document.
+        }
+    }
+    return undefined;
+};
+
+const DECK_DISPLAY = 1;
+const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
+const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
+const steamUiCardDocument = () => {
+    return findSteamUiDocumentMatch((document) => document.querySelector("[data-id]") ? document : undefined);
 };
 /**
  * Decky's module finder sees the observer/memo export, not LibraryItemBox's
@@ -4499,10 +5046,10 @@ const findOneSourceExport = (modules, predicate) => {
  * and Steam has a positive status to display. Category 0 is Steam's native
  * no-status state, so it deliberately does not fabricate an Unknown badge.
  */
-const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, isNativeNonSteamShortcut: isNativeShortcut, }) => {
+const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, globalDefault, isNativeNonSteamShortcut: isNativeShortcut, }) => {
     if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview))
         return null;
-    const category = effectiveCompatibilityCategory(metadata);
+    const category = effectiveCompatibilityCategory(metadata, globalDefault);
     return category === null || category === 0 ? null : category;
 };
 const childrenOf = (element) => {
@@ -6317,8 +6864,16 @@ const isNeverOnSteam = (appId) => {
 // hooks the class that registers the info section. Its output contains the
 // function boundary whose render creates the native quick-links component.
 const NullQuickLinks = () => null;
-const infoSectionWrapperCache = new Map();
-const nativeQuickLinksWrapperCache = new Map();
+const QUICK_LINK_RUNTIME_KEY = "__deckyMetadataQuickLinkRuntime";
+const quickLinkRuntime = () => {
+    const host = globalThis;
+    const current = host[QUICK_LINK_RUNTIME_KEY];
+    if (current && typeof current === "object")
+        return current;
+    const runtime = { owner: 0 };
+    host[QUICK_LINK_RUNTIME_KEY] = runtime;
+    return runtime;
+};
 const installNonSteamQuickLinkPolicy = (unpatchers) => {
     const maxAttempts = 5;
     let attempts = 0;
@@ -6326,6 +6881,14 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
     let retryId;
     let policyUnpatch;
     let quickLinkResources;
+    // Steam can retain these element objects while Decky replaces a plugin in
+    // place. Retained wrappers must call the current import's policy, rather
+    // than mutating a live React tree during the old import's teardown.
+    const runtime = quickLinkRuntime();
+    const runtimeOwner = runtime.owner + 1;
+    runtime.owner = runtimeOwner;
+    const infoSectionWrapperCache = new Map();
+    const nativeQuickLinksWrapperCache = new Map();
     const clearRetry = () => {
         if (retryId !== undefined) {
             window.clearTimeout(retryId);
@@ -6361,42 +6924,80 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
         void frontendLog("patch", message, fields, "warning").catch(() => undefined);
     };
     const policyWrapperFor = (original) => {
+        // A retained React element can be rendered more than once before its
+        // parent remounts. Reusing its policy wrapper avoids an unbounded chain.
+        if (original?.__dmQuickLinksWrapper === true)
+            return original;
         let wrapper = nativeQuickLinksWrapperCache.get(original);
         if (wrapper)
             return wrapper;
         wrapper = (props) => {
-            const nativeOutput = original(props);
-            try {
-                const appId = Number(props?.overview?.appid);
-                const metadata = metadataCache[String(appId)];
-                if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
-                    return nativeOutput;
-                }
-                if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
-                    warnPolicyFailure("matched quick-links output shape changed", { appId });
-                    return nativeOutput;
-                }
-                quickLinkResources ?? (quickLinkResources = resolveQuickLinkResources());
-                const links = transformMatchedQuickLinks(nativeOutput.props.links, {
-                    steamAppid: Number(metadata.steam_appid),
-                    steamStoreState: metadata.steam_store_state || "unknown",
-                    hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
-                    hasPointsShop: metadata.has_points_shop === true,
-                }, quickLinkResources);
-                return SP_REACT.cloneElement(nativeOutput, { links });
-            }
-            catch (error) {
-                warnPolicyFailure("matched quick-links transformation failed", {
-                    appId: Number(props?.overview?.appid) || 0,
-                    error: error instanceof Error ? error.message : String(error),
-                });
-                return nativeOutput;
-            }
+            const activePolicy = quickLinkRuntime().renderQuickLinks;
+            return activePolicy ? activePolicy(original, props) : original(props);
         };
         wrapper.__dmQuickLinksWrapper = true;
         nativeQuickLinksWrapperCache.set(original, wrapper);
         return wrapper;
     };
+    const renderQuickLinks = (original, props) => {
+        const nativeOutput = original(props);
+        try {
+            const appId = Number(props?.overview?.appid);
+            const metadata = metadataCache[String(appId)];
+            if (!metadata || !isNonSteamApp(props?.overview) || !(Number(metadata.steam_appid) > 0)) {
+                return nativeOutput;
+            }
+            if (!isReactElement(nativeOutput) || !Array.isArray(nativeOutput.props?.links)) {
+                warnPolicyFailure("matched quick-links output shape changed", { appId });
+                return nativeOutput;
+            }
+            quickLinkResources ?? (quickLinkResources = resolveQuickLinkResources());
+            const links = transformMatchedQuickLinks(nativeOutput.props.links, {
+                steamAppid: Number(metadata.steam_appid),
+                steamStoreState: metadata.steam_store_state || "unknown",
+                hasDlc: Array.isArray(metadata.steam_dlc_appids) && metadata.steam_dlc_appids.length > 0,
+                hasPointsShop: metadata.has_points_shop === true,
+            }, quickLinkResources);
+            return SP_REACT.cloneElement(nativeOutput, { links });
+        }
+        catch (error) {
+            warnPolicyFailure("matched quick-links transformation failed", {
+                appId: Number(props?.overview?.appid) || 0,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return nativeOutput;
+        }
+    };
+    const renderInfoSection = (original, props) => {
+        const rendered = original(props);
+        try {
+            const renderedAppId = Number(props?.overview?.appid);
+            const metadata = metadataCache[String(renderedAppId)];
+            if (!metadata || !isNonSteamApp(props?.overview))
+                return rendered;
+            const linkRows = [];
+            findChildElements(rendered, isQuickLinksElement, linkRows);
+            if (linkRows.length === 0) {
+                warnPolicyFailure("non-Steam quick-links row shape changed", {
+                    appId: renderedAppId,
+                });
+            }
+            for (const row of linkRows) {
+                row.type = isNeverOnSteam(renderedAppId)
+                    ? NullQuickLinks
+                    : policyWrapperFor(row.type);
+            }
+        }
+        catch (error) {
+            warnPolicyFailure("non-Steam quick-links section traversal failed", {
+                appId: Number(props?.overview?.appid) || 0,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        }
+        return rendered;
+    };
+    runtime.renderQuickLinks = renderQuickLinks;
+    runtime.renderInfoSection = renderInfoSection;
     const tryInstall = () => {
         retryId = undefined;
         if (cancelled || policyUnpatch)
@@ -6424,32 +7025,8 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
                     let wrapper = infoSectionWrapperCache.get(original);
                     if (!wrapper) {
                         wrapper = (props) => {
-                            const rendered = original(props);
-                            try {
-                                const renderedAppId = Number(props?.overview?.appid);
-                                const metadata = metadataCache[String(renderedAppId)];
-                                if (!metadata || !isNonSteamApp(props?.overview))
-                                    return rendered;
-                                const linkRows = [];
-                                findChildElements(rendered, isQuickLinksElement, linkRows);
-                                if (linkRows.length === 0) {
-                                    warnPolicyFailure("non-Steam quick-links row shape changed", {
-                                        appId: renderedAppId,
-                                    });
-                                }
-                                for (const row of linkRows) {
-                                    row.type = isNeverOnSteam(renderedAppId)
-                                        ? NullQuickLinks
-                                        : policyWrapperFor(row.type);
-                                }
-                            }
-                            catch (error) {
-                                warnPolicyFailure("non-Steam quick-links section traversal failed", {
-                                    appId: Number(props?.overview?.appid) || 0,
-                                    error: error instanceof Error ? error.message : String(error),
-                                });
-                            }
-                            return rendered;
+                            const activePolicy = quickLinkRuntime().renderInfoSection;
+                            return activePolicy ? activePolicy(original, props) : original(props);
                         };
                         wrapper.__dmQuickLinksWrapper = true;
                         infoSectionWrapperCache.set(original, wrapper);
@@ -6470,6 +7047,13 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
         clearRetry();
         policyUnpatch?.();
         policyUnpatch = undefined;
+        if (runtime.owner === runtimeOwner) {
+            runtime.renderQuickLinks = undefined;
+            runtime.renderInfoSection = undefined;
+        }
+        infoSectionWrapperCache.clear();
+        nativeQuickLinksWrapperCache.clear();
+        quickLinkResources = undefined;
     });
     tryInstall();
 };
@@ -6484,13 +7068,26 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
                     const appOverview = overview || getOverview(appId);
                     if (appId && isNonSteamApp(appOverview)) {
+                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
                         const previousAppId = metadataState.lastObservedGameDetailAppId;
                         metadataState.lastObservedGameDetailAppId = appId;
                         if (metadataCache[String(appId)]) {
-                            armRouteShield(appId, route, "route-render");
+                            // `route` is a Decky template (for example `:appid`), not an
+                            // authoritative path. Replacing a history listener's concrete
+                            // return shield with that template makes stale editor browser
+                            // tokens fail the exact-app check during the first Game Info
+                            // render. Keep the shield's identity concrete.
+                            const shieldPath = route.replace(":appid", String(appId));
+                            armRouteShield(appId, shieldPath, "route-render");
                             if (isBypassTraceEnabled()) {
-                                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+                                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
                             }
+                            // A completed editor Save wrote this overview directly while
+                            // Steam still had editor route tokens. Publish its replacement
+                            // only after this exact Game Info tree has re-entered under the
+                            // concrete shield, so native collections update without losing
+                            // the matched rich render.
+                            publishDeferredEditorCompatibility(appId);
                         }
                         else {
                             if (isBypassTraceEnabled()) {
@@ -6498,6 +7095,8 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             }
                         }
                         void ensureMetadataCache().then(() => {
+                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                                return;
                             if (applyMetadata(appId))
                                 notifyCompatibilityRevision();
                             void tryEnrichScreenshotsForApp(appId);
@@ -6525,8 +7124,11 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                     const appId = currentGameDetailAppId() || treeAppId;
                     const overview = overviewFromReactTree(ret) || getOverview(appId);
                     if (appId && isNonSteamApp(overview)) {
+                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
                         metadataState.lastObservedGameDetailAppId = appId;
                         void ensureMetadataCache().then(() => {
+                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                                return;
                             if (applyMetadata(appId))
                                 notifyCompatibilityRevision();
                         });
@@ -6628,6 +7230,15 @@ const installGameDetailReentryShield = (unpatchers) => {
     const listenToHistory = (history) => {
         try {
             const unlisten = history.listen((location) => {
+                // This callback's new location is authoritative. currentRoutePath()
+                // can still contain the departing Game Info path while Steam commits
+                // its browser tokens, so it must not keep the held update queued. The
+                // callback's query and hash can carry the selected tab, so preserve
+                // them instead of falling back to stale browser tokens.
+                const routeContext = [location?.pathname, location?.search, location?.hash]
+                    .filter(Boolean)
+                    .join(" ");
+                flushDeferredCompatibilityPublications(routeContext);
                 armShieldForPath(location?.pathname || "", "listen", history);
             });
             if (typeof unlisten === "function") {
@@ -7671,6 +8282,62 @@ const installSteamPatches = () => {
     };
 };
 
+// The native dropdown is displayed in a separate Big Picture window. Keep the
+// request outside a mounted QAM component because that transition can remount
+// the plugin content before it returns to the Quick Access window.
+let compatibilityDropdownReturnPending = false;
+let compatibilityDropdownControlUnmounted = false;
+let compatibilityDropdownReturnVisible = false;
+let compatibilityDropdownSelectionSaved = false;
+const requestCompatibilityDropdownReturn = () => {
+    compatibilityDropdownReturnPending = true;
+    compatibilityDropdownControlUnmounted = false;
+    compatibilityDropdownReturnVisible = false;
+    compatibilityDropdownSelectionSaved = false;
+};
+const hasCompatibilityDropdownReturn = () => compatibilityDropdownReturnPending;
+const noteCompatibilityDropdownControlUnmounted = () => {
+    if (!compatibilityDropdownReturnPending)
+        return false;
+    compatibilityDropdownControlUnmounted = true;
+    return true;
+};
+const noteCompatibilityDropdownReturnVisible = () => {
+    if (!compatibilityDropdownReturnPending || !compatibilityDropdownControlUnmounted) {
+        return false;
+    }
+    compatibilityDropdownReturnVisible = true;
+    return true;
+};
+/** Selection completes after the backend confirms the new global policy. */
+const noteCompatibilityDropdownSelectionSaved = () => {
+    if (!compatibilityDropdownReturnPending)
+        return false;
+    compatibilityDropdownReturnVisible = true;
+    compatibilityDropdownSelectionSaved = true;
+    return true;
+};
+const isCompatibilityDropdownSelectionReturn = () => compatibilityDropdownSelectionSaved;
+const isCompatibilityDropdownReturnReady = () => compatibilityDropdownReturnPending && compatibilityDropdownReturnVisible;
+/**
+ * Consume the request only after native gamepad focus succeeds. Failed early
+ * attempts remain armed until the current close handoff finishes or aborts.
+ */
+const consumeCompatibilityDropdownReturn = () => {
+    const pending = compatibilityDropdownReturnPending;
+    compatibilityDropdownReturnPending = false;
+    compatibilityDropdownControlUnmounted = false;
+    compatibilityDropdownReturnVisible = false;
+    compatibilityDropdownSelectionSaved = false;
+    return pending;
+};
+const clearCompatibilityDropdownReturn = () => {
+    compatibilityDropdownReturnPending = false;
+    compatibilityDropdownControlUnmounted = false;
+    compatibilityDropdownReturnVisible = false;
+    compatibilityDropdownSelectionSaved = false;
+};
+
 const DEFAULT_UPDATE_SETTINGS = {
     update_channel: "stable",
     automatic_update_checks: true,
@@ -7693,7 +8360,15 @@ const useNonSteamGames = () => {
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
-const takePreferredPanelFocus = (element) => {
+// Steam can take over a second to register the fresh QAM control after its
+// native popup returns. This caps one return handoff at roughly three seconds.
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 360;
+const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
+const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 180;
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 3;
+const takeNativeFocus = (element) => {
+    if (!element)
+        return false;
     try {
         const trees = (DFL.getGamepadNavigationTrees() || []);
         for (const tree of trees) {
@@ -7715,6 +8390,21 @@ const takePreferredPanelFocus = (element) => {
         warn("qam", "preferred metadata focus unavailable", error);
     }
     return false;
+};
+const compatibilityDropdownButton = (element) => element?.querySelector('button[role="combobox"]') || null;
+const takeCompatibilityDropdownFocus = (element) => {
+    const dropdown = compatibilityDropdownButton(element);
+    if (!dropdown || dropdown.disabled || !dropdown.isConnected)
+        return false;
+    return takeNativeFocus(dropdown);
+};
+const hasCompatibilityDropdownFocus = (element) => {
+    const dropdown = compatibilityDropdownButton(element);
+    if (!dropdown)
+        return false;
+    const classes = typeof dropdown.className === "string" ? dropdown.className : "";
+    return dropdown.ownerDocument.activeElement === dropdown
+        || /(^|\s)gpfocus(\s|$)/.test(classes);
 };
 const findScrollViewport = (element) => {
     let node = element.parentElement;
@@ -7755,6 +8445,7 @@ const epochToUsDate = (value) => {
 };
 const Content = () => {
     const focusFrame = SP_REACT.useRef(null);
+    const initialPanelFocusComplete = SP_REACT.useRef(false);
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [missing, setMissing] = SP_REACT.useState(0);
@@ -7773,16 +8464,54 @@ const Content = () => {
     const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
     const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
     const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
+    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(null);
+    const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
+    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(false);
+    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState("");
+    const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
+    const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
+    const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
+    const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setCompatibilityDefaultControlState(element);
+    }, []);
+    SP_REACT.useEffect(() => {
+        if (!compatibilityDefaultControl)
+            return;
+        const qamDocument = compatibilityDefaultControl.ownerDocument;
+        const noteVisibleReturn = () => {
+            if (qamDocument.visibilityState !== "visible")
+                return;
+            if (!noteCompatibilityDropdownReturnVisible())
+                return;
+            setCompatibilityDropdownReturnVersion((version) => version + 1);
+        };
+        const observeVisibility = () => {
+            if (qamDocument.visibilityState === "hidden") {
+                noteCompatibilityDropdownControlUnmounted();
+            }
+            else {
+                noteVisibleReturn();
+            }
+        };
+        qamDocument.addEventListener("visibilitychange", observeVisibility);
+        observeVisibility();
+        return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
+    }, [compatibilityDefaultControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
             focusFrame.current = null;
         }
-        if (element) {
+        if (element && !initialPanelFocusComplete.current && !hasCompatibilityDropdownReturn()) {
             focusFrame.current = window.requestAnimationFrame(() => {
                 focusFrame.current = null;
-                takePreferredPanelFocus(element);
+                if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn())
+                    return;
+                initialPanelFocusComplete.current = true;
+                takeNativeFocus(element);
                 // Taking focus scrolls the summary up, hiding the panel's "Metadata"
                 // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
                 // summary is the first row, so snap the viewport back to the top on
@@ -7796,6 +8525,67 @@ const Content = () => {
             });
         }
     }, []);
+    SP_REACT.useEffect(() => {
+        if (!isCompatibilityDropdownReturnReady()
+            || !compatibilityDefaultControl
+            || !compatibilityDefaultLoaded
+            || compatibilityDefaultBusy)
+            return;
+        const control = compatibilityDefaultControl;
+        const settleFrames = isCompatibilityDropdownSelectionReturn()
+            ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
+            : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
+        let cancelled = false;
+        let frame = null;
+        let attempts = 0;
+        let stableFocusFrames = 0;
+        const focusReturnedDropdown = () => {
+            frame = null;
+            if (cancelled
+                || !isCompatibilityDropdownReturnReady()
+                || !compatibilityDefaultLoaded
+                || compatibilityDefaultBusy)
+                return;
+            attempts += 1;
+            if (attempts <= settleFrames) {
+                frame = window.requestAnimationFrame(focusReturnedDropdown);
+                return;
+            }
+            // The native menu hides and unmounts QAM before the replacement
+            // combobox is registered in Steam's navigation tree. Retry only over
+            // this bounded return transition, and only with Steam's BTakeFocus.
+            if (hasCompatibilityDropdownFocus(control)) {
+                stableFocusFrames += 1;
+                if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
+                    consumeCompatibilityDropdownReturn();
+                    initialPanelFocusComplete.current = true;
+                    return;
+                }
+                frame = window.requestAnimationFrame(focusReturnedDropdown);
+                return;
+            }
+            stableFocusFrames = 0;
+            takeCompatibilityDropdownFocus(control);
+            if (attempts < COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES) {
+                frame = window.requestAnimationFrame(focusReturnedDropdown);
+            }
+            else {
+                warn("qam", "compatibility dropdown return focus unavailable");
+                clearCompatibilityDropdownReturn();
+            }
+        };
+        frame = window.requestAnimationFrame(focusReturnedDropdown);
+        return () => {
+            cancelled = true;
+            if (frame !== null)
+                window.cancelAnimationFrame(frame);
+        };
+    }, [
+        compatibilityDefaultBusy,
+        compatibilityDefaultControl,
+        compatibilityDefaultLoaded,
+        compatibilityDropdownReturnVersion,
+    ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
             .then(setMissing)
@@ -7817,6 +8607,35 @@ const Content = () => {
         catch (error) {
             warn("bridge", "delisted index status load failed", error);
         }
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        const requestVersion = compatibilityDefaultLoadVersion.current;
+        void ensureCompatibilityDefault()
+            .then((value) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            setCompatibilityDefaultState(value);
+            setCompatibilityDefaultError("");
+            setCompatibilityDefaultLoaded(true);
+        })
+            .catch((error) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
+            warn("bridge", "compatibility default load failed", error);
+        });
+        const unsubscribe = subscribeCompatibilityRevision(() => {
+            if (cancelled || !compatibilityDefaultLoadedSnapshot())
+                return;
+            setCompatibilityDefaultState(compatibilityDefaultSnapshot());
+            setCompatibilityDefaultError("");
+            setCompatibilityDefaultLoaded(true);
+        });
+        return () => {
+            cancelled = true;
+            unsubscribe();
+        };
     }, []);
     SP_REACT.useEffect(() => {
         void loadDelistedStatus();
@@ -7907,6 +8726,42 @@ const Content = () => {
         }
         finally {
             setDebugLoggingBusy(false);
+        }
+    };
+    const saveCompatibilityDefault = async (category) => {
+        if (compatibilityDefaultBusy || !compatibilityDefaultLoaded)
+            return;
+        const previous = compatibilityDefault;
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        setCompatibilityDefaultBusy(true);
+        setCompatibilityDefaultError("");
+        compatibilityDefaultLoadVersion.current += 1;
+        try {
+            const saved = await setCompatibilityDefault(category);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            setCompatibilityDefaultState(confirmed);
+            if (noteCompatibilityDropdownSelectionSaved()) {
+                setCompatibilityDropdownReturnVersion((version) => version + 1);
+            }
+            toastSuccess("Compatibility", "Default compatibility status saved");
+        }
+        catch (error) {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            setCompatibilityDefaultState(previous);
+            const message = `Compatibility default could not be saved: ${String(error)}`;
+            setCompatibilityDefaultError(message);
+            toastError("Compatibility", message);
+            warn("bridge", "compatibility default save failed", error);
+        }
+        finally {
+            if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
+                setCompatibilityDefaultBusy(false);
+            }
         }
     };
     const saveUpdateChannel = async (enabled) => {
@@ -8051,7 +8906,7 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache() }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*
@@ -8396,7 +9251,8 @@ const descriptionTextareaStyle = {
     border: "1px solid rgba(255,255,255,0.18)",
 };
 const compatibilityStatusOptions = [
-    { data: null, label: "Automatic" },
+    { data: null, label: "Use global default" },
+    { data: "valve", label: "Follow Valve" },
     { data: 3, label: "Verified" },
     { data: 2, label: "Playable" },
     { data: 1, label: "Unsupported" },
@@ -8407,13 +9263,22 @@ const isCompatibilityCategory = (value) => typeof value === "number" &&
     value >= 0 &&
     value <= 3;
 const compatibilityStatusLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
-const compatibilityStatusValue = (value) => isCompatibilityCategory(value) ? value : null;
-const compatibilityStatusDisplay = (override, resolved) => {
-    if (override !== null)
+const compatibilityStatusValue = (value) => value === "valve" || isCompatibilityCategory(value) ? value : null;
+const compatibilityCategoryValue = (value) => isCompatibilityCategory(value) ? value : null;
+const compatibilityStatusDisplay = (override, valveCategory, globalDefault) => {
+    if (isCompatibilityCategory(override))
         return compatibilityStatusLabel(override);
-    return resolved === null
-        ? "Automatic"
-        : `Automatic (Valve: ${compatibilityStatusLabel(resolved)})`;
+    if (override === "valve") {
+        return valveCategory === null
+            ? "Follow Valve (unavailable — original Steam status)"
+            : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
+    }
+    if (globalDefault !== null) {
+        return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+    }
+    return valveCategory === null
+        ? "Use global default (Automatic — original Steam status)"
+        : `Use global default (${compatibilityStatusLabel(valveCategory)} — from Valve)`;
 };
 const metadataValuesEqual = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 /**
@@ -8484,6 +9349,7 @@ const MetadataPage = () => {
     const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
     const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
     const [metadataHydratedEntry, setMetadataHydratedEntry] = SP_REACT.useState(null);
+    const [compatibilityDefault, setCompatibilityDefault] = SP_REACT.useState(compatibilityDefaultSnapshot());
     const steamNameBackfillEntryRef = SP_REACT.useRef(null);
     const editorEntryRef = SP_REACT.useRef({ appId, token: 0 });
     // The editor can visit A, B, then A again while an async operation from the
@@ -8763,6 +9629,16 @@ const MetadataPage = () => {
             scrollViewport.style.scrollPaddingBottom = previousScrollPaddingBottom;
         };
     }, []);
+    SP_REACT.useEffect(() => {
+        void ensureCompatibilityDefault()
+            .then((value) => {
+            setCompatibilityDefault(value);
+        })
+            .catch(() => undefined);
+        return subscribeCompatibilityRevision(() => {
+            setCompatibilityDefault(compatibilityDefaultSnapshot());
+        });
+    }, []);
     const normalizedMetadata = SP_REACT.useMemo(() => ({
         ...metadata,
         title: cleanTitle(metadata.title),
@@ -8789,7 +9665,7 @@ const MetadataPage = () => {
             }
             metadataCache[String(appId)] = saved;
             setFormMetadata(saved);
-            applyMetadata(appId);
+            applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
         }
@@ -8825,6 +9701,7 @@ const MetadataPage = () => {
                 steam_appid: parsed || null,
                 // A proposal is valid only for the Steam match that supplied it.
                 // Clear it before enrichment so a failed request cannot reuse stale data.
+                deck_compat_category: steamAppIdChanged ? null : normalizedMetadata.deck_compat_category,
                 steam_store_name: steamAppIdChanged ? "" : normalizedMetadata.steam_store_name,
                 steam_store_url: parsed
                     ? `https://store.steampowered.com/app/${parsed}/`
@@ -8852,7 +9729,7 @@ const MetadataPage = () => {
             steamNameBackfillEntryRef.current = requestedEntry;
             setSteamNameUnavailable(false);
             if (parsed === null) {
-                applyMetadata(appId);
+                applyMetadata(appId, { publishCompatibility: false });
                 refreshCompatibilitySurfaces();
                 toastSuccess("Saved", "Metadata saved");
                 return;
@@ -8889,7 +9766,7 @@ const MetadataPage = () => {
                     setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
                 }
             }
-            applyMetadata(appId);
+            applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
         }
@@ -8928,7 +9805,7 @@ const MetadataPage = () => {
                 return;
             }
             metadataCache[String(appId)] = saved;
-            applyMetadata(appId);
+            applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             setFormMetadata(saved);
             setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
@@ -8948,7 +9825,7 @@ const MetadataPage = () => {
         try {
             await removeMetadata(appId);
             delete metadataCache[String(appId)];
-            applyMetadata(appId);
+            applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
@@ -9140,21 +10017,69 @@ const MetadataPage = () => {
                                                         markFormEdited();
                                                         ratingTextRef.current = e.target.value;
                                                         setRatingText(e.target.value);
-                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
-                                ...prev,
-                                deck_compat_override: compatibilityStatusValue(option.data),
-                            })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityStatusValue(metadata.deck_compat_category)) }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
+                                    ...prev,
+                                    deck_compat_override: compatibilityStatusValue(option.data),
+                                })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityCategoryValue(metadata.deck_compat_category), compatibilityDefault) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
+const installInPlaceReloadGuard = (onFailedReload) => {
+    const loader = globalThis.DeckyPluginLoader;
+    if (!loader || typeof loader.importPlugin !== "function") {
+        return { isPending: () => false, unpatch: () => undefined };
+    }
+    const original = loader.importPlugin;
+    let pending = false;
+    const guardedImport = async function (name, ...args) {
+        const isThisPlugin = name === "Decky Metadata";
+        if (isThisPlugin)
+            pending = true;
+        try {
+            return await original.call(this, name, ...args);
+        }
+        catch (error) {
+            if (isThisPlugin && pending)
+                onFailedReload();
+            throw error;
+        }
+        finally {
+            if (isThisPlugin)
+                pending = false;
+        }
+    };
+    loader.importPlugin = guardedImport;
+    return {
+        isPending: () => pending,
+        unpatch: () => {
+            if (loader.importPlugin === guardedImport)
+                loader.importPlugin = original;
+        },
+    };
+};
 var index = DFL.definePlugin(() => {
+    clearCompatibilityDropdownReturn();
+    beginCompatibilityLifecycle();
+    let retainedReloadBaselines = false;
+    const reloadGuard = installInPlaceReloadGuard(() => {
+        if (!retainedReloadBaselines)
+            return;
+        try {
+            restoreAllCompatibilityBaselines();
+        }
+        finally {
+            discardRetainedCompatibilityState();
+            retainedReloadBaselines = false;
+        }
+    });
     void getDebugLogging()
         .then((enabled) => setVerboseLogging(enabled))
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
+    void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     let unpatchSteam;
     try {
         unpatchSteam = installSteamPatches();
@@ -9178,6 +10103,18 @@ var index = DFL.definePlugin(() => {
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
+            const reloading = reloadGuard.isPending();
+            // The bootstrap stopper invalidates the compatibility lifecycle. Retain
+            // the held Game Info intent before it does so during an in-place import.
+            try {
+                if (reloading) {
+                    retainCompatibilityBaselinesForReload();
+                    retainedReloadBaselines = true;
+                }
+            }
+            catch (error$1) {
+                error("patch", "compatibility reload state retain failed", error$1);
+            }
             try {
                 menuPatch?.unpatch?.();
             }
@@ -9191,10 +10128,24 @@ var index = DFL.definePlugin(() => {
                 error("patch", "metadata bootstrap stop failed", error$1);
             }
             try {
-                restoreAllCompatibilityBaselines();
+                clearCompatibilityDropdownReturn();
+            }
+            catch (error$1) {
+                error("patch", "compatibility dropdown focus stop failed", error$1);
+            }
+            try {
+                if (!reloading) {
+                    restoreAllCompatibilityBaselines();
+                }
             }
             catch (error$1) {
                 error("patch", "compatibility baseline restore failed", error$1);
+            }
+            try {
+                cancelCompatibilityDefaultLoad();
+            }
+            catch (error$1) {
+                error("patch", "compatibility default load stop failed", error$1);
             }
             try {
                 unpatchSteam?.();
@@ -9202,6 +10153,7 @@ var index = DFL.definePlugin(() => {
             catch (error$1) {
                 error("patch", "Steam unpatch failed", error$1);
             }
+            reloadGuard.unpatch();
             try {
                 routerHook.removeRoute(METADATA_ROUTE);
             }
