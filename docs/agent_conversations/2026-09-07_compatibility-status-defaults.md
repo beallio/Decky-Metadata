@@ -678,3 +678,36 @@ compatibility default, retain per-game precedence, and add the explicit
   `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-package.log`.
   This correction round made no Deck connection, deployment, installation,
   fixture, setting, navigation, merge, push, release, or history rewrite.
+
+## Review round 15
+
+### Retained held-state collapse after reload
+
+- Both native-overview paths now capture the authoritative held compatibility
+  nibble before queueing an active Game Info update. If the latest policy
+  returns to that held state, queue collapse can remove the pending entry
+  without letting a replacement object's native low nibble replace the held
+  value.
+- Regressions cover an in-place reload replacement and an incoming protobuf
+  replacement. In each case, retained Playable (`0xa`) is restored over a
+  replacement's native `0` nibble, and leaving Game Info does not replay a
+  stale update.
+
+### Verification and package handoff
+
+- The two new focused regressions failed before the correction: both observed
+  replacement packed value `0x70` instead of the retained `0x7a`. After the
+  correction, `./run.sh npm test -- src/steam/metadataPatch.test.ts` passed
+  `57` tests. The red-to-green run is recorded in this session transcript.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript, Rollup,
+  `27` Vitest files / `471` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, version checks, and review-note retention. Logs:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-15-quality-gates.log`
+  and `/tmp/Decky-Metadata/compatibility-status-defaults-round-15-review-audit.log`.
+- Commit `0a4f385` (`fix(steam): retain held compatibility on reload`) was
+  packaged locally. `./run.sh npm run package` produced ignored
+  `Decky-Metadata.zip`, version `0.3.14+0a4f385`, SHA-256
+  `fade56f498d3bfdcf45e5b3f07cb9c7c6057b8b20394be613abdca34e6278e6e`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round-15-package.log`.
+  This correction made no Deck connection, deployment, installation, fixture,
+  setting, navigation, merge, push, release, or history rewrite.
