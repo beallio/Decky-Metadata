@@ -1718,6 +1718,44 @@ const isCurrentGameInfoRoute = (routeContext, appId) => {
         return false;
     return String(routeContext || "").split(/\s+/).some((token) => /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token));
 };
+/**
+ * A history listener can confirm an exact Game Info return before Steam's
+ * window and browser route tokens leave the metadata editor.  Let that short
+ * re-entry shield cover only this app and only when the current tokens contain
+ * no explicit destination that conflicts with it.  Generic route templates
+ * and a shield for another app cannot recover a stale route.
+ */
+const canRecoverStaleGameDetailRoute = (routeContext, appId) => {
+    const shield = metadataState.routeShield;
+    if (!shield || shield.appId !== appId)
+        return false;
+    if (!isCurrentGameDetailRoute(shield.path, appId))
+        return false;
+    for (const token of String(routeContext || "").trim().split(/\s+/)) {
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
+            return false;
+        }
+        const routeAppId = gameDetailAppIdFromPath(pathname);
+        if (routeAppId && routeAppId !== appId)
+            return false;
+    }
+    return true;
+};
 const appIdFromDom = () => {
     const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
     const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
@@ -3279,7 +3317,7 @@ const installCommunityFeedPatch = (unpatchers) => {
 // ordering bug here (the render shield consumed before the in-call truth
 // window), which only surfaced on-device.
 const decideBIsModOrShortcut = (input) => {
-    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, consumeShield } = input;
+    const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, canRecoverStaleRoute = false, consumeShield, } = input;
     if (!isPatchedNonSteam) {
         return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
@@ -3305,14 +3343,17 @@ const decideBIsModOrShortcut = (input) => {
     }
     // Steam's Library Home, artwork resolvers, collections, controller pages,
     // and sidebars share this overview prototype.  Only the current matched
-    // shortcut's Library detail page needs to appear native.  Do not spend a
-    // render shield or truth-window budget outside that narrow route scope.
+    // shortcut's Library detail page needs to appear native. A history listener
+    // can provide one narrow exception: its exact, matching destination may
+    // bridge stale editor tokens while the native Game Info tree re-enters.
+    if (isCurrentMatchedDetail || canRecoverStaleRoute) {
+        const shieldHit = consumeShield();
+        if (shieldHit) {
+            return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
+        }
+    }
     if (!isCurrentMatchedDetail) {
         return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
-    }
-    const shieldHit = consumeShield();
-    if (shieldHit) {
-        return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
     }
     const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
     const shouldBypass = nextBypassCounter > 0;
@@ -4360,6 +4401,7 @@ const installMetadataPatches = (unpatchers) => {
                 bypassCounter: metadataState.bypassCounter,
                 hasCache,
                 isCurrentMatchedDetail,
+                canRecoverStaleRoute: canRecoverStaleGameDetailRoute(path, appId),
                 consumeShield: () => consumeRouteShield(appId),
             });
             metadataState.bypassCounter = decision.nextBypassCounter;

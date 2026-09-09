@@ -10,6 +10,7 @@ import {
   NON_STEAM_APP_TYPE,
   Unpatch,
   appName,
+  canRecoverStaleGameDetailRoute,
   cleanTitle,
   currentRoutePath,
   gameDetailAppIdFromPath,
@@ -1082,6 +1083,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           bypassCounter: metadataState.bypassCounter,
           hasCache,
           isCurrentMatchedDetail,
+          canRecoverStaleRoute: canRecoverStaleGameDetailRoute(path, appId),
           consumeShield: () => consumeRouteShield(appId),
         });
         metadataState.bypassCounter = decision.nextBypassCounter;

@@ -40,7 +40,7 @@ import {
   metadataState,
   notifyCompatibilityRevision,
 } from "./core";
-import { installMetadataPatches, setConfirmedCompatibilityDefault } from "./metadataPatch";
+import { applyMetadata, installMetadataPatches, setConfirmedCompatibilityDefault } from "./metadataPatch";
 import {
   installGameDetailReentryShield,
   installNonSteamQuickLinkPolicy,
@@ -132,6 +132,64 @@ describe("router compatibility publication", () => {
       hash: "#compatibility",
     });
     expect(overview.steam_hw_compat_category_packed).toBe(0x6f);
+
+    shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
+    metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
+  });
+
+  it("keeps matched Game Info rich when Done returns after a completed editor save", () => {
+    const appId = 9715;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0x0a;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+    }
+    const overview = new NativeOverview();
+    const history = {
+      index: 1,
+      entries: [
+        { pathname: `/library/app/${appId}/tab/GameInfo` },
+        { pathname: `/decky-metadata/${appId}` },
+      ],
+      location: { pathname: `/decky-metadata/${appId}` },
+      goBack: vi.fn(),
+    };
+    (globalThis as any).Router = {
+      WindowStore: { GamepadUIMainWindowInstance: { m_history: history } },
+    };
+    (globalThis as any).window = { location: { pathname: `/decky-metadata/${appId}` } };
+    (globalThis as any).appStore = {
+      allApps: [overview],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
+    };
+    (globalThis as any).appDetailsStore = {};
+    metadataCache[String(appId)] = {
+      steam_appid: 15100,
+      deck_compat_override: 1,
+    } as any;
+
+    const metadataUnpatchers: Array<() => void> = [];
+    installMetadataPatches(metadataUnpatchers);
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x05);
+
+    const shieldUnpatchers: Array<() => void> = [];
+    installGameDetailReentryShield(shieldUnpatchers);
+    history.goBack();
+
+    const renderGameInfo = () => ({
+      content: overview.BIsModOrShortcut() ? "non-Steam placeholder" : "rich matched Game Info",
+      category: (overview.steam_hw_compat_category_packed & 0x0f) === 0x05 ? "Unsupported" : "other",
+    });
+    expect(renderGameInfo()).toEqual({ content: "rich matched Game Info", category: "Unsupported" });
 
     shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());

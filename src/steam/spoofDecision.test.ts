@@ -86,6 +86,18 @@ describe("decideBIsModOrShortcut", () => {
     expect(d).toMatchObject({ finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true });
   });
 
+  it("uses an authoritative re-entry shield while editor route tokens are stale", () => {
+    const consumeShield = vi.fn(() => true);
+    const d = decideBIsModOrShortcut({
+      ...base,
+      isCurrentMatchedDetail: false,
+      canRecoverStaleRoute: true,
+      consumeShield,
+    });
+    expect(d).toMatchObject({ finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true });
+    expect(consumeShield).toHaveBeenCalledOnce();
+  });
+
   it("passes through outside the current matched detail without consulting the shield", () => {
     const consumeShield = vi.fn(() => true);
     const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedDetail: false, consumeShield });

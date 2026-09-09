@@ -495,6 +495,43 @@ export const isCurrentGameInfoRoute = (routeContext: string, appId: number): boo
   );
 };
 
+/**
+ * A history listener can confirm an exact Game Info return before Steam's
+ * window and browser route tokens leave the metadata editor.  Let that short
+ * re-entry shield cover only this app and only when the current tokens contain
+ * no explicit destination that conflicts with it.  Generic route templates
+ * and a shield for another app cannot recover a stale route.
+ */
+export const canRecoverStaleGameDetailRoute = (routeContext: string, appId: number): boolean => {
+  const shield = metadataState.routeShield;
+  if (!shield || shield.appId !== appId) return false;
+  if (!isCurrentGameDetailRoute(shield.path, appId)) return false;
+
+  for (const token of String(routeContext || "").trim().split(/\s+/)) {
+    if (!token) continue;
+    let pathname = token;
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token)) pathname = new URL(token).pathname;
+      else if (!token.startsWith("/")) continue;
+      pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+    } catch (_error) {
+      continue;
+    }
+
+    if (
+      /^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+      /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+      /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)
+    ) {
+      return false;
+    }
+
+    const routeAppId = gameDetailAppIdFromPath(pathname);
+    if (routeAppId && routeAppId !== appId) return false;
+  }
+  return true;
+};
+
 const appIdFromDom = () => {
   const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
   const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");

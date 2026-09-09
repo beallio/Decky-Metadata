@@ -27,13 +27,23 @@ export type SpoofInput = {
   bypassCounter: number;
   hasCache: boolean;
   isCurrentMatchedDetail: boolean;
+  /** A trusted history destination can bridge stale editor route tokens. */
+  canRecoverStaleRoute?: boolean;
   // Consuming a shield hit is a side effect (decrements the hit budget), so
   // the caller passes it lazily; the decision controls WHETHER it happens.
   consumeShield: () => boolean;
 };
 
 export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
-  const { isPatchedNonSteam, originalRet, bypassCounter, hasCache, isCurrentMatchedDetail, consumeShield } = input;
+  const {
+    isPatchedNonSteam,
+    originalRet,
+    bypassCounter,
+    hasCache,
+    isCurrentMatchedDetail,
+    canRecoverStaleRoute = false,
+    consumeShield,
+  } = input;
 
   if (!isPatchedNonSteam) {
     return { finalRet: originalRet, reason: "not-nonsteam", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
@@ -63,16 +73,20 @@ export const decideBIsModOrShortcut = (input: SpoofInput): SpoofDecision => {
 
   // Steam's Library Home, artwork resolvers, collections, controller pages,
   // and sidebars share this overview prototype.  Only the current matched
-  // shortcut's Library detail page needs to appear native.  Do not spend a
-  // render shield or truth-window budget outside that narrow route scope.
+  // shortcut's Library detail page needs to appear native. A history listener
+  // can provide one narrow exception: its exact, matching destination may
+  // bridge stale editor tokens while the native Game Info tree re-enters.
+  if (isCurrentMatchedDetail || canRecoverStaleRoute) {
+    const shieldHit = consumeShield();
+    if (shieldHit) {
+      return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
+    }
+  }
+
   if (!isCurrentMatchedDetail) {
     return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
   }
 
-  const shieldHit = consumeShield();
-  if (shieldHit) {
-    return { finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true, nextBypassCounter: bypassCounter };
-  }
   const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
   const shouldBypass = nextBypassCounter > 0;
   return {
