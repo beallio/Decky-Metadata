@@ -298,9 +298,15 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
             const previousAppId = metadataState.lastObservedGameDetailAppId;
             metadataState.lastObservedGameDetailAppId = appId;
             if (metadataCache[String(appId)]) {
-              armRouteShield(appId, route, "route-render");
+              // `route` is a Decky template (for example `:appid`), not an
+              // authoritative path. Replacing a history listener's concrete
+              // return shield with that template makes stale editor browser
+              // tokens fail the exact-app check during the first Game Info
+              // render. Keep the shield's identity concrete.
+              const shieldPath = route.replace(":appid", String(appId));
+              armRouteShield(appId, shieldPath, "route-render");
               if (isBypassTraceEnabled()) {
-                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: route }).catch(() => undefined);
+                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
               }
             } else {
               if (isBypassTraceEnabled()) {

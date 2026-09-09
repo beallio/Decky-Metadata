@@ -153,6 +153,18 @@ describe("router compatibility publication", () => {
       }
     }
     const overview = new NativeOverview();
+    const overviews: any = new Map([[appId, overview]]);
+    let classificationAtMapPublication: "non-Steam placeholder" | "rich matched Game Info" | undefined;
+    const nativeSet = vi.fn((key: number, value: NativeOverview) => {
+      // Steam's observable app map can synchronously classify a replacement
+      // before NavigateBack commits its Game Info route. That classification
+      // is the placeholder race reported by the Deck validation.
+      classificationAtMapPublication = value.BIsModOrShortcut()
+        ? "non-Steam placeholder"
+        : "rich matched Game Info";
+      return Map.prototype.set.call(overviews, key, value);
+    });
+    overviews.originalSet = nativeSet;
     const history = {
       index: 1,
       entries: [
@@ -162,12 +174,16 @@ describe("router compatibility publication", () => {
       location: { pathname: `/decky-metadata/${appId}` },
       goBack: vi.fn(),
     };
+    history.goBack.mockImplementation(() => {
+      history.location = { pathname: `/library/app/${appId}/tab/GameInfo` };
+    });
     (globalThis as any).Router = {
       WindowStore: { GamepadUIMainWindowInstance: { m_history: history } },
     };
     (globalThis as any).window = { location: { pathname: `/decky-metadata/${appId}` } };
     (globalThis as any).appStore = {
       allApps: [overview],
+      m_mapApps: overviews,
       GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
     };
     (globalThis as any).appDetailsStore = {};
@@ -178,19 +194,39 @@ describe("router compatibility publication", () => {
 
     const metadataUnpatchers: Array<() => void> = [];
     installMetadataPatches(metadataUnpatchers);
-    expect(applyMetadata(appId)).toBe(true);
+    expect(applyMetadata(appId, { publishCompatibility: false })).toBe(true);
     expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x05);
+    expect(nativeSet).not.toHaveBeenCalled();
 
     const shieldUnpatchers: Array<() => void> = [];
     installGameDetailReentryShield(shieldUnpatchers);
     history.goBack();
 
+    // Steam can enter the route while its browser token still names the
+    // editor. Exercise the real route-render hook between NavigateBack and
+    // the first native identity call; it must retain an exact shield path.
+    const routeProps = {
+      renderFunc: () => ({ props: { children: { props: { overview } } } }),
+    };
+    const routerUnpatchers: Array<() => void> = [];
+    installRouterRenderPatches(routerUnpatchers, {
+      ensureMetadataCache: vi.fn(async () => undefined),
+      applyMetadata: vi.fn(() => false),
+      tryEnrichScreenshotsForApp: vi.fn(async () => undefined),
+      tryFetchMetadataForApp: vi.fn(async () => undefined),
+      refreshDeckyNativeActivityForApp: vi.fn(async () => null),
+    });
+    mocks.routeHandlers[0](routeProps);
+    routeProps.renderFunc();
+
     const renderGameInfo = () => ({
-      content: overview.BIsModOrShortcut() ? "non-Steam placeholder" : "rich matched Game Info",
+      content: classificationAtMapPublication ??
+        (overview.BIsModOrShortcut() ? "non-Steam placeholder" : "rich matched Game Info"),
       category: (overview.steam_hw_compat_category_packed & 0x0f) === 0x05 ? "Unsupported" : "other",
     });
     expect(renderGameInfo()).toEqual({ content: "rich matched Game Info", category: "Unsupported" });
 
+    routerUnpatchers.reverse().forEach((unpatch) => unpatch());
     shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });

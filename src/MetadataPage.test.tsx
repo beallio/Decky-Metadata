@@ -269,7 +269,7 @@ describe("MetadataPage compatibility status", () => {
       expect.objectContaining({ deck_compat_override: 0 })
     );
     expect(steam.metadataCache["100"]).toBe(saved);
-    expect(steam.applyMetadata).toHaveBeenCalledWith(100);
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
     expect(dropdown(renderPage()).props.selectedOption).toBe(0);
@@ -862,7 +862,7 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
     expect(state.values[8]).toBe("");
     expect(backend.enrichSteamApp).not.toHaveBeenCalled();
-    expect(steam.applyMetadata).toHaveBeenCalledWith(100);
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
   });

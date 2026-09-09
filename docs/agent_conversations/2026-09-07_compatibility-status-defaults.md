@@ -751,3 +751,41 @@ compatibility default, retain per-game precedence, and add the explicit
   Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round16-package-final.log`.
   This correction made no Deck connection, deployment, installation, fixture,
   setting, navigation, integration, push, release, or history rewrite.
+
+## Review round 17
+
+### Editor-return publication race
+
+- A confirmed editor Save updates the correct packed compatibility value, but
+  publishing a replacement into `m_mapApps` while the editor route is still
+  current lets Steam synchronously classify that replacement as a shortcut.
+  The editor now writes the native value and refreshes the plugin's
+  compatibility surfaces without publishing that replacement from any of its
+  save, Steam App ID, fetch, or remove paths.
+- The route-render hook also renewed a return shield with a Decky route
+  template such as `/library/app/:appid`. That template cannot pass the
+  exact-app recovery check, so it could overwrite a concrete history shield
+  during the first Game Info render. It now renews the shield with the actual
+  shortcut App ID.
+- The regression exercises the observed order: an editor Save changes the
+  native status to Unsupported, `NavigateBack` enters Game Info while the
+  browser still reports the editor route, the real route-render hook runs,
+  and the first native identity check must retain rich matched Game Info.
+  Before the concrete shield fix it failed with `non-Steam placeholder`; the
+  test also fails if an editor save publishes the native map replacement.
+
+### Validation and package handoff
+
+- Focused editor/Steam validation passed:
+  `./run.sh npm test -- src/MetadataPage.test.tsx src/steam/metadataPatch.test.ts src/steam/routerPatches.test.ts`
+  (`3` files, `98` passing tests, `4` existing skips). The plan's broader
+  focused frontend run passed `4` files / `156` tests, and the focused backend
+  run passed `32` tests.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript,
+  Rollup, `27` Vitest files / `473` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, version checks, and review-note retention. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round17-quality-gates.log`.
+- Per review 17, no Steam Deck, SSH, debugger, deployment, installation,
+  fixture, setting, or navigation command ran. Main retains the documented
+  fixture baseline restoration and next live validation once connectivity is
+  available.

@@ -585,7 +585,7 @@ export const MetadataPage = () => {
       }
       metadataCache[String(appId)] = saved;
       setFormMetadata(saved);
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
@@ -647,7 +647,7 @@ export const MetadataPage = () => {
       steamNameBackfillEntryRef.current = requestedEntry;
       setSteamNameUnavailable(false);
       if (parsed === null) {
-        applyMetadata(appId);
+        applyMetadata(appId, { publishCompatibility: false });
         refreshCompatibilitySurfaces();
         toastSuccess("Saved", "Metadata saved");
         return;
@@ -693,7 +693,7 @@ export const MetadataPage = () => {
           setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
         }
       }
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
     } catch (error) {
@@ -729,7 +729,7 @@ export const MetadataPage = () => {
         return;
       }
       metadataCache[String(appId)] = saved;
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);
       setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
@@ -747,7 +747,7 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       delete metadataCache[String(appId)];
-      applyMetadata(appId);
+      applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setFormMetadata(metadataTemplate(appName(appId)));

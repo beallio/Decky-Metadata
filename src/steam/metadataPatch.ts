@@ -808,10 +808,23 @@ const applyMetadataBatch = (appIds: Iterable<string | number>) => {
   return compatibilityChanged;
 };
 
-export const applyMetadata = (appId: number) => {
+type ApplyMetadataOptions = {
+  /**
+   * The metadata editor can update a native overview while Steam is still
+   * returning to Game Info. Publishing a replacement in that window makes
+   * Steam classify the replacement against its stale editor route and cache
+   * the non-Steam placeholder. The direct native write is still immediate;
+   * omit the observable-map replacement for this editor-originated write.
+   */
+  publishCompatibility?: boolean;
+};
+
+export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {}) => {
   const overview = getNativeOverview(appId);
   const compatibilityChanged = applyMetadataToOverview(appId, overview);
-  if (compatibilityChanged && overview) publishCompatibilityReplacements([{ appId, overview }]);
+  if (compatibilityChanged && overview && options.publishCompatibility !== false) {
+    publishCompatibilityReplacements([{ appId, overview }]);
+  }
   return compatibilityChanged;
 };
 
