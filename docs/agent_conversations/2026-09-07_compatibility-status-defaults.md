@@ -785,6 +785,9 @@ compatibility default, retain per-game precedence, and add the explicit
   Rollup, `27` Vitest files / `473` passing tests (`4` existing skips), Python
   byte-compilation, pytest, version checks, and review-note retention. Output:
   `/tmp/Decky-Metadata/compatibility-status-defaults-round17-quality-gates.log`.
+- `./run.sh npm run package` produced the ignored local
+  `Decky-Metadata.zip`, version `0.3.14+bdf0248`. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round17-package.log`.
 - Per review 17, no Steam Deck, SSH, debugger, deployment, installation,
   fixture, setting, or navigation command ran. Main retains the documented
   fixture baseline restoration and next live validation once connectivity is
