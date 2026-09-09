@@ -259,6 +259,11 @@ type DeferredCompatibilityUpdate = {
 };
 
 const deferredCompatibilityUpdates = new Map<number, DeferredCompatibilityUpdate>();
+// Editor writes must not replace Steam's observable overview map until the
+// matching Game Info route has rendered under its return shield. The direct
+// packed-field write is already complete; this set tracks only the delayed
+// collection/filter publication.
+const deferredEditorCompatibilityPublications = new Set<number>();
 
 /**
  * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
@@ -328,10 +333,15 @@ const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibili
 
 export const retainCompatibilityBaselinesForReload = () => {
   const baselines = metadataState.compatibilityBaselines;
-  if (Object.keys(baselines).length === 0 && deferredCompatibilityUpdates.size === 0) return;
+  if (
+    Object.keys(baselines).length === 0 &&
+    deferredCompatibilityUpdates.size === 0 &&
+    deferredEditorCompatibilityPublications.size === 0
+  ) return;
   (globalThis as Record<string, unknown>)[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
     baselines: { ...baselines },
     deferred: Array.from(deferredCompatibilityUpdates.values()),
+    editorPublications: Array.from(deferredEditorCompatibilityPublications),
   };
 };
 
@@ -346,6 +356,7 @@ const resumeRetainedCompatibilityBaselines = () => {
   const state = retained as {
     baselines?: Record<string, unknown>;
     deferred?: Array<Partial<DeferredCompatibilityUpdate>>;
+    editorPublications?: unknown[];
   };
   // Accept the bare baseline record written by the preceding plugin version so
   // an in-place import from that version remains safe.
@@ -370,6 +381,13 @@ const resumeRetainedCompatibilityBaselines = () => {
           appId: Number(appId),
           heldNibble: Number(heldNibble),
         });
+      }
+    });
+  }
+  if (Array.isArray(state.editorPublications)) {
+    state.editorPublications.forEach((appId) => {
+      if (Number.isSafeInteger(appId) && Number(appId) > 0) {
+        deferredEditorCompatibilityPublications.add(Number(appId));
       }
     });
   }
@@ -409,9 +427,10 @@ const createCompatibilityReplacement = (overview: any) => {
  * revision listeners. Publish only after a completed linear write batch.
  */
 const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublication>) => {
+  let published = false;
   try {
     const overviews = appStore?.m_mapApps;
-    if (!overviews || typeof overviews.get !== "function" || typeof overviews.set !== "function") return;
+    if (!overviews || typeof overviews.get !== "function" || typeof overviews.set !== "function") return false;
     for (const { appId, overview } of updates) {
       // Never publish a stale entry, an alias, or an official Steam overview.
       if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview)) continue;
@@ -429,11 +448,31 @@ const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublica
       } else {
         overviews.set(appId, replacement);
       }
+      published = true;
     }
   } catch {
     // Steam can replace this private map during a batch. The current objects
     // remain correct, and a later policy or metadata update can publish again.
   }
+  return published;
+};
+
+/**
+ * Complete one editor-originated Steam collection update after its exact Game
+ * Info tree has re-entered. The return shield is armed by the caller first so
+ * this map replacement cannot be classified as the non-Steam placeholder.
+ */
+export const publishDeferredEditorCompatibility = (appId: number) => {
+  if (!deferredEditorCompatibilityPublications.has(appId)) return false;
+  const overview = getNativeOverview(appId);
+  if (!overview || !isNativeNonSteamShortcut(overview)) {
+    // A deleted shortcut or an official alias must never be recreated.
+    deferredEditorCompatibilityPublications.delete(appId);
+    return false;
+  }
+  if (!publishCompatibilityReplacements([{ appId, overview }])) return false;
+  deferredEditorCompatibilityPublications.delete(appId);
+  return true;
 };
 
 /**
@@ -531,6 +570,7 @@ export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoadPromise = null;
   deferredCompatibilityUpdates.clear();
+  deferredEditorCompatibilityPublications.clear();
   resumeRetainedCompatibilityBaselines();
   return metadataState.compatibilityLifecycleGeneration;
 };
@@ -570,6 +610,7 @@ export const cancelCompatibilityDefaultLoad = () => {
   metadataState.compatibilityDefaultGeneration += 1;
   metadataState.compatibilityLifecycleGeneration += 1;
   deferredCompatibilityUpdates.clear();
+  deferredEditorCompatibilityPublications.clear();
 };
 
 /**
@@ -811,10 +852,11 @@ const applyMetadataBatch = (appIds: Iterable<string | number>) => {
 type ApplyMetadataOptions = {
   /**
    * The metadata editor can update a native overview while Steam is still
-   * returning to Game Info. Publishing a replacement in that window makes
-   * Steam classify the replacement against its stale editor route and cache
-   * the non-Steam placeholder. The direct native write is still immediate;
-   * omit the observable-map replacement for this editor-originated write.
+   * open or returning to Game Info. Publishing a replacement in that window
+   * makes Steam classify it against stale editor route tokens and cache the
+   * non-Steam placeholder. The direct native write remains immediate; queue
+   * the observable-map replacement until the matching Game Info render arms
+   * its concrete return shield.
    */
   publishCompatibility?: boolean;
 };
@@ -822,8 +864,12 @@ type ApplyMetadataOptions = {
 export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {}) => {
   const overview = getNativeOverview(appId);
   const compatibilityChanged = applyMetadataToOverview(appId, overview);
-  if (compatibilityChanged && overview && options.publishCompatibility !== false) {
-    publishCompatibilityReplacements([{ appId, overview }]);
+  if (compatibilityChanged && overview) {
+    if (options.publishCompatibility === false) {
+      deferredEditorCompatibilityPublications.add(appId);
+    } else {
+      publishCompatibilityReplacements([{ appId, overview }]);
+    }
   }
   return compatibilityChanged;
 };

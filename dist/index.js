@@ -3620,6 +3620,11 @@ const desiredCompatibilityNibble = (appId, heldNibble, category) => {
     return category | (category << 2);
 };
 const deferredCompatibilityUpdates = new Map();
+// Editor writes must not replace Steam's observable overview map until the
+// matching Game Info route has rendered under its return shield. The direct
+// packed-field write is already complete; this set tracks only the delayed
+// collection/filter publication.
+const deferredEditorCompatibilityPublications = new Set();
 /**
  * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
  * not change this main-window route, while another tab, page, game, or the
@@ -3678,11 +3683,14 @@ const applyCompatibilityToOverview = (appId, overview, routeContext = currentRou
 const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibilityBaselines";
 const retainCompatibilityBaselinesForReload = () => {
     const baselines = metadataState.compatibilityBaselines;
-    if (Object.keys(baselines).length === 0 && deferredCompatibilityUpdates.size === 0)
+    if (Object.keys(baselines).length === 0 &&
+        deferredCompatibilityUpdates.size === 0 &&
+        deferredEditorCompatibilityPublications.size === 0)
         return;
     globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
         baselines: { ...baselines },
         deferred: Array.from(deferredCompatibilityUpdates.values()),
+        editorPublications: Array.from(deferredEditorCompatibilityPublications),
     };
 };
 const discardRetainedCompatibilityState = () => {
@@ -3715,6 +3723,13 @@ const resumeRetainedCompatibilityBaselines = () => {
                     appId: Number(appId),
                     heldNibble: Number(heldNibble),
                 });
+            }
+        });
+    }
+    if (Array.isArray(state.editorPublications)) {
+        state.editorPublications.forEach((appId) => {
+            if (Number.isSafeInteger(appId) && Number(appId) > 0) {
+                deferredEditorCompatibilityPublications.add(Number(appId));
             }
         });
     }
@@ -3754,10 +3769,11 @@ const createCompatibilityReplacement = (overview) => {
  * revision listeners. Publish only after a completed linear write batch.
  */
 const publishCompatibilityReplacements = (updates) => {
+    let published = false;
     try {
         const overviews = appStore?.m_mapApps;
         if (!overviews || typeof overviews.get !== "function" || typeof overviews.set !== "function")
-            return;
+            return false;
         for (const { appId, overview } of updates) {
             // Never publish a stale entry, an alias, or an official Steam overview.
             if (overviews.get(appId) !== overview || !isNativeNonSteamShortcut(overview))
@@ -3778,12 +3794,33 @@ const publishCompatibilityReplacements = (updates) => {
             else {
                 overviews.set(appId, replacement);
             }
+            published = true;
         }
     }
     catch {
         // Steam can replace this private map during a batch. The current objects
         // remain correct, and a later policy or metadata update can publish again.
     }
+    return published;
+};
+/**
+ * Complete one editor-originated Steam collection update after its exact Game
+ * Info tree has re-entered. The return shield is armed by the caller first so
+ * this map replacement cannot be classified as the non-Steam placeholder.
+ */
+const publishDeferredEditorCompatibility = (appId) => {
+    if (!deferredEditorCompatibilityPublications.has(appId))
+        return false;
+    const overview = getNativeOverview(appId);
+    if (!overview || !isNativeNonSteamShortcut(overview)) {
+        // A deleted shortcut or an official alias must never be recreated.
+        deferredEditorCompatibilityPublications.delete(appId);
+        return false;
+    }
+    if (!publishCompatibilityReplacements([{ appId, overview }]))
+        return false;
+    deferredEditorCompatibilityPublications.delete(appId);
+    return true;
 };
 /**
  * Recompute pending work after the main Game Info view exits. A history
@@ -3877,6 +3914,7 @@ const beginCompatibilityLifecycle = () => {
     metadataState.compatibilityDefaultLoadPromise = null;
     metadataState.metadataLoadPromise = null;
     deferredCompatibilityUpdates.clear();
+    deferredEditorCompatibilityPublications.clear();
     resumeRetainedCompatibilityBaselines();
     return metadataState.compatibilityLifecycleGeneration;
 };
@@ -3913,6 +3951,7 @@ const cancelCompatibilityDefaultLoad = () => {
     metadataState.compatibilityDefaultGeneration += 1;
     metadataState.compatibilityLifecycleGeneration += 1;
     deferredCompatibilityUpdates.clear();
+    deferredEditorCompatibilityPublications.clear();
 };
 /**
  * Steam sends AppOverview protobufs to appInfoStore before it creates and
@@ -4141,8 +4180,13 @@ const applyMetadataBatch = (appIds) => {
 const applyMetadata = (appId, options = {}) => {
     const overview = getNativeOverview(appId);
     const compatibilityChanged = applyMetadataToOverview(appId, overview);
-    if (compatibilityChanged && overview && options.publishCompatibility !== false) {
-        publishCompatibilityReplacements([{ appId, overview }]);
+    if (compatibilityChanged && overview) {
+        if (options.publishCompatibility === false) {
+            deferredEditorCompatibilityPublications.add(appId);
+        }
+        else {
+            publishCompatibilityReplacements([{ appId, overview }]);
+        }
     }
     return compatibilityChanged;
 };
@@ -6980,6 +7024,12 @@ const installRouterRenderPatches = (unpatchers, deps) => {
                             if (isBypassTraceEnabled()) {
                                 void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
                             }
+                            // A completed editor Save wrote this overview directly while
+                            // Steam still had editor route tokens. Publish its replacement
+                            // only after this exact Game Info tree has re-entered under the
+                            // concrete shield, so native collections update without losing
+                            // the matched rich render.
+                            publishDeferredEditorCompatibility(appId);
                         }
                         else {
                             if (isBypassTraceEnabled()) {

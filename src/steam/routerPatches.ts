@@ -25,7 +25,11 @@ import {
   armRouteShield,
   clearRouteShield,
 } from "./core";
-import { flushDeferredCompatibilityPublications, isBypassTraceEnabled } from "./metadataPatch";
+import {
+  flushDeferredCompatibilityPublications,
+  isBypassTraceEnabled,
+  publishDeferredEditorCompatibility,
+} from "./metadataPatch";
 import {
   findChildElements,
   isInfoSectionBoundary,
@@ -308,6 +312,12 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
               if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
               }
+              // A completed editor Save wrote this overview directly while
+              // Steam still had editor route tokens. Publish its replacement
+              // only after this exact Game Info tree has re-entered under the
+              // concrete shield, so native collections update without losing
+              // the matched rich render.
+              publishDeferredEditorCompatibility(appId);
             } else {
               if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);

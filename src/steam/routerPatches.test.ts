@@ -219,6 +219,13 @@ describe("router compatibility publication", () => {
     mocks.routeHandlers[0](routeProps);
     routeProps.renderFunc();
 
+    // The editor write waits until the matching Game Info render has re-entered
+    // under its concrete route shield. It must then publish once through
+    // Steam's observable map so compatibility collections see the new value.
+    expect(nativeSet).toHaveBeenCalledTimes(1);
+    expect(nativeSet).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
+    expect(overviews.get(appId)).not.toBe(overview);
+
     const renderGameInfo = () => ({
       content: classificationAtMapPublication ??
         (overview.BIsModOrShortcut() ? "non-Steam placeholder" : "rich matched Game Info"),
