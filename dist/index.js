@@ -3399,6 +3399,20 @@ const decideBIsModOrShortcut = (input) => {
     if (!isCurrentMatchedRenderRoute) {
         return { finalRet: originalRet, reason: "outside-current-detail", shieldConsulted: false, shieldHit: false, nextBypassCounter: bypassCounter };
     }
+    // GetPerClientData and BHasRecentlyLaunched arm a short truth window for
+    // native callers outside this render path. It must not turn the current
+    // matched Game Info/editor render back into a shortcut when the optional
+    // shield has expired under a render flood. Keep the window intact for its
+    // intended native caller; only withInCallTruth (-1 above) outranks render.
+    if (bypassCounter > 0) {
+        return {
+            finalRet: false,
+            reason: "render-route-truth-window",
+            shieldConsulted: true,
+            shieldHit: false,
+            nextBypassCounter: bypassCounter,
+        };
+    }
     const nextBypassCounter = bypassCounter > 0 ? bypassCounter - 1 : bypassCounter;
     const shouldBypass = nextBypassCounter > 0;
     return {
