@@ -44,9 +44,28 @@ Relevant files:
   technical contract), `CHANGELOG.md` (`## [Unreleased]`),
   `docs/runbooks/on-device-verification.md` (compatibility defaults section).
 - Tests: `tests/test_deck_compat.py`, `src/steam/metadataPatch.test.ts`,
-  `src/ContentPanel.test.tsx` if it exists, and the QAM section tests.
+  `src/ContentPanel.updateSettings.test.tsx`, and the QAM section tests.
 
 **Slug used throughout this plan:** `compat-default-matched-only`
+
+### Execution status — 2026-09-09
+
+The external launch failed before implementation because the Codex account
+reached its usage limit. That lifecycle was explicitly abandoned after
+confirming there was no implementer session or feature branch. Implementation
+continued in OMP-native mode on `feat/compat-default-matched-only`. Do not
+resume the external lifecycle against these native changes.
+
+Local review and quality gates pass. Device validation and integration remain
+blocked: `steamdeck` (`10.168.168.20`) returns `No route to host`. No toggle
+candidate has been installed or merged into `dev`.
+
+The initial implementation tests were added after the source change, not
+red-first. The subsequent mutation control removed the scope condition and
+produced five failing scope tests before restoration. The save-ordering
+correction was separately reproduced red-first: repeated activation submitted
+two requests instead of one. Both compatibility controls now share an
+immediate in-flight guard and are disabled until the request finishes.
 
 ---
 

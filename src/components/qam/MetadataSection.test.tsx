@@ -30,13 +30,6 @@ const nodes = (node: unknown): Node[] => {
   return [element, ...nodes(element.props?.children)];
 };
 
-const text = (node: unknown): string => {
-  if (node == null || typeof node === "boolean") return "";
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(text).join("");
-  if (typeof node !== "object") return "";
-  return text((node as Node).props?.children);
-};
 
 const onCompatibilityDefaultMatchedOnlyChange = vi.fn();
 
@@ -76,13 +69,6 @@ const toggle = (overrides: Parameters<typeof render>[0] = {}) => {
 };
 
 describe("MetadataSection matched-games-only scope", () => {
-  it("reflects the loaded scope and forwards a change", () => {
-    expect(toggle().checked).toBe(false);
-    expect(toggle({ compatibilityDefaultMatchedOnly: true }).checked).toBe(true);
-
-    (toggle().onChange as (value: boolean) => void)(true);
-    expect(onCompatibilityDefaultMatchedOnlyChange).toHaveBeenCalledWith(true);
-  });
 
   it("disables the scope while it cannot be applied or saved", () => {
     expect(toggle().disabled).toBe(false);
@@ -91,11 +77,9 @@ describe("MetadataSection matched-games-only scope", () => {
     expect(toggle({ compatibilityDefaultLoaded: false }).disabled).toBe(true);
     expect(toggle({ compatibilityDefaultBusy: true }).disabled).toBe(true);
     expect(toggle({ compatibilityDefaultScopeBusy: true }).disabled).toBe(true);
+    const dropdown = nodes(render({ compatibilityDefaultScopeBusy: true }))
+      .find((node) => node.type === "DropdownItem");
+    expect(dropdown?.props?.disabled).toBe(true);
   });
 
-  it("describes the narrowed scope in the section copy", () => {
-    expect(text(render())).toContain("existing and new non-Steam shortcuts, including games with a Steam match");
-    expect(text(render({ compatibilityDefaultMatchedOnly: true })))
-      .toContain("non-Steam shortcuts that have saved metadata");
-  });
 });

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { MetadataData } from "../types";
 
 const mocks = vi.hoisted(() => ({
   afterPatch: vi.fn((target: Record<string, unknown>, method: string, handler: Function) => {
@@ -257,7 +258,10 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
   });
 });
 
-const compatibilityMetadata = (category?: number | null, override?: number | "valve" | null) => ({
+const compatibilityMetadata = (
+  category?: MetadataData["deck_compat_category"],
+  override?: MetadataData["deck_compat_override"],
+): MetadataData => ({
   title: "Example",
   id: "example",
   description: "",
@@ -438,7 +442,7 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
   });
 
-  it.each([0, 1, 2, 3])("writes category %i without changing higher packed bits", (category) => {
+  it.each([0, 1, 2, 3] as const)("writes category %i without changing higher packed bits", (category) => {
     const appId = 9000 + category;
     const overview = installCompatibilityOverview(appId, 0xab);
     metadataCache[String(appId)] = compatibilityMetadata(null, category) as any;
@@ -483,55 +487,63 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
   });
 
-  it("keeps a numeric default off no-record shortcuts while the matched-games-only scope is on", () => {
+  it("publishes scope changes for no-record shortcuts without changing recorded games", () => {
     const recordedAppId = 9111;
     const bareAppId = 9112;
-    const recorded = {
-      appid: recordedAppId,
-      app_type: 1073741824,
-      BIsShortcut: () => true,
-      BIsModOrShortcut: () => true,
-      steam_hw_compat_category_packed: 0xa0,
-    };
-    const bare = { ...recorded, appid: bareAppId, steam_hw_compat_category_packed: 0xb0 };
-    const overviews = new Map<number, typeof recorded>([
-      [recordedAppId, recorded],
-      [bareAppId, bare],
-    ]);
+    class NativeOverview {
+      appid = 0;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0;
+      BIsShortcut() { return true; }
+      BIsModOrShortcut() { return true; }
+    }
+    const recorded = Object.assign(new NativeOverview(), {
+      appid: recordedAppId, steam_hw_compat_category_packed: 0xa0,
+    });
+    const bare = Object.assign(new NativeOverview(), {
+      appid: bareAppId, steam_hw_compat_category_packed: 0xb9,
+    });
+    const overviews = new Map([[recordedAppId, recorded], [bareAppId, bare]]);
     const host = globalThis as Record<string, unknown>;
     host.appStore = {
-      allApps: [recorded, bare],
+      get allApps() { return Array.from(overviews.values()); },
       m_mapApps: overviews,
       GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
     };
     host.appDetailsStore = {};
-    // A record with no Steam match still counts as matched.
-    metadataCache[String(recordedAppId)] = compatibilityMetadata(null, null) as any;
-
+    // A saved record without a Steam match is still within the selected scope.
+    metadataCache[String(recordedAppId)] = compatibilityMetadata(null, null);
     setConfirmedCompatibilityDefault(3);
-    expect(recorded.steam_hw_compat_category_packed).toBe(0xaf);
-    expect(bare.steam_hw_compat_category_packed).toBe(0xbf);
+    const defaultBare = overviews.get(bareAppId);
+    const defaultRecorded = overviews.get(recordedAppId);
+    expect(defaultBare?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(defaultRecorded?.steam_hw_compat_category_packed).toBe(0xaf);
 
     setConfirmedCompatibilityDefaultMatchedOnly(true);
-    expect(recorded.steam_hw_compat_category_packed).toBe(0xaf);
-    expect(bare.steam_hw_compat_category_packed).toBe(0xb0);
+    const restoredBare = overviews.get(bareAppId);
+    expect(restoredBare).not.toBe(defaultBare);
+    expect(restoredBare?.steam_hw_compat_category_packed).toBe(0xb9);
+    expect(overviews.get(recordedAppId)).toBe(defaultRecorded);
 
     setConfirmedCompatibilityDefaultMatchedOnly(false);
-    expect(bare.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(bareAppId)).not.toBe(restoredBare);
+    expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(recordedAppId)).toBe(defaultRecorded);
+    expect(metadataCache[String(bareAppId)]).toBeUndefined();
   });
 
   it("keeps fixed and Follow Valve per-game choices under the matched-games-only scope", () => {
     metadataState.compatibilityDefaultMatchedOnly = true;
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(3, 0) as any, 2)).toBe(0);
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, "valve") as any, 3)).toBe(2);
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, null) as any, 3)).toBe(3);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(3, 0), 2)).toBe(0);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, "valve"), 3)).toBe(2);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, null), 3)).toBe(3);
     expect(effectiveCompatibilityCategory(undefined, 3)).toBeNull();
   });
 
   it("returns a shortcut to its native baseline when record removal meets the matched-games-only scope", () => {
     const appId = 9113;
     const overview = installCompatibilityOverview(appId, 0x90);
-    metadataCache[String(appId)] = compatibilityMetadata(null, null) as any;
+    metadataCache[String(appId)] = compatibilityMetadata(null, null);
     metadataState.compatibilityDefaultMatchedOnly = true;
     setConfirmedCompatibilityDefault(1);
     expect(overview.steam_hw_compat_category_packed).toBe(0x95);
@@ -545,12 +557,13 @@ describe("compatibility metadata application", () => {
   it("holds the active Game Info value when the scope changes and applies it after the exit", () => {
     const appId = 9114;
     const overview = installCompatibilityOverview(appId, 0xa0);
-    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    setRoute("/library/home");
     setConfirmedCompatibilityDefault(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
 
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
     setConfirmedCompatibilityDefaultMatchedOnly(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
 
     setRoute("/library/home");
     flushDeferredCompatibilityPublications();

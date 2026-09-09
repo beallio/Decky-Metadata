@@ -95,7 +95,7 @@ export function MetadataSection({
             label="Default compatibility status"
             rgOptions={compatibilityDefaultOptions}
             selectedOption={compatibilityDefault}
-            disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy}
+            disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
             onMenuWillOpen={() => {
               onCompatibilityDefaultMenuWillOpen();
             }}

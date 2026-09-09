@@ -287,7 +287,7 @@ const compatibilityDefaultOptions = [
     { data: 0, label: "Unknown" },
 ];
 function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultMatchedOnly, compatibilityDefaultScopeBusy, onRefreshMetadata, onClearCache, onCompatibilityDefaultChange, onCompatibilityDefaultMatchedOnlyChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy, onMenuWillOpen: () => {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
                             onCompatibilityDefaultMenuWillOpen();
                         }, onChange: (option) => onCompatibilityDefaultChange(option.data) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Apply only to matched games", description: "Shortcuts without saved metadata keep their original Steam status.", bottomSeparator: "none", checked: compatibilityDefaultMatchedOnly, disabled: !compatibilityDefaultLoaded ||
                         compatibilityDefaultBusy ||
@@ -8505,6 +8505,7 @@ const Content = () => {
     const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState("");
     const [compatibilityDefaultMatchedOnly, setCompatibilityDefaultMatchedOnlyState] = SP_REACT.useState(false);
     const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(false);
+    const compatibilitySaveInFlight = SP_REACT.useRef(false);
     const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
@@ -8768,8 +8769,9 @@ const Content = () => {
         }
     };
     const saveCompatibilityDefault = async (category) => {
-        if (compatibilityDefaultBusy || !compatibilityDefaultLoaded)
+        if (compatibilitySaveInFlight.current || !compatibilityDefaultLoaded)
             return;
+        compatibilitySaveInFlight.current = true;
         const previous = compatibilityDefault;
         const lifecycleGeneration = compatibilityLifecycleSnapshot();
         setCompatibilityDefaultBusy(true);
@@ -8798,18 +8800,23 @@ const Content = () => {
             warn("bridge", "compatibility default save failed", error);
         }
         finally {
+            compatibilitySaveInFlight.current = false;
             if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
                 setCompatibilityDefaultBusy(false);
             }
         }
     };
     const saveCompatibilityDefaultMatchedOnly = async (matchedOnly) => {
-        if (compatibilityDefaultScopeBusy || !compatibilityDefaultLoaded)
+        if (compatibilitySaveInFlight.current ||
+            !compatibilityDefaultLoaded ||
+            compatibilityDefault === null)
             return;
+        compatibilitySaveInFlight.current = true;
         const previous = compatibilityDefaultMatchedOnly;
         const lifecycleGeneration = compatibilityLifecycleSnapshot();
         setCompatibilityDefaultScopeBusy(true);
         setCompatibilityDefaultError("");
+        compatibilityDefaultLoadVersion.current += 1;
         setCompatibilityDefaultMatchedOnlyState(matchedOnly);
         try {
             const saved = await setCompatibilityDefaultMatchedOnly(matchedOnly);
@@ -8833,6 +8840,7 @@ const Content = () => {
             warn("bridge", "compatibility default scope save failed", error);
         }
         finally {
+            compatibilitySaveInFlight.current = false;
             if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
                 setCompatibilityDefaultScopeBusy(false);
             }

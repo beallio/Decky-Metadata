@@ -133,7 +133,7 @@ const flushPromises = async () => {
 
 describe("Content update settings", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
@@ -153,6 +153,10 @@ describe("Content update settings", () => {
     backend.getMissingMetadataCount.mockResolvedValue(0);
     backend.getPluginVersion.mockResolvedValue("0.3.1");
     backend.getSystemVersions.mockResolvedValue({ decky: "", steamos: "" });
+    backend.getUpdateSettings.mockResolvedValue({
+      update_channel: "stable",
+      automatic_update_checks: true,
+    });
   });
 
   afterEach(() => {
@@ -304,6 +308,38 @@ describe("Content update settings", () => {
     expect(afterFailure.props.compatibilityDefaultMatchedOnly).toBe(true);
     expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
     expect(steam.setConfirmedCompatibilityDefaultMatchedOnly).not.toHaveBeenCalled();
+  });
+
+  it("blocks overlapping policy saves until the scope request finishes", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    let finishScope!: (value: boolean) => void;
+    backend.setCompatibilityDefaultMatchedOnly.mockReturnValue(new Promise<boolean>((resolve) => {
+      finishScope = resolve;
+    }));
+    render();
+    runEffects();
+    await flushPromises();
+
+    const loaded = metadataSection(render());
+    loaded.props.onCompatibilityDefaultMatchedOnlyChange(true);
+    // Controller activation can arrive again before React has rendered busy.
+    loaded.props.onCompatibilityDefaultMatchedOnlyChange(false);
+    metadataSection(render()).props.onCompatibilityDefaultChange(null);
+    expect(backend.setCompatibilityDefaultMatchedOnly).toHaveBeenCalledTimes(1);
+    expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
+
+    finishScope(true);
+    await flushPromises();
+    const saved = metadataSection(render());
+    expect(saved.props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(saved.props.compatibilityDefault).toBe(3);
+    expect(saved.props.compatibilityDefaultScopeBusy).toBe(false);
+
+    backend.setCompatibilityDefault.mockResolvedValue(null);
+    saved.props.onCompatibilityDefaultChange(null);
+    await flushPromises();
+    expect(metadataSection(render()).props.compatibilityDefault).toBeNull();
+    expect(metadataSection(render()).props.compatibilityDefaultMatchedOnly).toBe(true);
   });
 
 

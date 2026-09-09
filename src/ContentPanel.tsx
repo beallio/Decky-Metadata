@@ -206,6 +206,7 @@ export const Content = () => {
   const [compatibilityDefaultError, setCompatibilityDefaultError] = useState("");
   const [compatibilityDefaultMatchedOnly, setCompatibilityDefaultMatchedOnlyState] = useState(false);
   const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(false);
+  const compatibilitySaveInFlight = useRef(false);
   const compatibilityDefaultLoadVersion = useRef(0);
   const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
     useState<HTMLDivElement | null>(null);
@@ -472,7 +473,8 @@ export const Content = () => {
   };
 
   const saveCompatibilityDefault = async (category: DeckCompatibilityCategory | null) => {
-    if (compatibilityDefaultBusy || !compatibilityDefaultLoaded) return;
+    if (compatibilitySaveInFlight.current || !compatibilityDefaultLoaded) return;
+    compatibilitySaveInFlight.current = true;
     const previous = compatibilityDefault;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     setCompatibilityDefaultBusy(true);
@@ -496,6 +498,7 @@ export const Content = () => {
       toastError("Compatibility", message);
       log.warn("bridge", "compatibility default save failed", error);
     } finally {
+      compatibilitySaveInFlight.current = false;
       if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
         setCompatibilityDefaultBusy(false);
       }
@@ -503,11 +506,17 @@ export const Content = () => {
   };
 
   const saveCompatibilityDefaultMatchedOnly = async (matchedOnly: boolean) => {
-    if (compatibilityDefaultScopeBusy || !compatibilityDefaultLoaded) return;
+    if (
+      compatibilitySaveInFlight.current ||
+      !compatibilityDefaultLoaded ||
+      compatibilityDefault === null
+    ) return;
+    compatibilitySaveInFlight.current = true;
     const previous = compatibilityDefaultMatchedOnly;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     setCompatibilityDefaultScopeBusy(true);
     setCompatibilityDefaultError("");
+    compatibilityDefaultLoadVersion.current += 1;
     setCompatibilityDefaultMatchedOnlyState(matchedOnly);
     try {
       const saved = await setCompatibilityDefaultMatchedOnly(matchedOnly);
@@ -526,6 +535,7 @@ export const Content = () => {
       toastError("Compatibility", message);
       log.warn("bridge", "compatibility default scope save failed", error);
     } finally {
+      compatibilitySaveInFlight.current = false;
       if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
         setCompatibilityDefaultScopeBusy(false);
       }
