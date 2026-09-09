@@ -129,6 +129,19 @@ native entries. The history callback's new location is authoritative during
 navigation. In-place reload retains this pending intent with compatibility
 baselines; real teardown clears it before restoring baselines.
 
+Render identity has one more valid route than this deferral. The plugin's own
+editor route, `/decky-metadata/<appid>` with or without Steam's `/routes/`
+prefix, belongs to that app's still-mounted detail tree, so a matched shortcut
+keeps its spoofed identity there while an editor Save writes a new packed
+value. Entering the editor still counts as a Game Info exit for deferral, and
+a later editor Save wins over a queued default. On that app's own render
+route, a positive truth window armed by `GetPerClientData` or
+`BHasRecentlyLaunched` never exposes native shortcut identity, because the
+finite render-shield hit budget can expire under a render flood and Steam
+caches the non-Steam placeholder it then renders. Only in-call truth inside
+`GetGameID` or `GetPrimaryAppID` outranks the render path, which preserves
+launch behavior.
+
 On plugin dismount, baseline restoration uses one native-entry lookup pass and
 late setting responses cannot reapply a category. VDF-only IDs wait for a real
 native overview; the plugin never fabricates an overview just to apply policy.

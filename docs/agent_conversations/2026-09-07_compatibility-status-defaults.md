@@ -952,3 +952,40 @@ compatibility default, retain per-game precedence, and add the explicit
   Per review 21, no Steam Deck, SSH, debugger, deployment, installation,
   fixture, setting, navigation, integration, push, release, or history rewrite
   command ran; main retains the editor-return and launch-smoke checks.
+
+## Device validation and integration (orchestrator)
+
+- Candidates `0.3.14+161d624`, `+3ff40a6`, `+279fb6c`, `+b49d284`, and
+  `+9d901da` were each installed as a full ZIP through Decky's **Install
+  Plugin from ZIP File** dialog and rejected on the Deck: a completed editor
+  Save could return to Steam's non-Steam placeholder. Reviews 16 through 21
+  record each observation.
+- The cause came from the plugin's own trace log with Debug Logging enabled.
+  The route shield's 64-hit budget expired inside about 80 ms during the
+  editor-return render flood, then a `GetPerClientData` truth window returned
+  native shortcut identity while that app's Game Info rendered, so Steam
+  cached the placeholder. Trace:
+  `/tmp/Decky-Metadata/round21-editor-return-trace.log`.
+- `0.3.14+9224499` passed on the Deck: six consecutive alternating editor
+  saves returned rich matched content with the saved category; a global change
+  held the active view at Playable while other shortcuts moved to `15`;
+  context-menu cancellation kept the hold; the editor released it and its
+  Save won; inheritance and the captured baseline restored; an in-place
+  `importPlugin` reload kept the held value and applied the pending policy
+  only after exit.
+- Publication was verified by holding a direct reference to the
+  `appStore.m_mapApps` entry. Both a global default change and an editor Save
+  replaced that entry. Reviews 19 and 20 had claimed otherwise from a probe
+  property, which `createCompatibilityReplacement` copies onto the
+  replacement; that probe could not detect publication.
+- `scripts/deck/verify/run_all.sh --no-launch` passed quick-links, re-render
+  (0 cache writes), community fallback, and controller layouts.
+  `scripts/deck/verify/smoke_launch.sh 2312439508` passed with a 64-bit
+  gameid under explicit authorization for that run.
+- Review 22 approved the work and `scripts/orchestration/finalize` merged
+  `feat/compatibility-status-defaults` into local `dev` as `ae29f34`. The
+  merged build was reinstalled and re-checked on the Deck, then the fixture,
+  global default, and the `debug_logging` setting were restored to baseline.
+  `./run.sh scripts/orchestration/run-quality-gates` passed on `dev`. The
+  `dev` to `main` promotion remains a human gate, and the matched-games-only
+  default toggle stays queued as separate work.
