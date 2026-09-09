@@ -594,3 +594,46 @@ compatibility default, retain per-game precedence, and add the explicit
   record. `./run.sh scripts/decky package-push --build --push` created and
   delivered `Decky-Metadata.zip` version `0.3.14+bd383f3`; archive validation
   passed and the Deck reports `REINSTALL_REQUIRED` for the delivered local ZIP.
+
+## Review round 13
+
+### Active Game Info deferral
+
+- The approved behavior now holds the active native Game Info object's packed
+  compatibility nibble. It no longer changes that object and then delays only
+  the observable-map publication. Other eligible native shortcuts still update
+  in the same confirmed policy batch.
+- Pending work is keyed by exact native shortcut App ID and stores only the
+  held nibble. On a real Game Info exit it resolves the current overview and
+  current policy. A direct history callback location wins over stale joined
+  route tokens. Closing QAM or a context-menu overlay remains on Game Info;
+  opening the metadata editor releases pending work, and its later explicit
+  Save takes priority.
+- Incoming native overview replacement preserves the held nibble. Pending work
+  is retained with compatibility baselines across an in-place reload and is
+  cleared on a real plugin teardown before baselines restore. The retired
+  mounted-renderer frame refresh was removed because this policy does not need
+  an active-view force update.
+
+### Local evidence and package handoff
+
+- The new held-status regression failed before the change with the active
+  shortcut changed from `0xa0` to `0xaf`. The focused metadata suite now has
+  54 passing tests. It covers other shortcuts updating immediately, repeated
+  choices collapsing to the latest policy, editor-exit precedence, incoming
+  native replacement, reload reconstruction, and real-teardown cancellation.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript, Rollup,
+  27 Vitest files / 467 passing tests, Python compilation, pytest, version
+  checks, and review-note retention. The full output is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round13-quality-gates.log`.
+- Deck reachability, log audit, and capture ran before packaging. The audit
+  contains historical network and older patch errors; it is retained at
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round13-log-audit.json`.
+  `./run.sh scripts/decky package-push --build --push` built and delivered
+  `Decky-Metadata.zip` version `0.3.14+8c1571c` and reported
+  `INSTALLED_STATE REINSTALL_REQUIRED`.
+- The full local ZIP install requires Decky Settings -> Developer -> Install
+  Plugin from ZIP File confirmation. The required local-ZIP GUI installer skill
+  is not available in this session, so this candidate is delivered but not
+  installed. The live active-view, reload, collection/filter, controller, and
+  launch checks remain unrun; no fixture or user setting was changed.
