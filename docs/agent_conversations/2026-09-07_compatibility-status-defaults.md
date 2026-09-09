@@ -711,3 +711,43 @@ compatibility default, retain per-game precedence, and add the explicit
   Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round-15-package.log`.
   This correction made no Deck connection, deployment, installation, fixture,
   setting, navigation, merge, push, release, or history rewrite.
+
+## Review round 16
+
+### Editor return rendering correction
+
+- A completed editor Save already applied the correct native packed category,
+  but Game Info could render Steam's non-Steam placeholder on return. The
+  history re-entry shield was armed for the exact Game Info destination, then
+  ignored because joined Steam route tokens still contained the metadata-editor
+  route.
+- `canRecoverStaleGameDetailRoute()` now permits that shield only when its
+  target is the exact same app's Library detail route and no current token
+  explicitly names Home, a controller page, a collection, or another game.
+  Generic route templates cannot recover stale tokens. The existing in-call
+  truth window still wins, and ordinary outside-detail calls keep their native
+  shortcut result.
+- The focused regression models editor Save applying Unsupported, Done using
+  the patched history `goBack()`, stale editor tokens during the first native
+  renderer call, and a rich matched Game Info result with Unsupported retained.
+  Existing Home and controller tests retain their fail-closed, unspent-shield
+  boundary.
+
+### Red-to-green and local package handoff
+
+- Before the correction, the focused stale-editor renderer regression failed
+  with `non-Steam placeholder` instead of `rich matched Game Info`:
+  `/tmp/Decky-Metadata/round16-regression-failure.log`.
+- The focused run passed `3` Vitest files / `80` tests (`4` existing skips):
+  `./run.sh npm test -- src/steam/metadataPatch.test.ts
+  src/steam/routerPatches.test.ts src/steam/spoofDecision.test.ts`.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript,
+  Rollup, `27` Vitest files / `473` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, version checks, and review-note retention. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round16-quality-gates.log`.
+- `./run.sh npm run package` produced the ignored local
+  `Decky-Metadata.zip`, version `0.3.14+c0652f6`, SHA-256
+  `0f0550bf3824000a2b4efe55296103ff0d1dfdfc03b90b76c77cc8b13ef3c552`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round16-package.log`.
+  This correction made no Deck connection, deployment, installation, fixture,
+  setting, navigation, integration, push, release, or history rewrite.
