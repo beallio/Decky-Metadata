@@ -832,3 +832,43 @@ compatibility default, retain per-game precedence, and add the explicit
   Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round18-package.log`.
   Per review 18, no Steam Deck, SSH, debugger, deployment, installation,
   fixture, setting, or navigation command ran.
+
+## Review round 19
+
+### Editor-route render identity
+
+- The confirmed live failure did not replace the native observable-map entry.
+  It occurred when a packed compatibility write re-rendered the still-mounted
+  Game Info tree while its exact `/decky-metadata/<appid>` editor route was
+  current. The generic Library-detail predicate rejected that route, so Steam
+  rendered the native non-Steam placeholder for that mounted tree.
+- `isCurrentMatchedRenderRoute()` now has a deliberately separate editor-route
+  branch. It accepts only the exact editor route for the same shortcut, and
+  rejects a different app, an unmatched shortcut, extra editor path segments,
+  and joined conflicting route tokens. `isCurrentGameInfoRoute()` remains
+  unchanged for compatibility deferral, so entering the editor still releases
+  the held update and a later editor Save remains authoritative.
+- The red-to-green regressions cover a packed-changing editor save retaining
+  the matched render identity, plus distinct and unmatched shortcuts retaining
+  native identity. The existing deferred-update test continues to cover editor
+  exit and latest-editor-choice precedence. The new tests initially failed:
+  nine absent-predicate assertions and two editor-identity assertions;
+  after the change, `./run.sh npx vitest run src/steam/core.test.ts
+  src/steam/spoofDecision.test.ts src/steam/metadataPatch.test.ts` passed
+  `3` files / `119` tests.
+
+### Validation and package handoff
+
+- `scripts/orchestration/run-quality-gates` passed TypeScript, Rollup,
+  `27` Vitest files / `484` passing tests (`4` existing skips), Python
+  byte-compilation, pytest, version checks, and the independent review-retention
+  audit (`no deleted review notes`). Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-19-quality.log`.
+- Commit `b807338` (`fix(steam): preserve editor route identity`) was packaged
+  locally. `./run.sh npm run package` produced the ignored
+  `Decky-Metadata.zip`, version `0.3.14+b807338`, SHA-256
+  `71547dc8b04524b6ba4a1f3b4745075a696fc865b353fced991f7cefff966802`.
+  Output: `/tmp/Decky-Metadata/compatibility-status-defaults-round19-package.log`.
+  Per review 19, no Steam Deck, SSH, debugger, deployment, installation,
+  fixture, setting, navigation, integration, push, release, or history rewrite
+  command ran.
