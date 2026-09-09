@@ -1192,21 +1192,106 @@ describe("compatibility metadata application", () => {
     expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0f);
   });
 
-  it("reconstructs a held update after an in-place reload without applying it during the view", () => {
+  it("preserves the held category when repeated global changes return to it before an active replacement", () => {
+    const appId = 9464;
+    const initial = installCompatibilityOverview(appId, 0x9a);
+    let currentOverview: any = initial;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? currentOverview : null,
+      UpdateAppOverview: (incoming: any) => {
+        appInfoStore.OnAppOverviewChange([incoming]);
+        currentOverview = {
+          ...currentOverview,
+          steam_hw_compat_category_packed: incoming.steam_hw_compat_category_packed(),
+        };
+        appStore.allApps = [currentOverview];
+        return currentOverview;
+      },
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    metadataState.compatibilityDefaultLoaded = true;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    setConfirmedCompatibilityDefault(3);
+    setConfirmedCompatibilityDefault(2);
+    appStore.UpdateAppOverview(incomingOverview(appId, 0x70));
+
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x7a);
+  });
+
+  it("preserves the held numeric Unknown category on an incoming active replacement", () => {
+    const appId = 9465;
+    const initial = installCompatibilityOverview(appId, 0xb0);
+    let currentOverview: any = initial;
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? currentOverview : null,
+      UpdateAppOverview: (incoming: any) => {
+        appInfoStore.OnAppOverviewChange([incoming]);
+        currentOverview = {
+          ...currentOverview,
+          steam_hw_compat_category_packed: incoming.steam_hw_compat_category_packed(),
+        };
+        appStore.allApps = [currentOverview];
+        return currentOverview;
+      },
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    metadataState.compatibilityDefault = 0;
+    metadataState.compatibilityDefaultLoaded = true;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    appStore.UpdateAppOverview(incomingOverview(appId, 0xaf));
+
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xa0);
+  });
+
+  it("reconciles a retained held update after a replacement during an in-place reload", () => {
     const appId = 9460;
-    const overview = installCompatibilityOverview(appId, 0xa0);
+    const overview = installCompatibilityOverview(appId, 0xaa);
     setRoute(`/library/app/${appId}/tab/GameInfo`);
     setConfirmedCompatibilityDefault(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
 
     retainCompatibilityBaselinesForReload();
     cancelCompatibilityDefaultLoad();
+    const replacement = {
+      ...overview,
+      steam_hw_compat_category_packed: 0x70,
+    };
+    const set = vi.fn();
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [replacement],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? replacement : null,
+      m_mapApps: {
+        get: (candidate: number) => candidate === appId ? replacement : undefined,
+        set,
+      },
+    };
     beginCompatibilityLifecycle();
-    metadataState.compatibilityDefault = 2;
+    metadataState.compatibilityDefault = 3;
     metadataState.compatibilityDefaultLoaded = true;
 
+    expect(applyCompatibilityDefault()).toBe(false);
+    expect(replacement.steam_hw_compat_category_packed).toBe(0x7a);
+    expect(set).not.toHaveBeenCalled();
+
     flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(replacement.steam_hw_compat_category_packed).toBe(0x7f);
   });
 
   it("clears a held update on real teardown instead of writing it later", () => {

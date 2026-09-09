@@ -297,7 +297,21 @@ const applyCompatibilityToOverview = (
   const metadata = metadataCache[String(appId)];
   const category = effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault);
   if (isCurrentGameInfoRoute(routeContext, appId)) {
-    deferActiveCompatibilityUpdate(appId, packedCompatibilityValue(overview) & 0xf, category);
+    const packed = packedCompatibilityValue(overview);
+    const heldNibble = packed & 0xf;
+    deferActiveCompatibilityUpdate(appId, heldNibble, category);
+    const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+    const heldPacked = (packed & ~0xf) | held;
+    if (heldPacked === packed) return false;
+    try {
+      // Reload adoption can find a replacement native object after the old
+      // hook lifetime ended. Restore only the held view state in place: the
+      // pending policy still waits for Game Info to exit, and this active
+      // object must not be republished under a new identity.
+      overview.steam_hw_compat_category_packed = heldPacked;
+    } catch {
+      // Steam can replace this private object while the active view is held.
+    }
     return false;
   }
   deferredCompatibilityUpdates.delete(appId);
@@ -577,9 +591,11 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   }
   if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
     const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
-    if (!deferActiveCompatibilityUpdate(appId, heldNibble, category)) return false;
-    const held = deferredCompatibilityUpdates.get(appId)?.heldNibble;
-    if (held === undefined) return false;
+    deferActiveCompatibilityUpdate(appId, heldNibble, category);
+    // An unchanged effective policy does not need a deferred exit flush, but
+    // Steam can still send a replacement with its native low nibble. Preserve
+    // the currently held Game Info state on that incoming object either way.
+    const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
     const heldPacked = (packed & ~0xf) | held;
     if (heldPacked === packed) return false;
     try {

@@ -446,8 +446,13 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
       const unlisten = history.listen((location: any) => {
         // This callback's new location is authoritative. currentRoutePath()
         // can still contain the departing Game Info path while Steam commits
-        // its browser tokens, so it must not keep the held update queued.
-        flushDeferredCompatibilityPublications(String(location?.pathname || ""));
+        // its browser tokens, so it must not keep the held update queued. The
+        // callback's query and hash can carry the selected tab, so preserve
+        // them instead of falling back to stale browser tokens.
+        const routeContext = [location?.pathname, location?.search, location?.hash]
+          .filter(Boolean)
+          .join(" ");
+        flushDeferredCompatibilityPublications(routeContext);
         armShieldForPath(location?.pathname || "", "listen", history);
       });
       if (typeof unlisten === "function") {

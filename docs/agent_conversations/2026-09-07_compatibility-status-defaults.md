@@ -637,3 +637,44 @@ compatibility default, retain per-game precedence, and add the explicit
   is not available in this session, so this candidate is delivered but not
   installed. The live active-view, reload, collection/filter, controller, and
   launch checks remain unrun; no fixture or user setting was changed.
+
+## Review round 14
+
+### Active replacement and route-context corrections
+
+- An incoming native overview now keeps the active Game Info view's held low
+  compatibility nibble even when the current effective policy already equals
+  that held state and no deferred exit flush is needed. The incoming object's
+  higher packed bits and exact native App ID remain unchanged.
+- A replacement native overview found after an in-place reload now receives an
+  adopted pending held nibble in place. The pending policy still waits for a
+  real Game Info exit, and this reconciliation does not publish another active
+  `m_mapApps` identity.
+- History-listener route context now joins the callback's pathname, search, and
+  hash. A query or hash-selected Game Info tab remains protected; a real
+  different-tab event releases the pending update without consulting stale
+  browser route tokens.
+
+### Red-to-green and local package handoff
+
+- The new focused regressions failed before the correction with four failures:
+  repeated global changes that return to the held state, numeric Unknown on an
+  incoming replacement, reload adoption after a native replacement, and a
+  query/hash Game Info history event. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-red.log`.
+- The corrected focused run passed `2` Vitest files / `61` tests (`4` existing
+  skips):
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-targeted.log`.
+- `./run.sh scripts/orchestration/run-quality-gates` passed TypeScript, Rollup,
+  `27` Vitest files / `470` passing tests, Python byte-compilation and pytest,
+  plus version-drift checking. The review-retention audit reported `no deleted
+  review notes`. Output:
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-quality-gates.log`
+  and `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-review-audit.log`.
+- `./run.sh npm run package` produced the local, ignored
+  `Decky-Metadata.zip` with version `0.3.14+5bd9551` and SHA-256
+  `ac07ed5c4e79b23618e7da7c99198e3d0d08de754e37a6f06caf670929e158a8`.
+  Package output is
+  `/tmp/Decky-Metadata/compatibility-status-defaults-round-14-package.log`.
+  This correction round made no Deck connection, deployment, installation,
+  fixture, setting, navigation, merge, push, release, or history rewrite.

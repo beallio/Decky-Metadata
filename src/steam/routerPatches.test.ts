@@ -41,7 +41,11 @@ import {
   notifyCompatibilityRevision,
 } from "./core";
 import { installMetadataPatches, setConfirmedCompatibilityDefault } from "./metadataPatch";
-import { installNonSteamQuickLinkPolicy, installRouterRenderPatches } from "./routerPatches";
+import {
+  installGameDetailReentryShield,
+  installNonSteamQuickLinkPolicy,
+  installRouterRenderPatches,
+} from "./routerPatches";
 
 afterEach(() => {
   mocks.routeHandlers.length = 0;
@@ -68,6 +72,71 @@ afterEach(() => {
 });
 
 describe("router compatibility publication", () => {
+  it("keeps a query/hash Game Info history event held until a real tab exit", () => {
+    const appId = 9714;
+    const overview = {
+      appid: appId,
+      app_type: 1073741824,
+      steam_hw_compat_category_packed: 0x6a,
+      BIsShortcut: () => true,
+      BIsModOrShortcut: () => true,
+    };
+    let historyListener: ((location: unknown) => void) | undefined;
+    const history = {
+      location: {
+        pathname: `/library/app/${appId}`,
+        search: "?tab=GameInfo",
+        hash: "#compatibility",
+      },
+      listen: vi.fn((listener: (location: unknown) => void) => {
+        historyListener = listener;
+        return vi.fn();
+      }),
+    };
+    (globalThis as any).Router = {
+      WindowStore: { GamepadUIMainWindowInstance: { m_history: history } },
+    };
+    (globalThis as any).window = {
+      location: {
+        pathname: `/library/app/${appId}`,
+        search: "?tab=GameInfo",
+        hash: "#compatibility",
+      },
+    };
+    (globalThis as any).appStore = {
+      allApps: [overview],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
+    };
+    (globalThis as any).appDetailsStore = {};
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    const metadataUnpatchers: Array<() => void> = [];
+    installMetadataPatches(metadataUnpatchers);
+    setConfirmedCompatibilityDefault(3);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x6a);
+
+    const shieldUnpatchers: Array<() => void> = [];
+    installGameDetailReentryShield(shieldUnpatchers);
+    if (!historyListener) throw new Error("history listener was not installed");
+
+    historyListener({
+      pathname: `/library/app/${appId}`,
+      search: "?tab=GameInfo",
+      hash: "#compatibility",
+    });
+    expect(overview.steam_hw_compat_category_packed).toBe(0x6a);
+
+    historyListener({
+      pathname: `/library/app/${appId}`,
+      search: "?tab=Activity",
+      hash: "#compatibility",
+    });
+    expect(overview.steam_hw_compat_category_packed).toBe(0x6f);
+
+    shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
+    metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
+  });
+
   it("keeps retained quick-link wrappers single across a plugin reimport", () => {
     const appId = 9713;
     const overview = {
