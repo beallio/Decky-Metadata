@@ -294,3 +294,18 @@ mode. Its verdict is recorded in the merge commit, not an `APPROVED` review
 note. No human-approved finalize command is used; no finalized marker is
 expected on this path. Promotion to `main` and remote publication remain human
 gates outside this task.
+
+## Native layout follow-up — 2026-09-10
+
+After the external lifecycle completed, the maintainer requested a small
+separator adjustment. In OMP-native mode, the scope dropdown's separator was
+disabled and the explanation Field's standard bottom separator was enabled.
+The category separator and all policy behavior were left unchanged.
+
+The full local quality gate passed (516 frontend tests, 4 skipped, backend
+pytest, type check, build, and Python compilation). The frontend was deployed
+with `scripts/deck/deploy.sh --no-build`. Visual verification on the actual QAM
+confirmed no separator between **Apply default to** and its explanation, and
+one separator below the explanation and above **Refresh metadata**.
+Evidence: `/tmp/Decky-Metadata/separator-check-f7zetzc8/complete-scope-section.png`.
+README and behavior specifications are intentionally unchanged.
