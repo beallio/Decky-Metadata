@@ -64,17 +64,55 @@ depend on earlier tests initializing unrelated RPCs.
 - `./run.sh scripts/decky verify-change dev --explain` classified this as a
   device change and returned `DEFERRED` for the live checks.
 
-## Device and integration boundary
+## Device validation and acceptance — 2026-09-09/10
 
-On 2026-09-09 the doctor reported the Deck offline; direct SSH to `steamdeck`
-(`10.168.168.20`) returned `No route to host`. No toggle candidate was
-installed, and no device fixtures or settings were changed for this feature.
-The branch remains unmerged. Package creation is local preparation, not proof
-of delivery or installation.
+The Deck was initially unreachable. Once it returned, the complete ZIP
+`0.3.14+c80575f` was delivered and installed through Decky Loader's ZIP file
+picker. The final capture verified its manifest version and confirmed that the
+installed bundle's SHA-256 equals the local `dist/index.js` SHA-256.
 
-Required next checks once the Deck is reachable: install the full ZIP, exercise
-S41-S47 through the real QAM controls, check controller focus and disabled
-state, confirm native compatibility filter membership in both directions,
-verify held-view/reload behavior, run the required device smoke checks, and
-restore the captured settings and fixtures. Local tests do not establish
-visual or on-device correctness.
+Live results:
+
+- Scope on restored all four no-record shortcuts to their captured native
+  values. Recorded games, including a record without a Steam App ID, retained
+  the numeric default. Ordinary Steam games were unchanged.
+- The already-mounted native **Great on Deck** collection changed from
+  **42 -> 46 -> 42** as scope changed **on -> off -> on**.
+- QAM screenshots confirmed the toggle layout. D-pad Down moved from the
+  default dropdown to the toggle and then Refresh metadata. A activated and
+  saved the toggle, with focus retained on the control.
+- Matched Game Info retained rich content while scope changed. A no-record
+  game's active Game Info held Verified while scope was enabled; leaving the
+  view then restored its native category.
+- A temporary metadata record was saved for the existing no-record Heroic
+  launcher shortcut `3245664592`. With scope on, saving that record applied
+  Verified despite having no Steam match. Removing only that temporary record
+  restored the original native category. No shortcut was created or deleted.
+- Follow Valve retained Playable with either scope. A fixed Verified override
+  remained Verified while an inheriting recorded game followed Unsupported.
+- Automatic disabled the toggle without clearing its saved true value.
+  In-place plugin reload retained it; choosing a numeric default afterward
+  again excluded the no-record shortcuts.
+- `scripts/deck/verify/run_all.sh --no-launch` passed quick links, re-render
+  (0 cache writes across three round trips), community fallback, and controller
+  layout isolation. Fixture-specific DLC/Points Shop coverage was skipped.
+- After the maintainer authorized this invocation,
+  `scripts/deck/verify/smoke_launch.sh 2312439508` passed: the game started with
+  64-bit game ID `9931852060871884800` and was terminated by the smoke script.
+
+All original metadata records, per-game choices, numeric default, and debug
+logging values were restored. The new scope setting is explicitly false,
+which is equivalent to its originally absent value. The browser handle and
+debugger tunnel were released.
+
+Evidence:
+
+- `/tmp/Decky-Metadata/matched-only-live-g2d6wibm/verification-result.json`
+- QAM, disabled-toggle, and native-filter screenshots in the same directory
+- `/tmp/Decky-Metadata/verification/20260909T152037Z/`
+- `/tmp/Decky-Metadata/diagnostics/20260910T073349Z/`
+
+The foreground agent accepts this candidate for local integration into `dev`.
+This is native OMP acceptance, not a completed external-orchestration review.
+No external implementer or finalizer is to be resumed for this abandoned run.
+Promotion to `main` and remote publication remain outside this task.

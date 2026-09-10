@@ -48,7 +48,7 @@ Relevant files:
 
 **Slug used throughout this plan:** `compat-default-matched-only`
 
-### Execution status — 2026-09-09
+### Execution status — 2026-09-10
 
 The external launch failed before implementation because the Codex account
 reached its usage limit. That lifecycle was explicitly abandoned after
@@ -56,9 +56,13 @@ confirming there was no implementer session or feature branch. Implementation
 continued in OMP-native mode on `feat/compat-default-matched-only`. Do not
 resume the external lifecycle against these native changes.
 
-Local review and quality gates pass. Device validation and integration remain
-blocked: `steamdeck` (`10.168.168.20`) returns `No route to host`. No toggle
-candidate has been installed or merged into `dev`.
+Local review, quality gates, and live device validation pass for `c80575f`.
+The full ZIP was installed through Decky Loader; its installed bundle matches
+the candidate. Native filter membership, controller operation, scope and
+record transitions, reload persistence, and the authorized launch smoke were
+verified. Device settings and test records were restored. The candidate is
+accepted for local integration into `dev` in OMP-native mode; `main` promotion
+and any remote push remain outside this task.
 
 The initial implementation tests were added after the source change, not
 red-first. The subsequent mutation control removed the scope condition and
