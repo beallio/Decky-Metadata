@@ -916,8 +916,18 @@ describe("MetadataPage compatibility status", () => {
 
   it("normalizes a cleared Steam ID and completes its consumer-visible refresh", async () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[15] = 3;
+    state.values[16] = "steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
     state.values[8] = "";
-    const cleared = makeMetadata({ steam_appid: null, steam_store_name: "", steam_store_url: "" });
+    const cleared = makeMetadata({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+      steam_store_name: "",
+      steam_store_url: "",
+    });
     backend.saveMetadata.mockResolvedValue(cleared);
     backend.enrichSteamApp.mockResolvedValue(null);
 
@@ -926,6 +936,15 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
     expect(state.values[8]).toBe("");
     expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — original Steam status)",
+    );
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+    }));
     expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");

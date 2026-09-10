@@ -1338,7 +1338,6 @@ const steamPatchTargetsReady = () => {
     }
 };
 const hasActivityStore = () => !!steamInternals().appActivityStore;
-const metadataCache = {};
 const NON_STEAM_APP_TYPE = 1073741824;
 const GAME_DETAIL_ROUTES = [
     "/library/app/:appid",
@@ -1353,7 +1352,8 @@ const GAME_ACTIVITY_ROUTES = [
     "/library/:collection/app/:appid/activity",
     "/library/:collection/app/:appid/activity/:rest",
 ];
-const metadataState = {
+const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
+const newCompatibilityMetadataState = () => ({
     bypassCounter: 0,
     metadataLoaded: false,
     metadataLoadPromise: null,
@@ -1370,8 +1370,36 @@ const metadataState = {
     compatibilityRevision: 0,
     lastObservedGameDetailAppId: 0,
     routeShield: null,
+});
+/**
+ * Decky loads a new module bundle during an in-place plugin import, while a
+ * mounted route can still hold callbacks from the retiring bundle. Keep the
+ * mutable compatibility runtime on SteamUI's global host for that handoff.
+ * A lifecycle change makes old asynchronous work inert; the shared object
+ * ensures a surviving editor observes the current cache, policy, and revision.
+ */
+const compatibilityRuntime = () => {
+    const host = globalThis;
+    const existing = host[COMPATIBILITY_RUNTIME_KEY];
+    if (existing &&
+        typeof existing === "object" &&
+        existing.metadataCache &&
+        existing.metadataState &&
+        existing.revisionListeners instanceof Set) {
+        return existing;
+    }
+    const runtime = {
+        metadataCache: {},
+        metadataState: newCompatibilityMetadataState(),
+        revisionListeners: new Set(),
+    };
+    host[COMPATIBILITY_RUNTIME_KEY] = runtime;
+    return runtime;
 };
-const compatibilityRevisionListeners = new Set();
+const runtime = compatibilityRuntime();
+const metadataCache = runtime.metadataCache;
+const metadataState = runtime.metadataState;
+const compatibilityRevisionListeners = runtime.revisionListeners;
 const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
 const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
 const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
@@ -4012,6 +4040,14 @@ const setConfirmedCompatibilityDefaultScope = (scope, lifecycleGeneration = meta
 const beginCompatibilityLifecycle = () => {
     metadataState.compatibilityLifecycleGeneration += 1;
     metadataState.compatibilityDefaultGeneration += 1;
+    // This object survives an in-place import so a retained editor and new QAM
+    // controls share one current runtime. Clear pending work from the retiring
+    // lifetime, while retaining its current cache until the startup refresh
+    // supplies an authoritative replacement.
+    metadataState.metadataLoadPromise = null;
+    metadataState.loadingMetadata.clear();
+    metadataState.loadingScreenshots.clear();
+    metadataState.appliedMetadataRef = {};
     metadataState.compatibilityDefault = null;
     metadataState.compatibilityDefaultLoaded = false;
     metadataState.compatibilityDefaultScope = "all";

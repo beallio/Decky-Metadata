@@ -652,6 +652,71 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
   });
 
+  it("restores the captured native value after a reloaded editor clears a Steam ID", () => {
+    const appId = 9121;
+    const unrelatedAppId = 9122;
+    const overview = installCompatibilityOverview(appId, 0x80);
+    const unrelated = {
+      appid: unrelatedAppId,
+      app_type: 1073741824,
+      BIsShortcut: () => true,
+      BIsModOrShortcut: () => true,
+      steam_hw_compat_category_packed: 0x91,
+    };
+    (globalThis as Record<string, unknown>).appStore = {
+      allApps: [overview, unrelated],
+      GetAppOverviewByAppID: (candidate: number) =>
+        candidate === appId ? overview : candidate === unrelatedAppId ? unrelated : null,
+    };
+    (globalThis as Record<string, unknown>).appDetailsStore = {};
+    const record = {
+      ...compatibilityMetadata(null, null),
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+    } as any;
+    metadataCache[String(appId)] = record;
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    metadataState.compatibilityDefaultScope = "no-steam";
+
+    // The editor is entered after the reload. A no-ID record first inherits
+    // the default, then its Steam match and scope change. Clearing that match
+    // must resolve from the acknowledged record, not its former Steam data.
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    record.steam_appid = 15100;
+    record.deck_compat_category = 2;
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8a);
+    setConfirmedCompatibilityDefaultScope("steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+
+    retainCompatibilityBaselinesForReload();
+    cancelCompatibilityDefaultLoad();
+    beginCompatibilityLifecycle();
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    metadataState.compatibilityDefaultScope = "steam";
+    record.steam_appid = null;
+    record.deck_compat_category = null;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x80);
+    expect(unrelated.steam_hw_compat_category_packed).toBe(0x91);
+    expect(record).toEqual(expect.objectContaining({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+    }));
+
+    setConfirmedCompatibilityDefaultScope("no-steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    setConfirmedCompatibilityDefaultScope("steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x80);
+  });
+
   it("restores compatibility when a backend cache refresh removes the record", async () => {
     const appId = 9200;
     const overview = installCompatibilityOverview(appId, 0x4d);

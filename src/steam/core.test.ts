@@ -145,3 +145,52 @@ describe("getNativeOverview", () => {
     }
   });
 });
+
+describe("in-place reload compatibility runtime", () => {
+  it("keeps a retained editor callback on the current cache and scope after a reload", async () => {
+    const host = globalThis as Record<string, unknown>;
+    const runtimeKey = "__deckyMetadataCompatibilityRuntime";
+    const appId = 3245664592;
+    delete host[runtimeKey];
+
+    try {
+      vi.resetModules();
+      const retiring = await import("./core");
+      retiring.metadataCache[String(appId)] = {
+        steam_appid: 15100,
+        deck_compat_category: 2,
+      } as any;
+      retiring.metadataState.compatibilityDefault = 3;
+      retiring.metadataState.compatibilityDefaultScope = "steam";
+      const observed = vi.fn();
+      retiring.subscribeCompatibilityRevision(() => {
+        observed({
+          metadata: retiring.metadataCache[String(appId)],
+          scope: retiring.metadataState.compatibilityDefaultScope,
+        });
+      });
+
+      // `importPlugin` creates a new bundle lifetime. A retained editor from
+      // the previous one must see its cleared ID and the later scope-only
+      // revision, not its private pre-reload cache and policy.
+      vi.resetModules();
+      const active = await import("./core");
+      active.metadataCache[String(appId)] = {
+        steam_appid: null,
+        deck_compat_category: null,
+      } as any;
+      active.metadataState.compatibilityDefaultScope = "no-steam";
+      active.notifyCompatibilityRevision();
+
+      expect(active.metadataCache).toBe(retiring.metadataCache);
+      expect(active.metadataState).toBe(retiring.metadataState);
+      expect(observed).toHaveBeenCalledWith({
+        metadata: expect.objectContaining({ steam_appid: null, deck_compat_category: null }),
+        scope: "no-steam",
+      });
+    } finally {
+      delete host[runtimeKey];
+      vi.resetModules();
+    }
+  });
+});

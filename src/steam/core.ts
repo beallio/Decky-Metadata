@@ -26,8 +26,6 @@ export const steamPatchTargetsReady = () => {
 };
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
 
-export const metadataCache: Record<string, MetadataData> = {};
-
 export const NON_STEAM_APP_TYPE = 1073741824;
 export const GAME_DETAIL_ROUTES = [
   "/library/app/:appid",
@@ -43,7 +41,7 @@ export const GAME_ACTIVITY_ROUTES = [
   "/library/:collection/app/:appid/activity/:rest",
 ];
 
-export const metadataState: {
+type CompatibilityMetadataState = {
   bypassCounter: number;
   metadataLoaded: boolean;
   metadataLoadPromise: Promise<void> | null;
@@ -73,7 +71,17 @@ export const metadataState: {
     remaining: number;
     seqId: number;
   } | null;
-} = {
+};
+
+type CompatibilityRuntime = {
+  metadataCache: Record<string, MetadataData>;
+  metadataState: CompatibilityMetadataState;
+  revisionListeners: Set<() => void>;
+};
+
+const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
+
+const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   bypassCounter: 0,
   metadataLoaded: false,
   metadataLoadPromise: null,
@@ -90,9 +98,43 @@ export const metadataState: {
   compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
+});
+
+/**
+ * Decky loads a new module bundle during an in-place plugin import, while a
+ * mounted route can still hold callbacks from the retiring bundle. Keep the
+ * mutable compatibility runtime on SteamUI's global host for that handoff.
+ * A lifecycle change makes old asynchronous work inert; the shared object
+ * ensures a surviving editor observes the current cache, policy, and revision.
+ */
+const compatibilityRuntime = (): CompatibilityRuntime => {
+  const host = globalThis as Record<string, unknown>;
+  const existing = host[COMPATIBILITY_RUNTIME_KEY] as Partial<CompatibilityRuntime> | undefined;
+  if (
+    existing &&
+    typeof existing === "object" &&
+    existing.metadataCache &&
+    existing.metadataState &&
+    existing.revisionListeners instanceof Set
+  ) {
+    return existing as CompatibilityRuntime;
+  }
+  const runtime: CompatibilityRuntime = {
+    metadataCache: {},
+    metadataState: newCompatibilityMetadataState(),
+    revisionListeners: new Set<() => void>(),
+  };
+  host[COMPATIBILITY_RUNTIME_KEY] = runtime;
+  return runtime;
 };
 
-const compatibilityRevisionListeners = new Set<() => void>();
+const runtime = compatibilityRuntime();
+
+export const metadataCache = runtime.metadataCache;
+
+export const metadataState = runtime.metadataState;
+
+const compatibilityRevisionListeners = runtime.revisionListeners;
 
 export const compatibilityRevisionSnapshot = () =>
   metadataState.compatibilityRevision;

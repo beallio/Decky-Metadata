@@ -600,6 +600,14 @@ export const setConfirmedCompatibilityDefaultScope = (
 export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityLifecycleGeneration += 1;
   metadataState.compatibilityDefaultGeneration += 1;
+  // This object survives an in-place import so a retained editor and new QAM
+  // controls share one current runtime. Clear pending work from the retiring
+  // lifetime, while retaining its current cache until the startup refresh
+  // supplies an authoritative replacement.
+  metadataState.metadataLoadPromise = null;
+  metadataState.loadingMetadata.clear();
+  metadataState.loadingScreenshots.clear();
+  metadataState.appliedMetadataRef = {};
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
   metadataState.compatibilityDefaultScope = "all";
