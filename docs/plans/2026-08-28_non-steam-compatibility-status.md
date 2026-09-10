@@ -1,5 +1,9 @@
 # Plan: Add Non-Steam Compatibility Status Overrides (non-steam-compatibility-status)
 
+> **Historical plan — implementation is on `dev` (`c9fec7d`).**
+> Later defaults and scopes extend this original design. Do not relaunch it.
+> See the [current compatibility contract](../specs/compatibility-status.md).
+
 ## Context
 
 Issue #4 asks for a per-game control that changes the Steam Deck compatibility

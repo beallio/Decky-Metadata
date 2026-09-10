@@ -1,0 +1,196 @@
+# Compatibility status
+
+## User behavior
+
+Decky Metadata can set a Steam compatibility category on native non-Steam
+shortcuts. The QAM **Default compatibility status** applies to the group
+selected by **Apply default to**.
+Its choices are, in order: **Automatic — use matched Steam status**,
+**Verified**, **Playable**, **Unsupported**, and **Unknown**.
+
+The per-game **Compatibility status** has, in order: **Use global default**,
+**Follow Valve**, **Verified**, **Playable**, **Unsupported**, and **Unknown**.
+A fixed per-game choice wins over all other sources. Follow Valve ignores the
+global default. It uses the current Steam match's category only; if none is
+available, Steam keeps the shortcut's original status. Use global default uses
+the numeric QAM category when selected, otherwise it uses the matched Steam
+category or the original status when unavailable.
+
+Unknown is an available Valve category, not missing data. Steam presents it
+without a compatibility badge. All manual and default categories are choices
+made by the user. They do not mean Valve certified the shortcut, and they do
+not describe emulator performance.
+
+Saving a default saves it immediately. Eligible shortcuts other than the game
+currently open on the **Game Info** tab update immediately. The active Game
+Info game keeps its applied value and rich content until the user leaves that
+tab. Closing QAM or a context-menu overlay does not release it. A different
+tab, page, or game releases it; opening **Decky metadata...** is also an exit.
+The pending work then uses the latest default, match, and per-game choice, so a
+later editor Save wins over a formerly queued default.
+
+**Apply default to** has four choices, in this order:
+
+1. **Steam-matched games**: saved records with a valid positive Steam App ID.
+2. **Saved games without a Steam ID**: saved records without a valid Steam App
+   ID. This includes manual and provider records.
+3. **All games with saved metadata**: every saved record.
+4. **All non-Steam games**: every native non-Steam shortcut, including one
+   with no record.
+
+The selector uses record presence and Steam App ID. It does not use provider
+name or current store availability. A delisted game with a valid ID is
+Steam-matched. An IGN record can be Steam-matched. A shortcut with no record
+is not a manual record. Fixed per-game categories and Follow Valve always win
+before the scope. A game outside the selected scope uses its Valve category or
+its original native status. The selector is unavailable while the default is
+Automatic, but it keeps its saved value. A change applies at once under the
+same active-Game-Info deferral as any other default change.
+
+## Scenario reference
+
+`Original` is the native shortcut status before Decky Metadata changed it.
+
+| ID | Global | Per-game condition | Expected result |
+| --- | --- | --- | --- |
+| S01 | Automatic | Legacy null/absent; Valve Playable | Playable; editor shows Use global default. |
+| S02 | Verified | Unmatched, Use global default | Verified. |
+| S03 | Verified | Valve Unsupported, Use global default | Verified. |
+| S04 | Verified | No metadata record | Verified; no record is created. |
+| S05 | Verified | Shortcut appears after bootstrap | Verified when its native overview exists. |
+| S06 | Playable | Valve Verified, Use global default | Playable. |
+| S07 | Unsupported | Valve Verified, Use global default | Unsupported. |
+| S08 | Unknown | Valve Verified, Use global default | Unknown; remove a positive badge. |
+| S09 | Unsupported | Fixed Verified | Verified. |
+| S10 | Verified | Fixed Playable | Playable. |
+| S11 | Verified | Fixed Unsupported | Unsupported. |
+| S12 | Verified | Fixed Unknown | Unknown; never fall back. |
+| S13 | Verified | Follow Valve, Valve Playable | Playable. |
+| S14 | Verified | Follow Valve, Valve Unknown | Unknown; 0 is available. |
+| S15 | Verified | Follow Valve, no Steam match | Original. |
+| S16 | Verified | Follow Valve, no category | Original. |
+| S17 | Any | Follow Valve category Playable -> Verified | Verified after normal refresh. |
+| S18 | Verified | Follow Valve unavailable -> Playable | Playable after normal refresh. |
+| S19 | Verified -> Unsupported | Inherit, Follow Valve, and fixed games | Only inheriting game follows global change. |
+| S20 | Verified -> Automatic | Inheriting game with Valve Playable | Playable. |
+| S21 | Verified -> Automatic | Inheriting game without category | Original, not old Verified. |
+| S22 | Verified | Follow Valve -> Use global default | Verified after Save. |
+| S23 | Verified | Use global default -> Follow Valve | Valve category or Original after Save. |
+| S24 | Any | Scan, enrichment, or unrelated save | Keep numeric and valve per-game choices. |
+| S25 | Verified | Follow Valve match removed or reassigned | Keep Follow Valve; do not reuse old category. |
+| S26 | Verified | Record removed or cache cleared | Inherit global; global setting persists; injected Activity clears. |
+| S27 | Any | Plugin reload then overview replacement | Reload and apply saved policy to exact native shortcuts. |
+| S28 | Any | Dismount during callback | Restore baselines; late callback is inert. |
+| S29 | Any | Steam game or official-ID alias | No mutation, badge, or filter change. |
+| S30 | Any | Global or per-game save fails/cancels | Last confirmed setting remains active; show failures. |
+| S31 | Any | Old load completes after successful save | New confirmed choice stays active. |
+| S32 | Automatic / Follow Valve | Nonzero Original and no Valve data | Preserve Original and high packed bits. |
+| S33 | Automatic -> Verified | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
+| S34 | Several global changes | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
+| S35 | Changed global default | Close QAM or cancel a context-menu overlay | Do not release the pending update while Game Info remains selected. |
+| S36 | Changed global default | Open Decky metadata... from active Game Info | Editor navigation exits; its explicit Save wins over the old queued default. |
+| S37 | Changed global default | Navigate from game A Game Info to game B | Release A only; do not transfer A's state to B. |
+| S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
+| S39 | Changed global default | Plugin reload or unload while pending | In-place reload retains/reconstructs pending work; real unload clears it and restores baselines. |
+| S40 | Any global change | Active Game Info has unchanged fixed or Follow Valve result | Keep that result; do not force an active-view refresh. Other eligible games still update. |
+| S41 | Verified, Steam-matched games | Shortcut with no record | Original; no record is created. |
+| S42 | Verified, saved games without a Steam ID | Manual or provider record without an ID | Verified. |
+| S43 | Verified, Steam-matched games | IGN record with a valid Steam ID | Verified. |
+| S44 | Verified, all games with saved metadata | Shortcut with no record | Original; it is outside the scope. |
+| S45 | Automatic, any saved scope | Any shortcut | No visible change; the selector is unavailable and its value persists. |
+| S46 | Verified | Scope changes while a Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
+| S47 | Verified, Steam-matched games | An inheriting record loses its Steam ID | Valve category or Original; it leaves the scope. |
+| S48 | Verified, saved games without a Steam ID | A record gains a valid Steam ID | Valve category or Original; it leaves the scope. |
+
+## Technical contract
+
+Settings JSON stores `settings.deck_compat_default` as `0`, `1`, `2`, `3`, or
+`null`; missing and null both mean Automatic. Values map to Unknown,
+Unsupported, Playable, and Verified. Invalid persisted values, including
+booleans, load as Automatic. `get_compatibility_default()` and
+`set_compatibility_default(category)` return the persisted numeric-or-null
+value. The setter rejects any other input without changing the saved or
+in-memory value.
+
+Settings JSON stores `settings.deck_compat_default_scope` as `steam`,
+`no-steam`, `metadata`, or `all`. The getter returns `all` when the key is
+absent. The setter accepts only these four exact strings and rejects booleans,
+numbers, null, and other strings with `invalid compatibility default scope`.
+A failed write restores the previous value or key absence.
+
+The load boundary migrates the older
+`settings.deck_compat_default_matched_only` boolean without writing the file.
+A valid canonical scope wins. Otherwise, legacy `true` becomes `metadata` and
+legacy `false`, absent, or invalid values become `all`. If both keys are
+absent, the canonical key remains absent in memory. If the legacy key exists,
+the resolved canonical scope exists in memory and the legacy key is removed.
+A later successful save writes only the canonical key.
+
+The frontend loads the numeric default and this scope as one policy before it
+reports the setting as loaded, so an inheriting shortcut is never resolved
+against a half-loaded policy. A confirmed scope change reuses the same single
+linear pass over native shortcut overviews as a confirmed default change.
+
+`MetadataData.deck_compat_override` and `MetadataRecord.deck_compat_override`
+store a number, `"valve"`, or null. Null or an omitted field means Use global
+default; `"valve"` means Follow Valve. Existing numeric values, including 0,
+keep their meaning. Existing null/omitted Automatic records become inheritance,
+so they retain their prior visible behavior while the global setting remains
+Automatic. `deck_compat_category` stays provider-owned and is numeric-or-null;
+the setting and `"valve"` are never written there.
+
+Metadata saves preserve an omitted override. Explicit null resets it to
+inheritance. A provider scan preserves the latest saved override under the data
+lock, even when its sanitized provider shell contains null. Refresh,
+enrichment, scans, and Steam-ID changes preserve the per-game override but
+clear a stale provider category when it no longer belongs to the current
+match. Removing a record removes that per-game choice and recomputes
+inheritance; clearing metadata does not change the global setting.
+
+For scope classification, a Steam App ID is a positive safe integer. Numeric
+strings are normalized first. Booleans, fractions, non-finite values, zero,
+negative values, and malformed strings are not Steam IDs.
+
+For an unchanged Steam match, a failed or malformed Valve lookup keeps a valid
+last-known provider category, including Unknown (0). An authoritative Valve
+response with no category clears it. The plugin never carries a cached category
+through a changed or removed Steam App ID.
+
+The frontend loads one confirmed setting at startup. A requested value is not
+published until the backend save succeeds. A shared mount generation makes old
+setting saves, setting loads, metadata loads, and bootstrap callbacks inert
+after dismount. Policy application makes one linear pass over exact native
+shortcut overviews, retains high packed bits, captures native low-nibble
+baselines before mutation, and publishes one shared revision after a changed
+batch. Metadata refresh uses one native-entry batch for metadata records; it
+does not rescan the full library once per global-only baseline. Availability
+changes publish a revision even when the packed value already matches, so
+mounted Home/grid badges update. The same resolver serves startup, incoming
+overviews, metadata removal, detail state, and mounted Home/grid indicators.
+It never writes through a matched official-AppID alias or a regular Steam game.
+
+While the exact main-window Game Info tab is active, the plugin keeps a small
+in-memory record keyed by the native shortcut App ID and does not mutate that
+shortcut's packed compatibility field. An incoming replacement receives the
+held low nibble. On a real history exit, the plugin resolves the current
+overview and current policy in one bounded batch, then publishes the changed
+native entries. The history callback's new location is authoritative during
+navigation. In-place reload retains this pending intent with compatibility
+baselines; real teardown clears it before restoring baselines.
+
+Render identity has one more valid route than this deferral. The plugin's own
+editor route, `/decky-metadata/<appid>` with or without Steam's `/routes/`
+prefix, belongs to that app's still-mounted detail tree, so a matched shortcut
+keeps its spoofed identity there while an editor Save writes a new packed
+value. Entering the editor still counts as a Game Info exit for deferral, and
+a later editor Save wins over a queued default. On that app's own render
+route, a positive truth window armed by `GetPerClientData` or
+`BHasRecentlyLaunched` never exposes native shortcut identity, because the
+finite render-shield hit budget can expire under a render flood and Steam
+caches the non-Steam placeholder it then renders. Only in-call truth inside
+`GetGameID` or `GetPrimaryAppID` outranks the render path, which preserves
+launch behavior.
+
+On plugin dismount, baseline restoration uses one native-entry lookup pass and
+late setting responses cannot reapply a category. VDF-only IDs wait for a real
+native overview; the plugin never fabricates an overview just to apply policy.

@@ -1,5 +1,9 @@
 # SteamGridDB artwork compatibility implementation — 2026-08-27
 
+> **Historical session — implementation is on `dev` (`fccb9cc`).**
+> Device limitations and issue-state statements below apply to their recorded
+> checkpoints; they do not report the current GitHub issue state.
+
 ## Objective
 
 Preserve the native shortcut identity for matched non-Steam shortcuts outside
@@ -301,7 +305,8 @@ launch. The dedicated tunnel was closed and its final status was `down`.
 - Other Steam builds and controller types/platforms remain unverified. The two
   stale delisted-fixture failures are unrelated to the artwork route scope and
   remain outside this plan.
-- Issue #5 remains open until a published release contains this fix.
+- At this checkpoint, issue #5 was left open pending a published release.
+  This historical log does not track the issue's current GitHub state.
 
 The dedicated CDP tunnel on port 18085 was closed after capture; its final
 status was `down` (the status command uses a nonzero exit code for this expected

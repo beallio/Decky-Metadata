@@ -1,5 +1,9 @@
 # Per-game Steam shortcut names
 
+> **Historical session — implementation is on `dev` (`73bb7f2`).**
+> Integration does not imply verification on every device. The original
+> platform/UI limitations below remain explicit historical coverage limits.
+
 Date: 2026-09-06
 
 ## Objective

@@ -75,6 +75,7 @@ afterEach(() => {
   Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
   deckyNativeActivityCache().clear();
   metadataState.compatibilityRevision = 0;
+  metadataState.compatibilityLifecycleGeneration = 0;
   patchInstallStatus.activity = "pending";
   mocks.refreshSteamActivityForApp.mockReset();
   configureActivityMetadataLoader(async () => undefined, () => false);
@@ -116,6 +117,39 @@ describe("activity compatibility refresh", () => {
 
     expect(applyMetadata).not.toHaveBeenCalled();
     expect(compatibilityRevisionSnapshot()).toBe(0);
+  });
+
+  it("keeps a late activity refresh inert after the plugin lifecycle ends", async () => {
+    const appId = 9606;
+    installShortcut(appId);
+    const existing = makeMetadata(null, 1);
+    const refreshed = makeMetadata(null, 2);
+    metadataCache[String(appId)] = existing;
+    const applyMetadata = vi.fn(() => true);
+    configureActivityMetadataLoader(async () => undefined, applyMetadata);
+    metadataState.compatibilityLifecycleGeneration = 1;
+    let resolveRefresh!: (metadata: MetadataData | null) => void;
+    mocks.refreshSteamActivityForApp.mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }));
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    metadataState.compatibilityLifecycleGeneration += 1;
+    resolveRefresh(refreshed);
+    await Promise.resolve();
+
+    expect(metadataCache[String(appId)]).toBe(existing);
+    expect(applyMetadata).not.toHaveBeenCalled();
+
+    const nextAppId = 9607;
+    installShortcut(nextAppId);
+    metadataCache[String(nextAppId)] = existing;
+    metadataState.compatibilityLifecycleGeneration += 1;
+    mocks.refreshSteamActivityForApp.mockResolvedValue(refreshed);
+    await steamActivityPayloadForApp(nextAppId);
+    await vi.waitFor(() => expect(metadataCache[String(nextAppId)]).toBe(refreshed));
+    expect(applyMetadata).toHaveBeenCalledWith(nextAppId);
   });
 });
 

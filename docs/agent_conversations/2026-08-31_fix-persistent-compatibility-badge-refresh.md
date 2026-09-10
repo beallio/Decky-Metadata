@@ -1,5 +1,9 @@
 # Fix persistent compatibility badge refresh
 
+> **Historical session — implementation is on `dev` (`a229009`).**
+> Startup discovery follow-up: `b047d39`. Original evidence caveats are
+> retained; this is not an active implementation run.
+
 ## Date
 
 2026-08-31
