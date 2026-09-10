@@ -1,5 +1,10 @@
 # Plan: Add four compatibility default scopes (compatibility-default-scopes)
 
+> **Historical plan — implementation is on `dev` (`34e52a5`).**
+> Do not launch this completed plan again. Separator follow-up: `2982c86`.
+> See the [current compatibility contract](../specs/compatibility-status.md).
+> Authoring-time prerequisites and instructions below are retained as history.
+
 ## Context
 
 Replace the current matched-games-only toggle with a four-option native

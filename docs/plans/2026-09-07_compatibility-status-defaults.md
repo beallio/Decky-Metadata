@@ -1,5 +1,11 @@
 # Plan: Add global compatibility defaults and Follow Valve (compatibility-status-defaults)
 
+> **Historical plan — implementation is on `dev` (`ae29f34`).**
+> Do not launch this completed plan again. Global-scope behavior was extended
+> by the four-scope implementation in `34e52a5`.
+> See the [current compatibility contract](../specs/compatibility-status.md);
+> the instructions below describe the original task.
+
 ## Context
 
 Implement [issue #12](https://github.com/beallio/Decky-Metadata/issues/12):

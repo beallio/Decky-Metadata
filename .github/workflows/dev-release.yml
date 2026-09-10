@@ -2,7 +2,7 @@
 #
 # Each run publishes a distinct semver prerelease tagged vX.Y.Z-dev.g<sha> with a
 # release manifest + checksum, so the in-plugin updater can discover and install
-# it. This is separate from the rolling `dev` prerelease (release.yml), which
+# it. This is separate from the rolling `dev-build` prerelease (release.yml), which
 # stays a fixed-tag build for the on-device sideload loop and is NOT an updater
 # source (its tag is not semver, so discovery skips it).
 name: Dev Release

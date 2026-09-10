@@ -1,5 +1,10 @@
 # Fix npm audit findings
 
+> **Historical dependency plan — not current installation guidance.**
+> Later remediation is recorded in `80651e0`. Check current dependencies rather
+> than replaying old version pins; use the
+> [current workflow](../runbooks/agent-workflow.md).
+
 ## Objective
 
 Eliminate the eight high-severity `npm audit` findings in the frontend build

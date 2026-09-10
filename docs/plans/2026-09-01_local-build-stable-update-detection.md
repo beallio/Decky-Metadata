@@ -1,5 +1,9 @@
 # Local Build Stable Update Detection
 
+> **Historical plan — implementation is on `dev` (`8de2a9d`).**
+> Do not launch this completed plan again. Current local-build update behavior
+> is described in the [device runbook](../runbooks/on-device-verification.md).
+
 ## Problem Definition
 
 A local package uses `X.Y.Z+<hash>`. The updater correctly ignores build metadata for SemVer precedence, so a published stable `X.Y.Z` compares equal and is not selected. The QAM panel also blocks every local build from invoking Decky's installer. As a result, an installed local `0.3.11+<hash>` build cannot move to the published stable `0.3.11` release.

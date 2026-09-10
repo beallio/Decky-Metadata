@@ -1,5 +1,9 @@
 # Matched-games-only compatibility default
 
+> **Historical session — implemented in `5971737`, superseded by `34e52a5`.**
+> The boolean is now migration input only. Round statuses below are historical;
+> see the [current compatibility contract](../specs/compatibility-status.md).
+
 ## Scope and execution
 
 The maintainer selected saved metadata record membership as the meaning of
@@ -112,7 +116,8 @@ Evidence:
 - `/tmp/Decky-Metadata/verification/20260909T152037Z/`
 - `/tmp/Decky-Metadata/diagnostics/20260910T073349Z/`
 
-The foreground agent accepts this candidate for local integration into `dev`.
-This is native OMP acceptance, not a completed external-orchestration review.
+The candidate was integrated into `dev` as `5971737`. Its boolean scope was
+later replaced by four scopes in `34e52a5`. This was native OMP integration,
+not a completed external-orchestration review.
 No external implementer or finalizer is to be resumed for this abandoned run.
 Promotion to `main` and remote publication remain outside this task.

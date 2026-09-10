@@ -1,11 +1,10 @@
 # Runbook: On-Device Verification
 
 Every frontend change that touches Steam patching must be verified on the Deck
-before `dev` is considered good — the quality gates cover types/build/backend
-only, and two shipped fixes (the launch regression's armer assumption,
-`hide-quicklinks-row-nonsteam`'s insertion point) were wrong in ways only the
-live Steam tree reveals. Session logs must not defer these checks without
-naming who runs them and when; prefer running `run_all.sh` before merge.
+before `dev` is considered good. Local gates cover type checking, builds,
+frontend/backend tests, Python compilation, and version drift; they do not
+exercise the live Steam tree. Session logs must name any unrun live checks and
+their prerequisites. Run the applicable checks below before integration.
 
 ## Tooling (committed — do not recreate ad hoc)
 
@@ -19,7 +18,7 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | `cdp.py list\|eval\|reload\|wait-ready\|input\|screenshot` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets; `input [<target>] <key>…` dispatches synthetic D-pad/`enter`/`escape` key events (default target Big Picture) to drive gamepad focus without a physical controller; `screenshot OUTPUT.png [TARGET]` captures a visual page below `/tmp/Decky-Metadata` |
 | `screenshot.sh OUTPUT.png [TARGET]` | Opens the debugger tunnel and captures a PNG below `/tmp/Decky-Metadata/screenshots`; defaults to the composited `Steam Big Picture Mode` target and accepts a visual overlay target such as the active `QuickAccess_uid*` page |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
-| `install_release.sh <tag> [update\|downgrade]` | install a published GitHub *release* build via Decky's own installer (over CDP) — the way to move OFF a local `+hash` build onto a real release so the self-updater is enabled. Fetches the zip URL + whole-zip sha256, then fires `utilities/install_plugin`; you confirm the prompt on the Deck. See the self-update section below |
+| `install_release.sh <tag> [auto\|update\|downgrade]` | install a published GitHub release through Decky's installer; `auto` is the default. Fetches the ZIP URL and checksum and opens the on-device confirmation prompt. See the self-update section below. |
 | `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
 | `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate`; focus probes `gpfocus_dump` (read-only "what is selected now") and `focus_order` (active focusable inventory with rects) |
 | `verify/run_all.sh [--no-launch] [--extended]` | the suite using a persisted semantic fixture manifest; extended adds bounded idle sampling |
@@ -42,12 +41,18 @@ scripts/decky package-push --build --push
 
 Install the resulting zip through the Decky UI before running the live checks.
 
-Typical loop:
+Typical loop, after authorization for the current device:
 
 ```bash
-scripts/deck/deploy.sh            # push the current change
-scripts/deck/verify/run_all.sh    # verify (really launches a game briefly)
+./run.sh scripts/deck/deploy.sh
+./run.sh scripts/deck/verify/run_all.sh --no-launch
 ```
+
+The non-launch suite includes controller queries that populate Steam's
+in-memory cache. When the change also requires a launch check, obtain separate
+authorization for the exact fixture and run `smoke_launch.sh <appid>`.
+`run_all.sh` without `--no-launch` launches only when `MATCHED_APPID` is
+explicitly supplied; an automatically selected fixture is render-only.
 
 ## Which checks a change must run
 
@@ -347,8 +352,10 @@ To verify a published development-prerelease update, first put the Deck on a rea
 release build:
 
 ```bash
-# 1. Move onto a release (Decky's own installer; confirm the on-device prompt).
-scripts/deck/install_release.sh v0.3.1
+# 1. Resolve the latest published stable release, then use Decky's installer.
+#    This opens an on-device confirmation prompt; it is not a read-only check.
+stable_tag="$(gh release view --repo beallio/Decky-Metadata --json tagName --jq .tagName)" &&
+  ./run.sh scripts/deck/install_release.sh "$stable_tag" auto
 
 # 2. In the panel, enable "Receive development releases", then Check now. A newer
 #    dev prerelease (higher base, or same base + different -dev.g<sha>) is offered.
@@ -360,8 +367,10 @@ A successful cycle logs: `revalidate_success` → `Pending install saved` →
 `handoff_start (installer_api=callable)` → `handoff_resolved status=success` →
 (Decky uninstalls the old dir) → **`Startup reconciliation: Pending update
 promoted`** → a follow-up check reports "already up to date". That promotion line
-is the proof the restart + reconcile worked. Do **not** commit to `dev`/`main`
-mid-test — the post-commit hook reinstalls a local build over the release one.
+is the proof the restart + reconcile worked. A commit or merge on `dev`/`main`
+may build and copy a local ZIP to Downloads through the configured hook; it
+does not install that ZIP or replace the running release. Do not install the
+copied local ZIP while testing the release updater.
 
 **Why local builds use `+<hash>` and published dev builds use `-dev.g<sha>` (kept
 distinct on purpose).** They are two deployment paths with different jobs, and the
@@ -369,8 +378,10 @@ version scheme is what keeps them honest:
 
 - `+build` is semver **build metadata** — "built from this commit" — and is
   *ignored for precedence*. It correctly describes a working-copy build that may
-  not correspond to anything published. The `+` marker blocks development-channel
-  installation but permits an explicit handoff to a canonical stable release.
+  not correspond to anything published. The in-plugin updater blocks
+  development-channel installation from a local build, but permits an explicit
+  handoff to a canonical stable release of the same base version. This does not
+  prevent a separately authorized manual ZIP installation.
 - `-dev.g<sha>` is a semver **pre-release identifier** — it *does* affect
   precedence and announces "this is a distributable pre-release." That is only
   true of builds published through CI (`dev-release.yml`).

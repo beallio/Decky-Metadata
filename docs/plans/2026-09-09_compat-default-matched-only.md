@@ -1,5 +1,10 @@
 # Plan: Scope the compatibility default to matched games (compat-default-matched-only)
 
+> **Historical plan — implemented in `5971737`, superseded by `34e52a5`.**
+> Do not launch this completed plan again. The boolean is now migration input
+> only; current behavior uses four scopes.
+> See the [current compatibility contract](../specs/compatibility-status.md).
+
 ## Context
 
 The QAM **Default compatibility status** currently applies to every native
@@ -60,9 +65,10 @@ Local review, quality gates, and live device validation pass for `c80575f`.
 The full ZIP was installed through Decky Loader; its installed bundle matches
 the candidate. Native filter membership, controller operation, scope and
 record transitions, reload persistence, and the authorized launch smoke were
-verified. Device settings and test records were restored. The candidate is
-accepted for local integration into `dev` in OMP-native mode; `main` promotion
-and any remote push remain outside this task.
+verified. Device settings and test records were restored. The implementation
+was integrated into `dev` as `5971737` in OMP-native mode and subsequently
+superseded by four scopes in `34e52a5`; `main` promotion and remote publication
+were outside this task.
 
 The initial implementation tests were added after the source change, not
 red-first. The subsequent mutation control removed the scope condition and

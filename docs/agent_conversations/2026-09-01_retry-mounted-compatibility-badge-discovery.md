@@ -1,5 +1,9 @@
 # Retry mounted compatibility badge discovery
 
+> **Historical session — implementation is on `dev` (`b047d39`).**
+> Original checkpoints and final device evidence are retained below; this is
+> not an active implementation run.
+
 ## Date
 
 2026-09-01

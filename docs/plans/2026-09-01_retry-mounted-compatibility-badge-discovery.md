@@ -1,5 +1,9 @@
 # Plan: Retry mounted compatibility badge discovery after startup (retry-mounted-compatibility-badge-discovery)
 
+> **Historical plan — implementation is on `dev` (`b047d39`).**
+> Do not launch this completed plan again. Original verification evidence
+> remains below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 Updater installation of `0.3.11-dev.ga229009` is healthy, but the Home
