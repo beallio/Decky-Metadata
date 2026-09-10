@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import json
+
+import pytest
+
 import main
 
 
@@ -49,6 +54,20 @@ def test_steam_deck_compat_fetcher_returns_none_for_malformed_payload(monkeypatc
     ):
         monkeypatch.setattr(plugin, "_http_json", lambda _url, timeout=20, payload=payload: payload)
         assert plugin._steam_deck_compat_for_appid(123) is None
+
+
+def test_steam_deck_compat_lookup_marks_a_missing_category_field_as_failed(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {"success": 1, "results": {}},
+    )
+
+    lookup = plugin._steam_deck_compat_lookup_for_appid(123)
+
+    assert lookup.status == "failed"
+    assert lookup.category is None
 
 
 def test_steam_deck_compat_fetcher_swallows_http_errors(monkeypatch) -> None:
@@ -178,3 +197,484 @@ def test_metadata_with_steam_news_sync_keeps_manual_compatibility_override(monke
 
     assert enriched["deck_compat_category"] == 3
     assert enriched["deck_compat_override"] == 0
+
+
+def test_sanitize_metadata_preserves_follow_valve_override() -> None:
+    plugin = make_plugin()
+
+    sanitized = plugin._sanitize_metadata(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "deck_compat_override": "valve",
+        }
+    )
+
+    assert sanitized["deck_compat_override"] == "valve"
+
+
+def test_refresh_drops_stale_valve_category_when_the_match_changes(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (456, "https://store.steampowered.com/app/456", []),
+    )
+    monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", lambda steam_appid: None)
+
+    refreshed = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "steam_appid": 123,
+            "deck_compat_category": 3,
+            "deck_compat_override": "valve",
+        },
+        "Example",
+    )
+
+    assert refreshed["steam_appid"] == 456
+    assert refreshed["deck_compat_category"] is None
+    assert refreshed["deck_compat_override"] == "valve"
+
+
+def test_refresh_keeps_last_known_category_when_the_same_match_fetch_fails(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (123, "https://store.steampowered.com/app/123", []),
+    )
+
+    def fail_http_json(_url: str, timeout: int = 20):
+        raise OSError("temporary network failure")
+
+    monkeypatch.setattr(plugin, "_http_json", fail_http_json)
+
+    refreshed = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "steam_appid": 123,
+            "deck_compat_category": 2,
+        },
+        "Example",
+    )
+
+    assert refreshed["deck_compat_category"] == 2
+
+
+def test_refresh_keeps_last_known_unknown_when_the_same_match_fetch_fails(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (123, "https://store.steampowered.com/app/123", []),
+    )
+    monkeypatch.setattr(plugin, "_http_json", lambda _url, timeout=20: (_ for _ in ()).throw(OSError("offline")))
+
+    refreshed = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "steam_appid": 123,
+            "deck_compat_category": 0,
+        },
+        "Example",
+    )
+
+    assert refreshed["deck_compat_category"] == 0
+
+
+@pytest.mark.parametrize("category", [0, 2])
+def test_refresh_keeps_last_known_category_when_the_same_match_payload_is_malformed(
+    monkeypatch, category: int
+) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (123, "https://store.steampowered.com/app/123", []),
+    )
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {"success": 1, "results": {}},
+    )
+
+    refreshed = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "steam_appid": 123,
+            "deck_compat_category": category,
+        },
+        "Example",
+    )
+
+    assert refreshed["deck_compat_category"] == category
+
+
+def test_refresh_clears_the_category_when_valve_authoritatively_reports_none(monkeypatch) -> None:
+    plugin = make_plugin()
+    monkeypatch.setattr(
+        plugin,
+        "_steam_news_for_metadata",
+        lambda metadata, title, limit=6: (123, "https://store.steampowered.com/app/123", []),
+    )
+    monkeypatch.setattr(
+        plugin,
+        "_http_json",
+        lambda _url, timeout=20: {"success": 1, "results": {"resolved_category": None}},
+    )
+
+    refreshed = plugin._metadata_with_steam_news_sync(
+        {
+            "title": "Example",
+            "description": "",
+            "store_categories": [],
+            "steam_appid": 123,
+            "deck_compat_category": 2,
+        },
+        "Example",
+    )
+
+    assert refreshed["deck_compat_category"] is None
+
+
+def make_settings_plugin(tmp_path, monkeypatch) -> main.Plugin:
+    monkeypatch.setattr(main.decky, "DECKY_PLUGIN_SETTINGS_DIR", str(tmp_path), raising=False)
+    return main.Plugin()
+
+
+def test_compatibility_default_loads_missing_or_invalid_values_as_automatic(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    plugin._data_file.write_text(
+        json.dumps({"settings": {"debug_logging": True, "deck_compat_default": True}}),
+        encoding="utf-8",
+    )
+
+    assert asyncio.run(plugin.get_compatibility_default()) is None
+    assert plugin._data["settings"]["debug_logging"] is True
+
+
+def test_compatibility_default_persists_and_rejects_invalid_writes_without_mutation(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+
+    assert asyncio.run(plugin.set_compatibility_default(3)) == 3
+    with pytest.raises(ValueError, match="invalid compatibility default"):
+        asyncio.run(plugin.set_compatibility_default(True))
+    with pytest.raises(ValueError, match="invalid compatibility default"):
+        asyncio.run(plugin.set_compatibility_default("2"))
+
+    assert asyncio.run(plugin.get_compatibility_default()) == 3
+    persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"]["deck_compat_default"] == 3
+
+    fresh = make_settings_plugin(tmp_path, monkeypatch)
+    assert asyncio.run(fresh.get_compatibility_default()) == 3
+
+
+def test_failed_compatibility_default_save_keeps_the_confirmed_value(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.set_compatibility_default(2))
+    original_save = plugin._save_data
+
+    def fail_save() -> None:
+        raise OSError("simulated write failure")
+
+    monkeypatch.setattr(plugin, "_save_data", fail_save)
+    with pytest.raises(OSError, match="simulated write failure"):
+        asyncio.run(plugin.set_compatibility_default(3))
+
+    assert plugin._data["settings"]["deck_compat_default"] == 2
+    monkeypatch.setattr(plugin, "_save_data", original_save)
+    assert asyncio.run(plugin.get_compatibility_default()) == 2
+
+
+@pytest.mark.parametrize(
+    ("legacy", "expected"),
+    ((True, "metadata"), (False, "all"), ("yes", "all"), (None, "all")),
+)
+def test_compatibility_default_scope_migrates_legacy_boolean_without_rewriting(
+    tmp_path, monkeypatch, legacy, expected
+) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "settings": {
+            "debug_logging": True,
+            "deck_compat_default": 3,
+            "deck_compat_default_matched_only": legacy,
+        },
+        "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+    }
+    serialized = json.dumps(payload)
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == expected
+    assert plugin._data["settings"]["debug_logging"] is True
+    assert plugin._data["settings"]["deck_compat_default_scope"] == expected
+    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
+
+
+def test_compatibility_default_scope_prefers_valid_canonical_and_normalizes_invalid_values(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    plugin._data_file.write_text(
+        json.dumps(
+            {
+                "settings": {
+                    "deck_compat_default_scope": "steam",
+                    "deck_compat_default_matched_only": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "steam"
+    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
+
+    invalid = make_settings_plugin(tmp_path / "invalid", monkeypatch)
+    invalid._settings_dir.mkdir(parents=True, exist_ok=True)
+    invalid._data_file.write_text(
+        json.dumps(
+            {
+                "settings": {
+                    "deck_compat_default_scope": "bad",
+                    "deck_compat_default_matched_only": True,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert asyncio.run(invalid.get_compatibility_default_scope()) == "metadata"
+
+
+def test_invalid_canonical_scope_without_legacy_normalizes_in_memory_then_persists_on_save(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(
+        {
+            "settings": {
+                "debug_logging": True,
+                "deck_compat_default_scope": "bad",
+            },
+            "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+        }
+    )
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+    plugin._data_cache = None
+    plugin._data_cache_mtime_ns = None
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
+    assert plugin._data["settings"]["deck_compat_default_scope"] == "all"
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
+
+    assert asyncio.run(plugin.set_compatibility_default(3)) == 3
+    persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"] == {
+        "debug_logging": True,
+        "deck_compat_default": 3,
+        "deck_compat_default_scope": "all",
+    }
+    assert persisted["metadata"] == {"101": {"title": "unchanged", "steam_store_state": "unknown"}}
+
+
+def test_compatibility_default_scope_missing_keys_default_to_all_without_adding_a_key(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps({"settings": {"debug_logging": False, "deck_compat_default": 2}})
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
+    assert "deck_compat_default_scope" not in plugin._data["settings"]
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
+
+
+def test_compatibility_default_scope_persists_and_rejects_invalid_writes(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+
+    for scope in ("steam", "no-steam", "metadata", "all"):
+        assert asyncio.run(plugin.set_compatibility_default_scope(scope)) == scope
+    for invalid in (True, False, 1, 0, 1.0, "matched", "true", None):
+        with pytest.raises(ValueError, match="invalid compatibility default scope"):
+            asyncio.run(plugin.set_compatibility_default_scope(invalid))
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
+    persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"]["deck_compat_default_scope"] == "all"
+    assert "deck_compat_default_matched_only" not in persisted["settings"]
+
+    fresh = make_settings_plugin(tmp_path, monkeypatch)
+    assert asyncio.run(fresh.get_compatibility_default_scope()) == "all"
+
+
+def test_failed_compatibility_default_scope_save_restores_value_or_key_absence(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.set_compatibility_default_scope("steam"))
+
+    def fail_save() -> None:
+        raise OSError("simulated write failure")
+
+    monkeypatch.setattr(plugin, "_save_data", fail_save)
+    with pytest.raises(OSError, match="simulated write failure"):
+        asyncio.run(plugin.set_compatibility_default_scope("all"))
+    assert plugin._data["settings"]["deck_compat_default_scope"] == "steam"
+
+    absent = make_settings_plugin(tmp_path / "absent", monkeypatch)
+    absent._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps({
+        "settings": {"debug_logging": False},
+        "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+    })
+    absent._data_file.write_text(serialized, encoding="utf-8")
+    absent._data_cache = None
+    absent._data_cache_mtime_ns = None
+    assert asyncio.run(absent.get_compatibility_default_scope()) == "all"
+    original_save = absent._save_data
+    monkeypatch.setattr(absent, "_save_data", fail_save)
+    with pytest.raises(OSError, match="simulated write failure"):
+        asyncio.run(absent.set_compatibility_default_scope("metadata"))
+    assert "deck_compat_default_scope" not in absent._data["settings"]
+    assert absent._data_file.read_text(encoding="utf-8") == serialized
+
+    monkeypatch.setattr(absent, "_save_data", original_save)
+    assert asyncio.run(absent.set_compatibility_default_scope("metadata")) == "metadata"
+    persisted = json.loads(absent._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"]["deck_compat_default_scope"] == "metadata"
+
+
+def test_steam_appid_reassignment_clears_old_provider_category_and_keeps_follow_valve(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    original = asyncio.run(
+        plugin.save_metadata(
+            100,
+            {
+                "title": "Example",
+                "steam_appid": 123,
+                "deck_compat_category": 3,
+                "deck_compat_override": "valve",
+            },
+        )
+    )
+    reassigned = asyncio.run(
+        plugin.save_metadata(
+            100,
+            {
+                **original,
+                "steam_appid": 456,
+                # A full editor form can still contain the old category.
+                "deck_compat_category": 3,
+            },
+        )
+    )
+
+    assert reassigned["steam_appid"] == 456
+    assert reassigned["deck_compat_category"] is None
+    assert reassigned["deck_compat_override"] == "valve"
+
+
+def test_editor_match_removal_clears_old_provider_category_and_keeps_follow_valve(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    original = asyncio.run(
+        plugin.save_metadata(
+            100,
+            {
+                "title": "Example",
+                "steam_appid": 123,
+                "deck_compat_category": 3,
+                "deck_compat_override": "valve",
+            },
+        )
+    )
+
+    removed = asyncio.run(
+        plugin.save_metadata(
+            100,
+            {
+                **original,
+                "steam_appid": None,
+                # A full editor form can still carry data from the removed match.
+                "deck_compat_category": 3,
+            },
+        )
+    )
+
+    assert removed["steam_appid"] is None
+    assert removed["deck_compat_category"] is None
+    assert removed["deck_compat_override"] == "valve"
+
+
+def test_scan_save_preserves_a_sanitized_follow_valve_choice(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.save_metadata(100, {
+        "title": "Example",
+        "deck_compat_override": "valve",
+        "store_categories": [],
+    }))
+    provider_result = plugin._sanitize_metadata({
+        "title": "Example",
+        "description": "Provider result",
+        "store_categories": [],
+        "deck_compat_override": None,
+    })
+
+    asyncio.run(plugin._save_scan_pipeline_metadata(100, provider_result))
+
+    assert plugin._data["metadata"]["100"]["deck_compat_override"] == "valve"
+
+
+def test_scan_save_uses_the_latest_choice_when_an_editor_save_wins_the_race(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.save_metadata(100, {
+        "title": "Example",
+        "deck_compat_override": "valve",
+        "store_categories": [],
+    }))
+    provider_result = plugin._sanitize_metadata({
+        "title": "Example",
+        "description": "Provider result",
+        "store_categories": [],
+        "deck_compat_override": None,
+    })
+    asyncio.run(plugin.save_metadata(100, {
+        "title": "Example",
+        "deck_compat_override": 0,
+        "store_categories": [],
+    }))
+
+    asyncio.run(plugin._save_scan_pipeline_metadata(100, provider_result))
+
+    assert plugin._data["metadata"]["100"]["deck_compat_override"] == 0
+
+
+def test_scan_save_keeps_a_trusted_category_for_a_new_steam_match(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    asyncio.run(plugin.save_metadata(100, {
+        "title": "Example",
+        "steam_appid": 123,
+        "deck_compat_category": 3,
+        "deck_compat_override": "valve",
+        "store_categories": [],
+    }))
+
+    asyncio.run(plugin._save_scan_pipeline_metadata(100, {
+        "title": "Example",
+        "steam_appid": 456,
+        "deck_compat_category": 2,
+        "deck_compat_override": None,
+        "store_categories": [],
+    }))
+
+    saved = plugin._data["metadata"]["100"]
+    assert saved["steam_appid"] == 456
+    assert saved["deck_compat_category"] == 2
+    assert saved["deck_compat_override"] == "valve"

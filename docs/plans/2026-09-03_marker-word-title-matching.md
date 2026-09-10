@@ -1,5 +1,9 @@
 # Plan: Match games titled only with stripped marker words (marker-word-title-matching)
 
+> **Historical plan — implementation is on `dev` (`c192aae`).**
+> Do not launch this completed plan again. Original verification evidence
+> remains below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 Decky Metadata cannot resolve a Steam app ID for a game whose title consists

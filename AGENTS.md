@@ -12,13 +12,13 @@ Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gami
 
 - **Frontend:** TypeScript / React in `src/*.ts(x)`, bundled by **rollup** into
   `dist/index.js` (the committed plugin artifact). Tooling is **npm / pnpm**.
-- **Backend:** a single-file Python module, `main.py`, using only the standard
-  library and the Decky runtime.
+- **Backend:** the Decky entry point `main.py` plus the `backend/` package,
+  using only the Python standard library and the Decky runtime.
 
 There is **no uv project layout** here, but Python backend tests run through
 `uv run --with pytest` in an ephemeral environment (`.protocol: TDD_REQUIRED=true`).
-The quality gate is build + static check + pytest, defined in
-`scripts/orchestration-hooks/quality-gates`.
+The quality gate covers type checking, build, frontend tests, and backend checks.
+It is defined in `scripts/orchestration-hooks/quality-gates`.
 
 ---
 
@@ -62,7 +62,8 @@ package.json / tsconfig.json      # frontend build config (rollup, tsc)
 rollup.config.js                  # bundles src/ -> dist/index.js
 src/*.ts(x)                       # TypeScript/React frontend
 dist/index.js                     # committed build artifact
-main.py                           # Python backend (Decky)
+main.py                           # Decky backend entry point
+backend/                          # storage, matching, providers, and other backend modules
 plugin.json                       # Decky plugin manifest
 scripts/check_tdd.sh              # pre-commit sanity check
 scripts/orchestration            # symlink -> agent-orchestration engine
@@ -255,9 +256,10 @@ the updater and Decky Loader verify). Then move the dev base to the next patch s
 the drift guard stays green:
 
 ```
-scripts/release.sh 0.1.1
+# Replace X.Y.Z with the human-approved version matching the curated changelog.
+scripts/release.sh X.Y.Z
 git push origin main
-git push origin v0.1.1
+git push origin vX.Y.Z
 scripts/bump_next_patch.sh
 ```
 
@@ -319,8 +321,8 @@ while its manifest/list name is `Storage Cleaner`.
 
 **Release channels.** Two GitHub prerelease flows exist and must not be
 conflated:
-- The rolling `dev` prerelease (auto-refreshed on every `dev` push, fixed `dev`
-  tag) is for the on-device sideload loop only. Its non-semver tag means the
+- The rolling `dev-build` prerelease (auto-refreshed on every `dev` push, fixed
+  `dev-build` tag) is for the on-device sideload loop only. Its non-semver tag means the
   self-updater's discovery deliberately skips it — it is **not** an update
   source.
 - The **Dev Release** workflow (`.github/workflows/dev-release.yml`, manual
@@ -330,8 +332,9 @@ conflated:
 
 Version grammar the updater parses (and `scripts/package.mjs --release-version`
 accepts): `X.Y.Z`, optionally `-dev.<id>` (development channel) and/or
-`+<build>` metadata. A local `npm run package` still stamps `X.Y.Z+<hash>`,
-which the panel treats as a non-updatable local build.
+`+<build>` metadata. A local `npm run package` still stamps `X.Y.Z+<hash>`.
+The in-plugin updater does not replace it with a development prerelease, but
+offers an explicit **Move to Stable** handoff when canonical `X.Y.Z` is published.
 
 README screenshots are committed
 under `assets/` and use stable relative paths with a

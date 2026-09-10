@@ -1,5 +1,9 @@
 # Plan: Clear Activity news when metadata is removed (clear-removed-activity-news)
 
+> **Historical plan — implementation is on `dev` (`3d10062`).**
+> Do not launch this completed plan again. Original verification evidence
+> remains below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 ### Problem and evidence

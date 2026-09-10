@@ -1,10 +1,19 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
 
 export type Unpatch = () => void;
+
+export type DeferredCompatibilityUpdate = {
+  appId: number;
+  heldNibble: number;
+};
+
+type CompatibilityInFlightRequest = {
+  lifecycleGeneration: number;
+};
 
 export const patchInstallStatus = {
   activity: "pending",
@@ -26,8 +35,6 @@ export const steamPatchTargetsReady = () => {
 };
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
 
-export const metadataCache: Record<string, MetadataData> = {};
-
 export const NON_STEAM_APP_TYPE = 1073741824;
 export const GAME_DETAIL_ROUTES = [
   "/library/app/:appid",
@@ -43,15 +50,31 @@ export const GAME_ACTIVITY_ROUTES = [
   "/library/:collection/app/:appid/activity/:rest",
 ];
 
-export const metadataState: {
+type CompatibilityMetadataState = {
   bypassCounter: number;
   metadataLoaded: boolean;
   metadataLoadPromise: Promise<void> | null;
+  /** Current ownership for per-app work; legacy Sets remain for retiring bundles. */
+  metadataRequestOwners: Map<number, CompatibilityInFlightRequest>;
+  screenshotRequestOwners: Map<number, CompatibilityInFlightRequest>;
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
   /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /** Held Game Info work and editor publication both survive an in-place reload. */
+  deferredCompatibilityUpdates: Map<number, DeferredCompatibilityUpdate>;
+  deferredEditorCompatibilityPublications: Set<number>;
+  /** Confirmed global policy. Null is Automatic. */
+  compatibilityDefault: DeckCompatibilityCategory | null;
+  compatibilityDefaultLoaded: boolean;
+  /** Which native non-Steam shortcuts inherit the numeric global default. */
+  compatibilityDefaultScope: CompatibilityDefaultScope;
+  /** Invalidates stale backend loads after a confirmed save or dismount. */
+  compatibilityDefaultGeneration: number;
+  /** Distinguishes one plugin mount from async work left by an older mount. */
+  compatibilityLifecycleGeneration: number;
+  compatibilityDefaultLoadPromise: Promise<DeckCompatibilityCategory | null> | null;
   /** Bumps when a compatibility choice needs Steam's current route to render again. */
   compatibilityRevision: number;
   lastObservedGameDetailAppId: number;
@@ -63,23 +86,105 @@ export const metadataState: {
     remaining: number;
     seqId: number;
   } | null;
-} = {
+};
+
+type CompatibilityRuntime = {
+  metadataCache: Record<string, MetadataData>;
+  metadataState: CompatibilityMetadataState;
+  revisionListeners: Set<() => void>;
+};
+
+const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
+
+const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   bypassCounter: 0,
   metadataLoaded: false,
   metadataLoadPromise: null,
+  metadataRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
+  screenshotRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  deferredCompatibilityUpdates: new Map<number, DeferredCompatibilityUpdate>(),
+  deferredEditorCompatibilityPublications: new Set<number>(),
+  compatibilityDefault: null,
+  compatibilityDefaultLoaded: false,
+  compatibilityDefaultScope: "all",
+  compatibilityDefaultGeneration: 0,
+  compatibilityLifecycleGeneration: 0,
+  compatibilityDefaultLoadPromise: null,
   compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
+});
+
+/**
+ * Decky loads a new module bundle during an in-place plugin import, while a
+ * mounted route can still hold callbacks from the retiring bundle. Keep the
+ * mutable compatibility runtime on SteamUI's global host for that handoff.
+ * A lifecycle change makes old asynchronous work inert; the shared object
+ * ensures a surviving editor observes the current cache, policy, and revision.
+ */
+const compatibilityRuntime = (): CompatibilityRuntime => {
+  const host = globalThis as Record<string, unknown>;
+  const existing = host[COMPATIBILITY_RUNTIME_KEY] as Partial<CompatibilityRuntime> | undefined;
+  if (
+    existing &&
+    typeof existing === "object" &&
+    existing.metadataCache &&
+    existing.metadataState &&
+    existing.revisionListeners instanceof Set
+  ) {
+    const state = existing.metadataState as CompatibilityMetadataState;
+    // Older bundles do not have the reload-owned maps. Keep their public Set
+    // fields for callbacks that still hold the retiring import, but make this
+    // import's authoritative guards and compatibility queues shared.
+    if (!(state.metadataRequestOwners instanceof Map)) {
+      state.metadataRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.screenshotRequestOwners instanceof Map)) {
+      state.screenshotRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.deferredCompatibilityUpdates instanceof Map)) {
+      state.deferredCompatibilityUpdates = new Map<number, DeferredCompatibilityUpdate>();
+    }
+    if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
+      state.deferredEditorCompatibilityPublications = new Set<number>();
+    }
+    return existing as CompatibilityRuntime;
+  }
+  const runtime: CompatibilityRuntime = {
+    metadataCache: {},
+    metadataState: newCompatibilityMetadataState(),
+    revisionListeners: new Set<() => void>(),
+  };
+  host[COMPATIBILITY_RUNTIME_KEY] = runtime;
+  return runtime;
 };
 
-const compatibilityRevisionListeners = new Set<() => void>();
+const runtime = compatibilityRuntime();
+
+export const metadataCache = runtime.metadataCache;
+
+export const metadataState = runtime.metadataState;
+
+const compatibilityRevisionListeners = runtime.revisionListeners;
 
 export const compatibilityRevisionSnapshot = () =>
   metadataState.compatibilityRevision;
+
+export const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
+
+export const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
+
+export const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
+
+export const compatibilityLifecycleSnapshot = () =>
+  metadataState.compatibilityLifecycleGeneration;
+
+export const isCompatibilityLifecycleCurrent = (generation: number) =>
+  generation === metadataState.compatibilityLifecycleGeneration;
 
 export const subscribeCompatibilityRevision = (listener: () => void): Unpatch => {
   compatibilityRevisionListeners.add(listener);
@@ -458,6 +563,95 @@ export const isCurrentGameDetailRoute = (routeContext: string, appId: number): b
     foundCurrentDetail = true;
   }
   return foundCurrentDetail;
+};
+
+/**
+ * The metadata editor is a separate route, but Steam keeps the selected
+ * game's Game Info tree mounted beneath it. For that exact app only, render
+ * identity must stay matched while the editor saves a changed packed value.
+ * This is intentionally separate from Game Info deferral: entering the editor
+ * still releases any held compatibility update.
+ */
+export const isCurrentMetadataEditorRoute = (routeContext: string, appId: number): boolean => {
+  if (!Number.isSafeInteger(appId) || appId <= 0) return false;
+  const tokens = String(routeContext || "").trim().split(/\s+/);
+  let foundCurrentEditor = false;
+  for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+    const token = tokens[index];
+    if (!token) continue;
+    let pathname = token;
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token)) pathname = new URL(token).pathname;
+      else if (!token.startsWith("/")) continue;
+      pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+    } catch (_error) {
+      continue;
+    }
+
+    const match = pathname.match(/^\/(?:routes\/)?decky-metadata\/(\d+)\/?$/i);
+    if (!match) return false;
+    const routeAppId = Number(match[1]);
+    if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId) return false;
+    foundCurrentEditor = true;
+  }
+  return foundCurrentEditor;
+};
+
+/**
+ * Render identity has one more valid route than compatibility deferral. The
+ * exact plugin editor is part of its selected app's still-mounted detail tree;
+ * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
+ */
+export const isCurrentMatchedRenderRoute = (routeContext: string, appId: number): boolean =>
+  isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
+
+/**
+ * True only for the exact Game Info tab of this app. Other detail tabs share
+ * the app route, but leaving Game Info must release a held compatibility
+ * update instead of treating the whole app page as protected.
+ */
+export const isCurrentGameInfoRoute = (routeContext: string, appId: number): boolean => {
+  if (!isCurrentGameDetailRoute(routeContext, appId)) return false;
+  return String(routeContext || "").split(/\s+/).some((token) =>
+    /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token)
+  );
+};
+
+/**
+ * A history listener can confirm an exact Game Info return before Steam's
+ * window and browser route tokens leave the metadata editor.  Let that short
+ * re-entry shield cover only this app and only when the current tokens contain
+ * no explicit destination that conflicts with it.  Generic route templates
+ * and a shield for another app cannot recover a stale route.
+ */
+export const canRecoverStaleGameDetailRoute = (routeContext: string, appId: number): boolean => {
+  const shield = metadataState.routeShield;
+  if (!shield || shield.appId !== appId) return false;
+  if (!isCurrentGameDetailRoute(shield.path, appId)) return false;
+
+  for (const token of String(routeContext || "").trim().split(/\s+/)) {
+    if (!token) continue;
+    let pathname = token;
+    try {
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token)) pathname = new URL(token).pathname;
+      else if (!token.startsWith("/")) continue;
+      pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+    } catch (_error) {
+      continue;
+    }
+
+    if (
+      /^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+      /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+      /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)
+    ) {
+      return false;
+    }
+
+    const routeAppId = gameDetailAppIdFromPath(pathname);
+    if (routeAppId && routeAppId !== appId) return false;
+  }
+  return true;
 };
 
 const appIdFromDom = () => {

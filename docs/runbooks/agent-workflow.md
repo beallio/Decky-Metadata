@@ -42,3 +42,15 @@ scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
 ```
 
 Use `--install` explicitly. The skill installer refuses external Git worktrees unless `--allow-external-worktree` is also supplied.
+
+## Documentation status
+
+[Compatibility behavior](../specs/compatibility-status.md) and this runbook are
+current guidance. Dated [plans](../plans/) and [session logs](../agent_conversations/)
+record their original task and verification state. Their status notices
+distinguish completed work, superseded designs, and unimplemented research.
+
+Do not execute a completed plan's retained setup or polling commands. A blocked
+checkpoint inside a historical session log is not necessarily a current blocker.
+Keep the original paths and review notes so audit references remain valid.
+Revalidate research proposals against current code before scheduling work.

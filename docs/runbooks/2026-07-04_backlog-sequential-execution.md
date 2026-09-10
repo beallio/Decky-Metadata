@@ -1,5 +1,12 @@
 # Runbook: Sequential execution of the remaining backlog plans with dual review
 
+> **Historical snapshot — not the current backlog or execution procedure.**
+> The July 2026 file layout and eight-plan sequence below are retained as an
+> audit record. Several listed decompositions have since landed; do not run
+> this sequence or apply its old environment block to current work.
+> Use [Agent Workflow](agent-workflow.md) and the status of each current plan.
+
+
 **Type:** orchestrator runbook (NOT an implementer plan — do not place in `docs/plans/`; it has
 no slug/markers and would confuse `validate-state`). This is the orchestrator's operating
 procedure for driving the 8 remaining thermo-nuclear-review backlog plans to completion, each

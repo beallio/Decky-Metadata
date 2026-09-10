@@ -1,5 +1,9 @@
 # Plan: Fix controller layout type filtering and expose controller types (controller-type-filtering)
 
+> **Historical plan — implementation is on `dev` (`a2d23cf`).**
+> Do not relaunch it. Original controller/platform coverage limitations remain
+> below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 Controller Settings currently forwards Steam's `filterOtherControllerTypes`

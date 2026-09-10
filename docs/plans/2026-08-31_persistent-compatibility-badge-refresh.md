@@ -1,5 +1,10 @@
 # Plan: Fix persistent compatibility badge refresh (persistent-compatibility-badge-refresh)
 
+> **Historical plan — implementation is on `dev` (`a229009`).**
+> The startup discovery follow-up landed in `b047d39`. Do not relaunch it.
+> Use the [current workflow](../runbooks/agent-workflow.md); original
+> verification evidence and exclusions remain below.
+
 ## Context
 
 The Steam Home compatibility badge for a saved non-Steam match disappears after

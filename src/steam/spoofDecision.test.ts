@@ -7,7 +7,7 @@ const base = {
   bypassCounter: 0,
   hasCache: true,
   path: "/library/app/123456",
-  isCurrentMatchedDetail: true,
+  isCurrentMatchedRenderRoute: true,
   consumeShield: () => false,
 };
 
@@ -43,7 +43,7 @@ describe("decideBIsModOrShortcut", () => {
   });
 
   it("in-call truth window outranks outside-detail pass-through", () => {
-    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, isCurrentMatchedDetail: false });
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: -1, isCurrentMatchedRenderRoute: false });
     expect(d).toMatchObject({ finalRet: true, reason: "in-call-truth" });
   });
 
@@ -67,7 +67,7 @@ describe("decideBIsModOrShortcut", () => {
   });
 
   it("uncached passthrough outside a detail route does not spoof", () => {
-    const d = decideBIsModOrShortcut({ ...base, hasCache: false, isCurrentMatchedDetail: false });
+    const d = decideBIsModOrShortcut({ ...base, hasCache: false, isCurrentMatchedRenderRoute: false });
     expect(d).toMatchObject({ finalRet: true, reason: "not-matched" });
   });
 
@@ -86,22 +86,37 @@ describe("decideBIsModOrShortcut", () => {
     expect(d).toMatchObject({ finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true });
   });
 
-  it("passes through outside the current matched detail without consulting the shield", () => {
+  it("uses an authoritative re-entry shield while editor route tokens are stale", () => {
     const consumeShield = vi.fn(() => true);
-    const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedDetail: false, consumeShield });
-    expect(d).toMatchObject({
-      finalRet: true,
-      reason: "outside-current-detail",
-      shieldConsulted: false,
-      shieldHit: false,
-      nextBypassCounter: 4,
+    const d = decideBIsModOrShortcut({
+      ...base,
+      isCurrentMatchedRenderRoute: false,
+      canRecoverStaleRoute: true,
+      consumeShield,
     });
-    expect(consumeShield).not.toHaveBeenCalled();
+    expect(d).toMatchObject({ finalRet: false, reason: "render-shield", shieldConsulted: true, shieldHit: true });
+    expect(consumeShield).toHaveBeenCalledOnce();
   });
+
+  it.each(["a different matched app", "a Home, controller, or collection route"])(
+    "keeps armed truth native for %s outside the current matched render",
+    () => {
+      const consumeShield = vi.fn(() => true);
+      const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, isCurrentMatchedRenderRoute: false, consumeShield });
+      expect(d).toMatchObject({
+        finalRet: true,
+        reason: "outside-current-detail",
+        shieldConsulted: false,
+        shieldHit: false,
+        nextBypassCounter: 4,
+      });
+      expect(consumeShield).not.toHaveBeenCalled();
+    }
+  );
 
   it("keeps a different shortcut native while another matched detail is active", () => {
     const consumeShield = vi.fn(() => true);
-    const d = decideBIsModOrShortcut({ ...base, isCurrentMatchedDetail: false, consumeShield });
+    const d = decideBIsModOrShortcut({ ...base, isCurrentMatchedRenderRoute: false, consumeShield });
     expect(d).toMatchObject({ finalRet: true, reason: "outside-current-detail", shieldConsulted: false });
     expect(consumeShield).not.toHaveBeenCalled();
   });
@@ -111,18 +126,17 @@ describe("decideBIsModOrShortcut", () => {
     expect(d).toMatchObject({ finalRet: false, reason: "normal-shortcut", nextBypassCounter: 0 });
   });
 
-  it("armed truth window decrements and yields truth until exhausted", () => {
-    // Armed to 4 by GetPerClientData/BHasRecentlyLaunched: 3 truths, then spoof.
-    let counter = 4;
-    const results: Array<{ finalRet: any; reason: string }> = [];
-    for (let i = 0; i < 4; i++) {
-      const d = decideBIsModOrShortcut({ ...base, bypassCounter: counter });
-      counter = d.nextBypassCounter;
-      results.push({ finalRet: d.finalRet, reason: d.reason });
-    }
-    expect(results.map((r) => r.finalRet)).toEqual([true, true, true, false]);
-    expect(results[3].reason).toBe("normal-shortcut");
-    expect(counter).toBe(0);
+  it("keeps the current matched render spoofed when an armed truth window outlives the shield", () => {
+    const consumeShield = vi.fn(() => false); // absent or exhausted
+    const d = decideBIsModOrShortcut({ ...base, bypassCounter: 4, consumeShield });
+    expect(d).toMatchObject({
+      finalRet: false,
+      reason: "render-route-truth-window",
+      shieldConsulted: true,
+      shieldHit: false,
+      nextBypassCounter: 4,
+    });
+    expect(consumeShield).toHaveBeenCalledOnce();
   });
 
   it("render shield takes a hit before the armed window is spent", () => {

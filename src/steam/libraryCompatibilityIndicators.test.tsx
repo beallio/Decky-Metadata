@@ -65,6 +65,41 @@ describe("resolveLibraryCompatibilityIndicator", () => {
     expect(resolveLibraryCompatibilityIndicator(input({ metadata: { deck_compat_override: null, deck_compat_category: 2 } }))).toBe(2);
   });
 
+  it("uses the global default for the all scope and lets Follow Valve bypass it", () => {
+    expect(resolveLibraryCompatibilityIndicator(input({ metadata: undefined, globalDefault: 3, globalScope: "all" }))).toBe(3);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: "valve", deck_compat_category: 2 },
+      globalDefault: 3,
+    }))).toBe(2);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: "valve", deck_compat_category: null },
+      globalDefault: 3,
+    }))).toBeNull();
+  });
+
+  it("uses Steam-ID scope metadata for mounted Home and grid cards", () => {
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2, steam_appid: "55150", source: "IGN" },
+      globalDefault: 3,
+      globalScope: "steam",
+    }))).toBe(3);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2 },
+      globalDefault: 3,
+      globalScope: "steam",
+    }))).toBe(2);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2 },
+      globalDefault: 3,
+      globalScope: "no-steam",
+    }))).toBe(3);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: undefined,
+      globalDefault: 3,
+      globalScope: "metadata",
+    }))).toBeNull();
+  });
+
   it("keeps explicit Unknown and unresolved Automatic as Steam's normal no-status state", () => {
     expect(resolveLibraryCompatibilityIndicator(input({ metadata: { deck_compat_override: 0 } }))).toBeNull();
     expect(resolveLibraryCompatibilityIndicator(input({ metadata: { deck_compat_override: null } }))).toBeNull();
@@ -1258,8 +1293,11 @@ describe("installLibraryCompatibilityIndicators", () => {
     }
   });
 
-  it("keeps Home and grid badge slots reactive when metadata arrives after their first render", () => {
-    let metadata: Parameters<typeof resolveLibraryCompatibilityIndicator>[0]["metadata"];
+  it("keeps mounted Home and grid badges reactive when Follow Valve data appears or disappears", () => {
+    let metadata: Parameters<typeof resolveLibraryCompatibilityIndicator>[0]["metadata"] = {
+      deck_compat_override: "valve",
+      deck_compat_category: null,
+    };
     const useCompatibilityRevision = vi.fn();
     const harness = makeHarness({
       metadataForApp: () => metadata,
@@ -1282,7 +1320,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(gridSlot.type).toBe(homeSlot.type);
     expect(gridSlot.type(gridSlot.props)).toBeNull();
 
-    metadata = { deck_compat_override: 3 };
+    metadata = { deck_compat_override: "valve", deck_compat_category: 2 };
     expect(homeSlot.type(homeSlot.props)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
@@ -1292,6 +1330,10 @@ describe("installLibraryCompatibilityIndicators", () => {
       props: { display: 1, overview: nativeShortcut, className: "grid-compat" },
     });
     expect(useCompatibilityRevision).toHaveBeenCalledTimes(4);
+
+    metadata = { deck_compat_override: "valve", deck_compat_category: null };
+    expect(homeSlot.type(homeSlot.props)).toBeNull();
+    expect(gridSlot.type(gridSlot.props)).toBeNull();
 
     harness.unpatchers[0]();
   });

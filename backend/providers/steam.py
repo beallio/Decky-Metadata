@@ -7,7 +7,7 @@ import logging
 import re
 import time
 import urllib.parse
-from typing import Any, Callable
+from typing import Any, Callable, Literal, NamedTuple
 
 import decky
 
@@ -16,6 +16,13 @@ from backend import matching
 HttpJsonFn = Callable[..., Any]
 HttpTextFn = Callable[..., str]
 PlogFn = Callable[..., None]
+
+
+class DeckCompatibilityLookup(NamedTuple):
+    """One Valve compatibility lookup with failure distinct from no data."""
+
+    status: Literal["available", "unavailable", "failed"]
+    category: int | None
 
 STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/api/storesearch/"
 STEAM_APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails"
@@ -275,13 +282,15 @@ def steam_announcement_page_image(url: str, http_text: HttpTextFn) -> str:
     return ""
 
 
-def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: PlogFn) -> int | None:
+def steam_deck_compat_lookup_for_appid(
+    steam_appid: int, http_json: HttpJsonFn, plog: PlogFn
+) -> DeckCompatibilityLookup:
     try:
         appid = int(steam_appid)
     except Exception:
-        return None
+        return DeckCompatibilityLookup("failed", None)
     if appid <= 0:
-        return None
+        return DeckCompatibilityLookup("failed", None)
 
     params = urllib.parse.urlencode({"nAppID": appid, "l": "english"})
     try:
@@ -291,7 +300,12 @@ def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: P
         results = payload.get("results")
         if not isinstance(results, dict):
             raise ValueError("missing deck compatibility results")
-        category = int(results.get("resolved_category"))
+        if "resolved_category" not in results:
+            raise ValueError("missing deck compatibility category")
+        raw_category = results.get("resolved_category")
+        if raw_category is None:
+            return DeckCompatibilityLookup("unavailable", None)
+        category = int(raw_category)
     except Exception:
         plog(
             "steam",
@@ -300,10 +314,10 @@ def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: P
             exc=True,
             steam_appid=appid,
         )
-        return None
+        return DeckCompatibilityLookup("failed", None)
 
     if category not in {0, 1, 2, 3}:
-        return None
+        return DeckCompatibilityLookup("unavailable", None)
     plog(
         "steam",
         "deck compat resolved",
@@ -311,7 +325,13 @@ def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: P
         steam_appid=appid,
         category=category,
     )
-    return category
+    return DeckCompatibilityLookup("available", category)
+
+
+def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: PlogFn) -> int | None:
+    """Compatibility wrapper retained for callers that need only a category."""
+
+    return steam_deck_compat_lookup_for_appid(steam_appid, http_json, plog).category
 
 
 def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: PlogFn) -> dict[str, Any] | None:

@@ -1,5 +1,9 @@
 # Plan: Preserve SteamGridDB artwork for matched non-Steam shortcuts (steamgriddb-artwork-compatibility)
 
+> **Historical plan — implementation is on `dev` (`fccb9cc`).**
+> Do not relaunch it. Original device limitations and issue-state checkpoints
+> remain historical; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 GitHub issue

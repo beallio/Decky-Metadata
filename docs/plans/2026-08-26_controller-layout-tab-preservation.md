@@ -1,5 +1,9 @@
 # Plan: Preserve controller layout tab across filter queries (controller-layout-tab-preservation)
 
+> **Historical plan — implementation is on `dev` (`73ac1a4`).**
+> Do not relaunch it. Original layout-preview/application limitations remain
+> below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 The controller layout data fix is working: when Steam's controller-type filter

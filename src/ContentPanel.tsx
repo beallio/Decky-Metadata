@@ -18,6 +18,8 @@ import {
   getUpdateSettings,
   refreshDelistedIndex,
   setAutomaticUpdateChecks,
+  setCompatibilityDefault,
+  setCompatibilityDefaultScope,
   setDebugLogging,
   setUpdateChannel,
   startScanMissing,
@@ -29,12 +31,44 @@ import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
-import { metadataCache, refreshMetadataCache } from "./steam";
+import {
+  compatibilityDefaultLoadedSnapshot,
+  compatibilityDefaultScopeSnapshot,
+  compatibilityDefaultSnapshot,
+  compatibilityLifecycleSnapshot,
+  ensureCompatibilityDefault,
+  isCompatibilityLifecycleCurrent,
+  metadataCache,
+  refreshMetadataCache,
+  setConfirmedCompatibilityDefault,
+  setConfirmedCompatibilityDefaultScope,
+  subscribeCompatibilityRevision,
+} from "./steam";
+import {
+  beginCompatibilityPolicySave,
+  clearCompatibilityDropdownReturn,
+  compatibilityPolicySaveSnapshot,
+  compatibilityDropdownReturnOrigin,
+  consumeCompatibilityDropdownReturn,
+  discardStaleCompatibilityPolicySave,
+  hasPendingCompatibilityPolicySave,
+  hasCompatibilityDropdownReturn,
+  isCompatibilityDropdownReturnReady,
+  isCompatibilityDropdownSelectionReturn,
+  noteCompatibilityDropdownControlUnmounted,
+  noteCompatibilityDropdownReturnVisible,
+  noteCompatibilityDropdownSelectionSaved,
+  requestCompatibilityDropdownReturn,
+  settleCompatibilityPolicySave,
+  subscribeCompatibilityPolicySave,
+} from "./qamCompatibilityFocus";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
 import {
   GameOption,
+  CompatibilityDefaultScope,
+  DeckCompatibilityCategory,
   UpdateChannel,
 } from "./types";
 import {
@@ -46,9 +80,15 @@ import { getConnectedControllerTypes } from "./steam";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
+// Steam can take over a second to register the fresh QAM control after its
+// native popup returns. This caps one return handoff at roughly three seconds.
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 360;
+const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
+const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 180;
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 3;
 
 type NativeFocusNode = {
-  Element?: HTMLElement;
+  Element?: Element;
   m_rgChildren?: NativeFocusNode[];
   BTakeFocus?: () => boolean;
 };
@@ -57,7 +97,8 @@ type NativeNavigationTree = {
   Root?: NativeFocusNode;
 };
 
-const takePreferredPanelFocus = (element: HTMLDivElement): boolean => {
+export const takeNativeFocus = (element: Element | null): boolean => {
+  if (!element) return false;
   try {
     const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
     for (const tree of trees) {
@@ -77,6 +118,23 @@ const takePreferredPanelFocus = (element: HTMLDivElement): boolean => {
     log.warn("qam", "preferred metadata focus unavailable", error);
   }
   return false;
+};
+
+const compatibilityDropdownButton = (element: HTMLElement | null) =>
+  element?.querySelector<HTMLButtonElement>('button[role="combobox"]') || null;
+
+export const takeCompatibilityDropdownFocus = (element: HTMLElement | null): boolean => {
+  const dropdown = compatibilityDropdownButton(element);
+  if (!dropdown || dropdown.disabled || !dropdown.isConnected) return false;
+  return takeNativeFocus(dropdown);
+};
+
+const hasCompatibilityDropdownFocus = (element: HTMLElement | null): boolean => {
+  const dropdown = compatibilityDropdownButton(element);
+  if (!dropdown) return false;
+  const classes = typeof dropdown.className === "string" ? dropdown.className : "";
+  return dropdown.ownerDocument.activeElement === dropdown
+    || /(^|\s)gpfocus(\s|$)/.test(classes);
 };
 
 const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
@@ -126,7 +184,14 @@ const epochToUsDate = (value?: number | null) => {
 };
 
 export const Content = () => {
+  const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
+  const initialPendingCompatibilityPolicySave =
+    initialCompatibilityPolicySave
+    && initialCompatibilityPolicySave.pendingKind !== null
+      ? initialCompatibilityPolicySave
+      : null;
   const focusFrame = useRef<number | null>(null);
+  const initialPanelFocusComplete = useRef(false);
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
   const [missing, setMissing] = useState(0);
@@ -149,17 +214,99 @@ export const Content = () => {
     useState<UpdateChannel>("stable");
   const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [compatibilityDefault, setCompatibilityDefaultState] = useState<DeckCompatibilityCategory | null>(
+    initialPendingCompatibilityPolicySave?.category ?? compatibilityDefaultSnapshot(),
+  );
+  const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = useState(false);
+  const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(
+    initialPendingCompatibilityPolicySave?.pendingKind === "category",
+  );
+  const [compatibilityDefaultError, setCompatibilityDefaultError] = useState(
+    initialCompatibilityPolicySave?.error ?? "",
+  );
+  const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = useState<CompatibilityDefaultScope>(
+    initialPendingCompatibilityPolicySave?.scope ?? compatibilityDefaultScopeSnapshot(),
+  );
+  const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(
+    initialPendingCompatibilityPolicySave?.pendingKind === "scope",
+  );
+  const compatibilityDefaultLoadVersion = useRef(0);
+  const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
+    useState<HTMLDivElement | null>(null);
+  const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] =
+    useState<HTMLDivElement | null>(null);
+  const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
+
+  const setCompatibilityDefaultControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setCompatibilityDefaultControlState(element);
+  }, []);
+  const setCompatibilityDefaultScopeControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setCompatibilityDefaultScopeControlState(element);
+  }, []);
+
+  const synchronizeCompatibilityPolicySave = useCallback((
+    fallbackCategory = compatibilityDefaultSnapshot(),
+    fallbackScope = compatibilityDefaultScopeSnapshot(),
+  ) => {
+    const shared = compatibilityPolicySaveSnapshot();
+    if (
+      shared
+      && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+      && shared.pendingKind !== null
+    ) {
+      setCompatibilityDefaultState(shared.category);
+      setCompatibilityDefaultScopeState(shared.scope);
+      setCompatibilityDefaultBusy(shared.pendingKind === "category");
+      setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
+      setCompatibilityDefaultError(shared.error);
+      return;
+    }
+    setCompatibilityDefaultState(fallbackCategory);
+    setCompatibilityDefaultScopeState(fallbackScope);
+    setCompatibilityDefaultBusy(false);
+    setCompatibilityDefaultScopeBusy(false);
+    setCompatibilityDefaultError(
+      shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()
+        ? shared.error
+        : "",
+    );
+  }, []);
+
+  useEffect(() => {
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
+    if (!mountedControl) return;
+    const qamDocument = mountedControl.ownerDocument;
+    const noteVisibleReturn = () => {
+      if (qamDocument.visibilityState !== "visible") return;
+      if (!noteCompatibilityDropdownReturnVisible()) return;
+      setCompatibilityDropdownReturnVersion((version) => version + 1);
+    };
+    const observeVisibility = () => {
+      if (qamDocument.visibilityState === "hidden") {
+        noteCompatibilityDropdownControlUnmounted();
+      } else {
+        noteVisibleReturn();
+      }
+    };
+    qamDocument.addEventListener("visibilitychange", observeVisibility);
+    observeVisibility();
+    return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
       window.cancelAnimationFrame(focusFrame.current);
       focusFrame.current = null;
     }
-    if (element) {
+    if (element && !initialPanelFocusComplete.current && !hasCompatibilityDropdownReturn()) {
       focusFrame.current = window.requestAnimationFrame(() => {
         focusFrame.current = null;
-        takePreferredPanelFocus(element);
+        if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn()) return;
+        initialPanelFocusComplete.current = true;
+        takeNativeFocus(element);
         // Taking focus scrolls the summary up, hiding the panel's "Metadata"
         // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
         // summary is the first row, so snap the viewport back to the top on
@@ -173,6 +320,76 @@ export const Content = () => {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (
+      !isCompatibilityDropdownReturnReady()
+      || !(compatibilityDropdownReturnOrigin() === "scope"
+        ? compatibilityDefaultScopeControl
+        : compatibilityDefaultControl)
+      || !compatibilityDefaultLoaded
+      || compatibilityDefaultBusy
+      || compatibilityDefaultScopeBusy
+    ) return;
+    const control = compatibilityDropdownReturnOrigin() === "scope"
+      ? compatibilityDefaultScopeControl
+      : compatibilityDefaultControl;
+    const settleFrames = isCompatibilityDropdownSelectionReturn()
+      ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
+      : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
+    let cancelled = false;
+    let frame: number | null = null;
+    let attempts = 0;
+    let stableFocusFrames = 0;
+    const focusReturnedDropdown = () => {
+      frame = null;
+      if (
+        cancelled
+        || !isCompatibilityDropdownReturnReady()
+        || !compatibilityDefaultLoaded
+        || compatibilityDefaultBusy
+        || compatibilityDefaultScopeBusy
+      ) return;
+      attempts += 1;
+      if (attempts <= settleFrames) {
+        frame = window.requestAnimationFrame(focusReturnedDropdown);
+        return;
+      }
+      // The native menu hides and unmounts QAM before the replacement
+      // combobox is registered in Steam's navigation tree. Retry only over
+      // this bounded return transition, and only with Steam's BTakeFocus.
+      if (hasCompatibilityDropdownFocus(control)) {
+        stableFocusFrames += 1;
+        if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
+          consumeCompatibilityDropdownReturn();
+          initialPanelFocusComplete.current = true;
+          return;
+        }
+        frame = window.requestAnimationFrame(focusReturnedDropdown);
+        return;
+      }
+      stableFocusFrames = 0;
+      takeCompatibilityDropdownFocus(control);
+      if (attempts < COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES) {
+        frame = window.requestAnimationFrame(focusReturnedDropdown);
+      } else {
+        log.warn("qam", "compatibility dropdown return focus unavailable");
+        clearCompatibilityDropdownReturn();
+      }
+    };
+    frame = window.requestAnimationFrame(focusReturnedDropdown);
+    return () => {
+      cancelled = true;
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [
+    compatibilityDefaultBusy,
+    compatibilityDefaultControl,
+    compatibilityDefaultScopeBusy,
+    compatibilityDefaultScopeControl,
+    compatibilityDefaultLoaded,
+    compatibilityDropdownReturnVersion,
+  ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
     void getMissingMetadataCount(currentGames)
@@ -198,6 +415,42 @@ export const Content = () => {
       log.warn("bridge", "delisted index status load failed", error);
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
+    synchronizeCompatibilityPolicySave();
+    const requestVersion = compatibilityDefaultLoadVersion.current;
+    void ensureCompatibilityDefault()
+      .then((value) => {
+        if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
+        synchronizeCompatibilityPolicySave(value, compatibilityDefaultScopeSnapshot());
+        setCompatibilityDefaultLoaded(true);
+      })
+      .catch((error) => {
+        if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
+        const shared = compatibilityPolicySaveSnapshot();
+        if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+          synchronizeCompatibilityPolicySave();
+          return;
+        }
+        setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
+        log.warn("bridge", "compatibility default load failed", error);
+      });
+    const unsubscribeRevision = subscribeCompatibilityRevision(() => {
+      if (cancelled || !compatibilityDefaultLoadedSnapshot()) return;
+      synchronizeCompatibilityPolicySave();
+      setCompatibilityDefaultLoaded(true);
+    });
+    const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
+      if (!cancelled) synchronizeCompatibilityPolicySave();
+    });
+    return () => {
+      cancelled = true;
+      unsubscribeRevision();
+      unsubscribeSave();
+    };
+  }, [synchronizeCompatibilityPolicySave]);
 
   useEffect(() => {
     void loadDelistedStatus();
@@ -289,6 +542,70 @@ export const Content = () => {
       log.warn("bridge", "debug logging setting update failed", error);
     } finally {
       setDebugLoggingBusy(false);
+    }
+  };
+
+  const saveCompatibilityDefault = async (category: DeckCompatibilityCategory | null) => {
+    if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded) return;
+    const previous = compatibilityDefault;
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    const saveId = beginCompatibilityPolicySave(
+      "category",
+      lifecycleGeneration,
+      previous,
+      compatibilityDefaultScope,
+    );
+    compatibilityDefaultLoadVersion.current += 1;
+    try {
+      const saved = await setCompatibilityDefault(category);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
+      if (noteCompatibilityDropdownSelectionSaved()) {
+        setCompatibilityDropdownReturnVersion((version) => version + 1);
+      }
+      toastSuccess("Compatibility", "Default compatibility status saved");
+    } catch (error) {
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      const message = `Compatibility default could not be saved: ${String(error)}`;
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
+      toastError("Compatibility", message);
+      log.warn("bridge", "compatibility default save failed", error);
+    }
+  };
+
+  const saveCompatibilityDefaultScope = async (scope: CompatibilityDefaultScope) => {
+    if (
+      hasPendingCompatibilityPolicySave() ||
+      !compatibilityDefaultLoaded ||
+      compatibilityDefault === null
+    ) return;
+    const previous = compatibilityDefaultScope;
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    const saveId = beginCompatibilityPolicySave(
+      "scope",
+      lifecycleGeneration,
+      compatibilityDefault,
+      scope,
+    );
+    compatibilityDefaultLoadVersion.current += 1;
+    try {
+      const saved = await setCompatibilityDefaultScope(scope);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
+      if (noteCompatibilityDropdownSelectionSaved()) {
+        setCompatibilityDropdownReturnVersion((version) => version + 1);
+      }
+      toastSuccess("Compatibility", "Default compatibility scope saved");
+    } catch (error) {
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      const message = `Compatibility default scope could not be saved: ${String(error)}`;
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
+      toastError("Compatibility", message);
+      log.warn("bridge", "compatibility default scope save failed", error);
     }
   };
 
@@ -458,8 +775,19 @@ export const Content = () => {
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}
+        compatibilityDefault={compatibilityDefault}
+        compatibilityDefaultLoaded={compatibilityDefaultLoaded}
+        compatibilityDefaultBusy={compatibilityDefaultBusy}
+        compatibilityDefaultError={compatibilityDefaultError}
+        compatibilityDefaultScope={compatibilityDefaultScope}
+        compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
         onRefreshMetadata={() => void scanMissing()}
         onClearCache={() => void clearCache()}
+        onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
+        onCompatibilityDefaultScopeChange={(scope) => void saveCompatibilityDefaultScope(scope)}
+        onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
+        onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
+        onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
       />
       <DelistedIndexSection
         countText={delistedCountText}

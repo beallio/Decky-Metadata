@@ -10,10 +10,16 @@ const metadata = {
 };
 
 describe("reassertMatchedAppData", () => {
-  it("identifies only metadata records with a real matched Steam app id", () => {
+  it("identifies only metadata records with a positive safe Steam app id", () => {
     expect(hasMatchedSteamAppId({ ...metadata, steam_appid: 338930 } as any)).toBe(true);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: "338930" } as any)).toBe(true);
     expect(hasMatchedSteamAppId({ ...metadata, steam_appid: null } as any)).toBe(false);
     expect(hasMatchedSteamAppId({ ...metadata, steam_appid: 0 } as any)).toBe(false);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: true } as any)).toBe(false);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: 1.5 } as any)).toBe(false);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: Infinity } as any)).toBe(false);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: Number.MAX_SAFE_INTEGER + 1 } as any)).toBe(false);
+    expect(hasMatchedSteamAppId({ ...metadata, steam_appid: "not-an-id" } as any)).toBe(false);
     expect(hasMatchedSteamAppId(undefined)).toBe(false);
   });
 

@@ -4,6 +4,25 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Library-wide compatibility defaults.** Choose Automatic, Verified,
+  Playable, Unsupported, or Unknown in the Decky Metadata panel. The setting
+  applies to existing and new non-Steam shortcuts, including ones without
+  saved metadata. Other shortcuts update immediately; the current Game Info
+  game updates after its tab exits. Per-game choices now include **Use global
+  default** and **Follow Valve**.
+- **Compatibility default scopes.** The **Apply default to** dropdown selects
+  Steam-matched games, saved games without a Steam ID, all saved metadata, or
+  all native non-Steam games. It uses the saved record and valid Steam ID, so
+  manual records are in the no-ID scope and a provider name does not decide
+  eligibility. The saved selection stays available after Automatic is chosen.
+
+### Fixed
+
+- Place the compatibility scope separator below its explanation, directly above
+  **Refresh metadata**.
+
 ## [0.3.13] - 2026-09-07
 
 Add Steam shortcut names and fix stale Activity news

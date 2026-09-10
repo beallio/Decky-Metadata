@@ -3,23 +3,72 @@ import { definePlugin, staticClasses } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
+import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import {
   installSteamPatches,
+  beginCompatibilityLifecycle,
+  cancelCompatibilityDefaultLoad,
+  discardRetainedCompatibilityState,
+  ensureCompatibilityDefault,
   refreshMetadataCache,
+  retainCompatibilityBaselinesForReload,
   restoreAllCompatibilityBaselines,
   startMetadataBootstrap,
 } from "./steam";
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
 
+const installInPlaceReloadGuard = (onFailedReload: () => void) => {
+  const loader = (globalThis as any).DeckyPluginLoader;
+  if (!loader || typeof loader.importPlugin !== "function") {
+    return { isPending: () => false, unpatch: () => undefined };
+  }
+  const original = loader.importPlugin;
+  let pending = false;
+  const guardedImport = async function (this: any, name: string, ...args: any[]) {
+    const isThisPlugin = name === "Decky Metadata";
+    if (isThisPlugin) pending = true;
+    try {
+      return await original.call(this, name, ...args);
+    } catch (error) {
+      if (isThisPlugin && pending) onFailedReload();
+      throw error;
+    } finally {
+      if (isThisPlugin) pending = false;
+    }
+  };
+  loader.importPlugin = guardedImport;
+  return {
+    isPending: () => pending,
+    unpatch: () => {
+      if (loader.importPlugin === guardedImport) loader.importPlugin = original;
+    },
+  };
+};
+
 export default definePlugin(() => {
+  clearCompatibilityDropdownReturn();
+  beginCompatibilityLifecycle();
+  let retainedReloadBaselines = false;
+  const reloadGuard = installInPlaceReloadGuard(() => {
+    if (!retainedReloadBaselines) return;
+    try {
+      restoreAllCompatibilityBaselines();
+    } finally {
+      discardRetainedCompatibilityState();
+      retainedReloadBaselines = false;
+    }
+  });
   void getDebugLogging()
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
   void refreshMetadataCache();
+  void ensureCompatibilityDefault().catch((error) =>
+    log.warn("bridge", "compatibility default load failed", error)
+  );
 
   let unpatchSteam: (() => void) | undefined;
   try {
@@ -45,6 +94,17 @@ export default definePlugin(() => {
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
+      const reloading = reloadGuard.isPending();
+      // The bootstrap stopper invalidates the compatibility lifecycle. Retain
+      // the held Game Info intent before it does so during an in-place import.
+      try {
+        if (reloading) {
+          retainCompatibilityBaselinesForReload();
+          retainedReloadBaselines = true;
+        }
+      } catch (error) {
+        log.error("patch", "compatibility reload state retain failed", error);
+      }
       try {
         menuPatch?.unpatch?.();
       } catch (error) {
@@ -56,15 +116,28 @@ export default definePlugin(() => {
         log.error("patch", "metadata bootstrap stop failed", error);
       }
       try {
-        restoreAllCompatibilityBaselines();
+        clearCompatibilityDropdownReturn();
+      } catch (error) {
+        log.error("patch", "compatibility dropdown focus stop failed", error);
+      }
+      try {
+        if (!reloading) {
+          restoreAllCompatibilityBaselines();
+        }
       } catch (error) {
         log.error("patch", "compatibility baseline restore failed", error);
+      }
+      try {
+        cancelCompatibilityDefaultLoad();
+      } catch (error) {
+        log.error("patch", "compatibility default load stop failed", error);
       }
       try {
         unpatchSteam?.();
       } catch (error) {
         log.error("patch", "Steam unpatch failed", error);
       }
+      reloadGuard.unpatch();
       try {
         routerHook.removeRoute(METADATA_ROUTE);
       } catch (error) {

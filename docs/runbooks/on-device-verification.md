@@ -1,11 +1,10 @@
 # Runbook: On-Device Verification
 
 Every frontend change that touches Steam patching must be verified on the Deck
-before `dev` is considered good — the quality gates cover types/build/backend
-only, and two shipped fixes (the launch regression's armer assumption,
-`hide-quicklinks-row-nonsteam`'s insertion point) were wrong in ways only the
-live Steam tree reveals. Session logs must not defer these checks without
-naming who runs them and when; prefer running `run_all.sh` before merge.
+before `dev` is considered good. Local gates cover type checking, builds,
+frontend/backend tests, Python compilation, and version drift; they do not
+exercise the live Steam tree. Session logs must name any unrun live checks and
+their prerequisites. Run the applicable checks below before integration.
 
 ## Tooling (committed — do not recreate ad hoc)
 
@@ -19,7 +18,7 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | `cdp.py list\|eval\|reload\|wait-ready\|input\|screenshot` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets; `input [<target>] <key>…` dispatches synthetic D-pad/`enter`/`escape` key events (default target Big Picture) to drive gamepad focus without a physical controller; `screenshot OUTPUT.png [TARGET]` captures a visual page below `/tmp/Decky-Metadata` |
 | `screenshot.sh OUTPUT.png [TARGET]` | Opens the debugger tunnel and captures a PNG below `/tmp/Decky-Metadata/screenshots`; defaults to the composited `Steam Big Picture Mode` target and accepts a visual overlay target such as the active `QuickAccess_uid*` page |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
-| `install_release.sh <tag> [update\|downgrade]` | install a published GitHub *release* build via Decky's own installer (over CDP) — the way to move OFF a local `+hash` build onto a real release so the self-updater is enabled. Fetches the zip URL + whole-zip sha256, then fires `utilities/install_plugin`; you confirm the prompt on the Deck. See the self-update section below |
+| `install_release.sh <tag> [auto\|update\|downgrade]` | install a published GitHub release through Decky's installer; `auto` is the default. Fetches the ZIP URL and checksum and opens the on-device confirmation prompt. See the self-update section below. |
 | `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
 | `js/*.js` | parameterized probes: `nav`, `click_play`, `goback`, `state`, `check_quicklinks`, `fiber_walk`, RunGame tracer pair, cache-write counter pair, `terminate`; focus probes `gpfocus_dump` (read-only "what is selected now") and `focus_order` (active focusable inventory with rects) |
 | `verify/run_all.sh [--no-launch] [--extended]` | the suite using a persisted semantic fixture manifest; extended adds bounded idle sampling |
@@ -42,12 +41,18 @@ scripts/decky package-push --build --push
 
 Install the resulting zip through the Decky UI before running the live checks.
 
-Typical loop:
+Typical loop, after authorization for the current device:
 
 ```bash
-scripts/deck/deploy.sh            # push the current change
-scripts/deck/verify/run_all.sh    # verify (really launches a game briefly)
+./run.sh scripts/deck/deploy.sh
+./run.sh scripts/deck/verify/run_all.sh --no-launch
 ```
+
+The non-launch suite includes controller queries that populate Steam's
+in-memory cache. When the change also requires a launch check, obtain separate
+authorization for the exact fixture and run `smoke_launch.sh <appid>`.
+`run_all.sh` without `--no-launch` launches only when `MATCHED_APPID` is
+explicitly supplied; an automatically selected fixture is render-only.
 
 ## Which checks a change must run
 
@@ -61,6 +66,77 @@ scripts/deck/verify/run_all.sh    # verify (really launches a game briefly)
 A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
+
+### Compatibility defaults and Follow Valve
+
+This check changes real plugin settings and may change real shortcut status.
+Get explicit approval for the current Deck and disposable fixtures before any
+deploy, package push, QAM selection, metadata removal, or shortcut creation.
+Capture the native baseline first and restore every fixture and the original
+global setting at the end. Use a full package because this feature changes both
+the frontend and `main.py`:
+
+```bash
+./run.sh scripts/decky doctor --deck
+./run.sh scripts/deck/logs.sh audit --json
+./run.sh scripts/decky capture
+./run.sh scripts/decky package-push --build --push
+# Install /home/deck/Downloads/Decky-Metadata.zip with Decky Settings -> Developer -> Install Plugin from ZIP File.
+```
+
+Prepare five disposable fixtures: a Steam-ID record with a known Valve
+category, an IGN-sourced record with a Steam ID if available, a saved manual or
+provider record without a Steam ID, a native shortcut with no metadata record,
+and one ordinary Steam game. Record their original packed category and visible
+Home/grid/Game Info state. Then, using the real QAM and editor controls:
+
+1. Set global **Verified**. Confirm matched, unmatched, and no-record shortcuts
+   show Verified; confirm the ordinary Steam game and its compatibility filter
+   membership do not change.
+2. Set a matched fixture to **Follow Valve** and confirm it shows its Valve
+   category while another shortcut stays Verified. Test unavailable data and
+   Valve Unknown; both must use native no-badge/original behavior as applicable.
+3. Set one fixed per-game status and confirm changing the global setting only
+   changes inheriting shortcuts. Return to Automatic and confirm an unmatched
+   inheriting shortcut returns to its captured native baseline.
+4. Keep a matched shortcut on **Game Info** with Automatic/Playable, set global
+   **Verified**, and close QAM. The active view must remain Playable with rich
+   content and links while other eligible shortcuts and their native filter
+   membership update. Change tabs and return to confirm Verified. Repeat back
+   to Automatic. Closing QAM or a context-menu overlay must not release the
+   held value; opening **Decky metadata...** must release it, and a later editor
+   Save must take priority. Repeat changes before exit and verify only the
+   latest result applies. Navigate from game A to game B, replace/delete only a
+   disposable pending fixture, and confirm no state leaks or recreation occur.
+5. Verify a shortcut that appears after bootstrap inherits the current default
+   once its real native overview exists. Clear only disposable metadata and
+   confirm its Activity cleanup and inherited status.
+6. With already-mounted Home and grid cards visible, capture Home, grid, and
+   Game Info before and after each transition. Check Steam's actual
+   compatibility filter or collection membership, not only packed fields.
+7. Reload through committed tooling while Game Info has a held update. Confirm
+   it remains responsive, keeps links, and applies the current policy only
+   after exit. Capture a controlled real unload that clears held work and
+   restores baselines. Drive QAM and editor order with `scripts/deck/cdp.py input`,
+   `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
+8. With a numeric global default active, use **Apply default to**. Verify all
+   four choices in order and the complete selected label in narrow QAM. Check
+   Steam-matched, saved-no-ID, saved-metadata, and all-shortcuts membership in
+   both directions through Steam's compatibility filter or collection, not
+   only packed fields. An IGN record with a valid ID belongs to the Steam
+   scope. A manual record without an ID belongs to the no-ID scope. A no-record
+   shortcut belongs only to all shortcuts. Change a disposable record's ID,
+   remove its record, and confirm it moves to the correct fallback. Change the
+   scope while Game Info is active and confirm that view holds its value until
+   exit. Use controller input to select and cancel both dropdowns; focus must
+   return to the dropdown that opened the popup. Set the default to Automatic
+   and confirm the selector is unavailable but keeps its value through reload.
+   Restore the captured scope and fixtures.
+
+Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
+`scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with
+separate current approval. Restore the original setting, records, shortcuts,
+and debugger tunnel before recording results.
 
 ### Per-game shortcut-name rename and restore
 
@@ -276,8 +352,10 @@ To verify a published development-prerelease update, first put the Deck on a rea
 release build:
 
 ```bash
-# 1. Move onto a release (Decky's own installer; confirm the on-device prompt).
-scripts/deck/install_release.sh v0.3.1
+# 1. Resolve the latest published stable release, then use Decky's installer.
+#    This opens an on-device confirmation prompt; it is not a read-only check.
+stable_tag="$(gh release view --repo beallio/Decky-Metadata --json tagName --jq .tagName)" &&
+  ./run.sh scripts/deck/install_release.sh "$stable_tag" auto
 
 # 2. In the panel, enable "Receive development releases", then Check now. A newer
 #    dev prerelease (higher base, or same base + different -dev.g<sha>) is offered.
@@ -289,8 +367,10 @@ A successful cycle logs: `revalidate_success` → `Pending install saved` →
 `handoff_start (installer_api=callable)` → `handoff_resolved status=success` →
 (Decky uninstalls the old dir) → **`Startup reconciliation: Pending update
 promoted`** → a follow-up check reports "already up to date". That promotion line
-is the proof the restart + reconcile worked. Do **not** commit to `dev`/`main`
-mid-test — the post-commit hook reinstalls a local build over the release one.
+is the proof the restart + reconcile worked. A commit or merge on `dev`/`main`
+may build and copy a local ZIP to Downloads through the configured hook; it
+does not install that ZIP or replace the running release. Do not install the
+copied local ZIP while testing the release updater.
 
 **Why local builds use `+<hash>` and published dev builds use `-dev.g<sha>` (kept
 distinct on purpose).** They are two deployment paths with different jobs, and the
@@ -298,8 +378,10 @@ version scheme is what keeps them honest:
 
 - `+build` is semver **build metadata** — "built from this commit" — and is
   *ignored for precedence*. It correctly describes a working-copy build that may
-  not correspond to anything published. The `+` marker blocks development-channel
-  installation but permits an explicit handoff to a canonical stable release.
+  not correspond to anything published. The in-plugin updater blocks
+  development-channel installation from a local build, but permits an explicit
+  handoff to a canonical stable release of the same base version. This does not
+  prevent a separately authorized manual ZIP installation.
 - `-dev.g<sha>` is a semver **pre-release identifier** — it *does* affect
   precedence and announces "this is a distributable pre-release." That is only
   true of builds published through CI (`dev-release.yml`).

@@ -1,5 +1,10 @@
 # Compatibility Badge Cache Refresh
 
+> **Historical plan — implementation is on `dev` (`59063ef`).**
+> Followed by persistent refresh (`a229009`) and mounted discovery retry
+> (`b047d39`). Do not replay this original implementation procedure.
+> Use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Problem Definition
 
 Non-Steam compatibility badges can be absent after plugin startup even when saved metadata contains a positive compatibility category. The Library card patch reads `metadataCache` during Steam's card render. If that render happens before the asynchronous cache load completes, the patch inserts no badge element. Cache loading updates the overview but does not make the cached card render again. Selecting the game causes Steam to render that card again, which makes the badge appear.

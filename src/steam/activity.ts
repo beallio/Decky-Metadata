@@ -13,6 +13,7 @@ import {
   DECKY_NATIVE_ACTIVITY_WINDOW_KEY,
   Unpatch,
   activityAppIdFromUrl,
+  compatibilityLifecycleSnapshot,
   currentGameDetailAppId,
   currentRoutePath,
   deckyNativeActivityCache,
@@ -25,6 +26,7 @@ import {
   historyPathFromArgs,
   historyStateFromArgs,
   isNonSteamApp,
+  isCompatibilityLifecycleCurrent,
   metadataCache,
   notifyCompatibilityRevision,
   patchInstallStatus,
@@ -47,6 +49,8 @@ export const configureActivityMetadataLoader = (
 const activityRefreshGate = createActivityRefreshGate();
 
 const maybeRefreshSteamNewsForApp = (appId: number) => {
+  const lifecycleGeneration = compatibilityLifecycleSnapshot();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
   if (!appId || !isNonSteamApp(getOverview(appId))) return;
   const enrichedAt = Number(metadataCache[String(appId)]?.steam_news_enriched_at || 0);
   const nowMs = Date.now();
@@ -56,6 +60,7 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
     try {
       const previous = metadataCache[String(appId)];
       const refreshed = await refreshSteamActivityForApp(appId);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       if (!refreshed) return;
       const newsKey = (metadata?: MetadataData | null) =>
         JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
@@ -114,7 +119,7 @@ const steamNewsRawBodyForModal = (value: unknown) =>
     .replace(/\\\//g, "/")
     .trim();
 
-const steamAppHeaderImage = (steamAppId?: number | null) =>
+const steamAppHeaderImage = (steamAppId?: number | string | null) =>
   steamAppId ? `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : "";
 
 const steamNewsImageCandidatesForMetadata = (_metadata: MetadataData, news: NonNullable<MetadataData["steam_news"]>[number]) => {
@@ -246,10 +251,13 @@ const steamActivityNewsItemsFromMetadata = (appId: number, metadata: MetadataDat
     });
 
 export const steamActivityPayloadForApp = async (appId: number) => {
+  const lifecycleGeneration = compatibilityLifecycleSnapshot();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
   void maybeRefreshSteamNewsForApp(appId);
   await ensureMetadataCacheFn();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   let metadata = metadataCache[String(appId)];
   if (!metadata) return null;
   const items = metadata ? steamActivityNewsItemsFromMetadata(appId, metadata) : [];
@@ -849,9 +857,12 @@ const getDeckyNativeActivityForApp = (appId: number) => {
 };
 
 export const refreshDeckyNativeActivityForApp = async (appId: number, store?: any) => {
+  const lifecycleGeneration = compatibilityLifecycleSnapshot();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   const overview = getOverview(appId);
   if (!appId || !isNonSteamApp(overview)) return null;
   await ensureMetadataCacheFn();
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   const metadata = metadataCache[String(appId)];
   if (!metadata) {
     clearDeckyNativeActivityForApp(appId, store);

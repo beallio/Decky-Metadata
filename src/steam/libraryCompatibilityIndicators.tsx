@@ -3,6 +3,7 @@ import { cloneElement, createElement, isValidElement, useEffect, useState } from
 import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
+import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../types";
 import {
   effectiveCompatibilityCategory,
   refreshCompatibilitySurfaces,
@@ -16,68 +17,22 @@ import {
   subscribeCompatibilityRevision,
   Unpatch,
 } from "./core";
+import { findSteamUiDocumentMatch, steamUiWindow } from "./steamUiHost";
 
 const DECK_DISPLAY = 1;
 
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
 type ModuleSourceCandidatesFinder = (fragments: string[]) => any[];
-type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category">;
+type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid">;
 
 const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
 const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
 
-const steamUiWindow = () => {
-  const candidates: any[] = [globalThis];
-  try {
-    const currentWindow = globalThis as any;
-    candidates.push(currentWindow.parent, currentWindow.top);
-  } catch {
-    // A cross-origin frame can still use its own Decky module bridge.
-  }
-  return candidates.find((candidate) =>
-    candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function"
-  ) ?? globalThis;
-};
-
 const steamUiCardDocument = () => {
-  // SharedJSContext does not own Big Picture's DOM. Steam exposes the mounted
-  // browser document through this same-window bridge instead. Decky can run in
-  // an isolated global, so inspect its SteamUI/webpack parent before falling
-  // back to the local document. Retain the Gamepad-specific form seen on
-  // older/current SteamUI builds.
-  const contexts = new Set<any>([globalThis, steamUiWindow()]);
-  try {
-    const currentWindow = globalThis as any;
-    contexts.add(currentWindow.parent);
-    contexts.add(currentWindow.top);
-  } catch {
-    // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
-  }
-  try {
-    for (const context of contexts) {
-      const windowStore = context?.SteamUIStore?.m_WindowStore;
-      const browserWindows = [
-        windowStore?.MainWindowInstance?.m_BrowserWindow,
-        windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
-      ];
-      for (const browserWindow of browserWindows) {
-        const document = browserWindow?.document;
-        if (
-          typeof document?.querySelector === "function" &&
-          !!document.querySelector("[data-id]")
-        ) {
-          return document;
-        }
-      }
-    }
-  } catch {
-    // A changed Steam window bridge must leave the optional cache patch inert.
-  }
-  return Array.from(contexts).find((candidate) =>
-    typeof candidate?.document?.querySelector === "function" &&
-    !!candidate.document.querySelector("[data-id]")
-  )?.document;
+  return findSteamUiDocumentMatch((document) =>
+    document.querySelector("[data-id]") ? document : undefined
+  );
 };
 
 export type LibraryCompatibilityIndicatorDependencies = {
@@ -172,15 +127,23 @@ export const resolveLibraryCompatibilityIndicator = ({
   renderedAppId,
   overview,
   metadata,
+  globalDefault,
+  globalScope,
   isNativeNonSteamShortcut: isNativeShortcut,
 }: {
   renderedAppId: number;
   overview: any;
   metadata: CompatibilityMetadata | undefined;
+  globalDefault?: DeckCompatibilityCategory | null;
+  globalScope?: CompatibilityDefaultScope;
   isNativeNonSteamShortcut: (overview: any) => boolean;
 }) => {
   if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview)) return null;
-  const category = effectiveCompatibilityCategory(metadata as MetadataData | undefined);
+  const category = effectiveCompatibilityCategory(
+    metadata,
+    globalDefault,
+    globalScope,
+  );
   return category === null || category === 0 ? null : category;
 };
 
