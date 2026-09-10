@@ -90,6 +90,12 @@ observable native map publication unchanged.
   `./run.sh scripts/orchestration/run-quality-gates` exited 0 with 28 frontend
   files passing (508 tests, 4 skipped), Python compilation and backend tests
   passing, and review-note retention passing.
+- After commit `a79eca4`, `./run.sh npm run package` produced
+  `Decky-Metadata.zip` version `0.3.14+a79eca4`, SHA-256
+  `ad04b8387a05bb3716879df5558a0646b08b7fc7df801ca795cd843df237a808`.
+  Archive inspection confirmed one `Decky-Metadata/` root containing the
+  manifest, backend, and built frontend files. The ZIP was not delivered or
+  installed.
 
 ## Deferred verification
 
