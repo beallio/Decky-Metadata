@@ -41,6 +41,7 @@ const steam = vi.hoisted(() => ({
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
+const ui = vi.hoisted(() => ({ getGamepadNavigationTrees: vi.fn(), showModal: vi.fn() }));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -48,17 +49,18 @@ vi.mock("react", () => ({
   },
   useRef: (initial: any) => {
     const index = harness.hookIndex++;
-    if (harness.hooks.length <= index) harness.hooks[index] = { current: initial };
-    return harness.hooks[index];
+    const owner = harness.hooks;
+    if (owner.length <= index) owner[index] = { current: initial };
+    return owner[index];
   },
   useState: (initial: any) => {
     const index = harness.hookIndex++;
-    if (harness.hooks.length <= index) harness.hooks[index] = initial;
+    const owner = harness.hooks;
+    if (owner.length <= index) owner[index] = initial;
     return [
-      harness.hooks[index],
+      owner[index],
       (value: any) => {
-        harness.hooks[index] =
-          typeof value === "function" ? value(harness.hooks[index]) : value;
+        owner[index] = typeof value === "function" ? value(owner[index]) : value;
       },
     ];
   },
@@ -67,8 +69,8 @@ vi.mock("react", () => ({
 vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred" },
-  getGamepadNavigationTrees: vi.fn(),
-  showModal: vi.fn(),
+  getGamepadNavigationTrees: ui.getGamepadNavigationTrees,
+  showModal: ui.showModal,
 }));
 vi.mock("./backend", () => backend);
 vi.mock("./components/qam/DelistedIndexSection", () => ({
@@ -102,12 +104,20 @@ vi.mock("./useNonSteamGames", () => ({
 import { Content } from "./ContentPanel";
 import {
   clearCompatibilityDropdownReturn,
+  clearCompatibilityPolicySave,
   compatibilityDropdownReturnOrigin,
 } from "./qamCompatibilityFocus";
 
 const render = () => {
   harness.hookIndex = 0;
   harness.effects.length = 0;
+  return Content();
+};
+
+const remount = () => {
+  harness.hookIndex = 0;
+  harness.hooks = [];
+  harness.effects = [];
   return Content();
 };
 
@@ -133,6 +143,108 @@ const runEffects = () => {
 
 const flushPromises = async () => {
   for (let index = 0; index < 8; index += 1) await Promise.resolve();
+};
+
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
+
+const makeFocusControls = () => {
+  const frames: Array<(time: number) => void> = [];
+  const qamDocument = {
+    visibilityState: "visible",
+    activeElement: null as unknown,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  };
+  const makeButton = () => ({
+    className: "",
+    disabled: false,
+    isConnected: true,
+    ownerDocument: qamDocument,
+  });
+  const categoryButton = makeButton();
+  const scopeButton = makeButton();
+  const control = (button: typeof categoryButton) => ({
+    ownerDocument: qamDocument,
+    querySelector: vi.fn(() => button),
+  });
+  const categoryA = control(categoryButton);
+  const scopeA = control(scopeButton);
+  const categoryB = control(categoryButton);
+  const scopeB = control(scopeButton);
+  ui.getGamepadNavigationTrees.mockReturnValue([{
+    Root: {
+      m_rgChildren: [
+        {
+          Element: categoryButton,
+          BTakeFocus: () => {
+            categoryButton.className = "gpfocus";
+            return true;
+          },
+        },
+        {
+          Element: scopeButton,
+          BTakeFocus: () => {
+            scopeButton.className = "gpfocus";
+            return true;
+          },
+        },
+      ],
+    },
+  }]);
+  vi.stubGlobal("window", {
+    requestAnimationFrame: (callback: (time: number) => void) => {
+      frames.push(callback);
+      return frames.length;
+    },
+    cancelAnimationFrame: vi.fn(),
+  });
+  return {
+    categoryA,
+    scopeA,
+    categoryB,
+    scopeB,
+    categoryButton,
+    scopeButton,
+    flushFrames: () => {
+      for (let attempt = 0; attempt < 200 && frames.length; attempt += 1) {
+        frames.shift()?.(attempt);
+      }
+    },
+  };
+};
+
+const remountReturnedDropdown = async (origin: "category" | "scope") => {
+  const controls = makeFocusControls();
+  render();
+  runEffects();
+  await flushPromises();
+  const first = metadataSection(render());
+  first.props.onCompatibilityDefaultControlRef(controls.categoryA);
+  first.props.onCompatibilityDefaultScopeControlRef(controls.scopeA);
+  render();
+  first.props.onCompatibilityDefaultMenuWillOpen(origin);
+  if (origin === "category") {
+    first.props.onCompatibilityDefaultControlRef(null);
+  } else {
+    first.props.onCompatibilityDefaultScopeControlRef(null);
+  }
+
+  remount();
+  const returned = metadataSection(render());
+  returned.props.onCompatibilityDefaultControlRef(controls.categoryB);
+  returned.props.onCompatibilityDefaultScopeControlRef(controls.scopeB);
+  render();
+  runEffects();
+  await flushPromises();
+  return { controls, first, returned: () => metadataSection(render()) };
 };
 
 describe("Content update settings", () => {
@@ -165,6 +277,7 @@ describe("Content update settings", () => {
 
   afterEach(() => {
     clearCompatibilityDropdownReturn();
+    clearCompatibilityPolicySave();
     vi.unstubAllGlobals();
   });
 
@@ -345,6 +458,83 @@ describe("Content update settings", () => {
     await flushPromises();
     expect(metadataSection(render()).props.compatibilityDefault).toBeNull();
     expect(metadataSection(render()).props.compatibilityDefaultScope).toBe("steam");
+  });
+
+  it("keeps a deferred scope save busy and visible after the QAM remounts", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
+    const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
+    backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
+    steam.setConfirmedCompatibilityDefaultScope.mockImplementation((value: unknown) => {
+      steam.compatibilityDefaultScopeSnapshot.mockReturnValue(value);
+      return value;
+    });
+
+    const { controls, first, returned } = await remountReturnedDropdown("scope");
+    first.props.onCompatibilityDefaultScopeChange("steam");
+
+    const pending = returned();
+    expect(pending.props.compatibilityDefaultScopeBusy).toBe(true);
+    expect(pending.props.compatibilityDefaultScope).toBe("steam");
+    pending.props.onCompatibilityDefaultChange(2);
+    expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
+
+    save.resolve("steam");
+    await flushPromises();
+    render();
+    runEffects();
+    controls.flushFrames();
+    const settled = returned();
+    expect(settled.props.compatibilityDefaultScopeBusy).toBe(false);
+    expect(settled.props.compatibilityDefaultScope).toBe("steam");
+    expect(controls.scopeButton.className).toContain("gpfocus");
+    expect(controls.categoryButton.className).not.toContain("gpfocus");
+  });
+
+  it("restores a remounted QAM after its deferred scope save fails", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
+    const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
+    backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
+
+    const { controls, first, returned } = await remountReturnedDropdown("scope");
+    first.props.onCompatibilityDefaultScopeChange("steam");
+    expect(returned().props.compatibilityDefaultScopeBusy).toBe(true);
+
+    save.reject(new Error("disk unavailable"));
+    await flushPromises();
+    render();
+    runEffects();
+    controls.flushFrames();
+    const failed = returned();
+    expect(failed.props.compatibilityDefaultScopeBusy).toBe(false);
+    expect(failed.props.compatibilityDefaultScope).toBe("all");
+    expect(failed.props.compatibilityDefaultError).toContain("disk unavailable");
+    expect(controls.scopeButton.className).toContain("gpfocus");
+  });
+
+  it("returns native focus to the category dropdown after its popup is cancelled", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    const { controls } = await remountReturnedDropdown("category");
+    render();
+    runEffects();
+    controls.flushFrames();
+    expect(controls.categoryButton.className).toContain("gpfocus");
+    expect(controls.scopeButton.className).not.toContain("gpfocus");
+  });
+
+  it("does not allow a second policy save while a remounted QAM is busy", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
+    const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
+    backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
+
+    const { first, returned } = await remountReturnedDropdown("scope");
+    first.props.onCompatibilityDefaultScopeChange("steam");
+    const returnedSection = returned();
+    expect(returnedSection.props.compatibilityDefaultScopeBusy).toBe(true);
+    returnedSection.props.onCompatibilityDefaultChange(2);
+    expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
   });
 
   it("records the dropdown that must receive focus after its popup closes", async () => {

@@ -37,7 +37,7 @@ import {
   isNonSteamApp,
   metadataCache,
   ensureCompatibilityDefault,
-  effectiveCompatibilityCategory,
+  isCompatibilityDefaultEligible,
   nativeShortcutName,
   refreshCompatibilitySurfaces,
   setShortcutNameAndWait,
@@ -153,8 +153,7 @@ const compatibilityStatusDisplay = (
       ? "Follow Valve (unavailable — original Steam status)"
       : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
   }
-  const effective = effectiveCompatibilityCategory(metadata, globalDefault, scope);
-  if (globalDefault !== null && effective === globalDefault) {
+  if (globalDefault !== null && isCompatibilityDefaultEligible(metadata, scope)) {
     return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
   }
   if (globalDefault !== null) {

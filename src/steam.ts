@@ -7,6 +7,7 @@ export {
   discardRetainedCompatibilityState,
   ensureCompatibilityDefault,
   effectiveCompatibilityCategory,
+  isCompatibilityDefaultEligible,
   ensureMetadataCache,
   flushDeferredCompatibilityPublications,
   refreshMetadataCache,

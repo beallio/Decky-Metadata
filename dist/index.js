@@ -3615,6 +3615,11 @@ const ensureDetailsOverviewSafeFields = (appId) => {
     }
 };
 const isCompatibilityCategory$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
+/** Whether this record inherits a numeric global default for the selected scope. */
+const isCompatibilityDefaultEligible = (metadata, scope) => scope === "all"
+    || (scope === "metadata" && metadata !== undefined)
+    || (scope === "steam" && hasMatchedSteamAppId(metadata))
+    || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
 const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.compatibilityDefault, scope = metadataState.compatibilityDefaultScope) => {
     if (isCompatibilityCategory$1(metadata?.deck_compat_override)) {
         return metadata.deck_compat_override;
@@ -3624,11 +3629,7 @@ const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.
             ? metadata.deck_compat_category
             : null;
     }
-    const eligible = scope === "all"
-        || (scope === "metadata" && metadata !== undefined)
-        || (scope === "steam" && hasMatchedSteamAppId(metadata))
-        || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
-    if (isCompatibilityCategory$1(globalDefault) && eligible) {
+    if (isCompatibilityCategory$1(globalDefault) && isCompatibilityDefaultEligible(metadata, scope)) {
         return globalDefault;
     }
     if (isCompatibilityCategory$1(metadata?.deck_compat_category)) {
@@ -8345,6 +8346,62 @@ let compatibilityDropdownControlUnmounted = false;
 let compatibilityDropdownReturnVisible = false;
 let compatibilityDropdownSelectionSaved = false;
 let compatibilityDropdownOrigin = "category";
+let compatibilityPolicySaveId = 0;
+let compatibilityPolicySave = null;
+const compatibilityPolicySaveListeners = new Set();
+const notifyCompatibilityPolicySave = () => {
+    compatibilityPolicySaveListeners.forEach((listener) => listener());
+};
+/** Keep one policy transaction alive while the native popup remounts QAM. */
+const compatibilityPolicySaveSnapshot = () => compatibilityPolicySave;
+const subscribeCompatibilityPolicySave = (listener) => {
+    compatibilityPolicySaveListeners.add(listener);
+    return () => compatibilityPolicySaveListeners.delete(listener);
+};
+const hasPendingCompatibilityPolicySave = () => compatibilityPolicySave !== null && compatibilityPolicySave.pendingKind !== null;
+const beginCompatibilityPolicySave = (kind, lifecycleGeneration, category, scope) => {
+    const id = compatibilityPolicySaveId + 1;
+    compatibilityPolicySaveId = id;
+    compatibilityPolicySave = {
+        id,
+        lifecycleGeneration,
+        category,
+        scope,
+        pendingKind: kind,
+        error: "",
+    };
+    notifyCompatibilityPolicySave();
+    return id;
+};
+/** Complete only the transaction from the current plugin lifetime. */
+const settleCompatibilityPolicySave = (id, lifecycleGeneration, category, scope, error = "") => {
+    if (!compatibilityPolicySave
+        || compatibilityPolicySave.id !== id
+        || compatibilityPolicySave.lifecycleGeneration !== lifecycleGeneration) {
+        return false;
+    }
+    compatibilityPolicySave = {
+        id,
+        lifecycleGeneration,
+        category,
+        scope,
+        pendingKind: null,
+        error,
+    };
+    notifyCompatibilityPolicySave();
+    return true;
+};
+/** Invalidate an old plugin's transaction without letting it unlock a new mount. */
+const discardStaleCompatibilityPolicySave = (lifecycleGeneration) => {
+    if (!compatibilityPolicySave
+        || compatibilityPolicySave.lifecycleGeneration === lifecycleGeneration) {
+        return false;
+    }
+    compatibilityPolicySave = null;
+    compatibilityPolicySaveId += 1;
+    notifyCompatibilityPolicySave();
+    return true;
+};
 const requestCompatibilityDropdownReturn = (origin) => {
     compatibilityDropdownReturnPending = true;
     compatibilityDropdownControlUnmounted = false;
@@ -8504,6 +8561,7 @@ const epochToUsDate = (value) => {
     return `${mm}-${dd}-${date.getUTCFullYear()}`;
 };
 const Content = () => {
+    const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
     const { games, loadGames } = useNonSteamGames();
@@ -8524,13 +8582,12 @@ const Content = () => {
     const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
     const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
     const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(null);
+    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(initialCompatibilityPolicySave?.category ?? null);
     const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(false);
-    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState("");
-    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState("all");
-    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(false);
-    const compatibilitySaveInFlight = SP_REACT.useRef(false);
+    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialCompatibilityPolicySave?.pendingKind === "category");
+    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState(initialCompatibilityPolicySave?.error ?? "");
+    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState(initialCompatibilityPolicySave?.scope ?? "all");
+    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialCompatibilityPolicySave?.pendingKind === "scope");
     const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
     const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
@@ -8545,6 +8602,23 @@ const Content = () => {
         if (!element)
             noteCompatibilityDropdownControlUnmounted();
         setCompatibilityDefaultScopeControlState(element);
+    }, []);
+    const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
+        const shared = compatibilityPolicySaveSnapshot();
+        if (shared
+            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+            setCompatibilityDefaultState(shared.category);
+            setCompatibilityDefaultScopeState(shared.scope);
+            setCompatibilityDefaultBusy(shared.pendingKind === "category");
+            setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
+            setCompatibilityDefaultError(shared.error);
+            return;
+        }
+        setCompatibilityDefaultState(fallbackCategory);
+        setCompatibilityDefaultScopeState(fallbackScope);
+        setCompatibilityDefaultBusy(false);
+        setCompatibilityDefaultScopeBusy(false);
+        setCompatibilityDefaultError("");
     }, []);
     SP_REACT.useEffect(() => {
         const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
@@ -8688,35 +8762,43 @@ const Content = () => {
     }, []);
     SP_REACT.useEffect(() => {
         let cancelled = false;
+        discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
+        synchronizeCompatibilityPolicySave();
         const requestVersion = compatibilityDefaultLoadVersion.current;
         void ensureCompatibilityDefault()
             .then((value) => {
             if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
                 return;
-            setCompatibilityDefaultState(value);
-            setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
-            setCompatibilityDefaultError("");
+            synchronizeCompatibilityPolicySave(value, compatibilityDefaultScopeSnapshot());
             setCompatibilityDefaultLoaded(true);
         })
             .catch((error) => {
             if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
                 return;
+            const shared = compatibilityPolicySaveSnapshot();
+            if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+                synchronizeCompatibilityPolicySave();
+                return;
+            }
             setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
             warn("bridge", "compatibility default load failed", error);
         });
-        const unsubscribe = subscribeCompatibilityRevision(() => {
+        const unsubscribeRevision = subscribeCompatibilityRevision(() => {
             if (cancelled || !compatibilityDefaultLoadedSnapshot())
                 return;
-            setCompatibilityDefaultState(compatibilityDefaultSnapshot());
-            setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
-            setCompatibilityDefaultError("");
+            synchronizeCompatibilityPolicySave();
             setCompatibilityDefaultLoaded(true);
+        });
+        const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
+            if (!cancelled)
+                synchronizeCompatibilityPolicySave();
         });
         return () => {
             cancelled = true;
-            unsubscribe();
+            unsubscribeRevision();
+            unsubscribeSave();
         };
-    }, []);
+    }, [synchronizeCompatibilityPolicySave]);
     SP_REACT.useEffect(() => {
         void loadDelistedStatus();
     }, [loadDelistedStatus]);
@@ -8809,13 +8891,11 @@ const Content = () => {
         }
     };
     const saveCompatibilityDefault = async (category) => {
-        if (compatibilitySaveInFlight.current || !compatibilityDefaultLoaded)
+        if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded)
             return;
-        compatibilitySaveInFlight.current = true;
         const previous = compatibilityDefault;
         const lifecycleGeneration = compatibilityLifecycleSnapshot();
-        setCompatibilityDefaultBusy(true);
-        setCompatibilityDefaultError("");
+        const saveId = beginCompatibilityPolicySave("category", lifecycleGeneration, previous, compatibilityDefaultScope);
         compatibilityDefaultLoadVersion.current += 1;
         try {
             const saved = await setCompatibilityDefault(category);
@@ -8824,7 +8904,7 @@ const Content = () => {
             const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultState(confirmed);
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
             if (noteCompatibilityDropdownSelectionSaved()) {
                 setCompatibilityDropdownReturnVersion((version) => version + 1);
             }
@@ -8833,31 +8913,21 @@ const Content = () => {
         catch (error) {
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultState(previous);
             const message = `Compatibility default could not be saved: ${String(error)}`;
-            setCompatibilityDefaultError(message);
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
             toastError("Compatibility", message);
             warn("bridge", "compatibility default save failed", error);
         }
-        finally {
-            compatibilitySaveInFlight.current = false;
-            if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
-                setCompatibilityDefaultBusy(false);
-            }
-        }
     };
     const saveCompatibilityDefaultScope = async (scope) => {
-        if (compatibilitySaveInFlight.current ||
+        if (hasPendingCompatibilityPolicySave() ||
             !compatibilityDefaultLoaded ||
             compatibilityDefault === null)
             return;
-        compatibilitySaveInFlight.current = true;
         const previous = compatibilityDefaultScope;
         const lifecycleGeneration = compatibilityLifecycleSnapshot();
-        setCompatibilityDefaultScopeBusy(true);
-        setCompatibilityDefaultError("");
+        const saveId = beginCompatibilityPolicySave("scope", lifecycleGeneration, compatibilityDefault, scope);
         compatibilityDefaultLoadVersion.current += 1;
-        setCompatibilityDefaultScopeState(scope);
         try {
             const saved = await setCompatibilityDefaultScope(scope);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
@@ -8865,7 +8935,7 @@ const Content = () => {
             const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultScopeState(confirmed);
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
             if (noteCompatibilityDropdownSelectionSaved()) {
                 setCompatibilityDropdownReturnVersion((version) => version + 1);
             }
@@ -8874,17 +8944,10 @@ const Content = () => {
         catch (error) {
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultScopeState(previous);
             const message = `Compatibility default scope could not be saved: ${String(error)}`;
-            setCompatibilityDefaultError(message);
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
             toastError("Compatibility", message);
             warn("bridge", "compatibility default scope save failed", error);
-        }
-        finally {
-            compatibilitySaveInFlight.current = false;
-            if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
-                setCompatibilityDefaultScopeBusy(false);
-            }
         }
     };
     const saveUpdateChannel = async (enabled) => {
@@ -9398,8 +9461,7 @@ const compatibilityStatusDisplay = (metadata, globalDefault, scope) => {
             ? "Follow Valve (unavailable — original Steam status)"
             : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
     }
-    const effective = effectiveCompatibilityCategory(metadata, globalDefault, scope);
-    if (globalDefault !== null && effective === globalDefault) {
+    if (globalDefault !== null && isCompatibilityDefaultEligible(metadata, scope)) {
         return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
     }
     if (globalDefault !== null) {

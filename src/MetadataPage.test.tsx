@@ -29,9 +29,17 @@ const steam = vi.hoisted(() => ({
   effectiveCompatibilityCategory: vi.fn((metadata: any, globalDefault: any, scope: string) => {
     if (typeof metadata?.deck_compat_override === "number") return metadata.deck_compat_override;
     if (metadata?.deck_compat_override === "valve") return metadata.deck_compat_category ?? null;
-    const eligible = scope === "all" || scope === "metadata";
+    const eligible = scope === "all"
+      || scope === "metadata"
+      || (scope === "steam" && Number(metadata?.steam_appid) > 0)
+      || (scope === "no-steam" && metadata !== undefined && Number(metadata?.steam_appid) <= 0);
     return eligible && globalDefault !== null ? globalDefault : metadata?.deck_compat_category ?? null;
   }),
+  isCompatibilityDefaultEligible: vi.fn((metadata: any, scope: string) =>
+    scope === "all"
+      || (scope === "metadata" && metadata !== undefined)
+      || (scope === "steam" && Number(metadata?.steam_appid) > 0)
+      || (scope === "no-steam" && metadata !== undefined && Number(metadata?.steam_appid) <= 0)),
   metadataCache: {} as Record<string, any>,
   nativeShortcutName: vi.fn(() => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
@@ -269,6 +277,44 @@ describe("MetadataPage compatibility status", () => {
     expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — Playable from Valve)",
     );
+  });
+
+  it("does not mistake an equal Valve category for global inheritance outside the scope", () => {
+    state.values[0] = makeMetadata({ steam_appid: 15100, deck_compat_category: 3 });
+    state.values[15] = 3;
+    state.values[16] = "no-steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("no-steam");
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Verified from Valve)",
+    );
+  });
+
+  it("updates the mounted editor preview after a scope-only revision", async () => {
+    state.values[0] = makeMetadata({ steam_appid: 15100, deck_compat_category: 2 });
+    state.values[15] = 3;
+    state.values[16] = "no-steam";
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(3);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("no-steam");
+    let notifyCompatibilityRevision!: () => void;
+    steam.subscribeCompatibilityRevision.mockImplementation(((listener: () => void) => {
+      notifyCompatibilityRevision = listener;
+      return () => undefined;
+    }) as any);
+    effects.enabled = true;
+
+    renderPage();
+    effects.callbacks[4]();
+    await flushAsyncWork();
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Playable from Valve)",
+    );
+
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
+    notifyCompatibilityRevision();
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
   });
 
   it("saves a dropdown change atomically and refreshes after success", async () => {

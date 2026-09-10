@@ -156,6 +156,16 @@ const ensureDetailsOverviewSafeFields = (appId: number) => {
 const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCategory =>
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 
+/** Whether this record inherits a numeric global default for the selected scope. */
+export const isCompatibilityDefaultEligible = (
+  metadata: Pick<MetadataData, "steam_appid"> | undefined,
+  scope: CompatibilityDefaultScope,
+): boolean =>
+  scope === "all"
+  || (scope === "metadata" && metadata !== undefined)
+  || (scope === "steam" && hasMatchedSteamAppId(metadata))
+  || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
+
 export const effectiveCompatibilityCategory = (
   metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid"> | undefined,
   globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
@@ -169,11 +179,7 @@ export const effectiveCompatibilityCategory = (
       ? metadata.deck_compat_category
       : null;
   }
-  const eligible = scope === "all"
-    || (scope === "metadata" && metadata !== undefined)
-    || (scope === "steam" && hasMatchedSteamAppId(metadata))
-    || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
-  if (isCompatibilityCategory(globalDefault) && eligible) {
+  if (isCompatibilityCategory(globalDefault) && isCompatibilityDefaultEligible(metadata, scope)) {
     return globalDefault;
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {

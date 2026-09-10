@@ -45,9 +45,13 @@ import {
   subscribeCompatibilityRevision,
 } from "./steam";
 import {
+  beginCompatibilityPolicySave,
   clearCompatibilityDropdownReturn,
+  compatibilityPolicySaveSnapshot,
   compatibilityDropdownReturnOrigin,
   consumeCompatibilityDropdownReturn,
+  discardStaleCompatibilityPolicySave,
+  hasPendingCompatibilityPolicySave,
   hasCompatibilityDropdownReturn,
   isCompatibilityDropdownReturnReady,
   isCompatibilityDropdownSelectionReturn,
@@ -55,6 +59,8 @@ import {
   noteCompatibilityDropdownReturnVisible,
   noteCompatibilityDropdownSelectionSaved,
   requestCompatibilityDropdownReturn,
+  settleCompatibilityPolicySave,
+  subscribeCompatibilityPolicySave,
 } from "./qamCompatibilityFocus";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
@@ -178,6 +184,7 @@ const epochToUsDate = (value?: number | null) => {
 };
 
 export const Content = () => {
+  const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
   const { games, loadGames } = useNonSteamGames();
@@ -202,13 +209,22 @@ export const Content = () => {
     useState<UpdateChannel>("stable");
   const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [compatibilityDefault, setCompatibilityDefaultState] = useState<DeckCompatibilityCategory | null>(null);
+  const [compatibilityDefault, setCompatibilityDefaultState] = useState<DeckCompatibilityCategory | null>(
+    initialCompatibilityPolicySave?.category ?? null,
+  );
   const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = useState(false);
-  const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(false);
-  const [compatibilityDefaultError, setCompatibilityDefaultError] = useState("");
-  const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = useState<CompatibilityDefaultScope>("all");
-  const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(false);
-  const compatibilitySaveInFlight = useRef(false);
+  const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(
+    initialCompatibilityPolicySave?.pendingKind === "category",
+  );
+  const [compatibilityDefaultError, setCompatibilityDefaultError] = useState(
+    initialCompatibilityPolicySave?.error ?? "",
+  );
+  const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = useState<CompatibilityDefaultScope>(
+    initialCompatibilityPolicySave?.scope ?? "all",
+  );
+  const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(
+    initialCompatibilityPolicySave?.pendingKind === "scope",
+  );
   const compatibilityDefaultLoadVersion = useRef(0);
   const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
     useState<HTMLDivElement | null>(null);
@@ -224,6 +240,29 @@ export const Content = () => {
   const setCompatibilityDefaultScopeControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setCompatibilityDefaultScopeControlState(element);
+  }, []);
+
+  const synchronizeCompatibilityPolicySave = useCallback((
+    fallbackCategory = compatibilityDefaultSnapshot(),
+    fallbackScope = compatibilityDefaultScopeSnapshot(),
+  ) => {
+    const shared = compatibilityPolicySaveSnapshot();
+    if (
+      shared
+      && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+    ) {
+      setCompatibilityDefaultState(shared.category);
+      setCompatibilityDefaultScopeState(shared.scope);
+      setCompatibilityDefaultBusy(shared.pendingKind === "category");
+      setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
+      setCompatibilityDefaultError(shared.error);
+      return;
+    }
+    setCompatibilityDefaultState(fallbackCategory);
+    setCompatibilityDefaultScopeState(fallbackScope);
+    setCompatibilityDefaultBusy(false);
+    setCompatibilityDefaultScopeBusy(false);
+    setCompatibilityDefaultError("");
   }, []);
 
   useEffect(() => {
@@ -369,32 +408,39 @@ export const Content = () => {
 
   useEffect(() => {
     let cancelled = false;
+    discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
+    synchronizeCompatibilityPolicySave();
     const requestVersion = compatibilityDefaultLoadVersion.current;
     void ensureCompatibilityDefault()
       .then((value) => {
         if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
-        setCompatibilityDefaultState(value);
-        setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
-        setCompatibilityDefaultError("");
+        synchronizeCompatibilityPolicySave(value, compatibilityDefaultScopeSnapshot());
         setCompatibilityDefaultLoaded(true);
       })
       .catch((error) => {
         if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
+        const shared = compatibilityPolicySaveSnapshot();
+        if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+          synchronizeCompatibilityPolicySave();
+          return;
+        }
         setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
         log.warn("bridge", "compatibility default load failed", error);
       });
-    const unsubscribe = subscribeCompatibilityRevision(() => {
+    const unsubscribeRevision = subscribeCompatibilityRevision(() => {
       if (cancelled || !compatibilityDefaultLoadedSnapshot()) return;
-      setCompatibilityDefaultState(compatibilityDefaultSnapshot());
-      setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
-      setCompatibilityDefaultError("");
+      synchronizeCompatibilityPolicySave();
       setCompatibilityDefaultLoaded(true);
+    });
+    const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
+      if (!cancelled) synchronizeCompatibilityPolicySave();
     });
     return () => {
       cancelled = true;
-      unsubscribe();
+      unsubscribeRevision();
+      unsubscribeSave();
     };
-  }, []);
+  }, [synchronizeCompatibilityPolicySave]);
 
   useEffect(() => {
     void loadDelistedStatus();
@@ -490,73 +536,66 @@ export const Content = () => {
   };
 
   const saveCompatibilityDefault = async (category: DeckCompatibilityCategory | null) => {
-    if (compatibilitySaveInFlight.current || !compatibilityDefaultLoaded) return;
-    compatibilitySaveInFlight.current = true;
+    if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded) return;
     const previous = compatibilityDefault;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
-    setCompatibilityDefaultBusy(true);
-    setCompatibilityDefaultError("");
+    const saveId = beginCompatibilityPolicySave(
+      "category",
+      lifecycleGeneration,
+      previous,
+      compatibilityDefaultScope,
+    );
     compatibilityDefaultLoadVersion.current += 1;
     try {
       const saved = await setCompatibilityDefault(category);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultState(confirmed);
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
       toastSuccess("Compatibility", "Default compatibility status saved");
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultState(previous);
       const message = `Compatibility default could not be saved: ${String(error)}`;
-      setCompatibilityDefaultError(message);
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
       toastError("Compatibility", message);
       log.warn("bridge", "compatibility default save failed", error);
-    } finally {
-      compatibilitySaveInFlight.current = false;
-      if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
-        setCompatibilityDefaultBusy(false);
-      }
     }
   };
 
   const saveCompatibilityDefaultScope = async (scope: CompatibilityDefaultScope) => {
     if (
-      compatibilitySaveInFlight.current ||
+      hasPendingCompatibilityPolicySave() ||
       !compatibilityDefaultLoaded ||
       compatibilityDefault === null
     ) return;
-    compatibilitySaveInFlight.current = true;
     const previous = compatibilityDefaultScope;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
-    setCompatibilityDefaultScopeBusy(true);
-    setCompatibilityDefaultError("");
+    const saveId = beginCompatibilityPolicySave(
+      "scope",
+      lifecycleGeneration,
+      compatibilityDefault,
+      scope,
+    );
     compatibilityDefaultLoadVersion.current += 1;
-    setCompatibilityDefaultScopeState(scope);
     try {
       const saved = await setCompatibilityDefaultScope(scope);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultScopeState(confirmed);
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
       toastSuccess("Compatibility", "Default compatibility scope saved");
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultScopeState(previous);
       const message = `Compatibility default scope could not be saved: ${String(error)}`;
-      setCompatibilityDefaultError(message);
+      settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
       toastError("Compatibility", message);
       log.warn("bridge", "compatibility default scope save failed", error);
-    } finally {
-      compatibilitySaveInFlight.current = false;
-      if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
-        setCompatibilityDefaultScopeBusy(false);
-      }
     }
   };
 

@@ -458,6 +458,36 @@ def test_compatibility_default_scope_prefers_valid_canonical_and_normalizes_inva
     assert asyncio.run(invalid.get_compatibility_default_scope()) == "metadata"
 
 
+def test_invalid_canonical_scope_without_legacy_normalizes_in_memory_then_persists_on_save(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(
+        {
+            "settings": {
+                "debug_logging": True,
+                "deck_compat_default_scope": "bad",
+            },
+            "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+        }
+    )
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+    plugin._data_cache = None
+    plugin._data_cache_mtime_ns = None
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
+    assert plugin._data["settings"]["deck_compat_default_scope"] == "all"
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
+
+    assert asyncio.run(plugin.set_compatibility_default(3)) == 3
+    persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"] == {
+        "debug_logging": True,
+        "deck_compat_default": 3,
+        "deck_compat_default_scope": "all",
+    }
+    assert persisted["metadata"] == {"101": {"title": "unchanged", "steam_store_state": "unknown"}}
+
+
 def test_compatibility_default_scope_missing_keys_default_to_all_without_adding_a_key(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
@@ -500,10 +530,26 @@ def test_failed_compatibility_default_scope_save_restores_value_or_key_absence(t
     assert plugin._data["settings"]["deck_compat_default_scope"] == "steam"
 
     absent = make_settings_plugin(tmp_path / "absent", monkeypatch)
+    absent._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps({
+        "settings": {"debug_logging": False},
+        "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+    })
+    absent._data_file.write_text(serialized, encoding="utf-8")
+    absent._data_cache = None
+    absent._data_cache_mtime_ns = None
+    assert asyncio.run(absent.get_compatibility_default_scope()) == "all"
+    original_save = absent._save_data
     monkeypatch.setattr(absent, "_save_data", fail_save)
     with pytest.raises(OSError, match="simulated write failure"):
         asyncio.run(absent.set_compatibility_default_scope("metadata"))
     assert "deck_compat_default_scope" not in absent._data["settings"]
+    assert absent._data_file.read_text(encoding="utf-8") == serialized
+
+    monkeypatch.setattr(absent, "_save_data", original_save)
+    assert asyncio.run(absent.set_compatibility_default_scope("metadata")) == "metadata"
+    persisted = json.loads(absent._data_file.read_text(encoding="utf-8"))
+    assert persisted["settings"]["deck_compat_default_scope"] == "metadata"
 
 
 def test_steam_appid_reassignment_clears_old_provider_category_and_keeps_follow_valve(tmp_path, monkeypatch) -> None:

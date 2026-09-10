@@ -82,7 +82,7 @@ def load_data(
     has_legacy_scope = isinstance(payload_settings, dict) and "deck_compat_default_matched_only" in payload_settings
     canonical_scope = compatibility_default_scope(merged["settings"].get("deck_compat_default_scope")) if has_scope else None
     fallback_scope = "metadata" if has_legacy_scope and merged["settings"].get("deck_compat_default_matched_only") is True else "all"
-    if canonical_scope is not None or has_legacy_scope:
+    if has_scope or has_legacy_scope:
         merged["settings"]["deck_compat_default_scope"] = canonical_scope or fallback_scope
     else:
         # Leave a file with neither old nor new scope key untouched in memory;
