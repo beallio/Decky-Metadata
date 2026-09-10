@@ -63,73 +63,60 @@ action is available.
 
 ## Set the compatibility status
 
-In the Decky Metadata Quick Access Menu, use **Default compatibility status**
-to set a live default for selected existing and new non-Steam shortcuts:
+Use Steam's compatibility rating, or choose your own label for the non-Steam
+games in your library.
 
-1. **Automatic — use matched Steam status**
-2. **Verified**
-3. **Playable**
-4. **Unsupported**
-5. **Unknown**
+### Choose a default
 
-Automatic is the initial setting. It uses the matched Steam category when one
-is available; otherwise it leaves the shortcut's original Steam status alone.
-The default changes existing cards as well as new shortcuts. It does not create
-metadata records or use ProtonDB.
+Open Decky Metadata in the Quick Access Menu and find **Default compatibility
+status**.
 
-Use **Apply default to** to select the default scope:
+- **Automatic — use matched Steam status** uses the matching Steam game's
+  rating. If none is available, your game's original status stays unchanged.
+- Choose **Verified**, **Playable**, or **Unsupported** to set your own label.
+- **Unknown** shows no compatibility badge.
 
-1. **Steam-matched games**: saved records with a valid Steam App ID.
-2. **Saved games without a Steam ID**: saved manual or provider records without
-   a valid Steam App ID.
-3. **All games with saved metadata**: every saved record.
-4. **All non-Steam games**: every native non-Steam shortcut, including one
-   without saved metadata.
+Leave **Automatic** selected if you just want Steam's rating.
 
-The scope uses the saved record and Steam App ID. It does not use the metadata
-provider or current store availability. A no-record shortcut belongs only to
-**All non-Steam games**. Per-game choices are unaffected. The scope selector is
-unavailable while the default is Automatic, but it keeps its saved selection.
-On upgrade, the old toggle's On value becomes **All games with saved metadata**;
-Off becomes **All non-Steam games**.
+### Choose which games it applies to
 
-Saving a default saves it immediately. Other eligible shortcuts update at once.
-If the current game's **Game Info** tab is open, that game's current status and
-rich Game Info stay in place until you leave the tab. Closing QAM or cancelling
-a context menu does not count as leaving. Switch to another tab, page, or game,
-or choose **Decky metadata...** to open the editor. The editor is an exit; a
-later editor Save uses its latest per-game choice.
+If you choose your own label, use **Apply default to**:
 
-For one game, open **Decky metadata...** and use **Compatibility status**:
-
-1. **Use global default**
-2. **Follow Valve**
-3. **Verified**
-4. **Playable**
-5. **Unsupported**
-6. **Unknown**
-
-Per-game choices take priority. **Follow Valve** ignores the global default and
-uses only the current matched Steam category; with no category, it restores or
-keeps the original Steam status. A fixed per-game category always wins.
-**Unknown** is a real Valve category, but Steam shows it with no compatibility
-badge. These choices are user-selected labels, not Valve certification or a
-claim about emulator performance.
-
-| Situation | Result |
+| Option | Games included |
 | --- | --- |
-| Global Verified, a game inside the selected scope using the default | Verified |
-| Follow Valve with Valve Playable | Playable |
-| Follow Valve with missing Valve data | Original Steam status |
-| Follow Valve with Valve Unknown | Unknown, with no badge |
-| Global Automatic | Matched category, or original Steam status if unavailable |
-| Changing the global default | Only inheriting games inside the selected scope take the new default |
-| Current Game Info tab during a default change | Keeps its current value until you leave; other games update now |
-| Steam-matched scope, shortcut with no saved metadata | Original Steam status |
-| Game outside the selected scope | Per-game choice, otherwise Valve category or original Steam status |
+| **Steam-matched games** | Games matched to a game on Steam. |
+| **Saved games without a Steam ID** | Games with saved information but no Steam match, including information you added yourself. |
+| **All games with saved metadata** | Any game with saved information in Decky Metadata. |
+| **All non-Steam games** | Every non-Steam game or app, including entries you have not matched. |
 
-See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
-for upgrade, persistence, and lifecycle details.
+For example, choose **Playable** and **All non-Steam games** to give all your
+added games that label.
+
+Games you leave out still use Steam's rating when one is available, or keep
+their original status. This control is disabled under **Automatic**, but
+remembers your selection.
+
+### Change just one game
+
+Open the game's menu, select **Decky metadata...**, and find **Compatibility
+status**:
+
+- **Use global default** follows the choices above.
+- **Follow Valve** ignores your default and uses Steam's rating for that game.
+  If no rating is available, it keeps the game's original status.
+- Choose **Verified**, **Playable**, **Unsupported**, or **Unknown** to set a
+  label just for this game.
+
+Select **Save** when you finish. A per-game choice takes priority over your
+default.
+
+**When will I see the change?** Other games update straight away. If you have
+a game's **Game Info** tab open, leave that tab and return to see its new
+status. Closing the Quick Access Menu alone does not update that open view.
+
+Choosing a label does not mean Valve tested your game or guarantee how well
+it will run. For more detail, see the
+[compatibility guide](docs/specs/compatibility-status.md).
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
