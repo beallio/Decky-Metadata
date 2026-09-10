@@ -130,6 +130,7 @@ export function MetadataSection({
             label="Apply default to"
             layout="below"
             childrenContainerWidth="max"
+            bottomSeparator="none"
             rgOptions={compatibilityDefaultScopeOptions}
             selectedOption={compatibilityDefaultScope}
             disabled={
@@ -153,7 +154,7 @@ export function MetadataSection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="none"
+          bottomSeparator="standard"
         >
           <div style={compactTextStyle}>
             {`${scopeDescription(compatibilityDefaultScope)} Per-game choices take priority.`}

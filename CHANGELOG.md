@@ -18,6 +18,11 @@ All notable changes to this project are documented here in Keep a Changelog form
   manual records are in the no-ID scope and a provider name does not decide
   eligibility. The saved selection stays available after Automatic is chosen.
 
+### Fixed
+
+- Place the compatibility scope separator below its explanation, directly above
+  **Refresh metadata**.
+
 ## [0.3.13] - 2026-09-07
 
 Add Steam shortcut names and fix stale Activity news
