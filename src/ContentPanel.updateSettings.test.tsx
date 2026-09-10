@@ -121,6 +121,17 @@ const remount = () => {
   return Content();
 };
 
+const importReloadedContent = async () => {
+  vi.resetModules();
+  const { Content: ReloadedContent } = await import("./ContentPanel");
+  return () => {
+    harness.hookIndex = 0;
+    harness.hooks = [];
+    harness.effects = [];
+    return ReloadedContent();
+  };
+};
+
 const children = (node: any): any[] => {
   if (node == null || typeof node === "boolean") return [];
   if (Array.isArray(node)) return node.flatMap(children);
@@ -319,6 +330,11 @@ describe("Content update settings", () => {
 
   it("keeps the global compatibility default disabled until it loads, then applies only a confirmed save", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(3);
+    steam.setConfirmedCompatibilityDefault.mockImplementation((value: 0 | 1 | 2 | 3 | null) => {
+      steam.compatibilityDefaultSnapshot.mockReturnValue(value);
+      return value;
+    });
     backend.setCompatibilityDefault.mockResolvedValue(2);
     render();
     runEffects();
@@ -337,6 +353,7 @@ describe("Content update settings", () => {
 
   it("keeps the confirmed global compatibility default after a failed save", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(3);
     backend.setCompatibilityDefault.mockRejectedValue(new Error("disk unavailable"));
     render();
     runEffects();
@@ -396,6 +413,10 @@ describe("Content update settings", () => {
   it("publishes only a backend-confirmed compatibility scope", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
     steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
+    steam.setConfirmedCompatibilityDefaultScope.mockImplementation((value: "steam" | "no-steam" | "metadata" | "all") => {
+      steam.compatibilityDefaultScopeSnapshot.mockReturnValue(value);
+      return value;
+    });
     backend.setCompatibilityDefaultScope.mockResolvedValue("steam");
     render();
     runEffects();
@@ -430,6 +451,15 @@ describe("Content update settings", () => {
 
   it("blocks overlapping policy saves until the scope request finishes", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(3);
+    steam.setConfirmedCompatibilityDefault.mockImplementation((value: 0 | 1 | 2 | 3 | null) => {
+      steam.compatibilityDefaultSnapshot.mockReturnValue(value);
+      return value;
+    });
+    steam.setConfirmedCompatibilityDefaultScope.mockImplementation((value: "steam" | "no-steam" | "metadata" | "all") => {
+      steam.compatibilityDefaultScopeSnapshot.mockReturnValue(value);
+      return value;
+    });
     let finishScope!: (value: "steam" | "no-steam" | "metadata" | "all") => void;
     backend.setCompatibilityDefaultScope.mockReturnValue(new Promise<"steam" | "no-steam" | "metadata" | "all">((resolve) => {
       finishScope = resolve;
@@ -535,6 +565,91 @@ describe("Content update settings", () => {
     expect(returnedSection.props.compatibilityDefaultScopeBusy).toBe(true);
     returnedSection.props.onCompatibilityDefaultChange(2);
     expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
+  });
+
+  it("shares a settled policy transaction across reloaded QAM bundles without overriding Automatic", async () => {
+    let confirmedCategory: 0 | 1 | 2 | 3 | null = 3;
+    let confirmedScope: "steam" | "no-steam" | "metadata" | "all" = "all";
+    const revisionListeners = new Set<() => void>();
+    const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
+    steam.compatibilityDefaultSnapshot.mockImplementation(() => confirmedCategory);
+    steam.compatibilityDefaultScopeSnapshot.mockImplementation(() => confirmedScope);
+    steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(true);
+    steam.ensureCompatibilityDefault.mockImplementation(async () => confirmedCategory);
+    steam.subscribeCompatibilityRevision.mockImplementation((listener: () => void) => {
+      revisionListeners.add(listener);
+      return () => revisionListeners.delete(listener);
+    });
+    steam.setConfirmedCompatibilityDefault.mockImplementation((value: 0 | 1 | 2 | 3 | null) => {
+      confirmedCategory = value;
+      return value;
+    });
+    steam.setConfirmedCompatibilityDefaultScope.mockImplementation((value: typeof confirmedScope) => {
+      confirmedScope = value;
+      return value;
+    });
+    backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
+
+    render();
+    runEffects();
+    await flushPromises();
+    const first = metadataSection(render());
+    first.props.onCompatibilityDefaultMenuWillOpen("scope");
+    first.props.onCompatibilityDefaultScopeChange("metadata");
+
+    const renderReloaded = await importReloadedContent();
+    const reloadedFocus = await import("./qamCompatibilityFocus");
+    expect(reloadedFocus.compatibilityDropdownReturnOrigin()).toBe("scope");
+    renderReloaded();
+    runEffects();
+    await flushPromises();
+    const pending = metadataSection(renderReloaded());
+    expect(pending.props.compatibilityDefaultScopeBusy).toBe(true);
+    pending.props.onCompatibilityDefaultChange(2);
+    expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
+
+    save.resolve("metadata");
+    await flushPromises();
+    renderReloaded();
+    runEffects();
+    const settled = metadataSection(renderReloaded());
+    expect(settled.props.compatibilityDefault).toBe(3);
+    expect(settled.props.compatibilityDefaultScope).toBe("metadata");
+    expect(settled.props.compatibilityDefaultScopeBusy).toBe(false);
+
+    confirmedCategory = null;
+    revisionListeners.forEach((listener) => listener());
+    const automatic = metadataSection(renderReloaded());
+    expect(automatic.props.compatibilityDefault).toBeNull();
+    expect(automatic.props.compatibilityDefaultScope).toBe("metadata");
+    expect(automatic.props.compatibilityDefaultScopeBusy).toBe(false);
+    expect(automatic.props.compatibilityDefault).toBeNull();
+  });
+
+  it("reports a retained bundle's failed policy save in the returned QAM", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
+    backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
+
+    render();
+    runEffects();
+    await flushPromises();
+    metadataSection(render()).props.onCompatibilityDefaultScopeChange("steam");
+
+    const renderReloaded = await importReloadedContent();
+    renderReloaded();
+    runEffects();
+    await flushPromises();
+    expect(metadataSection(renderReloaded()).props.compatibilityDefaultScopeBusy).toBe(true);
+
+    save.reject(new Error("disk unavailable"));
+    await flushPromises();
+    renderReloaded();
+    runEffects();
+    const failed = metadataSection(renderReloaded());
+    expect(failed.props.compatibilityDefaultScopeBusy).toBe(false);
+    expect(failed.props.compatibilityDefaultScope).toBe("all");
+    expect(failed.props.compatibilityDefaultError).toContain("disk unavailable");
   });
 
   it("records the dropdown that must receive focus after its popup closes", async () => {

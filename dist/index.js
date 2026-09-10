@@ -1416,10 +1416,10 @@ const compatibilityRuntime = () => {
     host[COMPATIBILITY_RUNTIME_KEY] = runtime;
     return runtime;
 };
-const runtime = compatibilityRuntime();
-const metadataCache = runtime.metadataCache;
-const metadataState = runtime.metadataState;
-const compatibilityRevisionListeners = runtime.revisionListeners;
+const runtime$1 = compatibilityRuntime();
+const metadataCache = runtime$1.metadataCache;
+const metadataState = runtime$1.metadataState;
+const compatibilityRevisionListeners = runtime$1.revisionListeners;
 const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
 const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
 const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
@@ -8407,31 +8407,53 @@ const installSteamPatches = () => {
     };
 };
 
-// The native dropdown is displayed in a separate Big Picture window. Keep the
-// request outside a mounted QAM component because that transition can remount
-// the plugin content before it returns to the Quick Access window.
-let compatibilityDropdownReturnPending = false;
-let compatibilityDropdownControlUnmounted = false;
-let compatibilityDropdownReturnVisible = false;
-let compatibilityDropdownSelectionSaved = false;
-let compatibilityDropdownOrigin = "category";
-let compatibilityPolicySaveId = 0;
-let compatibilityPolicySave = null;
-const compatibilityPolicySaveListeners = new Set();
+const COMPATIBILITY_QAM_RUNTIME_KEY = "__deckyMetadataCompatibilityQamRuntime";
+const newCompatibilityQamRuntime = () => ({
+    dropdown: {
+        returnPending: false,
+        controlUnmounted: false,
+        returnVisible: false,
+        selectionSaved: false,
+        origin: "category",
+    },
+    policySaveId: 0,
+    policySave: null,
+    policySaveListeners: new Set(),
+});
+/**
+ * A native popup can keep an old callback alive while Decky evaluates a new
+ * bundle for the replacement QAM panel. Share that UI handoff state just like
+ * the compatibility policy runtime, so both bundles observe one transaction.
+ */
+const compatibilityQamRuntime = () => {
+    const host = globalThis;
+    const existing = host[COMPATIBILITY_QAM_RUNTIME_KEY];
+    if (existing
+        && typeof existing === "object"
+        && existing.dropdown
+        && existing.policySaveListeners instanceof Set
+        && typeof existing.policySaveId === "number") {
+        return existing;
+    }
+    const runtime = newCompatibilityQamRuntime();
+    host[COMPATIBILITY_QAM_RUNTIME_KEY] = runtime;
+    return runtime;
+};
+const runtime = compatibilityQamRuntime();
 const notifyCompatibilityPolicySave = () => {
-    compatibilityPolicySaveListeners.forEach((listener) => listener());
+    runtime.policySaveListeners.forEach((listener) => listener());
 };
 /** Keep one policy transaction alive while the native popup remounts QAM. */
-const compatibilityPolicySaveSnapshot = () => compatibilityPolicySave;
+const compatibilityPolicySaveSnapshot = () => runtime.policySave;
 const subscribeCompatibilityPolicySave = (listener) => {
-    compatibilityPolicySaveListeners.add(listener);
-    return () => compatibilityPolicySaveListeners.delete(listener);
+    runtime.policySaveListeners.add(listener);
+    return () => runtime.policySaveListeners.delete(listener);
 };
-const hasPendingCompatibilityPolicySave = () => compatibilityPolicySave !== null && compatibilityPolicySave.pendingKind !== null;
+const hasPendingCompatibilityPolicySave = () => runtime.policySave !== null && runtime.policySave.pendingKind !== null;
 const beginCompatibilityPolicySave = (kind, lifecycleGeneration, category, scope) => {
-    const id = compatibilityPolicySaveId + 1;
-    compatibilityPolicySaveId = id;
-    compatibilityPolicySave = {
+    const id = runtime.policySaveId + 1;
+    runtime.policySaveId = id;
+    runtime.policySave = {
         id,
         lifecycleGeneration,
         category,
@@ -8444,12 +8466,12 @@ const beginCompatibilityPolicySave = (kind, lifecycleGeneration, category, scope
 };
 /** Complete only the transaction from the current plugin lifetime. */
 const settleCompatibilityPolicySave = (id, lifecycleGeneration, category, scope, error = "") => {
-    if (!compatibilityPolicySave
-        || compatibilityPolicySave.id !== id
-        || compatibilityPolicySave.lifecycleGeneration !== lifecycleGeneration) {
+    if (!runtime.policySave
+        || runtime.policySave.id !== id
+        || runtime.policySave.lifecycleGeneration !== lifecycleGeneration) {
         return false;
     }
-    compatibilityPolicySave = {
+    runtime.policySave = {
         id,
         lifecycleGeneration,
         category,
@@ -8462,66 +8484,66 @@ const settleCompatibilityPolicySave = (id, lifecycleGeneration, category, scope,
 };
 /** Invalidate an old plugin's transaction without letting it unlock a new mount. */
 const discardStaleCompatibilityPolicySave = (lifecycleGeneration) => {
-    if (!compatibilityPolicySave
-        || compatibilityPolicySave.lifecycleGeneration === lifecycleGeneration) {
+    if (!runtime.policySave
+        || runtime.policySave.lifecycleGeneration === lifecycleGeneration) {
         return false;
     }
-    compatibilityPolicySave = null;
-    compatibilityPolicySaveId += 1;
+    runtime.policySave = null;
+    runtime.policySaveId += 1;
     notifyCompatibilityPolicySave();
     return true;
 };
 const requestCompatibilityDropdownReturn = (origin) => {
-    compatibilityDropdownReturnPending = true;
-    compatibilityDropdownControlUnmounted = false;
-    compatibilityDropdownReturnVisible = false;
-    compatibilityDropdownSelectionSaved = false;
-    compatibilityDropdownOrigin = origin;
+    runtime.dropdown.returnPending = true;
+    runtime.dropdown.controlUnmounted = false;
+    runtime.dropdown.returnVisible = false;
+    runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.origin = origin;
 };
-const hasCompatibilityDropdownReturn = () => compatibilityDropdownReturnPending;
-const compatibilityDropdownReturnOrigin = () => compatibilityDropdownOrigin;
+const hasCompatibilityDropdownReturn = () => runtime.dropdown.returnPending;
+const compatibilityDropdownReturnOrigin = () => runtime.dropdown.origin;
 const noteCompatibilityDropdownControlUnmounted = () => {
-    if (!compatibilityDropdownReturnPending)
+    if (!runtime.dropdown.returnPending)
         return false;
-    compatibilityDropdownControlUnmounted = true;
+    runtime.dropdown.controlUnmounted = true;
     return true;
 };
 const noteCompatibilityDropdownReturnVisible = () => {
-    if (!compatibilityDropdownReturnPending || !compatibilityDropdownControlUnmounted) {
+    if (!runtime.dropdown.returnPending || !runtime.dropdown.controlUnmounted) {
         return false;
     }
-    compatibilityDropdownReturnVisible = true;
+    runtime.dropdown.returnVisible = true;
     return true;
 };
 /** Selection completes after the backend confirms the new global policy. */
 const noteCompatibilityDropdownSelectionSaved = () => {
-    if (!compatibilityDropdownReturnPending)
+    if (!runtime.dropdown.returnPending)
         return false;
-    compatibilityDropdownReturnVisible = true;
-    compatibilityDropdownSelectionSaved = true;
+    runtime.dropdown.returnVisible = true;
+    runtime.dropdown.selectionSaved = true;
     return true;
 };
-const isCompatibilityDropdownSelectionReturn = () => compatibilityDropdownSelectionSaved;
-const isCompatibilityDropdownReturnReady = () => compatibilityDropdownReturnPending && compatibilityDropdownReturnVisible;
+const isCompatibilityDropdownSelectionReturn = () => runtime.dropdown.selectionSaved;
+const isCompatibilityDropdownReturnReady = () => runtime.dropdown.returnPending && runtime.dropdown.returnVisible;
 /**
  * Consume the request only after native gamepad focus succeeds. Failed early
  * attempts remain armed until the current close handoff finishes or aborts.
  */
 const consumeCompatibilityDropdownReturn = () => {
-    const pending = compatibilityDropdownReturnPending;
-    compatibilityDropdownReturnPending = false;
-    compatibilityDropdownControlUnmounted = false;
-    compatibilityDropdownReturnVisible = false;
-    compatibilityDropdownSelectionSaved = false;
-    compatibilityDropdownOrigin = "category";
+    const pending = runtime.dropdown.returnPending;
+    runtime.dropdown.returnPending = false;
+    runtime.dropdown.controlUnmounted = false;
+    runtime.dropdown.returnVisible = false;
+    runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.origin = "category";
     return pending;
 };
 const clearCompatibilityDropdownReturn = () => {
-    compatibilityDropdownReturnPending = false;
-    compatibilityDropdownControlUnmounted = false;
-    compatibilityDropdownReturnVisible = false;
-    compatibilityDropdownSelectionSaved = false;
-    compatibilityDropdownOrigin = "category";
+    runtime.dropdown.returnPending = false;
+    runtime.dropdown.controlUnmounted = false;
+    runtime.dropdown.returnVisible = false;
+    runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.origin = "category";
 };
 
 const DEFAULT_UPDATE_SETTINGS = {
@@ -8631,6 +8653,10 @@ const epochToUsDate = (value) => {
 };
 const Content = () => {
     const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
+    const initialPendingCompatibilityPolicySave = initialCompatibilityPolicySave
+        && initialCompatibilityPolicySave.pendingKind !== null
+        ? initialCompatibilityPolicySave
+        : null;
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
     const { games, loadGames } = useNonSteamGames();
@@ -8651,12 +8677,12 @@ const Content = () => {
     const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
     const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
     const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(initialCompatibilityPolicySave?.category ?? null);
+    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.category ?? compatibilityDefaultSnapshot());
     const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialCompatibilityPolicySave?.pendingKind === "category");
+    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.pendingKind === "category");
     const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState(initialCompatibilityPolicySave?.error ?? "");
-    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState(initialCompatibilityPolicySave?.scope ?? "all");
-    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialCompatibilityPolicySave?.pendingKind === "scope");
+    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.scope ?? compatibilityDefaultScopeSnapshot());
+    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.pendingKind === "scope");
     const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
     const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
@@ -8675,7 +8701,8 @@ const Content = () => {
     const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
         const shared = compatibilityPolicySaveSnapshot();
         if (shared
-            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+            && shared.pendingKind !== null) {
             setCompatibilityDefaultState(shared.category);
             setCompatibilityDefaultScopeState(shared.scope);
             setCompatibilityDefaultBusy(shared.pendingKind === "category");
@@ -8687,7 +8714,9 @@ const Content = () => {
         setCompatibilityDefaultScopeState(fallbackScope);
         setCompatibilityDefaultBusy(false);
         setCompatibilityDefaultScopeBusy(false);
-        setCompatibilityDefaultError("");
+        setCompatibilityDefaultError(shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()
+            ? shared.error
+            : "");
     }, []);
     SP_REACT.useEffect(() => {
         const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;

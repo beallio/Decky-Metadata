@@ -80,6 +80,13 @@ describe("MetadataSection compatibility default scope", () => {
     expect(scopeDropdown({ compatibilityDefaultLoaded: false }).disabled).toBe(true);
     expect(scopeDropdown({ compatibilityDefaultBusy: true }).disabled).toBe(true);
     expect(scopeDropdown({ compatibilityDefaultScopeBusy: true }).disabled).toBe(true);
+    const automaticScope = scopeDropdown({
+      compatibilityDefault: null,
+      compatibilityDefaultScope: "metadata",
+    });
+    expect(automaticScope.disabled).toBe(true);
+    expect((automaticScope.renderButtonValue as any)().props.children)
+      .toBe("All games with saved metadata");
     const dropdown = nodes(render({ compatibilityDefaultScopeBusy: true }))
       .find((node) => node.type === "DropdownItem" && node.props?.label === "Default compatibility status");
     expect(dropdown?.props?.disabled).toBe(true);

@@ -185,6 +185,11 @@ const epochToUsDate = (value?: number | null) => {
 
 export const Content = () => {
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
+  const initialPendingCompatibilityPolicySave =
+    initialCompatibilityPolicySave
+    && initialCompatibilityPolicySave.pendingKind !== null
+      ? initialCompatibilityPolicySave
+      : null;
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
   const { games, loadGames } = useNonSteamGames();
@@ -210,20 +215,20 @@ export const Content = () => {
   const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [compatibilityDefault, setCompatibilityDefaultState] = useState<DeckCompatibilityCategory | null>(
-    initialCompatibilityPolicySave?.category ?? null,
+    initialPendingCompatibilityPolicySave?.category ?? compatibilityDefaultSnapshot(),
   );
   const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = useState(false);
   const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(
-    initialCompatibilityPolicySave?.pendingKind === "category",
+    initialPendingCompatibilityPolicySave?.pendingKind === "category",
   );
   const [compatibilityDefaultError, setCompatibilityDefaultError] = useState(
     initialCompatibilityPolicySave?.error ?? "",
   );
   const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = useState<CompatibilityDefaultScope>(
-    initialCompatibilityPolicySave?.scope ?? "all",
+    initialPendingCompatibilityPolicySave?.scope ?? compatibilityDefaultScopeSnapshot(),
   );
   const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(
-    initialCompatibilityPolicySave?.pendingKind === "scope",
+    initialPendingCompatibilityPolicySave?.pendingKind === "scope",
   );
   const compatibilityDefaultLoadVersion = useRef(0);
   const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
@@ -250,6 +255,7 @@ export const Content = () => {
     if (
       shared
       && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+      && shared.pendingKind !== null
     ) {
       setCompatibilityDefaultState(shared.category);
       setCompatibilityDefaultScopeState(shared.scope);
@@ -262,7 +268,11 @@ export const Content = () => {
     setCompatibilityDefaultScopeState(fallbackScope);
     setCompatibilityDefaultBusy(false);
     setCompatibilityDefaultScopeBusy(false);
-    setCompatibilityDefaultError("");
+    setCompatibilityDefaultError(
+      shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()
+        ? shared.error
+        : "",
+    );
   }, []);
 
   useEffect(() => {
