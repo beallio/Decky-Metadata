@@ -180,3 +180,46 @@ No device state was changed in this round.
 The review note prohibited device calls in this correction round. The reported
 Deck recovery and final native-state restoration remain for Main after the
 device returns; no device state was changed here.
+
+## Review round 04 correction
+
+- QAM policy-save and popup-return state now uses one SteamUI-global runtime.
+  A native dropdown callback retained from the prior bundle and the returned
+  QAM panel now share its pending transaction, error, and originating control.
+  The returned panel keeps both controls locked until that one request settles.
+- Completed transactions no longer supply category or scope values. They retain
+  a same-lifetime error for the returned panel, while category and scope always
+  return to the confirmed shared compatibility runtime. A later confirmed
+  Automatic category therefore disables the scope control without discarding
+  its selected scope.
+- The regression imports a second `ContentPanel` module after the first has
+  started a save. It proves shared scope busy/error state and popup origin,
+  then emits a compatibility revision after a retained caller confirms
+  Automatic. The real scope dropdown test verifies that its retained
+  `metadata` value is shown but disabled under Automatic.
+
+### Round-04 verification evidence
+
+- TDD reproduction: before the correction, `./run.sh npm test --
+  src/ContentPanel.updateSettings.test.tsx` failed both new reloaded-bundle
+  cases. The returned bundle showed scope busy as `false` rather than `true`.
+- After the correction, `./run.sh npm test --
+  src/ContentPanel.updateSettings.test.tsx
+  src/components/qam/MetadataSection.test.tsx` passed 18 tests, and
+  `./run.sh npx tsc --noEmit` exited 0.
+- `./run.sh scripts/orchestration/run-quality-gates` and
+  `./run.sh scripts/orchestration/check-review-notes-not-deleted` exited 0:
+  Rollup rebuilt the tracked bundle, 28 frontend files passed with 516 tests
+  passed and 4 skipped, Python compilation and backend pytest passed, and all
+  committed review notes were retained.
+- Commit `1b548b4` was packaged with `./run.sh npm run package`. It produced
+  `Decky-Metadata.zip` version `0.3.14+1b548b4`, SHA-256
+  `8faf7fca38302c7d1ad8ebd48c5cdf7310b08fb48de2c67fabf8cfde874ca695`.
+  Archive inspection confirmed the single `Decky-Metadata/` root with the
+  manifest, backend, and built frontend files. The ZIP was not delivered or
+  installed.
+
+## Deferred review-round 04 device work
+
+The review note prohibited device calls in this correction round. The package
+was built only for local archive verification; no Deck state was changed.
