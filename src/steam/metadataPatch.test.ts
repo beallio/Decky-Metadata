@@ -46,6 +46,7 @@ import {
   beginCompatibilityLifecycle,
   cancelCompatibilityDefaultLoad,
   ensureCompatibilityDefault,
+  ensureMetadataCache,
   refreshCompatibilitySurfaces,
   refreshMetadataCache,
   setConfirmedCompatibilityDefault,
@@ -124,6 +125,8 @@ afterEach(() => {
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoaded = false;
   metadataState.metadataLoadPromise = null;
+  metadataState.metadataRequestOwners.clear();
+  metadataState.screenshotRequestOwners.clear();
   metadataState.loadingMetadata.clear();
   metadataState.loadingScreenshots.clear();
   mocks.autoFetchMetadata.mockReset();
@@ -826,6 +829,102 @@ describe("compatibility metadata application", () => {
     expect(metadataCache[String(appId)]).toEqual(compatibilityMetadata(2, null));
   });
 
+  it("keeps the current metadata-cache request owned after an older reload request settles", async () => {
+    let resolveFirst!: (value: Record<string, MetadataData>) => void;
+    let resolveSecond!: (value: Record<string, MetadataData>) => void;
+    mocks.getAllMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const first = ensureMetadataCache();
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = ensureMetadataCache();
+    await Promise.resolve();
+    const currentRequest = metadataState.metadataLoadPromise;
+
+    resolveFirst({});
+    await first;
+
+    expect(metadataState.metadataLoadPromise).toBe(currentRequest);
+    const third = ensureMetadataCache();
+    await Promise.resolve();
+    expect(mocks.getAllMetadata).toHaveBeenCalledTimes(2);
+
+    resolveSecond({});
+    await Promise.all([second, third]);
+    expect(metadataState.metadataLoadPromise).toBeNull();
+  });
+
+  it("keeps the current per-app metadata guard after an older reload fetch settles", async () => {
+    const appId = 93004;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    let resolveFirst!: (value: Record<string, any> | null) => void;
+    let resolveSecond!: (value: Record<string, any> | null) => void;
+    mocks.autoFetchMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    beginCompatibilityLifecycle();
+    const first = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+
+    resolveFirst(null);
+    await first;
+
+    expect(metadataState.loadingMetadata.has(appId)).toBe(true);
+    const third = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+    expect(mocks.autoFetchMetadata).toHaveBeenCalledTimes(2);
+
+    resolveSecond(null);
+    await Promise.all([second, third]);
+    expect(metadataState.loadingMetadata.has(appId)).toBe(false);
+  });
+
+  it("keeps the current per-app screenshot guard after an older reload fetch settles", async () => {
+    const appId = 93005;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...compatibilityMetadata(null, null),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    let resolveFirst!: (value: Record<string, any> | null) => void;
+    let resolveSecond!: (value: Record<string, any> | null) => void;
+    mocks.fetchMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    beginCompatibilityLifecycle();
+    const first = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+
+    resolveFirst(null);
+    await first;
+
+    expect(metadataState.loadingScreenshots.has(appId)).toBe(true);
+    const third = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    expect(mocks.fetchMetadata).toHaveBeenCalledTimes(2);
+
+    const saved = { ...existing, screenshots: [{ url: "https://example.invalid/shot.png" }] };
+    mocks.saveMetadata.mockResolvedValue(saved);
+    resolveSecond({ screenshots: saved.screenshots });
+    await Promise.all([second, third]);
+    expect(metadataState.loadingScreenshots.has(appId)).toBe(false);
+  });
+
   it("does not start a late screenshot save after dismount", async () => {
     const appId = 93003;
     installCompatibilityOverview(appId, 0xa0);
@@ -1303,6 +1402,57 @@ describe("compatibility metadata application", () => {
     expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(overviews.get(appId)).toBe(published);
+  });
+
+  it("publishes an old editor callback's deferred update through the current module instance", async () => {
+    const appId = 94541;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const oldModule = await import("./metadataPatch");
+    vi.resetModules();
+    const currentModule = await import("./metadataPatch");
+    const currentCore = await import("./core");
+    const original = new NativeOverview();
+    const overviews = new Map<number, NativeOverview>([[appId, original]]);
+    const set = overviews.set.bind(overviews);
+    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [original],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
+    };
+    host.appDetailsStore = {};
+    currentModule.beginCompatibilityLifecycle();
+    currentCore.metadataState.compatibilityDefault = 3;
+    currentCore.metadataState.compatibilityDefaultLoaded = true;
+    currentCore.metadataCache[String(appId)] = compatibilityMetadata(2, 2) as any;
+
+    expect(oldModule.applyMetadata(appId, { publishCompatibility: false })).toBe(true);
+    expect(publish).not.toHaveBeenCalled();
+
+    expect(currentModule.publishDeferredEditorCompatibility(appId)).toBe(true);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(overviews.get(appId)).not.toBe(original);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaa);
   });
 
   it("holds an active Game Info compatibility value until the view exits", () => {

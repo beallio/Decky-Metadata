@@ -1357,10 +1357,14 @@ const newCompatibilityMetadataState = () => ({
     bypassCounter: 0,
     metadataLoaded: false,
     metadataLoadPromise: null,
+    metadataRequestOwners: new Map(),
+    screenshotRequestOwners: new Map(),
     loadingMetadata: new Set(),
     loadingScreenshots: new Set(),
     appliedMetadataRef: {},
     compatibilityBaselines: {},
+    deferredCompatibilityUpdates: new Map(),
+    deferredEditorCompatibilityPublications: new Set(),
     compatibilityDefault: null,
     compatibilityDefaultLoaded: false,
     compatibilityDefaultScope: "all",
@@ -1386,6 +1390,22 @@ const compatibilityRuntime = () => {
         existing.metadataCache &&
         existing.metadataState &&
         existing.revisionListeners instanceof Set) {
+        const state = existing.metadataState;
+        // Older bundles do not have the reload-owned maps. Keep their public Set
+        // fields for callbacks that still hold the retiring import, but make this
+        // import's authoritative guards and compatibility queues shared.
+        if (!(state.metadataRequestOwners instanceof Map)) {
+            state.metadataRequestOwners = new Map();
+        }
+        if (!(state.screenshotRequestOwners instanceof Map)) {
+            state.screenshotRequestOwners = new Map();
+        }
+        if (!(state.deferredCompatibilityUpdates instanceof Map)) {
+            state.deferredCompatibilityUpdates = new Map();
+        }
+        if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
+            state.deferredEditorCompatibilityPublications = new Set();
+        }
         return existing;
     }
     const runtime = {
@@ -3737,28 +3757,22 @@ const desiredCompatibilityNibble = (appId, heldNibble, category) => {
     }
     return category | (category << 2);
 };
-const deferredCompatibilityUpdates = new Map();
-// Editor writes must not replace Steam's observable overview map until the
-// matching Game Info route has rendered under its return shield. The direct
-// packed-field write is already complete; this set tracks only the delayed
-// collection/filter publication.
-const deferredEditorCompatibilityPublications = new Set();
 /**
  * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
  * not change this main-window route, while another tab, page, game, or the
  * metadata editor does.
  */
 const deferActiveCompatibilityUpdate = (appId, heldNibble, category) => {
-    const existing = deferredCompatibilityUpdates.get(appId);
+    const existing = metadataState.deferredCompatibilityUpdates.get(appId);
     const held = existing?.heldNibble ?? heldNibble;
     if (desiredCompatibilityNibble(appId, held, category) === held) {
         // Repeated edits can return to the already visible state. There is then no
         // stale mutation to replay after the user leaves Game Info.
-        deferredCompatibilityUpdates.delete(appId);
+        metadataState.deferredCompatibilityUpdates.delete(appId);
         return false;
     }
     if (!existing)
-        deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
+        metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
     return true;
 };
 /**
@@ -3778,7 +3792,7 @@ const applyCompatibilityToOverview = (appId, overview, routeContext = currentRou
         // Read the retained held value before deferring. The helper can remove a
         // pending entry when the latest policy returns to that held value, while a
         // native replacement still needs the held nibble reconciled in place.
-        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
         deferActiveCompatibilityUpdate(appId, held, category);
         const heldPacked = (packed & -16) | held;
         if (heldPacked === packed)
@@ -3795,20 +3809,20 @@ const applyCompatibilityToOverview = (appId, overview, routeContext = currentRou
         }
         return false;
     }
-    deferredCompatibilityUpdates.delete(appId);
+    metadataState.deferredCompatibilityUpdates.delete(appId);
     return applyCompatibilityCategory(appId, overview, category);
 };
 const RETAINED_COMPATIBILITY_BASELINES_KEY = "__deckyMetadataRetainedCompatibilityBaselines";
 const retainCompatibilityBaselinesForReload = () => {
     const baselines = metadataState.compatibilityBaselines;
     if (Object.keys(baselines).length === 0 &&
-        deferredCompatibilityUpdates.size === 0 &&
-        deferredEditorCompatibilityPublications.size === 0)
+        metadataState.deferredCompatibilityUpdates.size === 0 &&
+        metadataState.deferredEditorCompatibilityPublications.size === 0)
         return;
     globalThis[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
         baselines: { ...baselines },
-        deferred: Array.from(deferredCompatibilityUpdates.values()),
-        editorPublications: Array.from(deferredEditorCompatibilityPublications),
+        deferred: Array.from(metadataState.deferredCompatibilityUpdates.values()),
+        editorPublications: Array.from(metadataState.deferredEditorCompatibilityPublications),
     };
 };
 const discardRetainedCompatibilityState = () => {
@@ -3837,7 +3851,7 @@ const resumeRetainedCompatibilityBaselines = () => {
                 Number.isInteger(heldNibble) &&
                 Number(heldNibble) >= 0 &&
                 Number(heldNibble) <= 0xf) {
-                deferredCompatibilityUpdates.set(Number(appId), {
+                metadataState.deferredCompatibilityUpdates.set(Number(appId), {
                     appId: Number(appId),
                     heldNibble: Number(heldNibble),
                 });
@@ -3847,7 +3861,7 @@ const resumeRetainedCompatibilityBaselines = () => {
     if (Array.isArray(state.editorPublications)) {
         state.editorPublications.forEach((appId) => {
             if (Number.isSafeInteger(appId) && Number(appId) > 0) {
-                deferredEditorCompatibilityPublications.add(Number(appId));
+                metadataState.deferredEditorCompatibilityPublications.add(Number(appId));
             }
         });
     }
@@ -3927,17 +3941,17 @@ const publishCompatibilityReplacements = (updates) => {
  * this map replacement cannot be classified as the non-Steam placeholder.
  */
 const publishDeferredEditorCompatibility = (appId) => {
-    if (!deferredEditorCompatibilityPublications.has(appId))
+    if (!metadataState.deferredEditorCompatibilityPublications.has(appId))
         return false;
     const overview = getNativeOverview(appId);
     if (!overview || !isNativeNonSteamShortcut(overview)) {
         // A deleted shortcut or an official alias must never be recreated.
-        deferredEditorCompatibilityPublications.delete(appId);
+        metadataState.deferredEditorCompatibilityPublications.delete(appId);
         return false;
     }
     if (!publishCompatibilityReplacements([{ appId, overview }]))
         return false;
-    deferredEditorCompatibilityPublications.delete(appId);
+    metadataState.deferredEditorCompatibilityPublications.delete(appId);
     return true;
 };
 /**
@@ -3948,7 +3962,7 @@ const publishDeferredEditorCompatibility = (appId) => {
 const flushDeferredCompatibilityPublications = (routeContext = currentRoutePath()) => {
     const publications = [];
     let changed = false;
-    for (const { appId } of Array.from(deferredCompatibilityUpdates.values())) {
+    for (const { appId } of Array.from(metadataState.deferredCompatibilityUpdates.values())) {
         if (isCurrentGameInfoRoute(routeContext, appId))
             continue;
         const metadata = metadataCache[String(appId)];
@@ -3959,7 +3973,7 @@ const flushDeferredCompatibilityPublications = (routeContext = currentRoutePath(
             metadata?.deck_compat_override !== "valve") {
             continue;
         }
-        deferredCompatibilityUpdates.delete(appId);
+        metadataState.deferredCompatibilityUpdates.delete(appId);
         const overview = getNativeOverview(appId);
         if (applyCompatibilityToOverview(appId, overview, routeContext)) {
             changed = true;
@@ -4045,6 +4059,8 @@ const beginCompatibilityLifecycle = () => {
     // lifetime, while retaining its current cache until the startup refresh
     // supplies an authoritative replacement.
     metadataState.metadataLoadPromise = null;
+    metadataState.metadataRequestOwners.clear();
+    metadataState.screenshotRequestOwners.clear();
     metadataState.loadingMetadata.clear();
     metadataState.loadingScreenshots.clear();
     metadataState.appliedMetadataRef = {};
@@ -4052,9 +4068,8 @@ const beginCompatibilityLifecycle = () => {
     metadataState.compatibilityDefaultLoaded = false;
     metadataState.compatibilityDefaultScope = "all";
     metadataState.compatibilityDefaultLoadPromise = null;
-    metadataState.metadataLoadPromise = null;
-    deferredCompatibilityUpdates.clear();
-    deferredEditorCompatibilityPublications.clear();
+    metadataState.deferredCompatibilityUpdates.clear();
+    metadataState.deferredEditorCompatibilityPublications.clear();
     resumeRetainedCompatibilityBaselines();
     return metadataState.compatibilityLifecycleGeneration;
 };
@@ -4100,8 +4115,12 @@ const ensureCompatibilityDefault = async () => {
 const cancelCompatibilityDefaultLoad = () => {
     metadataState.compatibilityDefaultGeneration += 1;
     metadataState.compatibilityLifecycleGeneration += 1;
-    deferredCompatibilityUpdates.clear();
-    deferredEditorCompatibilityPublications.clear();
+    metadataState.metadataRequestOwners.clear();
+    metadataState.screenshotRequestOwners.clear();
+    metadataState.loadingMetadata.clear();
+    metadataState.loadingScreenshots.clear();
+    metadataState.deferredCompatibilityUpdates.clear();
+    metadataState.deferredEditorCompatibilityPublications.clear();
 };
 /**
  * Steam sends AppOverview protobufs to appInfoStore before it creates and
@@ -4126,7 +4145,7 @@ const applyCompatibilityToIncomingOverview = (overview) => {
         const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
         // Keep the retained Game Info value stable even if the latest policy
         // collapses the queued update and removes its map entry.
-        const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+        const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
         deferActiveCompatibilityUpdate(appId, held, category);
         // An unchanged effective policy does not need a deferred exit flush, but
         // Steam can still send a replacement with its native low nibble. Preserve
@@ -4142,7 +4161,7 @@ const applyCompatibilityToIncomingOverview = (overview) => {
             return false;
         }
     }
-    deferredCompatibilityUpdates.delete(appId);
+    metadataState.deferredCompatibilityUpdates.delete(appId);
     if (category === null)
         return false;
     const key = String(appId);
@@ -4192,9 +4211,13 @@ const ensureMetadataCache = async () => {
     if (metadataState.metadataLoaded)
         return;
     if (!metadataState.metadataLoadPromise) {
-        metadataState.metadataLoadPromise = refreshMetadataCache().finally(() => {
-            metadataState.metadataLoadPromise = null;
+        const request = refreshMetadataCache();
+        const loadPromise = request.finally(() => {
+            if (metadataState.metadataLoadPromise === loadPromise) {
+                metadataState.metadataLoadPromise = null;
+            }
         });
+        metadataState.metadataLoadPromise = loadPromise;
     }
     await metadataState.metadataLoadPromise;
 };
@@ -4332,7 +4355,7 @@ const applyMetadata = (appId, options = {}) => {
     const compatibilityChanged = applyMetadataToOverview(appId, overview);
     if (compatibilityChanged && overview) {
         if (options.publishCompatibility === false) {
-            deferredEditorCompatibilityPublications.add(appId);
+            metadataState.deferredEditorCompatibilityPublications.add(appId);
         }
         else {
             publishCompatibilityReplacements([{ appId, overview }]);
@@ -4363,11 +4386,13 @@ const tryFetchMetadataForApp = async (appId) => {
     await ensureMetadataCache();
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
         return;
-    if (metadataCache[String(appId)] || metadataState.loadingMetadata.has(appId))
+    if (metadataCache[String(appId)] || metadataState.metadataRequestOwners.has(appId))
         return;
     const overview = getOverview(appId);
     if (!isNonSteamApp(overview))
         return;
+    const request = { lifecycleGeneration };
+    metadataState.metadataRequestOwners.set(appId, request);
     metadataState.loadingMetadata.add(appId);
     try {
         const metadata = await autoFetchMetadata(appId, appName(appId));
@@ -4380,7 +4405,10 @@ const tryFetchMetadataForApp = async (appId) => {
         }
     }
     finally {
-        metadataState.loadingMetadata.delete(appId);
+        if (metadataState.metadataRequestOwners.get(appId) === request) {
+            metadataState.metadataRequestOwners.delete(appId);
+            metadataState.loadingMetadata.delete(appId);
+        }
     }
 };
 const tryEnrichScreenshotsForApp = async (appId) => {
@@ -4391,13 +4419,15 @@ const tryEnrichScreenshotsForApp = async (appId) => {
     const metadata = metadataCache[String(appId)];
     if (!metadata ||
         metadata.screenshots?.length ||
-        metadataState.loadingScreenshots.has(appId) ||
+        metadataState.screenshotRequestOwners.has(appId) ||
         String(metadata.source || "").toUpperCase() !== "IGN") {
         return;
     }
     const source = metadata.source_url || String(metadata.id || "");
     if (!source)
         return;
+    const request = { lifecycleGeneration };
+    metadataState.screenshotRequestOwners.set(appId, request);
     metadataState.loadingScreenshots.add(appId);
     try {
         const refreshed = await fetchMetadata(source);
@@ -4419,7 +4449,10 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         warn("bridge", "screenshot enrichment failed", error);
     }
     finally {
-        metadataState.loadingScreenshots.delete(appId);
+        if (metadataState.screenshotRequestOwners.get(appId) === request) {
+            metadataState.screenshotRequestOwners.delete(appId);
+            metadataState.loadingScreenshots.delete(appId);
+        }
     }
 };
 const installMetadataPatches = (unpatchers) => {

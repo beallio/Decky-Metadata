@@ -6,6 +6,15 @@ declare const appDetailsStore: SteamInternals["appDetailsStore"];
 
 export type Unpatch = () => void;
 
+export type DeferredCompatibilityUpdate = {
+  appId: number;
+  heldNibble: number;
+};
+
+type CompatibilityInFlightRequest = {
+  lifecycleGeneration: number;
+};
+
 export const patchInstallStatus = {
   activity: "pending",
   partnerEvents: "pending",
@@ -45,11 +54,17 @@ type CompatibilityMetadataState = {
   bypassCounter: number;
   metadataLoaded: boolean;
   metadataLoadPromise: Promise<void> | null;
+  /** Current ownership for per-app work; legacy Sets remain for retiring bundles. */
+  metadataRequestOwners: Map<number, CompatibilityInFlightRequest>;
+  screenshotRequestOwners: Map<number, CompatibilityInFlightRequest>;
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
   /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /** Held Game Info work and editor publication both survive an in-place reload. */
+  deferredCompatibilityUpdates: Map<number, DeferredCompatibilityUpdate>;
+  deferredEditorCompatibilityPublications: Set<number>;
   /** Confirmed global policy. Null is Automatic. */
   compatibilityDefault: DeckCompatibilityCategory | null;
   compatibilityDefaultLoaded: boolean;
@@ -85,10 +100,14 @@ const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   bypassCounter: 0,
   metadataLoaded: false,
   metadataLoadPromise: null,
+  metadataRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
+  screenshotRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  deferredCompatibilityUpdates: new Map<number, DeferredCompatibilityUpdate>(),
+  deferredEditorCompatibilityPublications: new Set<number>(),
   compatibilityDefault: null,
   compatibilityDefaultLoaded: false,
   compatibilityDefaultScope: "all",
@@ -117,6 +136,22 @@ const compatibilityRuntime = (): CompatibilityRuntime => {
     existing.metadataState &&
     existing.revisionListeners instanceof Set
   ) {
+    const state = existing.metadataState as CompatibilityMetadataState;
+    // Older bundles do not have the reload-owned maps. Keep their public Set
+    // fields for callbacks that still hold the retiring import, but make this
+    // import's authoritative guards and compatibility queues shared.
+    if (!(state.metadataRequestOwners instanceof Map)) {
+      state.metadataRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.screenshotRequestOwners instanceof Map)) {
+      state.screenshotRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.deferredCompatibilityUpdates instanceof Map)) {
+      state.deferredCompatibilityUpdates = new Map<number, DeferredCompatibilityUpdate>();
+    }
+    if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
+      state.deferredEditorCompatibilityPublications = new Set<number>();
+    }
     return existing as CompatibilityRuntime;
   }
   const runtime: CompatibilityRuntime = {
