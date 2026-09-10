@@ -79,8 +79,9 @@ the frontend and `main.py`:
 # Install /home/deck/Downloads/Decky-Metadata.zip with Decky Settings -> Developer -> Install Plugin from ZIP File.
 ```
 
-Prepare four disposable fixtures: one matched shortcut with a known Valve
-category, one unmatched shortcut, one native shortcut with no metadata record,
+Prepare five disposable fixtures: a Steam-ID record with a known Valve
+category, an IGN-sourced record with a Steam ID if available, a saved manual or
+provider record without a Steam ID, a native shortcut with no metadata record,
 and one ordinary Steam game. Record their original packed category and visible
 Home/grid/Game Info state. Then, using the real QAM and editor controls:
 
@@ -113,17 +114,19 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    after exit. Capture a controlled real unload that clears held work and
    restores baselines. Drive QAM and editor order with `scripts/deck/cdp.py input`,
    `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
-8. With a numeric global default active, turn **Apply only to matched games**
-   on. A no-record shortcut must return to its captured native status while a
-   recorded shortcut keeps the default, including a record with no Steam
-   match. Turn the toggle back off and confirm the no-record shortcut takes
-   the default again. Check Steam's own compatibility filter or collection
-   membership in both directions, not only packed fields. Change the scope
-   while a matched Game Info tab is active and confirm that view holds its
-   value until it exits. Remove a disposable record with the scope on and
-   confirm that shortcut returns to its native status. Set the default to
-   Automatic and confirm the toggle is unavailable and its saved value
-   survives a plugin reload. Restore the toggle to its captured value.
+8. With a numeric global default active, use **Apply default to**. Verify all
+   four choices in order and the complete selected label in narrow QAM. Check
+   Steam-matched, saved-no-ID, saved-metadata, and all-shortcuts membership in
+   both directions through Steam's compatibility filter or collection, not
+   only packed fields. An IGN record with a valid ID belongs to the Steam
+   scope. A manual record without an ID belongs to the no-ID scope. A no-record
+   shortcut belongs only to all shortcuts. Change a disposable record's ID,
+   remove its record, and confirm it moves to the correct fallback. Change the
+   scope while Game Info is active and confirm that view holds its value until
+   exit. Use controller input to select and cancel both dropdowns; focus must
+   return to the dropdown that opened the popup. Set the default to Automatic
+   and confirm the selector is unavailable but keeps its value through reload.
+   Restore the captured scope and fixtures.
 
 Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with

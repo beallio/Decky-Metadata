@@ -5,16 +5,20 @@ let compatibilityDropdownReturnPending = false;
 let compatibilityDropdownControlUnmounted = false;
 let compatibilityDropdownReturnVisible = false;
 let compatibilityDropdownSelectionSaved = false;
+let compatibilityDropdownOrigin: "category" | "scope" = "category";
 
-export const requestCompatibilityDropdownReturn = () => {
+export const requestCompatibilityDropdownReturn = (origin: "category" | "scope") => {
   compatibilityDropdownReturnPending = true;
   compatibilityDropdownControlUnmounted = false;
   compatibilityDropdownReturnVisible = false;
   compatibilityDropdownSelectionSaved = false;
+  compatibilityDropdownOrigin = origin;
 };
 
 export const hasCompatibilityDropdownReturn = () =>
   compatibilityDropdownReturnPending;
+
+export const compatibilityDropdownReturnOrigin = () => compatibilityDropdownOrigin;
 
 export const noteCompatibilityDropdownControlUnmounted = () => {
   if (!compatibilityDropdownReturnPending) return false;
@@ -54,6 +58,7 @@ export const consumeCompatibilityDropdownReturn = () => {
   compatibilityDropdownControlUnmounted = false;
   compatibilityDropdownReturnVisible = false;
   compatibilityDropdownSelectionSaved = false;
+  compatibilityDropdownOrigin = "category";
   return pending;
 };
 
@@ -62,4 +67,5 @@ export const clearCompatibilityDropdownReturn = () => {
   compatibilityDropdownControlUnmounted = false;
   compatibilityDropdownReturnVisible = false;
   compatibilityDropdownSelectionSaved = false;
+  compatibilityDropdownOrigin = "category";
 };

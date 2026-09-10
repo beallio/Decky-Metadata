@@ -12,11 +12,11 @@ All notable changes to this project are documented here in Keep a Changelog form
   saved metadata. Other shortcuts update immediately; the current Game Info
   game updates after its tab exits. Per-game choices now include **Use global
   default** and **Follow Valve**.
-- **Matched-games-only compatibility default.** A new **Apply only to matched
-  games** toggle in the Decky Metadata panel keeps the default off non-Steam
-  shortcuts that have no saved metadata, so launcher and emulator entries you
-  never matched keep their original Steam status. Per-game choices are
-  unaffected, and the toggle is unavailable while the default is Automatic.
+- **Compatibility default scopes.** The **Apply default to** dropdown selects
+  Steam-matched games, saved games without a Steam ID, all saved metadata, or
+  all native non-Steam games. It uses the saved record and valid Steam ID, so
+  manual records are in the no-ID scope and a provider name does not decide
+  eligibility. The saved selection stays available after Automatic is chosen.
 
 ## [0.3.13] - 2026-09-07
 

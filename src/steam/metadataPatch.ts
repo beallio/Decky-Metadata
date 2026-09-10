@@ -5,14 +5,14 @@ import {
   frontendLog,
   getAllMetadata,
   getCompatibilityDefault,
-  getCompatibilityDefaultMatchedOnly,
+  getCompatibilityDefaultScope,
   saveMetadata,
 } from "../backend";
 import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
-import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
-import { DeckCompatibilityCategory, MetadataData } from "../types";
+import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData } from "../types";
 import * as log from "../log";
 import {
   NON_STEAM_APP_TYPE,
@@ -108,7 +108,7 @@ const shortcutAppIdForSteamAppId = (steamAppId: number): number | null => {
   if (!Number.isFinite(steamAppId) || steamAppId <= 0) return null;
   for (const [shortcutAppIdText, metadata] of Object.entries(metadataCache)) {
     const shortcutAppId = Number(shortcutAppIdText);
-    const metadataSteamAppId = Number((metadata as MetadataData | undefined)?.steam_appid);
+    const metadataSteamAppId = matchedSteamAppId(metadata);
     if (
       Number.isFinite(shortcutAppId) &&
       shortcutAppId > 0 &&
@@ -157,9 +157,9 @@ const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCate
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 
 export const effectiveCompatibilityCategory = (
-  metadata: MetadataData | undefined,
+  metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid"> | undefined,
   globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
-  matchedOnly: boolean = metadataState.compatibilityDefaultMatchedOnly,
+  scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
 ): DeckCompatibilityCategory | null => {
   if (isCompatibilityCategory(metadata?.deck_compat_override)) {
     return metadata.deck_compat_override;
@@ -169,10 +169,11 @@ export const effectiveCompatibilityCategory = (
       ? metadata.deck_compat_category
       : null;
   }
-  // The matched-games-only scope keeps the global default off shortcuts the
-  // plugin has no record for. A record without a Steam match still counts;
-  // both remaining sources below live in a record anyway.
-  if (isCompatibilityCategory(globalDefault) && (!matchedOnly || metadata !== undefined)) {
+  const eligible = scope === "all"
+    || (scope === "metadata" && metadata !== undefined)
+    || (scope === "steam" && hasMatchedSteamAppId(metadata))
+    || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
+  if (isCompatibilityCategory(globalDefault) && eligible) {
     return globalDefault;
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {
@@ -574,19 +575,19 @@ export const setConfirmedCompatibilityDefault = (
 };
 
 /** Commit only a backend-confirmed scope, using the same one-pass policy path. */
-export const setConfirmedCompatibilityDefaultMatchedOnly = (
-  matchedOnly: boolean,
+export const setConfirmedCompatibilityDefaultScope = (
+  scope: CompatibilityDefaultScope,
   lifecycleGeneration = metadataState.compatibilityLifecycleGeneration,
 ) => {
   if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
-    return metadataState.compatibilityDefaultMatchedOnly;
+    return metadataState.compatibilityDefaultScope;
   }
-  const changedPolicy = metadataState.compatibilityDefaultMatchedOnly !== matchedOnly;
+  const changedPolicy = metadataState.compatibilityDefaultScope !== scope;
   metadataState.compatibilityDefaultGeneration += 1;
-  metadataState.compatibilityDefaultMatchedOnly = matchedOnly;
+  metadataState.compatibilityDefaultScope = scope;
   const compatibilityChanged = applyCompatibilityDefault();
   if (changedPolicy || compatibilityChanged) notifyCompatibilityRevision();
-  return matchedOnly;
+  return scope;
 };
 
 /** Start a new plugin lifetime and make unfinished work from the old one inert. */
@@ -595,7 +596,7 @@ export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityDefaultGeneration += 1;
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
-  metadataState.compatibilityDefaultMatchedOnly = false;
+  metadataState.compatibilityDefaultScope = "all";
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoadPromise = null;
   deferredCompatibilityUpdates.clear();
@@ -615,9 +616,12 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
     // load together and only then satisfy compatibilityDefaultLoaded.
     const request = Promise.all([
       getCompatibilityDefault(),
-      getCompatibilityDefaultMatchedOnly(),
-    ]).then(([value, matchedOnly]) => {
+      getCompatibilityDefaultScope(),
+    ]).then(([value, scope]) => {
       const category = isCompatibilityCategory(value) ? value : null;
+      if (scope !== "steam" && scope !== "no-steam" && scope !== "metadata" && scope !== "all") {
+        throw new Error("invalid compatibility default scope response");
+      }
       if (
         requestGeneration !== metadataState.compatibilityDefaultGeneration ||
         lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration
@@ -625,7 +629,7 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
         return metadataState.compatibilityDefault;
       }
       metadataState.compatibilityDefault = category;
-      metadataState.compatibilityDefaultMatchedOnly = matchedOnly === true;
+      metadataState.compatibilityDefaultScope = scope;
       metadataState.compatibilityDefaultLoaded = true;
       applyCompatibilityDefault();
       notifyCompatibilityRevision();

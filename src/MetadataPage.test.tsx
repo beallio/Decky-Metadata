@@ -20,11 +20,18 @@ const steam = vi.hoisted(() => ({
   applyMetadata: vi.fn(),
   cleanTitle: vi.fn((value: string) => value.trim()),
   compatibilityDefaultSnapshot: vi.fn(() => null),
+  compatibilityDefaultScopeSnapshot: vi.fn(() => "all"),
   classifyShortcutNameState: vi.fn((_current: string | null, _state: any) => "unmanaged"),
   getOverview: vi.fn(() => ({ app_type: 1073741824, BIsShortcut: () => true })),
   hasShortcutNameApi: vi.fn(() => true),
   isNonSteamApp: vi.fn(() => true),
   ensureCompatibilityDefault: vi.fn(() => Promise.resolve(null)),
+  effectiveCompatibilityCategory: vi.fn((metadata: any, globalDefault: any, scope: string) => {
+    if (typeof metadata?.deck_compat_override === "number") return metadata.deck_compat_override;
+    if (metadata?.deck_compat_override === "valve") return metadata.deck_compat_category ?? null;
+    const eligible = scope === "all" || scope === "metadata";
+    return eligible && globalDefault !== null ? globalDefault : metadata?.deck_compat_category ?? null;
+  }),
   metadataCache: {} as Record<string, any>,
   nativeShortcutName: vi.fn(() => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
@@ -251,6 +258,17 @@ describe("MetadataPage compatibility status", () => {
     state.values[15] = 3;
 
     expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
+  });
+
+  it("updates an inheriting editor preview when the selected scope excludes its record", () => {
+    state.values[0] = makeMetadata({ steam_appid: null, deck_compat_category: 2 });
+    state.values[15] = 3;
+    state.values[16] = "steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Playable from Valve)",
+    );
   });
 
   it("saves a dropdown change atomically and refreshes after success", async () => {

@@ -61,8 +61,7 @@ action is available.
 ## Set the compatibility status
 
 In the Decky Metadata Quick Access Menu, use **Default compatibility status**
-to set the live default for every existing and new non-Steam shortcut, whether
-or not it has a Steam match:
+to set a live default for selected existing and new non-Steam shortcuts:
 
 1. **Automatic — use matched Steam status**
 2. **Verified**
@@ -75,12 +74,20 @@ is available; otherwise it leaves the shortcut's original Steam status alone.
 The default changes existing cards as well as new shortcuts. It does not create
 metadata records or use ProtonDB.
 
-**Apply only to matched games** narrows that default. With it on, only
-shortcuts that already have saved Decky Metadata data follow the default;
-everything else, such as a launcher or emulator entry you never matched, keeps
-its original Steam status. A saved game without a Steam match still counts.
-Per-game choices are unaffected. The toggle is unavailable while the default is
-Automatic, because there is nothing to narrow.
+Use **Apply default to** to select the default scope:
+
+1. **Steam-matched games**: saved records with a valid Steam App ID.
+2. **Saved games without a Steam ID**: saved manual or provider records without
+   a valid Steam App ID.
+3. **All games with saved metadata**: every saved record.
+4. **All non-Steam games**: every native non-Steam shortcut, including one
+   without saved metadata.
+
+The scope uses the saved record and Steam App ID. It does not use the metadata
+provider or current store availability. A no-record shortcut belongs only to
+**All non-Steam games**. Per-game choices are unaffected. The scope selector is
+unavailable while the default is Automatic, but it keeps its saved selection.
+Older matched-only settings migrate to the matching saved-metadata scope.
 
 Saving a default saves it immediately. Other eligible shortcuts update at once.
 If the current game's **Game Info** tab is open, that game's current status and
@@ -107,14 +114,14 @@ claim about emulator performance.
 
 | Situation | Result |
 | --- | --- |
-| Global Verified, matched or unmatched game using the default | Verified |
+| Global Verified, a game inside the selected scope using the default | Verified |
 | Follow Valve with Valve Playable | Playable |
 | Follow Valve with missing Valve data | Original Steam status |
 | Follow Valve with Valve Unknown | Unknown, with no badge |
 | Global Automatic | Matched category, or original Steam status if unavailable |
 | Changing the global default | Only games using **Use global default** change |
 | Current Game Info tab during a default change | Keeps its current value until you leave; other games update now |
-| Apply only to matched games, shortcut with no saved metadata | Original Steam status |
+| Steam-matched scope, shortcut with no saved metadata | Original Steam status |
 
 See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
 for upgrade, persistence, and lifecycle details.

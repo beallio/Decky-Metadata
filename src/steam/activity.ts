@@ -119,7 +119,7 @@ const steamNewsRawBodyForModal = (value: unknown) =>
     .replace(/\\\//g, "/")
     .trim();
 
-const steamAppHeaderImage = (steamAppId?: number | null) =>
+const steamAppHeaderImage = (steamAppId?: number | string | null) =>
   steamAppId ? `https://cdn.akamai.steamstatic.com/steam/apps/${steamAppId}/header.jpg` : "";
 
 const steamNewsImageCandidatesForMetadata = (_metadata: MetadataData, news: NonNullable<MetadataData["steam_news"]>[number]) => {

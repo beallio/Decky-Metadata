@@ -19,7 +19,7 @@ const backend = vi.hoisted(() => ({
   refreshDelistedIndex: vi.fn(),
   setAutomaticUpdateChecks: vi.fn(),
   setCompatibilityDefault: vi.fn(),
-  setCompatibilityDefaultMatchedOnly: vi.fn(),
+  setCompatibilityDefaultScope: vi.fn(),
   setDebugLogging: vi.fn(),
   setUpdateChannel: vi.fn(),
   startScanMissing: vi.fn(),
@@ -31,9 +31,9 @@ const steam = vi.hoisted(() => ({
   getConnectedControllerTypes: vi.fn(),
   ensureCompatibilityDefault: vi.fn(),
   setConfirmedCompatibilityDefault: vi.fn(),
-  setConfirmedCompatibilityDefaultMatchedOnly: vi.fn(),
+  setConfirmedCompatibilityDefaultScope: vi.fn(),
   compatibilityDefaultSnapshot: vi.fn(),
-  compatibilityDefaultMatchedOnlySnapshot: vi.fn(),
+  compatibilityDefaultScopeSnapshot: vi.fn(),
   compatibilityDefaultLoadedSnapshot: vi.fn(),
   compatibilityLifecycleSnapshot: vi.fn(),
   isCompatibilityLifecycleCurrent: vi.fn(),
@@ -100,6 +100,10 @@ vi.mock("./useNonSteamGames", () => ({
 }));
 
 import { Content } from "./ContentPanel";
+import {
+  clearCompatibilityDropdownReturn,
+  compatibilityDropdownReturnOrigin,
+} from "./qamCompatibilityFocus";
 
 const render = () => {
   harness.hookIndex = 0;
@@ -141,9 +145,9 @@ describe("Content update settings", () => {
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
     steam.setConfirmedCompatibilityDefault.mockImplementation((value: unknown) => value);
-    steam.setConfirmedCompatibilityDefaultMatchedOnly.mockImplementation((value: unknown) => value);
+    steam.setConfirmedCompatibilityDefaultScope.mockImplementation((value: unknown) => value);
     steam.compatibilityDefaultSnapshot.mockReturnValue(null);
-    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(false);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
     steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(false);
     steam.compatibilityLifecycleSnapshot.mockReturnValue(1);
     steam.isCompatibilityLifecycleCurrent.mockReturnValue(true);
@@ -160,6 +164,7 @@ describe("Content update settings", () => {
   });
 
   afterEach(() => {
+    clearCompatibilityDropdownReturn();
     vi.unstubAllGlobals();
   });
 
@@ -275,45 +280,45 @@ describe("Content update settings", () => {
     expect(recovered.props.compatibilityDefaultError).toBe("");
   });
 
-  it("publishes only a backend-confirmed matched-games-only scope", async () => {
+  it("publishes only a backend-confirmed compatibility scope", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
-    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(false);
-    backend.setCompatibilityDefaultMatchedOnly.mockResolvedValue(true);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("all");
+    backend.setCompatibilityDefaultScope.mockResolvedValue("steam");
     render();
     runEffects();
     await flushPromises();
 
     const loaded = metadataSection(render());
-    expect(loaded.props.compatibilityDefaultMatchedOnly).toBe(false);
-    loaded.props.onCompatibilityDefaultMatchedOnlyChange(true);
+    expect(loaded.props.compatibilityDefaultScope).toBe("all");
+    loaded.props.onCompatibilityDefaultScopeChange("steam");
     await flushPromises();
 
-    expect(backend.setCompatibilityDefaultMatchedOnly).toHaveBeenCalledWith(true);
-    expect(steam.setConfirmedCompatibilityDefaultMatchedOnly).toHaveBeenCalledWith(true, 1);
-    expect(metadataSection(render()).props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(backend.setCompatibilityDefaultScope).toHaveBeenCalledWith("steam");
+    expect(steam.setConfirmedCompatibilityDefaultScope).toHaveBeenCalledWith("steam", 1);
+    expect(metadataSection(render()).props.compatibilityDefaultScope).toBe("steam");
   });
 
   it("restores the previous scope and reports the failure after a failed scope save", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
-    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(true);
-    backend.setCompatibilityDefaultMatchedOnly.mockRejectedValue(new Error("disk unavailable"));
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("metadata");
+    backend.setCompatibilityDefaultScope.mockRejectedValue(new Error("disk unavailable"));
     render();
     runEffects();
     await flushPromises();
 
-    metadataSection(render()).props.onCompatibilityDefaultMatchedOnlyChange(false);
+    metadataSection(render()).props.onCompatibilityDefaultScopeChange("all");
     await flushPromises();
 
     const afterFailure = metadataSection(render());
-    expect(afterFailure.props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(afterFailure.props.compatibilityDefaultScope).toBe("metadata");
     expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
-    expect(steam.setConfirmedCompatibilityDefaultMatchedOnly).not.toHaveBeenCalled();
+    expect(steam.setConfirmedCompatibilityDefaultScope).not.toHaveBeenCalled();
   });
 
   it("blocks overlapping policy saves until the scope request finishes", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);
-    let finishScope!: (value: boolean) => void;
-    backend.setCompatibilityDefaultMatchedOnly.mockReturnValue(new Promise<boolean>((resolve) => {
+    let finishScope!: (value: "steam" | "no-steam" | "metadata" | "all") => void;
+    backend.setCompatibilityDefaultScope.mockReturnValue(new Promise<"steam" | "no-steam" | "metadata" | "all">((resolve) => {
       finishScope = resolve;
     }));
     render();
@@ -321,17 +326,17 @@ describe("Content update settings", () => {
     await flushPromises();
 
     const loaded = metadataSection(render());
-    loaded.props.onCompatibilityDefaultMatchedOnlyChange(true);
+    loaded.props.onCompatibilityDefaultScopeChange("steam");
     // Controller activation can arrive again before React has rendered busy.
-    loaded.props.onCompatibilityDefaultMatchedOnlyChange(false);
+    loaded.props.onCompatibilityDefaultScopeChange("all");
     metadataSection(render()).props.onCompatibilityDefaultChange(null);
-    expect(backend.setCompatibilityDefaultMatchedOnly).toHaveBeenCalledTimes(1);
+    expect(backend.setCompatibilityDefaultScope).toHaveBeenCalledTimes(1);
     expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
 
-    finishScope(true);
+    finishScope("steam");
     await flushPromises();
     const saved = metadataSection(render());
-    expect(saved.props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(saved.props.compatibilityDefaultScope).toBe("steam");
     expect(saved.props.compatibilityDefault).toBe(3);
     expect(saved.props.compatibilityDefaultScopeBusy).toBe(false);
 
@@ -339,7 +344,19 @@ describe("Content update settings", () => {
     saved.props.onCompatibilityDefaultChange(null);
     await flushPromises();
     expect(metadataSection(render()).props.compatibilityDefault).toBeNull();
-    expect(metadataSection(render()).props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(metadataSection(render()).props.compatibilityDefaultScope).toBe("steam");
+  });
+
+  it("records the dropdown that must receive focus after its popup closes", async () => {
+    render();
+    runEffects();
+    await flushPromises();
+
+    const section = metadataSection(render());
+    section.props.onCompatibilityDefaultMenuWillOpen("category");
+    expect(compatibilityDropdownReturnOrigin()).toBe("category");
+    section.props.onCompatibilityDefaultMenuWillOpen("scope");
+    expect(compatibilityDropdownReturnOrigin()).toBe("scope");
   });
 
 

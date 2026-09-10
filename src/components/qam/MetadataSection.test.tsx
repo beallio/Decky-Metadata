@@ -6,7 +6,6 @@ vi.mock("@decky/ui", () => ({
   Field: "Field",
   PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
-  ToggleField: "ToggleField",
 }));
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
@@ -18,7 +17,7 @@ vi.mock("../../styles", () => ({
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
 
 import { MetadataSection } from "./MetadataSection";
-import type { DeckCompatibilityCategory } from "../../types";
+import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
 type Node = { type?: unknown; props?: { children?: unknown; [key: string]: unknown } };
 
@@ -31,13 +30,14 @@ const nodes = (node: unknown): Node[] => {
 };
 
 
-const onCompatibilityDefaultMatchedOnlyChange = vi.fn();
+const onCompatibilityDefaultScopeChange = vi.fn();
+const onCompatibilityDefaultMenuWillOpen = vi.fn();
 
 const render = (overrides: {
   compatibilityDefault?: DeckCompatibilityCategory | null;
   compatibilityDefaultLoaded?: boolean;
   compatibilityDefaultBusy?: boolean;
-  compatibilityDefaultMatchedOnly?: boolean;
+  compatibilityDefaultScope?: CompatibilityDefaultScope;
   compatibilityDefaultScopeBusy?: boolean;
 } = {}) => MetadataSection({
   detectedCount: 3,
@@ -51,35 +51,53 @@ const render = (overrides: {
   compatibilityDefaultLoaded: true,
   compatibilityDefaultBusy: false,
   compatibilityDefaultError: "",
-  compatibilityDefaultMatchedOnly: false,
+  compatibilityDefaultScope: "all",
   compatibilityDefaultScopeBusy: false,
   onRefreshMetadata: vi.fn(),
   onClearCache: vi.fn(),
   onCompatibilityDefaultChange: vi.fn(),
-  onCompatibilityDefaultMatchedOnlyChange,
-  onCompatibilityDefaultMenuWillOpen: vi.fn(),
+  onCompatibilityDefaultScopeChange,
+  onCompatibilityDefaultMenuWillOpen,
   onCompatibilityDefaultControlRef: vi.fn(),
+  onCompatibilityDefaultScopeControlRef: vi.fn(),
   ...overrides,
 });
 
-const toggle = (overrides: Parameters<typeof render>[0] = {}) => {
-  const found = nodes(render(overrides)).find((node) => node.type === "ToggleField");
-  if (!found?.props) throw new Error("matched-games-only toggle is missing");
+const scopeDropdown = (overrides: Parameters<typeof render>[0] = {}) => {
+  const found = nodes(render(overrides)).find((node) =>
+    node.type === "DropdownItem" && node.props?.label === "Apply default to"
+  );
+  if (!found?.props) throw new Error("compatibility scope dropdown is missing");
   return found.props;
 };
 
-describe("MetadataSection matched-games-only scope", () => {
+describe("MetadataSection compatibility default scope", () => {
 
   it("disables the scope while it cannot be applied or saved", () => {
-    expect(toggle().disabled).toBe(false);
+    expect(scopeDropdown().disabled).toBe(false);
     // Automatic has no default to scope.
-    expect(toggle({ compatibilityDefault: null }).disabled).toBe(true);
-    expect(toggle({ compatibilityDefaultLoaded: false }).disabled).toBe(true);
-    expect(toggle({ compatibilityDefaultBusy: true }).disabled).toBe(true);
-    expect(toggle({ compatibilityDefaultScopeBusy: true }).disabled).toBe(true);
+    expect(scopeDropdown({ compatibilityDefault: null }).disabled).toBe(true);
+    expect(scopeDropdown({ compatibilityDefaultLoaded: false }).disabled).toBe(true);
+    expect(scopeDropdown({ compatibilityDefaultBusy: true }).disabled).toBe(true);
+    expect(scopeDropdown({ compatibilityDefaultScopeBusy: true }).disabled).toBe(true);
     const dropdown = nodes(render({ compatibilityDefaultScopeBusy: true }))
-      .find((node) => node.type === "DropdownItem");
+      .find((node) => node.type === "DropdownItem" && node.props?.label === "Default compatibility status");
     expect(dropdown?.props?.disabled).toBe(true);
+  });
+
+  it("uses the native readable four-option scope dropdown", () => {
+    const dropdown = scopeDropdown({ compatibilityDefaultScope: "no-steam" });
+    expect(dropdown.layout).toBe("below");
+    expect(dropdown.childrenContainerWidth).toBe("max");
+    expect(dropdown.rgOptions).toEqual([
+      { data: "steam", label: "Steam-matched games" },
+      { data: "no-steam", label: "Saved games without a Steam ID" },
+      { data: "metadata", label: "All games with saved metadata" },
+      { data: "all", label: "All non-Steam games" },
+    ]);
+    expect((dropdown.renderButtonValue as any)().props.children).toBe("Saved games without a Steam ID");
+    (dropdown.onMenuWillOpen as any)();
+    expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("scope");
   });
 
 });

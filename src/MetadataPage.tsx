@@ -29,6 +29,7 @@ import {
   appName,
   applyMetadata,
   compatibilityDefaultSnapshot,
+  compatibilityDefaultScopeSnapshot,
   cleanTitle,
   classifyShortcutNameState,
   getOverview,
@@ -36,6 +37,7 @@ import {
   isNonSteamApp,
   metadataCache,
   ensureCompatibilityDefault,
+  effectiveCompatibilityCategory,
   nativeShortcutName,
   refreshCompatibilitySurfaces,
   setShortcutNameAndWait,
@@ -44,6 +46,7 @@ import {
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
   CATEGORY_LABELS,
+  CompatibilityDefaultScope,
   DeckCompatibilityCategory,
   DeckCompatibilityOverride,
   MetadataData,
@@ -138,18 +141,26 @@ const compatibilityCategoryValue = (value: unknown): DeckCompatibilityCategory |
   isCompatibilityCategory(value) ? value : null;
 
 const compatibilityStatusDisplay = (
-  override: DeckCompatibilityOverride,
-  valveCategory: DeckCompatibilityCategory | null,
+  metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid">,
   globalDefault: DeckCompatibilityCategory | null,
+  scope: CompatibilityDefaultScope,
 ): string => {
+  const override = compatibilityStatusValue(metadata.deck_compat_override);
+  const valveCategory = compatibilityCategoryValue(metadata.deck_compat_category);
   if (isCompatibilityCategory(override)) return compatibilityStatusLabel(override);
   if (override === "valve") {
     return valveCategory === null
       ? "Follow Valve (unavailable — original Steam status)"
       : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
   }
-  if (globalDefault !== null) {
+  const effective = effectiveCompatibilityCategory(metadata, globalDefault, scope);
+  if (globalDefault !== null && effective === globalDefault) {
     return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+  }
+  if (globalDefault !== null) {
+    return valveCategory === null
+      ? "Use global default (outside selected scope — original Steam status)"
+      : `Use global default (outside selected scope — ${compatibilityStatusLabel(valveCategory)} from Valve)`;
   }
   return valveCategory === null
     ? "Use global default (Automatic — original Steam status)"
@@ -244,6 +255,9 @@ export const MetadataPage = () => {
   const [metadataHydratedEntry, setMetadataHydratedEntry] = useState<number | null>(null);
   const [compatibilityDefault, setCompatibilityDefault] = useState<DeckCompatibilityCategory | null>(
     compatibilityDefaultSnapshot(),
+  );
+  const [compatibilityDefaultScope, setCompatibilityDefaultScope] = useState<CompatibilityDefaultScope>(
+    compatibilityDefaultScopeSnapshot(),
   );
   const steamNameBackfillEntryRef = useRef<number | null>(null);
   const editorEntryRef = useRef({ appId, token: 0 });
@@ -547,11 +561,17 @@ export const MetadataPage = () => {
     let cancelled = false;
     void ensureCompatibilityDefault()
       .then((value) => {
-        if (!cancelled) setCompatibilityDefault(value);
+        if (!cancelled) {
+          setCompatibilityDefault(value);
+          setCompatibilityDefaultScope(compatibilityDefaultScopeSnapshot());
+        }
       })
       .catch(() => undefined);
     return subscribeCompatibilityRevision(() => {
-      if (!cancelled) setCompatibilityDefault(compatibilityDefaultSnapshot());
+      if (!cancelled) {
+        setCompatibilityDefault(compatibilityDefaultSnapshot());
+        setCompatibilityDefaultScope(compatibilityDefaultScopeSnapshot());
+      }
     });
   }, []);
 
@@ -1139,9 +1159,9 @@ export const MetadataPage = () => {
                 }
                 renderButtonValue={() =>
                   compatibilityStatusDisplay(
-                    compatibilityStatusValue(metadata.deck_compat_override),
-                    compatibilityCategoryValue(metadata.deck_compat_category),
+                    metadata,
                     compatibilityDefault,
+                    compatibilityDefaultScope,
                   )
                 }
               />

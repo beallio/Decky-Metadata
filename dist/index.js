@@ -112,8 +112,8 @@ const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
 const getCompatibilityDefault = callable("get_compatibility_default");
 const setCompatibilityDefault = callable("set_compatibility_default");
-const getCompatibilityDefaultMatchedOnly = callable("get_compatibility_default_matched_only");
-const setCompatibilityDefaultMatchedOnly = callable("set_compatibility_default_matched_only");
+const getCompatibilityDefaultScope = callable("get_compatibility_default_scope");
+const setCompatibilityDefaultScope = callable("set_compatibility_default_scope");
 const checkForPluginUpdate = callable("check_for_plugin_update");
 const revalidatePluginUpdate = callable("revalidate_plugin_update");
 const recordUpdateInstallRequested = callable("record_update_install_requested");
@@ -140,7 +140,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getAllMetadata: getAllMetadata,
     getCommunityFallbackPage: getCommunityFallbackPage,
     getCompatibilityDefault: getCompatibilityDefault,
-    getCompatibilityDefaultMatchedOnly: getCompatibilityDefaultMatchedOnly,
+    getCompatibilityDefaultScope: getCompatibilityDefaultScope,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
@@ -163,7 +163,7 @@ var backend = /*#__PURE__*/Object.freeze({
     searchMetadata: searchMetadata,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setCompatibilityDefault: setCompatibilityDefault,
-    setCompatibilityDefaultMatchedOnly: setCompatibilityDefaultMatchedOnly,
+    setCompatibilityDefaultScope: setCompatibilityDefaultScope,
     setDebugLogging: setDebugLogging,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -286,15 +286,25 @@ const compatibilityDefaultOptions = [
     { data: 1, label: "Unsupported" },
     { data: 0, label: "Unknown" },
 ];
-function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultMatchedOnly, compatibilityDefaultScopeBusy, onRefreshMetadata, onClearCache, onCompatibilityDefaultChange, onCompatibilityDefaultMatchedOnlyChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
-                            onCompatibilityDefaultMenuWillOpen();
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Apply only to matched games", description: "Shortcuts without saved metadata keep their original Steam status.", bottomSeparator: "none", checked: compatibilityDefaultMatchedOnly, disabled: !compatibilityDefaultLoaded ||
-                        compatibilityDefaultBusy ||
-                        compatibilityDefaultScopeBusy ||
-                        compatibilityDefault === null, onChange: onCompatibilityDefaultMatchedOnlyChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: compatibilityDefaultMatchedOnly
-                                ? "This applies now to existing and new non-Steam shortcuts that have saved metadata, including games with a Steam match. Per-game choices take priority."
-                                : "This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: { ...compactTextStyle, paddingBottom: space.md }, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
+const compatibilityDefaultScopeOptions = [
+    { data: "steam", label: "Steam-matched games" },
+    { data: "no-steam", label: "Saved games without a Steam ID" },
+    { data: "metadata", label: "All games with saved metadata" },
+    { data: "all", label: "All non-Steam games" },
+];
+const scopeDescription = (scope) => ({
+    steam: "Applies to saved records with a valid Steam App ID.",
+    "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
+    metadata: "Applies to every saved metadata record, with or without a Steam ID.",
+    all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
+}[scope]);
+function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onRefreshMetadata, onClearCache, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
+                            onCompatibilityDefaultMenuWillOpen("category");
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                            compatibilityDefaultBusy ||
+                            compatibilityDefaultScopeBusy ||
+                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescription(compatibilityDefaultScope)} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: { ...compactTextStyle, paddingBottom: space.md }, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
@@ -1353,7 +1363,7 @@ const metadataState = {
     compatibilityBaselines: {},
     compatibilityDefault: null,
     compatibilityDefaultLoaded: false,
-    compatibilityDefaultMatchedOnly: false,
+    compatibilityDefaultScope: "all",
     compatibilityDefaultGeneration: 0,
     compatibilityLifecycleGeneration: 0,
     compatibilityDefaultLoadPromise: null,
@@ -1365,7 +1375,7 @@ const compatibilityRevisionListeners = new Set();
 const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
 const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
 const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
-const compatibilityDefaultMatchedOnlySnapshot = () => metadataState.compatibilityDefaultMatchedOnly;
+const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
 const compatibilityLifecycleSnapshot = () => metadataState.compatibilityLifecycleGeneration;
 const isCompatibilityLifecycleCurrent = (generation) => generation === metadataState.compatibilityLifecycleGeneration;
 const subscribeCompatibilityRevision = (listener) => {
@@ -3446,10 +3456,16 @@ const withInCallTruth = (state, run) => {
     }
 };
 
-const hasMatchedSteamAppId = (metadata) => {
-    const steamAppId = Number(metadata?.steam_appid);
-    return Number.isFinite(steamAppId) && steamAppId > 0;
+const matchedSteamAppId = (metadata) => {
+    const raw = metadata?.steam_appid;
+    if (typeof raw === "boolean" || raw === null || raw === undefined)
+        return null;
+    const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
+    return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
+        ? steamAppId
+        : null;
 };
+const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
 /**
  * Reapply Decky's matched-game fields to a native app-data replacement.
  *
@@ -3555,7 +3571,7 @@ const shortcutAppIdForSteamAppId = (steamAppId) => {
         return null;
     for (const [shortcutAppIdText, metadata] of Object.entries(metadataCache)) {
         const shortcutAppId = Number(shortcutAppIdText);
-        const metadataSteamAppId = Number(metadata?.steam_appid);
+        const metadataSteamAppId = matchedSteamAppId(metadata);
         if (Number.isFinite(shortcutAppId) &&
             shortcutAppId > 0 &&
             metadataSteamAppId === steamAppId) {
@@ -3599,7 +3615,7 @@ const ensureDetailsOverviewSafeFields = (appId) => {
     }
 };
 const isCompatibilityCategory$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
-const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.compatibilityDefault, matchedOnly = metadataState.compatibilityDefaultMatchedOnly) => {
+const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.compatibilityDefault, scope = metadataState.compatibilityDefaultScope) => {
     if (isCompatibilityCategory$1(metadata?.deck_compat_override)) {
         return metadata.deck_compat_override;
     }
@@ -3608,10 +3624,11 @@ const effectiveCompatibilityCategory = (metadata, globalDefault = metadataState.
             ? metadata.deck_compat_category
             : null;
     }
-    // The matched-games-only scope keeps the global default off shortcuts the
-    // plugin has no record for. A record without a Steam match still counts;
-    // both remaining sources below live in a record anyway.
-    if (isCompatibilityCategory$1(globalDefault) && (!matchedOnly || metadata !== undefined)) {
+    const eligible = scope === "all"
+        || (scope === "metadata" && metadata !== undefined)
+        || (scope === "steam" && hasMatchedSteamAppId(metadata))
+        || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
+    if (isCompatibilityCategory$1(globalDefault) && eligible) {
         return globalDefault;
     }
     if (isCompatibilityCategory$1(metadata?.deck_compat_category)) {
@@ -3978,17 +3995,17 @@ const setConfirmedCompatibilityDefault = (category, lifecycleGeneration = metada
     return category;
 };
 /** Commit only a backend-confirmed scope, using the same one-pass policy path. */
-const setConfirmedCompatibilityDefaultMatchedOnly = (matchedOnly, lifecycleGeneration = metadataState.compatibilityLifecycleGeneration) => {
+const setConfirmedCompatibilityDefaultScope = (scope, lifecycleGeneration = metadataState.compatibilityLifecycleGeneration) => {
     if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
-        return metadataState.compatibilityDefaultMatchedOnly;
+        return metadataState.compatibilityDefaultScope;
     }
-    const changedPolicy = metadataState.compatibilityDefaultMatchedOnly !== matchedOnly;
+    const changedPolicy = metadataState.compatibilityDefaultScope !== scope;
     metadataState.compatibilityDefaultGeneration += 1;
-    metadataState.compatibilityDefaultMatchedOnly = matchedOnly;
+    metadataState.compatibilityDefaultScope = scope;
     const compatibilityChanged = applyCompatibilityDefault();
     if (changedPolicy || compatibilityChanged)
         notifyCompatibilityRevision();
-    return matchedOnly;
+    return scope;
 };
 /** Start a new plugin lifetime and make unfinished work from the old one inert. */
 const beginCompatibilityLifecycle = () => {
@@ -3996,7 +4013,7 @@ const beginCompatibilityLifecycle = () => {
     metadataState.compatibilityDefaultGeneration += 1;
     metadataState.compatibilityDefault = null;
     metadataState.compatibilityDefaultLoaded = false;
-    metadataState.compatibilityDefaultMatchedOnly = false;
+    metadataState.compatibilityDefaultScope = "all";
     metadataState.compatibilityDefaultLoadPromise = null;
     metadataState.metadataLoadPromise = null;
     deferredCompatibilityUpdates.clear();
@@ -4016,15 +4033,18 @@ const ensureCompatibilityDefault = async () => {
         // load together and only then satisfy compatibilityDefaultLoaded.
         const request = Promise.all([
             getCompatibilityDefault(),
-            getCompatibilityDefaultMatchedOnly(),
-        ]).then(([value, matchedOnly]) => {
+            getCompatibilityDefaultScope(),
+        ]).then(([value, scope]) => {
             const category = isCompatibilityCategory$1(value) ? value : null;
+            if (scope !== "steam" && scope !== "no-steam" && scope !== "metadata" && scope !== "all") {
+                throw new Error("invalid compatibility default scope response");
+            }
             if (requestGeneration !== metadataState.compatibilityDefaultGeneration ||
                 lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
                 return metadataState.compatibilityDefault;
             }
             metadataState.compatibilityDefault = category;
-            metadataState.compatibilityDefaultMatchedOnly = matchedOnly === true;
+            metadataState.compatibilityDefaultScope = scope;
             metadataState.compatibilityDefaultLoaded = true;
             applyCompatibilityDefault();
             notifyCompatibilityRevision();
@@ -5081,10 +5101,10 @@ const findOneSourceExport = (modules, predicate) => {
  * and Steam has a positive status to display. Category 0 is Steam's native
  * no-status state, so it deliberately does not fabricate an Unknown badge.
  */
-const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, globalDefault, isNativeNonSteamShortcut: isNativeShortcut, }) => {
+const resolveLibraryCompatibilityIndicator = ({ renderedAppId, overview, metadata, globalDefault, globalScope, isNativeNonSteamShortcut: isNativeShortcut, }) => {
     if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview))
         return null;
-    const category = effectiveCompatibilityCategory(metadata, globalDefault);
+    const category = effectiveCompatibilityCategory(metadata, globalDefault, globalScope);
     return category === null || category === 0 ? null : category;
 };
 const childrenOf = (element) => {
@@ -8324,13 +8344,16 @@ let compatibilityDropdownReturnPending = false;
 let compatibilityDropdownControlUnmounted = false;
 let compatibilityDropdownReturnVisible = false;
 let compatibilityDropdownSelectionSaved = false;
-const requestCompatibilityDropdownReturn = () => {
+let compatibilityDropdownOrigin = "category";
+const requestCompatibilityDropdownReturn = (origin) => {
     compatibilityDropdownReturnPending = true;
     compatibilityDropdownControlUnmounted = false;
     compatibilityDropdownReturnVisible = false;
     compatibilityDropdownSelectionSaved = false;
+    compatibilityDropdownOrigin = origin;
 };
 const hasCompatibilityDropdownReturn = () => compatibilityDropdownReturnPending;
+const compatibilityDropdownReturnOrigin = () => compatibilityDropdownOrigin;
 const noteCompatibilityDropdownControlUnmounted = () => {
     if (!compatibilityDropdownReturnPending)
         return false;
@@ -8364,6 +8387,7 @@ const consumeCompatibilityDropdownReturn = () => {
     compatibilityDropdownControlUnmounted = false;
     compatibilityDropdownReturnVisible = false;
     compatibilityDropdownSelectionSaved = false;
+    compatibilityDropdownOrigin = "category";
     return pending;
 };
 const clearCompatibilityDropdownReturn = () => {
@@ -8371,6 +8395,7 @@ const clearCompatibilityDropdownReturn = () => {
     compatibilityDropdownControlUnmounted = false;
     compatibilityDropdownReturnVisible = false;
     compatibilityDropdownSelectionSaved = false;
+    compatibilityDropdownOrigin = "category";
 };
 
 const DEFAULT_UPDATE_SETTINGS = {
@@ -8503,11 +8528,12 @@ const Content = () => {
     const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
     const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(false);
     const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState("");
-    const [compatibilityDefaultMatchedOnly, setCompatibilityDefaultMatchedOnlyState] = SP_REACT.useState(false);
+    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState("all");
     const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(false);
     const compatibilitySaveInFlight = SP_REACT.useRef(false);
     const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
+    const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
@@ -8515,10 +8541,16 @@ const Content = () => {
             noteCompatibilityDropdownControlUnmounted();
         setCompatibilityDefaultControlState(element);
     }, []);
+    const setCompatibilityDefaultScopeControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setCompatibilityDefaultScopeControlState(element);
+    }, []);
     SP_REACT.useEffect(() => {
-        if (!compatibilityDefaultControl)
+        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
+        if (!mountedControl)
             return;
-        const qamDocument = compatibilityDefaultControl.ownerDocument;
+        const qamDocument = mountedControl.ownerDocument;
         const noteVisibleReturn = () => {
             if (qamDocument.visibilityState !== "visible")
                 return;
@@ -8537,7 +8569,7 @@ const Content = () => {
         qamDocument.addEventListener("visibilitychange", observeVisibility);
         observeVisibility();
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl]);
+    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -8565,11 +8597,16 @@ const Content = () => {
     }, []);
     SP_REACT.useEffect(() => {
         if (!isCompatibilityDropdownReturnReady()
-            || !compatibilityDefaultControl
+            || !(compatibilityDropdownReturnOrigin() === "scope"
+                ? compatibilityDefaultScopeControl
+                : compatibilityDefaultControl)
             || !compatibilityDefaultLoaded
-            || compatibilityDefaultBusy)
+            || compatibilityDefaultBusy
+            || compatibilityDefaultScopeBusy)
             return;
-        const control = compatibilityDefaultControl;
+        const control = compatibilityDropdownReturnOrigin() === "scope"
+            ? compatibilityDefaultScopeControl
+            : compatibilityDefaultControl;
         const settleFrames = isCompatibilityDropdownSelectionReturn()
             ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
             : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
@@ -8582,7 +8619,8 @@ const Content = () => {
             if (cancelled
                 || !isCompatibilityDropdownReturnReady()
                 || !compatibilityDefaultLoaded
-                || compatibilityDefaultBusy)
+                || compatibilityDefaultBusy
+                || compatibilityDefaultScopeBusy)
                 return;
             attempts += 1;
             if (attempts <= settleFrames) {
@@ -8621,6 +8659,8 @@ const Content = () => {
     }, [
         compatibilityDefaultBusy,
         compatibilityDefaultControl,
+        compatibilityDefaultScopeBusy,
+        compatibilityDefaultScopeControl,
         compatibilityDefaultLoaded,
         compatibilityDropdownReturnVersion,
     ]);
@@ -8654,7 +8694,7 @@ const Content = () => {
             if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
                 return;
             setCompatibilityDefaultState(value);
-            setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
+            setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
             setCompatibilityDefaultError("");
             setCompatibilityDefaultLoaded(true);
         })
@@ -8668,7 +8708,7 @@ const Content = () => {
             if (cancelled || !compatibilityDefaultLoadedSnapshot())
                 return;
             setCompatibilityDefaultState(compatibilityDefaultSnapshot());
-            setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
+            setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
             setCompatibilityDefaultError("");
             setCompatibilityDefaultLoaded(true);
         });
@@ -8806,34 +8846,35 @@ const Content = () => {
             }
         }
     };
-    const saveCompatibilityDefaultMatchedOnly = async (matchedOnly) => {
+    const saveCompatibilityDefaultScope = async (scope) => {
         if (compatibilitySaveInFlight.current ||
             !compatibilityDefaultLoaded ||
             compatibilityDefault === null)
             return;
         compatibilitySaveInFlight.current = true;
-        const previous = compatibilityDefaultMatchedOnly;
+        const previous = compatibilityDefaultScope;
         const lifecycleGeneration = compatibilityLifecycleSnapshot();
         setCompatibilityDefaultScopeBusy(true);
         setCompatibilityDefaultError("");
         compatibilityDefaultLoadVersion.current += 1;
-        setCompatibilityDefaultMatchedOnlyState(matchedOnly);
+        setCompatibilityDefaultScopeState(scope);
         try {
-            const saved = await setCompatibilityDefaultMatchedOnly(matchedOnly);
+            const saved = await setCompatibilityDefaultScope(scope);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            const confirmed = setConfirmedCompatibilityDefaultMatchedOnly(saved, lifecycleGeneration);
+            const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultMatchedOnlyState(confirmed);
-            toastSuccess("Compatibility", confirmed
-                ? "Default now applies to matched games only"
-                : "Default now applies to all non-Steam shortcuts");
+            setCompatibilityDefaultScopeState(confirmed);
+            if (noteCompatibilityDropdownSelectionSaved()) {
+                setCompatibilityDropdownReturnVersion((version) => version + 1);
+            }
+            toastSuccess("Compatibility", "Default compatibility scope saved");
         }
         catch (error) {
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            setCompatibilityDefaultMatchedOnlyState(previous);
+            setCompatibilityDefaultScopeState(previous);
             const message = `Compatibility default scope could not be saved: ${String(error)}`;
             setCompatibilityDefaultError(message);
             toastError("Compatibility", message);
@@ -8988,7 +9029,7 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultMatchedOnly: compatibilityDefaultMatchedOnly, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultMatchedOnlyChange: (matchedOnly) => void saveCompatibilityDefaultMatchedOnly(matchedOnly), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*
@@ -9347,7 +9388,9 @@ const isCompatibilityCategory = (value) => typeof value === "number" &&
 const compatibilityStatusLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
 const compatibilityStatusValue = (value) => value === "valve" || isCompatibilityCategory(value) ? value : null;
 const compatibilityCategoryValue = (value) => isCompatibilityCategory(value) ? value : null;
-const compatibilityStatusDisplay = (override, valveCategory, globalDefault) => {
+const compatibilityStatusDisplay = (metadata, globalDefault, scope) => {
+    const override = compatibilityStatusValue(metadata.deck_compat_override);
+    const valveCategory = compatibilityCategoryValue(metadata.deck_compat_category);
     if (isCompatibilityCategory(override))
         return compatibilityStatusLabel(override);
     if (override === "valve") {
@@ -9355,8 +9398,14 @@ const compatibilityStatusDisplay = (override, valveCategory, globalDefault) => {
             ? "Follow Valve (unavailable — original Steam status)"
             : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
     }
-    if (globalDefault !== null) {
+    const effective = effectiveCompatibilityCategory(metadata, globalDefault, scope);
+    if (globalDefault !== null && effective === globalDefault) {
         return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+    }
+    if (globalDefault !== null) {
+        return valveCategory === null
+            ? "Use global default (outside selected scope — original Steam status)"
+            : `Use global default (outside selected scope — ${compatibilityStatusLabel(valveCategory)} from Valve)`;
     }
     return valveCategory === null
         ? "Use global default (Automatic — original Steam status)"
@@ -9432,6 +9481,7 @@ const MetadataPage = () => {
     const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
     const [metadataHydratedEntry, setMetadataHydratedEntry] = SP_REACT.useState(null);
     const [compatibilityDefault, setCompatibilityDefault] = SP_REACT.useState(compatibilityDefaultSnapshot());
+    const [compatibilityDefaultScope, setCompatibilityDefaultScope] = SP_REACT.useState(compatibilityDefaultScopeSnapshot());
     const steamNameBackfillEntryRef = SP_REACT.useRef(null);
     const editorEntryRef = SP_REACT.useRef({ appId, token: 0 });
     // The editor can visit A, B, then A again while an async operation from the
@@ -9714,11 +9764,17 @@ const MetadataPage = () => {
     SP_REACT.useEffect(() => {
         void ensureCompatibilityDefault()
             .then((value) => {
-            setCompatibilityDefault(value);
+            {
+                setCompatibilityDefault(value);
+                setCompatibilityDefaultScope(compatibilityDefaultScopeSnapshot());
+            }
         })
             .catch(() => undefined);
         return subscribeCompatibilityRevision(() => {
-            setCompatibilityDefault(compatibilityDefaultSnapshot());
+            {
+                setCompatibilityDefault(compatibilityDefaultSnapshot());
+                setCompatibilityDefaultScope(compatibilityDefaultScopeSnapshot());
+            }
         });
     }, []);
     const normalizedMetadata = SP_REACT.useMemo(() => ({
@@ -10102,7 +10158,7 @@ const MetadataPage = () => {
                                                     }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
                                     ...prev,
                                     deck_compat_override: compatibilityStatusValue(option.data),
-                                })), renderButtonValue: () => compatibilityStatusDisplay(compatibilityStatusValue(metadata.deck_compat_override), compatibilityCategoryValue(metadata.deck_compat_category), compatibilityDefault) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));

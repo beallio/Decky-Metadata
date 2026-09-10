@@ -19,7 +19,7 @@ import {
   refreshDelistedIndex,
   setAutomaticUpdateChecks,
   setCompatibilityDefault,
-  setCompatibilityDefaultMatchedOnly,
+  setCompatibilityDefaultScope,
   setDebugLogging,
   setUpdateChannel,
   startScanMissing,
@@ -33,7 +33,7 @@ import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
-  compatibilityDefaultMatchedOnlySnapshot,
+  compatibilityDefaultScopeSnapshot,
   compatibilityDefaultSnapshot,
   compatibilityLifecycleSnapshot,
   ensureCompatibilityDefault,
@@ -41,11 +41,12 @@ import {
   metadataCache,
   refreshMetadataCache,
   setConfirmedCompatibilityDefault,
-  setConfirmedCompatibilityDefaultMatchedOnly,
+  setConfirmedCompatibilityDefaultScope,
   subscribeCompatibilityRevision,
 } from "./steam";
 import {
   clearCompatibilityDropdownReturn,
+  compatibilityDropdownReturnOrigin,
   consumeCompatibilityDropdownReturn,
   hasCompatibilityDropdownReturn,
   isCompatibilityDropdownReturnReady,
@@ -60,6 +61,7 @@ import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
 import {
   GameOption,
+  CompatibilityDefaultScope,
   DeckCompatibilityCategory,
   UpdateChannel,
 } from "./types";
@@ -204,11 +206,13 @@ export const Content = () => {
   const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = useState(false);
   const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(false);
   const [compatibilityDefaultError, setCompatibilityDefaultError] = useState("");
-  const [compatibilityDefaultMatchedOnly, setCompatibilityDefaultMatchedOnlyState] = useState(false);
+  const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = useState<CompatibilityDefaultScope>("all");
   const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(false);
   const compatibilitySaveInFlight = useRef(false);
   const compatibilityDefaultLoadVersion = useRef(0);
   const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
+    useState<HTMLDivElement | null>(null);
+  const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] =
     useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
@@ -217,10 +221,15 @@ export const Content = () => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setCompatibilityDefaultControlState(element);
   }, []);
+  const setCompatibilityDefaultScopeControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setCompatibilityDefaultScopeControlState(element);
+  }, []);
 
   useEffect(() => {
-    if (!compatibilityDefaultControl) return;
-    const qamDocument = compatibilityDefaultControl.ownerDocument;
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
+    if (!mountedControl) return;
+    const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
       if (qamDocument.visibilityState !== "visible") return;
       if (!noteCompatibilityDropdownReturnVisible()) return;
@@ -236,7 +245,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -266,11 +275,16 @@ export const Content = () => {
   useEffect(() => {
     if (
       !isCompatibilityDropdownReturnReady()
-      || !compatibilityDefaultControl
+      || !(compatibilityDropdownReturnOrigin() === "scope"
+        ? compatibilityDefaultScopeControl
+        : compatibilityDefaultControl)
       || !compatibilityDefaultLoaded
       || compatibilityDefaultBusy
+      || compatibilityDefaultScopeBusy
     ) return;
-    const control = compatibilityDefaultControl;
+    const control = compatibilityDropdownReturnOrigin() === "scope"
+      ? compatibilityDefaultScopeControl
+      : compatibilityDefaultControl;
     const settleFrames = isCompatibilityDropdownSelectionReturn()
       ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
       : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
@@ -285,6 +299,7 @@ export const Content = () => {
         || !isCompatibilityDropdownReturnReady()
         || !compatibilityDefaultLoaded
         || compatibilityDefaultBusy
+        || compatibilityDefaultScopeBusy
       ) return;
       attempts += 1;
       if (attempts <= settleFrames) {
@@ -321,6 +336,8 @@ export const Content = () => {
   }, [
     compatibilityDefaultBusy,
     compatibilityDefaultControl,
+    compatibilityDefaultScopeBusy,
+    compatibilityDefaultScopeControl,
     compatibilityDefaultLoaded,
     compatibilityDropdownReturnVersion,
   ]);
@@ -357,7 +374,7 @@ export const Content = () => {
       .then((value) => {
         if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
         setCompatibilityDefaultState(value);
-        setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
+        setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
         setCompatibilityDefaultError("");
         setCompatibilityDefaultLoaded(true);
       })
@@ -369,7 +386,7 @@ export const Content = () => {
     const unsubscribe = subscribeCompatibilityRevision(() => {
       if (cancelled || !compatibilityDefaultLoadedSnapshot()) return;
       setCompatibilityDefaultState(compatibilityDefaultSnapshot());
-      setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
+      setCompatibilityDefaultScopeState(compatibilityDefaultScopeSnapshot());
       setCompatibilityDefaultError("");
       setCompatibilityDefaultLoaded(true);
     });
@@ -505,31 +522,32 @@ export const Content = () => {
     }
   };
 
-  const saveCompatibilityDefaultMatchedOnly = async (matchedOnly: boolean) => {
+  const saveCompatibilityDefaultScope = async (scope: CompatibilityDefaultScope) => {
     if (
       compatibilitySaveInFlight.current ||
       !compatibilityDefaultLoaded ||
       compatibilityDefault === null
     ) return;
     compatibilitySaveInFlight.current = true;
-    const previous = compatibilityDefaultMatchedOnly;
+    const previous = compatibilityDefaultScope;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     setCompatibilityDefaultScopeBusy(true);
     setCompatibilityDefaultError("");
     compatibilityDefaultLoadVersion.current += 1;
-    setCompatibilityDefaultMatchedOnlyState(matchedOnly);
+    setCompatibilityDefaultScopeState(scope);
     try {
-      const saved = await setCompatibilityDefaultMatchedOnly(matchedOnly);
+      const saved = await setCompatibilityDefaultScope(scope);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      const confirmed = setConfirmedCompatibilityDefaultMatchedOnly(saved, lifecycleGeneration);
+      const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultMatchedOnlyState(confirmed);
-      toastSuccess("Compatibility", confirmed
-        ? "Default now applies to matched games only"
-        : "Default now applies to all non-Steam shortcuts");
+      setCompatibilityDefaultScopeState(confirmed);
+      if (noteCompatibilityDropdownSelectionSaved()) {
+        setCompatibilityDropdownReturnVersion((version) => version + 1);
+      }
+      toastSuccess("Compatibility", "Default compatibility scope saved");
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      setCompatibilityDefaultMatchedOnlyState(previous);
+      setCompatibilityDefaultScopeState(previous);
       const message = `Compatibility default scope could not be saved: ${String(error)}`;
       setCompatibilityDefaultError(message);
       toastError("Compatibility", message);
@@ -712,14 +730,15 @@ export const Content = () => {
         compatibilityDefaultLoaded={compatibilityDefaultLoaded}
         compatibilityDefaultBusy={compatibilityDefaultBusy}
         compatibilityDefaultError={compatibilityDefaultError}
-        compatibilityDefaultMatchedOnly={compatibilityDefaultMatchedOnly}
+        compatibilityDefaultScope={compatibilityDefaultScope}
         compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
         onRefreshMetadata={() => void scanMissing()}
         onClearCache={() => void clearCache()}
         onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
-        onCompatibilityDefaultMatchedOnlyChange={(matchedOnly) => void saveCompatibilityDefaultMatchedOnly(matchedOnly)}
+        onCompatibilityDefaultScopeChange={(scope) => void saveCompatibilityDefaultScope(scope)}
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
         onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
+        onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
       />
       <DelistedIndexSection
         countText={delistedCountText}

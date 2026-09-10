@@ -3,7 +3,7 @@ import { cloneElement, createElement, isValidElement, useEffect, useState } from
 import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
-import type { DeckCompatibilityCategory } from "../types";
+import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../types";
 import {
   effectiveCompatibilityCategory,
   refreshCompatibilitySurfaces,
@@ -24,7 +24,7 @@ const DECK_DISPLAY = 1;
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
 type ModuleSourceCandidatesFinder = (fragments: string[]) => any[];
-type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category">;
+type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid">;
 
 const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
 const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
@@ -128,18 +128,21 @@ export const resolveLibraryCompatibilityIndicator = ({
   overview,
   metadata,
   globalDefault,
+  globalScope,
   isNativeNonSteamShortcut: isNativeShortcut,
 }: {
   renderedAppId: number;
   overview: any;
   metadata: CompatibilityMetadata | undefined;
   globalDefault?: DeckCompatibilityCategory | null;
+  globalScope?: CompatibilityDefaultScope;
   isNativeNonSteamShortcut: (overview: any) => boolean;
 }) => {
   if (Number(overview?.appid) !== Number(renderedAppId) || !isNativeShortcut(overview)) return null;
   const category = effectiveCompatibilityCategory(
-    metadata as MetadataData | undefined,
+    metadata,
     globalDefault,
+    globalScope,
   );
   return category === null || category === 0 ? null : category;
 };

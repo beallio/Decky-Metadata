@@ -3,9 +3,8 @@
 ## User behavior
 
 Decky Metadata can set a Steam compatibility category on native non-Steam
-shortcuts. The QAM **Default compatibility status** applies to existing and new
-shortcuts, including shortcuts that have no saved metadata, unless the QAM
-**Apply only to matched games** toggle restricts it.
+shortcuts. The QAM **Default compatibility status** applies to the group
+selected by **Apply default to**.
 Its choices are, in order: **Automatic — use matched Steam status**,
 **Verified**, **Playable**, **Unsupported**, and **Unknown**.
 
@@ -30,14 +29,23 @@ tab, page, or game releases it; opening **Decky metadata...** is also an exit.
 The pending work then uses the latest default, match, and per-game choice, so a
 later editor Save wins over a formerly queued default.
 
-**Apply only to matched games** is off by default. When it is on, a numeric
-default applies only to shortcuts that have a saved metadata record; a record
-without a Steam match still counts. A shortcut with no record keeps its
-original Steam status. Fixed per-game categories and Follow Valve live in a
-record, so the scope never changes them. The toggle is unavailable while the
-default is Automatic, because there is no default to restrict; its saved value
-is kept. Turning the scope on or off applies the resulting policy at once,
-under the same active-Game-Info deferral as any other default change.
+**Apply default to** has four choices, in this order:
+
+1. **Steam-matched games**: saved records with a valid positive Steam App ID.
+2. **Saved games without a Steam ID**: saved records without a valid Steam App
+   ID. This includes manual and provider records.
+3. **All games with saved metadata**: every saved record.
+4. **All non-Steam games**: every native non-Steam shortcut, including one
+   with no record.
+
+The selector uses record presence and Steam App ID. It does not use provider
+name or current store availability. A delisted game with a valid ID is
+Steam-matched. An IGN record can be Steam-matched. A shortcut with no record
+is not a manual record. Fixed per-game categories and Follow Valve always win
+before the scope. A game outside the selected scope uses its Valve category or
+its original native status. The selector is unavailable while the default is
+Automatic, but it keeps its saved value. A change applies at once under the
+same active-Game-Info deferral as any other default change.
 
 ## Scenario reference
 
@@ -85,13 +93,14 @@ under the same active-Game-Info deferral as any other default change.
 | S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
 | S39 | Changed global default | Plugin reload or unload while pending | In-place reload retains/reconstructs pending work; real unload clears it and restores baselines. |
 | S40 | Any global change | Active Game Info has unchanged fixed or Follow Valve result | Keep that result; do not force an active-view refresh. Other eligible games still update. |
-| S41 | Verified, matched only | Shortcut with no record | Original; no record is created. |
-| S42 | Verified, matched only | Record with no Steam match, Use global default | Verified. |
-| S43 | Verified, matched only | Fixed per-game or Follow Valve | Per-game result, unchanged by the scope. |
-| S44 | Verified, matched only -> off | Shortcut with no record | Verified again in the same pass. |
-| S45 | Automatic, matched only | Any shortcut | No visible change; the toggle is unavailable and its value persists. |
+| S41 | Verified, Steam-matched games | Shortcut with no record | Original; no record is created. |
+| S42 | Verified, saved games without a Steam ID | Manual or provider record without an ID | Verified. |
+| S43 | Verified, Steam-matched games | IGN record with a valid Steam ID | Verified. |
+| S44 | Verified, all games with saved metadata | Shortcut with no record | Original; it is outside the scope. |
+| S45 | Automatic, any saved scope | Any shortcut | No visible change; the selector is unavailable and its value persists. |
 | S46 | Verified | Scope changes while a Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
-| S47 | Verified, matched only | Record removed for an inheriting shortcut | Original; the shortcut leaves the default's scope. |
+| S47 | Verified, Steam-matched games | An inheriting record loses its Steam ID | Valve category or Original; it leaves the scope. |
+| S48 | Verified, saved games without a Steam ID | A record gains a valid Steam ID | Valve category or Original; it leaves the scope. |
 
 ## Technical contract
 
@@ -103,14 +112,19 @@ booleans, load as Automatic. `get_compatibility_default()` and
 value. The setter rejects any other input without changing the saved or
 in-memory value.
 
-Settings JSON stores `settings.deck_compat_default_matched_only` as a boolean.
-Missing, null, and any non-boolean persisted value load as `false`, and the
-key is not added to a legacy settings file merely because it exists now.
-`get_compatibility_default_matched_only()` returns the sanitized boolean;
-`set_compatibility_default_matched_only(enabled)` accepts only a real boolean
-and rejects anything else, including `0`, `1`, `"true"`, and null, without
-changing the saved or in-memory value. A failed write restores the previous
-state, including its absence.
+Settings JSON stores `settings.deck_compat_default_scope` as `steam`,
+`no-steam`, `metadata`, or `all`. The getter returns `all` when the key is
+absent. The setter accepts only these four exact strings and rejects booleans,
+numbers, null, and other strings with `invalid compatibility default scope`.
+A failed write restores the previous value or key absence.
+
+The load boundary migrates the older
+`settings.deck_compat_default_matched_only` boolean without writing the file.
+A valid canonical scope wins. Otherwise, legacy `true` becomes `metadata` and
+legacy `false`, absent, or invalid values become `all`. If both keys are
+absent, the canonical key remains absent in memory. If the legacy key exists,
+the resolved canonical scope exists in memory and the legacy key is removed.
+A later successful save writes only the canonical key.
 
 The frontend loads the numeric default and this scope as one policy before it
 reports the setting as loaded, so an inheriting shortcut is never resolved
@@ -132,6 +146,10 @@ enrichment, scans, and Steam-ID changes preserve the per-game override but
 clear a stale provider category when it no longer belongs to the current
 match. Removing a record removes that per-game choice and recomputes
 inheritance; clearing metadata does not change the global setting.
+
+For scope classification, a Steam App ID is a positive safe integer. Numeric
+strings are normalized first. Booleans, fractions, non-finite values, zero,
+negative values, and malformed strings are not Steam IDs.
 
 For an unchanged Steam match, a failed or malformed Valve lookup keeps a valid
 last-known provider category, including Unknown (0). An authoritative Valve

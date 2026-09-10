@@ -1,4 +1,4 @@
-import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
 
 import {
   ButtonLabel,
@@ -9,7 +9,7 @@ import {
 } from "../../styles";
 import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
-import type { DeckCompatibilityCategory } from "../../types";
+import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
 const compatibilityDefaultOptions: Array<{
   data: DeckCompatibilityCategory | null;
@@ -21,6 +21,23 @@ const compatibilityDefaultOptions: Array<{
   { data: 1, label: "Unsupported" },
   { data: 0, label: "Unknown" },
 ];
+
+const compatibilityDefaultScopeOptions: Array<{
+  data: CompatibilityDefaultScope;
+  label: string;
+}> = [
+  { data: "steam", label: "Steam-matched games" },
+  { data: "no-steam", label: "Saved games without a Steam ID" },
+  { data: "metadata", label: "All games with saved metadata" },
+  { data: "all", label: "All non-Steam games" },
+];
+
+const scopeDescription = (scope: CompatibilityDefaultScope) => ({
+  steam: "Applies to saved records with a valid Steam App ID.",
+  "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
+  metadata: "Applies to every saved metadata record, with or without a Steam ID.",
+  all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
+}[scope]);
 
 type MetadataSectionProps = {
   detectedCount: number;
@@ -34,14 +51,15 @@ type MetadataSectionProps = {
   compatibilityDefaultLoaded: boolean;
   compatibilityDefaultBusy: boolean;
   compatibilityDefaultError: string;
-  compatibilityDefaultMatchedOnly: boolean;
+  compatibilityDefaultScope: CompatibilityDefaultScope;
   compatibilityDefaultScopeBusy: boolean;
   onRefreshMetadata: () => void;
   onClearCache: () => void;
   onCompatibilityDefaultChange: (category: DeckCompatibilityCategory | null) => void;
-  onCompatibilityDefaultMatchedOnlyChange: (matchedOnly: boolean) => void;
-  onCompatibilityDefaultMenuWillOpen: () => void;
+  onCompatibilityDefaultScopeChange: (scope: CompatibilityDefaultScope) => void;
+  onCompatibilityDefaultMenuWillOpen: (origin: "category" | "scope") => void;
   onCompatibilityDefaultControlRef: (element: HTMLDivElement | null) => void;
+  onCompatibilityDefaultScopeControlRef: (element: HTMLDivElement | null) => void;
 };
 
 export function MetadataSection({
@@ -56,14 +74,15 @@ export function MetadataSection({
   compatibilityDefaultLoaded,
   compatibilityDefaultBusy,
   compatibilityDefaultError,
-  compatibilityDefaultMatchedOnly,
+  compatibilityDefaultScope,
   compatibilityDefaultScopeBusy,
   onRefreshMetadata,
   onClearCache,
   onCompatibilityDefaultChange,
-  onCompatibilityDefaultMatchedOnlyChange,
+  onCompatibilityDefaultScopeChange,
   onCompatibilityDefaultMenuWillOpen,
   onCompatibilityDefaultControlRef,
+  onCompatibilityDefaultScopeControlRef,
 }: MetadataSectionProps) {
   return (
     <PanelSection title="Metadata">
@@ -93,30 +112,41 @@ export function MetadataSection({
         <div ref={onCompatibilityDefaultControlRef}>
           <DropdownItem
             label="Default compatibility status"
+            layout="below"
+            childrenContainerWidth="max"
             rgOptions={compatibilityDefaultOptions}
             selectedOption={compatibilityDefault}
             disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
             onMenuWillOpen={() => {
-              onCompatibilityDefaultMenuWillOpen();
+              onCompatibilityDefaultMenuWillOpen("category");
             }}
             onChange={(option) => onCompatibilityDefaultChange(option.data)}
           />
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <ToggleField
-          label="Apply only to matched games"
-          description="Shortcuts without saved metadata keep their original Steam status."
-          bottomSeparator="none"
-          checked={compatibilityDefaultMatchedOnly}
-          disabled={
-            !compatibilityDefaultLoaded ||
-            compatibilityDefaultBusy ||
-            compatibilityDefaultScopeBusy ||
-            compatibilityDefault === null
-          }
-          onChange={onCompatibilityDefaultMatchedOnlyChange}
-        />
+        <div ref={onCompatibilityDefaultScopeControlRef}>
+          <DropdownItem
+            label="Apply default to"
+            layout="below"
+            childrenContainerWidth="max"
+            rgOptions={compatibilityDefaultScopeOptions}
+            selectedOption={compatibilityDefaultScope}
+            disabled={
+              !compatibilityDefaultLoaded ||
+              compatibilityDefaultBusy ||
+              compatibilityDefaultScopeBusy ||
+              compatibilityDefault === null
+            }
+            onMenuWillOpen={() => onCompatibilityDefaultMenuWillOpen("scope")}
+            onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
+            renderButtonValue={() => (
+              <span style={{ whiteSpace: "normal" }}>
+                {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
+              </span>
+            )}
+          />
+        </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <Field
@@ -126,9 +156,7 @@ export function MetadataSection({
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            {compatibilityDefaultMatchedOnly
-              ? "This applies now to existing and new non-Steam shortcuts that have saved metadata, including games with a Steam match. Per-game choices take priority."
-              : "This applies now to existing and new non-Steam shortcuts, including games with a Steam match. Per-game choices take priority."}
+            {`${scopeDescription(compatibilityDefaultScope)} Per-game choices take priority.`}
           </div>
           <div style={compactTextStyle}>
             {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}

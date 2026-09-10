@@ -1,5 +1,5 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
@@ -55,8 +55,8 @@ export const metadataState: {
   /** Confirmed global policy. Null is Automatic. */
   compatibilityDefault: DeckCompatibilityCategory | null;
   compatibilityDefaultLoaded: boolean;
-  /** True restricts the global default to shortcuts with a saved record. */
-  compatibilityDefaultMatchedOnly: boolean;
+  /** Which native non-Steam shortcuts inherit the numeric global default. */
+  compatibilityDefaultScope: CompatibilityDefaultScope;
   /** Invalidates stale backend loads after a confirmed save or dismount. */
   compatibilityDefaultGeneration: number;
   /** Distinguishes one plugin mount from async work left by an older mount. */
@@ -83,7 +83,7 @@ export const metadataState: {
   compatibilityBaselines: {},
   compatibilityDefault: null,
   compatibilityDefaultLoaded: false,
-  compatibilityDefaultMatchedOnly: false,
+  compatibilityDefaultScope: "all",
   compatibilityDefaultGeneration: 0,
   compatibilityLifecycleGeneration: 0,
   compatibilityDefaultLoadPromise: null,
@@ -101,8 +101,7 @@ export const compatibilityDefaultSnapshot = () => metadataState.compatibilityDef
 
 export const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
 
-export const compatibilityDefaultMatchedOnlySnapshot = () =>
-  metadataState.compatibilityDefaultMatchedOnly;
+export const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
 
 export const compatibilityLifecycleSnapshot = () =>
   metadataState.compatibilityLifecycleGeneration;

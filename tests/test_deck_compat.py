@@ -398,70 +398,112 @@ def test_failed_compatibility_default_save_keeps_the_confirmed_value(tmp_path, m
     assert asyncio.run(plugin.get_compatibility_default()) == 2
 
 
-def test_compatibility_default_scope_loads_non_boolean_values_as_disabled(tmp_path, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    ("legacy", "expected"),
+    ((True, "metadata"), (False, "all"), ("yes", "all"), (None, "all")),
+)
+def test_compatibility_default_scope_migrates_legacy_boolean_without_rewriting(
+    tmp_path, monkeypatch, legacy, expected
+) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "settings": {
+            "debug_logging": True,
+            "deck_compat_default": 3,
+            "deck_compat_default_matched_only": legacy,
+        },
+        "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
+    }
+    serialized = json.dumps(payload)
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == expected
+    assert plugin._data["settings"]["debug_logging"] is True
+    assert plugin._data["settings"]["deck_compat_default_scope"] == expected
+    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
+
+
+def test_compatibility_default_scope_prefers_valid_canonical_and_normalizes_invalid_values(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
     plugin._data_file.write_text(
         json.dumps(
             {
                 "settings": {
-                    "debug_logging": True,
-                    "deck_compat_default": 3,
-                    "deck_compat_default_matched_only": "yes",
+                    "deck_compat_default_scope": "steam",
+                    "deck_compat_default_matched_only": True,
                 }
             }
         ),
         encoding="utf-8",
     )
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "steam"
+    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
 
-    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is False
-    assert asyncio.run(plugin.get_compatibility_default()) == 3
-    assert plugin._data["settings"]["debug_logging"] is True
-
-
-def test_legacy_settings_without_the_scope_key_are_not_rewritten(tmp_path, monkeypatch) -> None:
-    plugin = make_settings_plugin(tmp_path, monkeypatch)
-    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
-    plugin._data_file.write_text(
-        json.dumps({"settings": {"debug_logging": False, "deck_compat_default": 2}}),
+    invalid = make_settings_plugin(tmp_path / "invalid", monkeypatch)
+    invalid._settings_dir.mkdir(parents=True, exist_ok=True)
+    invalid._data_file.write_text(
+        json.dumps(
+            {
+                "settings": {
+                    "deck_compat_default_scope": "bad",
+                    "deck_compat_default_matched_only": True,
+                }
+            }
+        ),
         encoding="utf-8",
     )
+    assert asyncio.run(invalid.get_compatibility_default_scope()) == "metadata"
 
-    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is False
-    assert "deck_compat_default_matched_only" not in plugin._data["settings"]
+
+def test_compatibility_default_scope_missing_keys_default_to_all_without_adding_a_key(tmp_path, monkeypatch) -> None:
+    plugin = make_settings_plugin(tmp_path, monkeypatch)
+    plugin._settings_dir.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps({"settings": {"debug_logging": False, "deck_compat_default": 2}})
+    plugin._data_file.write_text(serialized, encoding="utf-8")
+
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
+    assert "deck_compat_default_scope" not in plugin._data["settings"]
+    assert plugin._data_file.read_text(encoding="utf-8") == serialized
 
 
 def test_compatibility_default_scope_persists_and_rejects_invalid_writes(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
 
-    assert asyncio.run(plugin.set_compatibility_default_matched_only(True)) is True
-    for invalid in (1, "true", None):
+    for scope in ("steam", "no-steam", "metadata", "all"):
+        assert asyncio.run(plugin.set_compatibility_default_scope(scope)) == scope
+    for invalid in (True, False, 1, 0, 1.0, "matched", "true", None):
         with pytest.raises(ValueError, match="invalid compatibility default scope"):
-            asyncio.run(plugin.set_compatibility_default_matched_only(invalid))
+            asyncio.run(plugin.set_compatibility_default_scope(invalid))
 
-    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is True
+    assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
     persisted = json.loads(plugin._data_file.read_text(encoding="utf-8"))
-    assert persisted["settings"]["deck_compat_default_matched_only"] is True
+    assert persisted["settings"]["deck_compat_default_scope"] == "all"
+    assert "deck_compat_default_matched_only" not in persisted["settings"]
 
     fresh = make_settings_plugin(tmp_path, monkeypatch)
-    assert asyncio.run(fresh.get_compatibility_default_matched_only()) is True
+    assert asyncio.run(fresh.get_compatibility_default_scope()) == "all"
 
 
-def test_failed_compatibility_default_scope_save_keeps_the_confirmed_value(tmp_path, monkeypatch) -> None:
+def test_failed_compatibility_default_scope_save_restores_value_or_key_absence(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
-    asyncio.run(plugin.set_compatibility_default_matched_only(True))
-    original_save = plugin._save_data
+    asyncio.run(plugin.set_compatibility_default_scope("steam"))
 
     def fail_save() -> None:
         raise OSError("simulated write failure")
 
     monkeypatch.setattr(plugin, "_save_data", fail_save)
     with pytest.raises(OSError, match="simulated write failure"):
-        asyncio.run(plugin.set_compatibility_default_matched_only(False))
+        asyncio.run(plugin.set_compatibility_default_scope("all"))
+    assert plugin._data["settings"]["deck_compat_default_scope"] == "steam"
 
-    assert plugin._data["settings"]["deck_compat_default_matched_only"] is True
-    monkeypatch.setattr(plugin, "_save_data", original_save)
-    assert asyncio.run(plugin.get_compatibility_default_matched_only()) is True
+    absent = make_settings_plugin(tmp_path / "absent", monkeypatch)
+    monkeypatch.setattr(absent, "_save_data", fail_save)
+    with pytest.raises(OSError, match="simulated write failure"):
+        asyncio.run(absent.set_compatibility_default_scope("metadata"))
+    assert "deck_compat_default_scope" not in absent._data["settings"]
 
 
 def test_steam_appid_reassignment_clears_old_provider_category_and_keeps_follow_valve(tmp_path, monkeypatch) -> None:
