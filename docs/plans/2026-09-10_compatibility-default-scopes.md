@@ -66,6 +66,10 @@ criterion.
 - Match predicate: `src/steam/detailsReassert.ts` and its existing consumers.
 - UI: `src/components/qam/MetadataSection.tsx`, `src/ContentPanel.tsx`,
   `src/qamCompatibilityFocus.ts`, `src/MetadataPage.tsx`.
+- Reload integration, only as needed for the already-required lifetime
+  contract: `src/index.tsx`, `src/steam/install.ts`, and
+  `src/steam/routerPatches.ts`. Retired editor/router callbacks must not keep
+  using an old scope or metadata cache after an in-place plugin reload.
 - Home/grid contract: `src/steam/libraryCompatibilityIndicators.tsx`; its
   `CompatibilityMetadata` pick currently omits `steam_appid` and must include
   it when the resolver becomes scope-aware.
