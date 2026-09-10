@@ -102,3 +102,47 @@ observable native map publication unchanged.
 Live Deck verification is deferred. The plan requires explicit current-device
 authorization before ZIP install, launch, disposable fixture edits, or reload.
 No device state was changed in this round.
+
+## Review round 02 correction
+
+- An in-place `DeckyPluginLoader.importPlugin("Decky Metadata")` can create a
+  new frontend bundle while a prior editor or router callback remains mounted.
+  The old and new bundles previously had separate metadata caches, policy
+  state, and compatibility-revision listeners. A cleared Steam ID could then
+  save correctly on disk while the editor or native publisher still used the
+  retiring bundle's record and scope.
+- The compatibility runtime now has one SteamUI-global cache, policy state,
+  and revision-listener set for the active session. Beginning a new lifecycle
+  invalidates retiring asynchronous work and clears its pending work sets, but
+  keeps the current cache until startup refresh supplies the authoritative
+  data. A retained editor therefore observes its acknowledged record and a
+  later scope-only revision.
+- The editor regression now asserts that clearing a Steam ID under the
+  `steam` scope displays the outside-scope native fallback and preserves user
+  fields. The native regression covers no-ID record creation, ID addition,
+  scope change, reload handoff, ID removal, both later scope-only changes,
+  restoration of the captured native value, and an unchanged unrelated
+  shortcut.
+
+### Round-02 verification evidence
+
+- TDD reproduction: `./run.sh npm test -- src/steam/core.test.ts` first
+  failed with separate cache object identities after a simulated module reload
+  (46 passed, 1 failed).
+- After the correction, `./run.sh npm test -- src/steam/core.test.ts
+  src/steam/metadataPatch.test.ts src/MetadataPage.test.tsx` passed 152 tests.
+- `./run.sh scripts/orchestration/run-quality-gates` exited 0: type check,
+  Rollup build, 510 passed frontend tests with 4 skipped, Python compilation,
+  backend pytest, and review-retention checks all passed. The complete output
+  is in `/tmp/Decky-Metadata/compatibility-default-scopes-round02-quality.log`.
+- `./run.sh npm run package` after commit `80197fd` produced
+  `Decky-Metadata.zip` version `0.3.14+80197fd`, SHA-256
+  `a0c440d190fc4b8a4eb0f9e12b4d23d69bc64525be70ddd51fd4653d917043f1`.
+  Archive inspection confirmed the `Decky-Metadata/` root and required plugin
+  files. The ZIP was not delivered or installed.
+
+## Deferred review-round device work
+
+The review note prohibited device calls in this correction round. The reported
+Deck recovery and final native-state restoration remain for Main after the
+device returns; no device state was changed here.
