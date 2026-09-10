@@ -14,6 +14,7 @@ export {
   retainCompatibilityBaselinesForReload,
   restoreAllCompatibilityBaselines,
   setConfirmedCompatibilityDefault,
+  setConfirmedCompatibilityDefaultMatchedOnly,
   startMetadataBootstrap,
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
@@ -25,6 +26,7 @@ export {
 export {
   appName,
   compatibilityDefaultLoadedSnapshot,
+  compatibilityDefaultMatchedOnlySnapshot,
   compatibilityDefaultSnapshot,
   compatibilityLifecycleSnapshot,
   compatibilityRevisionSnapshot,

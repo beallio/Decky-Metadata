@@ -19,6 +19,7 @@ import {
   refreshDelistedIndex,
   setAutomaticUpdateChecks,
   setCompatibilityDefault,
+  setCompatibilityDefaultMatchedOnly,
   setDebugLogging,
   setUpdateChannel,
   startScanMissing,
@@ -32,6 +33,7 @@ import { VersionsSection } from "./components/qam/VersionsSection";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
+  compatibilityDefaultMatchedOnlySnapshot,
   compatibilityDefaultSnapshot,
   compatibilityLifecycleSnapshot,
   ensureCompatibilityDefault,
@@ -39,6 +41,7 @@ import {
   metadataCache,
   refreshMetadataCache,
   setConfirmedCompatibilityDefault,
+  setConfirmedCompatibilityDefaultMatchedOnly,
   subscribeCompatibilityRevision,
 } from "./steam";
 import {
@@ -201,6 +204,9 @@ export const Content = () => {
   const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = useState(false);
   const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = useState(false);
   const [compatibilityDefaultError, setCompatibilityDefaultError] = useState("");
+  const [compatibilityDefaultMatchedOnly, setCompatibilityDefaultMatchedOnlyState] = useState(false);
+  const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = useState(false);
+  const compatibilitySaveInFlight = useRef(false);
   const compatibilityDefaultLoadVersion = useRef(0);
   const [compatibilityDefaultControl, setCompatibilityDefaultControlState] =
     useState<HTMLDivElement | null>(null);
@@ -351,6 +357,7 @@ export const Content = () => {
       .then((value) => {
         if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current) return;
         setCompatibilityDefaultState(value);
+        setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
         setCompatibilityDefaultError("");
         setCompatibilityDefaultLoaded(true);
       })
@@ -362,6 +369,7 @@ export const Content = () => {
     const unsubscribe = subscribeCompatibilityRevision(() => {
       if (cancelled || !compatibilityDefaultLoadedSnapshot()) return;
       setCompatibilityDefaultState(compatibilityDefaultSnapshot());
+      setCompatibilityDefaultMatchedOnlyState(compatibilityDefaultMatchedOnlySnapshot());
       setCompatibilityDefaultError("");
       setCompatibilityDefaultLoaded(true);
     });
@@ -465,7 +473,8 @@ export const Content = () => {
   };
 
   const saveCompatibilityDefault = async (category: DeckCompatibilityCategory | null) => {
-    if (compatibilityDefaultBusy || !compatibilityDefaultLoaded) return;
+    if (compatibilitySaveInFlight.current || !compatibilityDefaultLoaded) return;
+    compatibilitySaveInFlight.current = true;
     const previous = compatibilityDefault;
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     setCompatibilityDefaultBusy(true);
@@ -489,8 +498,46 @@ export const Content = () => {
       toastError("Compatibility", message);
       log.warn("bridge", "compatibility default save failed", error);
     } finally {
+      compatibilitySaveInFlight.current = false;
       if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
         setCompatibilityDefaultBusy(false);
+      }
+    }
+  };
+
+  const saveCompatibilityDefaultMatchedOnly = async (matchedOnly: boolean) => {
+    if (
+      compatibilitySaveInFlight.current ||
+      !compatibilityDefaultLoaded ||
+      compatibilityDefault === null
+    ) return;
+    compatibilitySaveInFlight.current = true;
+    const previous = compatibilityDefaultMatchedOnly;
+    const lifecycleGeneration = compatibilityLifecycleSnapshot();
+    setCompatibilityDefaultScopeBusy(true);
+    setCompatibilityDefaultError("");
+    compatibilityDefaultLoadVersion.current += 1;
+    setCompatibilityDefaultMatchedOnlyState(matchedOnly);
+    try {
+      const saved = await setCompatibilityDefaultMatchedOnly(matchedOnly);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      const confirmed = setConfirmedCompatibilityDefaultMatchedOnly(saved, lifecycleGeneration);
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      setCompatibilityDefaultMatchedOnlyState(confirmed);
+      toastSuccess("Compatibility", confirmed
+        ? "Default now applies to matched games only"
+        : "Default now applies to all non-Steam shortcuts");
+    } catch (error) {
+      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      setCompatibilityDefaultMatchedOnlyState(previous);
+      const message = `Compatibility default scope could not be saved: ${String(error)}`;
+      setCompatibilityDefaultError(message);
+      toastError("Compatibility", message);
+      log.warn("bridge", "compatibility default scope save failed", error);
+    } finally {
+      compatibilitySaveInFlight.current = false;
+      if (isCompatibilityLifecycleCurrent(lifecycleGeneration)) {
+        setCompatibilityDefaultScopeBusy(false);
       }
     }
   };
@@ -665,9 +712,12 @@ export const Content = () => {
         compatibilityDefaultLoaded={compatibilityDefaultLoaded}
         compatibilityDefaultBusy={compatibilityDefaultBusy}
         compatibilityDefaultError={compatibilityDefaultError}
+        compatibilityDefaultMatchedOnly={compatibilityDefaultMatchedOnly}
+        compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
         onRefreshMetadata={() => void scanMissing()}
         onClearCache={() => void clearCache()}
         onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
+        onCompatibilityDefaultMatchedOnlyChange={(matchedOnly) => void saveCompatibilityDefaultMatchedOnly(matchedOnly)}
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
         onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
       />

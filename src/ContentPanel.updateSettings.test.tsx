@@ -19,6 +19,7 @@ const backend = vi.hoisted(() => ({
   refreshDelistedIndex: vi.fn(),
   setAutomaticUpdateChecks: vi.fn(),
   setCompatibilityDefault: vi.fn(),
+  setCompatibilityDefaultMatchedOnly: vi.fn(),
   setDebugLogging: vi.fn(),
   setUpdateChannel: vi.fn(),
   startScanMissing: vi.fn(),
@@ -30,7 +31,9 @@ const steam = vi.hoisted(() => ({
   getConnectedControllerTypes: vi.fn(),
   ensureCompatibilityDefault: vi.fn(),
   setConfirmedCompatibilityDefault: vi.fn(),
+  setConfirmedCompatibilityDefaultMatchedOnly: vi.fn(),
   compatibilityDefaultSnapshot: vi.fn(),
+  compatibilityDefaultMatchedOnlySnapshot: vi.fn(),
   compatibilityDefaultLoadedSnapshot: vi.fn(),
   compatibilityLifecycleSnapshot: vi.fn(),
   isCompatibilityLifecycleCurrent: vi.fn(),
@@ -130,7 +133,7 @@ const flushPromises = async () => {
 
 describe("Content update settings", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
@@ -138,7 +141,9 @@ describe("Content update settings", () => {
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
     steam.setConfirmedCompatibilityDefault.mockImplementation((value: unknown) => value);
+    steam.setConfirmedCompatibilityDefaultMatchedOnly.mockImplementation((value: unknown) => value);
     steam.compatibilityDefaultSnapshot.mockReturnValue(null);
+    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(false);
     steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(false);
     steam.compatibilityLifecycleSnapshot.mockReturnValue(1);
     steam.isCompatibilityLifecycleCurrent.mockReturnValue(true);
@@ -148,6 +153,10 @@ describe("Content update settings", () => {
     backend.getMissingMetadataCount.mockResolvedValue(0);
     backend.getPluginVersion.mockResolvedValue("0.3.1");
     backend.getSystemVersions.mockResolvedValue({ decky: "", steamos: "" });
+    backend.getUpdateSettings.mockResolvedValue({
+      update_channel: "stable",
+      automatic_update_checks: true,
+    });
   });
 
   afterEach(() => {
@@ -265,5 +274,73 @@ describe("Content update settings", () => {
     expect(recovered.props.compatibilityDefaultLoaded).toBe(true);
     expect(recovered.props.compatibilityDefaultError).toBe("");
   });
+
+  it("publishes only a backend-confirmed matched-games-only scope", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(false);
+    backend.setCompatibilityDefaultMatchedOnly.mockResolvedValue(true);
+    render();
+    runEffects();
+    await flushPromises();
+
+    const loaded = metadataSection(render());
+    expect(loaded.props.compatibilityDefaultMatchedOnly).toBe(false);
+    loaded.props.onCompatibilityDefaultMatchedOnlyChange(true);
+    await flushPromises();
+
+    expect(backend.setCompatibilityDefaultMatchedOnly).toHaveBeenCalledWith(true);
+    expect(steam.setConfirmedCompatibilityDefaultMatchedOnly).toHaveBeenCalledWith(true, 1);
+    expect(metadataSection(render()).props.compatibilityDefaultMatchedOnly).toBe(true);
+  });
+
+  it("restores the previous scope and reports the failure after a failed scope save", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultMatchedOnlySnapshot.mockReturnValue(true);
+    backend.setCompatibilityDefaultMatchedOnly.mockRejectedValue(new Error("disk unavailable"));
+    render();
+    runEffects();
+    await flushPromises();
+
+    metadataSection(render()).props.onCompatibilityDefaultMatchedOnlyChange(false);
+    await flushPromises();
+
+    const afterFailure = metadataSection(render());
+    expect(afterFailure.props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
+    expect(steam.setConfirmedCompatibilityDefaultMatchedOnly).not.toHaveBeenCalled();
+  });
+
+  it("blocks overlapping policy saves until the scope request finishes", async () => {
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    let finishScope!: (value: boolean) => void;
+    backend.setCompatibilityDefaultMatchedOnly.mockReturnValue(new Promise<boolean>((resolve) => {
+      finishScope = resolve;
+    }));
+    render();
+    runEffects();
+    await flushPromises();
+
+    const loaded = metadataSection(render());
+    loaded.props.onCompatibilityDefaultMatchedOnlyChange(true);
+    // Controller activation can arrive again before React has rendered busy.
+    loaded.props.onCompatibilityDefaultMatchedOnlyChange(false);
+    metadataSection(render()).props.onCompatibilityDefaultChange(null);
+    expect(backend.setCompatibilityDefaultMatchedOnly).toHaveBeenCalledTimes(1);
+    expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
+
+    finishScope(true);
+    await flushPromises();
+    const saved = metadataSection(render());
+    expect(saved.props.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(saved.props.compatibilityDefault).toBe(3);
+    expect(saved.props.compatibilityDefaultScopeBusy).toBe(false);
+
+    backend.setCompatibilityDefault.mockResolvedValue(null);
+    saved.props.onCompatibilityDefaultChange(null);
+    await flushPromises();
+    expect(metadataSection(render()).props.compatibilityDefault).toBeNull();
+    expect(metadataSection(render()).props.compatibilityDefaultMatchedOnly).toBe(true);
+  });
+
 
 });

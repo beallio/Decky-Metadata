@@ -44,9 +44,32 @@ Relevant files:
   technical contract), `CHANGELOG.md` (`## [Unreleased]`),
   `docs/runbooks/on-device-verification.md` (compatibility defaults section).
 - Tests: `tests/test_deck_compat.py`, `src/steam/metadataPatch.test.ts`,
-  `src/ContentPanel.test.tsx` if it exists, and the QAM section tests.
+  `src/ContentPanel.updateSettings.test.tsx`, and the QAM section tests.
 
 **Slug used throughout this plan:** `compat-default-matched-only`
+
+### Execution status — 2026-09-10
+
+The external launch failed before implementation because the Codex account
+reached its usage limit. That lifecycle was explicitly abandoned after
+confirming there was no implementer session or feature branch. Implementation
+continued in OMP-native mode on `feat/compat-default-matched-only`. Do not
+resume the external lifecycle against these native changes.
+
+Local review, quality gates, and live device validation pass for `c80575f`.
+The full ZIP was installed through Decky Loader; its installed bundle matches
+the candidate. Native filter membership, controller operation, scope and
+record transitions, reload persistence, and the authorized launch smoke were
+verified. Device settings and test records were restored. The candidate is
+accepted for local integration into `dev` in OMP-native mode; `main` promotion
+and any remote push remain outside this task.
+
+The initial implementation tests were added after the source change, not
+red-first. The subsequent mutation control removed the scope condition and
+produced five failing scope tests before restoration. The save-ordering
+correction was separately reproduced red-first: repeated activation submitted
+two requests instead of one. Both compatibility controls now share an
+immediate in-flight guard and are disabled until the request finishes.
 
 ---
 

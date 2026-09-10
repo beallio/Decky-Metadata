@@ -1,5 +1,13 @@
 import { findModuleChild } from "@decky/ui";
-import { autoFetchMetadata, fetchMetadata, frontendLog, getAllMetadata, getCompatibilityDefault, saveMetadata } from "../backend";
+import {
+  autoFetchMetadata,
+  fetchMetadata,
+  frontendLog,
+  getAllMetadata,
+  getCompatibilityDefault,
+  getCompatibilityDefaultMatchedOnly,
+  saveMetadata,
+} from "../backend";
 import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
@@ -151,6 +159,7 @@ const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCate
 export const effectiveCompatibilityCategory = (
   metadata: MetadataData | undefined,
   globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
+  matchedOnly: boolean = metadataState.compatibilityDefaultMatchedOnly,
 ): DeckCompatibilityCategory | null => {
   if (isCompatibilityCategory(metadata?.deck_compat_override)) {
     return metadata.deck_compat_override;
@@ -160,7 +169,10 @@ export const effectiveCompatibilityCategory = (
       ? metadata.deck_compat_category
       : null;
   }
-  if (isCompatibilityCategory(globalDefault)) {
+  // The matched-games-only scope keeps the global default off shortcuts the
+  // plugin has no record for. A record without a Steam match still counts;
+  // both remaining sources below live in a record anyway.
+  if (isCompatibilityCategory(globalDefault) && (!matchedOnly || metadata !== undefined)) {
     return globalDefault;
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {
@@ -561,12 +573,29 @@ export const setConfirmedCompatibilityDefault = (
   return category;
 };
 
+/** Commit only a backend-confirmed scope, using the same one-pass policy path. */
+export const setConfirmedCompatibilityDefaultMatchedOnly = (
+  matchedOnly: boolean,
+  lifecycleGeneration = metadataState.compatibilityLifecycleGeneration,
+) => {
+  if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
+    return metadataState.compatibilityDefaultMatchedOnly;
+  }
+  const changedPolicy = metadataState.compatibilityDefaultMatchedOnly !== matchedOnly;
+  metadataState.compatibilityDefaultGeneration += 1;
+  metadataState.compatibilityDefaultMatchedOnly = matchedOnly;
+  const compatibilityChanged = applyCompatibilityDefault();
+  if (changedPolicy || compatibilityChanged) notifyCompatibilityRevision();
+  return matchedOnly;
+};
+
 /** Start a new plugin lifetime and make unfinished work from the old one inert. */
 export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityLifecycleGeneration += 1;
   metadataState.compatibilityDefaultGeneration += 1;
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
+  metadataState.compatibilityDefaultMatchedOnly = false;
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoadPromise = null;
   deferredCompatibilityUpdates.clear();
@@ -581,7 +610,13 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
   if (!metadataState.compatibilityDefaultLoadPromise) {
     const requestGeneration = metadataState.compatibilityDefaultGeneration;
     const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
-    const request = getCompatibilityDefault().then((value) => {
+    // Both values are one policy. Publishing the category before the scope
+    // would briefly apply the wrong policy to unmatched shortcuts, so they
+    // load together and only then satisfy compatibilityDefaultLoaded.
+    const request = Promise.all([
+      getCompatibilityDefault(),
+      getCompatibilityDefaultMatchedOnly(),
+    ]).then(([value, matchedOnly]) => {
       const category = isCompatibilityCategory(value) ? value : null;
       if (
         requestGeneration !== metadataState.compatibilityDefaultGeneration ||
@@ -590,6 +625,7 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
         return metadataState.compatibilityDefault;
       }
       metadataState.compatibilityDefault = category;
+      metadataState.compatibilityDefaultMatchedOnly = matchedOnly === true;
       metadataState.compatibilityDefaultLoaded = true;
       applyCompatibilityDefault();
       notifyCompatibilityRevision();

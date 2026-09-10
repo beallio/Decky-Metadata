@@ -113,6 +113,17 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    after exit. Capture a controlled real unload that clears held work and
    restores baselines. Drive QAM and editor order with `scripts/deck/cdp.py input`,
    `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
+8. With a numeric global default active, turn **Apply only to matched games**
+   on. A no-record shortcut must return to its captured native status while a
+   recorded shortcut keeps the default, including a record with no Steam
+   match. Turn the toggle back off and confirm the no-record shortcut takes
+   the default again. Check Steam's own compatibility filter or collection
+   membership in both directions, not only packed fields. Change the scope
+   while a matched Game Info tab is active and confirm that view holds its
+   value until it exits. Remove a disposable record with the scope on and
+   confirm that shortcut returns to its native status. Set the default to
+   Automatic and confirm the toggle is unavailable and its saved value
+   survives a plugin reload. Restore the toggle to its captured value.
 
 Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with
