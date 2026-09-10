@@ -223,3 +223,74 @@ device returns; no device state was changed here.
 
 The review note prohibited device calls in this correction round. The package
 was built only for local archive verification; no Deck state was changed.
+
+## Orchestrator verification and integration record
+
+The final reviewed candidate is `7fdb4b6`, installed through Decky Loader as
+`0.3.14+7fdb4b6`. The final diagnostic capture confirmed its manifest version
+and that the installed frontend SHA-256 matches the reviewed local bundle.
+All four committed change-request rounds were reviewed as resolved.
+
+Device observations across the reviewed candidates:
+
+- All four scopes matched the captured Steam-ID, no-ID, manual, and no-record
+  classes. Per-game overrides and Valve/native fallback remained intact.
+- The native Great on Deck collection reported 38 / 38 / 42 / 46 entries for
+  steam / no-steam / metadata / all on `18f1c50`. The policy/publication core
+  was unchanged by the final QAM-only correction; all four native policy
+  outputs were checked again on `7fdb4b6`.
+- On the reload-corrected build, a disposable manual record accepted Steam ID
+  15100, moved between scopes, then returned to native packed 0 after the ID
+  was cleared. Its editor preview agreed with the cleared record. An editor
+  save after reload replaced the actual native map entry. The temporary record
+  was removed and the original record set was preserved.
+- The final QAM build retained its selected scope under Automatic and across
+  an in-place import. Disabled activation opened no menu. Long labels wrapped
+  within the full-width control. Both dropdowns preserved the expected next
+  controller navigation target after select/cancel and the native return
+  transition.
+
+The first final smoke run lost connectivity. On resumption, the committed
+cache-write dump/restore probe removed the interrupted instrumentation before
+a new suite began. The complete fresh suite passed:
+
+- `scripts/deck/verify/run_all.sh --no-launch`: quick links, re-render with
+  0 writes across three subsection round trips, community fallback, and
+  controller-layout isolation. The optional DLC/Points Shop fixture was absent.
+- Separately authorized `scripts/deck/verify/smoke_launch.sh 2312439508`:
+  started with 64-bit game ID `9931852060871884800` and terminated the game.
+- Final `./run.sh scripts/orchestration/run-quality-gates`: type check,
+  Rollup, 28 frontend files with 516 passed and 4 skipped, Python compilation,
+  backend pytest, and review-note retention all passed.
+
+After verification, original metadata records and native packed categories
+matched the baseline. Settings are Automatic and scope `all`, the canonical
+equivalent of the original legacy false value. Debug logging was unchanged.
+The Library selection was restored to All Games and navigation to Library
+Home; the temporary debugger tunnel was closed.
+
+### Verification-method corrections
+
+Steam's native DropdownItem marks disabled controls with the `Disabled` CSS
+class and reduced opacity, while HTMLButtonElement.disabled can remain false.
+The attribute observation in review 04 was therefore not conclusive evidence
+of an enabled native control. Final checks used the native class, visible
+appearance, and ignored activation. The separately reproduced cross-bundle
+transaction and stale-snapshot defects were still corrected and tested.
+
+An empty browser fill did not reliably clear the Steam ID field; the verified
+clear used Ctrl+A/Backspace and confirmed the empty input and saved null ID.
+Controller return checks waited for the existing bounded native handoff;
+premature synthetic input was not counted as a product failure.
+
+Evidence is retained under
+`/tmp/Decky-Metadata/four-scopes-live-qe4_x60v/`, especially
+`completed-verification.json`. Final suite:
+`/tmp/Decky-Metadata/verification/20260910T211859Z/`. Final capture:
+`/tmp/Decky-Metadata/diagnostics/20260910T211949Z/`.
+
+The orchestrator's review passes for local integration in configured `final`
+mode. Its verdict is recorded in the merge commit, not an `APPROVED` review
+note. No human-approved finalize command is used; no finalized marker is
+expected on this path. Promotion to `main` and remote publication remain human
+gates outside this task.
