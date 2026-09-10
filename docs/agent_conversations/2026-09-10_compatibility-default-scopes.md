@@ -141,6 +141,40 @@ No device state was changed in this round.
   Archive inspection confirmed the `Decky-Metadata/` root and required plugin
   files. The ZIP was not delivered or installed.
 
+## Review round 03 corrections
+
+- Metadata-cache cleanup now compares the promise it installed before it clears
+  the shared pending field. A request from a retiring lifecycle cannot clear a
+  newer request and allow a duplicate metadata load.
+- Per-app metadata and screenshot work now has an authoritative shared owner
+  map. The existing Sets remain only for retiring bundle compatibility; current
+  work checks and clears its owner by exact request identity. A stale finalizer
+  therefore cannot remove the current work guard after a reload.
+- Deferred Game Info compatibility updates and editor-originated native map
+  publications now live in the shared compatibility runtime. An old retained
+  editor callback can enqueue the update, and the current router bundle
+  publishes exactly one native replacement after the route return shield.
+- The lifecycle reset has one metadata-load-promise clear. Real teardown also
+  clears the owner maps and both deferred queues.
+
+### Round-03 verification evidence
+
+- The focused red run reproduced four requested boundaries: a stale metadata
+  cache finalizer cleared the current promise; stale metadata and screenshot
+  finalizers cleared their current per-app guards; and a current module could
+  not publish a deferred update queued by an old module. After the correction,
+  `./run.sh npm test -- src/steam/metadataPatch.test.ts` passed 71 tests.
+- `./run.sh scripts/orchestration/run-quality-gates` passed: 28 frontend files,
+  514 passed tests and 4 skipped; Python compilation and backend pytest also
+  passed. The complete command output is
+  `/tmp/Decky-Metadata/compatibility-default-scopes-round03-quality.log`.
+- After commit `97c2aa1`, `./run.sh npm run package` produced
+  `Decky-Metadata.zip` version `0.3.14+97c2aa1`, SHA-256
+  `5799f7eceeab3b97bb21a7803763dd1783d7052cacb54376bc1b084f6720e66e`.
+  Archive inspection confirmed the single `Decky-Metadata/` root with the
+  manifest, backend, and built frontend files. The ZIP was not delivered or
+  installed.
+
 ## Deferred review-round device work
 
 The review note prohibited device calls in this correction round. The reported
