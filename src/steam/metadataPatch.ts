@@ -5,17 +5,18 @@ import {
   frontendLog,
   getAllMetadata,
   getCompatibilityDefault,
-  getCompatibilityDefaultMatchedOnly,
+  getCompatibilityDefaultScope,
   saveMetadata,
 } from "../backend";
 import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
-import { hasMatchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
-import { DeckCompatibilityCategory, MetadataData } from "../types";
+import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData } from "../types";
 import * as log from "../log";
 import {
   NON_STEAM_APP_TYPE,
+  type DeferredCompatibilityUpdate,
   Unpatch,
   appName,
   canRecoverStaleGameDetailRoute,
@@ -108,7 +109,7 @@ const shortcutAppIdForSteamAppId = (steamAppId: number): number | null => {
   if (!Number.isFinite(steamAppId) || steamAppId <= 0) return null;
   for (const [shortcutAppIdText, metadata] of Object.entries(metadataCache)) {
     const shortcutAppId = Number(shortcutAppIdText);
-    const metadataSteamAppId = Number((metadata as MetadataData | undefined)?.steam_appid);
+    const metadataSteamAppId = matchedSteamAppId(metadata);
     if (
       Number.isFinite(shortcutAppId) &&
       shortcutAppId > 0 &&
@@ -156,10 +157,20 @@ const ensureDetailsOverviewSafeFields = (appId: number) => {
 const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCategory =>
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 
+/** Whether this record inherits a numeric global default for the selected scope. */
+export const isCompatibilityDefaultEligible = (
+  metadata: Pick<MetadataData, "steam_appid"> | undefined,
+  scope: CompatibilityDefaultScope,
+): boolean =>
+  scope === "all"
+  || (scope === "metadata" && metadata !== undefined)
+  || (scope === "steam" && hasMatchedSteamAppId(metadata))
+  || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
+
 export const effectiveCompatibilityCategory = (
-  metadata: MetadataData | undefined,
+  metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid"> | undefined,
   globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
-  matchedOnly: boolean = metadataState.compatibilityDefaultMatchedOnly,
+  scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
 ): DeckCompatibilityCategory | null => {
   if (isCompatibilityCategory(metadata?.deck_compat_override)) {
     return metadata.deck_compat_override;
@@ -169,10 +180,7 @@ export const effectiveCompatibilityCategory = (
       ? metadata.deck_compat_category
       : null;
   }
-  // The matched-games-only scope keeps the global default off shortcuts the
-  // plugin has no record for. A record without a Steam match still counts;
-  // both remaining sources below live in a record anyway.
-  if (isCompatibilityCategory(globalDefault) && (!matchedOnly || metadata !== undefined)) {
+  if (isCompatibilityCategory(globalDefault) && isCompatibilityDefaultEligible(metadata, scope)) {
     return globalDefault;
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {
@@ -265,18 +273,6 @@ const desiredCompatibilityNibble = (
   return category | (category << 2);
 };
 
-type DeferredCompatibilityUpdate = {
-  appId: number;
-  heldNibble: number;
-};
-
-const deferredCompatibilityUpdates = new Map<number, DeferredCompatibilityUpdate>();
-// Editor writes must not replace Steam's observable overview map until the
-// matching Game Info route has rendered under its return shield. The direct
-// packed-field write is already complete; this set tracks only the delayed
-// collection/filter publication.
-const deferredEditorCompatibilityPublications = new Set<number>();
-
 /**
  * Hold only the exact selected Game Info tab. QAM and context-menu overlays do
  * not change this main-window route, while another tab, page, game, or the
@@ -287,15 +283,15 @@ const deferActiveCompatibilityUpdate = (
   heldNibble: number,
   category: DeckCompatibilityCategory | null,
 ) => {
-  const existing = deferredCompatibilityUpdates.get(appId);
+  const existing = metadataState.deferredCompatibilityUpdates.get(appId);
   const held = existing?.heldNibble ?? heldNibble;
   if (desiredCompatibilityNibble(appId, held, category) === held) {
     // Repeated edits can return to the already visible state. There is then no
     // stale mutation to replay after the user leaves Game Info.
-    deferredCompatibilityUpdates.delete(appId);
+    metadataState.deferredCompatibilityUpdates.delete(appId);
     return false;
   }
-  if (!existing) deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
+  if (!existing) metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
   return true;
 };
 
@@ -320,7 +316,7 @@ const applyCompatibilityToOverview = (
     // Read the retained held value before deferring. The helper can remove a
     // pending entry when the latest policy returns to that held value, while a
     // native replacement still needs the held nibble reconciled in place.
-    const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
     deferActiveCompatibilityUpdate(appId, held, category);
     const heldPacked = (packed & ~0xf) | held;
     if (heldPacked === packed) return false;
@@ -335,7 +331,7 @@ const applyCompatibilityToOverview = (
     }
     return false;
   }
-  deferredCompatibilityUpdates.delete(appId);
+  metadataState.deferredCompatibilityUpdates.delete(appId);
   return applyCompatibilityCategory(appId, overview, category);
 };
 
@@ -347,13 +343,13 @@ export const retainCompatibilityBaselinesForReload = () => {
   const baselines = metadataState.compatibilityBaselines;
   if (
     Object.keys(baselines).length === 0 &&
-    deferredCompatibilityUpdates.size === 0 &&
-    deferredEditorCompatibilityPublications.size === 0
+    metadataState.deferredCompatibilityUpdates.size === 0 &&
+    metadataState.deferredEditorCompatibilityPublications.size === 0
   ) return;
   (globalThis as Record<string, unknown>)[RETAINED_COMPATIBILITY_BASELINES_KEY] = {
     baselines: { ...baselines },
-    deferred: Array.from(deferredCompatibilityUpdates.values()),
-    editorPublications: Array.from(deferredEditorCompatibilityPublications),
+    deferred: Array.from(metadataState.deferredCompatibilityUpdates.values()),
+    editorPublications: Array.from(metadataState.deferredEditorCompatibilityPublications),
   };
 };
 
@@ -389,7 +385,7 @@ const resumeRetainedCompatibilityBaselines = () => {
         Number(heldNibble) >= 0 &&
         Number(heldNibble) <= 0xf
       ) {
-        deferredCompatibilityUpdates.set(Number(appId), {
+        metadataState.deferredCompatibilityUpdates.set(Number(appId), {
           appId: Number(appId),
           heldNibble: Number(heldNibble),
         });
@@ -399,7 +395,7 @@ const resumeRetainedCompatibilityBaselines = () => {
   if (Array.isArray(state.editorPublications)) {
     state.editorPublications.forEach((appId) => {
       if (Number.isSafeInteger(appId) && Number(appId) > 0) {
-        deferredEditorCompatibilityPublications.add(Number(appId));
+        metadataState.deferredEditorCompatibilityPublications.add(Number(appId));
       }
     });
   }
@@ -475,15 +471,15 @@ const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublica
  * this map replacement cannot be classified as the non-Steam placeholder.
  */
 export const publishDeferredEditorCompatibility = (appId: number) => {
-  if (!deferredEditorCompatibilityPublications.has(appId)) return false;
+  if (!metadataState.deferredEditorCompatibilityPublications.has(appId)) return false;
   const overview = getNativeOverview(appId);
   if (!overview || !isNativeNonSteamShortcut(overview)) {
     // A deleted shortcut or an official alias must never be recreated.
-    deferredEditorCompatibilityPublications.delete(appId);
+    metadataState.deferredEditorCompatibilityPublications.delete(appId);
     return false;
   }
   if (!publishCompatibilityReplacements([{ appId, overview }])) return false;
-  deferredEditorCompatibilityPublications.delete(appId);
+  metadataState.deferredEditorCompatibilityPublications.delete(appId);
   return true;
 };
 
@@ -495,7 +491,7 @@ export const publishDeferredEditorCompatibility = (appId: number) => {
 export const flushDeferredCompatibilityPublications = (routeContext = currentRoutePath()) => {
   const publications: CompatibilityPublication[] = [];
   let changed = false;
-  for (const { appId } of Array.from(deferredCompatibilityUpdates.values())) {
+  for (const { appId } of Array.from(metadataState.deferredCompatibilityUpdates.values())) {
     if (isCurrentGameInfoRoute(routeContext, appId)) continue;
     const metadata = metadataCache[String(appId)];
     // An inheriting shortcut cannot safely resolve until its persisted global
@@ -507,7 +503,7 @@ export const flushDeferredCompatibilityPublications = (routeContext = currentRou
     ) {
       continue;
     }
-    deferredCompatibilityUpdates.delete(appId);
+    metadataState.deferredCompatibilityUpdates.delete(appId);
     const overview = getNativeOverview(appId);
     if (applyCompatibilityToOverview(appId, overview, routeContext)) {
       changed = true;
@@ -574,32 +570,41 @@ export const setConfirmedCompatibilityDefault = (
 };
 
 /** Commit only a backend-confirmed scope, using the same one-pass policy path. */
-export const setConfirmedCompatibilityDefaultMatchedOnly = (
-  matchedOnly: boolean,
+export const setConfirmedCompatibilityDefaultScope = (
+  scope: CompatibilityDefaultScope,
   lifecycleGeneration = metadataState.compatibilityLifecycleGeneration,
 ) => {
   if (lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) {
-    return metadataState.compatibilityDefaultMatchedOnly;
+    return metadataState.compatibilityDefaultScope;
   }
-  const changedPolicy = metadataState.compatibilityDefaultMatchedOnly !== matchedOnly;
+  const changedPolicy = metadataState.compatibilityDefaultScope !== scope;
   metadataState.compatibilityDefaultGeneration += 1;
-  metadataState.compatibilityDefaultMatchedOnly = matchedOnly;
+  metadataState.compatibilityDefaultScope = scope;
   const compatibilityChanged = applyCompatibilityDefault();
   if (changedPolicy || compatibilityChanged) notifyCompatibilityRevision();
-  return matchedOnly;
+  return scope;
 };
 
 /** Start a new plugin lifetime and make unfinished work from the old one inert. */
 export const beginCompatibilityLifecycle = () => {
   metadataState.compatibilityLifecycleGeneration += 1;
   metadataState.compatibilityDefaultGeneration += 1;
+  // This object survives an in-place import so a retained editor and new QAM
+  // controls share one current runtime. Clear pending work from the retiring
+  // lifetime, while retaining its current cache until the startup refresh
+  // supplies an authoritative replacement.
+  metadataState.metadataLoadPromise = null;
+  metadataState.metadataRequestOwners.clear();
+  metadataState.screenshotRequestOwners.clear();
+  metadataState.loadingMetadata.clear();
+  metadataState.loadingScreenshots.clear();
+  metadataState.appliedMetadataRef = {};
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
-  metadataState.compatibilityDefaultMatchedOnly = false;
+  metadataState.compatibilityDefaultScope = "all";
   metadataState.compatibilityDefaultLoadPromise = null;
-  metadataState.metadataLoadPromise = null;
-  deferredCompatibilityUpdates.clear();
-  deferredEditorCompatibilityPublications.clear();
+  metadataState.deferredCompatibilityUpdates.clear();
+  metadataState.deferredEditorCompatibilityPublications.clear();
   resumeRetainedCompatibilityBaselines();
   return metadataState.compatibilityLifecycleGeneration;
 };
@@ -615,9 +620,12 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
     // load together and only then satisfy compatibilityDefaultLoaded.
     const request = Promise.all([
       getCompatibilityDefault(),
-      getCompatibilityDefaultMatchedOnly(),
-    ]).then(([value, matchedOnly]) => {
+      getCompatibilityDefaultScope(),
+    ]).then(([value, scope]) => {
       const category = isCompatibilityCategory(value) ? value : null;
+      if (scope !== "steam" && scope !== "no-steam" && scope !== "metadata" && scope !== "all") {
+        throw new Error("invalid compatibility default scope response");
+      }
       if (
         requestGeneration !== metadataState.compatibilityDefaultGeneration ||
         lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration
@@ -625,7 +633,7 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
         return metadataState.compatibilityDefault;
       }
       metadataState.compatibilityDefault = category;
-      metadataState.compatibilityDefaultMatchedOnly = matchedOnly === true;
+      metadataState.compatibilityDefaultScope = scope;
       metadataState.compatibilityDefaultLoaded = true;
       applyCompatibilityDefault();
       notifyCompatibilityRevision();
@@ -645,8 +653,12 @@ export const ensureCompatibilityDefault = async (): Promise<DeckCompatibilityCat
 export const cancelCompatibilityDefaultLoad = () => {
   metadataState.compatibilityDefaultGeneration += 1;
   metadataState.compatibilityLifecycleGeneration += 1;
-  deferredCompatibilityUpdates.clear();
-  deferredEditorCompatibilityPublications.clear();
+  metadataState.metadataRequestOwners.clear();
+  metadataState.screenshotRequestOwners.clear();
+  metadataState.loadingMetadata.clear();
+  metadataState.loadingScreenshots.clear();
+  metadataState.deferredCompatibilityUpdates.clear();
+  metadataState.deferredEditorCompatibilityPublications.clear();
 };
 
 /**
@@ -674,7 +686,7 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
     const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
     // Keep the retained Game Info value stable even if the latest policy
     // collapses the queued update and removes its map entry.
-    const held = deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
+    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
     deferActiveCompatibilityUpdate(appId, held, category);
     // An unchanged effective policy does not need a deferred exit flush, but
     // Steam can still send a replacement with its native low nibble. Preserve
@@ -688,7 +700,7 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
       return false;
     }
   }
-  deferredCompatibilityUpdates.delete(appId);
+  metadataState.deferredCompatibilityUpdates.delete(appId);
   if (category === null) return false;
   const key = String(appId);
   if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
@@ -736,9 +748,13 @@ export const refreshMetadataCache = async () => {
 export const ensureMetadataCache = async () => {
   if (metadataState.metadataLoaded) return;
   if (!metadataState.metadataLoadPromise) {
-    metadataState.metadataLoadPromise = refreshMetadataCache().finally(() => {
-      metadataState.metadataLoadPromise = null;
+    const request = refreshMetadataCache();
+    const loadPromise = request.finally(() => {
+      if (metadataState.metadataLoadPromise === loadPromise) {
+        metadataState.metadataLoadPromise = null;
+      }
     });
+    metadataState.metadataLoadPromise = loadPromise;
   }
   await metadataState.metadataLoadPromise;
 };
@@ -902,7 +918,7 @@ export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {})
   const compatibilityChanged = applyMetadataToOverview(appId, overview);
   if (compatibilityChanged && overview) {
     if (options.publishCompatibility === false) {
-      deferredEditorCompatibilityPublications.add(appId);
+      metadataState.deferredEditorCompatibilityPublications.add(appId);
     } else {
       publishCompatibilityReplacements([{ appId, overview }]);
     }
@@ -934,9 +950,11 @@ export const tryFetchMetadataForApp = async (appId: number) => {
   const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   await ensureMetadataCache();
   if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-  if (metadataCache[String(appId)] || metadataState.loadingMetadata.has(appId)) return;
+  if (metadataCache[String(appId)] || metadataState.metadataRequestOwners.has(appId)) return;
   const overview = getOverview(appId);
   if (!isNonSteamApp(overview)) return;
+  const request = { lifecycleGeneration };
+  metadataState.metadataRequestOwners.set(appId, request);
   metadataState.loadingMetadata.add(appId);
   try {
     const metadata = await autoFetchMetadata(appId, appName(appId));
@@ -947,7 +965,10 @@ export const tryFetchMetadataForApp = async (appId: number) => {
       notifyCompatibilityRevision();
     }
   } finally {
-    metadataState.loadingMetadata.delete(appId);
+    if (metadataState.metadataRequestOwners.get(appId) === request) {
+      metadataState.metadataRequestOwners.delete(appId);
+      metadataState.loadingMetadata.delete(appId);
+    }
   }
 };
 
@@ -959,13 +980,15 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   if (
     !metadata ||
     metadata.screenshots?.length ||
-    metadataState.loadingScreenshots.has(appId) ||
+    metadataState.screenshotRequestOwners.has(appId) ||
     String(metadata.source || "").toUpperCase() !== "IGN"
   ) {
     return;
   }
   const source = metadata.source_url || String(metadata.id || "");
   if (!source) return;
+  const request = { lifecycleGeneration };
+  metadataState.screenshotRequestOwners.set(appId, request);
   metadataState.loadingScreenshots.add(appId);
   try {
     const refreshed = await fetchMetadata(source);
@@ -983,7 +1006,10 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   } catch (error) {
     log.warn("bridge", "screenshot enrichment failed", error);
   } finally {
-    metadataState.loadingScreenshots.delete(appId);
+    if (metadataState.screenshotRequestOwners.get(appId) === request) {
+      metadataState.screenshotRequestOwners.delete(appId);
+      metadataState.loadingScreenshots.delete(appId);
+    }
   }
 };
 

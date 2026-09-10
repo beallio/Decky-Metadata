@@ -7,10 +7,17 @@ type SteamAppData = {
   screenshots?: Record<string, any>;
 };
 
-export const hasMatchedSteamAppId = (metadata: MetadataData | undefined): boolean => {
-  const steamAppId = Number(metadata?.steam_appid);
-  return Number.isFinite(steamAppId) && steamAppId > 0;
+export const matchedSteamAppId = (metadata: Pick<MetadataData, "steam_appid"> | undefined): number | null => {
+  const raw = metadata?.steam_appid;
+  if (typeof raw === "boolean" || raw === null || raw === undefined) return null;
+  const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
+  return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
+    ? steamAppId
+    : null;
 };
+
+export const hasMatchedSteamAppId = (metadata: Pick<MetadataData, "steam_appid"> | undefined): boolean =>
+  matchedSteamAppId(metadata) !== null;
 
 /**
  * Reapply Decky's matched-game fields to a native app-data replacement.

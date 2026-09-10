@@ -1,10 +1,19 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
 
 export type Unpatch = () => void;
+
+export type DeferredCompatibilityUpdate = {
+  appId: number;
+  heldNibble: number;
+};
+
+type CompatibilityInFlightRequest = {
+  lifecycleGeneration: number;
+};
 
 export const patchInstallStatus = {
   activity: "pending",
@@ -26,8 +35,6 @@ export const steamPatchTargetsReady = () => {
 };
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
 
-export const metadataCache: Record<string, MetadataData> = {};
-
 export const NON_STEAM_APP_TYPE = 1073741824;
 export const GAME_DETAIL_ROUTES = [
   "/library/app/:appid",
@@ -43,20 +50,26 @@ export const GAME_ACTIVITY_ROUTES = [
   "/library/:collection/app/:appid/activity/:rest",
 ];
 
-export const metadataState: {
+type CompatibilityMetadataState = {
   bypassCounter: number;
   metadataLoaded: boolean;
   metadataLoadPromise: Promise<void> | null;
+  /** Current ownership for per-app work; legacy Sets remain for retiring bundles. */
+  metadataRequestOwners: Map<number, CompatibilityInFlightRequest>;
+  screenshotRequestOwners: Map<number, CompatibilityInFlightRequest>;
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
   /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /** Held Game Info work and editor publication both survive an in-place reload. */
+  deferredCompatibilityUpdates: Map<number, DeferredCompatibilityUpdate>;
+  deferredEditorCompatibilityPublications: Set<number>;
   /** Confirmed global policy. Null is Automatic. */
   compatibilityDefault: DeckCompatibilityCategory | null;
   compatibilityDefaultLoaded: boolean;
-  /** True restricts the global default to shortcuts with a saved record. */
-  compatibilityDefaultMatchedOnly: boolean;
+  /** Which native non-Steam shortcuts inherit the numeric global default. */
+  compatibilityDefaultScope: CompatibilityDefaultScope;
   /** Invalidates stale backend loads after a confirmed save or dismount. */
   compatibilityDefaultGeneration: number;
   /** Distinguishes one plugin mount from async work left by an older mount. */
@@ -73,26 +86,90 @@ export const metadataState: {
     remaining: number;
     seqId: number;
   } | null;
-} = {
+};
+
+type CompatibilityRuntime = {
+  metadataCache: Record<string, MetadataData>;
+  metadataState: CompatibilityMetadataState;
+  revisionListeners: Set<() => void>;
+};
+
+const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
+
+const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   bypassCounter: 0,
   metadataLoaded: false,
   metadataLoadPromise: null,
+  metadataRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
+  screenshotRequestOwners: new Map<number, CompatibilityInFlightRequest>(),
   loadingMetadata: new Set<number>(),
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  deferredCompatibilityUpdates: new Map<number, DeferredCompatibilityUpdate>(),
+  deferredEditorCompatibilityPublications: new Set<number>(),
   compatibilityDefault: null,
   compatibilityDefaultLoaded: false,
-  compatibilityDefaultMatchedOnly: false,
+  compatibilityDefaultScope: "all",
   compatibilityDefaultGeneration: 0,
   compatibilityLifecycleGeneration: 0,
   compatibilityDefaultLoadPromise: null,
   compatibilityRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
+});
+
+/**
+ * Decky loads a new module bundle during an in-place plugin import, while a
+ * mounted route can still hold callbacks from the retiring bundle. Keep the
+ * mutable compatibility runtime on SteamUI's global host for that handoff.
+ * A lifecycle change makes old asynchronous work inert; the shared object
+ * ensures a surviving editor observes the current cache, policy, and revision.
+ */
+const compatibilityRuntime = (): CompatibilityRuntime => {
+  const host = globalThis as Record<string, unknown>;
+  const existing = host[COMPATIBILITY_RUNTIME_KEY] as Partial<CompatibilityRuntime> | undefined;
+  if (
+    existing &&
+    typeof existing === "object" &&
+    existing.metadataCache &&
+    existing.metadataState &&
+    existing.revisionListeners instanceof Set
+  ) {
+    const state = existing.metadataState as CompatibilityMetadataState;
+    // Older bundles do not have the reload-owned maps. Keep their public Set
+    // fields for callbacks that still hold the retiring import, but make this
+    // import's authoritative guards and compatibility queues shared.
+    if (!(state.metadataRequestOwners instanceof Map)) {
+      state.metadataRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.screenshotRequestOwners instanceof Map)) {
+      state.screenshotRequestOwners = new Map<number, CompatibilityInFlightRequest>();
+    }
+    if (!(state.deferredCompatibilityUpdates instanceof Map)) {
+      state.deferredCompatibilityUpdates = new Map<number, DeferredCompatibilityUpdate>();
+    }
+    if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
+      state.deferredEditorCompatibilityPublications = new Set<number>();
+    }
+    return existing as CompatibilityRuntime;
+  }
+  const runtime: CompatibilityRuntime = {
+    metadataCache: {},
+    metadataState: newCompatibilityMetadataState(),
+    revisionListeners: new Set<() => void>(),
+  };
+  host[COMPATIBILITY_RUNTIME_KEY] = runtime;
+  return runtime;
 };
 
-const compatibilityRevisionListeners = new Set<() => void>();
+const runtime = compatibilityRuntime();
+
+export const metadataCache = runtime.metadataCache;
+
+export const metadataState = runtime.metadataState;
+
+const compatibilityRevisionListeners = runtime.revisionListeners;
 
 export const compatibilityRevisionSnapshot = () =>
   metadataState.compatibilityRevision;
@@ -101,8 +178,7 @@ export const compatibilityDefaultSnapshot = () => metadataState.compatibilityDef
 
 export const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
 
-export const compatibilityDefaultMatchedOnlySnapshot = () =>
-  metadataState.compatibilityDefaultMatchedOnly;
+export const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
 
 export const compatibilityLifecycleSnapshot = () =>
   metadataState.compatibilityLifecycleGeneration;

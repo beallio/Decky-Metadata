@@ -77,6 +77,9 @@ export type UpdateRpcResult<T> = T | UpdateRpcStatus;
 /** Steam's packed Deck compatibility category values. */
 export type DeckCompatibilityCategory = 0 | 1 | 2 | 3;
 
+/** Which native non-Steam shortcuts inherit a numeric global default. */
+export type CompatibilityDefaultScope = "steam" | "no-steam" | "metadata" | "all";
+
 /** A per-shortcut policy: inherit, follow current Valve data, or use a fixed category. */
 export type DeckCompatibilityOverride = DeckCompatibilityCategory | "valve" | null;
 
@@ -95,7 +98,7 @@ export type MetadataData = {
   genres?: string[];
   features?: string[];
   screenshots?: MetadataScreenshot[];
-  steam_appid?: number | null;
+  steam_appid?: number | string | null;
   /** Steam's own cleaned display name, kept separate from editable title data. */
   steam_store_name?: string;
   steam_dlc_appids: number[];

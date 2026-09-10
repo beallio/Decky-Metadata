@@ -65,8 +65,8 @@ describe("resolveLibraryCompatibilityIndicator", () => {
     expect(resolveLibraryCompatibilityIndicator(input({ metadata: { deck_compat_override: null, deck_compat_category: 2 } }))).toBe(2);
   });
 
-  it("uses the global default for a mounted shortcut without metadata and lets Follow Valve bypass it", () => {
-    expect(resolveLibraryCompatibilityIndicator(input({ metadata: undefined, globalDefault: 3 }))).toBe(3);
+  it("uses the global default for the all scope and lets Follow Valve bypass it", () => {
+    expect(resolveLibraryCompatibilityIndicator(input({ metadata: undefined, globalDefault: 3, globalScope: "all" }))).toBe(3);
     expect(resolveLibraryCompatibilityIndicator(input({
       metadata: { deck_compat_override: "valve", deck_compat_category: 2 },
       globalDefault: 3,
@@ -74,6 +74,29 @@ describe("resolveLibraryCompatibilityIndicator", () => {
     expect(resolveLibraryCompatibilityIndicator(input({
       metadata: { deck_compat_override: "valve", deck_compat_category: null },
       globalDefault: 3,
+    }))).toBeNull();
+  });
+
+  it("uses Steam-ID scope metadata for mounted Home and grid cards", () => {
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2, steam_appid: "55150", source: "IGN" },
+      globalDefault: 3,
+      globalScope: "steam",
+    }))).toBe(3);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2 },
+      globalDefault: 3,
+      globalScope: "steam",
+    }))).toBe(2);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: { deck_compat_override: null, deck_compat_category: 2 },
+      globalDefault: 3,
+      globalScope: "no-steam",
+    }))).toBe(3);
+    expect(resolveLibraryCompatibilityIndicator(input({
+      metadata: undefined,
+      globalDefault: 3,
+      globalScope: "metadata",
     }))).toBeNull();
   });
 

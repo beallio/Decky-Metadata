@@ -20,11 +20,26 @@ const steam = vi.hoisted(() => ({
   applyMetadata: vi.fn(),
   cleanTitle: vi.fn((value: string) => value.trim()),
   compatibilityDefaultSnapshot: vi.fn(() => null),
+  compatibilityDefaultScopeSnapshot: vi.fn(() => "all"),
   classifyShortcutNameState: vi.fn((_current: string | null, _state: any) => "unmanaged"),
   getOverview: vi.fn(() => ({ app_type: 1073741824, BIsShortcut: () => true })),
   hasShortcutNameApi: vi.fn(() => true),
   isNonSteamApp: vi.fn(() => true),
   ensureCompatibilityDefault: vi.fn(() => Promise.resolve(null)),
+  effectiveCompatibilityCategory: vi.fn((metadata: any, globalDefault: any, scope: string) => {
+    if (typeof metadata?.deck_compat_override === "number") return metadata.deck_compat_override;
+    if (metadata?.deck_compat_override === "valve") return metadata.deck_compat_category ?? null;
+    const eligible = scope === "all"
+      || scope === "metadata"
+      || (scope === "steam" && Number(metadata?.steam_appid) > 0)
+      || (scope === "no-steam" && metadata !== undefined && Number(metadata?.steam_appid) <= 0);
+    return eligible && globalDefault !== null ? globalDefault : metadata?.deck_compat_category ?? null;
+  }),
+  isCompatibilityDefaultEligible: vi.fn((metadata: any, scope: string) =>
+    scope === "all"
+      || (scope === "metadata" && metadata !== undefined)
+      || (scope === "steam" && Number(metadata?.steam_appid) > 0)
+      || (scope === "no-steam" && metadata !== undefined && Number(metadata?.steam_appid) <= 0)),
   metadataCache: {} as Record<string, any>,
   nativeShortcutName: vi.fn(() => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
@@ -249,6 +264,55 @@ describe("MetadataPage compatibility status", () => {
     // Compatibility-default state is appended after the editor's existing
     // state slots, preserving the legacy state-index fixture above.
     state.values[15] = 3;
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
+  });
+
+  it("updates an inheriting editor preview when the selected scope excludes its record", () => {
+    state.values[0] = makeMetadata({ steam_appid: null, deck_compat_category: 2 });
+    state.values[15] = 3;
+    state.values[16] = "steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Playable from Valve)",
+    );
+  });
+
+  it("does not mistake an equal Valve category for global inheritance outside the scope", () => {
+    state.values[0] = makeMetadata({ steam_appid: 15100, deck_compat_category: 3 });
+    state.values[15] = 3;
+    state.values[16] = "no-steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("no-steam");
+
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Verified from Valve)",
+    );
+  });
+
+  it("updates the mounted editor preview after a scope-only revision", async () => {
+    state.values[0] = makeMetadata({ steam_appid: 15100, deck_compat_category: 2 });
+    state.values[15] = 3;
+    state.values[16] = "no-steam";
+    steam.ensureCompatibilityDefault.mockResolvedValue(3);
+    steam.compatibilityDefaultSnapshot.mockReturnValue(3);
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("no-steam");
+    let notifyCompatibilityRevision!: () => void;
+    steam.subscribeCompatibilityRevision.mockImplementation(((listener: () => void) => {
+      notifyCompatibilityRevision = listener;
+      return () => undefined;
+    }) as any);
+    effects.enabled = true;
+
+    renderPage();
+    effects.callbacks[4]();
+    await flushAsyncWork();
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — Playable from Valve)",
+    );
+
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
+    notifyCompatibilityRevision();
 
     expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
   });
@@ -852,8 +916,18 @@ describe("MetadataPage compatibility status", () => {
 
   it("normalizes a cleared Steam ID and completes its consumer-visible refresh", async () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[15] = 3;
+    state.values[16] = "steam";
+    steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
     state.values[8] = "";
-    const cleared = makeMetadata({ steam_appid: null, steam_store_name: "", steam_store_url: "" });
+    const cleared = makeMetadata({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+      steam_store_name: "",
+      steam_store_url: "",
+    });
     backend.saveMetadata.mockResolvedValue(cleared);
     backend.enrichSteamApp.mockResolvedValue(null);
 
@@ -862,6 +936,15 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
     expect(state.values[8]).toBe("");
     expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+      "Use global default (outside selected scope — original Steam status)",
+    );
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+    }));
     expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");

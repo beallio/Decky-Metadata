@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   }),
   getAllMetadata: vi.fn(),
   getCompatibilityDefault: vi.fn(),
-  getCompatibilityDefaultMatchedOnly: vi.fn(),
+  getCompatibilityDefaultScope: vi.fn(),
   autoFetchMetadata: vi.fn(),
   fetchMetadata: vi.fn(),
   saveMetadata: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock("../backend", () => ({
   frontendLog: vi.fn(() => Promise.resolve()),
   getAllMetadata: mocks.getAllMetadata,
   getCompatibilityDefault: mocks.getCompatibilityDefault,
-  getCompatibilityDefaultMatchedOnly: mocks.getCompatibilityDefaultMatchedOnly,
+  getCompatibilityDefaultScope: mocks.getCompatibilityDefaultScope,
   saveMetadata: mocks.saveMetadata,
 }));
 vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
@@ -46,10 +46,11 @@ import {
   beginCompatibilityLifecycle,
   cancelCompatibilityDefaultLoad,
   ensureCompatibilityDefault,
+  ensureMetadataCache,
   refreshCompatibilitySurfaces,
   refreshMetadataCache,
   setConfirmedCompatibilityDefault,
-  setConfirmedCompatibilityDefaultMatchedOnly,
+  setConfirmedCompatibilityDefaultScope,
   startMetadataBootstrap,
   tryEnrichScreenshotsForApp,
   tryFetchMetadataForApp,
@@ -107,7 +108,7 @@ const installWithOverview = (route: string, browserPathname = route, browserHref
 };
 
 beforeEach(() => {
-  mocks.getCompatibilityDefaultMatchedOnly.mockResolvedValue(false);
+  mocks.getCompatibilityDefaultScope.mockResolvedValue("all");
 });
 
 afterEach(() => {
@@ -118,12 +119,14 @@ afterEach(() => {
   metadataState.compatibilityBaselines = {};
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
-  metadataState.compatibilityDefaultMatchedOnly = false;
+  metadataState.compatibilityDefaultScope = "all";
   metadataState.compatibilityDefaultGeneration = 0;
   metadataState.compatibilityLifecycleGeneration = 0;
   metadataState.compatibilityDefaultLoadPromise = null;
   metadataState.metadataLoaded = false;
   metadataState.metadataLoadPromise = null;
+  metadataState.metadataRequestOwners.clear();
+  metadataState.screenshotRequestOwners.clear();
   metadataState.loadingMetadata.clear();
   metadataState.loadingScreenshots.clear();
   mocks.autoFetchMetadata.mockReset();
@@ -140,8 +143,8 @@ afterEach(() => {
   mocks.afterPatch.mockClear();
   mocks.getAllMetadata.mockReset();
   mocks.getCompatibilityDefault.mockReset();
-  mocks.getCompatibilityDefaultMatchedOnly.mockReset();
-  mocks.getCompatibilityDefaultMatchedOnly.mockResolvedValue(false);
+  mocks.getCompatibilityDefaultScope.mockReset();
+  mocks.getCompatibilityDefaultScope.mockResolvedValue("all");
   vi.useRealTimers();
 });
 
@@ -261,6 +264,7 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
 const compatibilityMetadata = (
   category?: MetadataData["deck_compat_category"],
   override?: MetadataData["deck_compat_override"],
+  steamAppId?: MetadataData["steam_appid"],
 ): MetadataData => ({
   title: "Example",
   id: "example",
@@ -270,6 +274,7 @@ const compatibilityMetadata = (
   has_points_shop: false,
   deck_compat_category: category,
   deck_compat_override: override,
+  steam_appid: steamAppId,
 });
 
 const activityMetadata = (title: string, gid: string, steamNews = true) => ({
@@ -487,9 +492,10 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
   });
 
-  it("publishes scope changes for no-record shortcuts without changing recorded games", () => {
-    const recordedAppId = 9111;
-    const bareAppId = 9112;
+  it("publishes scope-only changes with real entry replacements", () => {
+    const steamAppId = 9111;
+    const noSteamAppId = 9112;
+    const bareAppId = 9113;
     class NativeOverview {
       appid = 0;
       app_type = 1073741824;
@@ -497,13 +503,16 @@ describe("compatibility metadata application", () => {
       BIsShortcut() { return true; }
       BIsModOrShortcut() { return true; }
     }
-    const recorded = Object.assign(new NativeOverview(), {
-      appid: recordedAppId, steam_hw_compat_category_packed: 0xa0,
+    const steamMatched = Object.assign(new NativeOverview(), {
+      appid: steamAppId, steam_hw_compat_category_packed: 0xa0,
+    });
+    const noSteam = Object.assign(new NativeOverview(), {
+      appid: noSteamAppId, steam_hw_compat_category_packed: 0xb9,
     });
     const bare = Object.assign(new NativeOverview(), {
       appid: bareAppId, steam_hw_compat_category_packed: 0xb9,
     });
-    const overviews = new Map([[recordedAppId, recorded], [bareAppId, bare]]);
+    const overviews = new Map([[steamAppId, steamMatched], [noSteamAppId, noSteam], [bareAppId, bare]]);
     const host = globalThis as Record<string, unknown>;
     host.appStore = {
       get allApps() { return Array.from(overviews.values()); },
@@ -511,58 +520,83 @@ describe("compatibility metadata application", () => {
       GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
     };
     host.appDetailsStore = {};
-    // A saved record without a Steam match is still within the selected scope.
-    metadataCache[String(recordedAppId)] = compatibilityMetadata(null, null);
+    metadataCache[String(steamAppId)] = compatibilityMetadata(2, null, 55150);
+    metadataCache[String(noSteamAppId)] = compatibilityMetadata(1, null);
     setConfirmedCompatibilityDefault(3);
     const defaultBare = overviews.get(bareAppId);
-    const defaultRecorded = overviews.get(recordedAppId);
+    const defaultSteam = overviews.get(steamAppId);
+    const defaultNoSteam = overviews.get(noSteamAppId);
     expect(defaultBare?.steam_hw_compat_category_packed).toBe(0xbf);
-    expect(defaultRecorded?.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(defaultSteam?.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(defaultNoSteam?.steam_hw_compat_category_packed).toBe(0xbf);
 
-    setConfirmedCompatibilityDefaultMatchedOnly(true);
+    setConfirmedCompatibilityDefaultScope("steam");
     const restoredBare = overviews.get(bareAppId);
     expect(restoredBare).not.toBe(defaultBare);
     expect(restoredBare?.steam_hw_compat_category_packed).toBe(0xb9);
-    expect(overviews.get(recordedAppId)).toBe(defaultRecorded);
+    expect(overviews.get(steamAppId)).toBe(defaultSteam);
+    expect(overviews.get(noSteamAppId)).not.toBe(defaultNoSteam);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xb5);
 
-    setConfirmedCompatibilityDefaultMatchedOnly(false);
-    expect(overviews.get(bareAppId)).not.toBe(restoredBare);
+    setConfirmedCompatibilityDefaultScope("no-steam");
+    expect(overviews.get(steamAppId)).not.toBe(defaultSteam);
+    expect(overviews.get(steamAppId)?.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(bareAppId)).toBe(restoredBare);
+    setConfirmedCompatibilityDefaultScope("metadata");
+    expect(overviews.get(steamAppId)?.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0xb9);
+    setConfirmedCompatibilityDefaultScope("all");
     expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
-    expect(overviews.get(recordedAppId)).toBe(defaultRecorded);
     expect(metadataCache[String(bareAppId)]).toBeUndefined();
   });
 
-  it("keeps fixed and Follow Valve per-game choices under the matched-games-only scope", () => {
-    metadataState.compatibilityDefaultMatchedOnly = true;
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(3, 0), 2)).toBe(0);
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, "valve"), 3)).toBe(2);
-    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, null), 3)).toBe(3);
-    expect(effectiveCompatibilityCategory(undefined, 3)).toBeNull();
+  it("partitions records by Steam ID and keeps overrides ahead of every scope", () => {
+    const steamRecord = compatibilityMetadata(2, null, "55150");
+    const ignSteamRecord = { ...compatibilityMetadata(1, null, 480), source: "IGN" };
+    const providerOnlyRecord = { ...compatibilityMetadata(2, null), source: "IGN" };
+    const manualRecord = compatibilityMetadata(1, null);
+    for (const metadata of [steamRecord, ignSteamRecord]) {
+      expect(effectiveCompatibilityCategory(metadata, 3, "steam")).toBe(3);
+      expect(effectiveCompatibilityCategory(metadata, 3, "no-steam")).toBe(metadata.deck_compat_category);
+    }
+    for (const metadata of [providerOnlyRecord, manualRecord]) {
+      expect(effectiveCompatibilityCategory(metadata, 3, "steam")).toBe(metadata.deck_compat_category);
+      expect(effectiveCompatibilityCategory(metadata, 3, "no-steam")).toBe(3);
+    }
+    expect(effectiveCompatibilityCategory(steamRecord, 3, "metadata")).toBe(3);
+    expect(effectiveCompatibilityCategory(providerOnlyRecord, 3, "metadata")).toBe(3);
+    expect(effectiveCompatibilityCategory(undefined, 3, "metadata")).toBeNull();
+    expect(effectiveCompatibilityCategory(undefined, 3, "all")).toBe(3);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(3, 0), 2, "steam")).toBe(0);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, "valve"), 3, "no-steam")).toBe(2);
+    expect(effectiveCompatibilityCategory(compatibilityMetadata(2, null, 55150), 3, "no-steam")).toBe(2);
   });
 
-  it("returns a shortcut to its native baseline when record removal meets the matched-games-only scope", () => {
-    const appId = 9113;
+  it("returns a shortcut to its native baseline when metadata becomes excluded", () => {
+    const appId = 9114;
     const overview = installCompatibilityOverview(appId, 0x90);
-    metadataCache[String(appId)] = compatibilityMetadata(null, null);
-    metadataState.compatibilityDefaultMatchedOnly = true;
+    metadataCache[String(appId)] = compatibilityMetadata(null, null, 55150);
+    metadataState.compatibilityDefaultScope = "steam";
     setConfirmedCompatibilityDefault(1);
     expect(overview.steam_hw_compat_category_packed).toBe(0x95);
 
-    delete metadataCache[String(appId)];
+    metadataCache[String(appId)] = compatibilityMetadata(null, null);
     applyMetadata(appId);
 
     expect(overview.steam_hw_compat_category_packed).toBe(0x90);
   });
 
   it("holds the active Game Info value when the scope changes and applies it after the exit", () => {
-    const appId = 9114;
+    const appId = 9115;
     const overview = installCompatibilityOverview(appId, 0xa0);
     setRoute("/library/home");
     setConfirmedCompatibilityDefault(3);
     expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
 
     setRoute(`/library/app/${appId}/tab/GameInfo`);
-    setConfirmedCompatibilityDefaultMatchedOnly(true);
+    setConfirmedCompatibilityDefaultScope("steam");
     expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
 
     setRoute("/library/home");
@@ -572,12 +606,12 @@ describe("compatibility metadata application", () => {
   });
 
   it("loads the scope with the default before either applies", async () => {
-    const appId = 9115;
+    const appId = 9116;
     const overview = installCompatibilityOverview(appId, 0xa0);
-    let resolveScope: (value: boolean) => void = () => undefined;
+    let resolveScope: (value: "steam" | "no-steam" | "metadata" | "all") => void = () => undefined;
     mocks.getCompatibilityDefault.mockResolvedValue(3);
-    mocks.getCompatibilityDefaultMatchedOnly.mockReturnValue(
-      new Promise<boolean>((resolve) => { resolveScope = resolve; })
+    mocks.getCompatibilityDefaultScope.mockReturnValue(
+      new Promise<"steam" | "no-steam" | "metadata" | "all">((resolve) => { resolveScope = resolve; })
     );
 
     const pending = ensureCompatibilityDefault();
@@ -585,12 +619,105 @@ describe("compatibility metadata application", () => {
     expect(metadataState.compatibilityDefaultLoaded).toBe(false);
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
 
-    resolveScope(true);
+    resolveScope("steam");
     await pending;
 
     expect(metadataState.compatibilityDefaultLoaded).toBe(true);
-    expect(metadataState.compatibilityDefaultMatchedOnly).toBe(true);
+    expect(metadataState.compatibilityDefaultScope).toBe("steam");
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+  });
+
+  it("rejects an invalid scope response without publishing a half-loaded default", async () => {
+    const appId = 9117;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    mocks.getCompatibilityDefault.mockResolvedValue(3);
+    mocks.getCompatibilityDefaultScope.mockResolvedValue("invalid");
+
+    await expect(ensureCompatibilityDefault()).rejects.toThrow("invalid compatibility default scope response");
+
+    expect(metadataState.compatibilityDefaultLoaded).toBe(false);
+    expect(metadataState.compatibilityDefault).toBeNull();
+    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+  });
+
+  it("recomputes scoped eligibility when a metadata refresh removes a Steam ID", async () => {
+    const appId = 9118;
+    const overview = installCompatibilityOverview(appId, 0xa0);
+    metadataState.compatibilityDefaultScope = "steam";
+    metadataState.compatibilityDefault = 3;
+    metadataCache[String(appId)] = compatibilityMetadata(2, null, 55150);
+    applyMetadata(appId);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    mocks.getAllMetadata.mockResolvedValue({ [appId]: compatibilityMetadata(2, null) });
+
+    await refreshMetadataCache();
+
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
+  });
+
+  it("restores the captured native value after a reloaded editor clears a Steam ID", () => {
+    const appId = 9121;
+    const unrelatedAppId = 9122;
+    const overview = installCompatibilityOverview(appId, 0x80);
+    const unrelated = {
+      appid: unrelatedAppId,
+      app_type: 1073741824,
+      BIsShortcut: () => true,
+      BIsModOrShortcut: () => true,
+      steam_hw_compat_category_packed: 0x91,
+    };
+    (globalThis as Record<string, unknown>).appStore = {
+      allApps: [overview, unrelated],
+      GetAppOverviewByAppID: (candidate: number) =>
+        candidate === appId ? overview : candidate === unrelatedAppId ? unrelated : null,
+    };
+    (globalThis as Record<string, unknown>).appDetailsStore = {};
+    const record = {
+      ...compatibilityMetadata(null, null),
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+    } as any;
+    metadataCache[String(appId)] = record;
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    metadataState.compatibilityDefaultScope = "no-steam";
+
+    // The editor is entered after the reload. A no-ID record first inherits
+    // the default, then its Steam match and scope change. Clearing that match
+    // must resolve from the acknowledged record, not its former Steam data.
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    record.steam_appid = 15100;
+    record.deck_compat_category = 2;
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8a);
+    setConfirmedCompatibilityDefaultScope("steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+
+    retainCompatibilityBaselinesForReload();
+    cancelCompatibilityDefaultLoad();
+    beginCompatibilityLifecycle();
+    metadataState.compatibilityDefault = 3;
+    metadataState.compatibilityDefaultLoaded = true;
+    metadataState.compatibilityDefaultScope = "steam";
+    record.steam_appid = null;
+    record.deck_compat_category = null;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x80);
+    expect(unrelated.steam_hw_compat_category_packed).toBe(0x91);
+    expect(record).toEqual(expect.objectContaining({
+      title: "User title",
+      source: "Steam",
+      steam_appid: null,
+      deck_compat_category: null,
+    }));
+
+    setConfirmedCompatibilityDefaultScope("no-steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    setConfirmedCompatibilityDefaultScope("steam");
+    expect(overview.steam_hw_compat_category_packed).toBe(0x80);
   });
 
   it("restores compatibility when a backend cache refresh removes the record", async () => {
@@ -700,6 +827,102 @@ describe("compatibility metadata application", () => {
     mocks.autoFetchMetadata.mockResolvedValue(compatibilityMetadata(2, null));
     await tryFetchMetadataForApp(appId);
     expect(metadataCache[String(appId)]).toEqual(compatibilityMetadata(2, null));
+  });
+
+  it("keeps the current metadata-cache request owned after an older reload request settles", async () => {
+    let resolveFirst!: (value: Record<string, MetadataData>) => void;
+    let resolveSecond!: (value: Record<string, MetadataData>) => void;
+    mocks.getAllMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const first = ensureMetadataCache();
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = ensureMetadataCache();
+    await Promise.resolve();
+    const currentRequest = metadataState.metadataLoadPromise;
+
+    resolveFirst({});
+    await first;
+
+    expect(metadataState.metadataLoadPromise).toBe(currentRequest);
+    const third = ensureMetadataCache();
+    await Promise.resolve();
+    expect(mocks.getAllMetadata).toHaveBeenCalledTimes(2);
+
+    resolveSecond({});
+    await Promise.all([second, third]);
+    expect(metadataState.metadataLoadPromise).toBeNull();
+  });
+
+  it("keeps the current per-app metadata guard after an older reload fetch settles", async () => {
+    const appId = 93004;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    let resolveFirst!: (value: Record<string, any> | null) => void;
+    let resolveSecond!: (value: Record<string, any> | null) => void;
+    mocks.autoFetchMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    beginCompatibilityLifecycle();
+    const first = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+
+    resolveFirst(null);
+    await first;
+
+    expect(metadataState.loadingMetadata.has(appId)).toBe(true);
+    const third = tryFetchMetadataForApp(appId);
+    await Promise.resolve();
+    expect(mocks.autoFetchMetadata).toHaveBeenCalledTimes(2);
+
+    resolveSecond(null);
+    await Promise.all([second, third]);
+    expect(metadataState.loadingMetadata.has(appId)).toBe(false);
+  });
+
+  it("keeps the current per-app screenshot guard after an older reload fetch settles", async () => {
+    const appId = 93005;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...compatibilityMetadata(null, null),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    let resolveFirst!: (value: Record<string, any> | null) => void;
+    let resolveSecond!: (value: Record<string, any> | null) => void;
+    mocks.fetchMetadata
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+
+    beginCompatibilityLifecycle();
+    const first = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    beginCompatibilityLifecycle();
+    const second = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+
+    resolveFirst(null);
+    await first;
+
+    expect(metadataState.loadingScreenshots.has(appId)).toBe(true);
+    const third = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    expect(mocks.fetchMetadata).toHaveBeenCalledTimes(2);
+
+    const saved = { ...existing, screenshots: [{ url: "https://example.invalid/shot.png" }] };
+    mocks.saveMetadata.mockResolvedValue(saved);
+    resolveSecond({ screenshots: saved.screenshots });
+    await Promise.all([second, third]);
+    expect(metadataState.loadingScreenshots.has(appId)).toBe(false);
   });
 
   it("does not start a late screenshot save after dismount", async () => {
@@ -1179,6 +1402,57 @@ describe("compatibility metadata application", () => {
     expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(overviews.get(appId)).toBe(published);
+  });
+
+  it("publishes an old editor callback's deferred update through the current module instance", async () => {
+    const appId = 94541;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const oldModule = await import("./metadataPatch");
+    vi.resetModules();
+    const currentModule = await import("./metadataPatch");
+    const currentCore = await import("./core");
+    const original = new NativeOverview();
+    const overviews = new Map<number, NativeOverview>([[appId, original]]);
+    const set = overviews.set.bind(overviews);
+    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      allApps: [original],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => overviews.get(candidate) ?? null,
+    };
+    host.appDetailsStore = {};
+    currentModule.beginCompatibilityLifecycle();
+    currentCore.metadataState.compatibilityDefault = 3;
+    currentCore.metadataState.compatibilityDefaultLoaded = true;
+    currentCore.metadataCache[String(appId)] = compatibilityMetadata(2, 2) as any;
+
+    expect(oldModule.applyMetadata(appId, { publishCompatibility: false })).toBe(true);
+    expect(publish).not.toHaveBeenCalled();
+
+    expect(currentModule.publishDeferredEditorCompatibility(appId)).toBe(true);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(overviews.get(appId)).not.toBe(original);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaa);
   });
 
   it("holds an active Game Info compatibility value until the view exits", () => {
