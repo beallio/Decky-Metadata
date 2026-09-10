@@ -1,5 +1,10 @@
 # Compatibility status defaults
 
+> **Historical session — implementation is on `dev` (`ae29f34`).**
+> Four scopes subsequently landed in `34e52a5`. Round statuses below describe
+> their original checkpoints, not current execution instructions.
+> See the [current compatibility contract](../specs/compatibility-status.md).
+
 ## Date
 
 2026-09-07
@@ -987,5 +992,5 @@ compatibility default, retain per-game precedence, and add the explicit
   merged build was reinstalled and re-checked on the Deck, then the fixture,
   global default, and the `debug_logging` setting were restored to baseline.
   `./run.sh scripts/orchestration/run-quality-gates` passed on `dev`. The
-  `dev` to `main` promotion remains a human gate, and the matched-games-only
-  default toggle stays queued as separate work.
+  `dev` to `main` promotion remains a human gate. The matched-only follow-up
+  was later integrated in `5971737`, then replaced by four scopes in `34e52a5`.

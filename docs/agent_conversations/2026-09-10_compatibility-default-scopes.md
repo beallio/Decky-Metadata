@@ -1,5 +1,10 @@
 # Compatibility default scopes — 2026-09-10
 
+> **Historical session — implementation is on `dev` (`34e52a5`).**
+> Separator follow-up: `2982c86`. Earlier deferred checks are superseded by the
+> final verification record below, not a request to restart implementation.
+> See the [current compatibility contract](../specs/compatibility-status.md).
+
 ## Objective
 
 Replace the matched-games-only boolean with four saved compatibility default

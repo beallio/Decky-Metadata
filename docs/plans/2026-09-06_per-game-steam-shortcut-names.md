@@ -1,5 +1,10 @@
 # Plan: Rename individual shortcuts to matched Steam titles (per-game-steam-shortcut-names)
 
+> **Historical plan — implementation is on `dev` (`73bb7f2`).**
+> Do not relaunch it. Integration does not imply verification on every device;
+> retain the recorded platform and UI limitations below.
+> Use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 Decky Metadata already resolves a non-Steam shortcut to a Steam app ID and

@@ -9,6 +9,9 @@ community posts, and controller layouts.
 
 ![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20260718)
 
+This README describes the current branch. See the [changelog](CHANGELOG.md)
+for released and unreleased changes; screenshots may show an earlier layout.
+
 ## What it can add
 
 For a non-Steam game, Decky Metadata can add:
@@ -87,7 +90,8 @@ The scope uses the saved record and Steam App ID. It does not use the metadata
 provider or current store availability. A no-record shortcut belongs only to
 **All non-Steam games**. Per-game choices are unaffected. The scope selector is
 unavailable while the default is Automatic, but it keeps its saved selection.
-Older matched-only settings migrate to the matching saved-metadata scope.
+On upgrade, the old toggle's On value becomes **All games with saved metadata**;
+Off becomes **All non-Steam games**.
 
 Saving a default saves it immediately. Other eligible shortcuts update at once.
 If the current game's **Game Info** tab is open, that game's current status and
@@ -119,9 +123,10 @@ claim about emulator performance.
 | Follow Valve with missing Valve data | Original Steam status |
 | Follow Valve with Valve Unknown | Unknown, with no badge |
 | Global Automatic | Matched category, or original Steam status if unavailable |
-| Changing the global default | Only games using **Use global default** change |
+| Changing the global default | Only inheriting games inside the selected scope take the new default |
 | Current Game Info tab during a default change | Keeps its current value until you leave; other games update now |
 | Steam-matched scope, shortcut with no saved metadata | Original Steam status |
+| Game outside the selected scope | Per-game choice, otherwise Valve category or original Steam status |
 
 See the full [compatibility-status behavior reference](docs/specs/compatibility-status.md)
 for upgrade, persistence, and lifecycle details.
@@ -178,9 +183,25 @@ view recent logs.
 If you report a problem, include recent logs and the versions shown in the
 **Versions** panel.
 
-Want to test changes before the next stable release? Use the rolling
-[`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build).
-Testing builds may be less stable.
+For manual sideload testing, the rolling
+[`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build)
+contains a development ZIP. Its fixed tag is **not** an in-plugin updater
+source. The updater's **Receive development releases** option instead finds
+versioned `vX.Y.Z-dev.g<sha>` prereleases. Testing builds may be less stable.
+
+## Development and documentation
+
+- [Agent workflow](docs/runbooks/agent-workflow.md): current local checks,
+  device inspection, and package delivery.
+- [On-device verification](docs/runbooks/on-device-verification.md): required
+  live checks and explicit deployment/launch permissions.
+- [Compatibility behavior](docs/specs/compatibility-status.md): current
+  precedence, scopes, persistence, and lifecycle rules.
+
+Dated plans and session logs are historical records or research proposals,
+not a current backlog by default. Read their status notices before acting.
+Completed and superseded plans must not be launched again; their original
+paths and [review records](docs/review/) are retained for audit references.
 
 ## License and credits
 

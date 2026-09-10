@@ -1,5 +1,9 @@
 # Plan: Controller Search cross-app layout isolation (controller-search-isolation)
 
+> **Historical plan — implementation is on `dev` (`bf70769`).**
+> Do not relaunch it. Original controller and preview/application exclusions
+> remain below; use the [current workflow](../runbooks/agent-workflow.md).
+
 ## Context
 
 ### Symptom

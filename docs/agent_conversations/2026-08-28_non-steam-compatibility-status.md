@@ -1,5 +1,10 @@
 # Non-Steam Compatibility Status Implementation
 
+> **Historical session — implementation is on `dev` (`c9fec7d`).**
+> Early blocked/not-installed statuses describe their original review rounds.
+> Later defaults and scopes extend this work; device limitations remain as
+> recorded. See the [current compatibility contract](../specs/compatibility-status.md).
+
 Date: 2026-08-28
 
 ## Objective

@@ -1,5 +1,9 @@
 # Fix compatibility badge cache refresh
 
+> **Historical session — implementation is on `dev` (`59063ef`).**
+> Followed by persistent refresh (`a229009`) and mounted discovery retry
+> (`b047d39`). Original checkpoints remain below.
+
 ## Date
 
 2026-08-30
