@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Project quality gates. Invoked by orchestration/run-quality-gates from the repo
-# root. Exit non-zero to fail the gate. The engine separately enforces that
-# review notes are not deleted, so that is not repeated here.
+# root. Exit non-zero to fail the gate.
 #
 # Decky-Metadata is a Decky Loader plugin:
 #   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
