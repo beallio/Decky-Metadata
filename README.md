@@ -176,20 +176,6 @@ contains a development ZIP. Its fixed tag is **not** an in-plugin updater
 source. The updater's **Receive development releases** option instead finds
 versioned `vX.Y.Z-dev.g<sha>` prereleases. Testing builds may be less stable.
 
-## Development and documentation
-
-- [Agent workflow](docs/runbooks/agent-workflow.md): current local checks,
-  device inspection, and package delivery.
-- [On-device verification](docs/runbooks/on-device-verification.md): required
-  live checks and explicit deployment/launch permissions.
-- [Compatibility behavior](docs/specs/compatibility-status.md): current
-  precedence, scopes, persistence, and lifecycle rules.
-
-Dated plans and session logs are historical records or research proposals,
-not a current backlog by default. Read their status notices before acting.
-Completed and superseded plans must not be launched again; their original
-paths and [review records](docs/review/) are retained for audit references.
-
 ## License and credits
 
 Decky Metadata is licensed under the [GNU General Public License v3.0 or later](LICENSE).
