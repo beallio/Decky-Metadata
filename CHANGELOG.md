@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-09-20
+
+Add configurable compatibility defaults for non-Steam games
+
 ### Added
 
 - **Library-wide compatibility defaults.** Choose Automatic, Verified,
@@ -11,7 +15,7 @@ All notable changes to this project are documented here in Keep a Changelog form
   applies to existing and new non-Steam shortcuts, including ones without
   saved metadata. Other shortcuts update immediately; the current Game Info
   game updates after its tab exits. Per-game choices now include **Use global
-  default** and **Follow Valve**.
+  default** and **Follow Valve**. Fixes [issue #12](https://github.com/beallio/Decky-Metadata/issues/12).
 - **Compatibility default scopes.** The **Apply default to** dropdown selects
   Steam-matched games, saved games without a Steam ID, all saved metadata, or
   all native non-Steam games. It uses the saved record and valid Steam ID, so
@@ -22,6 +26,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 - Place the compatibility scope separator below its explanation, directly above
   **Refresh metadata**.
+
+### Security
+
+- Update test and CI tooling so mock redirects stay inside allowed file-system
+  paths, uv downloads use verified checksums, and installs use safer defaults.
 
 ## [0.3.13] - 2026-09-07
 

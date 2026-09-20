@@ -69,10 +69,7 @@ scripts/check_tdd.sh              # pre-commit sanity check
 scripts/orchestration            # symlink -> agent-orchestration engine
 scripts/orchestration-hooks/      # project quality-gates + finalize-release
 orchestration.conf                # orchestration engine config (committed)
-docs/plans/                       # implementation plans (write before code)
 docs/specs/                       # durable behavior/interface specs
-docs/review/                      # review notes (also used by the engine)
-docs/agent_conversations/         # session summaries
 ```
 
 Never reference files that have not been confirmed through filesystem inspection.
@@ -138,14 +135,13 @@ Lifecycle for a modifying task:
 ANALYZE → PLAN → IMPLEMENT → VALIDATE → COMMIT → DOCUMENT
 ```
 
-- **PLAN:** for non-trivial work, create or update `docs/plans/<feature>.md`
-  (Problem Definition, Architecture Overview, Public Interfaces / data shapes,
-  Dependency Requirements, Validation Strategy). For agent-orchestrated runs the
-  plan lives at `docs/plans/<date>_<slug>.md`.
+- **PLAN:** keep non-trivial native plans in task state. For an orchestration run,
+  edit the private path returned by `scripts/orchestration/new-plan <slug> <title>`
+  and validate it with `scripts/orchestration/validate-plan <slug>`.
 - **VALIDATE:** run the quality gate (Section 6) and confirm it passes.
 - **COMMIT:** Conventional Commits, on a feature branch (Section 7).
-- **DOCUMENT:** update `README.md` when behavior/usage changes; record a session
-  summary in `docs/agent_conversations/` for implementation tasks.
+- **DOCUMENT:** update maintained product documentation when behavior or usage
+  changes; report progress and verification in chat, not a session-log file.
 
 For review-only tasks that do not modify files, stop after ANALYZE and report
 findings.
@@ -179,7 +175,7 @@ A modifying task is complete only when:
 [ ] pytest passes when tests/ exists
 [ ] README updated when behavior or usage changed
 [ ] caches/installs stayed under /tmp/Decky-Metadata
-[ ] session log recorded in docs/agent_conversations/
+[ ] progress and verification reported in chat
 [ ] on-device checks run for src/steam/ changes (see below)
 ```
 
@@ -345,35 +341,36 @@ are re-captured so GitHub's image proxy serves the updated images.
 
 # 8. Agent Orchestration (plan → implement → review → finalize)
 
-This repo is wired to the `agent-orchestration` engine via
-`scripts/orchestration` (symlink) and `orchestration.conf`
-(`ORCH_IMPLEMENTER="codex"`, `ORCH_BASE_BRANCH="main"`,
-`ORCH_TMP_ROOT="/tmp/Decky-Metadata"`).
+This repo uses `scripts/orchestration` and the effective settings from
+`orchestration.conf` plus `orchestration.conf.local`. Active plans and recovery data
+stay in private Git metadata by default. Project caches still use `/tmp/Decky-Metadata`.
 
 Two skills drive it:
 
-- **`orchestration-plan-author`** — scopes a request and writes a validated plan to
-  `docs/plans/<date>_<slug>.md`, then stops. Safe to auto-trigger.
-- **`/orchestrated-implementation`** — explicitly launches the background
-  implementer on a plan, drives review cycles (`docs/review/<slug>-review-NN.md`),
-  and merges the `feat/<slug>` branch on approval.
+- **`orchestration-plan-author`** creates and validates a private local plan, then
+  stops. It does not commit a plan or start implementation.
+- **`/orchestrated-implementation`** explicitly launches an authorized implementer,
+  submits review findings through stdin with the captured run, round, plan version,
+  and completed revision, and integrates the feature only after approval.
 
 The companion **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
 and can perform the full local stable cut required by §7. Its Mode B stops before
 the public push by default and publishes only with explicit per-invocation
 authorization.
 
-The engine's `finalize` calls `scripts/orchestration-hooks/{quality-gates,
-finalize-release}`. The base → `main` promotion is always a human gate. See
-`agent-orchestration/USAGE.md` for the conversational workflow.
+Run `scripts/orchestration/run-quality-gates` before marking a round complete.
+`finalize` checks the approved target and invokes the release hook unless local-only
+mode disables it. Base-to-`main` promotion remains a human gate. See the shared
+engine's `USAGE.md` for the conversational workflow.
 
 ---
 
-# 9. Documentation & Session Logging
+# 9. Documentation & Progress Reporting
 
-For implementation tasks, record a summary in `docs/agent_conversations/`
-(date, task objective, files modified, design decisions, validation results),
-e.g. `docs/agent_conversations/2026-06-28_integrate-governance.md`.
+Report concise progress, decisions, and verification in chat. Do not create or
+commit process plans, review files, conversation exports, session logs, or
+verification reports. Keep active plans, findings, and recovery data local.
+Preserve maintained product documentation, fixtures, and unique research.
 
 ---
 

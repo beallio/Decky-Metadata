@@ -35,7 +35,7 @@ jobs:
       - name: Install uv
         # setup-uv publishes only full-version tags, so pin the current release.
         # v10 runs on Node 24; explicit caching preserves this workflow's policy.
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           enable-cache: true
 
