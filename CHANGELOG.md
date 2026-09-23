@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Non-Steam games with saved metadata now load their running-game Steam Menu
+  icon even when Game Info requests it before Steam has cached the image. Fixes
+  [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).
+
 ## [0.3.14] - 2026-09-20
 
 Add configurable compatibility defaults for non-Steam games

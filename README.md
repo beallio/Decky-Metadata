@@ -140,6 +140,7 @@ are available. Links that do not apply to the game are left out.
 Decky Metadata works with custom artwork from SteamGridDB. Your Library Home
 icon, capsule, hero, and logo stay in place while Game Info receives the extra
 Steam details.
+The running game's icon also appears in the Steam Menu.
 
 ## See community posts and news
 

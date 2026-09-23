@@ -4554,6 +4554,20 @@ const installMetadataPatches = (unpatchers) => {
             return result;
         }));
     }
+    if (appStore?.GetIconURLForApp) {
+        unpatchers.push(patchMethod(appStore, "GetIconURLForApp", (_thisValue, original, args) => {
+            const overview = args[0];
+            if (overview?.icon_data !== undefined ||
+                !isNonSteamAppWithoutPatchedMethod(overview) ||
+                !metadataCache[String(overview.appid)]) {
+                return original(...args);
+            }
+            // Steam requests a shortcut's icon only while it has native shortcut
+            // identity. The menu can first render over Game Info before its route
+            // changes to AppRunning; do not let that render-only spoof skip hydration.
+            return withInCallTruth(metadataState, () => original(...args));
+        }));
+    }
     unpatchers.push(patchMethod(detailsProto, "GetDescriptions", (_thisValue, original, args) => {
         const appId = Number(args[0]);
         const overview = getOverview(appId);
