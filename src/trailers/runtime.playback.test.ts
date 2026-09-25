@@ -31,6 +31,7 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', fetchRep
     getElementById: () => null, querySelectorAll: () => [], querySelector: () => null,
   };
   const context = vm.createContext({ window, document, URL: urlType ?? URL, console, navigator: {}, AbortController,
+    TextEncoder, TextDecoder,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
   const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)}},
@@ -47,6 +48,15 @@ const movie = {
   dash_av1: 'https://steam.test/dash_av1.mpd',
 };
 const urls = (candidates) => Array.from(candidates, candidate => candidate.url.split('/').at(-1));
+const responseBody = (body, properties = {}) => {
+  const bytes = typeof body === 'string' ? new TextEncoder().encode(body) : body;
+  return {
+    ok: true,
+    body: new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } }),
+    headers: { get: name => name.toLowerCase() === 'content-length' ? String(bytes.byteLength) : null },
+    ...properties,
+  };
+};
 
 for (const [display, target, expected] of [
   [{ width: 1280, height: 800, dpr: 1 }, 800, 'dash_h264.mpd'],
@@ -92,7 +102,7 @@ test('Auto selects the highest available rendition below the display, then the s
 test('Declared direct files outrank adaptive only at an exact height; missing exact prefers adaptive', async () => {
   const h = setup({ quality: 720, fetchReply: async (_url, options) => {
     assert.equal(options.cache, 'default');
-    return { ok: true, json: async () => ({ 570: { data: { movies: [{ id: 11, mp4: { 720: 'https://steam.test/other.mp4' } }, movie] } } }) };
+    return responseBody(JSON.stringify({ 570: { data: { movies: [{ id: 11, mp4: { 720: 'https://steam.test/other.mp4' } }, movie] } } }));
   } });
   const result = await h.runtime.getTrailer(570);
   assert.equal(result.name, 'Fixture trailer');
@@ -133,10 +143,10 @@ test('A quality change aborts pending metadata without poisoning the next page a
   let release;
   let aborted = false;
   let requests = 0;
-  const response = { ok: true, json: async () => ({ 570: { data: { movies: [movie] } } }) };
+  const response = () => responseBody(JSON.stringify({ 570: { data: { movies: [movie] } } }));
   const h = setup({ fetchReply: (_url, options) => {
     requests++;
-    if (requests > 1) return Promise.resolve(response);
+    if (requests > 1) return Promise.resolve(response());
     options.signal.addEventListener('abort', () => { aborted = true; });
     return new Promise(resolve => { release = resolve; });
   } });
@@ -144,7 +154,7 @@ test('A quality change aborts pending metadata without poisoning the next page a
   const first = h.runtime.getTrailer(570);
   h.runtime.update({ enabled: true, audioEnabled: true, quality: 1080 }, 1);
   assert.equal(aborted, true);
-  release(response);
+  release(response());
   assert.equal((await first).ok, false);
   assert.equal(h.runtime.trailerCache.size, 0);
   assert.equal((await h.runtime.getTrailer(570)).ok, true);
@@ -241,9 +251,9 @@ test('A matched shortcut requests movies by Steam source ID and attaches only to
   const requested = [];
   const h = setup({ pageAppId, sourceAppId, fetchReply: async (url) => {
     requested.push(url);
-    return { ok: true, json: async () => ({ [sourceAppId]: { data: { movies: [
+    return responseBody(JSON.stringify({ [sourceAppId]: { data: { movies: [
       { id: 7, name: 'Matched trailer', highlight: true, mp4: { 720: 'https://steam.test/matched720.mp4' } },
-    ] } } }) };
+    ] } } }));
   } });
   class Hero {
     constructor() {
@@ -271,6 +281,47 @@ test('A matched shortcut requests movies by Steam source ID and attaches only to
   assert.equal(attached.target, hero);
   assert.equal(attached.appId, pageAppId);
   assert.equal(attached.candidates[0].url, 'https://steam.test/matched720.mp4');
+});
+
+test('A QAM hash keeps the current root-page trailer attached during a runtime scan', async () => {
+  const h = setup();
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = 'url(https://steam.test/steam/apps/570/library_hero.jpg)';
+      this.classList = { add() {}, remove() {} };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  const hero = new Hero();
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  let requests = 0;
+  h.runtime.getTrailer = async () => {
+    requests++;
+    return { ok: true, name: 'Fixture', candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] };
+  };
+  h.runtime.attachVideo = (target, appId, _candidates, _token, options) => {
+    const video = { isConnected: true, currentTime: 17 };
+    h.runtime.currentTarget = target;
+    h.runtime.currentAppId = appId;
+    h.runtime.currentMediaSignature = options.mediaSignature;
+    h.runtime.currentVideo = video;
+  };
+
+  await h.runtime.scan();
+  const video = h.runtime.currentVideo;
+  h.window.location.hash = '#quickaccess';
+  h.runtime.handleRouteChange();
+  await h.runtime.scan();
+
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(video.currentTime, 17);
+  assert.equal(requests, 1);
 });
 
 test('Native Steam pages use their own ID; subpages and mismatched heroes make no movie request', async () => {
@@ -304,7 +355,7 @@ test('Native Steam pages use their own ID; subpages and mismatched heroes make n
     const requested = [];
     const h = prepareHero(570, heroAppId, async url => {
       requested.push(url);
-      return { ok: true, json: async () => ({ 570: { data: { movies: [movie] } } }) };
+      return responseBody(JSON.stringify({ 570: { data: { movies: [movie] } } }));
     });
     h.window.location = new URL(`https://steamloopback.host${route}`);
     h.document.URL = h.window.location.href;
@@ -316,7 +367,7 @@ test('Native Steam pages use their own ID; subpages and mismatched heroes make n
   const requested = [];
   const h = prepareHero(570, 570, async url => {
     requested.push(url);
-    return { ok: true, json: async () => ({ 570: { data: { movies: [movie] } } }) };
+    return responseBody(JSON.stringify({ 570: { data: { movies: [movie] } } }));
   });
   await h.runtime.scan();
   assert.deepEqual(requested, ['https://store.steampowered.com/api/appdetails?appids=570&filters=movies']);
@@ -380,6 +431,7 @@ function adaptiveFixture({ sourceOpen = true, holdUrl, stallUpdate = false, quot
   };
   const urls = new Map(), segmentTimes = new Map(), requested = [], removed = [];
   let revoked = 0, allocations = 0, releaseHeld, heldSignal;
+  const initOffsets = [];
   class FixtureURL extends URL {
     static createObjectURL(source) { const url = `blob:fixture-${urls.size + 1}`; urls.set(url, source); return url; }
     static revokeObjectURL(url) { assert.ok(urls.delete(url)); revoked++; }
@@ -390,7 +442,10 @@ function adaptiveFixture({ sourceOpen = true, holdUrl, stallUpdate = false, quot
       if (this.source.readyState === 'ended') this.source.readyState = 'open';
       const url = new TextDecoder().decode(data);
       if (url === quotaAtUrl) throw new DOMException('Buffer quota exceeded', 'QuotaExceededError');
-      if (url.endsWith('/init')) this.initialized = true;
+      if (url.endsWith('/init')) {
+        this.initialized = true;
+        initOffsets.push(this.timestampOffset);
+      }
       else {
         const segment = segmentTimes.get(url);
         assert.ok(segment, `Known segment ${url}`);
@@ -464,10 +519,10 @@ function adaptiveFixture({ sourceOpen = true, holdUrl, stallUpdate = false, quot
     if (url === holdUrl) {
       heldSignal = signal;
       return new Promise(resolve => {
-        releaseHeld = () => resolve({ ok: true, arrayBuffer: async () => new TextEncoder().encode(url).buffer });
+        releaseHeld = () => resolve(responseBody(new TextEncoder().encode(url)));
       });
     }
-    return Promise.resolve({ ok: true, arrayBuffer: async () => new TextEncoder().encode(url).buffer });
+    return Promise.resolve(responseBody(new TextEncoder().encode(url)));
   };
   const { api, runtime } = setup({ mediaSourceType: FixtureMediaSource, urlType: FixtureURL, fetchReply, clock });
   const video = new FixtureVideo();
@@ -480,11 +535,168 @@ function adaptiveFixture({ sourceOpen = true, holdUrl, stallUpdate = false, quot
     get source() { return session.mediaSource; },
     get allocations() { return allocations; },
     get revoked() { return revoked; },
+    initOffsets,
     get failures() { return failures; },
     get heldSignal() { return heldSignal; },
     releaseHeld: () => releaseHeld?.(),
     flush };
 }
+
+test('DASH track timestamp correction is applied before init data is appended', async () => {
+  const h = adaptiveFixture();
+  const element = (localName, attributes = {}, children = []) => ({
+    localName,
+    children,
+    getAttribute: name => attributes[name] ?? null,
+    hasAttribute: name => Object.hasOwn(attributes, name),
+  });
+  const template = element('SegmentTemplate', {
+    timescale: '1000', duration: '2000', presentationTimeOffset: '1000', startNumber: '1',
+    initialization: 'init.mp4', media: 'segment-$Time$.m4s',
+  });
+  const representation = element('Representation', { id: 'video', bandwidth: '500000', height: '720' }, [template]);
+  const adaptation = element('AdaptationSet', {
+    contentType: 'video', mimeType: 'video/mp4', codecs: 'avc1.640029',
+  }, [representation]);
+  const period = element('Period', { duration: 'PT6S' }, [adaptation]);
+  const root = element('MPD', { type: 'static', mediaPresentationDuration: 'PT6S' }, [period]);
+  class ManifestParser {
+    parseFromString() {
+      return { documentElement: root, querySelector: () => null, getElementsByTagName: () => [] };
+    }
+  }
+  const parsed = setup({ domParserType: ManifestParser }).runtime.selectDashVariant(
+    '<MPD/>', 'https://steam.test/manifest.mpd');
+  assert.equal(parsed.tracks[0].timestampOffset, -1);
+  h.presentation.tracks[0].timestampOffset = parsed.tracks[0].timestampOffset;
+  await h.session.start();
+  assert.deepEqual(h.initOffsets.slice(0, 2), [-1, 0]);
+  h.session.dispose();
+});
+
+test('Changing trailer audio keeps the current media time and adaptive session', () => {
+  const h = setup();
+  const video = { isConnected: true, currentTime: 13.5, muted: false, defaultMuted: false, volume: 1,
+    classList: { contains: () => false } };
+  const session = { dispose: () => assert.fail('audio changes must not dispose MSE') };
+  h.runtime.currentVideo = video;
+  h.runtime.activeSession = session;
+  h.runtime.currentMediaReady = true;
+
+  h.runtime.setTrailerAudioEnabled(false, false);
+
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(video.currentTime, 13.5);
+  assert.equal(video.muted, true);
+  assert.equal(h.runtime.activeSession, session);
+});
+
+test('A runtime destroys all Metadata-owned resources when its controller owner disappears', async () => {
+  const h = setup();
+  let clearedScanTimer = false, disconnected = false, removedStyle = false;
+  const documentListeners = new Map();
+  const windowListeners = new Map();
+  const style = { id: 'decky-metadata-trailer-style', textContent: '', remove() { removedStyle = true; } };
+  h.window.setInterval = () => 41;
+  h.window.clearInterval = id => { if (id === 41) clearedScanTimer = true; };
+  h.window.addEventListener = (name, listener) => windowListeners.set(name, listener);
+  h.window.removeEventListener = name => windowListeners.delete(name);
+  h.document.body = {};
+  h.document.head = { appendChild() {} };
+  h.document.createElement = () => style;
+  h.document.getElementById = id => id === style.id ? style : null;
+  h.document.addEventListener = (name, listener) => documentListeners.set(name, listener);
+  h.document.removeEventListener = name => documentListeners.delete(name);
+  h.document.querySelectorAll = () => [];
+  h.context.MutationObserver = class {
+    observe() {}
+    disconnect() { disconnected = true; }
+  };
+  h.runtime.mount();
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  const video = { isConnected: true, pause() {}, removeAttribute() {}, load() {}, remove() { this.isConnected = false; } };
+  h.runtime.currentVideo = video;
+  h.window.__deckyMetadataTrailerOwner.active = false;
+
+  await h.runtime.scan();
+
+  assert.equal(h.runtime.destroyed, true);
+  assert.equal(h.window.__deckyMetadataTrailerRuntime, undefined);
+  assert.equal(video.isConnected, false);
+  assert.equal(clearedScanTimer, true);
+  assert.equal(disconnected, true);
+  assert.equal(removedStyle, true);
+  assert.equal(documentListeners.size, 0);
+  assert.equal(windowListeners.size, 0);
+});
+
+test('Media request validation rejects an unsafe redirect and an HTTP child URI', async () => {
+  const redirected = setup({ fetchReply: async () => ({
+    ok: true, redirected: true, url: 'https://127.0.0.1/private.m3u8',
+    body: null,
+  }) });
+  const candidate = { controller: new AbortController(), isCurrent: () => true };
+  await assert.rejects(redirected.runtime.fetchText('https://steam.test/master.m3u8', candidate), /URL|redirect/i);
+
+  const h = setup();
+  assert.throws(() => h.runtime.selectHlsVariant(`#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=1000,CODECS="avc1.640029",RESOLUTION=1280x720
+http://127.0.0.1/private.m3u8`,
+  'https://steam.test/master.m3u8'), /supported video/i);
+});
+
+test('Movie metadata cannot supply an HTTP or private direct candidate', async () => {
+  const h = setup({ fetchReply: async () => responseBody(JSON.stringify({ 570: { data: { movies: [{
+    id: 5,
+    mp4: {
+      720: 'http://cdn.steam.test/movie720.mp4',
+      1080: 'https://127.0.0.1/private.mp4',
+    },
+  }] } } })) });
+
+  const result = await h.runtime.getTrailer(570);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.candidates, undefined);
+});
+
+test('An oversized short segment fails before the response body is read', async () => {
+  let bodyRead = false;
+  const h = setup({ fetchReply: async () => ({
+    ok: true,
+    headers: { get: name => name.toLowerCase() === 'content-length' ? String(32 * 1024 * 1024 + 1) : null },
+    body: null,
+    arrayBuffer: async () => { bodyRead = true; return new ArrayBuffer(0); },
+  }) });
+  const candidate = { controller: new AbortController(), isCurrent: () => true };
+  const session = new h.api.AdaptiveSession({ pause() {}, removeAttribute() {}, load() {} },
+    { duration: 3, tracks: [] }, candidate);
+  await assert.rejects(session.fetchBytes('https://steam.test/short.m4s', 0, true), /too large|size/i);
+  assert.equal(bodyRead, false);
+});
+
+test('An oversized chunked short segment is cancelled at the streaming byte cap', async () => {
+  let chunksRead = 0, cancelled = false;
+  const h = setup({ fetchReply: async () => ({
+    ok: true,
+    headers: { get: () => null },
+    body: new ReadableStream({
+      pull(controller) {
+        chunksRead++;
+        controller.enqueue(new Uint8Array(8 * 1024 * 1024));
+      },
+      cancel() { cancelled = true; },
+    }),
+  }) });
+  const candidate = { controller: new AbortController(), isCurrent: () => true };
+  const session = new h.api.AdaptiveSession({ pause() {}, removeAttribute() {}, load() {} },
+    { duration: 3, tracks: [] }, candidate);
+
+  await assert.rejects(session.fetchBytes('https://steam.test/short.m4s', 0, true), /too large/i);
+
+  assert.ok(chunksRead >= 5 && chunksRead <= 6);
+  assert.equal(cancelled, true);
+});
 
 test('One A/V MediaSource primes only its forward window, evicts, seeks and loops pinned opening segments', async () => {
   const h = adaptiveFixture();
@@ -614,7 +826,7 @@ test('QuotaExceededError after eviction fails the active candidate once', async 
 
 test('Unsupported Steam HLS source falls back to a declared direct file, not a guessed URL', async () => {
   const direct = 'https://steam.test/declared.mp4';
-  const h = setup({ fetchReply: async () => ({ ok: true, text: async () => '#EXTM3U\n#EXT-X-ENDLIST' }) });
+  const h = setup({ fetchReply: async () => responseBody('#EXTM3U\n#EXT-X-ENDLIST') });
   const classes = new Set();
   const target = { classList: { add: (...names) => names.forEach(name => classes.add(name)),
     remove: (...names) => names.forEach(name => classes.delete(name)) },

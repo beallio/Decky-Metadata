@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import http.client
 import json
 import os
 import socket
@@ -11,12 +12,15 @@ import struct
 import threading
 import time
 import urllib.error
-import urllib.request
 from typing import Any
 from urllib.parse import urlparse
 
 MAX_EVALUATION_BYTES = 512 * 1024
 MAX_RESPONSE_FRAME_BYTES = 16 * 1024 * 1024
+MAX_DISCOVERY_BYTES = 1024 * 1024
+MAX_UPGRADE_HEADER_BYTES = 64 * 1024
+DISCOVERY_TIMEOUT_SECONDS = 3
+UPGRADE_TIMEOUT_SECONDS = 5
 
 
 class BigPictureEvaluator:
@@ -24,6 +28,7 @@ class BigPictureEvaluator:
         self._unloading = False
         self._last_debugger_warning = 0.0
         self._active_cdp_sockets: set[socket.socket] = set()
+        self._active_discovery_connections: set[http.client.HTTPConnection] = set()
         self._active_cdp_lock = threading.Lock()
         self._logger = logger
 
@@ -35,6 +40,9 @@ class BigPictureEvaluator:
         with self._active_cdp_lock:
             self._unloading = True
             sockets = tuple(self._active_cdp_sockets)
+            connections = tuple(self._active_discovery_connections)
+        for connection in connections:
+            self._interrupt_discovery_connection(connection)
         for sock in sockets:
             try:
                 sock.shutdown(socket.SHUT_RDWR)
@@ -104,8 +112,32 @@ class BigPictureEvaluator:
         }
 
     def _find_big_picture_target(self) -> dict[str, Any] | None:
-        with urllib.request.urlopen("http://127.0.0.1:8080/json", timeout=3) as response:
-            targets = json.loads(response.read().decode("utf-8"))
+        connection = http.client.HTTPConnection(
+            "127.0.0.1", 8080, timeout=DISCOVERY_TIMEOUT_SECONDS
+        )
+        with self._active_cdp_lock:
+            if self._unloading:
+                connection.close()
+                raise ConnectionError("Plugin is unloading")
+            self._active_discovery_connections.add(connection)
+        deadline = time.monotonic() + DISCOVERY_TIMEOUT_SECONDS
+        deadline_interrupt = threading.Timer(
+            DISCOVERY_TIMEOUT_SECONDS,
+            self._interrupt_discovery_connection,
+            args=(connection,),
+        )
+        deadline_interrupt.daemon = True
+        deadline_interrupt.start()
+        try:
+            connection.request("GET", "/json")
+            response = connection.getresponse()
+            body = self._read_discovery_body(response, connection, deadline)
+            targets = json.loads(body.decode("utf-8"))
+        finally:
+            deadline_interrupt.cancel()
+            with self._active_cdp_lock:
+                self._active_discovery_connections.discard(connection)
+            connection.close()
 
         def score(target: dict[str, Any]) -> int:
             title = (target.get("title") or "").lower()
@@ -126,6 +158,45 @@ class BigPictureEvaluator:
         ]
         candidates.sort(key=score, reverse=True)
         return candidates[0] if candidates and score(candidates[0]) > 0 else None
+
+    @staticmethod
+    def _read_discovery_body(response: Any, connection: http.client.HTTPConnection,
+                             deadline: float) -> bytes:
+        length_header = response.getheader("Content-Length")
+        if length_header is not None:
+            try:
+                if int(length_header) > MAX_DISCOVERY_BYTES:
+                    raise ValueError("DevTools discovery response is too large")
+            except ValueError as error:
+                if "too large" in str(error):
+                    raise
+                raise ValueError("Invalid DevTools discovery length") from error
+        data = bytearray()
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("DevTools discovery timed out")
+            if connection.sock is not None:
+                connection.sock.settimeout(remaining)
+            chunk = response.read(min(8192, MAX_DISCOVERY_BYTES + 1 - len(data)))
+            if not chunk:
+                return bytes(data)
+            data.extend(chunk)
+            if len(data) > MAX_DISCOVERY_BYTES:
+                raise ValueError("DevTools discovery response is too large")
+
+    @staticmethod
+    def _interrupt_discovery_connection(connection: http.client.HTTPConnection) -> None:
+        sock = connection.sock
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        try:
+            connection.close()
+        except OSError:
+            pass
 
     def _websocket_json_request(self, ws_url: str, payload: dict[str, Any]) -> dict[str, Any]:
         parsed = urlparse(ws_url)
@@ -169,7 +240,12 @@ class BigPictureEvaluator:
             "\r\n"
         )
         sock.sendall(request.encode("ascii"))
-        response = self._recv_until(sock, b"\r\n\r\n")
+        response = self._recv_until(
+            sock,
+            b"\r\n\r\n",
+            time.monotonic() + UPGRADE_TIMEOUT_SECONDS,
+            max_bytes=MAX_UPGRADE_HEADER_BYTES,
+        )
         if b" 101 " not in response.split(b"\r\n", 1)[0]:
             raise ConnectionError("DevTools WebSocket handshake failed")
 
@@ -233,11 +309,18 @@ class BigPictureEvaluator:
         return bytes(data)
 
     @classmethod
-    def _recv_until(cls, sock: socket.socket, marker: bytes) -> bytes:
+    def _recv_until(cls, sock: socket.socket, marker: bytes, deadline: float,
+                    max_bytes: int = MAX_UPGRADE_HEADER_BYTES) -> bytes:
         data = bytearray()
         while marker not in data:
-            chunk = sock.recv(4096)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("DevTools WebSocket upgrade header timed out")
+            sock.settimeout(remaining)
+            chunk = sock.recv(min(4096, max_bytes + 1 - len(data)))
             if not chunk:
                 raise ConnectionError("Unexpected socket close")
             data.extend(chunk)
+            if len(data) > max_bytes:
+                raise ValueError("DevTools WebSocket upgrade header is too large")
         return bytes(data)

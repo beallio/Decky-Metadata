@@ -241,6 +241,7 @@ export const Content = () => {
     useState<HTMLDivElement | null>(null);
   const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] =
     useState<HTMLDivElement | null>(null);
+  const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -251,6 +252,10 @@ export const Content = () => {
   const setCompatibilityDefaultScopeControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setCompatibilityDefaultScopeControlState(element);
+  }, []);
+  const setTrailerQualityControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setTrailerQualityControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -282,7 +287,7 @@ export const Content = () => {
   }, []);
 
   useEffect(() => {
-    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -300,7 +305,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -328,18 +333,15 @@ export const Content = () => {
   }, []);
 
   useEffect(() => {
-    if (
-      !isCompatibilityDropdownReturnReady()
-      || !(compatibilityDropdownReturnOrigin() === "scope"
-        ? compatibilityDefaultScopeControl
-        : compatibilityDefaultControl)
-      || !compatibilityDefaultLoaded
-      || compatibilityDefaultBusy
-      || compatibilityDefaultScopeBusy
-    ) return;
-    const control = compatibilityDropdownReturnOrigin() === "scope"
+    const origin = compatibilityDropdownReturnOrigin();
+    const control = origin === "scope"
       ? compatibilityDefaultScopeControl
-      : compatibilityDefaultControl;
+      : origin === "quality" ? trailerQualityControl : compatibilityDefaultControl;
+    const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+    const busy = origin === "quality"
+      ? trailerSnapshot.busy
+      : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+    if (!isCompatibilityDropdownReturnReady() || !control || !loaded || busy) return;
     const settleFrames = isCompatibilityDropdownSelectionReturn()
       ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
       : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
@@ -352,9 +354,10 @@ export const Content = () => {
       if (
         cancelled
         || !isCompatibilityDropdownReturnReady()
-        || !compatibilityDefaultLoaded
-        || compatibilityDefaultBusy
-        || compatibilityDefaultScopeBusy
+        || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
+        || (origin === "quality"
+          ? trailerSnapshot.busy
+          : compatibilityDefaultBusy || compatibilityDefaultScopeBusy)
       ) return;
       attempts += 1;
       if (attempts <= settleFrames) {
@@ -395,6 +398,9 @@ export const Content = () => {
     compatibilityDefaultScopeControl,
     compatibilityDefaultLoaded,
     compatibilityDropdownReturnVersion,
+    trailerQualityControl,
+    trailerSnapshot.busy,
+    trailerSnapshot.settingsLoaded,
   ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
@@ -799,7 +805,15 @@ export const Content = () => {
         state={trailerSnapshot}
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
-        onQualityChange={(quality) => void trailerController.setQuality(quality)}
+        onQualityChange={async (quality) => {
+          const saved = await trailerController.setQuality(quality);
+          if (saved && noteCompatibilityDropdownSelectionSaved()) {
+            setCompatibilityDropdownReturnVersion((version) => version + 1);
+          }
+          return saved;
+        }}
+        onQualityMenuWillOpen={() => requestCompatibilityDropdownReturn("quality")}
+        onQualityControlRef={setTrailerQualityControl}
       />
       <DelistedIndexSection
         countText={delistedCountText}

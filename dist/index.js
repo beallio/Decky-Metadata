@@ -288,12 +288,12 @@ const qualityOptions = [
     { data: 1440, label: "1440p" },
     { data: 2160, label: "2160p" },
 ];
-function GameTrailersSection({ state, onEnabledChange, onAudioChange, onQualityChange, }) {
+function GameTrailersSection({ state, onEnabledChange, onAudioChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const disabled = !state.settingsLoaded || state.busy;
     const display = state.displayWidth && state.displayHeight
         ? `${state.displayWidth} × ${state.displayHeight} pixels`
         : "Unavailable";
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers start muted, then use this setting when playback is ready.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onChange: (option) => onQualityChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers start muted, then use this setting when playback is ready.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -8662,7 +8662,8 @@ const useNonSteamGames = () => {
 const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
 const parseTrailerRootRoute = (route) => {
     const routeText = String(route || "").trim();
-    if (routeText.includes("#") || /\b(?:tab|page|section|subpage)=/i.test(routeText))
+    const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+    if (hashes.some((hash) => hash && hash !== "quickaccess") || /\b(?:tab|page|section|subpage)=/i.test(routeText))
         return null;
     const first = routeText.split(/\s+/, 1)[0];
     if (!first)
@@ -8672,7 +8673,8 @@ const parseTrailerRootRoute = (route) => {
         const parsed = new URL(first, "https://steamloopback.host/");
         if (parsed.hostname !== "steamloopback.host")
             return null;
-        if (parsed.hash || ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key)))
+        if ((parsed.hash && parsed.hash.toLowerCase() !== "#quickaccess") ||
+            ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key)))
             return null;
         path = parsed.pathname.replace(/^\/routes(?=\/)/i, "");
     }
@@ -8750,7 +8752,84 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
+    const MAX_METADATA_BYTES = 1024 * 1024;
+    const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
+    const MAX_INIT_BYTES = 4 * 1024 * 1024;
+    const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
     const translations = injectedTranslations || { en: {} };
+    const safeMediaUrl = (value, base) => {
+        if (typeof value !== "string" || !value.trim())
+            return null;
+        let parsed;
+        try {
+            parsed = base ? new URL(value, base) : new URL(value);
+        }
+        catch {
+            return null;
+        }
+        const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || !host ||
+            host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+            host.endsWith(".internal") || host.endsWith(".lan") || host.endsWith(".home") ||
+            host.endsWith(".onion") || /^\[.*\]$/.test(host) || /^\d+(?:\.\d+){0,3}$/.test(host))
+            return null;
+        return parsed.href;
+    };
+    const readBoundedBody = async (response, maximumBytes, asText) => {
+        const declaredLength = Number(response.headers?.get?.("content-length"));
+        if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) {
+            throw new Error("Steam media response is too large");
+        }
+        const reader = response.body?.getReader?.();
+        if (!reader) {
+            if (!Number.isFinite(declaredLength) || declaredLength < 0) {
+                throw new Error("Steam media response has no bounded body");
+            }
+            const fallback = asText ? await response.text() : await response.arrayBuffer();
+            const bytes = asText ? new TextEncoder().encode(fallback) : new Uint8Array(fallback);
+            if (bytes.byteLength > maximumBytes)
+                throw new Error("Steam media response is too large");
+            return asText ? fallback : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        }
+        const chunks = [];
+        let size = 0;
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done)
+                    break;
+                size += value.byteLength;
+                if (size > maximumBytes) {
+                    await reader.cancel();
+                    throw new Error("Steam media response is too large");
+                }
+                chunks.push(value);
+            }
+        }
+        catch (error) {
+            try {
+                await reader.cancel();
+            }
+            catch { }
+            throw error;
+        }
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return asText ? new TextDecoder().decode(bytes) : bytes.buffer;
+    };
+    const validateResponseUrl = (response, requestedUrl) => {
+        if (response.redirected === true)
+            throw new Error("Steam media redirects are not allowed");
+        if (!response.url)
+            return;
+        const finalUrl = safeMediaUrl(response.url);
+        if (!finalUrl || finalUrl !== requestedUrl)
+            throw new Error("Steam media response URL changed");
+    };
     const normalizeSettings = (value) => {
         const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
         const qualityOptions = ["auto", 720, 1080, 1440, 2160];
@@ -8817,11 +8896,14 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         let path;
         try {
             const routeText = String(value || "").trim();
-            if (routeText.includes("#") || /\b(?:tab|page|section|subpage)=/i.test(routeText))
+            const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+            if (hashes.some((hash) => hash && hash !== "quickaccess") ||
+                /\b(?:tab|page|section|subpage)=/i.test(routeText))
                 return undefined;
             const route = new URL(routeText.split(/\s+/, 1)[0], window.location?.href ||
                 "https://steamloopback.host/");
-            if (route.hash || ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key)))
+            if ((route.hash && route.hash.toLowerCase() !== "#quickaccess") ||
+                ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key)))
                 return undefined;
             path = route.pathname;
         }
@@ -9038,6 +9120,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         async fetchBytes(url, generation, segment = false) {
             this.assertCurrent();
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl)
+                throw new Error("Steam media URL is not safe HTTPS");
             const controller = new AbortController();
             const request = { controller, generation, segment };
             this.requests.add(request);
@@ -9045,10 +9130,11 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.candidate.controller.signal.addEventListener("abort", cancel, { once: true });
             const timeout = window.setTimeout(() => controller.abort(), 12000);
             try {
-                const response = await fetch(url, { signal: controller.signal, cache: "default" });
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
                 if (!response.ok)
-                    throw new Error(`HTTP ${response.status}: ${url}`);
-                const data = await response.arrayBuffer();
+                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const data = await readBoundedBody(response, segment ? MAX_SEGMENT_BYTES : MAX_INIT_BYTES, false);
                 this.assertCurrent();
                 if (segment && generation !== this.generation) {
                     const error = new Error("Obsolete seek request");
@@ -9096,6 +9182,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.tracks = this.presentation.tracks.map((track) => {
                     const buffer = this.mediaSource.addSourceBuffer(track.mimeType);
                     buffer.mode = "segments";
+                    const timestampOffset = Number(track.timestampOffset ?? 0);
+                    if (!Number.isFinite(timestampOffset))
+                        throw new Error("Invalid media timestamp offset");
+                    buffer.timestampOffset = timestampOffset;
                     return { track, buffer, appended: new Set(),
                         pinned: new Set(track.segments.flatMap((segment, index) => segment.start < 8 ? [index] : [])) };
                 });
@@ -9589,8 +9679,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 return;
             const owner = findOwnerRecord();
             if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
-                this.cleanupVideo(true);
-                this.status = "Metadata trailer owner is unavailable";
+                this.destroy();
+                if (window[runtimeKey] === this)
+                    delete window[runtimeKey];
                 return;
             }
             if (Number.isSafeInteger(owner.settingsRevision) && owner.settingsRevision > this.settingsRevision) {
@@ -9685,12 +9776,14 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.metadataController = controller;
             const timeout = window.setTimeout(() => controller.abort(), 9000);
             try {
-                const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`, {
-                    signal: controller.signal, cache: "default"
+                const requestUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`;
+                const response = await fetch(requestUrl, {
+                    signal: controller.signal, cache: "default", redirect: "error"
                 });
+                validateResponseUrl(response, requestUrl);
                 if (!response.ok)
                     throw new Error(`HTTP ${response.status}`);
-                const payload = await response.json();
+                const payload = JSON.parse(await readBoundedBody(response, MAX_METADATA_BYTES, true));
                 if (controller.signal.aborted)
                     throw new Error("Steam metadata request stopped");
                 const movies = payload?.[String(appId)]?.data?.movies ?? [];
@@ -9703,17 +9796,12 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 const add = (url, format, label = "") => {
                     if (typeof url !== "string")
                         return;
-                    try {
-                        const parsed = new URL(url);
-                        if (parsed.protocol !== "https:" && parsed.protocol !== "http:")
-                            return;
-                    }
-                    catch {
+                    const safeUrl = safeMediaUrl(url);
+                    if (!safeUrl)
                         return;
-                    }
                     const height = Number(String(label).match(/(?:^|[^0-9])(2160|1440|1080|720|480|360)(?:p|[^0-9]|$)/i)?.[1]
                         ?? url.match(/movie[_-]?(2160|1440|1080|720|480|360)/i)?.[1] ?? 0);
-                    candidates.push({ url, format, height });
+                    candidates.push({ url: safeUrl, format, height });
                 };
                 for (const format of ["mp4", "webm"]) {
                     if (!movie[format] || typeof movie[format] !== "object")
@@ -9747,6 +9835,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             const target = this.targetHeight;
             const formatRank = { mp4: 0, webm: 1, dash_h264: 0, hls_h264: 1, dash_av1: 2 };
             const ranked = candidates.filter((candidate) => {
+                if (!safeMediaUrl(candidate.url))
+                    return false;
                 if (candidate.format !== "dash_av1")
                     return true;
                 return typeof MediaSource !== "undefined" &&
@@ -9962,6 +10052,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             await this.playAdaptive(video, presentation, candidate);
         }
         async fetchText(url, candidate) {
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl)
+                throw new Error("Steam manifest URL is not safe HTTPS");
             const controller = new AbortController();
             const cancel = () => controller.abort();
             candidate.controller.signal.addEventListener("abort", cancel, { once: true });
@@ -9969,10 +10062,11 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             try {
                 if (!candidate.isCurrent())
                     throw new Error("Trailer request changed");
-                const response = await fetch(url, { signal: controller.signal, cache: "default" });
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
                 if (!response.ok)
-                    throw new Error(`HTTP ${response.status}: ${url}`);
-                const text = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const text = await readBoundedBody(response, MAX_MANIFEST_BYTES, true);
                 if (controller.signal.aborted || !candidate.isCurrent())
                     throw new Error("Trailer request changed");
                 return text;
@@ -10054,7 +10148,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     continue;
                 const height = Number(attributes.RESOLUTION?.match(/^\d+x(\d+)$/)?.[1] || 0);
                 const bandwidth = Number(attributes.BANDWIDTH || 0);
-                variants.push({ url: new URL(uri, masterUrl).href, mimeType: videoMimeType,
+                const resolvedUrl = safeMediaUrl(uri, masterUrl);
+                if (!resolvedUrl)
+                    continue;
+                variants.push({ url: resolvedUrl, mimeType: videoMimeType,
                     height, bandwidth, audioGroup: attributes.AUDIO, codecs });
             }
             if (!variants.length)
@@ -10070,7 +10167,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 const mimeType = `audio/mp4; codecs="${codec}"`;
                 if (!MediaSource.isTypeSupported(mimeType))
                     throw new Error("Unsupported HLS audio codec");
-                selected.audio = { url: new URL(rendition.URI, masterUrl).href, mimeType };
+                const audioUrl = safeMediaUrl(rendition.URI, masterUrl);
+                if (!audioUrl)
+                    throw new Error("HLS audio URL is not safe HTTPS");
+                selected.audio = { url: audioUrl, mimeType };
             }
             return selected;
         }
@@ -10096,7 +10196,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 throw new Error("DASH presentation duration is invalid");
             const resolveBase = (node, base) => {
                 const relative = children(node, "BaseURL")[0]?.textContent?.trim();
-                return relative ? new URL(relative, base).href : base;
+                const resolved = relative ? safeMediaUrl(relative, base) : safeMediaUrl(base);
+                if (!resolved)
+                    throw new Error("DASH BaseURL is not safe HTTPS");
+                return resolved;
             };
             const periodBase = resolveBase(period, resolveBase(root, manifestUrl));
             const videos = [], audio = [];
@@ -10160,9 +10263,13 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     }
                     if (!segments.length)
                         continue;
+                    const initUrl = safeMediaUrl(this.expandDashTemplate(initTemplate, representationId, bandwidth), base);
+                    if (!initUrl)
+                        continue;
                     const track = {
                         kind: isAudio ? "audio" : "video", mimeType,
-                        initUrl: new URL(this.expandDashTemplate(initTemplate, representationId, bandwidth), base).href,
+                        timestampOffset: -spec.offset / spec.timescale,
+                        initUrl,
                         segments
                     };
                     const entry = { track, height, bandwidth };
@@ -10192,8 +10299,11 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 const start = Math.max(0, (tick - offset) / timescale);
                 const end = Math.min(duration, (endTick - offset) / timescale);
                 if (Number.isFinite(start) && Number.isFinite(end) && end > start && start < duration) {
+                    const url = safeMediaUrl(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base);
+                    if (!url)
+                        throw new Error("DASH segment URL is not safe HTTPS");
                     segments.push({
-                        url: new URL(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base).href,
+                        url,
                         start, end
                     });
                 }
@@ -10271,7 +10381,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     if (!attributes.URI || attributes.BYTERANGE || initUrl || segments.length) {
                         throw new Error("Invalid HLS initialization segment");
                     }
-                    initUrl = new URL(attributes.URI, mediaUrl).href;
+                    initUrl = safeMediaUrl(attributes.URI, mediaUrl);
+                    if (!initUrl)
+                        throw new Error("HLS initialization URL is not safe HTTPS");
                 }
                 else if (line.startsWith("#EXTINF:")) {
                     if (pendingDuration !== undefined || ended)
@@ -10288,7 +10400,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     const end = duration + pendingDuration;
                     if (!Number.isFinite(end) || end <= duration || segments.length >= 100000)
                         throw new Error("Invalid HLS timeline");
-                    segments.push({ url: new URL(line, mediaUrl).href, start: duration, end });
+                    const url = safeMediaUrl(line, mediaUrl);
+                    if (!url)
+                        throw new Error("HLS segment URL is not safe HTTPS");
+                    segments.push({ url, start: duration, end });
                     duration = end;
                     pendingDuration = undefined;
                 }
@@ -10469,6 +10584,12 @@ class TrailerController {
             writable: true,
             value: { ...DEFAULT_TRAILER_SETTINGS }
         });
+        Object.defineProperty(this, "confirmedSettings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: { ...DEFAULT_TRAILER_SETTINGS }
+        });
         Object.defineProperty(this, "settingsLoaded", {
             enumerable: true,
             configurable: true,
@@ -10480,6 +10601,18 @@ class TrailerController {
             configurable: true,
             writable: true,
             value: false
+        });
+        Object.defineProperty(this, "pendingSettingsWrites", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "settingsTransactionId", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
         });
         Object.defineProperty(this, "settingsError", {
             enumerable: true,
@@ -10631,6 +10764,8 @@ class TrailerController {
             return;
         this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
         this.mounted = true;
+        this.pendingSettingsWrites = 0;
+        this.settingsBusy = false;
         this.destroyOlderRuntimes();
         this.publishOwner();
         this.refreshAudioListeners();
@@ -10726,6 +10861,7 @@ class TrailerController {
             if (!this.mounted)
                 return;
             this.settings = loaded;
+            this.confirmedSettings = { ...loaded };
             this.settingsLoaded = true;
             this.settingsError = "";
             this.settingsRevision += 1;
@@ -10743,7 +10879,7 @@ class TrailerController {
         }
     }
     async updateSettings(change) {
-        if (!this.mounted || !this.settingsLoaded || this.settingsBusy)
+        if (!this.mounted || !this.settingsLoaded)
             return false;
         const previous = { ...this.settings };
         const next = normalizeSettings({ ...this.settings, ...change });
@@ -10751,10 +10887,12 @@ class TrailerController {
             return true;
         }
         this.settings = next;
+        const ownerId = this.ownerId;
+        const transactionId = ++this.settingsTransactionId;
+        this.pendingSettingsWrites += 1;
         this.settingsBusy = true;
         this.settingsError = "";
         this.settingsRevision += 1;
-        const revision = this.settingsRevision;
         this.publishOwner();
         const direct = this.updateReachableRuntimes();
         this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
@@ -10765,28 +10903,38 @@ class TrailerController {
         const save = this.settingsSaveQueue.then(async () => {
             await setTrailerSettings(next);
         });
-        this.settingsSaveQueue = save.catch(() => undefined);
+        this.settingsSaveQueue = save.then(() => {
+            if (this.ownsMount(ownerId))
+                this.confirmedSettings = { ...next };
+        }, () => undefined);
         try {
             await save;
         }
         catch (error) {
             succeeded = false;
-            if (this.settingsRevision === revision) {
-                this.settings = previous;
+            if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
+                this.settings = { ...this.confirmedSettings };
                 this.settingsRevision += 1;
                 this.publishOwner();
                 this.updateReachableRuntimes();
+                this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
+                this.status = "Trailer settings were restored";
             }
-            this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
-            this.status = "Trailer settings were restored";
         }
         finally {
-            this.settingsBusy = false;
-            this.emit();
+            if (this.ownsMount(ownerId)) {
+                this.pendingSettingsWrites = Math.max(0, this.pendingSettingsWrites - 1);
+                this.settingsBusy = this.pendingSettingsWrites > 0;
+                this.emit();
+            }
         }
-        if (succeeded && next.enabled)
+        if (succeeded && this.ownsMount(ownerId) && next.enabled)
             void this.poll();
         return succeeded;
+    }
+    ownsMount(ownerId) {
+        const owner = window[OWNER_KEY];
+        return this.mounted && this.ownerId === ownerId && owner?.ownerId === ownerId && owner.active;
     }
     publishOwner() {
         const record = {
@@ -10850,6 +10998,11 @@ class TrailerController {
             return { identity: null, status: "Open a game's main Steam Library page" };
         if (pageAppId !== this.pageAppId) {
             this.pageAppId = pageAppId;
+            this.pageOverview = null;
+        }
+        if (Number(this.pageOverview?.appid) !== pageAppId) {
+            // Steam can hydrate the native overview after the route becomes visible.
+            // This is a direct AppID lookup; do not scan every app on healthy polls.
             this.pageOverview = getNativeOverview(pageAppId);
         }
         if (!this.pageOverview || Number(this.pageOverview?.appid) !== pageAppId) {
@@ -11165,6 +11318,7 @@ const Content = () => {
     const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
     const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
+    const [trailerQualityControl, setTrailerQualityControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
@@ -11176,6 +11330,11 @@ const Content = () => {
         if (!element)
             noteCompatibilityDropdownControlUnmounted();
         setCompatibilityDefaultScopeControlState(element);
+    }, []);
+    const setTrailerQualityControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setTrailerQualityControlState(element);
     }, []);
     const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
         const shared = compatibilityPolicySaveSnapshot();
@@ -11198,7 +11357,7 @@ const Content = () => {
             : "");
     }, []);
     SP_REACT.useEffect(() => {
-        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl;
+        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl;
         if (!mountedControl)
             return;
         const qamDocument = mountedControl.ownerDocument;
@@ -11220,7 +11379,7 @@ const Content = () => {
         qamDocument.addEventListener("visibilitychange", observeVisibility);
         observeVisibility();
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl]);
+    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -11247,17 +11406,16 @@ const Content = () => {
         }
     }, []);
     SP_REACT.useEffect(() => {
-        if (!isCompatibilityDropdownReturnReady()
-            || !(compatibilityDropdownReturnOrigin() === "scope"
-                ? compatibilityDefaultScopeControl
-                : compatibilityDefaultControl)
-            || !compatibilityDefaultLoaded
-            || compatibilityDefaultBusy
-            || compatibilityDefaultScopeBusy)
-            return;
-        const control = compatibilityDropdownReturnOrigin() === "scope"
+        const origin = compatibilityDropdownReturnOrigin();
+        const control = origin === "scope"
             ? compatibilityDefaultScopeControl
-            : compatibilityDefaultControl;
+            : origin === "quality" ? trailerQualityControl : compatibilityDefaultControl;
+        const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+        const busy = origin === "quality"
+            ? trailerSnapshot.busy
+            : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+        if (!isCompatibilityDropdownReturnReady() || !control || !loaded || busy)
+            return;
         const settleFrames = isCompatibilityDropdownSelectionReturn()
             ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
             : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
@@ -11269,9 +11427,10 @@ const Content = () => {
             frame = null;
             if (cancelled
                 || !isCompatibilityDropdownReturnReady()
-                || !compatibilityDefaultLoaded
-                || compatibilityDefaultBusy
-                || compatibilityDefaultScopeBusy)
+                || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
+                || (origin === "quality"
+                    ? trailerSnapshot.busy
+                    : compatibilityDefaultBusy || compatibilityDefaultScopeBusy))
                 return;
             attempts += 1;
             if (attempts <= settleFrames) {
@@ -11314,6 +11473,9 @@ const Content = () => {
         compatibilityDefaultScopeControl,
         compatibilityDefaultLoaded,
         compatibilityDropdownReturnVersion,
+        trailerQualityControl,
+        trailerSnapshot.busy,
+        trailerSnapshot.settingsLoaded,
     ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
@@ -11669,7 +11831,13 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onQualityChange: (quality) => void trailerController.setQuality(quality) }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onQualityChange: async (quality) => {
+                    const saved = await trailerController.setQuality(quality);
+                    if (saved && noteCompatibilityDropdownSelectionSaved()) {
+                        setCompatibilityDropdownReturnVersion((version) => version + 1);
+                    }
+                    return saved;
+                }, onQualityMenuWillOpen: () => requestCompatibilityDropdownReturn("quality"), onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*

@@ -204,6 +204,7 @@ const makeFocusControls = () => {
   });
   const categoryButton = makeButton();
   const scopeButton = makeButton();
+  const qualityButton = makeButton();
   const control = (button: typeof categoryButton) => ({
     ownerDocument: qamDocument,
     querySelector: vi.fn(() => button),
@@ -212,6 +213,8 @@ const makeFocusControls = () => {
   const scopeA = control(scopeButton);
   const categoryB = control(categoryButton);
   const scopeB = control(scopeButton);
+  const qualityA = control(qualityButton);
+  const qualityB = control(qualityButton);
   ui.getGamepadNavigationTrees.mockReturnValue([{
     Root: {
       m_rgChildren: [
@@ -226,6 +229,13 @@ const makeFocusControls = () => {
           Element: scopeButton,
           BTakeFocus: () => {
             scopeButton.className = "gpfocus";
+            return true;
+          },
+        },
+        {
+          Element: qualityButton,
+          BTakeFocus: () => {
+            qualityButton.className = "gpfocus";
             return true;
           },
         },
@@ -244,8 +254,11 @@ const makeFocusControls = () => {
     scopeA,
     categoryB,
     scopeB,
+    qualityA,
+    qualityB,
     categoryButton,
     scopeButton,
+    qualityButton,
     flushFrames: () => {
       for (let attempt = 0; attempt < 200 && frames.length; attempt += 1) {
         frames.shift()?.(attempt);
@@ -254,26 +267,35 @@ const makeFocusControls = () => {
   };
 };
 
-const remountReturnedDropdown = async (origin: "category" | "scope") => {
+const remountReturnedDropdown = async (origin: "category" | "scope" | "quality") => {
   const controls = makeFocusControls();
   render();
   runEffects();
   await flushPromises();
   const first = metadataSection(render());
+  const firstTrailers = gameTrailersSection(render());
   first.props.onCompatibilityDefaultControlRef(controls.categoryA);
   first.props.onCompatibilityDefaultScopeControlRef(controls.scopeA);
   render();
-  first.props.onCompatibilityDefaultMenuWillOpen(origin);
+  if (origin === "quality") {
+    firstTrailers.props.onQualityMenuWillOpen();
+    firstTrailers.props.onQualityControlRef(controls.qualityA);
+    firstTrailers.props.onQualityControlRef(null);
+  } else {
+    first.props.onCompatibilityDefaultMenuWillOpen(origin);
+  }
   if (origin === "category") {
     first.props.onCompatibilityDefaultControlRef(null);
-  } else {
+  } else if (origin === "scope") {
     first.props.onCompatibilityDefaultScopeControlRef(null);
   }
 
   remount();
   const returned = metadataSection(render());
+  const returnedTrailers = gameTrailersSection(render());
   returned.props.onCompatibilityDefaultControlRef(controls.categoryB);
   returned.props.onCompatibilityDefaultScopeControlRef(controls.scopeB);
+  if (origin === "quality") returnedTrailers.props.onQualityControlRef(controls.qualityB);
   render();
   runEffects();
   await flushPromises();
@@ -294,6 +316,12 @@ describe("Content update settings", () => {
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
+    trailer.getSnapshot.mockReturnValue({
+      settings: { enabled: false, audioEnabled: false, quality: "auto" },
+      status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
+      settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
+    });
+    trailer.setQuality.mockResolvedValue(true);
     games.loadGames.mockResolvedValue([]);
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
@@ -581,6 +609,39 @@ describe("Content update settings", () => {
     controls.flushFrames();
     expect(controls.categoryButton.className).toContain("gpfocus");
     expect(controls.scopeButton.className).not.toContain("gpfocus");
+  });
+
+  it("returns native focus to Video quality after cancellation", async () => {
+    const { controls } = await remountReturnedDropdown("quality");
+    render();
+    runEffects();
+    controls.flushFrames();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    expect(controls.categoryButton.className).not.toContain("gpfocus");
+    expect(controls.scopeButton.className).not.toContain("gpfocus");
+  });
+
+  it("returns native focus to Video quality after a selection", async () => {
+    const controls = makeFocusControls();
+    render();
+    runEffects();
+    await flushPromises();
+    const first = gameTrailersSection(render());
+    first.props.onQualityMenuWillOpen();
+    first.props.onQualityControlRef(controls.qualityA);
+    first.props.onQualityControlRef(null);
+    await first.props.onQualityChange(1080);
+
+    remount();
+    const returned = gameTrailersSection(render());
+    returned.props.onQualityControlRef(controls.qualityB);
+    render();
+    runEffects();
+    await flushPromises();
+    controls.flushFrames();
+
+    expect(trailer.setQuality).toHaveBeenCalledWith(1080);
+    expect(controls.qualityButton.className).toContain("gpfocus");
   });
 
   it("does not allow a second policy save while a remounted QAM is busy", async () => {

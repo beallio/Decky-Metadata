@@ -18,14 +18,16 @@ export type TrailerSourceContext = {
 
 export const parseTrailerRootRoute = (route: string): number | null => {
   const routeText = String(route || "").trim();
-  if (routeText.includes("#") || /\b(?:tab|page|section|subpage)=/i.test(routeText)) return null;
+  const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+  if (hashes.some((hash) => hash && hash !== "quickaccess") || /\b(?:tab|page|section|subpage)=/i.test(routeText)) return null;
   const first = routeText.split(/\s+/, 1)[0];
   if (!first) return null;
   let path: string;
   try {
     const parsed = new URL(first, "https://steamloopback.host/");
     if (parsed.hostname !== "steamloopback.host") return null;
-    if (parsed.hash || ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key))) return null;
+    if ((parsed.hash && parsed.hash.toLowerCase() !== "#quickaccess") ||
+        ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key))) return null;
     path = parsed.pathname.replace(/^\/routes(?=\/)/i, "");
   } catch {
     return null;

@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import http.client
 import socket
 import struct
 import threading
+import time
 from unittest.mock import patch
+
+import pytest
 
 from backend import cef_bridge
 
@@ -93,12 +97,139 @@ def test_target_discovery_skips_shared_context_and_has_three_second_timeout() ->
         {"title": "SharedJSContext", "type": "page", "webSocketDebuggerUrl": "ws://127.0.0.1:1"},
         {"title": "QuickAccess_uid14", "type": "page", "webSocketDebuggerUrl": "ws://127.0.0.1:1"},
     ]
-    response = type("Response", (), {"__enter__": lambda self: self, "__exit__": lambda *args: None,
-                                     "read": lambda self: json.dumps(targets).encode()})()
-    with patch.object(cef_bridge.urllib.request, "urlopen", return_value=response) as lookup:
+    class Response:
+        def __init__(self):
+            self.done = False
+
+        def getheader(self, _name):
+            return None
+
+        def read(self, _size):
+            if self.done:
+                return b""
+            self.done = True
+            return json.dumps(targets).encode()
+
+    connections = []
+
+    class Connection:
+        sock = None
+
+        def __init__(self, host, port, timeout):
+            self.arguments = (host, port, timeout)
+            connections.append(self)
+
+        def request(self, method, path):
+            assert (method, path) == ("GET", "/json")
+
+        def getresponse(self):
+            return Response()
+
+        def close(self):
+            return None
+
+    with patch.object(cef_bridge.http.client, "HTTPConnection", Connection):
         result = evaluator._find_big_picture_target()
     assert result is None
-    assert lookup.call_args.kwargs["timeout"] == 3
+    assert connections[0].arguments == ("127.0.0.1", 8080, 3)
+
+
+def test_discovery_body_rejects_declared_oversize_and_trickled_body() -> None:
+    class Connection:
+        sock = None
+
+    class LargeResponse:
+        def getheader(self, _name):
+            return str(cef_bridge.MAX_DISCOVERY_BYTES + 1)
+
+        def read(self, _size):
+            raise AssertionError("oversized body must be rejected before reading")
+
+    with pytest.raises(ValueError, match="too large"):
+        cef_bridge.BigPictureEvaluator._read_discovery_body(
+            LargeResponse(), Connection(), time.monotonic() + 1
+        )
+
+    class TrickleResponse:
+        def getheader(self, _name):
+            return None
+
+        def read(self, _size):
+            time.sleep(0.01)
+            return b"["
+
+    started = time.monotonic()
+    with pytest.raises(TimeoutError, match="discovery.*timed out"):
+        cef_bridge.BigPictureEvaluator._read_discovery_body(
+            TrickleResponse(), Connection(), started + 0.04
+        )
+    assert time.monotonic() - started < 0.2
+
+
+def test_websocket_upgrade_header_has_absolute_deadline_and_byte_limit() -> None:
+    class TrickleSocket:
+        timeout = None
+
+        def settimeout(self, value):
+            self.timeout = value
+
+        def recv(self, _count):
+            time.sleep(0.01)
+            return b"x"
+
+    sock = TrickleSocket()
+    started = time.monotonic()
+    with pytest.raises(TimeoutError, match="header.*timed out"):
+        cef_bridge.BigPictureEvaluator._recv_until(
+            sock, b"\r\n\r\n", started + 0.04, max_bytes=64
+        )
+    assert time.monotonic() - started < 0.2
+
+    with pytest.raises(ValueError, match="header.*too large"):
+        cef_bridge.BigPictureEvaluator._recv_until(
+            sock, b"\r\n\r\n", time.monotonic() + 1, max_bytes=4
+        )
+
+
+def test_unload_closes_a_registered_discovery_connection() -> None:
+    entered = threading.Event()
+    closed = threading.Event()
+
+    class DiscoveryConnection:
+        def __init__(self, *_args, **_kwargs):
+            self.sock = None
+
+        def request(self, *_args, **_kwargs):
+            return None
+
+        def getresponse(self):
+            entered.set()
+            closed.wait(2)
+            raise OSError("discovery connection closed")
+
+        def close(self):
+            closed.set()
+
+    evaluator = cef_bridge.BigPictureEvaluator()
+    failures = []
+
+    def find_target():
+        try:
+            evaluator._find_big_picture_target()
+        except OSError as error:
+            failures.append(error)
+
+    with patch.object(cef_bridge.http.client, "HTTPConnection", DiscoveryConnection):
+        worker = threading.Thread(target=find_target)
+        worker.start()
+        assert entered.wait(1)
+        evaluator.close_active()
+        worker.join(1)
+
+    assert not worker.is_alive()
+    assert closed.is_set()
+    assert failures
+    assert not evaluator._active_discovery_connections
 
 
 def test_evaluator_sends_runtime_evaluate_and_returns_the_dictionary() -> None:
@@ -128,11 +259,13 @@ def test_unload_closes_a_socket_registered_before_connect_returns() -> None:
             async def run():
                 pending = asyncio.create_task(evaluator.eval_in_big_picture("({status:'wait'})"))
                 assert await asyncio.to_thread(endpoint.connected.wait, 2)
+                # Closing the WebSocket can interrupt the peer before it reads
+                # a complete CDP command. Mark that expected disconnect first.
+                endpoint.release.set()
                 evaluator.close_active()
                 assert (await evaluator.eval_in_big_picture("true"))["runtimeMissing"] is True
                 result = await asyncio.wait_for(pending, timeout=3)
                 assert result["runtimeMissing"] is True
-                endpoint.release.set()
                 assert await asyncio.to_thread(endpoint.closed.wait, 2)
             asyncio.run(run())
     assert not evaluator._active_cdp_sockets

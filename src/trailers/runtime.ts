@@ -14,7 +14,70 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
+    const MAX_METADATA_BYTES = 1024 * 1024;
+    const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
+    const MAX_INIT_BYTES = 4 * 1024 * 1024;
+    const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
     const translations = injectedTranslations || { en: {} };
+    const safeMediaUrl = (value, base) => {
+        if (typeof value !== "string" || !value.trim()) return null;
+        let parsed;
+        try { parsed = base ? new URL(value, base) : new URL(value); }
+        catch { return null; }
+        const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || !host ||
+            host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+            host.endsWith(".internal") || host.endsWith(".lan") || host.endsWith(".home") ||
+            host.endsWith(".onion") || /^\[.*\]$/.test(host) || /^\d+(?:\.\d+){0,3}$/.test(host)) return null;
+        return parsed.href;
+    };
+    const readBoundedBody = async (response, maximumBytes, asText) => {
+        const declaredLength = Number(response.headers?.get?.("content-length"));
+        if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) {
+            throw new Error("Steam media response is too large");
+        }
+        const reader = response.body?.getReader?.();
+        if (!reader) {
+            if (!Number.isFinite(declaredLength) || declaredLength < 0) {
+                throw new Error("Steam media response has no bounded body");
+            }
+            const fallback = asText ? await response.text() : await response.arrayBuffer();
+            const bytes = asText ? new TextEncoder().encode(fallback) : new Uint8Array(fallback);
+            if (bytes.byteLength > maximumBytes) throw new Error("Steam media response is too large");
+            return asText ? fallback : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+        }
+        const chunks = [];
+        let size = 0;
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                size += value.byteLength;
+                if (size > maximumBytes) {
+                    await reader.cancel();
+                    throw new Error("Steam media response is too large");
+                }
+                chunks.push(value);
+            }
+        }
+        catch (error) {
+            try { await reader.cancel(); } catch { }
+            throw error;
+        }
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return asText ? new TextDecoder().decode(bytes) : bytes.buffer;
+    };
+    const validateResponseUrl = (response, requestedUrl) => {
+        if (response.redirected === true) throw new Error("Steam media redirects are not allowed");
+        if (!response.url) return;
+        const finalUrl = safeMediaUrl(response.url);
+        if (!finalUrl || finalUrl !== requestedUrl) throw new Error("Steam media response URL changed");
+    };
     const normalizeSettings = (value) => {
         const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
         const qualityOptions = ["auto", 720, 1080, 1440, 2160];
@@ -72,10 +135,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         let path;
         try {
             const routeText = String(value || "").trim();
-            if (routeText.includes("#") || /\b(?:tab|page|section|subpage)=/i.test(routeText)) return undefined;
+            const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+            if (hashes.some((hash) => hash && hash !== "quickaccess") ||
+                /\b(?:tab|page|section|subpage)=/i.test(routeText)) return undefined;
             const route = new URL(routeText.split(/\s+/, 1)[0], window.location?.href ||
                 "https://steamloopback.host/");
-            if (route.hash || ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key))) return undefined;
+            if ((route.hash && route.hash.toLowerCase() !== "#quickaccess") ||
+                ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key))) return undefined;
             path = route.pathname;
         }
         catch { return undefined; }
@@ -259,6 +325,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         async fetchBytes(url, generation, segment = false) {
             this.assertCurrent();
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl) throw new Error("Steam media URL is not safe HTTPS");
             const controller = new AbortController();
             const request = { controller, generation, segment };
             this.requests.add(request);
@@ -266,9 +334,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.candidate.controller.signal.addEventListener("abort", cancel, { once: true });
             const timeout = window.setTimeout(() => controller.abort(), 12000);
             try {
-                const response = await fetch(url, { signal: controller.signal, cache: "default" });
-                if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`);
-                const data = await response.arrayBuffer();
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const data = await readBoundedBody(response, segment ? MAX_SEGMENT_BYTES : MAX_INIT_BYTES, false);
                 this.assertCurrent();
                 if (segment && generation !== this.generation) {
                     const error = new Error("Obsolete seek request");
@@ -316,6 +385,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.tracks = this.presentation.tracks.map((track) => {
                     const buffer = this.mediaSource.addSourceBuffer(track.mimeType);
                     buffer.mode = "segments";
+                    const timestampOffset = Number(track.timestampOffset ?? 0);
+                    if (!Number.isFinite(timestampOffset)) throw new Error("Invalid media timestamp offset");
+                    buffer.timestampOffset = timestampOffset;
                     return { track, buffer, appended: new Set(),
                         pinned: new Set(track.segments.flatMap((segment, index) => segment.start < 8 ? [index] : [])) };
                 });
@@ -745,8 +817,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (this.destroyed) return;
             const owner = findOwnerRecord();
             if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
-                this.cleanupVideo(true);
-                this.status = "Metadata trailer owner is unavailable";
+                this.destroy();
+                if (window[runtimeKey] === this) delete window[runtimeKey];
                 return;
             }
             if (Number.isSafeInteger(owner.settingsRevision) && owner.settingsRevision > this.settingsRevision) {
@@ -836,11 +908,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.metadataController = controller;
             const timeout = window.setTimeout(() => controller.abort(), 9000);
             try {
-                const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`, {
-                    signal: controller.signal, cache: "default"
+                const requestUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`;
+                const response = await fetch(requestUrl, {
+                    signal: controller.signal, cache: "default", redirect: "error"
                 });
+                validateResponseUrl(response, requestUrl);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const payload = await response.json();
+                const payload = JSON.parse(await readBoundedBody(response, MAX_METADATA_BYTES, true));
                 if (controller.signal.aborted) throw new Error("Steam metadata request stopped");
                 const movies = payload?.[String(appId)]?.data?.movies ?? [];
                 if (!Array.isArray(movies) || !movies.length) return { ok: false, error: rt("noSteamTrailer") };
@@ -849,14 +923,11 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 const candidates = [];
                 const add = (url, format, label = "") => {
                     if (typeof url !== "string") return;
-                    try {
-                        const parsed = new URL(url);
-                        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return;
-                    }
-                    catch { return; }
+                    const safeUrl = safeMediaUrl(url);
+                    if (!safeUrl) return;
                     const height = Number(String(label).match(/(?:^|[^0-9])(2160|1440|1080|720|480|360)(?:p|[^0-9]|$)/i)?.[1]
                         ?? url.match(/movie[_-]?(2160|1440|1080|720|480|360)/i)?.[1] ?? 0);
-                    candidates.push({ url, format, height });
+                    candidates.push({ url: safeUrl, format, height });
                 };
                 for (const format of ["mp4", "webm"]) {
                     if (!movie[format] || typeof movie[format] !== "object") continue;
@@ -884,6 +955,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const target = this.targetHeight;
             const formatRank = { mp4: 0, webm: 1, dash_h264: 0, hls_h264: 1, dash_av1: 2 };
             const ranked = candidates.filter((candidate) => {
+                if (!safeMediaUrl(candidate.url)) return false;
                 if (candidate.format !== "dash_av1") return true;
                 return typeof MediaSource !== "undefined" &&
                     MediaSource.isTypeSupported?.('video/mp4; codecs="av01.0.08M.08"');
@@ -1075,15 +1147,18 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             await this.playAdaptive(video, presentation, candidate);
         }
         async fetchText(url, candidate) {
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl) throw new Error("Steam manifest URL is not safe HTTPS");
             const controller = new AbortController();
             const cancel = () => controller.abort();
             candidate.controller.signal.addEventListener("abort", cancel, { once: true });
             const timeout = window.setTimeout(() => controller.abort(), 9000);
             try {
                 if (!candidate.isCurrent()) throw new Error("Trailer request changed");
-                const response = await fetch(url, { signal: controller.signal, cache: "default" });
-                if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`);
-                const text = await response.text();
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const text = await readBoundedBody(response, MAX_MANIFEST_BYTES, true);
                 if (controller.signal.aborted || !candidate.isCurrent()) throw new Error("Trailer request changed");
                 return text;
             }
@@ -1154,7 +1229,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!MediaSource.isTypeSupported(videoMimeType)) continue;
                 const height = Number(attributes.RESOLUTION?.match(/^\d+x(\d+)$/)?.[1] || 0);
                 const bandwidth = Number(attributes.BANDWIDTH || 0);
-                variants.push({ url: new URL(uri, masterUrl).href, mimeType: videoMimeType,
+                const resolvedUrl = safeMediaUrl(uri, masterUrl);
+                if (!resolvedUrl) continue;
+                variants.push({ url: resolvedUrl, mimeType: videoMimeType,
                     height, bandwidth, audioGroup: attributes.AUDIO, codecs });
             }
             if (!variants.length) throw new Error("HLS playlist has no supported video variants");
@@ -1167,7 +1244,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!rendition?.URI || !codec) throw new Error("HLS audio group is unavailable");
                 const mimeType = `audio/mp4; codecs="${codec}"`;
                 if (!MediaSource.isTypeSupported(mimeType)) throw new Error("Unsupported HLS audio codec");
-                selected.audio = { url: new URL(rendition.URI, masterUrl).href, mimeType };
+                const audioUrl = safeMediaUrl(rendition.URI, masterUrl);
+                if (!audioUrl) throw new Error("HLS audio URL is not safe HTTPS");
+                selected.audio = { url: audioUrl, mimeType };
             }
             return selected;
         }
@@ -1193,7 +1272,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!Number.isFinite(duration) || duration <= 0) throw new Error("DASH presentation duration is invalid");
             const resolveBase = (node, base) => {
                 const relative = children(node, "BaseURL")[0]?.textContent?.trim();
-                return relative ? new URL(relative, base).href : base;
+                const resolved = relative ? safeMediaUrl(relative, base) : safeMediaUrl(base);
+                if (!resolved) throw new Error("DASH BaseURL is not safe HTTPS");
+                return resolved;
             };
             const periodBase = resolveBase(period, resolveBase(root, manifestUrl));
             const videos = [], audio = [];
@@ -1246,9 +1327,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     try { segments = this.buildDashSegments(spec, representationId, bandwidth, duration, base); }
                     catch { continue; }
                     if (!segments.length) continue;
+                    const initUrl = safeMediaUrl(this.expandDashTemplate(initTemplate, representationId, bandwidth), base);
+                    if (!initUrl) continue;
                     const track = {
                         kind: isAudio ? "audio" : "video", mimeType,
-                        initUrl: new URL(this.expandDashTemplate(initTemplate, representationId, bandwidth), base).href,
+                        timestampOffset: -spec.offset / spec.timescale,
+                        initUrl,
                         segments
                     };
                     const entry = { track, height, bandwidth };
@@ -1273,8 +1357,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 const start = Math.max(0, (tick - offset) / timescale);
                 const end = Math.min(duration, (endTick - offset) / timescale);
                 if (Number.isFinite(start) && Number.isFinite(end) && end > start && start < duration) {
+                    const url = safeMediaUrl(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base);
+                    if (!url) throw new Error("DASH segment URL is not safe HTTPS");
                     segments.push({
-                        url: new URL(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base).href,
+                        url,
                         start, end
                     });
                 }
@@ -1343,7 +1429,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (!attributes.URI || attributes.BYTERANGE || initUrl || segments.length) {
                         throw new Error("Invalid HLS initialization segment");
                     }
-                    initUrl = new URL(attributes.URI, mediaUrl).href;
+                    initUrl = safeMediaUrl(attributes.URI, mediaUrl);
+                    if (!initUrl) throw new Error("HLS initialization URL is not safe HTTPS");
                 }
                 else if (line.startsWith("#EXTINF:")) {
                     if (pendingDuration !== undefined || ended) throw new Error("Malformed HLS segment");
@@ -1355,7 +1442,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (ended || !initUrl || pendingDuration === undefined) throw new Error("Malformed HLS segment timeline");
                     const end = duration + pendingDuration;
                     if (!Number.isFinite(end) || end <= duration || segments.length >= 100000) throw new Error("Invalid HLS timeline");
-                    segments.push({ url: new URL(line, mediaUrl).href, start: duration, end });
+                    const url = safeMediaUrl(line, mediaUrl);
+                    if (!url) throw new Error("HLS segment URL is not safe HTTPS");
+                    segments.push({ url, start: duration, end });
                     duration = end;
                     pendingDuration = undefined;
                 }

@@ -20,6 +20,13 @@ describe("resolveTrailerSource", () => {
     })).toEqual({ pageAppId: 0x80000010, sourceAppId: 55150, kind: "shortcut" });
   });
 
+  it("keeps a root game route through the QAM menu hash", () => {
+    expect(resolveTrailerSource({
+      route: `${root(55150)}#quickaccess`, heroAppId: 55150, overview: nativeGame,
+      metadata: null, hydrated: true,
+    })).toEqual({ pageAppId: 55150, sourceAppId: 55150, kind: "steam" });
+  });
+
   it.each([
     ["unmatched shortcut", { steam_appid: null }],
     ["malformed id", { steam_appid: "not-an-id" }],
@@ -38,6 +45,8 @@ describe("resolveTrailerSource", () => {
     ["another app's hero", { route: root(55150), heroAppId: 55151, overview: nativeGame,
       metadata: null, hydrated: true }],
     ["a detail subpage", { route: `${root(55150)}/activity`, heroAppId: 55150,
+      overview: nativeGame, metadata: null, hydrated: true }],
+    ["a non-menu hash route", { route: `${root(55150)}#gameinfo`, heroAppId: 55150,
       overview: nativeGame, metadata: null, hydrated: true }],
     ["Game Info tab", { route: `${root(55150)}?tab=GameInfo`, heroAppId: 55150,
       overview: nativeGame, metadata: null, hydrated: true }],

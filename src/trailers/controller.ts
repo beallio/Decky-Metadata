@@ -134,8 +134,11 @@ const runtimeMissingScript = `(() => {
 
 export class TrailerController {
   private settings = { ...DEFAULT_TRAILER_SETTINGS };
+  private confirmedSettings = { ...DEFAULT_TRAILER_SETTINGS };
   private settingsLoaded = false;
   private settingsBusy = false;
+  private pendingSettingsWrites = 0;
+  private settingsTransactionId = 0;
   private settingsError = "";
   private status = "Loading trailer settings";
   private runtimeSnapshot: RuntimeSnapshot | undefined;
@@ -180,6 +183,8 @@ export class TrailerController {
     if (this.mounted) return;
     this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     this.mounted = true;
+    this.pendingSettingsWrites = 0;
+    this.settingsBusy = false;
     this.destroyOlderRuntimes();
     this.publishOwner();
     this.refreshAudioListeners();
@@ -266,6 +271,7 @@ export class TrailerController {
       const loaded = normalizeSettings(await getTrailerSettings());
       if (!this.mounted) return;
       this.settings = loaded;
+      this.confirmedSettings = { ...loaded };
       this.settingsLoaded = true;
       this.settingsError = "";
       this.settingsRevision += 1;
@@ -282,17 +288,19 @@ export class TrailerController {
   }
 
   private async updateSettings(change: Partial<TrailerSettings>): Promise<boolean> {
-    if (!this.mounted || !this.settingsLoaded || this.settingsBusy) return false;
+    if (!this.mounted || !this.settingsLoaded) return false;
     const previous = { ...this.settings };
     const next = normalizeSettings({ ...this.settings, ...change });
     if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled && next.quality === previous.quality) {
       return true;
     }
     this.settings = next;
+    const ownerId = this.ownerId;
+    const transactionId = ++this.settingsTransactionId;
+    this.pendingSettingsWrites += 1;
     this.settingsBusy = true;
     this.settingsError = "";
     this.settingsRevision += 1;
-    const revision = this.settingsRevision;
     this.publishOwner();
     const direct = this.updateReachableRuntimes();
     this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
@@ -303,25 +311,38 @@ export class TrailerController {
     const save = this.settingsSaveQueue.then(async () => {
       await setTrailerSettings(next);
     });
-    this.settingsSaveQueue = save.catch(() => undefined);
+    this.settingsSaveQueue = save.then(
+      () => {
+        if (this.ownsMount(ownerId)) this.confirmedSettings = { ...next };
+      },
+      () => undefined,
+    );
     try {
       await save;
     } catch (error) {
       succeeded = false;
-      if (this.settingsRevision === revision) {
-        this.settings = previous;
+      if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
+        this.settings = { ...this.confirmedSettings };
         this.settingsRevision += 1;
         this.publishOwner();
         this.updateReachableRuntimes();
+        this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
+        this.status = "Trailer settings were restored";
       }
-      this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
-      this.status = "Trailer settings were restored";
     } finally {
-      this.settingsBusy = false;
-      this.emit();
+      if (this.ownsMount(ownerId)) {
+        this.pendingSettingsWrites = Math.max(0, this.pendingSettingsWrites - 1);
+        this.settingsBusy = this.pendingSettingsWrites > 0;
+        this.emit();
+      }
     }
-    if (succeeded && next.enabled) void this.poll();
+    if (succeeded && this.ownsMount(ownerId) && next.enabled) void this.poll();
     return succeeded;
+  }
+
+  private ownsMount(ownerId: string) {
+    const owner = (window as any)[OWNER_KEY] as OwnerRecord | undefined;
+    return this.mounted && this.ownerId === ownerId && owner?.ownerId === ownerId && owner.active;
   }
 
   private publishOwner() {
@@ -374,6 +395,11 @@ export class TrailerController {
     if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page" };
     if (pageAppId !== this.pageAppId) {
       this.pageAppId = pageAppId;
+      this.pageOverview = null;
+    }
+    if (Number((this.pageOverview as any)?.appid) !== pageAppId) {
+      // Steam can hydrate the native overview after the route becomes visible.
+      // This is a direct AppID lookup; do not scan every app on healthy polls.
       this.pageOverview = getNativeOverview(pageAppId);
     }
     if (!this.pageOverview || Number((this.pageOverview as any)?.appid) !== pageAppId) {

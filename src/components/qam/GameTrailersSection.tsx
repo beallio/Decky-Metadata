@@ -16,7 +16,9 @@ type GameTrailersSectionProps = {
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
-  onQualityChange: (quality: TrailerQuality) => void;
+  onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
+  onQualityMenuWillOpen: () => void;
+  onQualityControlRef: (element: HTMLDivElement | null) => void;
 };
 
 export function GameTrailersSection({
@@ -24,6 +26,8 @@ export function GameTrailersSection({
   onEnabledChange,
   onAudioChange,
   onQualityChange,
+  onQualityMenuWillOpen,
+  onQualityControlRef,
 }: GameTrailersSectionProps) {
   const disabled = !state.settingsLoaded || state.busy;
   const display = state.displayWidth && state.displayHeight
@@ -51,20 +55,23 @@ export function GameTrailersSection({
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <DropdownItem
-          label="Video quality"
-          layout="below"
-          childrenContainerWidth="max"
-          rgOptions={qualityOptions}
-          selectedOption={state.settings.quality}
-          disabled={disabled}
-          onChange={(option) => onQualityChange(option.data)}
-          renderButtonValue={() => (
-            <span style={{ whiteSpace: "normal" }}>
-              {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
-            </span>
-          )}
-        />
+        <div ref={onQualityControlRef}>
+          <DropdownItem
+            label="Video quality"
+            layout="below"
+            childrenContainerWidth="max"
+            rgOptions={qualityOptions}
+            selectedOption={state.settings.quality}
+            disabled={disabled}
+            onMenuWillOpen={onQualityMenuWillOpen}
+            onChange={(option) => { void onQualityChange(option.data); }}
+            renderButtonValue={() => (
+              <span style={{ whiteSpace: "normal" }}>
+                {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
+              </span>
+            )}
+          />
+        </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <Field

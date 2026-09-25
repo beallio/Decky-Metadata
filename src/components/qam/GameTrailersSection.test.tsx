@@ -40,6 +40,8 @@ describe("GameTrailersSection", () => {
       onEnabledChange: vi.fn(),
       onAudioChange: vi.fn(),
       onQualityChange: vi.fn(),
+      onQualityMenuWillOpen: vi.fn(),
+      onQualityControlRef: vi.fn(),
     });
     const nodes = children(tree);
     const toggles = nodes.filter((node) => node.type === "ToggleField");
@@ -57,11 +59,15 @@ describe("GameTrailersSection", () => {
   });
 
   it("shows the physical Big Picture size, target and original-art/offline guidance", () => {
+    const onQualityMenuWillOpen = vi.fn();
+    const onQualityControlRef = vi.fn();
     const tree = GameTrailersSection({
       state: state({ status: "Waiting for the matching Steam hero" }),
       onEnabledChange: vi.fn(),
       onAudioChange: vi.fn(),
       onQualityChange: vi.fn(),
+      onQualityMenuWillOpen,
+      onQualityControlRef,
     });
     const nodes = children(tree);
     expect(nodes.some((node) => node.type === "Field" && node.props.label === "Big Picture display"
@@ -70,5 +76,9 @@ describe("GameTrailersSection", () => {
       && node.props.children.join("") === "1280 × 800 pixels · target 720p")).toBe(true);
     expect(JSON.stringify(tree)).toContain("Steam artwork stays visible");
     expect(JSON.stringify(tree)).toContain("not saved for offline playback");
+    const quality = nodes.find((node) => node.type === "DropdownItem");
+    quality.props.onMenuWillOpen();
+    expect(onQualityMenuWillOpen).toHaveBeenCalledOnce();
+    expect(nodes.some((node) => node.type === "div" && node.props.ref === onQualityControlRef)).toBe(true);
   });
 });
