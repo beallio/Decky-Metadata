@@ -28,7 +28,9 @@ class BigPictureEvaluator:
         self._unloading = False
         self._last_debugger_warning = 0.0
         self._active_cdp_sockets: set[socket.socket] = set()
-        self._active_discovery_connections: set[http.client.HTTPConnection] = set()
+        self._active_discovery_connections: dict[
+            http.client.HTTPConnection, list[Any | None]
+        ] = {}
         self._active_cdp_lock = threading.Lock()
         self._logger = logger
 
@@ -40,9 +42,9 @@ class BigPictureEvaluator:
         with self._active_cdp_lock:
             self._unloading = True
             sockets = tuple(self._active_cdp_sockets)
-            connections = tuple(self._active_discovery_connections)
-        for connection in connections:
-            self._interrupt_discovery_connection(connection)
+            connections = tuple(self._active_discovery_connections.items())
+        for connection, response_reference in connections:
+            self._interrupt_discovery_connection(connection, response_reference)
         for sock in sockets:
             try:
                 sock.shutdown(socket.SHUT_RDWR)
@@ -115,29 +117,40 @@ class BigPictureEvaluator:
         connection = http.client.HTTPConnection(
             "127.0.0.1", 8080, timeout=DISCOVERY_TIMEOUT_SECONDS
         )
+        response_reference: list[Any | None] = [None, None]
         with self._active_cdp_lock:
             if self._unloading:
                 connection.close()
                 raise ConnectionError("Plugin is unloading")
-            self._active_discovery_connections.add(connection)
+            self._active_discovery_connections[connection] = response_reference
         deadline = time.monotonic() + DISCOVERY_TIMEOUT_SECONDS
         deadline_interrupt = threading.Timer(
             DISCOVERY_TIMEOUT_SECONDS,
             self._interrupt_discovery_connection,
-            args=(connection,),
+            args=(connection, response_reference),
         )
         deadline_interrupt.daemon = True
         deadline_interrupt.start()
         try:
             connection.request("GET", "/json")
+            response_reference[1] = connection.sock
             response = connection.getresponse()
+            # HTTPConnection transfers ownership of the socket to HTTPResponse
+            # for close-delimited bodies and clears connection.sock. Keep both
+            # references so a deadline can interrupt even during that transfer.
+            response_reference[0] = response
             body = self._read_discovery_body(response, connection, deadline)
             targets = json.loads(body.decode("utf-8"))
         finally:
             deadline_interrupt.cancel()
             with self._active_cdp_lock:
-                self._active_discovery_connections.discard(connection)
-            connection.close()
+                self._active_discovery_connections.pop(connection, None)
+            response = response_reference[0]
+            try:
+                if response is not None and callable(getattr(response, "close", None)):
+                    response.close()
+            finally:
+                connection.close()
 
         def score(target: dict[str, Any]) -> int:
             title = (target.get("title") or "").lower()
@@ -176,8 +189,9 @@ class BigPictureEvaluator:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise TimeoutError("DevTools discovery timed out")
-            if connection.sock is not None:
-                connection.sock.settimeout(remaining)
+            transport = BigPictureEvaluator._response_transport(response) or connection.sock
+            if transport is not None:
+                transport.settimeout(remaining)
             chunk = response.read(min(8192, MAX_DISCOVERY_BYTES + 1 - len(data)))
             if not chunk:
                 return bytes(data)
@@ -186,8 +200,24 @@ class BigPictureEvaluator:
                 raise ValueError("DevTools discovery response is too large")
 
     @staticmethod
-    def _interrupt_discovery_connection(connection: http.client.HTTPConnection) -> None:
-        sock = connection.sock
+    def _response_transport(response: Any) -> socket.socket | None:
+        file_pointer = getattr(response, "fp", None)
+        raw = getattr(file_pointer, "raw", None)
+        transport = getattr(raw, "_sock", None) or getattr(file_pointer, "_sock", None)
+        return transport if isinstance(transport, socket.socket) else None
+
+    @staticmethod
+    def _interrupt_discovery_connection(
+        connection: http.client.HTTPConnection,
+        response_reference: list[Any | None] | None = None,
+    ) -> None:
+        response = response_reference[0] if response_reference else None
+        sock = BigPictureEvaluator._response_transport(response) if response is not None else None
+        if sock is None and response_reference and len(response_reference) > 1 and isinstance(
+            response_reference[1], socket.socket
+        ):
+            sock = response_reference[1]
+        sock = sock or connection.sock
         if sock is not None:
             try:
                 sock.shutdown(socket.SHUT_RDWR)
@@ -195,6 +225,10 @@ class BigPictureEvaluator:
                 pass
         try:
             connection.close()
+        except OSError:
+            pass
+        try:
+            sock.close() if sock is not None else None
         except OSError:
             pass
 

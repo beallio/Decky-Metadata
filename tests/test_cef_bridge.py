@@ -87,6 +87,74 @@ class _FakeCDP:
                 self.error = error
 
 
+class _TrickleHttpServer:
+    def __init__(self) -> None:
+        self.server = socket.socket()
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server.bind(("127.0.0.1", 0))
+        self.server.listen(1)
+        self.port = self.server.getsockname()[1]
+        self.headers_sent = threading.Event()
+        self.disconnected = threading.Event()
+        self.stop = threading.Event()
+        self.client = None
+        self.worker = threading.Thread(target=self._serve, daemon=True)
+
+    def __enter__(self):
+        self.worker.start()
+        return self
+
+    def __exit__(self, *_args):
+        self.close()
+
+    def close(self) -> None:
+        self.stop.set()
+        if self.client is not None:
+            try:
+                self.client.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                self.client.close()
+            except OSError:
+                pass
+        try:
+            self.server.close()
+        except OSError:
+            pass
+        self.worker.join(1)
+
+    def _serve(self) -> None:
+        try:
+            client, _address = self.server.accept()
+            self.client = client
+            with client:
+                request = b""
+                while b"\r\n\r\n" not in request:
+                    request += client.recv(4096)
+                client.sendall(b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n")
+                self.headers_sent.set()
+                while not self.stop.wait(0.01):
+                    client.sendall(b" ")
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            self.disconnected.set()
+        finally:
+            self.disconnected.set()
+            try:
+                self.server.close()
+            except OSError:
+                pass
+
+
+def _route_discovery_to_local_server(monkeypatch, endpoint: _TrickleHttpServer) -> None:
+    http_connection = cef_bridge.http.client.HTTPConnection
+    monkeypatch.setattr(
+        cef_bridge.http.client,
+        "HTTPConnection",
+        lambda host, _port, timeout: http_connection(host, endpoint.port, timeout),
+    )
+
+
 def _target(url: str) -> dict[str, str]:
     return {"title": "Steam Big Picture Mode", "type": "page", "webSocketDebuggerUrl": url}
 
@@ -230,6 +298,70 @@ def test_unload_closes_a_registered_discovery_connection() -> None:
     assert closed.is_set()
     assert failures
     assert not evaluator._active_discovery_connections
+
+
+def test_connection_close_discovery_trickle_is_interrupted_by_its_deadline(monkeypatch) -> None:
+    with _TrickleHttpServer() as endpoint:
+        _route_discovery_to_local_server(monkeypatch, endpoint)
+        monkeypatch.setattr(cef_bridge, "DISCOVERY_TIMEOUT_SECONDS", 0.2)
+        evaluator = cef_bridge.BigPictureEvaluator()
+        failures = []
+        finished = threading.Event()
+
+        def find_target():
+            try:
+                evaluator._find_big_picture_target()
+            except BaseException as error:
+                failures.append(error)
+            finally:
+                finished.set()
+
+        started = time.monotonic()
+        worker = threading.Thread(target=find_target, daemon=True)
+        worker.start()
+        completed_promptly = finished.wait(0.8)
+        elapsed = time.monotonic() - started
+        if not completed_promptly:
+            endpoint.close()
+            worker.join(1)
+
+        assert completed_promptly, "the real close-delimited response read outlived its deadline"
+        assert elapsed < 0.8
+        assert failures
+        assert endpoint.headers_sent.is_set()
+        assert endpoint.disconnected.wait(1)
+        assert not evaluator._active_discovery_connections
+
+
+def test_unload_interrupts_a_real_connection_close_discovery_trickle(monkeypatch) -> None:
+    with _TrickleHttpServer() as endpoint:
+        _route_discovery_to_local_server(monkeypatch, endpoint)
+        evaluator = cef_bridge.BigPictureEvaluator()
+        failures = []
+        finished = threading.Event()
+
+        def find_target():
+            try:
+                evaluator._find_big_picture_target()
+            except BaseException as error:
+                failures.append(error)
+            finally:
+                finished.set()
+
+        worker = threading.Thread(target=find_target, daemon=True)
+        worker.start()
+        assert endpoint.headers_sent.wait(1)
+        time.sleep(0.03)
+        evaluator.close_active()
+        completed_promptly = finished.wait(0.5)
+        if not completed_promptly:
+            endpoint.close()
+            worker.join(1)
+
+        assert completed_promptly, "unload did not close the response-owned transport"
+        assert failures
+        assert endpoint.disconnected.wait(1)
+        assert not evaluator._active_discovery_connections
 
 
 def test_evaluator_sends_runtime_evaluate_and_returns_the_dictionary() -> None:

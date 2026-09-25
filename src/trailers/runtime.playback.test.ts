@@ -660,6 +660,44 @@ test('Movie metadata cannot supply an HTTP or private direct candidate', async (
   assert.equal(result.candidates, undefined);
 });
 
+test('Steam loopback URLs are rejected as direct files and HLS child playlists', async () => {
+  const requestedUrls = [];
+  const h = setup({ fetchReply: async url => {
+    requestedUrls.push(url);
+    return responseBody(JSON.stringify({ 570: { data: { movies: [{
+      id: 6,
+      mp4: { 720: 'https://steamloopback.host/movie.mp4' },
+    }] } } }));
+  } });
+
+  const result = await h.runtime.getTrailer(570);
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(requestedUrls, ['https://store.steampowered.com/api/appdetails?appids=570&filters=movies']);
+  assert.throws(() => h.runtime.selectHlsVariant(`#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=1000,CODECS="avc1.640029",RESOLUTION=1280x720
+https://cdn.steamloopback.host/child.m3u8`,
+  'https://steam.test/master.m3u8'), /supported video/i);
+});
+
+test('A response without a streaming reader fails closed without reading an unbounded fallback', async () => {
+  for (const contentLength of [null, '4']) {
+    let bodyRead = false;
+    const h = setup({ fetchReply: async () => ({
+      ok: true,
+      headers: { get: name => name.toLowerCase() === 'content-length' ? contentLength : null },
+      body: null,
+      text: async () => { bodyRead = true; return 'oversized response'; },
+      arrayBuffer: async () => { bodyRead = true; return new ArrayBuffer(128); },
+    }) });
+    const candidate = { controller: new AbortController(), isCurrent: () => true };
+
+    await assert.rejects(h.runtime.fetchText('https://steam.test/manifest.m3u8', candidate), /stream|bounded/i);
+
+    assert.equal(bodyRead, false);
+  }
+});
+
 test('An oversized short segment fails before the response body is read', async () => {
   let bodyRead = false;
   const h = setup({ fetchReply: async () => ({

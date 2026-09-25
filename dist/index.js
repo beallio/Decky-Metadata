@@ -8769,6 +8769,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
         if (parsed.protocol !== "https:" || parsed.username || parsed.password || !host ||
+            host === "steamloopback.host" || host.endsWith(".steamloopback.host") ||
             host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
             host.endsWith(".internal") || host.endsWith(".lan") || host.endsWith(".home") ||
             host.endsWith(".onion") || /^\[.*\]$/.test(host) || /^\d+(?:\.\d+){0,3}$/.test(host))
@@ -8776,21 +8777,21 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         return parsed.href;
     };
     const readBoundedBody = async (response, maximumBytes, asText) => {
-        const declaredLength = Number(response.headers?.get?.("content-length"));
-        if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) {
+        const contentLength = response.headers?.get?.("content-length");
+        const lengthText = contentLength == null ? null : String(contentLength).trim();
+        if (lengthText !== null && !/^\d+$/.test(lengthText)) {
+            throw new Error("Steam media response has an invalid content length");
+        }
+        const declaredLength = lengthText === null ? null : Number(lengthText);
+        if (declaredLength !== null && !Number.isSafeInteger(declaredLength)) {
+            throw new Error("Steam media response has an invalid content length");
+        }
+        if (declaredLength !== null && declaredLength > maximumBytes) {
             throw new Error("Steam media response is too large");
         }
         const reader = response.body?.getReader?.();
-        if (!reader) {
-            if (!Number.isFinite(declaredLength) || declaredLength < 0) {
-                throw new Error("Steam media response has no bounded body");
-            }
-            const fallback = asText ? await response.text() : await response.arrayBuffer();
-            const bytes = asText ? new TextEncoder().encode(fallback) : new Uint8Array(fallback);
-            if (bytes.byteLength > maximumBytes)
-                throw new Error("Steam media response is too large");
-            return asText ? fallback : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-        }
+        if (!reader)
+            throw new Error("Steam media response has no bounded streaming body");
         const chunks = [];
         let size = 0;
         try {
@@ -10000,6 +10001,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     watchProgress(); });
                 watchProgress();
                 if (readyForPlayback) {
+                    // Native direct playback keeps browser-managed buffering. The browser follows
+                    // redirects for these declared MP4/WebM URLs without exposing the target here.
                     video.src = source.url;
                     video.load();
                 }
@@ -10901,6 +10904,8 @@ class TrailerController {
             void this.poll();
         let succeeded = true;
         const save = this.settingsSaveQueue.then(async () => {
+            if (!this.ownsMount(ownerId))
+                return;
             await setTrailerSettings(next);
         });
         this.settingsSaveQueue = save.then(() => {

@@ -56,7 +56,7 @@ const mountController = (settings = { enabled: true, audioEnabled: false, qualit
   return controller as any;
 };
 
-describe("TrailerController round 2 behavior", () => {
+describe("TrailerController behavior", () => {
   beforeEach(() => {
     steam.route = "/routes/library/app/570";
     steam.overview.clear();
@@ -202,5 +202,39 @@ describe("TrailerController round 2 behavior", () => {
     expect(controller.settingsBusy).toBe(false);
     expect(runtime.update).toHaveBeenCalledTimes(2);
     controller.stop();
+  });
+
+  it("skips a retired mount's queued settings write after a replacement saves newer state", async () => {
+    const firstWrite = deferred<unknown>();
+    const persistedAudioValues: boolean[] = [];
+    let writeCount = 0;
+    backend.setTrailerSettings.mockImplementation(async (value: unknown) => {
+      const audioEnabled = (value as { audioEnabled: boolean }).audioEnabled;
+      writeCount += 1;
+      if (writeCount === 1) await firstWrite.promise;
+      persistedAudioValues.push(audioEnabled);
+      return value;
+    });
+
+    const retired = mountController({ enabled: true, audioEnabled: false, quality: "auto" }, "retired");
+    retired.handleAudioChange({ detail: { ownerId: "retired", settingsRevision: 0, audioEnabled: true } });
+    await flush();
+    retired.handleAudioChange({ detail: {
+      ownerId: "retired", settingsRevision: retired.settingsRevision, audioEnabled: false,
+    } });
+    await flush();
+    expect(backend.setTrailerSettings).toHaveBeenCalledTimes(1);
+
+    retired.stop();
+    const current = mountController({ enabled: true, audioEnabled: false, quality: "auto" }, "current");
+    await current.setAudioEnabled(true);
+    expect(persistedAudioValues).toEqual([true]);
+
+    firstWrite.resolve(undefined);
+    await retired.settingsSaveQueue;
+
+    expect(backend.setTrailerSettings).toHaveBeenCalledTimes(2);
+    expect(persistedAudioValues).toEqual([true, true]);
+    current.stop();
   });
 });

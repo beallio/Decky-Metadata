@@ -309,6 +309,7 @@ export class TrailerController {
 
     let succeeded = true;
     const save = this.settingsSaveQueue.then(async () => {
+      if (!this.ownsMount(ownerId)) return;
       await setTrailerSettings(next);
     });
     this.settingsSaveQueue = save.then(
