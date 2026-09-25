@@ -7,6 +7,7 @@ import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
+import { startTrailerController } from "./trailers/controller";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -80,6 +81,7 @@ export default definePlugin(() => {
     }, "error").catch(() => undefined);
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
+  const stopTrailerController = startTrailerController();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -94,6 +96,7 @@ export default definePlugin(() => {
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
+      stopTrailerController();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.

@@ -42,6 +42,23 @@ const steam = vi.hoisted(() => ({
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
 const ui = vi.hoisted(() => ({ getGamepadNavigationTrees: vi.fn(), showModal: vi.fn() }));
+const trailer = vi.hoisted(() => ({
+  subscribe: vi.fn(() => () => undefined),
+  getSnapshot: vi.fn(() => ({
+    settings: { enabled: false, audioEnabled: false, quality: "auto" },
+    status: "Disabled",
+    displayWidth: null,
+    displayHeight: null,
+    targetHeight: 720,
+    settingsLoaded: false,
+    busy: false,
+    settingsError: "",
+    matchRevision: 0,
+  })),
+  setEnabled: vi.fn(),
+  setAudioEnabled: vi.fn(),
+  setQuality: vi.fn(),
+}));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -76,6 +93,7 @@ vi.mock("./backend", () => backend);
 vi.mock("./components/qam/DelistedIndexSection", () => ({
   DelistedIndexSection: "DelistedIndexSection",
 }));
+vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersSection: "GameTrailersSection" }));
 vi.mock("./components/qam/LogsSection", () => ({ LogsSection: "LogsSection" }));
 vi.mock("./components/qam/MetadataSection", () => ({
   MetadataSection: "MetadataSection",
@@ -95,6 +113,7 @@ vi.mock("./log", () => ({
   warn: vi.fn(),
 }));
 vi.mock("./steam", () => steam);
+vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({
@@ -147,6 +166,9 @@ const versionsSection = (tree: any) =>
 
 const metadataSection = (tree: any) =>
   children(tree).find((node) => node.type === "MetadataSection");
+
+const gameTrailersSection = (tree: any) =>
+  children(tree).find((node) => node.type === "GameTrailersSection");
 
 const runEffects = () => {
   for (const effect of [...harness.effects]) effect();
@@ -259,6 +281,14 @@ const remountReturnedDropdown = async (origin: "category" | "scope") => {
 };
 
 describe("Content update settings", () => {
+  it("includes the single Metadata-owned game trailers section", () => {
+    const section = gameTrailersSection(render());
+    expect(section?.props.state.settings).toEqual({ enabled: false, audioEnabled: false, quality: "auto" });
+    expect(typeof section?.props.onEnabledChange).toBe("function");
+    expect(typeof section?.props.onAudioChange).toBe("function");
+    expect(typeof section?.props.onQualityChange).toBe("function");
+  });
+
   beforeEach(() => {
     vi.resetAllMocks();
     harness.hookIndex = 0;

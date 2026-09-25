@@ -67,6 +67,27 @@ export type UpdateSettings = {
   automatic_update_checks: boolean;
 };
 
+export type TrailerQuality = "auto" | 720 | 1080 | 1440 | 2160;
+
+/** Metadata-owned Steam trailer preferences. */
+export type TrailerSettings = {
+  enabled: boolean;
+  audioEnabled: boolean;
+  quality: TrailerQuality;
+};
+
+export type TrailerStatus = {
+  settings: TrailerSettings;
+  appId?: number;
+  sourceAppId?: number;
+  status: string;
+  trailerName?: string;
+  gameTitle?: string;
+  displayWidth: number | null;
+  displayHeight: number | null;
+  targetHeight: number;
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;

@@ -32,6 +32,8 @@ import {
   isNativeNonSteamShortcut,
   isNonSteamAppWithoutPatchedMethod,
   metadataCache,
+  replaceMetadataCacheEntries,
+  setMetadataCacheEntry,
   notifyCompatibilityRevision,
   patchMethod,
   safeAfterPatch,
@@ -736,8 +738,7 @@ export const refreshMetadataCache = async () => {
     effectiveCompatibilityCategory(previousMetadata[key], metadataState.compatibilityDefault) !==
     effectiveCompatibilityCategory((all || {})[key], metadataState.compatibilityDefault)
   );
-  Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
-  Object.assign(metadataCache, all || {});
+  replaceMetadataCacheEntries(all || {});
   metadataState.metadataLoaded = true;
   const compatibilityChanged = applyMetadataBatch(affectedAppIds);
   // A first successful load must wake mounted cards even if Steam has not made
@@ -960,7 +961,7 @@ export const tryFetchMetadataForApp = async (appId: number) => {
     const metadata = await autoFetchMetadata(appId, appName(appId));
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
     if (metadata) {
-      metadataCache[String(appId)] = metadata;
+      setMetadataCacheEntry(appId, metadata);
       applyMetadata(appId);
       notifyCompatibilityRevision();
     }
@@ -999,7 +1000,7 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
         screenshots: refreshed.screenshots,
       });
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      metadataCache[String(appId)] = saved;
+      setMetadataCacheEntry(appId, saved);
       applyMetadata(appId);
       notifyCompatibilityRevision();
     }

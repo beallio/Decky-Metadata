@@ -36,11 +36,13 @@ import {
   hasShortcutNameApi,
   isNonSteamApp,
   metadataCache,
+  removeMetadataCacheEntry,
   ensureCompatibilityDefault,
   isCompatibilityDefaultEligible,
   nativeShortcutName,
   refreshCompatibilitySurfaces,
   setShortcutNameAndWait,
+  setMetadataCacheEntry,
   subscribeCompatibilityRevision,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
@@ -514,7 +516,7 @@ export const MetadataPage = () => {
           return;
         }
         const reconciled = reconcileMetadataResponse(enriched, requestedMetadata, requestedText);
-        metadataCache[String(appId)] = reconciled;
+        setMetadataCacheEntry(appId, reconciled);
         if (steamAppIdTextRef.current === requestedText.steamAppIdText) {
           setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
         }
@@ -602,7 +604,7 @@ export const MetadataPage = () => {
       ) {
         return;
       }
-      metadataCache[String(appId)] = saved;
+      setMetadataCacheEntry(appId, saved);
       setFormMetadata(saved);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
@@ -659,7 +661,7 @@ export const MetadataPage = () => {
         steam_store_name: typeof saved.steam_store_name === "string" ? saved.steam_store_name : "",
         steam_store_url: typeof saved.steam_store_url === "string" ? saved.steam_store_url : "",
       }, saveBaselineMetadata, saveBaselineText);
-      metadataCache[String(appId)] = reconciled;
+      setMetadataCacheEntry(appId, reconciled);
       if (steamAppIdTextRef.current === steamAppIdText) {
         setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
       }
@@ -703,7 +705,7 @@ export const MetadataPage = () => {
           enrichmentBaselineMetadata,
           enrichmentBaselineText,
         );
-        metadataCache[String(appId)] = enrichedMetadata;
+        setMetadataCacheEntry(appId, enrichedMetadata);
         if (steamAppIdTextRef.current === steamAppIdText) {
           setSteamAppIdInput(enrichedMetadata.steam_appid ? String(enrichedMetadata.steam_appid) : "");
         }
@@ -747,7 +749,7 @@ export const MetadataPage = () => {
       ) {
         return;
       }
-      metadataCache[String(appId)] = saved;
+      setMetadataCacheEntry(appId, saved);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);
@@ -765,7 +767,7 @@ export const MetadataPage = () => {
     if (!beginBusy(requestedEntry)) return;
     try {
       await removeMetadata(appId);
-      delete metadataCache[String(appId)];
+      removeMetadataCacheEntry(appId);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;

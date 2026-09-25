@@ -25,6 +25,7 @@ import {
   startScanMissing,
 } from "./backend";
 import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
@@ -77,6 +78,7 @@ import {
 } from "./updater/updateSettings";
 import { useNonSteamGames } from "./useNonSteamGames";
 import { getConnectedControllerTypes } from "./steam";
+import { trailerController } from "./trailers/controller";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -184,6 +186,10 @@ const epochToUsDate = (value?: number | null) => {
 };
 
 export const Content = () => {
+  const [trailerSnapshot, setTrailerSnapshot] = useState(trailerController.getSnapshot());
+  useEffect(() => trailerController.subscribe(() => {
+    setTrailerSnapshot(trailerController.getSnapshot());
+  }), []);
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const initialPendingCompatibilityPolicySave =
     initialCompatibilityPolicySave
@@ -788,6 +794,12 @@ export const Content = () => {
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
         onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
         onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
+      />
+      <GameTrailersSection
+        state={trailerSnapshot}
+        onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
+        onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
+        onQualityChange={(quality) => void trailerController.setQuality(quality)}
       />
       <DelistedIndexSection
         countText={delistedCountText}

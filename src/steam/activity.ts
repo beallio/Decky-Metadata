@@ -29,6 +29,7 @@ import {
   isCompatibilityLifecycleCurrent,
   metadataCache,
   notifyCompatibilityRevision,
+  setMetadataCacheEntry,
   patchInstallStatus,
   patchMethod,
   rewriteSteamLinkToMatchedApp,
@@ -68,7 +69,7 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
       const compatibilityChanged =
         previous?.deck_compat_override !== refreshed.deck_compat_override ||
         previous?.deck_compat_category !== refreshed.deck_compat_category;
-      metadataCache[String(appId)] = refreshed;
+      setMetadataCacheEntry(appId, refreshed);
       if (compatibilityChanged) {
         applyMetadataFn(appId);
         notifyCompatibilityRevision();

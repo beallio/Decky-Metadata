@@ -81,6 +81,7 @@ import decky
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 from backend import matching, scan_runner, shortcuts_vdf, storage, steam_paths
+from backend.cef_bridge import BigPictureEvaluator
 from backend.providers import community as community_provider
 from backend.providers import delisted as delisted_provider
 from backend.providers import ign as ign_provider
@@ -350,6 +351,7 @@ class Plugin:
         self._data_cache: dict[str, Any] | None = None
         self._data_cache_mtime_ns: int | None = None
         self._delisted_index: dict[str, Any] | None = None
+        self._big_picture = BigPictureEvaluator(decky.logger)
         self._updater = PluginUpdater(
             state_lock=self._data_lock,
             save_callback=self._save_updater_state,
@@ -401,11 +403,15 @@ class Plugin:
 
     async def _unload(self) -> None:
         _plog("load", "backend unload begin")
+        self._big_picture.close_active()
         if self._scan_task and not self._scan_task.done():
             self._scan_task.cancel()
         if self._activity_refresh_task and not self._activity_refresh_task.done():
             self._activity_refresh_task.cancel()
         _plog("load", "backend unloaded")
+
+    async def eval_in_big_picture(self, code: str) -> dict[str, Any]:
+        return await self._big_picture.eval_in_big_picture(code)
 
     def _is_steamos(self) -> bool:
         return steam_paths.is_steamos()
@@ -659,6 +665,55 @@ class Plugin:
                     settings.pop("deck_compat_default_scope", None)
                 raise
         return value
+
+    @staticmethod
+    def _validated_trailer_settings(value: Any) -> dict[str, Any]:
+        expected = {"enabled", "audioEnabled", "quality"}
+        if not isinstance(value, dict) or set(value) != expected:
+            raise ValueError("invalid trailer settings")
+        if type(value["enabled"]) is not bool or type(value["audioEnabled"]) is not bool:
+            raise ValueError("invalid trailer settings")
+        quality = value["quality"]
+        if type(quality) is str:
+            valid_quality = quality == "auto"
+        else:
+            valid_quality = type(quality) is int and quality in {720, 1080, 1440, 2160}
+        if not valid_quality:
+            raise ValueError("invalid trailer settings")
+        return {
+            "enabled": value["enabled"],
+            "audioEnabled": value["audioEnabled"],
+            "quality": quality,
+        }
+
+    async def get_trailer_settings(self) -> dict[str, Any]:
+        if not self._load_data():
+            raise RuntimeError("trailer settings could not be loaded")
+        settings = self._data.get("settings")
+        value = settings.get("game_trailers") if isinstance(settings, dict) else None
+        return storage.normalize_trailer_settings(value)
+
+    async def set_trailer_settings(self, value: Any) -> dict[str, Any]:
+        normalized = self._validated_trailer_settings(value)
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("trailer settings could not be loaded")
+            settings = self._data.get("settings")
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "game_trailers" in settings
+            previous = settings.get("game_trailers")
+            settings["game_trailers"] = dict(normalized)
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["game_trailers"] = previous
+                else:
+                    settings.pop("game_trailers", None)
+                raise
+        return normalized
 
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
