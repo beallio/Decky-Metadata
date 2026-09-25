@@ -58,6 +58,83 @@ const responseBody = (body, properties = {}) => {
   };
 };
 
+async function readyDirectTrailer({ failWake = false } = {}) {
+  const h = setup();
+  let createdVideos = 0;
+  let playCalls = 0;
+  const classes = new Set();
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = 'url(https://steam.test/steam/apps/570/library_hero.jpg)';
+      this.classList = {
+        add: (...names) => names.forEach(name => classes.add(name)),
+        remove: (...names) => names.forEach(name => classes.delete(name)),
+      };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  class Video extends EventTarget {
+    constructor() {
+      super();
+      this.isConnected = false;
+      this.paused = true;
+      this.readyState = 0;
+      this.currentTime = 0;
+      this.dataset = {};
+      this.names = new Set();
+      this.classList = {
+        add: name => this.names.add(name),
+        remove: name => this.names.delete(name),
+        contains: name => this.names.has(name),
+      };
+    }
+    setAttribute() {}
+    load() {
+      if (this.src) queueMicrotask(() => {
+        this.readyState = 3;
+        this.dispatchEvent(new Event('canplay'));
+      });
+    }
+    play() {
+      playCalls++;
+      if (failWake && playCalls > 1) return Promise.reject(new Error('wake playback denied'));
+      this.paused = false;
+      this.dispatchEvent(new Event('play'));
+      this.dispatchEvent(new Event('playing'));
+      return Promise.resolve();
+    }
+    pause() { this.paused = true; }
+    removeAttribute(name) { if (name === 'src') this.src = ''; }
+    remove() { this.isConnected = false; }
+  }
+  const hero = new Hero();
+  h.window.location = new URL('https://steamloopback.host/routes/library/app/570');
+  h.document.URL = h.window.location.href;
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  h.document.createElement = () => {
+    createdVideos++;
+    return new Video();
+  };
+  hero.insertBefore = video => { video.isConnected = true; };
+  h.runtime.pageEnteredAt = Date.now() - 3000;
+  h.runtime.attachVideo(hero, 570, [{ format: 'mp4', url: movie.mp4[720], height: 720 }], h.runtime.requestToken);
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  return {
+    ...h,
+    hero,
+    get video() { return h.runtime.currentVideo; },
+    get playCalls() { return playCalls; },
+    get createdVideos() { return createdVideos; },
+    classes,
+  };
+}
+
 for (const [display, target, expected] of [
   [{ width: 1280, height: 800, dpr: 1 }, 800, 'dash_h264.mpd'],
   [{ width: 1920, height: 1080, dpr: 1 }, 1080, 'dash_h264.mpd'],
@@ -138,6 +215,48 @@ test('Same target preserves playback; Auto display change restarts, manual displ
   manual.runtime.update({ enabled: true, audioEnabled: true, quality: 1080 }, 1);
   assert.equal(manual.runtime.currentVideo.isConnected, true);
   assert.equal(manual.runtime.snapshot().targetHeight, 1080);
+});
+
+test('A visible paused trailer resumes the same video after wake without allocating another session', async () => {
+  const h = await readyDirectTrailer();
+  const video = h.video;
+  assert.ok(video);
+  assert.equal(video.paused, false);
+  assert.equal(h.runtime.currentMediaReady, true);
+
+  video.paused = true;
+  video.dispatchEvent(new Event('pause'));
+  await h.runtime.scan();
+  for (let index = 0; index < 10; index++) await Promise.resolve();
+  await h.runtime.scan();
+
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(video.paused, false);
+  assert.equal(h.playCalls, 2);
+  assert.equal(h.createdVideos, 1);
+
+  h.document.hidden = true;
+  h.runtime.handleVisibilityChange();
+  assert.equal(h.runtime.currentVideo, undefined, 'hidden playback is cleaned up instead of resumed');
+  assert.equal(h.playCalls, 2);
+});
+
+test('A denied wake resume restores artwork and does not retry on every scan', async () => {
+  const h = await readyDirectTrailer({ failWake: true });
+  const video = h.video;
+  video.paused = true;
+  video.dispatchEvent(new Event('pause'));
+
+  await h.runtime.scan();
+  for (let index = 0; index < 10; index++) await Promise.resolve();
+  assert.equal(h.runtime.currentVideo, undefined);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+  assert.equal(h.playCalls, 2);
+
+  await h.runtime.scan();
+  await h.runtime.scan();
+  assert.equal(h.playCalls, 2);
+  assert.equal(h.createdVideos, 1);
 });
 test('A quality change aborts pending metadata without poisoning the next page attempt', async () => {
   let release;

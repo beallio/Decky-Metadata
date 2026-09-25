@@ -83,7 +83,11 @@ class _FakeCDP:
                 frame = bytes([0x81, len(response)]) if len(response) < 126 else bytes([0x81, 126]) + struct.pack("!H", len(response))
                 connection.sendall(frame + response)
         except (ConnectionResetError, OSError, ConnectionError) as error:
-            if not self.release.is_set():
+            if self.release.is_set():
+                # The client may close the socket while this fixture is still
+                # reading the command. That is the expected unload path too.
+                self.closed.set()
+            else:
                 self.error = error
 
 

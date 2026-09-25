@@ -82,12 +82,13 @@ import { trailerController } from "./trailers/controller";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
-// Steam can take over a second to register the fresh QAM control after its
-// native popup returns. This caps one return handoff at roughly three seconds.
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 360;
+// Keep checking native focus while Steam rebuilds the navigation tree after a
+// popup return. A saved quality change is already settled before this begins.
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 900;
 const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
-const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 180;
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 3;
+const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
+const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
 
 type NativeFocusNode = {
   Element?: Element;
@@ -102,6 +103,14 @@ type NativeNavigationTree = {
 export const takeNativeFocus = (element: Element | null): boolean => {
   if (!element) return false;
   try {
+    const ownerDocument = element.ownerDocument;
+    const ownerWindow = ownerDocument.defaultView;
+    if (
+      !ownerWindow
+      || ownerWindow.closed
+      || ownerWindow.document !== ownerDocument
+      || ownerDocument.visibilityState !== "visible"
+    ) return false;
     const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
     for (const tree of trees) {
       const pending = tree.Root ? [tree.Root] : [];
@@ -347,8 +356,44 @@ export const Content = () => {
       : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
     let cancelled = false;
     let frame: number | null = null;
+    let focusObserver: MutationObserver | null = null;
     let attempts = 0;
     let stableFocusFrames = 0;
+    const qamDocument = control.ownerDocument;
+    const releaseFocusLease = () => {
+      if (!isCompatibilityDropdownReturnReady()) return;
+      consumeCompatibilityDropdownReturn();
+      initialPanelFocusComplete.current = true;
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+        frame = null;
+      }
+      focusObserver?.disconnect();
+      focusObserver = null;
+    };
+    const handleUserNavigation = (event: Event) => {
+      if (event.type === "vgp_onbuttondown") {
+        const button = Number((event as CustomEvent).detail?.button);
+        if (GAMEPAD_DIRECTION_BUTTONS.has(button) && hasCompatibilityDropdownFocus(control)) {
+          releaseFocusLease();
+        }
+        return;
+      }
+      if (event.type === "pointerdown") {
+        releaseFocusLease();
+        return;
+      }
+      const key = (event as KeyboardEvent).key;
+      if (
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)
+        && hasCompatibilityDropdownFocus(control)
+      ) {
+        releaseFocusLease();
+      }
+    };
+    qamDocument.addEventListener("keydown", handleUserNavigation, true);
+    qamDocument.addEventListener("vgp_onbuttondown", handleUserNavigation, true);
+    qamDocument.addEventListener("pointerdown", handleUserNavigation, true);
     const focusReturnedDropdown = () => {
       frame = null;
       if (
@@ -359,37 +404,68 @@ export const Content = () => {
           ? trailerSnapshot.busy
           : compatibilityDefaultBusy || compatibilityDefaultScopeBusy)
       ) return;
+      const ownerWindow = qamDocument.defaultView;
+      if (!ownerWindow || ownerWindow.closed || ownerWindow.document !== qamDocument) return;
+      if (qamDocument.visibilityState !== "visible") return;
       attempts += 1;
       if (attempts <= settleFrames) {
         frame = window.requestAnimationFrame(focusReturnedDropdown);
         return;
       }
       // The native menu hides and unmounts QAM before the replacement
-      // combobox is registered in Steam's navigation tree. Retry only over
-      // this bounded return transition, and only with Steam's BTakeFocus.
+      // combobox is registered in Steam's navigation tree. Keep restoring the
+      // returned control through trailer updates and combobox replacement. The
+      // first user input releases this focus lease so D-pad navigation can continue.
       if (hasCompatibilityDropdownFocus(control)) {
         stableFocusFrames += 1;
         if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
-          consumeCompatibilityDropdownReturn();
           initialPanelFocusComplete.current = true;
-          return;
+          // Steam can replace the focused row after the popup closes without
+          // changing this control's DOM. Keep checking for a short bounded
+          // handoff so a later native focus reset cannot leave QAM unfocused.
         }
-        frame = window.requestAnimationFrame(focusReturnedDropdown);
-        return;
+      } else {
+        stableFocusFrames = 0;
+        takeCompatibilityDropdownFocus(control);
       }
-      stableFocusFrames = 0;
-      takeCompatibilityDropdownFocus(control);
       if (attempts < COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES) {
         frame = window.requestAnimationFrame(focusReturnedDropdown);
       } else {
         log.warn("qam", "compatibility dropdown return focus unavailable");
         clearCompatibilityDropdownReturn();
+        focusObserver?.disconnect();
+        focusObserver = null;
       }
     };
+    focusObserver = new MutationObserver(() => {
+      if (
+        cancelled
+        || !isCompatibilityDropdownReturnReady()
+        || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
+        || (origin === "quality"
+          ? trailerSnapshot.busy
+          : compatibilityDefaultBusy || compatibilityDefaultScopeBusy)
+        || hasCompatibilityDropdownFocus(control)
+        || frame !== null
+      ) return;
+      attempts = 0;
+      stableFocusFrames = 0;
+      frame = window.requestAnimationFrame(focusReturnedDropdown);
+    });
+    focusObserver.observe(control, {
+      attributes: true,
+      attributeFilter: ["class"],
+      childList: true,
+      subtree: true,
+    });
     frame = window.requestAnimationFrame(focusReturnedDropdown);
     return () => {
       cancelled = true;
       if (frame !== null) window.cancelAnimationFrame(frame);
+      focusObserver?.disconnect();
+      qamDocument.removeEventListener("keydown", handleUserNavigation, true);
+      qamDocument.removeEventListener("vgp_onbuttondown", handleUserNavigation, true);
+      qamDocument.removeEventListener("pointerdown", handleUserNavigation, true);
     };
   }, [
     compatibilityDefaultBusy,
@@ -400,7 +476,10 @@ export const Content = () => {
     compatibilityDropdownReturnVersion,
     trailerQualityControl,
     trailerSnapshot.busy,
+    trailerSnapshot.settings.quality,
     trailerSnapshot.settingsLoaded,
+    trailerSnapshot.status,
+    trailerSnapshot.targetHeight,
   ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
@@ -806,13 +885,20 @@ export const Content = () => {
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
         onQualityChange={async (quality) => {
-          const saved = await trailerController.setQuality(quality);
-          if (saved && noteCompatibilityDropdownSelectionSaved()) {
-            setCompatibilityDropdownReturnVersion((version) => version + 1);
+          requestCompatibilityDropdownReturn("quality");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            return await trailerController.setQuality(quality);
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) {
+              setCompatibilityDropdownReturnVersion((version) => version + 1);
+            }
           }
-          return saved;
         }}
-        onQualityMenuWillOpen={() => requestCompatibilityDropdownReturn("quality")}
+        onQualityMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("quality");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
         onQualityControlRef={setTrailerQualityControl}
       />
       <DelistedIndexSection

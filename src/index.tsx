@@ -51,7 +51,6 @@ const installInPlaceReloadGuard = (onFailedReload: () => void) => {
 };
 
 export default definePlugin(() => {
-  clearCompatibilityDropdownReturn();
   beginCompatibilityLifecycle();
   let retainedReloadBaselines = false;
   const reloadGuard = installInPlaceReloadGuard(() => {
@@ -119,7 +118,9 @@ export default definePlugin(() => {
         log.error("patch", "metadata bootstrap stop failed", error);
       }
       try {
-        clearCompatibilityDropdownReturn();
+        // Keep a native dropdown return request across an in-place bundle
+        // reload. A popup can reload the QAM while its selection is saving.
+        if (!reloading) clearCompatibilityDropdownReturn();
       } catch (error) {
         log.error("patch", "compatibility dropdown focus stop failed", error);
       }

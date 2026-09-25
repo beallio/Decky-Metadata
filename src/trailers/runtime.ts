@@ -539,6 +539,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.status = rt("waitingGamePage");
             this.requestToken = 0;
             this.trailerCache = new Map();
+            this.resumeAttemptCandidate = undefined;
             this.displaySize = readPlaybackDisplaySize(window);
             this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
             this.trailerAudioEnabled = this.settings.audioEnabled;
@@ -867,7 +868,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 return;
             }
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
-            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) return;
+            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
+                this.resumeVisiblePausedVideo(appId, hero.element);
+                return;
+            }
             if (this.pendingAppId === appId && this.pendingTarget === hero.element && this.pendingRequestToken === this.requestToken) return;
             const priorAppId = this.currentAppId;
             this.cleanupVideo(true);
@@ -894,6 +898,34 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             this.currentTrailerName = trailer.name;
             this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token, { mediaSignature: this.getDesiredMediaSignature() });
+        }
+        resumeVisiblePausedVideo(appId, hero) {
+            const video = this.currentVideo;
+            const candidate = this.activeCandidate;
+            if (!video?.isConnected || !video.paused || !this.currentMediaReady || document.hidden ||
+                this.launchHeld || !this.settings.enabled || !candidate?.isCurrent?.() ||
+                this.resumeAttemptCandidate === candidate) return;
+            this.resumeAttemptCandidate = candidate;
+            let playback;
+            try {
+                playback = video.play();
+            }
+            catch (error) {
+                playback = Promise.reject(error);
+            }
+            Promise.resolve(playback).then(() => {
+                if (!candidate.isCurrent()) return;
+                if (video.paused) throw new Error("Trailer stayed paused after wake");
+                this.status = this.currentTrailerName
+                    ? rt("trailerLabel", { name: this.currentTrailerName })
+                    : rt("trailerActive");
+                this.updateAudioHint();
+            }).catch(() => {
+                if (!candidate.isCurrent()) return;
+                this.failedVisit = { appId, hero };
+                this.cleanupVideo(true);
+                this.status = rt("autoplayBlocked");
+            });
         }
         getDesiredMediaSignature() {
             return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
@@ -997,6 +1029,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.activeSession?.dispose();
                 this.activeSession = undefined;
                 this.currentMediaReady = false;
+                this.resumeAttemptCandidate = undefined;
                 const video = this.currentVideo;
                 if (video?.isConnected) {
                     video.pause();
@@ -1047,6 +1080,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     }
                 };
                 this.activeCandidate = candidate;
+                this.resumeAttemptCandidate = undefined;
                 this.currentVideo = video;
                 this.currentMediaReady = false;
                 let readyForPlayback = source.format === "mp4" || source.format === "webm";
@@ -1093,6 +1127,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (!candidate.isCurrent() || video.paused || !Number.isFinite(video.currentTime)) return;
                     if (video.currentTime > lastProgress + 0.05 || video.currentTime + 0.05 < lastProgress) {
                         lastProgress = video.currentTime;
+                        if (this.resumeAttemptCandidate === candidate) this.resumeAttemptCandidate = undefined;
                         watchProgress();
                     }
                 });
@@ -1103,6 +1138,11 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 });
                 listen("pause", () => { if (started && candidate.isCurrent()) clearWatchdog(); });
                 listen("play", () => { if (candidate.isCurrent()) watchProgress(); });
+                listen("playing", () => {
+                    if (!candidate.isCurrent()) return;
+                    if (this.resumeAttemptCandidate === candidate) this.resumeAttemptCandidate = undefined;
+                    watchProgress();
+                });
                 watchProgress();
                 if (readyForPlayback) {
                     // Native direct playback keeps browser-managed buffering. The browser follows
@@ -1477,6 +1517,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.activeCandidate?.controller.abort();
             this.activeSession?.dispose();
             this.activeCandidate = undefined;
+            this.resumeAttemptCandidate = undefined;
             this.activeSession = undefined;
             this.currentMediaReady = false;
             if (this.fadeTimer) window.clearTimeout(this.fadeTimer);

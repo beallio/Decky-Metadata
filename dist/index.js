@@ -9369,6 +9369,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.status = rt("waitingGamePage");
             this.requestToken = 0;
             this.trailerCache = new Map();
+            this.resumeAttemptCandidate = undefined;
             this.displaySize = readPlaybackDisplaySize(window);
             this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
             this.trailerAudioEnabled = this.settings.audioEnabled;
@@ -9732,8 +9733,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element)
                 return;
-            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected)
+            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
+                this.resumeVisiblePausedVideo(appId, hero.element);
                 return;
+            }
             if (this.pendingAppId === appId && this.pendingTarget === hero.element && this.pendingRequestToken === this.requestToken)
                 return;
             const priorAppId = this.currentAppId;
@@ -9762,6 +9765,38 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
             this.currentTrailerName = trailer.name;
             this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token, { mediaSignature: this.getDesiredMediaSignature() });
+        }
+        resumeVisiblePausedVideo(appId, hero) {
+            const video = this.currentVideo;
+            const candidate = this.activeCandidate;
+            if (!video?.isConnected || !video.paused || !this.currentMediaReady || document.hidden ||
+                this.launchHeld || !this.settings.enabled || !candidate?.isCurrent?.() ||
+                this.resumeAttemptCandidate === candidate)
+                return;
+            this.resumeAttemptCandidate = candidate;
+            let playback;
+            try {
+                playback = video.play();
+            }
+            catch (error) {
+                playback = Promise.reject(error);
+            }
+            Promise.resolve(playback).then(() => {
+                if (!candidate.isCurrent())
+                    return;
+                if (video.paused)
+                    throw new Error("Trailer stayed paused after wake");
+                this.status = this.currentTrailerName
+                    ? rt("trailerLabel", { name: this.currentTrailerName })
+                    : rt("trailerActive");
+                this.updateAudioHint();
+            }).catch(() => {
+                if (!candidate.isCurrent())
+                    return;
+                this.failedVisit = { appId, hero };
+                this.cleanupVideo(true);
+                this.status = rt("autoplayBlocked");
+            });
         }
         getDesiredMediaSignature() {
             return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
@@ -9882,6 +9917,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.activeSession?.dispose();
                 this.activeSession = undefined;
                 this.currentMediaReady = false;
+                this.resumeAttemptCandidate = undefined;
                 const video = this.currentVideo;
                 if (video?.isConnected) {
                     video.pause();
@@ -9934,6 +9970,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     }
                 };
                 this.activeCandidate = candidate;
+                this.resumeAttemptCandidate = undefined;
                 this.currentVideo = video;
                 this.currentMediaReady = false;
                 let readyForPlayback = source.format === "mp4" || source.format === "webm";
@@ -9985,6 +10022,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                         return;
                     if (video.currentTime > lastProgress + 0.05 || video.currentTime + 0.05 < lastProgress) {
                         lastProgress = video.currentTime;
+                        if (this.resumeAttemptCandidate === candidate)
+                            this.resumeAttemptCandidate = undefined;
                         watchProgress();
                     }
                 });
@@ -9999,6 +10038,13 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     clearWatchdog(); });
                 listen("play", () => { if (candidate.isCurrent())
                     watchProgress(); });
+                listen("playing", () => {
+                    if (!candidate.isCurrent())
+                        return;
+                    if (this.resumeAttemptCandidate === candidate)
+                        this.resumeAttemptCandidate = undefined;
+                    watchProgress();
+                });
                 watchProgress();
                 if (readyForPlayback) {
                     // Native direct playback keeps browser-managed buffering. The browser follows
@@ -10437,6 +10483,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.activeCandidate?.controller.abort();
             this.activeSession?.dispose();
             this.activeCandidate = undefined;
+            this.resumeAttemptCandidate = undefined;
             this.activeSession = undefined;
             this.currentMediaReady = false;
             if (this.fadeTimer)
@@ -11201,16 +11248,24 @@ const startTrailerController = () => {
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
-// Steam can take over a second to register the fresh QAM control after its
-// native popup returns. This caps one return handoff at roughly three seconds.
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 360;
+// Keep checking native focus while Steam rebuilds the navigation tree after a
+// popup return. A saved quality change is already settled before this begins.
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 900;
 const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
-const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 180;
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 3;
+const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
+const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
+const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
     try {
+        const ownerDocument = element.ownerDocument;
+        const ownerWindow = ownerDocument.defaultView;
+        if (!ownerWindow
+            || ownerWindow.closed
+            || ownerWindow.document !== ownerDocument
+            || ownerDocument.visibilityState !== "visible")
+            return false;
         const trees = (DFL.getGamepadNavigationTrees() || []);
         for (const tree of trees) {
             const pending = tree.Root ? [tree.Root] : [];
@@ -11426,8 +11481,43 @@ const Content = () => {
             : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
         let cancelled = false;
         let frame = null;
+        let focusObserver = null;
         let attempts = 0;
         let stableFocusFrames = 0;
+        const qamDocument = control.ownerDocument;
+        const releaseFocusLease = () => {
+            if (!isCompatibilityDropdownReturnReady())
+                return;
+            consumeCompatibilityDropdownReturn();
+            initialPanelFocusComplete.current = true;
+            if (frame !== null) {
+                window.cancelAnimationFrame(frame);
+                frame = null;
+            }
+            focusObserver?.disconnect();
+            focusObserver = null;
+        };
+        const handleUserNavigation = (event) => {
+            if (event.type === "vgp_onbuttondown") {
+                const button = Number(event.detail?.button);
+                if (GAMEPAD_DIRECTION_BUTTONS.has(button) && hasCompatibilityDropdownFocus(control)) {
+                    releaseFocusLease();
+                }
+                return;
+            }
+            if (event.type === "pointerdown") {
+                releaseFocusLease();
+                return;
+            }
+            const key = event.key;
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)
+                && hasCompatibilityDropdownFocus(control)) {
+                releaseFocusLease();
+            }
+        };
+        qamDocument.addEventListener("keydown", handleUserNavigation, true);
+        qamDocument.addEventListener("vgp_onbuttondown", handleUserNavigation, true);
+        qamDocument.addEventListener("pointerdown", handleUserNavigation, true);
         const focusReturnedDropdown = () => {
             frame = null;
             if (cancelled
@@ -11437,39 +11527,72 @@ const Content = () => {
                     ? trailerSnapshot.busy
                     : compatibilityDefaultBusy || compatibilityDefaultScopeBusy))
                 return;
+            const ownerWindow = qamDocument.defaultView;
+            if (!ownerWindow || ownerWindow.closed || ownerWindow.document !== qamDocument)
+                return;
+            if (qamDocument.visibilityState !== "visible")
+                return;
             attempts += 1;
             if (attempts <= settleFrames) {
                 frame = window.requestAnimationFrame(focusReturnedDropdown);
                 return;
             }
             // The native menu hides and unmounts QAM before the replacement
-            // combobox is registered in Steam's navigation tree. Retry only over
-            // this bounded return transition, and only with Steam's BTakeFocus.
+            // combobox is registered in Steam's navigation tree. Keep restoring the
+            // returned control through trailer updates and combobox replacement. The
+            // first user input releases this focus lease so D-pad navigation can continue.
             if (hasCompatibilityDropdownFocus(control)) {
                 stableFocusFrames += 1;
                 if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
-                    consumeCompatibilityDropdownReturn();
                     initialPanelFocusComplete.current = true;
-                    return;
+                    // Steam can replace the focused row after the popup closes without
+                    // changing this control's DOM. Keep checking for a short bounded
+                    // handoff so a later native focus reset cannot leave QAM unfocused.
                 }
-                frame = window.requestAnimationFrame(focusReturnedDropdown);
-                return;
             }
-            stableFocusFrames = 0;
-            takeCompatibilityDropdownFocus(control);
+            else {
+                stableFocusFrames = 0;
+                takeCompatibilityDropdownFocus(control);
+            }
             if (attempts < COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES) {
                 frame = window.requestAnimationFrame(focusReturnedDropdown);
             }
             else {
                 warn("qam", "compatibility dropdown return focus unavailable");
                 clearCompatibilityDropdownReturn();
+                focusObserver?.disconnect();
+                focusObserver = null;
             }
         };
+        focusObserver = new MutationObserver(() => {
+            if (cancelled
+                || !isCompatibilityDropdownReturnReady()
+                || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
+                || (origin === "quality"
+                    ? trailerSnapshot.busy
+                    : compatibilityDefaultBusy || compatibilityDefaultScopeBusy)
+                || hasCompatibilityDropdownFocus(control)
+                || frame !== null)
+                return;
+            attempts = 0;
+            stableFocusFrames = 0;
+            frame = window.requestAnimationFrame(focusReturnedDropdown);
+        });
+        focusObserver.observe(control, {
+            attributes: true,
+            attributeFilter: ["class"],
+            childList: true,
+            subtree: true,
+        });
         frame = window.requestAnimationFrame(focusReturnedDropdown);
         return () => {
             cancelled = true;
             if (frame !== null)
                 window.cancelAnimationFrame(frame);
+            focusObserver?.disconnect();
+            qamDocument.removeEventListener("keydown", handleUserNavigation, true);
+            qamDocument.removeEventListener("vgp_onbuttondown", handleUserNavigation, true);
+            qamDocument.removeEventListener("pointerdown", handleUserNavigation, true);
         };
     }, [
         compatibilityDefaultBusy,
@@ -11480,7 +11603,10 @@ const Content = () => {
         compatibilityDropdownReturnVersion,
         trailerQualityControl,
         trailerSnapshot.busy,
+        trailerSnapshot.settings.quality,
         trailerSnapshot.settingsLoaded,
+        trailerSnapshot.status,
+        trailerSnapshot.targetHeight,
     ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
@@ -11837,12 +11963,20 @@ const Content = () => {
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
     return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onQualityChange: async (quality) => {
-                    const saved = await trailerController.setQuality(quality);
-                    if (saved && noteCompatibilityDropdownSelectionSaved()) {
-                        setCompatibilityDropdownReturnVersion((version) => version + 1);
+                    requestCompatibilityDropdownReturn("quality");
+                    noteCompatibilityDropdownControlUnmounted();
+                    try {
+                        return await trailerController.setQuality(quality);
                     }
-                    return saved;
-                }, onQualityMenuWillOpen: () => requestCompatibilityDropdownReturn("quality"), onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+                    finally {
+                        if (noteCompatibilityDropdownSelectionSaved()) {
+                            setCompatibilityDropdownReturnVersion((version) => version + 1);
+                        }
+                    }
+                }, onQualityMenuWillOpen: () => {
+                    requestCompatibilityDropdownReturn("quality");
+                    noteCompatibilityDropdownControlUnmounted();
+                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*
@@ -13011,7 +13145,6 @@ const installInPlaceReloadGuard = (onFailedReload) => {
     };
 };
 var index = DFL.definePlugin(() => {
-    clearCompatibilityDropdownReturn();
     beginCompatibilityLifecycle();
     let retainedReloadBaselines = false;
     const reloadGuard = installInPlaceReloadGuard(() => {
@@ -13080,7 +13213,10 @@ var index = DFL.definePlugin(() => {
                 error("patch", "metadata bootstrap stop failed", error$1);
             }
             try {
-                clearCompatibilityDropdownReturn();
+                // Keep a native dropdown return request across an in-place bundle
+                // reload. A popup can reload the QAM while its selection is saving.
+                if (!reloading)
+                    clearCompatibilityDropdownReturn();
             }
             catch (error$1) {
                 error("patch", "compatibility dropdown focus stop failed", error$1);
