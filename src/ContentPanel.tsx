@@ -1,5 +1,6 @@
 import {
   Focusable,
+  getFocusNavController,
   getGamepadNavigationTrees,
   NavEntryPositionPreferences,
   showModal,
@@ -112,6 +113,12 @@ export const takeNativeFocus = (element: Element | null): boolean => {
       || ownerWindow.document !== ownerDocument
       || ownerDocument.visibilityState !== "visible"
     ) return false;
+    // Steam may leave the QAM context inactive after its native dropdown closes.
+    // A focus node can then report success without painting gamepad focus.
+    const focusNav = getFocusNavController();
+    if (!focusNav?.m_ActiveContext && focusNav?.m_LastActiveContext) {
+      focusNav.FindAnActiveContext?.();
+    }
     const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
     for (const tree of trees) {
       const pending = tree.Root ? [tree.Root] : [];

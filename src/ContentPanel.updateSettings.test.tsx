@@ -41,7 +41,11 @@ const steam = vi.hoisted(() => ({
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
-const ui = vi.hoisted(() => ({ getGamepadNavigationTrees: vi.fn(), showModal: vi.fn() }));
+const ui = vi.hoisted(() => ({
+  getFocusNavController: vi.fn(),
+  getGamepadNavigationTrees: vi.fn(),
+  showModal: vi.fn(),
+}));
 const trailer = vi.hoisted(() => ({
   subscribe: vi.fn(() => () => undefined),
   getSnapshot: vi.fn(() => ({
@@ -87,6 +91,7 @@ vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred" },
   getGamepadNavigationTrees: ui.getGamepadNavigationTrees,
+  getFocusNavController: ui.getFocusNavController,
   showModal: ui.showModal,
 }));
 vi.mock("./backend", () => backend);
@@ -228,6 +233,7 @@ const makeFocusControls = () => {
   const scopeB = control(scopeButton);
   const qualityA = control(qualityButton);
   const qualityB = control(qualityButton);
+  let navContextActive = true;
   const navigationTree = {
     Root: {
       m_rgChildren: [
@@ -250,6 +256,7 @@ const makeFocusControls = () => {
         {
           Element: qualityButton,
           BTakeFocus: () => {
+            if (!navContextActive) return true;
             qualityButton.className = "gpfocus";
             qamDocument.activeElement = qualityButton;
             return true;
@@ -258,6 +265,18 @@ const makeFocusControls = () => {
       ],
     },
   };
+  const focusContext = { m_rgGamepadNavigationTrees: [navigationTree] };
+  const focusNav = {
+    m_ActiveContext: focusContext as typeof focusContext | null,
+    m_LastActiveContext: focusContext,
+    BCanActivateContext: vi.fn(() => true),
+    FindAnActiveContext: vi.fn(() => {
+      navContextActive = true;
+      focusNav.m_ActiveContext = focusContext;
+      return focusContext;
+    }),
+  };
+  ui.getFocusNavController.mockReturnValue(focusNav);
   ui.getGamepadNavigationTrees.mockImplementation(() =>
     frameCount >= nativeFocusAvailableAt ? [navigationTree] : [],
   );
@@ -281,6 +300,13 @@ const makeFocusControls = () => {
     categoryButton,
     scopeButton,
     qualityButton,
+    focusNav,
+    loseNavContext: () => {
+      navContextActive = false;
+      focusNav.m_ActiveContext = null;
+      qualityButton.className = "";
+      qamDocument.activeElement = null;
+    },
     delayNativeFocusUntil: (frame: number) => { nativeFocusAvailableAt = frame; },
     stealNativeFocusSilently: () => {
       qualityButton.className = "";
@@ -351,6 +377,15 @@ describe("Content update settings", () => {
 
     expect(takeCompatibilityDropdownFocus(controls.qualityA as unknown as HTMLElement)).toBe(false);
     expect(controls.qualityButton.className).toBe("");
+  });
+
+  it("reactivates the Quick Access context before returning quality focus", () => {
+    const controls = makeFocusControls();
+    controls.loseNavContext();
+
+    expect(takeCompatibilityDropdownFocus(controls.qualityA as unknown as HTMLElement)).toBe(true);
+    expect(controls.focusNav.FindAnActiveContext).toHaveBeenCalledOnce();
+    expect(controls.qualityButton.className).toContain("gpfocus");
   });
 
   it("includes the single Metadata-owned game trailers section", () => {

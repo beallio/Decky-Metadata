@@ -19,9 +19,11 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
 
 ### Fixed
 
-- Game trailer quality changes now return D-pad focus after the Steam menu closes.
-  A trailer that pauses while SteamOS wakes resumes in place; if resume fails,
-  Metadata restores the original artwork and does not retry on every scan.
+- Game trailer quality changes now return D-pad focus after the Steam menu
+  closes, including while a trailer is playing. Trailers paused during SteamOS
+  sleep resume in place, even when sleep interrupts the initial artwork delay.
+  If playback cannot resume, Metadata restores the original artwork without
+  repeated retries.
 - Non-Steam games with saved metadata now load their running-game Steam Menu
   icon even when Game Info requests it before Steam has cached the image. Fixes
   [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).
