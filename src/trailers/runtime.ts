@@ -870,6 +870,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
                 this.resumeVisiblePausedVideo(appId, hero.element);
+                if (this.currentVideo?.classList.contains(visibleClass) &&
+                    !document.getElementById(audioHintId)) {
+                    this.updateAudioHint();
+                }
                 return;
             }
             if (this.pendingAppId === appId && this.pendingTarget === hero.element && this.pendingRequestToken === this.requestToken) return;

@@ -372,6 +372,12 @@ test('A trailer paused before its reveal resumes and appears after the original 
   const hint = h.document.getElementById('decky-metadata-trailer-audio-hint');
   assert.ok(hint, 'the audio hint appears only after the trailer becomes visible');
   assert.equal(hint.querySelector('img')?.src, '/steaminputglyphs/shared_button_x.svg');
+  // Steam can replace the native Footer after the trailer becomes visible.
+  hint.remove();
+  assert.equal(h.document.getElementById('decky-metadata-trailer-audio-hint'), null);
+  await h.runtime.scan();
+  assert.ok(h.document.getElementById('decky-metadata-trailer-audio-hint'),
+    'a late Footer refresh restores the X action without restarting playback');
   assert.equal(h.playCalls, 2);
   assert.equal(h.createdVideos, 1);
 });
@@ -570,7 +576,7 @@ test('A QAM hash keeps the current root-page trailer attached during a runtime s
     return { ok: true, name: 'Fixture', candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] };
   };
   h.runtime.attachVideo = (target, appId, _candidates, _token, options) => {
-    const video = { isConnected: true, currentTime: 17 };
+    const video = { isConnected: true, currentTime: 17, classList: { contains: () => false } };
     h.runtime.currentTarget = target;
     h.runtime.currentAppId = appId;
     h.runtime.currentMediaSignature = options.mediaSignature;

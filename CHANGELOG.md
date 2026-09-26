@@ -24,6 +24,8 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
   sleep resume in place, even when sleep interrupts the initial artwork delay.
   If playback cannot resume, Metadata restores the original artwork without
   repeated retries.
+- The trailer audio X hint appears when Steam's footer loads after playback
+  starts and returns if Steam redraws the footer.
 - Non-Steam games with saved metadata now load their running-game Steam Menu
   icon even when Game Info requests it before Steam has cached the image. Fixes
   [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).

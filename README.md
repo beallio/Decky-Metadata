@@ -161,6 +161,10 @@ trailers start muted. Use **Video quality** to choose Auto, 720p, 1080p, 1440p,
 or 2160p. Auto follows the Big Picture display and uses an available Steam
 version at or below that size when possible.
 
+While a trailer is visible, press **X** on a Steam Deck or Xbox controller
+(**Square** on PlayStation) to mute or unmute it. Steam's footer shows the
+action; menus and text fields keep their normal button behavior.
+
 Trailers stream from Steam. Decky Metadata does not download them for offline
 playback and does not use other trailer providers. If you also installed the
 separate **TrailerHero** Decky plugin, uninstall that entry before you enable
