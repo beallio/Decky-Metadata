@@ -920,12 +920,27 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     ? rt("trailerLabel", { name: this.currentTrailerName })
                     : rt("trailerActive");
                 this.updateAudioHint();
+                this.scheduleTrailerReveal(candidate, video, hero);
             }).catch(() => {
                 if (!candidate.isCurrent()) return;
                 this.failedVisit = { appId, hero };
                 this.cleanupVideo(true);
                 this.status = rt("autoplayBlocked");
             });
+        }
+        scheduleTrailerReveal(candidate, video, target) {
+            if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
+                video.classList.contains(visibleClass)) return;
+            if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
+            const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            this.fadeTimer = window.setTimeout(() => {
+                this.fadeTimer = undefined;
+                if (!candidate.isCurrent() || video.paused) return;
+                target.classList.add(readyClass);
+                video.classList.add(visibleClass);
+                this.updateAudioHint();
+                this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
+            }, delay);
         }
         getDesiredMediaSignature() {
             return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
@@ -1101,14 +1116,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                         if (!candidate.isCurrent()) return;
                         this.currentMediaReady = true;
                         this.applyCurrentMediaAudioState();
-                        const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt || Date.now())));
-                        this.fadeTimer = window.setTimeout(() => {
-                            if (!candidate.isCurrent() || video.paused) return;
-                            target.classList.add(readyClass);
-                            video.classList.add(visibleClass);
-                            this.updateAudioHint();
-                            this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
-                        }, delay);
+                        this.scheduleTrailerReveal(candidate, video, target);
                     }).catch(() => {
                         if (!candidate.isCurrent()) return;
                         clearWatchdog();

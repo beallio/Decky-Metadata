@@ -8507,6 +8507,7 @@ const newCompatibilityQamRuntime = () => ({
         controlUnmounted: false,
         returnVisible: false,
         selectionSaved: false,
+        focusAttempts: 0,
         origin: "category",
     },
     policySaveId: 0,
@@ -8526,6 +8527,9 @@ const compatibilityQamRuntime = () => {
         && existing.dropdown
         && existing.policySaveListeners instanceof Set
         && typeof existing.policySaveId === "number") {
+        if (typeof existing.dropdown.focusAttempts !== "number") {
+            existing.dropdown.focusAttempts = 0;
+        }
         return existing;
     }
     const runtime = newCompatibilityQamRuntime();
@@ -8591,7 +8595,16 @@ const requestCompatibilityDropdownReturn = (origin) => {
     runtime.dropdown.controlUnmounted = false;
     runtime.dropdown.returnVisible = false;
     runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.focusAttempts = 0;
     runtime.dropdown.origin = origin;
+};
+/** Count native-focus polling across panel remounts and rerenders. */
+const claimCompatibilityDropdownFocusAttempt = (maximumAttempts) => {
+    if (!runtime.dropdown.returnPending
+        || runtime.dropdown.focusAttempts >= maximumAttempts)
+        return false;
+    runtime.dropdown.focusAttempts += 1;
+    return true;
 };
 const hasCompatibilityDropdownReturn = () => runtime.dropdown.returnPending;
 const compatibilityDropdownReturnOrigin = () => runtime.dropdown.origin;
@@ -8619,8 +8632,8 @@ const noteCompatibilityDropdownSelectionSaved = () => {
 const isCompatibilityDropdownSelectionReturn = () => runtime.dropdown.selectionSaved;
 const isCompatibilityDropdownReturnReady = () => runtime.dropdown.returnPending && runtime.dropdown.returnVisible;
 /**
- * Consume the request only after native gamepad focus succeeds. Failed early
- * attempts remain armed until the current close handoff finishes or aborts.
+ * Complete the handoff after native focus succeeds or the user takes
+ * navigation. Failed early attempts remain armed until the close handoff ends.
  */
 const consumeCompatibilityDropdownReturn = () => {
     const pending = runtime.dropdown.returnPending;
@@ -8628,6 +8641,7 @@ const consumeCompatibilityDropdownReturn = () => {
     runtime.dropdown.controlUnmounted = false;
     runtime.dropdown.returnVisible = false;
     runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.focusAttempts = 0;
     runtime.dropdown.origin = "category";
     return pending;
 };
@@ -8636,6 +8650,7 @@ const clearCompatibilityDropdownReturn = () => {
     runtime.dropdown.controlUnmounted = false;
     runtime.dropdown.returnVisible = false;
     runtime.dropdown.selectionSaved = false;
+    runtime.dropdown.focusAttempts = 0;
     runtime.dropdown.origin = "category";
 };
 
@@ -9790,6 +9805,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     ? rt("trailerLabel", { name: this.currentTrailerName })
                     : rt("trailerActive");
                 this.updateAudioHint();
+                this.scheduleTrailerReveal(candidate, video, hero);
             }).catch(() => {
                 if (!candidate.isCurrent())
                     return;
@@ -9797,6 +9813,23 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.cleanupVideo(true);
                 this.status = rt("autoplayBlocked");
             });
+        }
+        scheduleTrailerReveal(candidate, video, target) {
+            if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
+                video.classList.contains(visibleClass))
+                return;
+            if (this.fadeTimer)
+                window.clearTimeout(this.fadeTimer);
+            const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            this.fadeTimer = window.setTimeout(() => {
+                this.fadeTimer = undefined;
+                if (!candidate.isCurrent() || video.paused)
+                    return;
+                target.classList.add(readyClass);
+                video.classList.add(visibleClass);
+                this.updateAudioHint();
+                this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
+            }, delay);
         }
         getDesiredMediaSignature() {
             return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
@@ -9993,15 +10026,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                             return;
                         this.currentMediaReady = true;
                         this.applyCurrentMediaAudioState();
-                        const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt || Date.now())));
-                        this.fadeTimer = window.setTimeout(() => {
-                            if (!candidate.isCurrent() || video.paused)
-                                return;
-                            target.classList.add(readyClass);
-                            video.classList.add(visibleClass);
-                            this.updateAudioHint();
-                            this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
-                        }, delay);
+                        this.scheduleTrailerReveal(candidate, video, target);
                     }).catch(() => {
                         if (!candidate.isCurrent())
                             return;
@@ -11248,8 +11273,8 @@ const startTrailerController = () => {
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
-// Keep checking native focus while Steam rebuilds the navigation tree after a
-// popup return. A saved quality change is already settled before this begins.
+// Keep retrying native focus while Steam rebuilds the navigation tree. The
+// shared attempt count keeps the handoff bounded across QAM remounts.
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 900;
 const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
@@ -11474,125 +11499,105 @@ const Content = () => {
         const busy = origin === "quality"
             ? trailerSnapshot.busy
             : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
-        if (!isCompatibilityDropdownReturnReady() || !control || !loaded || busy)
+        if (!isCompatibilityDropdownReturnReady() || !control)
             return;
-        const settleFrames = isCompatibilityDropdownSelectionReturn()
+        let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
             ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
             : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
         let cancelled = false;
         let frame = null;
-        let focusObserver = null;
-        let attempts = 0;
+        let listenersAttached = false;
         let stableFocusFrames = 0;
         const qamDocument = control.ownerDocument;
-        const releaseFocusLease = () => {
-            if (!isCompatibilityDropdownReturnReady())
+        const detachNavigationListeners = () => {
+            if (!listenersAttached)
                 return;
-            consumeCompatibilityDropdownReturn();
-            initialPanelFocusComplete.current = true;
-            if (frame !== null) {
-                window.cancelAnimationFrame(frame);
-                frame = null;
+            qamDocument.removeEventListener("keydown", handleUserNavigation, true);
+            qamDocument.removeEventListener("vgp_onbuttondown", handleUserNavigation, true);
+            qamDocument.removeEventListener("pointerdown", handleUserNavigation, true);
+            listenersAttached = false;
+        };
+        const releaseFocusLease = () => {
+            if (isCompatibilityDropdownReturnReady()) {
+                consumeCompatibilityDropdownReturn();
+                initialPanelFocusComplete.current = true;
+                if (frame !== null) {
+                    window.cancelAnimationFrame(frame);
+                    frame = null;
+                }
             }
-            focusObserver?.disconnect();
-            focusObserver = null;
+            detachNavigationListeners();
         };
         const handleUserNavigation = (event) => {
             if (event.type === "vgp_onbuttondown") {
                 const button = Number(event.detail?.button);
-                if (GAMEPAD_DIRECTION_BUTTONS.has(button) && hasCompatibilityDropdownFocus(control)) {
+                if (GAMEPAD_DIRECTION_BUTTONS.has(button))
                     releaseFocusLease();
-                }
                 return;
             }
             if (event.type === "pointerdown") {
                 releaseFocusLease();
                 return;
             }
-            const key = event.key;
-            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)
-                && hasCompatibilityDropdownFocus(control)) {
+            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
                 releaseFocusLease();
             }
         };
         qamDocument.addEventListener("keydown", handleUserNavigation, true);
         qamDocument.addEventListener("vgp_onbuttondown", handleUserNavigation, true);
         qamDocument.addEventListener("pointerdown", handleUserNavigation, true);
+        listenersAttached = true;
         const focusReturnedDropdown = () => {
             frame = null;
-            if (cancelled
-                || !isCompatibilityDropdownReturnReady()
-                || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
-                || (origin === "quality"
-                    ? trailerSnapshot.busy
-                    : compatibilityDefaultBusy || compatibilityDefaultScopeBusy))
+            if (cancelled)
                 return;
+            if (!isCompatibilityDropdownReturnReady()) {
+                detachNavigationListeners();
+                return;
+            }
             const ownerWindow = qamDocument.defaultView;
-            if (!ownerWindow || ownerWindow.closed || ownerWindow.document !== qamDocument)
+            if (!ownerWindow || ownerWindow.closed || ownerWindow.document !== qamDocument) {
+                detachNavigationListeners();
                 return;
-            if (qamDocument.visibilityState !== "visible")
+            }
+            if (qamDocument.visibilityState !== "visible") {
+                detachNavigationListeners();
                 return;
-            attempts += 1;
-            if (attempts <= settleFrames) {
+            }
+            if (!loaded || busy)
+                return;
+            if (settleFramesRemaining > 0) {
+                settleFramesRemaining -= 1;
                 frame = window.requestAnimationFrame(focusReturnedDropdown);
+                return;
+            }
+            if (!claimCompatibilityDropdownFocusAttempt(COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES)) {
+                warn("qam", "compatibility dropdown return focus unavailable");
+                clearCompatibilityDropdownReturn();
+                detachNavigationListeners();
                 return;
             }
             // The native menu hides and unmounts QAM before the replacement
             // combobox is registered in Steam's navigation tree. Keep restoring the
-            // returned control through trailer updates and combobox replacement. The
-            // first user input releases this focus lease so D-pad navigation can continue.
+            // returned control through trailer updates and combobox replacement.
             if (hasCompatibilityDropdownFocus(control)) {
                 stableFocusFrames += 1;
                 if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
                     initialPanelFocusComplete.current = true;
-                    // Steam can replace the focused row after the popup closes without
-                    // changing this control's DOM. Keep checking for a short bounded
-                    // handoff so a later native focus reset cannot leave QAM unfocused.
                 }
             }
             else {
                 stableFocusFrames = 0;
                 takeCompatibilityDropdownFocus(control);
             }
-            if (attempts < COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES) {
-                frame = window.requestAnimationFrame(focusReturnedDropdown);
-            }
-            else {
-                warn("qam", "compatibility dropdown return focus unavailable");
-                clearCompatibilityDropdownReturn();
-                focusObserver?.disconnect();
-                focusObserver = null;
-            }
-        };
-        focusObserver = new MutationObserver(() => {
-            if (cancelled
-                || !isCompatibilityDropdownReturnReady()
-                || !(origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded)
-                || (origin === "quality"
-                    ? trailerSnapshot.busy
-                    : compatibilityDefaultBusy || compatibilityDefaultScopeBusy)
-                || hasCompatibilityDropdownFocus(control)
-                || frame !== null)
-                return;
-            attempts = 0;
-            stableFocusFrames = 0;
             frame = window.requestAnimationFrame(focusReturnedDropdown);
-        });
-        focusObserver.observe(control, {
-            attributes: true,
-            attributeFilter: ["class"],
-            childList: true,
-            subtree: true,
-        });
+        };
         frame = window.requestAnimationFrame(focusReturnedDropdown);
         return () => {
             cancelled = true;
             if (frame !== null)
                 window.cancelAnimationFrame(frame);
-            focusObserver?.disconnect();
-            qamDocument.removeEventListener("keydown", handleUserNavigation, true);
-            qamDocument.removeEventListener("vgp_onbuttondown", handleUserNavigation, true);
-            qamDocument.removeEventListener("pointerdown", handleUserNavigation, true);
+            detachNavigationListeners();
         };
     }, [
         compatibilityDefaultBusy,
@@ -11603,10 +11608,7 @@ const Content = () => {
         compatibilityDropdownReturnVersion,
         trailerQualityControl,
         trailerSnapshot.busy,
-        trailerSnapshot.settings.quality,
         trailerSnapshot.settingsLoaded,
-        trailerSnapshot.status,
-        trailerSnapshot.targetHeight,
     ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)

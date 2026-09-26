@@ -192,7 +192,6 @@ const deferred = <T,>() => {
 
 const makeFocusControls = () => {
   const frames: Array<(time: number) => void> = [];
-  const mutationObservers = new Set<{ callback: MutationCallback }>();
   let frameCount = 0;
   let nativeFocusAvailableAt = 0;
   const documentListeners = new Map<string, Set<(event: any) => void>>();
@@ -229,11 +228,6 @@ const makeFocusControls = () => {
   const scopeB = control(scopeButton);
   const qualityA = control(qualityButton);
   const qualityB = control(qualityButton);
-  class TestMutationObserver {
-    constructor(public callback: MutationCallback) {}
-    observe = vi.fn(() => mutationObservers.add(this));
-    disconnect = vi.fn(() => mutationObservers.delete(this));
-  }
   const navigationTree = {
     Root: {
       m_rgChildren: [
@@ -277,7 +271,6 @@ const makeFocusControls = () => {
     },
     cancelAnimationFrame: vi.fn(),
   });
-  vi.stubGlobal("MutationObserver", TestMutationObserver);
   return {
     categoryA,
     scopeA,
@@ -289,16 +282,6 @@ const makeFocusControls = () => {
     scopeButton,
     qualityButton,
     delayNativeFocusUntil: (frame: number) => { nativeFocusAvailableAt = frame; },
-    dropNativeFocus: () => {
-      qualityButton.className = "";
-      qamDocument.activeElement = null;
-      for (const observer of mutationObservers) {
-        observer.callback(
-          [{ type: "attributes", target: qualityButton } as unknown as MutationRecord],
-          observer as any,
-        );
-      }
-    },
     stealNativeFocusSilently: () => {
       qualityButton.className = "";
       qamDocument.activeElement = null;
@@ -311,12 +294,12 @@ const makeFocusControls = () => {
         listener({ type: "vgp_onbuttondown", detail: { button } });
       }
     },
+    listenerCount: (name: string) => documentListeners.get(name)?.size ?? 0,
     advanceFrames: (count: number) => {
       for (let attempt = 0; attempt < count && frames.length; attempt += 1) {
         frames.shift()?.(attempt);
       }
     },
-    elapseFrames: (count: number) => { frameCount += count; },
     flushFrames: () => {
       for (let attempt = 0; attempt < 200 && frames.length; attempt += 1) {
         frames.shift()?.(attempt);
@@ -727,7 +710,7 @@ describe("Content update settings", () => {
     expect(controls.qualityButton.className).toContain("gpfocus");
   });
 
-  it("returns focus to Video quality after an async Auto save and late QAM registration", async () => {
+  it("keeps an async Auto handoff through remount and releases on navigation after status churn", async () => {
     const controls = makeFocusControls();
     controls.delayNativeFocusUntil(24);
     trailer.getSnapshot.mockReturnValue({
@@ -799,28 +782,22 @@ describe("Content update settings", () => {
     expect(controls.qualityButton.ownerDocument.activeElement).toBe(controls.qualityButton);
     expect(hasCompatibilityDropdownReturn()).toBe(true);
 
-    // Steam can take focus away after the popup closes without mutating the
-    // returned row. The bounded handoff must detect and restore it.
+    // A playback status refresh can leave the row in the tree but remove its
+    // native focus. The next D-pad action belongs to Steam, not the return lease.
+    const updatedSnapshot = trailer.getSnapshot();
+    trailer.getSnapshot.mockReturnValue({
+      ...updatedSnapshot,
+      status: "Trailer playback status refreshed",
+    });
+    render();
+    runEffects();
     controls.stealNativeFocusSilently();
     controls.dispatchButtonDown(10);
-    expect(hasCompatibilityDropdownReturn()).toBe(true);
-    controls.advanceFrames(20);
-    expect(controls.qualityButton.className).toContain("gpfocus");
 
-    // Trailer status can re-render this row shortly after the menu closes.
-    // Keep restoring native focus after later updates, then let the user's
-    // first D-pad input take over without the handoff stealing focus back.
-    controls.dropNativeFocus();
-    controls.advanceFrames(20);
-    expect(controls.qualityButton.className).toContain("gpfocus");
-    controls.elapseFrames(300);
-    controls.dropNativeFocus();
-    controls.advanceFrames(20);
-    expect(controls.qualityButton.className).toContain("gpfocus");
-    expect(hasCompatibilityDropdownReturn()).toBe(true);
-    controls.dispatchKeyDown("ArrowDown");
     expect(hasCompatibilityDropdownReturn()).toBe(false);
-    controls.dropNativeFocus();
+    expect(controls.listenerCount("keydown")).toBe(0);
+    expect(controls.listenerCount("vgp_onbuttondown")).toBe(0);
+    expect(controls.listenerCount("pointerdown")).toBe(0);
     controls.advanceFrames(20);
     expect(controls.qualityButton.className).not.toContain("gpfocus");
   });

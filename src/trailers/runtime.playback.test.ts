@@ -31,6 +31,7 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', fetchRep
     getElementById: () => null, querySelectorAll: () => [], querySelector: () => null,
   };
   const context = vm.createContext({ window, document, URL: urlType ?? URL, console, navigator: {}, AbortController,
+    Date: clock?.Date ?? Date,
     TextEncoder, TextDecoder,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
@@ -58,8 +59,42 @@ const responseBody = (body, properties = {}) => {
   };
 };
 
-async function readyDirectTrailer({ failWake = false } = {}) {
-  const h = setup();
+function fakeClock(start = Date.now()) {
+  let now = start;
+  let timerId = 0;
+  const timers = new Map();
+  const intervals = new Map();
+  const clock = {
+    get now() { return now; },
+    timers,
+    setTimeout(fn, delay) {
+      const id = ++timerId;
+      timers.set(id, { fn, at: now + delay, delay });
+      return id;
+    },
+    clearTimeout(id) { timers.delete(id); },
+    setInterval(fn, delay) {
+      const id = ++timerId;
+      intervals.set(id, { fn, delay });
+      return id;
+    },
+    clearInterval(id) { intervals.delete(id); },
+    advance(milliseconds) {
+      now += milliseconds;
+      for (const [id, timer] of [...timers].sort((a, b) => a[1].at - b[1].at)) {
+        if (timer.at > now) break;
+        if (timers.delete(id)) timer.fn();
+      }
+    },
+  };
+  clock.Date = class extends Date {
+    static now() { return clock.now; }
+  };
+  return clock;
+}
+
+async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt } = {}) {
+  const h = setup({ clock });
   let createdVideos = 0;
   let playCalls = 0;
   const classes = new Set();
@@ -122,7 +157,7 @@ async function readyDirectTrailer({ failWake = false } = {}) {
     return new Video();
   };
   hero.insertBefore = video => { video.isConnected = true; };
-  h.runtime.pageEnteredAt = Date.now() - 3000;
+  h.runtime.pageEnteredAt = pageEnteredAt ?? Date.now() - 3000;
   h.runtime.attachVideo(hero, 570, [{ format: 'mp4', url: movie.mp4[720], height: 720 }], h.runtime.requestToken);
   for (let index = 0; index < 20; index++) await Promise.resolve();
   return {
@@ -239,6 +274,116 @@ test('A visible paused trailer resumes the same video after wake without allocat
   h.runtime.handleVisibilityChange();
   assert.equal(h.runtime.currentVideo, undefined, 'hidden playback is cleaned up instead of resumed');
   assert.equal(h.playCalls, 2);
+});
+
+test('A trailer paused before its reveal resumes and appears after the original artwork delay', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  const revealTimer = h.runtime.fadeTimer;
+  assert.equal(clock.timers.get(revealTimer)?.delay, 3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+  video.paused = true;
+  video.dispatchEvent(new Event('pause'));
+
+  clock.advance(3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+
+  const makeElement = () => ({
+    children: [], parentElement: null, className: '', style: {},
+    append(...children) { children.forEach(child => this.appendChild(child)); },
+    appendChild(child) {
+      child.parentElement?.children?.splice(child.parentElement.children.indexOf(child), 1);
+      child.parentElement = this;
+      this.children.push(child);
+    },
+    setAttribute() {},
+    querySelector(selector) {
+      const matches = element => selector.startsWith('img')
+        ? element.tagName === 'IMG'
+        : selector.startsWith('.') && element.className.split(/\s+/).includes(selector.slice(1));
+      const visit = element => {
+        for (const child of element.children) {
+          if (matches(child)) return child;
+          const found = visit(child);
+          if (found) return found;
+        }
+        return null;
+      };
+      return visit(this);
+    },
+    remove() {
+      if (this.parentElement) {
+        const siblings = this.parentElement.children;
+        siblings.splice(siblings.indexOf(this), 1);
+      }
+      this.parentElement = null;
+    },
+  });
+  const footer = makeElement();
+  const template = makeElement();
+  template.className = 'native-action';
+  const glyphContainer = makeElement();
+  glyphContainer.className = 'native-glyph-container';
+  const nativeGlyph = makeElement();
+  nativeGlyph.tagName = 'IMG';
+  nativeGlyph.src = '/steaminputglyphs/shared_button_a.svg';
+  nativeGlyph.className = 'native-glyph';
+  glyphContainer.appendChild(nativeGlyph);
+  const nativeLabel = makeElement();
+  nativeLabel.className = 'native-label';
+  template.append(glyphContainer, nativeLabel);
+  footer.appendChild(template);
+  footer.insertBefore = (element, before) => {
+    const index = before ? footer.children.indexOf(before) : -1;
+    if (index < 0) footer.appendChild(element);
+    else {
+      element.parentElement = footer;
+      footer.children.splice(index, 0, element);
+    }
+  };
+  h.document.querySelector = selector => selector === '#Footer > div' ? footer : null;
+  h.document.getElementById = id => {
+    const visit = element => element.id === id ? element : element.children.map(visit).find(Boolean) ?? null;
+    return visit(footer);
+  };
+  h.document.createElement = tagName => {
+    const element = makeElement();
+    element.tagName = tagName.toUpperCase();
+    return element;
+  };
+  h.context.HTMLElement = Object;
+
+  await h.runtime.scan();
+  for (let index = 0; index < 10; index++) await Promise.resolve();
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(video.paused, false);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  assert.equal(h.document.getElementById('decky-metadata-trailer-audio-hint'), null);
+  const resumedReveal = clock.timers.get(h.runtime.fadeTimer);
+  assert.ok(resumedReveal, 'wake playback rearms the consumed reveal timer');
+  assert.equal(resumedReveal.delay, 0, 'the artwork delay already elapsed during suspend');
+  clock.advance(0);
+
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), true);
+  const hint = h.document.getElementById('decky-metadata-trailer-audio-hint');
+  assert.ok(hint, 'the audio hint appears only after the trailer becomes visible');
+  assert.equal(hint.querySelector('img')?.src, '/steaminputglyphs/shared_button_x.svg');
+  assert.equal(h.playCalls, 2);
+  assert.equal(h.createdVideos, 1);
+});
+
+test('Trailer cleanup cancels a pending reveal timer', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const revealTimer = h.runtime.fadeTimer;
+  assert.ok(clock.timers.has(revealTimer));
+  h.runtime.cleanupVideo(true);
+  assert.equal(clock.timers.has(revealTimer), false);
+  assert.equal(h.runtime.fadeTimer, undefined);
 });
 
 test('A denied wake resume restores artwork and does not retry on every scan', async () => {
