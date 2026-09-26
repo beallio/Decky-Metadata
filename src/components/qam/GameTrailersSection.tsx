@@ -16,6 +16,7 @@ type GameTrailersSectionProps = {
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
+  onHideLogoChange: (hide: boolean) => void;
   onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
   onQualityMenuWillOpen: () => void;
   onQualityControlRef: (element: HTMLDivElement | null) => void;
@@ -25,6 +26,7 @@ export function GameTrailersSection({
   state,
   onEnabledChange,
   onAudioChange,
+  onHideLogoChange,
   onQualityChange,
   onQualityMenuWillOpen,
   onQualityControlRef,
@@ -52,6 +54,15 @@ export function GameTrailersSection({
           checked={state.settings.audioEnabled}
           disabled={disabled}
           onChange={onAudioChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ToggleField
+          label="Hide game logo during trailers"
+          description="Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops."
+          checked={state.settings.hideLogoDuringTrailer}
+          disabled={disabled}
+          onChange={onHideLogoChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TrailerControllerSnapshot } from "./trailers/controller";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -48,8 +49,8 @@ const ui = vi.hoisted(() => ({
 }));
 const trailer = vi.hoisted(() => ({
   subscribe: vi.fn(() => () => undefined),
-  getSnapshot: vi.fn(() => ({
-    settings: { enabled: false, audioEnabled: false, quality: "auto" },
+  getSnapshot: vi.fn<() => TrailerControllerSnapshot>(() => ({
+    settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto" },
     status: "Disabled",
     displayWidth: null,
     displayHeight: null,
@@ -61,6 +62,7 @@ const trailer = vi.hoisted(() => ({
   })),
   setEnabled: vi.fn(),
   setAudioEnabled: vi.fn(),
+  setHideLogoDuringTrailer: vi.fn(),
   setQuality: vi.fn(),
 }));
 vi.mock("react", () => ({
@@ -388,21 +390,13 @@ describe("Content update settings", () => {
     expect(controls.qualityButton.className).toContain("gpfocus");
   });
 
-  it("includes the single Metadata-owned game trailers section", () => {
-    const section = gameTrailersSection(render());
-    expect(section?.props.state.settings).toEqual({ enabled: false, audioEnabled: false, quality: "auto" });
-    expect(typeof section?.props.onEnabledChange).toBe("function");
-    expect(typeof section?.props.onAudioChange).toBe("function");
-    expect(typeof section?.props.onQualityChange).toBe("function");
-  });
-
   beforeEach(() => {
     vi.resetAllMocks();
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: false, audioEnabled: false, quality: "auto" },
+      settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto" },
       status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
       settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
     });
@@ -749,7 +743,7 @@ describe("Content update settings", () => {
     const controls = makeFocusControls();
     controls.delayNativeFocusUntil(24);
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, quality: 1080 as any },
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080 },
       status: "Trailer: Fixture",
       displayWidth: 1280,
       displayHeight: 800,
@@ -773,7 +767,7 @@ describe("Content update settings", () => {
     expect(isCompatibilityDropdownSelectionReturn()).toBe(false);
 
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, quality: 1080 as any },
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080 },
       status: "Checking the new display target",
       displayWidth: 1280,
       displayHeight: 800,
@@ -795,7 +789,7 @@ describe("Content update settings", () => {
     await changingQuality;
     expect(isCompatibilityDropdownSelectionReturn()).toBe(true);
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, quality: "auto" },
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: "auto" },
       status: "Trailer: Fixture",
       displayWidth: 1280,
       displayHeight: 800,

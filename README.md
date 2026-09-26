@@ -148,7 +148,8 @@ The running game's icon also appears in the Steam Menu.
 Menu and enable it to show a Steam trailer on a game's main Library page.
 Metadata waits three seconds before it covers the hero. The first highlighted
 Steam movie plays when it is available; otherwise, Metadata uses the first
-movie. It keeps Steam's logo and controller controls in place.
+movie. Controller controls stay in place. Steam's game logo stays visible unless
+you turn on the optional logo setting.
 
 For a non-Steam shortcut, first open **Decky metadata...**, choose the correct
 Steam game in the existing match editor, and select **Save**. Metadata uses
@@ -160,6 +161,10 @@ Use **Trailer audio** to choose whether a ready trailer plays with sound. New
 trailers start muted. Use **Video quality** to choose Auto, 720p, 1080p, 1440p,
 or 2160p. Auto follows the Big Picture display and uses an available Steam
 version at or below that size when possible.
+
+Turn on **Hide game logo during trailers** to hide Steam's game logo while a
+trailer is visible. The logo returns when playback stops, fails, or you leave
+the game page. This does not hide logos that appear inside the video itself.
 
 While a trailer is visible, press **X** on a Steam Deck or Xbox controller
 (**Square** on PlayStation) to mute or unmute it. Steam's footer shows the

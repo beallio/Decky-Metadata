@@ -22,7 +22,8 @@ vi.mock("../backend", () => backend);
 vi.mock("../steam/core", () => steam);
 vi.mock("../steam/metadataPatch", () => ({ ensureMetadataCache: vi.fn(async () => undefined) }));
 
-import { TrailerController } from "./controller";
+import { DEFAULT_TRAILER_SETTINGS, TrailerController } from "./controller";
+import type { TrailerSettings } from "../types";
 
 const nativeOverview = (appid: number) => ({ appid, app_type: 1 });
 const flush = async () => { for (let index = 0; index < 12; index += 1) await Promise.resolve(); };
@@ -36,12 +37,13 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-const mountController = (settings = { enabled: true, audioEnabled: false, quality: "auto" }, ownerId = "owner") => {
+const mountController = (settings: Partial<TrailerSettings> = { enabled: true }, ownerId = "owner") => {
+  const normalized = { ...DEFAULT_TRAILER_SETTINGS, ...settings };
   const controller = new TrailerController() as any;
   controller.mounted = true;
   controller.settingsLoaded = true;
-  controller.settings = { ...settings };
-  controller.confirmedSettings = { ...settings };
+  controller.settings = { ...normalized };
+  controller.confirmedSettings = { ...normalized };
   controller.ownerId = ownerId;
   controller.identity = null;
   controller.status = "Waiting for a Steam game page";
@@ -151,6 +153,35 @@ describe("TrailerController behavior", () => {
     expect(await pending).toBe(false);
     expect(controller.settings.audioEnabled).toBe(false);
     expect(controller.identity).toEqual({ pageAppId: shortcutId, sourceAppId: 571 });
+    controller.stop();
+  });
+
+  it("keeps the logo preference available before trailer playback is enabled", async () => {
+    const controller = mountController({ enabled: false });
+
+    expect(await controller.setHideLogoDuringTrailer(true)).toBe(true);
+    expect(controller.settings).toMatchObject({ enabled: false, hideLogoDuringTrailer: true });
+    expect((window as any).__deckyMetadataTrailerOwner.settings.hideLogoDuringTrailer).toBe(true);
+    controller.stop();
+  });
+
+  it("restores the previous logo preference when its save fails during playback", async () => {
+    steam.overview.set(570, nativeOverview(570));
+    const save = deferred<unknown>();
+    backend.setTrailerSettings.mockReturnValue(save.promise);
+    const controller = mountController();
+    await controller.refreshPageIdentity();
+
+    const pending = controller.setHideLogoDuringTrailer(true);
+    await flush();
+    expect(controller.settings.hideLogoDuringTrailer).toBe(true);
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+
+    save.reject(new Error("disk unavailable"));
+    expect(await pending).toBe(false);
+    expect(controller.settings.hideLogoDuringTrailer).toBe(false);
+    expect((window as any).__deckyMetadataTrailerOwner.settings.hideLogoDuringTrailer).toBe(false);
+    expect(controller.settingsError).toContain("could not be saved");
     controller.stop();
   });
 

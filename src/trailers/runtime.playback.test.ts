@@ -13,7 +13,7 @@ const factory = source.slice(start, end).replace(/^export\s+/, '').replace(
   'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget }; const existing = window[runtimeKey];'
 );
 
-function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', fetchReply,
+function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fetchReply,
   mediaSourceType, urlType, domParserType, clock, pageAppId = 570, sourceAppId = 570 } = {}) {
   const location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
   const window = {
@@ -24,20 +24,21 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', fetchRep
     clearInterval: clock?.clearInterval.bind(clock) ?? clearInterval,
     addEventListener() {}, removeEventListener() {},
     __deckyMetadataTrailerOwner: { ownerId: 'test-owner', active: true, settingsRevision: 0,
-      settings: { enabled: true, audioEnabled: true, quality } },
+      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer } },
   };
   const document = {
     URL: location.href, body: {}, documentElement: {},
     getElementById: () => null, querySelectorAll: () => [], querySelector: () => null,
+    addEventListener() {}, removeEventListener() {},
   };
   const context = vm.createContext({ window, document, URL: urlType ?? URL, console, navigator: {}, AbortController,
     Date: clock?.Date ?? Date,
     TextEncoder, TextDecoder,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
-  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)}},
+  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)}},
     'test-owner', 0, {en:{}}, ${JSON.stringify({ pageAppId, sourceAppId })})`, context);
-  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality }, 'test-owner', 0);
+  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer }, 'test-owner', 0);
   return { runtime, window, document, api, context };
 }
 
@@ -93,8 +94,9 @@ function fakeClock(start = Date.now()) {
   return clock;
 }
 
-async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt } = {}) {
-  const h = setup({ clock });
+async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
+  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, customLogo = false } = {}) {
+  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer });
   let createdVideos = 0;
   let playCalls = 0;
   const classes = new Set();
@@ -102,7 +104,9 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt } = {
     constructor() {
       this.tagName = 'DIV';
       this.className = 'library-hero';
-      this.asset = 'url(https://steam.test/steam/apps/570/library_hero.jpg)';
+      this.asset = customLogo
+        ? `url(https://steam.test/customimages/${pageAppId}_hero.png)`
+        : `url(https://steam.test/steam/apps/${pageAppId}/library_hero.jpg)`;
       this.classList = {
         add: (...names) => names.forEach(name => classes.add(name)),
         remove: (...names) => names.forEach(name => classes.delete(name)),
@@ -110,6 +114,21 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt } = {
     }
     getAttribute(name) { return name === 'style' ? this.asset : ''; }
     getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  class Logo {
+    constructor(src) {
+      this.tagName = 'IMG';
+      this.src = src;
+      this.isConnected = true;
+      this.names = new Set();
+      this.classList = {
+        add: name => this.names.add(name),
+        remove: name => this.names.delete(name),
+        contains: name => this.names.has(name),
+      };
+    }
+    getAttribute(name) { return name === 'src' ? this.src : ''; }
+    getBoundingClientRect() { return { width: 200, height: 100, top: 220, left: 30, right: 230, bottom: 320 }; }
   }
   class Video extends EventTarget {
     constructor() {
@@ -146,23 +165,36 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt } = {
     remove() { this.isConnected = false; }
   }
   const hero = new Hero();
-  h.window.location = new URL('https://steamloopback.host/routes/library/app/570');
+  const logo = new Logo(customLogo
+    ? `/customimages/${pageAppId}_logo.png?v=1`
+    : `/assets/${pageAppId}/logo.png`);
+  const unrelatedLogo = new Logo(`/assets/${sourceAppId === pageAppId ? pageAppId + 1 : sourceAppId}/logo.png`);
+  let logos = [logo, unrelatedLogo];
+  h.window.location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
   h.document.URL = h.window.location.href;
   h.document.body = {};
-  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero] : [];
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero]
+    : selector.startsWith('img[src') ? logos : [];
   h.context.HTMLElement = Hero;
-  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  h.context.getComputedStyle = element => ({
+    backgroundImage: element.asset, display: 'block', visibility: 'visible',
+    opacity: element.classList?.contains('decky-metadata-trailer-logo-hidden') ? '0' : '1',
+  });
   h.document.createElement = () => {
     createdVideos++;
     return new Video();
   };
   hero.insertBefore = video => { video.isConnected = true; };
   h.runtime.pageEnteredAt = pageEnteredAt ?? Date.now() - 3000;
-  h.runtime.attachVideo(hero, 570, [{ format: 'mp4', url: movie.mp4[720], height: 720 }], h.runtime.requestToken);
+  h.runtime.attachVideo(hero, pageAppId, [{ format: 'mp4', url: movie.mp4[720], height: 720 }], h.runtime.requestToken);
   for (let index = 0; index < 20; index++) await Promise.resolve();
   return {
     ...h,
     hero,
+    logo,
+    unrelatedLogo,
+    makeLogo: src => new Logo(src),
+    replaceLogo(next) { logos = [next, unrelatedLogo]; },
     get video() { return h.runtime.currentVideo; },
     get playCalls() { return playCalls; },
     get createdVideos() { return createdVideos; },
@@ -390,6 +422,79 @@ test('Trailer cleanup cancels a pending reveal timer', async () => {
   h.runtime.cleanupVideo(true);
   assert.equal(clock.timers.has(revealTimer), false);
   assert.equal(h.runtime.fadeTimer, undefined);
+});
+
+test('Native logo stays visible by default and toggles during playback without restarting the trailer', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  const opacity = element => h.context.getComputedStyle(element).opacity;
+  assert.equal(opacity(h.logo), '1');
+  clock.advance(3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(opacity(h.logo), '1');
+
+  h.runtime.update({ enabled: true, audioEnabled: true, quality: 'auto', hideLogoDuringTrailer: true }, 1);
+  assert.equal(opacity(h.logo), '0');
+  assert.equal(opacity(h.unrelatedLogo), '1');
+  assert.equal(h.video, video);
+  assert.equal(h.playCalls, 1);
+  assert.equal(h.createdVideos, 1);
+
+  h.runtime.update({ enabled: true, audioEnabled: true, quality: 'auto', hideLogoDuringTrailer: false }, 2);
+  assert.equal(opacity(h.logo), '1');
+  assert.equal(h.video, video);
+  h.runtime.update({ enabled: true, audioEnabled: true, quality: 'auto', hideLogoDuringTrailer: true }, 3);
+  h.runtime.activeCandidate.onFailure(new Error('video failed'));
+  assert.equal(opacity(h.logo), '1', 'failed playback restores the original game logo');
+  assert.equal(h.video, undefined);
+});
+
+test('A matched shortcut hides only its own custom logo after reveal and restores it on route exit', async () => {
+  const pageAppId = 2147483649;
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({
+    clock, pageEnteredAt: clock.now, pageAppId, sourceAppId: 15200,
+    hideLogoDuringTrailer: true, customLogo: true,
+  });
+  const opacity = element => h.context.getComputedStyle(element).opacity;
+  assert.equal(opacity(h.logo), '1', 'the logo stays visible while the trailer is preparing');
+  clock.advance(3000);
+  assert.equal(opacity(h.logo), '0');
+  assert.equal(opacity(h.unrelatedLogo), '1', 'the matched Steam source logo is not changed');
+
+  const replacement = h.makeLogo(`/customimages/${pageAppId}_logo.png?v=2`);
+  h.logo.isConnected = false;
+  h.replaceLogo(replacement);
+  await h.runtime.scan();
+  assert.equal(opacity(h.logo), '1', 'a detached logo loses the plugin-owned hidden class');
+  assert.equal(opacity(replacement), '0', 'a Steam redraw keeps the new active logo hidden');
+
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(opacity(replacement), '1');
+  assert.equal(h.video, undefined);
+});
+
+test('Sleep, disabling trailers, and unload each restore a hidden native logo', async () => {
+  for (const exit of ['sleep', 'disable', 'unload']) {
+    const clock = fakeClock();
+    const h = await readyDirectTrailer({ hideLogoDuringTrailer: true, clock, pageEnteredAt: clock.now });
+    clock.advance(3000);
+    const opacity = () => h.context.getComputedStyle(h.logo).opacity;
+    assert.equal(opacity(), '0');
+    if (exit === 'sleep') {
+      h.document.hidden = true;
+      h.runtime.handleVisibilityChange();
+    } else if (exit === 'disable') {
+      h.runtime.update({ enabled: false, audioEnabled: true, quality: 'auto', hideLogoDuringTrailer: true }, 1);
+    } else {
+      h.runtime.destroy();
+    }
+    assert.equal(opacity(), '1', `${exit} restores the logo`);
+    assert.equal(h.video, undefined);
+  }
 });
 
 test('A denied wake resume restores artwork and does not retry on every scan', async () => {

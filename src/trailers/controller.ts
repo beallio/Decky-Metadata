@@ -16,6 +16,7 @@ import { deckyMetadataTrailerRuntimeFactory } from "./runtime";
 export const DEFAULT_TRAILER_SETTINGS: TrailerSettings = {
   enabled: false,
   audioEnabled: false,
+  hideLogoDuringTrailer: false,
   quality: "auto",
 };
 
@@ -78,6 +79,7 @@ const normalizeSettings = (value: unknown): TrailerSettings => {
   return {
     enabled: typeof input.enabled === "boolean" ? input.enabled : false,
     audioEnabled: typeof input.audioEnabled === "boolean" ? input.audioEnabled : false,
+    hideLogoDuringTrailer: typeof input.hideLogoDuringTrailer === "boolean" ? input.hideLogoDuringTrailer : false,
     quality: QUALITY_OPTIONS.includes(input.quality as TrailerQuality)
       ? input.quality as TrailerQuality
       : "auto",
@@ -236,6 +238,10 @@ export class TrailerController {
     return this.updateSettings({ audioEnabled });
   }
 
+  setHideLogoDuringTrailer(hideLogoDuringTrailer: boolean) {
+    return this.updateSettings({ hideLogoDuringTrailer });
+  }
+
   setQuality(quality: TrailerQuality) {
     return this.updateSettings({ quality });
   }
@@ -291,7 +297,8 @@ export class TrailerController {
     if (!this.mounted || !this.settingsLoaded) return false;
     const previous = { ...this.settings };
     const next = normalizeSettings({ ...this.settings, ...change });
-    if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled && next.quality === previous.quality) {
+    if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
+        next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality) {
       return true;
     }
     this.settings = next;

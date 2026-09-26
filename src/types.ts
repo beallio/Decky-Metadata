@@ -73,6 +73,7 @@ export type TrailerQuality = "auto" | 720 | 1080 | 1440 | 2160;
 export type TrailerSettings = {
   enabled: boolean;
   audioEnabled: boolean;
+  hideLogoDuringTrailer: boolean;
   quality: TrailerQuality;
 };
 
