@@ -77,6 +77,8 @@ type CompatibilityMetadataState = {
   compatibilityDefaultLoadPromise: Promise<DeckCompatibilityCategory | null> | null;
   /** Bumps when a compatibility choice needs Steam's current route to render again. */
   compatibilityRevision: number;
+  /** Changes when a saved Steam AppID mapping changes independently of compatibility. */
+  metadataMatchRevision: number;
   lastObservedGameDetailAppId: number;
   routeShield: {
     appId: number;
@@ -92,6 +94,7 @@ type CompatibilityRuntime = {
   metadataCache: Record<string, MetadataData>;
   metadataState: CompatibilityMetadataState;
   revisionListeners: Set<() => void>;
+  matchRevisionListeners: Set<(appId: number, revision: number) => void>;
 };
 
 const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
@@ -115,6 +118,7 @@ const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   compatibilityLifecycleGeneration: 0,
   compatibilityDefaultLoadPromise: null,
   compatibilityRevision: 0,
+  metadataMatchRevision: 0,
   lastObservedGameDetailAppId: 0,
   routeShield: null,
 });
@@ -152,12 +156,17 @@ const compatibilityRuntime = (): CompatibilityRuntime => {
     if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
       state.deferredEditorCompatibilityPublications = new Set<number>();
     }
+    if (typeof state.metadataMatchRevision !== "number") state.metadataMatchRevision = 0;
+    if (!(existing.matchRevisionListeners instanceof Set)) {
+      existing.matchRevisionListeners = new Set();
+    }
     return existing as CompatibilityRuntime;
   }
   const runtime: CompatibilityRuntime = {
     metadataCache: {},
     metadataState: newCompatibilityMetadataState(),
     revisionListeners: new Set<() => void>(),
+    matchRevisionListeners: new Set<(appId: number, revision: number) => void>(),
   };
   host[COMPATIBILITY_RUNTIME_KEY] = runtime;
   return runtime;
@@ -169,7 +178,63 @@ export const metadataCache = runtime.metadataCache;
 
 export const metadataState = runtime.metadataState;
 
+export const metadataMatchRevisionSnapshot = () => metadataState.metadataMatchRevision;
+
+export const subscribeMetadataMatchChanges = (
+  listener: (appId: number, revision: number) => void,
+): Unpatch => {
+  metadataMatchRevisionListeners.add(listener);
+  return () => metadataMatchRevisionListeners.delete(listener);
+};
+
+const normalizedSavedSteamAppId = (value: unknown): number | null => {
+  if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value))) return null;
+  const appId = Number(value);
+  return Number.isSafeInteger(appId) && appId > 0 && appId < 0x80000000 ? appId : null;
+};
+
+export const notifyMetadataMatchChanged = (appId: number) => {
+  const revision = ++metadataState.metadataMatchRevision;
+  metadataMatchRevisionListeners.forEach((listener) => {
+    try { listener(appId, revision); } catch { /* A trailer update cannot block metadata. */ }
+  });
+  return revision;
+};
+
+export const setMetadataCacheEntry = (appId: number, value: MetadataData) => {
+  const key = String(appId);
+  const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+  metadataCache[key] = value;
+  const nextMatch = normalizedSavedSteamAppId(value?.steam_appid);
+  if (previousMatch !== nextMatch) notifyMetadataMatchChanged(appId);
+};
+
+export const removeMetadataCacheEntry = (appId: number) => {
+  const key = String(appId);
+  const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+  delete metadataCache[key];
+  if (previousMatch !== null) notifyMetadataMatchChanged(appId);
+};
+
+export const replaceMetadataCacheEntries = (records: Record<string, MetadataData>) => {
+  const previous = new Map(
+    Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]),
+  );
+  Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+  Object.assign(metadataCache, records || {});
+  const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+  for (const key of appIds) {
+    const previousMatch = previous.get(key) ?? null;
+    const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+    if (previousMatch !== nextMatch) {
+      const appId = Number(key);
+      if (Number.isInteger(appId) && appId > 0) notifyMetadataMatchChanged(appId);
+    }
+  }
+};
+
 const compatibilityRevisionListeners = runtime.revisionListeners;
+const metadataMatchRevisionListeners = runtime.matchRevisionListeners;
 
 export const compatibilityRevisionSnapshot = () =>
   metadataState.compatibilityRevision;

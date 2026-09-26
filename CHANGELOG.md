@@ -4,8 +4,28 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Add opt-in Steam trailer streaming for native games and correctly matched non-Steam shortcuts.
+
+### Added
+
+- **Game trailers.** Enable Steam trailers in the Quick Access Menu. Existing
+  installs stay disabled until you opt in. A saved match from Decky Metadata's
+  game editor selects trailers for a non-Steam shortcut. The original hero
+  stays visible until a playable trailer is ready and remains in place when
+  Steam has no playable movie. Set audio and Auto, 720p, 1080p, 1440p, or
+  2160p quality in the new section. Trailers stream from Steam; they are not
+  saved offline, and Metadata does not use other providers. Uninstall the
+  separate TrailerHero Decky plugin before enabling this feature.
+
 ### Fixed
 
+- Game trailer quality changes now return D-pad focus after the Steam menu
+  closes, including while a trailer is playing. Trailers paused during SteamOS
+  sleep resume in place, even when sleep interrupts the initial artwork delay.
+  If playback cannot resume, Metadata restores the original artwork without
+  repeated retries.
+- The trailer audio X hint appears when Steam's footer loads after playback
+  starts and returns if Steam redraws the footer.
 - Non-Steam games with saved metadata now load their running-game Steam Menu
   icon even when Game Info requests it before Steam has cached the image. Fixes
   [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).

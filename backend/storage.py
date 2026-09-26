@@ -9,6 +9,28 @@ from typing import Any, Callable
 
 PlogFn = Callable[..., None]
 
+DEFAULT_TRAILER_SETTINGS: dict[str, Any] = {
+    "enabled": False,
+    "audioEnabled": False,
+    "quality": "auto",
+}
+TRAILER_QUALITIES = ("auto", 720, 1080, 1440, 2160)
+
+
+def normalize_trailer_settings(value: Any) -> dict[str, Any]:
+    """Normalize saved trailer preferences without coercing incorrect types."""
+    settings = value if isinstance(value, dict) else {}
+    quality = settings.get("quality")
+    if type(quality) is not str and type(quality) is not int:
+        quality = "auto"
+    if quality not in TRAILER_QUALITIES:
+        quality = "auto"
+    return {
+        "enabled": settings.get("enabled") if type(settings.get("enabled")) is bool else False,
+        "audioEnabled": settings.get("audioEnabled") if type(settings.get("audioEnabled")) is bool else False,
+        "quality": quality,
+    }
+
 
 def compatibility_default(value: Any) -> int | None:
     """Return a valid global compatibility category, with Automatic as null."""
@@ -32,6 +54,7 @@ def default_data() -> dict[str, Any]:
         "settings": {
             "debug_logging": False,
             "deck_compat_default": None,
+            "game_trailers": dict(DEFAULT_TRAILER_SETTINGS),
         },
         "update_settings": {},
         "update_check_cache": {},
@@ -69,6 +92,14 @@ def load_data(
     merged["update_settings"].update(payload.get("update_settings") or {})
     merged["update_check_cache"].update(payload.get("update_check_cache") or {})
     merged["settings"]["debug_logging"] = bool(merged["settings"].get("debug_logging", False))
+    if isinstance(payload_settings, dict) and "game_trailers" in payload_settings:
+        merged["settings"]["game_trailers"] = normalize_trailer_settings(
+            payload_settings.get("game_trailers")
+        )
+    else:
+        # Keep legacy files unchanged when an unrelated setting is saved.
+        # get_trailer_settings supplies the defaults until a user saves this setting.
+        merged["settings"].pop("game_trailers", None)
     if isinstance(payload_settings, dict) and "deck_compat_default" in payload_settings:
         merged["settings"]["deck_compat_default"] = compatibility_default(
             merged["settings"].get("deck_compat_default")

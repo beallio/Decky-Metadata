@@ -142,6 +142,34 @@ icon, capsule, hero, and logo stay in place while Game Info receives the extra
 Steam details.
 The running game's icon also appears in the Steam Menu.
 
+## Stream Steam game trailers
+
+**Game trailers** is off by default. Open Decky Metadata in the Quick Access
+Menu and enable it to show a Steam trailer on a game's main Library page.
+Metadata waits three seconds before it covers the hero. The first highlighted
+Steam movie plays when it is available; otherwise, Metadata uses the first
+movie. It keeps Steam's logo and controller controls in place.
+
+For a non-Steam shortcut, first open **Decky metadata...**, choose the correct
+Steam game in the existing match editor, and select **Save**. Metadata uses
+that saved match only to find the Steam trailer. It does not change your
+shortcut artwork. If there is no valid match, no Steam trailer, or no playable
+video, the original Steam artwork stays visible.
+
+Use **Trailer audio** to choose whether a ready trailer plays with sound. New
+trailers start muted. Use **Video quality** to choose Auto, 720p, 1080p, 1440p,
+or 2160p. Auto follows the Big Picture display and uses an available Steam
+version at or below that size when possible.
+
+While a trailer is visible, press **X** on a Steam Deck or Xbox controller
+(**Square** on PlayStation) to mute or unmute it. Steam's footer shows the
+action; menus and text fields keep their normal button behavior.
+
+Trailers stream from Steam. Decky Metadata does not download them for offline
+playback and does not use other trailer providers. If you also installed the
+separate **TrailerHero** Decky plugin, uninstall that entry before you enable
+Game trailers in Decky Metadata.
+
 ## See community posts and news
 
 Your added game can show posts from the matching Steam Community page. If Steam
