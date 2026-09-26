@@ -16,6 +16,9 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
   2160p quality in the new section. Trailers stream from Steam; they are not
   saved offline, and Metadata does not use other providers. Uninstall the
   separate TrailerHero Decky plugin before enabling this feature.
+- **Optional trailer logo.** A new setting hides the game logo only while a
+  trailer is visible. It is off by default and restores the logo when playback
+  stops, fails, or the game page changes.
 
 ### Fixed
 

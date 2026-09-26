@@ -13,6 +13,7 @@ DEFAULT_TRAILER_SETTINGS: dict[str, Any] = {
     "enabled": False,
     "audioEnabled": False,
     "quality": "auto",
+    "hideLogoDuringTrailer": False,
 }
 TRAILER_QUALITIES = ("auto", 720, 1080, 1440, 2160)
 
@@ -29,6 +30,11 @@ def normalize_trailer_settings(value: Any) -> dict[str, Any]:
         "enabled": settings.get("enabled") if type(settings.get("enabled")) is bool else False,
         "audioEnabled": settings.get("audioEnabled") if type(settings.get("audioEnabled")) is bool else False,
         "quality": quality,
+        "hideLogoDuringTrailer": (
+            settings.get("hideLogoDuringTrailer")
+            if type(settings.get("hideLogoDuringTrailer")) is bool
+            else False
+        ),
     }
 
 

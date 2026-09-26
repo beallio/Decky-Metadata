@@ -3,12 +3,13 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.0";
+    const runtimeVersion = "0.1.1";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
     const readyClass = "decky-metadata-trailer-ready";
     const visibleClass = "decky-metadata-trailer-visible";
+    const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
     const audioHintId = "decky-metadata-trailer-audio-hint";
     const audioChangeEvent = "decky-metadata-trailer:audio-change";
     const routeScanIntervalMs = 2400;
@@ -85,6 +86,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         return {
             enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
+            hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
             quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto"
         };
     };
@@ -225,6 +227,30 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         return best;
     }
+    function findGameLogo(appId, hero) {
+        const heroRect = hero.getBoundingClientRect();
+        const nativePrefix = `/assets/${appId}/`;
+        const customPrefix = `/customimages/${appId}_logo.`;
+        const logos = document.querySelectorAll(`img[src*="${nativePrefix}"],img[src*="${customPrefix}"]`);
+        for (const logo of logos) {
+            const source = logo.getAttribute("src");
+            if (!source) continue;
+            let asset;
+            try { asset = new URL(source, window.location.href); } catch { continue; }
+            if (asset.origin !== window.location.origin) continue;
+            const path = asset.pathname.toLowerCase();
+            const nativeLogo = path.startsWith(nativePrefix) &&
+                /\/(?:library_)?logo\.(?:png|jpe?g|webp)$/.test(path);
+            const customLogo = path.startsWith(customPrefix) &&
+                /^(?:png|jpe?g|webp)$/.test(path.slice(customPrefix.length));
+            if (!nativeLogo && !customLogo) continue;
+            const rect = logo.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0 || rect.right <= heroRect.left ||
+                rect.left >= heroRect.right || rect.bottom <= heroRect.top || rect.top >= heroRect.bottom) continue;
+            return logo;
+        }
+        return undefined;
+    }
     function isProbablyGameDetailsPage() {
         if (!document.body) return false;
         const routeText = activeRouteText();
@@ -270,6 +296,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
       .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity 1200ms ease,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
+      img.${logoHiddenClass}{opacity:0!important}
     `;
     }
     class AdaptiveSession {
@@ -644,6 +671,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.cleanupVideo(true);
             }
             if (previous.audioEnabled !== this.settings.audioEnabled) this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
+            if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer) this.syncLogoVisibility();
             if (!this.settings.enabled) {
                 this.pageEnteredAt = undefined;
                 this.cleanupVideo(true);
@@ -806,6 +834,30 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const label = hint.querySelector(".decky-metadata-trailer-audio-label");
             if (label) label.textContent = rt(this.trailerAudioEnabled ? "muteTrailer" : "audio");
         }
+        restoreLogo() {
+            this.hiddenLogo?.classList.remove(logoHiddenClass);
+            this.hiddenLogo = undefined;
+        }
+        syncLogoVisibility() {
+            const appId = this.currentAppId;
+            if (!this.settings.enabled || !this.settings.hideLogoDuringTrailer ||
+                !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass) ||
+                !this.currentTarget || !appId || this.identity?.pageAppId !== appId ||
+                detectLocationAppId() !== appId) {
+                this.restoreLogo();
+                return;
+            }
+            const logo = findGameLogo(appId, this.currentTarget);
+            if (this.hiddenLogo === logo) {
+                if (logo && !logo.classList.contains(logoHiddenClass)) logo.classList.add(logoHiddenClass);
+                return;
+            }
+            this.restoreLogo();
+            if (logo) {
+                logo.classList.add(logoHiddenClass);
+                this.hiddenLogo = logo;
+            }
+        }
         queueScan() {
             if (this.scanQueued || this.destroyed) return;
             this.scanQueued = true;
@@ -870,6 +922,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
                 this.resumeVisiblePausedVideo(appId, hero.element);
+                this.syncLogoVisibility();
                 if (this.currentVideo?.classList.contains(visibleClass) &&
                     !document.getElementById(audioHintId)) {
                     this.updateAudioHint();
@@ -942,6 +995,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!candidate.isCurrent() || video.paused) return;
                 target.classList.add(readyClass);
                 video.classList.add(visibleClass);
+                this.syncLogoVisibility();
                 this.updateAudioHint();
                 this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
             }, delay);
@@ -1043,6 +1097,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 clearWatchdog();
                 if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
                 this.fadeTimer = undefined;
+                this.restoreLogo();
                 this.removeVideoHandlers(this.currentVideo);
                 this.activeCandidate?.controller.abort();
                 this.activeSession?.dispose();
@@ -1517,6 +1572,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         cleanupVideo(cancelPending = false) {
             this.removeAudioHint();
+            this.restoreLogo();
             if (cancelPending) {
                 this.metadataController?.abort();
                 this.metadataController = undefined;
