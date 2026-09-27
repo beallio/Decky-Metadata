@@ -3,14 +3,16 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.1";
+    const runtimeVersion = "0.1.2";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
     const readyClass = "decky-metadata-trailer-ready";
     const visibleClass = "decky-metadata-trailer-visible";
     const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
+    const cleanViewClass = "decky-metadata-trailer-clean-view";
     const audioHintId = "decky-metadata-trailer-audio-hint";
+    const viewHintId = "decky-metadata-trailer-view-hint";
     const audioChangeEvent = "decky-metadata-trailer:audio-change";
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
@@ -296,6 +298,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
       .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity 1200ms ease,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
+      .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
       img.${logoHiddenClass}{opacity:0!important}
     `;
     }
@@ -576,6 +579,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => this.queueScan();
             this.handleRouteChange = () => {
+                if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
+                    activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
                 if (this.checkRootRoute()) void this.scan();
             };
             this.handleVisibilityChange = () => {
@@ -592,9 +597,15 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             };
             this.handleLaunchIntent = (event) => this.stopTrailerForLaunch(event.target);
             this.handleLaunchKeyDown = (event) => {
+                if (this.cleanViewingOverlay && (event.key === "Escape" || event.key === "Backspace")) {
+                    this.exitCleanViewing();
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
                 if (event.key === "Enter" || event.key === " ") this.stopTrailerForLaunch(event.target ?? document.activeElement);
             };
-            const steamSideMenuVisible = () => {
+            this.steamSideMenuVisible = () => {
                 try {
                     const store = window.opener?.SteamUIStore?.m_WindowStore ??
                         window.SteamUIStore?.m_WindowStore;
@@ -603,8 +614,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 catch { return false; }
             };
             this.handleGamepadButtonDown = (event) => {
-                if (Number(event?.detail?.button) !== 3 || event?.detail?.is_repeat ||
-                    steamSideMenuVisible()) return;
+                const button = Number(event?.detail?.button);
+                if (event?.detail?.is_repeat || this.steamSideMenuVisible()) return;
                 const editable = (element) => element instanceof HTMLElement && Boolean(
                     element.closest("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']")
                 );
@@ -618,8 +629,19 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                         return rect.width > 0 && rect.height > 0 && style.display !== "none" &&
                             style.visibility !== "hidden";
                     });
-                if (overlayVisible || Date.now() - this.lastSecondaryPressAt < 350 || !this.toggleTrailerAudio()) return;
-                this.lastSecondaryPressAt = Date.now();
+                if (overlayVisible) return;
+                let handled = false;
+                if (button === 4) handled = this.toggleCleanViewing();
+                else if (button === 2 && this.cleanViewingOverlay) {
+                    this.exitCleanViewing();
+                    handled = true;
+                }
+                else if (button === 3 && Date.now() - this.lastSecondaryPressAt >= 350 &&
+                    this.toggleTrailerAudio()) {
+                    this.lastSecondaryPressAt = Date.now();
+                    handled = true;
+                }
+                if (!handled) return;
                 event.preventDefault?.();
                 event.stopPropagation?.();
                 event.stopImmediatePropagation?.();
@@ -786,7 +808,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.trailerAudioEnabled = enabled;
             this.settings = { ...this.settings, audioEnabled: enabled };
             this.applyCurrentMediaAudioState();
-            this.updateAudioHint();
+            this.updateTrailerHints();
             if (notify && changed) this.dispatchAudioChange();
             return true;
         }
@@ -794,45 +816,79 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!isProbablyGameDetailsPage() || !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass)) return false;
             return this.setTrailerAudioEnabled(!this.trailerAudioEnabled);
         }
-        removeAudioHint() {
-            document.getElementById(audioHintId)?.remove();
+        toggleCleanViewing() {
+            if (this.cleanViewingOverlay) {
+                this.exitCleanViewing();
+                return true;
+            }
+            const video = this.currentVideo;
+            if (!video?.isConnected || !video.classList.contains(visibleClass) ||
+                !isProbablyGameDetailsPage() || !document.body) return false;
+            const overlay = document.createElement("div");
+            overlay.className = cleanViewClass;
+            Object.assign(overlay.style, {
+                position: "fixed", inset: "0", background: "#000", zIndex: "2147483646"
+            });
+            overlay.addEventListener("click", () => this.exitCleanViewing());
+            document.body.appendChild(overlay);
+            overlay.appendChild(video);
+            this.cleanViewingOverlay = overlay;
+            return true;
         }
-        updateAudioHint() {
+        exitCleanViewing() {
+            const overlay = this.cleanViewingOverlay;
+            if (!overlay) return;
+            this.cleanViewingOverlay = undefined;
+            if (this.currentVideo?.parentElement === overlay && this.currentTarget?.isConnected) {
+                this.currentTarget.insertBefore(this.currentVideo, this.currentTarget.firstChild);
+            }
+            overlay.remove();
+        }
+        removeTrailerHints() {
+            document.getElementById(audioHintId)?.remove();
+            document.getElementById(viewHintId)?.remove();
+        }
+        updateTrailerHints() {
             const hasVideo = Boolean(this.currentVideo?.isConnected &&
                 this.currentVideo.classList.contains(visibleClass) && isProbablyGameDetailsPage());
             if (!hasVideo) {
-                this.removeAudioHint();
+                this.removeTrailerHints();
                 return;
             }
             const footer = document.querySelector("#Footer > div");
             if (!(footer instanceof HTMLElement)) return;
-            let hint = document.getElementById(audioHintId);
-            if (!hint || hint.parentElement !== footer) {
-                hint?.remove();
-                const template = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a'],img[src*='shared_button_b']")) ?? Array.from(footer.children).find((element) => element.querySelector("img"));
-                const nativeGlyph = template?.querySelector("img");
-                const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
-                if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel) return;
-                hint = document.createElement("div");
-                hint.id = audioHintId;
-                hint.className = template.className;
-                hint.style.pointerEvents = "none";
-                hint.setAttribute("aria-hidden", "true");
-                const iconContainer = document.createElement("div");
-                iconContainer.className = nativeGlyph.parentElement.className;
-                const glyph = document.createElement("img");
-                glyph.className = nativeGlyph.className;
-                glyph.src = "/steaminputglyphs/shared_button_x.svg";
-                glyph.alt = "";
-                iconContainer.appendChild(glyph);
-                const label = document.createElement("div");
-        label.className = `${nativeLabel.className} decky-metadata-trailer-audio-label`;
-                hint.append(iconContainer, label);
-                const firstAction = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a']"));
-                footer.insertBefore(hint, firstAction ?? null);
+            const template = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a'],img[src*='shared_button_b']")) ?? Array.from(footer.children).find((element) => element.querySelector("img"));
+            const nativeGlyph = template?.querySelector("img");
+            const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
+            if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel) return;
+            for (const [id, button, labelText] of [
+                [audioHintId, "x", rt(this.trailerAudioEnabled ? "muteTrailer" : "audio")],
+                [viewHintId, "y", rt("expandTrailer")],
+            ]) {
+                let hint = document.getElementById(id);
+                if (!hint || hint.parentElement !== footer) {
+                    hint?.remove();
+                    hint = document.createElement("div");
+                    hint.id = id;
+                    hint.className = template.className;
+                    hint.style.pointerEvents = "none";
+                    hint.setAttribute("aria-hidden", "true");
+                    const iconContainer = document.createElement("div");
+                    iconContainer.className = nativeGlyph.parentElement.className;
+                    const glyph = document.createElement("img");
+                    glyph.className = nativeGlyph.className;
+                    glyph.src = `/steaminputglyphs/shared_button_${button}.svg`;
+                    glyph.alt = "";
+                    iconContainer.appendChild(glyph);
+                    const label = document.createElement("div");
+                    label.className = `${nativeLabel.className} decky-metadata-trailer-hint-label`;
+                    hint.append(iconContainer, label);
+                    const firstAction = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a']"));
+                    footer.insertBefore(hint, firstAction ?? null);
+                }
+                const label = hint.querySelector(".decky-metadata-trailer-hint-label");
+                if (label) label.textContent = labelText;
             }
-            const label = hint.querySelector(".decky-metadata-trailer-audio-label");
-            if (label) label.textContent = rt(this.trailerAudioEnabled ? "muteTrailer" : "audio");
         }
         restoreLogo() {
             this.hiddenLogo?.classList.remove(logoHiddenClass);
@@ -879,6 +935,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.update(owner.settings, owner.settingsRevision, owner.identity);
                 return;
             }
+            if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
+                !this.cleanViewingOverlay.isConnected ||
+                activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
             this.refreshDisplayTarget();
             this.checkRootRoute();
             if (!this.settings.enabled) {
@@ -924,8 +983,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.resumeVisiblePausedVideo(appId, hero.element);
                 this.syncLogoVisibility();
                 if (this.currentVideo?.classList.contains(visibleClass) &&
-                    !document.getElementById(audioHintId)) {
-                    this.updateAudioHint();
+                    (!document.getElementById(audioHintId) || !document.getElementById(viewHintId))) {
+                    this.updateTrailerHints();
                 }
                 return;
             }
@@ -976,7 +1035,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.status = this.currentTrailerName
                     ? rt("trailerLabel", { name: this.currentTrailerName })
                     : rt("trailerActive");
-                this.updateAudioHint();
+                this.updateTrailerHints();
                 this.scheduleTrailerReveal(candidate, video, hero);
             }).catch(() => {
                 if (!candidate.isCurrent()) return;
@@ -996,7 +1055,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 target.classList.add(readyClass);
                 video.classList.add(visibleClass);
                 this.syncLogoVisibility();
-                this.updateAudioHint();
+                this.updateTrailerHints();
                 this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
             }, delay);
         }
@@ -1096,6 +1155,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const clearAttempt = () => {
                 clearWatchdog();
                 if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
+                this.exitCleanViewing();
                 this.fadeTimer = undefined;
                 this.restoreLogo();
                 this.removeVideoHandlers(this.currentVideo);
@@ -1114,7 +1174,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.currentVideo = undefined;
                 this.activeCandidate = undefined;
                 target.classList.remove(readyClass);
-                this.removeAudioHint();
+                this.removeTrailerHints();
             };
             const tryCandidate = () => {
                 if (token !== this.requestToken || this.destroyed) return;
@@ -1571,7 +1631,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (video) delete video.__deckyMetadataTrailerHandlers;
         }
         cleanupVideo(cancelPending = false) {
-            this.removeAudioHint();
+            this.exitCleanViewing();
+            this.removeTrailerHints();
             this.restoreLogo();
             if (cancelPending) {
                 this.metadataController?.abort();

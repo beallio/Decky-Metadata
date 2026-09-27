@@ -41,6 +41,7 @@ const TRANSLATIONS = {
     trailerLabel: "Trailer: {name}",
     waitingGamePage: "Waiting for a Steam game page",
     muteTrailer: "Mute trailer",
+    expandTrailer: "Expand trailer",
     mediaSourceUnavailable: "MediaSource is not available",
   },
 };

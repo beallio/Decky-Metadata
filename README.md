@@ -167,8 +167,11 @@ trailer is visible. The logo returns when playback stops, fails, or you leave
 the game page. This does not hide logos that appear inside the video itself.
 
 While a trailer is visible, press **X** on a Steam Deck or Xbox controller
-(**Square** on PlayStation) to mute or unmute it. Steam's footer shows the
-action; menus and text fields keep their normal button behavior.
+(**Square** on PlayStation) to mute or unmute it. Press **Y** (**Triangle** on
+PlayStation) to enlarge the trailer and hide the game page controls. Press
+**Y** again or **B** (**Circle** on PlayStation) to return. The video keeps
+playing, and Steam's footer shows the X and Y actions when the page is visible.
+Menus and text fields keep their normal button behavior.
 
 Trailers stream from Steam. Decky Metadata does not download them for offline
 playback and does not use other trailer providers. If you also installed the
