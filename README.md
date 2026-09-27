@@ -151,6 +151,10 @@ Steam movie plays when it is available; otherwise, Metadata uses the first
 movie. Controller controls stay in place. Steam's game logo stays visible unless
 you turn on the optional logo setting.
 
+If a save-status bar appears below the game artwork, the trailer can show
+through its transparent background without moving the bar. When the bar is
+hidden or you leave the game page, the artwork returns to its usual size.
+
 For a non-Steam shortcut, first open **Decky metadata...**, choose the correct
 Steam game in the existing match editor, and select **Save**. Metadata uses
 that saved match only to find the Steam trailer. It does not change your
