@@ -19,6 +19,10 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
 - **Optional trailer logo.** A new setting hides the game logo only while a
   trailer is visible. It is off by default and restores the logo when playback
   stops, fails, or the game page changes.
+- **Expanded trailer view.** Press Y while a trailer is visible to hide the
+  game page controls and enlarge the video without restarting it. Press Y or B
+  to return. Steam's footer shows the action, and the page returns when
+  playback stops or you leave the game.
 
 ### Fixed
 

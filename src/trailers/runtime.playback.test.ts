@@ -104,6 +104,7 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
     constructor() {
       this.tagName = 'DIV';
       this.className = 'library-hero';
+      this.isConnected = true;
       this.asset = customLogo
         ? `url(https://steam.test/customimages/${pageAppId}_hero.png)`
         : `url(https://steam.test/steam/apps/${pageAppId}/library_hero.jpg)`;
@@ -162,7 +163,7 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
     }
     pause() { this.paused = true; }
     removeAttribute(name) { if (name === 'src') this.src = ''; }
-    remove() { this.isConnected = false; }
+    remove() { this.parentElement?.removeChild(this); this.isConnected = false; }
   }
   const hero = new Hero();
   const logo = new Logo(customLogo
@@ -172,7 +173,20 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
   let logos = [logo, unrelatedLogo];
   h.window.location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
   h.document.URL = h.window.location.href;
-  h.document.body = {};
+  const bodyChildren = [];
+  h.document.body = {
+    children: bodyChildren,
+    appendChild(element) {
+      element.parentElement?.removeChild(element);
+      bodyChildren.push(element);
+      element.parentElement = this;
+      element.isConnected = true;
+    },
+    removeChild(element) {
+      bodyChildren.splice(bodyChildren.indexOf(element), 1);
+      element.parentElement = null;
+    },
+  };
   h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero]
     : selector.startsWith('img[src') ? logos : [];
   h.context.HTMLElement = Hero;
@@ -180,11 +194,33 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
     backgroundImage: element.asset, display: 'block', visibility: 'visible',
     opacity: element.classList?.contains('decky-metadata-trailer-logo-hidden') ? '0' : '1',
   });
-  h.document.createElement = () => {
-    createdVideos++;
-    return new Video();
+  h.document.createElement = tag => {
+    if (tag === 'video') {
+      createdVideos++;
+      return new Video();
+    }
+    return {
+      className: '', style: {}, isConnected: false, parentElement: null, children: [],
+      appendChild(element) {
+        element.parentElement?.removeChild(element);
+        this.children.push(element);
+        element.parentElement = this;
+        element.isConnected = true;
+      },
+      removeChild(element) {
+        this.children.splice(this.children.indexOf(element), 1);
+        element.parentElement = null;
+      },
+      remove() { this.parentElement?.removeChild(this); this.isConnected = false; },
+      addEventListener() {},
+    };
   };
-  hero.insertBefore = video => { video.isConnected = true; };
+  hero.insertBefore = video => {
+    video.parentElement?.removeChild(video);
+    video.parentElement = hero;
+    video.isConnected = true;
+  };
+  hero.removeChild = video => { video.parentElement = null; };
   h.runtime.pageEnteredAt = pageEnteredAt ?? Date.now() - 3000;
   h.runtime.attachVideo(hero, pageAppId, [{ format: 'mp4', url: movie.mp4[720], height: 720 }], h.runtime.requestToken);
   for (let index = 0; index < 20; index++) await Promise.resolve();
@@ -201,6 +237,70 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
     classes,
   };
 }
+
+test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  const press = (button, repeat = false) => {
+    let consumed = false;
+    h.runtime.handleGamepadButtonDown({
+      detail: { button, is_repeat: repeat }, target: null,
+      preventDefault() { consumed = true; }, stopPropagation() {}, stopImmediatePropagation() {},
+    });
+    return consumed;
+  };
+
+  assert.equal(press(4), false, 'Y retains its native action until the trailer is visible');
+  clock.advance(3000);
+  assert.equal(press(4), true);
+  const overlay = h.document.body.children[0];
+  assert.equal(overlay.style.position, 'fixed');
+  assert.equal(overlay.style.inset, '0');
+  assert.equal(video.parentElement, overlay);
+  assert.equal(h.video, video);
+  assert.equal(h.playCalls, 1);
+  assert.equal(press(4, true), false, 'repeated button-downs do not exit clean viewing');
+  assert.equal(press(4), true);
+  assert.equal(h.document.body.children.length, 0);
+  assert.equal(video.parentElement, h.hero);
+  assert.equal(h.playCalls, 1);
+  assert.equal(press(4), true);
+  assert.equal(press(3), true, 'X still controls audio while the page is covered');
+  assert.equal(press(2), true, 'B returns to the normal game page');
+  assert.equal(h.document.body.children.length, 0);
+  assert.equal(press(2), false, 'B keeps its native action outside clean viewing');
+
+
+  assert.equal(press(4), true);
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.document.body.children.length, 0, 'leaving the game page removes the overlay');
+  assert.equal(h.video, undefined);
+});
+test('Clean viewing restores the page on menu opening, playback failure, and trailer disable', async () => {
+  for (const exit of ['menu', 'failure', 'disable']) {
+    const clock = fakeClock();
+    const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+    clock.advance(3000);
+    h.runtime.handleGamepadButtonDown({
+      detail: { button: 4 }, preventDefault() {}, stopPropagation() {}, stopImmediatePropagation() {},
+    });
+    assert.equal(h.document.body.children.length, 1);
+    if (exit === 'menu') {
+      h.window.location.hash = '#quickaccess';
+      h.runtime.handleRouteChange();
+      assert.equal(h.video?.parentElement, h.hero);
+    } else if (exit === 'failure') {
+      h.runtime.activeCandidate.onFailure(new Error('stream stopped'));
+    } else {
+      h.runtime.update({ enabled: false, audioEnabled: true, quality: 'auto' }, 1);
+    }
+    assert.equal(h.document.body.children.length, 0, `${exit} must not leave a black overlay`);
+  }
+});
+
 
 for (const [display, target, expected] of [
   [{ width: 1280, height: 800, dpr: 1 }, 800, 'dash_h264.mpd'],
@@ -404,12 +504,18 @@ test('A trailer paused before its reveal resumes and appears after the original 
   const hint = h.document.getElementById('decky-metadata-trailer-audio-hint');
   assert.ok(hint, 'the audio hint appears only after the trailer becomes visible');
   assert.equal(hint.querySelector('img')?.src, '/steaminputglyphs/shared_button_x.svg');
+  const viewHint = h.document.getElementById('decky-metadata-trailer-view-hint');
+  assert.ok(viewHint, 'Y is shown in Steam’s native footer when the trailer is ready');
+  assert.equal(viewHint.querySelector('img')?.src, '/steaminputglyphs/shared_button_y.svg');
   // Steam can replace the native Footer after the trailer becomes visible.
   hint.remove();
   assert.equal(h.document.getElementById('decky-metadata-trailer-audio-hint'), null);
+  viewHint.remove();
   await h.runtime.scan();
   assert.ok(h.document.getElementById('decky-metadata-trailer-audio-hint'),
     'a late Footer refresh restores the X action without restarting playback');
+  assert.ok(h.document.getElementById('decky-metadata-trailer-view-hint'),
+    'a late Footer refresh restores the Y action without restarting playback');
   assert.equal(h.playCalls, 2);
   assert.equal(h.createdVideos, 1);
 });
