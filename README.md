@@ -153,6 +153,10 @@ the hero by default. Use **Trailer fade-in delay** to choose 0–10 seconds;
 zero shows it immediately. Controller controls stay in place. Steam's game
 logo stays visible unless you turn on the optional logo setting.
 
+Watch Hades artwork give way to its trailer on a Steam Deck (silent preview):
+
+![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
+
 If a save-status bar appears below the game artwork, the trailer can show
 through its transparent background without moving the bar. When the bar is
 hidden or you leave the game page, the artwork returns to its usual size.
