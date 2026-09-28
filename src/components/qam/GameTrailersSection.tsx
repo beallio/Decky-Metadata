@@ -1,4 +1,4 @@
-import { DropdownItem, Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { DropdownItem, Field, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 
 import { inlineStatusStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
@@ -17,6 +17,7 @@ type GameTrailersSectionProps = {
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
   onHideLogoChange: (hide: boolean) => void;
+  onFadeInDelayChange: (seconds: number) => void;
   onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
   onQualityMenuWillOpen: () => void;
   onQualityControlRef: (element: HTMLDivElement | null) => void;
@@ -27,6 +28,7 @@ export function GameTrailersSection({
   onEnabledChange,
   onAudioChange,
   onHideLogoChange,
+  onFadeInDelayChange,
   onQualityChange,
   onQualityMenuWillOpen,
   onQualityControlRef,
@@ -41,7 +43,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <ToggleField
           label="Enabled"
-          description="Show a Steam trailer on native game pages and shortcuts with a saved Steam match."
+          description="Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match."
           checked={state.settings.enabled}
           disabled={disabled}
           onChange={onEnabledChange}
@@ -63,6 +65,20 @@ export function GameTrailersSection({
           checked={state.settings.hideLogoDuringTrailer}
           disabled={disabled}
           onChange={onHideLogoChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <SliderField
+          label="Trailer fade-in delay"
+          description="Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears."
+          value={state.settings.fadeInDelaySeconds}
+          min={0}
+          max={10}
+          step={1}
+          showValue
+          valueSuffix="s"
+          disabled={!state.settingsLoaded}
+          onChange={onFadeInDelayChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>
@@ -105,7 +121,7 @@ export function GameTrailersSection({
           bottomSeparator="standard"
         >
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback.
+            Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.
           </div>
           {state.settingsError && (
             <div style={inlineStatusStyle("error")}>{state.settingsError}</div>

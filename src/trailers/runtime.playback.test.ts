@@ -13,7 +13,7 @@ const factory = source.slice(start, end).replace(/^export\s+/, '').replace(
   'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget }; const existing = window[runtimeKey];'
 );
 
-function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fetchReply,
+function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, fetchReply,
   mediaSourceType, urlType, domParserType, clock, pageAppId = 570, sourceAppId = 570 } = {}) {
   const location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
   const window = {
@@ -24,7 +24,7 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
     clearInterval: clock?.clearInterval.bind(clock) ?? clearInterval,
     addEventListener() {}, removeEventListener() {},
     __deckyMetadataTrailerOwner: { ownerId: 'test-owner', active: true, settingsRevision: 0,
-      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer } },
+      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds } },
   };
   const document = {
     URL: location.href, body: {}, documentElement: {},
@@ -36,9 +36,9 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
     TextEncoder, TextDecoder,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
-  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)}},
+  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)},fadeInDelaySeconds:${fadeInDelaySeconds}},
     'test-owner', 0, {en:{}}, ${JSON.stringify({ pageAppId, sourceAppId })})`, context);
-  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer }, 'test-owner', 0);
+  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds }, 'test-owner', 0);
   return { runtime, window, document, api, context };
 }
 
@@ -96,8 +96,8 @@ function fakeClock(start = Date.now()) {
 }
 
 async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
-  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, customLogo = false } = {}) {
-  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer });
+  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, customLogo = false } = {}) {
+  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer, fadeInDelaySeconds });
   let createdVideos = 0;
   let playCalls = 0;
   const classes = new Set();
@@ -473,6 +473,32 @@ test('A visible paused trailer resumes the same video after wake without allocat
   h.runtime.handleVisibilityChange();
   assert.equal(h.runtime.currentVideo, undefined, 'hidden playback is cleaned up instead of resumed');
   assert.equal(h.playCalls, 2);
+});
+
+test('Trailer reveal follows a 0–10 second setting and updates a pending reveal without restarting playback', async () => {
+  for (const seconds of [0, 10]) {
+    const clock = fakeClock();
+    const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now, fadeInDelaySeconds: seconds });
+    assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, seconds * 1000);
+    if (seconds) {
+      clock.advance(9999);
+      assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), false);
+    }
+    clock.advance(seconds ? 1 : 0);
+    assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), true);
+  }
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 10 }, 1, h.runtime.identity);
+  assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, 10000);
+  clock.advance(3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 0 }, 2, h.runtime.identity);
+  clock.advance(0);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(h.createdVideos, 1);
 });
 
 test('Trailer audio stays silent behind the hero and fades in with the video', async () => {
@@ -880,6 +906,144 @@ test('A matched shortcut requests movies by Steam source ID and attaches only to
   assert.equal(attached.target, hero);
   assert.equal(attached.appId, pageAppId);
   assert.equal(attached.candidates[0].url, 'https://steam.test/matched720.mp4');
+});
+async function trailerScanHarness(pageAppId, sourceAppId, steamResult) {
+  const h = setup({ pageAppId, sourceAppId });
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = `url(https://steam.test/${pageAppId >= 0x80000000 ? 'customimages' : 'steam/apps'}/${pageAppId}/library_hero.jpg)`;
+      this.classList = { add() {}, remove() {} };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  const hero = new Hero();
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') || selector.includes('customimages') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  const attached = [];
+  let steamLookups = 0;
+  h.runtime.getTrailer = async () => { steamLookups++; return steamResult; };
+  h.runtime.attachVideo = (target, appId, candidates) => { attached.push({ target, appId, candidates }); };
+  await h.runtime.scan();
+  return { ...h, hero, attached, get steamLookups() { return steamLookups; } };
+}
+
+test('An unmatched shortcut uses the IGN trailer only after its verified hero appears', async () => {
+  const shortcutId = 0x80000010;
+  const h = await trailerScanHarness(shortcutId, null, { ok: false });
+  assert.equal(h.runtime.identity?.sourceAppId, null);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.steamLookups, 0);
+  assert.equal(h.attached.length, 0);
+
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, {
+    name: 'Bloodborne Story Trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/bloodborne.mp4', height: 720 }],
+  });
+  await Promise.resolve();
+  assert.equal(h.attached.length, 1);
+  assert.equal(h.attached[0].target, h.hero);
+  assert.equal(h.attached[0].appId, shortcutId);
+  assert.equal(h.attached[0].candidates[0].url, 'https://assets14.ign.com/bloodborne.mp4');
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+});
+
+test('The Steam default-world owner update delivers a completed IGN lookup', async () => {
+  const shortcutId = 0x80000010;
+  const h = await trailerScanHarness(shortcutId, null, { ok: false });
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  h.window.__deckyMetadataTrailerOwner.settingsRevision = 1;
+  h.window.__deckyMetadataTrailerOwner.ignFallback = {
+    name: 'Bloodborne Story Trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/bloodborne.mp4', height: 720 }],
+  };
+
+  await h.runtime.scan();
+  await Promise.resolve();
+  assert.equal(h.attached.length, 1);
+  assert.equal(h.attached[0].candidates[0].url, 'https://assets14.ign.com/bloodborne.mp4');
+});
+
+test('Steam success never requests IGN; Steam miss uses it without repeating Steam lookup', async () => {
+  const steamMovie = { ok: true, name: 'Steam movie', candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] };
+  const success = await trailerScanHarness(570, 570, steamMovie);
+  assert.equal(success.attached[0].candidates[0].url, movie.mp4[720]);
+  assert.equal(success.runtime.snapshot().needsIgnFallback, false);
+
+  const miss = await trailerScanHarness(570, 570, { ok: false, error: 'No Steam trailer' });
+  assert.equal(miss.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(miss.steamLookups, 1);
+  miss.runtime.update(miss.runtime.settings, 1, miss.runtime.identity, {
+    name: 'IGN game trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/game.mp4', height: 720 }],
+  });
+  await Promise.resolve();
+  assert.equal(miss.attached[0].candidates[0].url, 'https://assets14.ign.com/game.mp4');
+  await miss.runtime.scan();
+  assert.equal(miss.steamLookups, 1);
+});
+
+test('An IGN miss leaves the artwork alone and a later route cannot reuse its result', async () => {
+  const h = await trailerScanHarness(0x80000010, null, { ok: false });
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, null);
+  await Promise.resolve();
+  assert.equal(h.attached.length, 0);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+  h.runtime.update(h.runtime.settings, 2, { pageAppId: 0x80000011, sourceAppId: null });
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+  assert.equal(h.runtime.ignFallback, undefined);
+});
+
+
+test('An unplayable Steam video falls back to IGN once and restores artwork if IGN also fails', async () => {
+  const h = await readyDirectTrailer();
+  const steamVideo = h.video;
+  steamVideo.dispatchEvent(new Event('error'));
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.video, undefined);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+
+  const url = 'https://assets14.ign.com/deadpool.mp4';
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, {
+    name: 'Deadpool Official Trailer',
+    candidates: [{ format: 'mp4', url, height: 720 }],
+  });
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  assert.equal(h.createdVideos, 2);
+  assert.equal(h.video.src, url);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+
+  h.video.dispatchEvent(new Event('error'));
+  assert.equal(h.video, undefined);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+  await h.runtime.scan();
+  assert.equal(h.createdVideos, 2, 'a failed IGN asset must not start an endless retry');
+});
+
+test('After Steam media fails, a later visit can use refreshed Steam assets', async () => {
+  const h = await readyDirectTrailer();
+  h.runtime.trailerCache.set(570, {
+    ok: true, name: 'Broken Steam movie',
+    candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }],
+  });
+  h.video.dispatchEvent(new Event('error'));
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  let requests = 0;
+  const fixedUrl = 'https://steam.test/fixed1080.mp4';
+  h.context.fetch = async () => {
+    requests++;
+    return responseBody(JSON.stringify({ 570: { data: { movies: [
+      { id: 8, name: 'Fixed Steam movie', highlight: true, mp4: { 1080: fixedUrl } },
+    ] } } }));
+  };
+  h.runtime.update({ ...h.runtime.settings, quality: 1080 }, 1, h.runtime.identity, null);
+  for (let index = 0; index < 30; index++) await Promise.resolve();
+  assert.equal(requests, 1);
+  assert.equal(h.video?.src, fixedUrl);
 });
 
 test('A QAM hash keeps the current root-page trailer attached during a runtime scan', async () => {

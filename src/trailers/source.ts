@@ -4,7 +4,7 @@ export const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
 
 export type TrailerSource = {
   pageAppId: number;
-  sourceAppId: number;
+  sourceAppId: number | null;
   kind: "steam" | "shortcut";
 };
 
@@ -12,7 +12,7 @@ export type TrailerSourceContext = {
   route: string;
   heroAppId: number | null | undefined;
   overview: unknown;
-  metadata: Pick<MetadataData, "steam_appid"> | null | undefined;
+  metadata: Partial<Pick<MetadataData, "steam_appid" | "source" | "source_url" | "title">> | null | undefined;
   hydrated: boolean;
 };
 
@@ -68,6 +68,25 @@ const validSteamAppId = (value: unknown): number | null => {
     : null;
 };
 
+const trailerTitle = (value: unknown): string => {
+  const title = typeof value === "string" ? value.trim() : "";
+  return title.length <= 200 ? title : "";
+};
+
+export const nativeTrailerGameTitle = (overview: unknown): string => {
+  if (!overview || typeof overview !== "object") return "";
+  const app = overview as Record<string, unknown>;
+  return trailerTitle(app.display_name) || trailerTitle(app.localized_name) ||
+    trailerTitle(app.name) || trailerTitle(app.strDisplayName);
+};
+
+export const ignGameUrl = (metadata: TrailerSourceContext["metadata"]): string | null => {
+  if (metadata?.source !== "IGN" || typeof metadata.source_url !== "string") return null;
+  const url = metadata.source_url.trim();
+  return /^https:\/\/www\.ign\.com\/games\/[a-z0-9][a-z0-9-]{0,119}\/?$/i.test(url)
+    ? url.replace(/\/$/, "") : null;
+};
+
 /** Resolve a trailer source only after Steam's native page and visible hero agree. */
 export const resolveTrailerSource = (context: TrailerSourceContext): TrailerSource | null => {
   if (!context.hydrated) return null;
@@ -82,5 +101,8 @@ export const resolveTrailerSource = (context: TrailerSourceContext): TrailerSour
   }
   if (!isNativeShortcut(context.overview)) return null;
   const sourceAppId = validSteamAppId(context.metadata?.steam_appid);
-  return sourceAppId ? { pageAppId, sourceAppId, kind: "shortcut" } : null;
+  if (!sourceAppId && !nativeTrailerGameTitle(context.overview) &&
+      !(typeof context.metadata?.title === "string" && context.metadata.title.trim()) &&
+      !ignGameUrl(context.metadata)) return null;
+  return { pageAppId, sourceAppId, kind: "shortcut" };
 };

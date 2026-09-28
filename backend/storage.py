@@ -14,6 +14,7 @@ DEFAULT_TRAILER_SETTINGS: dict[str, Any] = {
     "audioEnabled": False,
     "quality": "auto",
     "hideLogoDuringTrailer": False,
+    "fadeInDelaySeconds": 3,
 }
 TRAILER_QUALITIES = ("auto", 720, 1080, 1440, 2160)
 
@@ -34,6 +35,11 @@ def normalize_trailer_settings(value: Any) -> dict[str, Any]:
             settings.get("hideLogoDuringTrailer")
             if type(settings.get("hideLogoDuringTrailer")) is bool
             else False
+        ),
+        "fadeInDelaySeconds": (
+            settings["fadeInDelaySeconds"]
+            if type(settings.get("fadeInDelaySeconds")) is int and 0 <= settings["fadeInDelaySeconds"] <= 10
+            else 3
         ),
     }
 

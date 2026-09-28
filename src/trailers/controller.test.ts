@@ -4,6 +4,7 @@ const backend = vi.hoisted(() => ({
   evalInBigPicture: vi.fn(async () => ({ status: "Steam UI unavailable", runtimeMissing: true })),
   getTrailerSettings: vi.fn(async () => ({ enabled: false, audioEnabled: false, quality: "auto" })),
   setTrailerSettings: vi.fn(async (settings: unknown) => settings),
+  findIgnTrailer: vi.fn(async () => null as unknown),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -69,6 +70,7 @@ describe("TrailerController behavior", () => {
     backend.evalInBigPicture.mockReset().mockResolvedValue({ status: "Steam UI unavailable", runtimeMissing: true });
     backend.getTrailerSettings.mockReset().mockResolvedValue({ enabled: false, audioEnabled: false, quality: "auto" });
     backend.setTrailerSettings.mockReset().mockImplementation(async (settings: unknown) => settings);
+    backend.findIgnTrailer.mockReset().mockResolvedValue(null);
     vi.stubGlobal("window", {
       setInterval: vi.fn(() => 10), clearInterval: vi.fn(),
       setTimeout, clearTimeout, addEventListener: vi.fn(), removeEventListener: vi.fn(),
@@ -108,6 +110,79 @@ describe("TrailerController behavior", () => {
 
     expect(steam.getNativeOverview.mock.calls.filter(([appId]) => appId === 570)).toHaveLength(initialLookups + 1);
     expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    controller.stop();
+  });
+
+  it("requests IGN only for an unmatched shortcut whose runtime needs a trailer", async () => {
+    const shortcutId = 0x80000010;
+    steam.route = `/routes/library/app/${shortcutId}`;
+    steam.overview.set(shortcutId, { appid: shortcutId, app_type: 1073741824, display_name: "Bloodborne" });
+    const controller = mountController();
+    const runtime = (window as any).__deckyMetadataTrailerRuntime;
+    runtime.snapshot.mockReturnValue({ status: "Finding IGN trailer", needsIgnFallback: true });
+    backend.findIgnTrailer.mockResolvedValue({
+      name: "Bloodborne Story Trailer",
+      candidates: [{ format: "mp4", url: "https://assets14.ign.com/bloodborne.mp4", height: 720 }],
+    });
+
+    await controller.poll();
+    await flush();
+    expect(backend.findIgnTrailer).toHaveBeenCalledWith("Bloodborne", null);
+    expect((window as any).__deckyMetadataTrailerOwner.ignFallback.name).toBe("Bloodborne Story Trailer");
+    await controller.poll();
+    expect(backend.findIgnTrailer).toHaveBeenCalledTimes(1);
+    controller.stop();
+  });
+
+  it("does not look up IGN while the Steam trailer is playing", async () => {
+    steam.overview.set(570, nativeOverview(570));
+    const controller = mountController();
+    (window as any).__deckyMetadataTrailerRuntime.snapshot.mockReturnValue({
+      status: "Trailer: Steam movie", needsIgnFallback: false,
+    });
+    await controller.poll();
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
+    controller.stop();
+  });
+
+  it("ignores a late IGN response after navigating to another game", async () => {
+    const shortcutId = 0x80000010;
+    const pending = deferred<unknown>();
+    backend.findIgnTrailer.mockReturnValue(pending.promise);
+    steam.route = `/routes/library/app/${shortcutId}`;
+    steam.overview.set(shortcutId, { appid: shortcutId, app_type: 1073741824, display_name: "Deadpool" });
+    steam.overview.set(571, { ...nativeOverview(571), display_name: "Another Game" });
+    const controller = mountController();
+    (window as any).__deckyMetadataTrailerRuntime.snapshot.mockReturnValue({
+      status: "Finding IGN trailer", needsIgnFallback: true,
+    });
+    await controller.poll();
+    steam.route = "/routes/library/app/571";
+    await controller.refreshPageIdentity();
+    pending.resolve({
+      name: "Deadpool Official Trailer",
+      candidates: [{ format: "mp4", url: "https://assets14.ign.com/deadpool.mp4", height: 720 }],
+    });
+    await flush();
+    expect((window as any).__deckyMetadataTrailerOwner.identity).toEqual({ pageAppId: 571, sourceAppId: 571 });
+    expect((window as any).__deckyMetadataTrailerOwner.ignFallback).toBeUndefined();
+    controller.stop();
+  });
+
+  it("uses a saved IGN game URL for a renamed shortcut with no Steam match", async () => {
+    const shortcutId = 0x80000010;
+    steam.route = `/routes/library/app/${shortcutId}`;
+    steam.overview.set(shortcutId, { appid: shortcutId, app_type: 1073741824, display_name: "Custom Name" });
+    steam.metadataCache[String(shortcutId)] = {
+      steam_appid: null, source: "IGN", source_url: "https://www.ign.com/games/deadpool", title: "Deadpool",
+    };
+    const controller = mountController();
+    (window as any).__deckyMetadataTrailerRuntime.snapshot.mockReturnValue({
+      status: "Finding IGN trailer", needsIgnFallback: true,
+    });
+    await controller.poll();
+    await flush();
+    expect(backend.findIgnTrailer).toHaveBeenCalledWith("Custom Name", "https://www.ign.com/games/deadpool");
     controller.stop();
   });
 
@@ -162,6 +237,17 @@ describe("TrailerController behavior", () => {
     expect(await controller.setHideLogoDuringTrailer(true)).toBe(true);
     expect(controller.settings).toMatchObject({ enabled: false, hideLogoDuringTrailer: true });
     expect((window as any).__deckyMetadataTrailerOwner.settings.hideLogoDuringTrailer).toBe(true);
+    controller.stop();
+  });
+
+  it("changes the visible fade-in delay without changing the game identity", async () => {
+    steam.overview.set(570, nativeOverview(570));
+    const controller = mountController();
+    await controller.refreshPageIdentity();
+
+    expect(await controller.setFadeInDelaySeconds(0)).toBe(true);
+    expect(controller.getSnapshot().settings.fadeInDelaySeconds).toBe(0);
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
     controller.stop();
   });
 

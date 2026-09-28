@@ -142,30 +142,32 @@ icon, capsule, hero, and logo stay in place while Game Info receives the extra
 Steam details.
 The running game's icon also appears in the Steam Menu.
 
-## Stream Steam game trailers
+## Stream game trailers
 
 **Game trailers** is off by default. Open Decky Metadata in the Quick Access
-Menu and enable it to show a Steam trailer on a game's main Library page.
-Metadata waits three seconds before it covers the hero. The first highlighted
-Steam movie plays when it is available; otherwise, Metadata uses the first
-movie. Controller controls stay in place. Steam's game logo stays visible unless
-you turn on the optional logo setting.
+Menu and enable it to show a trailer on a game's main Library page. Steam
+trailers have priority; when Steam has no playable movie, Metadata looks for
+a matching IGN game trailer. The artwork stays in place if neither source has
+a suitable video. Metadata waits three seconds before a ready trailer covers
+the hero by default. Use **Trailer fade-in delay** to choose 0–10 seconds;
+zero shows it immediately. Controller controls stay in place. Steam's game
+logo stays visible unless you turn on the optional logo setting.
 
 If a save-status bar appears below the game artwork, the trailer can show
 through its transparent background without moving the bar. When the bar is
 hidden or you leave the game page, the artwork returns to its usual size.
 
-For a non-Steam shortcut, first open **Decky metadata...**, choose the correct
-Steam game in the existing match editor, and select **Save**. Metadata uses
-that saved match only to find the Steam trailer. It does not change your
-shortcut artwork. If there is no valid match, no Steam trailer, or no playable
-video, the original Steam artwork stays visible.
+For a non-Steam shortcut, a saved Steam match in **Decky metadata...** provides
+the Steam trailer first. If you have no Steam match, Metadata can look for
+an IGN game trailer using the shortcut's name or its saved IGN game match.
+Only a trailer clearly linked to the correct game plays. Your shortcut artwork
+does not change, and it stays visible when no suitable video can be found.
 
 Use **Trailer audio** to choose whether a trailer plays with sound. New
 trailers stay silent behind the hero artwork, then sound fades in with the
-video after the three-second delay. Use **Video quality** to choose Auto, 720p,
-1080p, 1440p, or 2160p. Auto follows the Big Picture display and uses an
-available Steam version at or below that size when possible.
+video when it appears. Use **Video quality** to choose Auto, 720p, 1080p,
+1440p, or 2160p. Auto follows the Big Picture display and chooses an
+available video size when possible.
 
 Turn on **Hide game logo during trailers** to hide Steam's game logo while a
 trailer is visible. The logo returns when playback stops, fails, or you leave
@@ -178,10 +180,9 @@ PlayStation) to enlarge the trailer and hide the game page controls. Press
 playing, and Steam's footer shows the X and Y actions when the page is visible.
 Menus and text fields keep their normal button behavior.
 
-Trailers stream from Steam. Decky Metadata does not download them for offline
-playback and does not use other trailer providers. If you also installed the
-separate **TrailerHero** Decky plugin, uninstall that entry before you enable
-Game trailers in Decky Metadata.
+Trailers stream from Steam or IGN. Decky Metadata does not download them for
+offline playback. If you also installed the separate **TrailerHero** Decky
+plugin, uninstall that entry before you enable Game trailers in Decky Metadata.
 
 ## See community posts and news
 

@@ -1,9 +1,9 @@
 // @ts-nocheck
 // This self-contained function is serialized into Steam's default world.
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
-export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity) {
+export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.2";
+    const runtimeVersion = "0.1.3";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -90,7 +90,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
             hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
-            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto"
+            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
+            fadeInDelaySeconds: Number.isInteger(parsed.fadeInDelaySeconds) &&
+                parsed.fadeInDelaySeconds >= 0 && parsed.fadeInDelaySeconds <= 10 ? parsed.fadeInDelaySeconds : 3
         };
     };
     const findOwnerRecord = () => {
@@ -112,12 +114,23 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     let settings = normalizeSettings(nextSettings);
     const normalizeIdentity = (value) => {
         const pageAppId = Number(value?.pageAppId);
-        const sourceAppId = Number(value?.sourceAppId);
+        const sourceAppId = value?.sourceAppId === null ? null : Number(value?.sourceAppId);
         if (!Number.isInteger(pageAppId) || pageAppId <= 0 || pageAppId > 0xffffffff ||
-            !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000) return null;
+            (sourceAppId === null
+                ? pageAppId < 0x80000000
+                : !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000)) return null;
         return { pageAppId, sourceAppId };
     };
+    const normalizeIgnFallback = (value) => {
+        if (value === undefined) return undefined;
+        if (!value || typeof value.name !== "string" || !value.name.trim() || !Array.isArray(value.candidates)) return null;
+        const candidates = value.candidates.slice(0, 8).filter((item) =>
+            item?.format === "mp4" && typeof item.url === "string" && safeMediaUrl(item.url) &&
+            Number.isInteger(item.height) && item.height >= 360 && item.height <= 4320);
+        return candidates.length ? { name: value.name.trim().slice(0, 200), candidates } : null;
+    };
     let activeIdentity = normalizeIdentity(identity);
+    let activeIgnFallback = normalizeIgnFallback(nextIgnFallback);
     const ownerRecord = findOwnerRecord();
     if (activeOwnerId && (!ownerRecord || ownerRecord.ownerId !== activeOwnerId || ownerRecord.active !== true)) {
         return { status: "Steam UI unavailable", runtimeMissing: true };
@@ -126,6 +139,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         activeRevision = ownerRecord.settingsRevision;
         settings = normalizeSettings(ownerRecord.settings);
         activeIdentity = normalizeIdentity(ownerRecord.identity);
+        activeIgnFallback = normalizeIgnFallback(ownerRecord.ignFallback);
     }
     const rt = (key, vars = {}) => {
         const template = translations.en?.[key] ?? key;
@@ -560,13 +574,16 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
     }
     class Runtime {
-        constructor(initialSettings, runtimeOwnerId, revision) {
+        constructor(initialSettings, runtimeOwnerId, revision, initialIgnFallback = activeIgnFallback) {
             this.product = "decky-metadata-trailer";
             this.version = runtimeVersion;
             this.ownerId = runtimeOwnerId || "";
             this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : 0;
             this.identity = activeIdentity;
             this.settings = normalizeSettings(initialSettings);
+            this.ignFallback = normalizeIgnFallback(initialIgnFallback);
+            this.needsIgnFallback = false;
+            this.steamUnavailable = false;
             this.status = rt("waitingGamePage");
             this.requestToken = 0;
             this.trailerCache = new Map();
@@ -719,10 +736,11 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.scanTimer = window.setInterval(() => { if (!document.hidden) void this.scan(); }, routeScanIntervalMs);
             void this.scan();
         }
-        update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity) {
+        update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
             if (Number.isSafeInteger(revision) && revision < this.settingsRevision) return this.snapshot();
             const previous = this.settings;
             const previousIdentity = this.identity;
+            const previousFallback = this.ignFallback;
             this.settings = normalizeSettings(nextSettings);
             this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : this.settingsRevision;
             activeRevision = this.settingsRevision;
@@ -730,10 +748,24 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             activeIdentity = this.identity;
             const identityChanged = previousIdentity?.pageAppId !== this.identity?.pageAppId ||
                 previousIdentity?.sourceAppId !== this.identity?.sourceAppId;
+            this.ignFallback = normalizeIgnFallback(arguments.length >= 4 ? nextFallback :
+                identityChanged ? undefined : previousFallback);
+            const fallbackChanged = (previousFallback === undefined) !== (this.ignFallback === undefined) ||
+                (previousFallback === null) !== (this.ignFallback === null);
             if (identityChanged) {
+                this.steamUnavailable = false;
+                this.needsIgnFallback = false;
                 this.failedVisit = undefined;
                 this.pageEnteredAt = Date.now();
                 this.cleanupVideo(true);
+            }
+            if (fallbackChanged && !identityChanged) {
+                this.failedVisit = undefined;
+                this.needsIgnFallback = false;
+                if (this.ignFallback === undefined) {
+                    this.steamUnavailable = false;
+                    this.cleanupVideo(true);
+                }
             }
             if (previous.audioEnabled !== this.settings.audioEnabled) this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
             if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer) this.syncLogoVisibility();
@@ -746,7 +778,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!previous.enabled) {
                 this.launchHeld = false;
                 this.failedVisit = undefined;
+                this.steamUnavailable = false;
+                this.needsIgnFallback = false;
                 this.pageEnteredAt = undefined;
+            }
+            if (previous.fadeInDelaySeconds !== this.settings.fadeInDelaySeconds &&
+                this.currentVideo && this.currentTarget && this.activeCandidate) {
+                this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
             }
             this.refreshDisplayTarget();
             void this.scan();
@@ -758,6 +796,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (this.targetHeight === targetHeight) return;
             this.targetHeight = targetHeight;
             this.failedVisit = undefined;
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
             this.pageEnteredAt = Date.now();
             this.cleanupVideo(true);
         }
@@ -766,6 +806,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (key === this.rootRouteKey) return false;
             this.rootRouteKey = key;
             this.launchHeld = false;
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
             this.failedVisit = undefined;
             this.pageEnteredAt = undefined;
             this.cleanupVideo(true);
@@ -782,7 +824,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 quality: this.settings.quality,
                 displayWidth: this.displaySize?.width ?? null,
                 displayHeight: this.displaySize?.height ?? null,
-                targetHeight: this.targetHeight
+                targetHeight: this.targetHeight,
+                needsIgnFallback: this.needsIgnFallback
             };
         }
         destroy() {
@@ -991,7 +1034,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 return;
             }
             if (Number.isSafeInteger(owner.settingsRevision) && owner.settingsRevision > this.settingsRevision) {
-                this.update(owner.settings, owner.settingsRevision, owner.identity);
+                this.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
                 return;
             }
             if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
@@ -1031,12 +1074,15 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const appId = detectLocationAppId();
             const hero = appId ? findHeroCandidate(appId) : undefined;
             if (!appId || !this.identity || this.identity.pageAppId !== appId || !hero || hero.appId !== appId) {
+                this.needsIgnFallback = false;
                 this.currentAppId = undefined;
                 this.failedVisit = undefined;
                 this.cleanupVideo(true);
                 this.status = rt("waitingGamePage");
                 return;
             }
+            if (this.needsIgnFallback && this.ignFallback === undefined &&
+                this.currentAppId === appId && this.currentTarget === hero.element) return;
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
                 this.syncStatusBackdrop(hero.element);
@@ -1061,19 +1107,44 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pendingRequestToken = token;
             this.status = rt("searchTrailerForApp", { appId });
             const sourceAppId = this.identity.sourceAppId;
-            const trailer = await this.getTrailer(sourceAppId);
-            if (token !== this.requestToken || this.destroyed) return;
+            let trailer, sourceKind = "steam";
+            if (sourceAppId === null || this.steamUnavailable) {
+                sourceKind = "ign";
+            }
+            else {
+                trailer = await this.getTrailer(sourceAppId);
+                if (token !== this.requestToken || this.destroyed) return;
+                if (!trailer.ok || !trailer.candidates?.length) {
+                    this.steamUnavailable = true;
+                    this.trailerCache.delete(sourceAppId);
+                    sourceKind = "ign";
+                }
+            }
+            if (sourceKind === "ign") {
+                if (this.ignFallback === undefined) {
+                    this.needsIgnFallback = true;
+                    this.status = rt("searchIgnTrailer");
+                    this.pendingAppId = undefined;
+                    this.pendingTarget = undefined;
+                    this.pendingRequestToken = undefined;
+                    return;
+                }
+                trailer = this.ignFallback
+                    ? { ok: true, name: this.ignFallback.name, candidates: this.ignFallback.candidates }
+                    : { ok: false, error: rt("noGameTrailer") };
+            }
+            this.needsIgnFallback = false;
             this.pendingAppId = undefined;
             this.pendingTarget = undefined;
             this.pendingRequestToken = undefined;
             if (!trailer.ok || !trailer.candidates?.length) {
                 this.failedVisit = { appId, hero: hero.element };
-                this.trailerCache.delete(sourceAppId);
-                this.status = trailer.error || rt("steamTrailerNotPlayable");
+                this.status = trailer.error || rt("noGameTrailer");
                 return;
             }
             this.currentTrailerName = trailer.name;
-            this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token, { mediaSignature: this.getDesiredMediaSignature() });
+            this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token,
+                { mediaSignature: this.getDesiredMediaSignature(), sourceKind });
         }
         resumeVisiblePausedVideo(appId, hero) {
             const video = this.currentVideo;
@@ -1108,7 +1179,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
                 video.classList.contains(visibleClass)) return;
             if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
-            const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            const delay = Math.max(0, this.settings.fadeInDelaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
             this.fadeTimer = window.setTimeout(() => {
                 this.fadeTimer = undefined;
                 if (!candidate.isCurrent() || video.paused) return;
@@ -1243,10 +1314,27 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (token !== this.requestToken || this.destroyed) return;
                 const source = candidates[index++];
                 if (!source) {
+                    if (options.sourceKind !== "ign" && this.identity?.sourceAppId != null) {
+                        this.steamUnavailable = true;
+                        this.trailerCache.delete(this.identity.sourceAppId);
+                        if (this.ignFallback) {
+                            this.currentTrailerName = this.ignFallback.name;
+                            this.needsIgnFallback = false;
+                            this.attachVideo(target, appId, this.orderCandidates(this.ignFallback.candidates), token,
+                                { mediaSignature: this.getDesiredMediaSignature(), sourceKind: "ign" });
+                            return;
+                        }
+                        if (this.ignFallback === undefined) {
+                            this.needsIgnFallback = true;
+                            this.failedVisit = { appId, hero: target };
+                            this.cleanupVideo();
+                            this.status = rt("searchIgnTrailer");
+                            return;
+                        }
+                    }
                     this.failedVisit = { appId, hero: target };
-                    this.trailerCache.delete(appId);
                     this.cleanupVideo();
-                    this.status = rt("steamTrailerNotPlayable");
+                    this.status = rt("noGameTrailer");
                     return;
                 }
                 const video = document.createElement("video");
@@ -1739,12 +1827,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             return { status: "Metadata trailer runtime conflict", runtimeMissing: true };
         }
         if (existing.ownerId === activeOwnerId && existing.version === runtimeVersion) {
-            return existing.update(settings, activeRevision, activeIdentity);
+            return existing.update(settings, activeRevision, activeIdentity, activeIgnFallback);
         }
         try { existing.destroy?.(); } catch { }
         if (window[runtimeKey] === existing) delete window[runtimeKey];
     }
-    const runtime = new Runtime(settings, activeOwnerId, activeRevision);
+    const runtime = new Runtime(settings, activeOwnerId, activeRevision, activeIgnFallback);
     window[runtimeKey] = runtime;
     runtime.mount();
     return runtime.snapshot();
