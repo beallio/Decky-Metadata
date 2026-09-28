@@ -3,6 +3,8 @@ from __future__ import annotations
 import io
 import json
 import urllib.error
+import subprocess
+import sys
 
 import pytest
 import main
@@ -608,3 +610,23 @@ def test_graphql_rejects_oversized_http_error_body(monkeypatch) -> None:
     monkeypatch.setattr(main.urllib.request, "urlopen", fail)
     with pytest.raises(ValueError, match="IGN GraphQL error response is too large"):
         main.Plugin.__new__(main.Plugin)._graphql("query { __typename }", {})
+
+
+def test_ign_trailer_parser_loads_in_decky_without_html_parser() -> None:
+    script = """
+import sys
+class WithoutDeckyParser:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "html.parser":
+            raise ImportError("html.parser is not bundled by Decky")
+sys.modules.pop("html.parser", None)
+sys.meta_path.insert(0, WithoutDeckyParser())
+from backend.providers import ign
+document = '<div data-cy="content-item" data-id="video-id"><a href="/videos/deadpool-official-trailer" aria-label="Deadpool Official Trailer"><div><a href="/games/deadpool">Deadpool</a></div></a></div>'
+items = ign._parse_trailer_listing(document)
+assert len(items) == 1 and items[0]["url"].endswith("/videos/deadpool-official-trailer")
+page = ign._next_data_page('<script id="__NEXT_DATA__">{"props":{"pageProps":{"page":{"objectId":"game-id"}}}}</script>')
+assert page == {"objectId": "game-id"}
+"""
+    result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr

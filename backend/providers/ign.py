@@ -4,7 +4,6 @@ import html
 import json
 import re
 import urllib.parse
-from html.parser import HTMLParser
 from typing import Any, Callable, TypedDict
 
 from backend import matching
@@ -642,71 +641,20 @@ def _resolve_game_identity(
     return None
 
 
-class _TrailerListingParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.items: list[dict[str, str]] = []
-        self._item: dict[str, Any] | None = None
-        self._div_depth = 0
-        self._anchor: dict[str, Any] | None = None
+_HTML_TAG_RE = re.compile(r"</?(div|a)\b[^>]*>", re.IGNORECASE | re.DOTALL)
+_HTML_ATTR_RE = re.compile(
+    r"""([a-z][\w:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')""",
+    re.IGNORECASE,
+)
+_NEXT_SCRIPT_RE = re.compile(r"<script\b[^>]*>", re.IGNORECASE | re.DOTALL)
+_SCRIPT_CLOSE_RE = re.compile(r"</script\s*>", re.IGNORECASE)
 
-    def _finish_item(self) -> None:
-        if self._item is None:
-            return
-        item_id = str(self._item.get("id") or "")
-        if _IGN_ID_RE.fullmatch(item_id):
-            for anchor in self._item.get("anchors", []):
-                href = str(anchor.get("href") or "")
-                page_url = _canonical_video_page_url(href)
-                label = str(anchor.get("label") or "").strip()
-                if page_url and label:
-                    self.items.append(
-                        {"id": item_id, "url": page_url, "label": label}
-                    )
-                    break
-        self._item = None
-        self._div_depth = 0
-        if len(self.items) >= TRAILER_LISTING_MAX_ITEMS:
-            self._item = {"id": "", "anchors": []}
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attributes = dict(attrs)
-        if tag == "div":
-            if attributes.get("data-cy") == "content-item":
-                if self._item is not None:
-                    self._finish_item()
-                    if len(self.items) >= TRAILER_LISTING_MAX_ITEMS:
-                        return
-                self._item = {
-                    "id": str(attributes.get("data-id") or ""),
-                    "anchors": [],
-                }
-                self._div_depth = 1
-            elif self._item is not None and self._div_depth:
-                self._div_depth += 1
-        if self._item is not None and self._div_depth and tag == "a" and self._anchor is None:
-            self._anchor = {
-                "href": str(attributes.get("href") or ""),
-                "label": str(attributes.get("aria-label") or "").strip(),
-                "text": [],
-            }
-
-    def handle_data(self, data: str) -> None:
-        if self._anchor is not None and not self._anchor["label"]:
-            self._anchor["text"].append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "a" and self._anchor is not None:
-            if not self._anchor["label"]:
-                self._anchor["label"] = " ".join(self._anchor["text"])
-            if self._item is not None:
-                self._item["anchors"].append(self._anchor)
-            self._anchor = None
-        elif tag == "div" and self._item is not None and self._div_depth:
-            self._div_depth -= 1
-            if self._div_depth == 0:
-                self._finish_item()
-
+def _html_attributes(tag: str) -> dict[str, str]:
+    return {
+        key.casefold(): html.unescape(double or single)
+        for key, double, single in _HTML_ATTR_RE.findall(tag)
+    }
 
 def _canonical_video_page_url(value: str) -> str:
     raw = str(value or "").strip()
@@ -730,51 +678,59 @@ def _canonical_video_page_url(value: str) -> str:
     return urllib.parse.urlunsplit(("https", "www.ign.com", parsed.path, "", ""))
 
 def _parse_trailer_listing(document: str) -> list[dict[str, str]]:
-    parser = _TrailerListingParser()
-    parser.feed(document)
-    parser.close()
-    if parser._item is not None:
-        parser._finish_item()
-    return parser.items[:TRAILER_LISTING_MAX_ITEMS]
-
-
-class _NextDataParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=False)
-        self.parts: list[str] = []
-        self.length = 0
-        self.oversize = False
-        self._script_depth = 0
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "script" and dict(attrs).get("id") == "__NEXT_DATA__":
-            self._script_depth = 1
-
-    def handle_data(self, data: str) -> None:
-        if not self._script_depth or self.oversize:
-            return
-        self.length += len(data)
-        if self.length > TRAILER_HTML_MAX_BYTES:
-            self.oversize = True
-            self.parts.clear()
-            return
-        self.parts.append(data)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "script" and self._script_depth:
-            self._script_depth = 0
+    """Read only labelled video links inside IGN's bounded trailer cards."""
+    items: list[dict[str, str]] = []
+    item_id = ""
+    depth = 0
+    found = False
+    for token in _HTML_TAG_RE.finditer(document):
+        tag = token.group(1).casefold()
+        closing = token.group().startswith("</")
+        if tag == "div":
+            if closing:
+                if depth:
+                    depth -= 1
+                    if not depth:
+                        item_id = ""
+            else:
+                if "content-item" in token.group():
+                    attributes = _html_attributes(token.group())
+                    if attributes.get("data-cy") == "content-item":
+                        candidate = attributes.get("data-id", "")
+                        item_id = candidate if _IGN_ID_RE.fullmatch(candidate) else ""
+                        depth = 1
+                        found = False
+                        continue
+                if depth:
+                    depth += 1
+        elif tag == "a" and not closing and item_id and not found:
+            attributes = _html_attributes(token.group())
+            url = _canonical_video_page_url(attributes.get("href", ""))
+            label = attributes.get("aria-label", "").strip()
+            if url and label:
+                items.append({"id": item_id, "url": url, "label": label})
+                found = True
+                if len(items) >= TRAILER_LISTING_MAX_ITEMS:
+                    break
+    return items
 
 
 def _next_data_page(document: str) -> dict[str, Any] | None:
-    parser = _NextDataParser()
-    parser.feed(document)
-    parser.close()
-    if parser.oversize or not parser.parts:
-        return None
-    try:
-        payload = json.loads("".join(parser.parts))
-    except (TypeError, ValueError):
-        return None
+    payload = None
+    for script in _NEXT_SCRIPT_RE.finditer(document):
+        if _html_attributes(script.group()).get("id") != "__NEXT_DATA__":
+            continue
+        end = _SCRIPT_CLOSE_RE.search(document, script.end())
+        if end is None:
+            return None
+        data = document[script.end() : end.start()]
+        if len(data.encode("utf-8")) > TRAILER_HTML_MAX_BYTES:
+            return None
+        try:
+            payload = json.loads(data)
+        except (TypeError, ValueError):
+            return None
+        break
     if not isinstance(payload, dict):
         return None
     props = payload.get("props")
