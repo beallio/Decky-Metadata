@@ -866,6 +866,7 @@ export const Content = () => {
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
         onHideLogoChange={(hide) => void trailerController.setHideLogoDuringTrailer(hide)}
+        onFadeInDelayChange={(seconds) => void trailerController.setFadeInDelaySeconds(seconds)}
         onQualityChange={async (quality) => {
           requestCompatibilityDropdownReturn("quality");
           noteCompatibilityDropdownControlUnmounted();

@@ -165,6 +165,20 @@ describe("TrailerController behavior", () => {
     controller.stop();
   });
 
+  it("saves the fade-in delay and updates the live owner without changing playback identity", async () => {
+    steam.overview.set(570, nativeOverview(570));
+    const controller = mountController();
+    await controller.refreshPageIdentity();
+
+    expect(await controller.setFadeInDelaySeconds(0)).toBe(true);
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(backend.setTrailerSettings).toHaveBeenCalledWith(expect.objectContaining({ fadeInDelaySeconds: 0 }));
+    expect((window as any).__deckyMetadataTrailerRuntime.update).toHaveBeenCalledWith(
+      expect.objectContaining({ fadeInDelaySeconds: 0 }), expect.any(Number), controller.identity,
+    );
+    controller.stop();
+  });
+
   it("restores the previous logo preference when its save fails during playback", async () => {
     steam.overview.set(570, nativeOverview(570));
     const save = deferred<unknown>();

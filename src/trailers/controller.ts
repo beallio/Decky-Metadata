@@ -18,6 +18,7 @@ export const DEFAULT_TRAILER_SETTINGS: TrailerSettings = {
   audioEnabled: false,
   hideLogoDuringTrailer: false,
   quality: "auto",
+  fadeInDelaySeconds: 3,
 };
 
 const POLL_INTERVAL_MS = 2000;
@@ -81,6 +82,9 @@ const normalizeSettings = (value: unknown): TrailerSettings => {
     enabled: typeof input.enabled === "boolean" ? input.enabled : false,
     audioEnabled: typeof input.audioEnabled === "boolean" ? input.audioEnabled : false,
     hideLogoDuringTrailer: typeof input.hideLogoDuringTrailer === "boolean" ? input.hideLogoDuringTrailer : false,
+    fadeInDelaySeconds: Number.isInteger(input.fadeInDelaySeconds) &&
+      (input.fadeInDelaySeconds as number) >= 0 && (input.fadeInDelaySeconds as number) <= 10
+      ? input.fadeInDelaySeconds as number : 3,
     quality: QUALITY_OPTIONS.includes(input.quality as TrailerQuality)
       ? input.quality as TrailerQuality
       : "auto",
@@ -246,6 +250,9 @@ export class TrailerController {
   setQuality(quality: TrailerQuality) {
     return this.updateSettings({ quality });
   }
+  setFadeInDelaySeconds(fadeInDelaySeconds: number) {
+    return this.updateSettings({ fadeInDelaySeconds });
+  }
 
   private buildSnapshot(): TrailerControllerSnapshot {
     const remote = this.runtimeSnapshot;
@@ -299,7 +306,8 @@ export class TrailerController {
     const previous = { ...this.settings };
     const next = normalizeSettings({ ...this.settings, ...change });
     if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
-        next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality) {
+        next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
+        next.fadeInDelaySeconds === previous.fadeInDelaySeconds) {
       return true;
     }
     this.settings = next;

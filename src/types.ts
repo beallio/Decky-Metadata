@@ -75,6 +75,7 @@ export type TrailerSettings = {
   audioEnabled: boolean;
   hideLogoDuringTrailer: boolean;
   quality: TrailerQuality;
+  fadeInDelaySeconds: number;
 };
 
 export type TrailerStatus = {

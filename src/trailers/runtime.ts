@@ -90,7 +90,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
             hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
-            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto"
+            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
+            fadeInDelaySeconds: Number.isInteger(parsed.fadeInDelaySeconds) &&
+                parsed.fadeInDelaySeconds >= 0 && parsed.fadeInDelaySeconds <= 10 ? parsed.fadeInDelaySeconds : 3
         };
     };
     const findOwnerRecord = () => {
@@ -748,6 +750,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.failedVisit = undefined;
                 this.pageEnteredAt = undefined;
             }
+            if (previous.fadeInDelaySeconds !== this.settings.fadeInDelaySeconds &&
+                this.currentVideo && this.currentTarget && this.activeCandidate) {
+                this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
+            }
             this.refreshDisplayTarget();
             void this.scan();
             return this.snapshot();
@@ -1108,7 +1114,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
                 video.classList.contains(visibleClass)) return;
             if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
-            const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            const delay = Math.max(0, this.settings.fadeInDelaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
             this.fadeTimer = window.setTimeout(() => {
                 this.fadeTimer = undefined;
                 if (!candidate.isCurrent() || video.paused) return;

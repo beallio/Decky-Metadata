@@ -668,7 +668,7 @@ class Plugin:
 
     @staticmethod
     def _validated_trailer_settings(value: Any) -> dict[str, Any]:
-        expected = {"enabled", "audioEnabled", "quality", "hideLogoDuringTrailer"}
+        expected = {"enabled", "audioEnabled", "quality", "hideLogoDuringTrailer", "fadeInDelaySeconds"}
         if not isinstance(value, dict) or set(value) != expected:
             raise ValueError("invalid trailer settings")
         if (
@@ -682,6 +682,9 @@ class Plugin:
             valid_quality = quality == "auto"
         else:
             valid_quality = type(quality) is int and quality in {720, 1080, 1440, 2160}
+        delay = value["fadeInDelaySeconds"]
+        if type(delay) is not int or not 0 <= delay <= 10:
+            raise ValueError("invalid trailer settings")
         if not valid_quality:
             raise ValueError("invalid trailer settings")
         return {
@@ -689,6 +692,7 @@ class Plugin:
             "audioEnabled": value["audioEnabled"],
             "quality": quality,
             "hideLogoDuringTrailer": value["hideLogoDuringTrailer"],
+            "fadeInDelaySeconds": delay,
         }
 
     async def get_trailer_settings(self) -> dict[str, Any]:

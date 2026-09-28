@@ -13,7 +13,7 @@ const factory = source.slice(start, end).replace(/^export\s+/, '').replace(
   'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget }; const existing = window[runtimeKey];'
 );
 
-function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fetchReply,
+function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, fetchReply,
   mediaSourceType, urlType, domParserType, clock, pageAppId = 570, sourceAppId = 570 } = {}) {
   const location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
   const window = {
@@ -24,7 +24,7 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
     clearInterval: clock?.clearInterval.bind(clock) ?? clearInterval,
     addEventListener() {}, removeEventListener() {},
     __deckyMetadataTrailerOwner: { ownerId: 'test-owner', active: true, settingsRevision: 0,
-      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer } },
+      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds } },
   };
   const document = {
     URL: location.href, body: {}, documentElement: {},
@@ -36,9 +36,9 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
     TextEncoder, TextDecoder,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
-  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)}},
+  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)},fadeInDelaySeconds:${fadeInDelaySeconds}},
     'test-owner', 0, {en:{}}, ${JSON.stringify({ pageAppId, sourceAppId })})`, context);
-  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer }, 'test-owner', 0);
+  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds }, 'test-owner', 0);
   return { runtime, window, document, api, context };
 }
 
@@ -96,8 +96,8 @@ function fakeClock(start = Date.now()) {
 }
 
 async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
-  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, customLogo = false } = {}) {
-  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer });
+  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, customLogo = false } = {}) {
+  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer, fadeInDelaySeconds });
   let createdVideos = 0;
   let playCalls = 0;
   const classes = new Set();
@@ -473,6 +473,32 @@ test('A visible paused trailer resumes the same video after wake without allocat
   h.runtime.handleVisibilityChange();
   assert.equal(h.runtime.currentVideo, undefined, 'hidden playback is cleaned up instead of resumed');
   assert.equal(h.playCalls, 2);
+});
+
+test('Trailer reveal follows a 0–10 second setting and updates a pending reveal without restarting playback', async () => {
+  for (const seconds of [0, 10]) {
+    const clock = fakeClock();
+    const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now, fadeInDelaySeconds: seconds });
+    assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, seconds * 1000);
+    if (seconds) {
+      clock.advance(9999);
+      assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), false);
+    }
+    clock.advance(seconds ? 1 : 0);
+    assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), true);
+  }
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 10 }, 1, h.runtime.identity);
+  assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, 10000);
+  clock.advance(3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 0 }, 2, h.runtime.identity);
+  clock.advance(0);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(h.runtime.currentVideo, video);
+  assert.equal(h.createdVideos, 1);
 });
 
 test('Trailer audio stays silent behind the hero and fades in with the video', async () => {

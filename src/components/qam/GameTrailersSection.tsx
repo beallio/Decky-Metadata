@@ -1,4 +1,4 @@
-import { DropdownItem, Field, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { DropdownItem, Field, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 
 import { inlineStatusStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
@@ -17,6 +17,7 @@ type GameTrailersSectionProps = {
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
   onHideLogoChange: (hide: boolean) => void;
+  onFadeInDelayChange: (seconds: number) => void;
   onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
   onQualityMenuWillOpen: () => void;
   onQualityControlRef: (element: HTMLDivElement | null) => void;
@@ -27,6 +28,7 @@ export function GameTrailersSection({
   onEnabledChange,
   onAudioChange,
   onHideLogoChange,
+  onFadeInDelayChange,
   onQualityChange,
   onQualityMenuWillOpen,
   onQualityControlRef,
@@ -63,6 +65,20 @@ export function GameTrailersSection({
           checked={state.settings.hideLogoDuringTrailer}
           disabled={disabled}
           onChange={onHideLogoChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <SliderField
+          label="Trailer fade-in delay"
+          description="Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears."
+          value={state.settings.fadeInDelaySeconds}
+          min={0}
+          max={10}
+          step={1}
+          showValue
+          valueSuffix="s"
+          disabled={!state.settingsLoaded}
+          onChange={onFadeInDelayChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>

@@ -288,12 +288,12 @@ const qualityOptions = [
     { data: 1440, label: "1440p" },
     { data: 2160, label: "2160p" },
 ];
-function GameTrailersSection({ state, onEnabledChange, onAudioChange, onHideLogoChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
+function GameTrailersSection({ state, onEnabledChange, onAudioChange, onHideLogoChange, onFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const disabled = !state.settingsLoaded || state.busy;
     const display = state.displayWidth && state.displayHeight
         ? `${state.displayWidth} × ${state.displayHeight} pixels`
         : "Unavailable";
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -8857,7 +8857,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
             hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
-            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto"
+            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
+            fadeInDelaySeconds: Number.isInteger(parsed.fadeInDelaySeconds) &&
+                parsed.fadeInDelaySeconds >= 0 && parsed.fadeInDelaySeconds <= 10 ? parsed.fadeInDelaySeconds : 3
         };
     };
     const findOwnerRecord = () => {
@@ -9621,6 +9623,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.failedVisit = undefined;
                 this.pageEnteredAt = undefined;
             }
+            if (previous.fadeInDelaySeconds !== this.settings.fadeInDelaySeconds &&
+                this.currentVideo && this.currentTarget && this.activeCandidate) {
+                this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
+            }
             this.refreshDisplayTarget();
             void this.scan();
             return this.snapshot();
@@ -10021,7 +10027,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 return;
             if (this.fadeTimer)
                 window.clearTimeout(this.fadeTimer);
-            const delay = Math.max(0, 3000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            const delay = Math.max(0, this.settings.fadeInDelaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
             this.fadeTimer = window.setTimeout(() => {
                 this.fadeTimer = undefined;
                 if (!candidate.isCurrent() || video.paused)
@@ -10769,6 +10775,7 @@ const DEFAULT_TRAILER_SETTINGS = {
     audioEnabled: false,
     hideLogoDuringTrailer: false,
     quality: "auto",
+    fadeInDelaySeconds: 3,
 };
 const POLL_INTERVAL_MS = 2000;
 const BRIDGE_TIMEOUT_MS = 24000;
@@ -10800,6 +10807,9 @@ const normalizeSettings = (value) => {
         enabled: typeof input.enabled === "boolean" ? input.enabled : false,
         audioEnabled: typeof input.audioEnabled === "boolean" ? input.audioEnabled : false,
         hideLogoDuringTrailer: typeof input.hideLogoDuringTrailer === "boolean" ? input.hideLogoDuringTrailer : false,
+        fadeInDelaySeconds: Number.isInteger(input.fadeInDelaySeconds) &&
+            input.fadeInDelaySeconds >= 0 && input.fadeInDelaySeconds <= 10
+            ? input.fadeInDelaySeconds : 3,
         quality: QUALITY_OPTIONS.includes(input.quality)
             ? input.quality
             : "auto",
@@ -11120,6 +11130,9 @@ class TrailerController {
     setQuality(quality) {
         return this.updateSettings({ quality });
     }
+    setFadeInDelaySeconds(fadeInDelaySeconds) {
+        return this.updateSettings({ fadeInDelaySeconds });
+    }
     buildSnapshot() {
         const remote = this.runtimeSnapshot;
         return {
@@ -11176,7 +11189,8 @@ class TrailerController {
         const previous = { ...this.settings };
         const next = normalizeSettings({ ...this.settings, ...change });
         if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
-            next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality) {
+            next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
+            next.fadeInDelaySeconds === previous.fadeInDelaySeconds) {
             return true;
         }
         this.settings = next;
@@ -12188,7 +12202,7 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onQualityChange: async (quality) => {
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {

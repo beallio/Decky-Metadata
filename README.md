@@ -146,10 +146,11 @@ The running game's icon also appears in the Steam Menu.
 
 **Game trailers** is off by default. Open Decky Metadata in the Quick Access
 Menu and enable it to show a Steam trailer on a game's main Library page.
-Metadata waits three seconds before it covers the hero. The first highlighted
-Steam movie plays when it is available; otherwise, Metadata uses the first
-movie. Controller controls stay in place. Steam's game logo stays visible unless
-you turn on the optional logo setting.
+Metadata waits three seconds before it covers the hero by default. Use
+**Trailer fade-in delay** to choose 0–10 seconds; zero shows a ready trailer
+immediately. The first highlighted Steam movie plays when it is available;
+otherwise, Metadata uses the first movie. Controller controls stay in place.
+Steam's game logo stays visible unless you turn on the optional logo setting.
 
 If a save-status bar appears below the game artwork, the trailer can show
 through its transparent background without moving the bar. When the bar is
@@ -163,9 +164,9 @@ video, the original Steam artwork stays visible.
 
 Use **Trailer audio** to choose whether a trailer plays with sound. New
 trailers stay silent behind the hero artwork, then sound fades in with the
-video after the three-second delay. Use **Video quality** to choose Auto, 720p,
-1080p, 1440p, or 2160p. Auto follows the Big Picture display and uses an
-available Steam version at or below that size when possible.
+video when it appears. Use **Video quality** to choose Auto, 720p, 1080p,
+1440p, or 2160p. Auto follows the Big Picture display and uses an available
+Steam version at or below that size when possible.
 
 Turn on **Hide game logo during trailers** to hide Steam's game logo while a
 trailer is visible. The logo returns when playback stops, fails, or you leave
