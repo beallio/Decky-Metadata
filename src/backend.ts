@@ -18,6 +18,7 @@ import {
   UpdateRpcResult,
   UpdateSettings,
   TrailerSettings,
+  IgnTrailerResult,
 } from "./types";
 
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
@@ -177,6 +178,10 @@ export const setTrailerSettings = callable<
   [settings: TrailerSettings],
   TrailerSettings
 >("set_trailer_settings");
+export const findIgnTrailer = callable<
+  [title: string, gameUrl?: string | null],
+  IgnTrailerResult | null
+>("find_ign_trailer");
 export const evalInBigPicture = callable<
   [code: string],
   Record<string, unknown>

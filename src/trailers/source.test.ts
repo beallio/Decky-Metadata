@@ -19,6 +19,22 @@ describe("resolveTrailerSource", () => {
       metadata: { steam_appid: 55150 }, hydrated: true,
     })).toEqual({ pageAppId: 0x80000010, sourceAppId: 55150, kind: "shortcut" });
   });
+  it("accepts an unmatched native shortcut when its title can identify an IGN game", () => {
+    expect(resolveTrailerSource({
+      route: root(0x80000010), heroAppId: 0x80000010,
+      overview: { ...shortcut, display_name: "Bloodborne" },
+      metadata: { steam_appid: null }, hydrated: true,
+    })).toEqual({ pageAppId: 0x80000010, sourceAppId: null, kind: "shortcut" });
+  });
+
+  it("uses a saved IGN game for a renamed shortcut without a Steam match", () => {
+    expect(resolveTrailerSource({
+      route: root(0x80000010), heroAppId: 0x80000010, overview: shortcut,
+      metadata: { steam_appid: null, source: "IGN", source_url: "https://www.ign.com/games/deadpool" },
+      hydrated: true,
+    })).toEqual({ pageAppId: 0x80000010, sourceAppId: null, kind: "shortcut" });
+  });
+
 
   it("keeps a root game route through the QAM menu hash", () => {
     expect(resolveTrailerSource({
@@ -28,8 +44,8 @@ describe("resolveTrailerSource", () => {
   });
 
   it.each([
-    ["unmatched shortcut", { steam_appid: null }],
-    ["malformed id", { steam_appid: "not-an-id" }],
+    ["unnamed shortcut", { steam_appid: null }],
+    ["malformed id without a title", { steam_appid: "not-an-id" }],
     ["shortcut-domain source id", { steam_appid: 0x80000010 }],
   ])("rejects %s", (_name, metadata) => {
     expect(resolveTrailerSource({

@@ -907,6 +907,144 @@ test('A matched shortcut requests movies by Steam source ID and attaches only to
   assert.equal(attached.appId, pageAppId);
   assert.equal(attached.candidates[0].url, 'https://steam.test/matched720.mp4');
 });
+async function trailerScanHarness(pageAppId, sourceAppId, steamResult) {
+  const h = setup({ pageAppId, sourceAppId });
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = `url(https://steam.test/${pageAppId >= 0x80000000 ? 'customimages' : 'steam/apps'}/${pageAppId}/library_hero.jpg)`;
+      this.classList = { add() {}, remove() {} };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  const hero = new Hero();
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') || selector.includes('customimages') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  const attached = [];
+  let steamLookups = 0;
+  h.runtime.getTrailer = async () => { steamLookups++; return steamResult; };
+  h.runtime.attachVideo = (target, appId, candidates) => { attached.push({ target, appId, candidates }); };
+  await h.runtime.scan();
+  return { ...h, hero, attached, get steamLookups() { return steamLookups; } };
+}
+
+test('An unmatched shortcut uses the IGN trailer only after its verified hero appears', async () => {
+  const shortcutId = 0x80000010;
+  const h = await trailerScanHarness(shortcutId, null, { ok: false });
+  assert.equal(h.runtime.identity?.sourceAppId, null);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.steamLookups, 0);
+  assert.equal(h.attached.length, 0);
+
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, {
+    name: 'Bloodborne Story Trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/bloodborne.mp4', height: 720 }],
+  });
+  await Promise.resolve();
+  assert.equal(h.attached.length, 1);
+  assert.equal(h.attached[0].target, h.hero);
+  assert.equal(h.attached[0].appId, shortcutId);
+  assert.equal(h.attached[0].candidates[0].url, 'https://assets14.ign.com/bloodborne.mp4');
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+});
+
+test('The Steam default-world owner update delivers a completed IGN lookup', async () => {
+  const shortcutId = 0x80000010;
+  const h = await trailerScanHarness(shortcutId, null, { ok: false });
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  h.window.__deckyMetadataTrailerOwner.settingsRevision = 1;
+  h.window.__deckyMetadataTrailerOwner.ignFallback = {
+    name: 'Bloodborne Story Trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/bloodborne.mp4', height: 720 }],
+  };
+
+  await h.runtime.scan();
+  await Promise.resolve();
+  assert.equal(h.attached.length, 1);
+  assert.equal(h.attached[0].candidates[0].url, 'https://assets14.ign.com/bloodborne.mp4');
+});
+
+test('Steam success never requests IGN; Steam miss uses it without repeating Steam lookup', async () => {
+  const steamMovie = { ok: true, name: 'Steam movie', candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] };
+  const success = await trailerScanHarness(570, 570, steamMovie);
+  assert.equal(success.attached[0].candidates[0].url, movie.mp4[720]);
+  assert.equal(success.runtime.snapshot().needsIgnFallback, false);
+
+  const miss = await trailerScanHarness(570, 570, { ok: false, error: 'No Steam trailer' });
+  assert.equal(miss.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(miss.steamLookups, 1);
+  miss.runtime.update(miss.runtime.settings, 1, miss.runtime.identity, {
+    name: 'IGN game trailer',
+    candidates: [{ format: 'mp4', url: 'https://assets14.ign.com/game.mp4', height: 720 }],
+  });
+  await Promise.resolve();
+  assert.equal(miss.attached[0].candidates[0].url, 'https://assets14.ign.com/game.mp4');
+  await miss.runtime.scan();
+  assert.equal(miss.steamLookups, 1);
+});
+
+test('An IGN miss leaves the artwork alone and a later route cannot reuse its result', async () => {
+  const h = await trailerScanHarness(0x80000010, null, { ok: false });
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, null);
+  await Promise.resolve();
+  assert.equal(h.attached.length, 0);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+  h.runtime.update(h.runtime.settings, 2, { pageAppId: 0x80000011, sourceAppId: null });
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+  assert.equal(h.runtime.ignFallback, undefined);
+});
+
+
+test('An unplayable Steam video falls back to IGN once and restores artwork if IGN also fails', async () => {
+  const h = await readyDirectTrailer();
+  const steamVideo = h.video;
+  steamVideo.dispatchEvent(new Event('error'));
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.video, undefined);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+
+  const url = 'https://assets14.ign.com/deadpool.mp4';
+  h.runtime.update(h.runtime.settings, 1, h.runtime.identity, {
+    name: 'Deadpool Official Trailer',
+    candidates: [{ format: 'mp4', url, height: 720 }],
+  });
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  assert.equal(h.createdVideos, 2);
+  assert.equal(h.video.src, url);
+  assert.equal(h.runtime.snapshot().needsIgnFallback, false);
+
+  h.video.dispatchEvent(new Event('error'));
+  assert.equal(h.video, undefined);
+  assert.equal(h.classes.has('decky-metadata-trailer-ready'), false);
+  await h.runtime.scan();
+  assert.equal(h.createdVideos, 2, 'a failed IGN asset must not start an endless retry');
+});
+
+test('After Steam media fails, a later visit can use refreshed Steam assets', async () => {
+  const h = await readyDirectTrailer();
+  h.runtime.trailerCache.set(570, {
+    ok: true, name: 'Broken Steam movie',
+    candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }],
+  });
+  h.video.dispatchEvent(new Event('error'));
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  let requests = 0;
+  const fixedUrl = 'https://steam.test/fixed1080.mp4';
+  h.context.fetch = async () => {
+    requests++;
+    return responseBody(JSON.stringify({ 570: { data: { movies: [
+      { id: 8, name: 'Fixed Steam movie', highlight: true, mp4: { 1080: fixedUrl } },
+    ] } } }));
+  };
+  h.runtime.update({ ...h.runtime.settings, quality: 1080 }, 1, h.runtime.identity, null);
+  for (let index = 0; index < 30; index++) await Promise.resolve();
+  assert.equal(requests, 1);
+  assert.equal(h.video?.src, fixedUrl);
+});
 
 test('A QAM hash keeps the current root-page trailer attached during a runtime scan', async () => {
   const h = setup();

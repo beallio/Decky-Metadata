@@ -68,6 +68,11 @@ export type UpdateSettings = {
 };
 
 export type TrailerQuality = "auto" | 720 | 1080 | 1440 | 2160;
+export type IgnTrailerResult = {
+  name: string;
+  candidates: Array<{ format: "mp4"; url: string; height: number }>;
+};
+
 
 /** Metadata-owned Steam trailer preferences. */
 export type TrailerSettings = {
@@ -81,7 +86,7 @@ export type TrailerSettings = {
 export type TrailerStatus = {
   settings: TrailerSettings;
   appId?: number;
-  sourceAppId?: number;
+  sourceAppId?: number | null;
   status: string;
   trailerName?: string;
   gameTitle?: string;

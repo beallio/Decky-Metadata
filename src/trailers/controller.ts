@@ -1,5 +1,5 @@
-import { evalInBigPicture, getTrailerSettings, setTrailerSettings } from "../backend";
-import type { TrailerQuality, TrailerSettings, TrailerStatus } from "../types";
+import { evalInBigPicture, findIgnTrailer, getTrailerSettings, setTrailerSettings } from "../backend";
+import type { IgnTrailerResult, TrailerQuality, TrailerSettings, TrailerStatus } from "../types";
 import {
   currentRoutePath,
   getNativeOverview,
@@ -10,7 +10,7 @@ import {
   subscribeMetadataMatchChanges,
 } from "../steam/core";
 import { ensureMetadataCache } from "../steam/metadataPatch";
-import { parseTrailerRootRoute, resolveTrailerSource, SHORTCUT_APP_ID_BOUNDARY } from "./source";
+import { ignGameUrl, nativeTrailerGameTitle, parseTrailerRootRoute, resolveTrailerSource, SHORTCUT_APP_ID_BOUNDARY } from "./source";
 import { deckyMetadataTrailerRuntimeFactory } from "./runtime";
 
 export const DEFAULT_TRAILER_SETTINGS: TrailerSettings = {
@@ -37,6 +37,8 @@ const TRANSLATIONS = {
     searchTrailerForApp: "Finding Steam trailer for app {appId}",
     steamTrailer: "Steam trailer",
     steamTrailerNotPlayable: "Steam trailer is not playable",
+    searchIgnTrailer: "Finding an IGN game trailer",
+    noGameTrailer: "No playable game trailer found",
     stoppedForLaunch: "Trailer stopped for launch",
     trailerActive: "Trailer active",
     trailerLabel: "Trailer: {name}",
@@ -47,11 +49,11 @@ const TRANSLATIONS = {
   },
 };
 
-type TrailerIdentity = { pageAppId: number; sourceAppId: number } | null;
+type TrailerIdentity = { pageAppId: number; sourceAppId: number | null } | null;
 
 type RuntimeSnapshot = {
   appId?: number;
-  sourceAppId?: number;
+  sourceAppId?: number | null;
   status: string;
   trailerName?: string;
   gameTitle?: string;
@@ -59,6 +61,7 @@ type RuntimeSnapshot = {
   displayWidth?: number | null;
   displayHeight?: number | null;
   targetHeight?: number;
+  needsIgnFallback?: boolean;
 };
 
 export type TrailerControllerSnapshot = TrailerStatus & {
@@ -74,6 +77,7 @@ type OwnerRecord = {
   settings: TrailerSettings;
   settingsRevision: number;
   identity: TrailerIdentity;
+  ignFallback?: IgnTrailerResult | null;
 };
 
 const normalizeSettings = (value: unknown): TrailerSettings => {
@@ -93,6 +97,10 @@ const normalizeSettings = (value: unknown): TrailerSettings => {
 
 const sameIdentity = (left: TrailerIdentity, right: TrailerIdentity) =>
   left?.pageAppId === right?.pageAppId && left?.sourceAppId === right?.sourceAppId;
+
+type IgnLookup = { title: string; gameUrl: string | null } | null;
+const sameIgnLookup = (left: IgnLookup, right: IgnLookup) =>
+  left?.title === right?.title && left?.gameUrl === right?.gameUrl;
 
 const isRuntimeSnapshot = (value: unknown): value is RuntimeSnapshot =>
   Boolean(value && typeof value === "object" && typeof (value as RuntimeSnapshot).status === "string");
@@ -154,6 +162,10 @@ export class TrailerController {
   private ownerId = "";
   private settingsRevision = 0;
   private identity: TrailerIdentity = null;
+  private ignLookup: IgnLookup = null;
+  private ignFallback: IgnTrailerResult | null | undefined;
+  private ignRequestEpoch = 0;
+  private ignRequested = false;
   private pageAppId: number | null = null;
   private pageOverview: unknown = null;
   private matchRevision = metadataMatchRevisionSnapshot();
@@ -209,6 +221,10 @@ export class TrailerController {
   stop() {
     if (!this.mounted) return;
     this.mounted = false;
+    this.ignRequestEpoch += 1;
+    this.ignRequested = false;
+    this.ignLookup = null;
+    this.ignFallback = undefined;
     if (this.statusTimer !== undefined) window.clearInterval(this.statusTimer);
     this.statusTimer = undefined;
     this.unsubscribeMatchChanges?.();
@@ -369,6 +385,7 @@ export class TrailerController {
       settings: { ...this.settings },
       settingsRevision: this.settingsRevision,
       identity: this.identity,
+      ignFallback: this.ignFallback,
     };
     (window as any)[OWNER_KEY] = record;
   }
@@ -405,7 +422,7 @@ export class TrailerController {
     }
   }
 
-  private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string }> {
+  private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string; ignLookup?: IgnLookup }> {
     const route = currentRoutePath();
     const pageAppId = parseTrailerRootRoute(route);
     if (!this.settings.enabled) return { identity: null, status: "Disabled" };
@@ -430,28 +447,42 @@ export class TrailerController {
       catch { return { identity: null, status: "Saved Steam matches are not available" }; }
       if (!this.mounted) return { identity: null, status: "Disabled" };
     }
+    const metadata = metadataCache[String(pageAppId)] ?? null;
     const resolved = resolveTrailerSource({
       route,
       heroAppId: pageAppId,
       overview: this.pageOverview,
-      metadata: metadataCache[String(pageAppId)] ?? null,
+      metadata,
       hydrated: pageAppId < SHORTCUT_APP_ID_BOUNDARY || metadataState.metadataLoaded,
     });
     if (resolved) {
-      return { identity: { pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId }, status: "Waiting for the matching Steam hero" };
+      const gameUrl = ignGameUrl(metadata);
+      const title = nativeTrailerGameTitle(this.pageOverview) ||
+        (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
+        (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
+      return {
+        identity: { pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId },
+        ignLookup: title ? { title, gameUrl } : null,
+        status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for the matching Steam hero",
+      };
     }
     return {
       identity: null,
       status: pageAppId >= SHORTCUT_APP_ID_BOUNDARY
-        ? "Save a valid Steam match in Decky Metadata's game editor"
-        : "Steam trailer is unavailable for this page",
+        ? "A game title or saved Steam match is needed for trailers"
+        : "Game trailer is unavailable for this page",
     };
   }
 
   private async refreshPageIdentity() {
     if (!this.mounted) return;
     const next = await this.resolveCurrentIdentity();
-    if (!this.mounted || sameIdentity(next.identity, this.identity)) return;
+    const lookup = next.ignLookup ?? null;
+    if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup))) return;
+    this.ignRequestEpoch += 1;
+    this.ignRequested = false;
+    this.ignFallback = undefined;
+    this.ignLookup = lookup;
     this.identity = next.identity;
     this.runtimeSnapshot = undefined;
     this.status = next.status;
@@ -469,7 +500,7 @@ export class TrailerController {
         const runtime = (doc.defaultView as any)?.[RUNTIME_KEY];
         if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
             typeof runtime.update !== "function") continue;
-        const result = runtime.update(this.settings, this.settingsRevision, this.identity);
+        const result = runtime.update(this.settings, this.settingsRevision, this.identity, this.ignFallback);
         if (isRuntimeSnapshot(result)) this.runtimeSnapshot = result;
         found = true;
       } catch { /* The CEF bridge can recover a missing or inaccessible runtime. */ }
@@ -500,9 +531,10 @@ export class TrailerController {
       const ownerId = ${JSON.stringify(this.ownerId)};
       const settingsRevision = ${this.settingsRevision};
       const identity = ${JSON.stringify(this.identity)};
+      const ignFallback = ${JSON.stringify(this.ignFallback) ?? "undefined"};
       const translations = ${JSON.stringify(TRANSLATIONS)};
       const factory = ${deckyMetadataTrailerRuntimeFactory.toString()};
-      return factory(settings, ownerId, settingsRevision, translations, identity);
+      return factory(settings, ownerId, settingsRevision, translations, identity, ignFallback);
     })()`;
   }
 
@@ -559,6 +591,27 @@ export class TrailerController {
     this.runtimeSnapshot = result;
     this.status = result.status;
     this.emit();
+    if (result.needsIgnFallback) void this.loadIgnFallback();
+  }
+
+  private async loadIgnFallback() {
+    if (!this.mounted || !this.settings.enabled || !this.identity || this.ignRequested) return;
+    this.ignRequested = true;
+    const epoch = this.ignRequestEpoch;
+    const ownerId = this.ownerId;
+    const identity = this.identity;
+    const lookup = this.ignLookup;
+    let result: IgnTrailerResult | null = null;
+    try {
+      if (lookup) result = await findIgnTrailer(lookup.title, lookup.gameUrl);
+    } catch { /* A failed IGN lookup leaves the original artwork in place. */ }
+    if (!this.ownsMount(ownerId) || epoch !== this.ignRequestEpoch ||
+        !sameIdentity(identity, this.identity) || !sameIgnLookup(lookup, this.ignLookup)) return;
+    this.ignFallback = result;
+    this.settingsRevision += 1;
+    this.publishOwner();
+    this.updateReachableRuntimes();
+    this.emit();
   }
 
   private async poll() {
@@ -570,6 +623,7 @@ export class TrailerController {
       if (!this.mounted || this.installInFlight) return;
       if (this.readReachableRuntime()) {
         this.emit();
+        if (this.runtimeSnapshot?.needsIgnFallback) void this.loadIgnFallback();
         return;
       }
       const result = await this.runInSteamTab(runtimeMissingScript);

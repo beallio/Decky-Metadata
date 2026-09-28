@@ -4,18 +4,19 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Add opt-in Steam trailer streaming for native games and correctly matched non-Steam shortcuts.
+Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
 
 ### Added
 
-- **Game trailers.** Enable Steam trailers in the Quick Access Menu. Existing
-  installs stay disabled until you opt in. A saved match from Decky Metadata's
-  game editor selects trailers for a non-Steam shortcut. The original hero
-  stays visible until a playable trailer is ready and remains in place when
-  Steam has no playable movie. Set audio and Auto, 720p, 1080p, 1440p, or
-  2160p quality in the new section. Trailers stream from Steam; they are not
-  saved offline, and Metadata does not use other providers. Uninstall the
-  separate TrailerHero Decky plugin before enabling this feature.
+- **Game trailers.** Enable game trailers in the Quick Access Menu. Existing
+  installs stay disabled until you opt in. Steam movies take priority; when
+  Steam has no playable movie, a clearly matched IGN game trailer can play.
+  Non-Steam shortcuts can use IGN even without a saved Steam match. The
+  original hero stays visible until a playable trailer is ready and remains
+  in place when neither source has a suitable movie. Set audio and Auto,
+  720p, 1080p, 1440p, or 2160p quality in the new section. Trailers stream;
+  they are not saved offline. Uninstall the separate TrailerHero Decky plugin
+  before enabling this feature.
 - **Trailer fade-in delay.** Set the wait before a ready trailer replaces the
   artwork from 0 to 10 seconds. Existing installs keep the three-second default.
 - **Optional trailer logo.** A new setting hides the game logo only while a

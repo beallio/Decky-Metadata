@@ -43,7 +43,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <ToggleField
           label="Enabled"
-          description="Show a Steam trailer on native game pages and shortcuts with a saved Steam match."
+          description="Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match."
           checked={state.settings.enabled}
           disabled={disabled}
           onChange={onEnabledChange}
@@ -121,7 +121,7 @@ export function GameTrailersSection({
           bottomSeparator="standard"
         >
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback.
+            Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.
           </div>
           {state.settingsError && (
             <div style={inlineStatusStyle("error")}>{state.settingsError}</div>
