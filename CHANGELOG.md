@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-28
+
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
 
 ### Added
