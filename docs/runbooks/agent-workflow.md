@@ -54,6 +54,21 @@ scripts/decky package-push --build --push
 
 The package command separately reports local validation, package creation, delivery, and installed state. It never installs the plugin or reloads Steam. An offline Deck is pending for the authorized Git hook but fails an explicit push.
 
+## IGN trailer health
+
+The [IGN Trailer Health workflow](../../.github/workflows/ign-trailer-health.yml)
+checks game search, verified trailer selection, and direct MP4 delivery for
+Deadpool and Bloodborne at minute 17 of every hour (UTC). Run the same probe
+locally with `./run.sh python3 scripts/check_ign_trailers.py`, or start the
+workflow manually from GitHub Actions. The schedule only runs after the
+workflow reaches GitHub's default branch, `main`.
+
+A failed probe makes the workflow fail and opens one issue titled
+**IGN trailer fallback health check failed**. Later failures reuse the open
+issue. Review the failed run for the specific error; close the issue after the
+source works again. This check does not exercise Steam's browser, Decky
+Loader, or on-device playback.
+
 ## Optional setup
 
 Both installers are non-mutating by default:
