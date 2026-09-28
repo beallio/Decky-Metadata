@@ -93,9 +93,18 @@ const installWithOverview = (route: string, browserPathname = route, browserHref
     appid: matchedShortcutAppId,
     app_type: 1073741824,
   }) as Overview;
+  const requestIconData = vi.fn();
   const appStore = {
     allApps: [overview],
     GetAppOverviewByAppID: (appId: number) => appId === matchedShortcutAppId ? overview : null,
+    GetIconURLForApp: (candidate: Overview) => {
+      if (candidate.icon_hash) return `https://example.invalid/${candidate.icon_hash}.jpg`;
+      if (candidate.icon_data) return `data:image/png;base64,${candidate.icon_data}`;
+      if (candidate.BIsModOrShortcut() && candidate.icon_data === undefined) {
+        requestIconData(candidate.appid);
+      }
+      return null;
+    },
   };
   (globalThis as Record<string, unknown>).appStore = appStore;
   (globalThis as Record<string, unknown>).appDetailsStore = {};
@@ -104,7 +113,7 @@ const installWithOverview = (route: string, browserPathname = route, browserHref
   metadataState.routeShield = null;
   unpatchers = [];
   installMetadataPatches(unpatchers);
-  return { appStore, original, overview };
+  return { appStore, original, overview, requestIconData };
 };
 
 beforeEach(() => {
@@ -182,15 +191,25 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
     expect(overview.BIsModOrShortcut()).toBe(true);
   });
 
-  it("passes Library Home shortcut identity through to Steam's icon resolver without artwork writes", () => {
-    const { appStore, overview } = installWithOverview("/routes/library/home");
+  it("requests cold shortcut icon data on Library Home without artwork writes", () => {
+    const { appStore, overview, requestIconData } = installWithOverview("/routes/library/home");
     const artworkBefore = { ...overview };
-    const resolveIcon = () => overview.BIsModOrShortcut() ? "shortcut-icon-request" : null;
 
-    expect(overview.BIsModOrShortcut()).toBe(true);
-    expect(resolveIcon()).toBe("shortcut-icon-request");
+    expect(appStore.GetIconURLForApp(overview)).toBeNull();
+    expect(requestIconData).toHaveBeenCalledExactlyOnceWith(matchedShortcutAppId);
     expect(appStore.GetAppOverviewByAppID(matchedSteamAppId)).toBe(overview);
     expect(overview).toMatchObject(artworkBefore);
+  });
+
+  it("requests cold shortcut icon data without changing matched Game Info identity", () => {
+    const { appStore, overview, requestIconData } = installWithOverview(
+      `/routes/library/app/${matchedShortcutAppId}/tab/GameInfo`,
+    );
+
+    expect(overview.BIsModOrShortcut()).toBe(false);
+    expect(appStore.GetIconURLForApp(overview)).toBeNull();
+    expect(requestIconData).toHaveBeenCalledExactlyOnceWith(matchedShortcutAppId);
+    expect(overview.BIsModOrShortcut()).toBe(false);
   });
 
   it("spoofs only the overview's own current matched detail route and preserves off-detail budgets", () => {

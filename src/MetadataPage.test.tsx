@@ -41,6 +41,12 @@ const steam = vi.hoisted(() => ({
       || (scope === "steam" && Number(metadata?.steam_appid) > 0)
       || (scope === "no-steam" && metadata !== undefined && Number(metadata?.steam_appid) <= 0)),
   metadataCache: {} as Record<string, any>,
+  setMetadataCacheEntry: vi.fn((appId: number, value: any) => {
+    steam.metadataCache[String(appId)] = value;
+  }),
+  removeMetadataCacheEntry: vi.fn((appId: number) => {
+    delete steam.metadataCache[String(appId)];
+  }),
   nativeShortcutName: vi.fn(() => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
   setShortcutNameAndWait: vi.fn(),

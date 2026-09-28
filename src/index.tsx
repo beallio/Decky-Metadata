@@ -7,6 +7,7 @@ import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
+import { startTrailerController } from "./trailers/controller";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -50,7 +51,6 @@ const installInPlaceReloadGuard = (onFailedReload: () => void) => {
 };
 
 export default definePlugin(() => {
-  clearCompatibilityDropdownReturn();
   beginCompatibilityLifecycle();
   let retainedReloadBaselines = false;
   const reloadGuard = installInPlaceReloadGuard(() => {
@@ -80,6 +80,7 @@ export default definePlugin(() => {
     }, "error").catch(() => undefined);
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
+  const stopTrailerController = startTrailerController();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -94,6 +95,7 @@ export default definePlugin(() => {
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
+      stopTrailerController();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.
@@ -116,7 +118,9 @@ export default definePlugin(() => {
         log.error("patch", "metadata bootstrap stop failed", error);
       }
       try {
-        clearCompatibilityDropdownReturn();
+        // Keep a native dropdown return request across an in-place bundle
+        // reload. A popup can reload the QAM while its selection is saving.
+        if (!reloading) clearCompatibilityDropdownReturn();
       } catch (error) {
         log.error("patch", "compatibility dropdown focus stop failed", error);
       }

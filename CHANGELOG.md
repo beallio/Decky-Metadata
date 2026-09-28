@@ -4,6 +4,51 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-28
+
+Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
+
+### Added
+
+- **Game trailers.** Enable game trailers in the Quick Access Menu. Existing
+  installs stay disabled until you opt in. Steam movies take priority; when
+  Steam has no playable movie, a clearly matched IGN game trailer can play.
+  Non-Steam shortcuts can use IGN even without a saved Steam match. The
+  original hero stays visible until a playable trailer is ready and remains
+  in place when neither source has a suitable movie. Set audio and Auto,
+  720p, 1080p, 1440p, or 2160p quality in the new section. Trailers stream;
+  they are not saved offline. Uninstall the separate TrailerHero Decky plugin
+  before enabling this feature.
+- **Trailer fade-in delay.** Set the wait before a ready trailer replaces the
+  artwork from 0 to 10 seconds. Existing installs keep the three-second default.
+- **Optional trailer logo.** A new setting hides the game logo only while a
+  trailer is visible. It is off by default and restores the logo when playback
+  stops, fails, or the game page changes.
+- **Expanded trailer view.** Press Y while a trailer is visible to hide the
+  game page controls and enlarge the video without restarting it. Press Y or B
+  to return. Steam's footer shows the action, and the page returns when
+  playback stops or you leave the game.
+- **IGN trailer health.** An hourly check alerts maintainers with one open
+  issue if game lookup, trailer selection, or MP4 delivery stops working.
+
+### Fixed
+
+- Trailer audio now stays silent behind the hero artwork and fades in with the
+  video when it appears, instead of playing before the video is visible.
+- Artwork and trailers now show through transparent save-status bars on game
+  pages. The bar stays in place, and the artwork returns to its usual size
+  when the bar is gone.
+- Game trailer quality changes now return D-pad focus after the Steam menu
+  closes, including while a trailer is playing. Trailers paused during SteamOS
+  sleep resume in place, even when sleep interrupts the initial artwork delay.
+  If playback cannot resume, Metadata restores the original artwork without
+  repeated retries.
+- The trailer audio X hint appears when Steam's footer loads after playback
+  starts and returns if Steam redraws the footer.
+- Non-Steam games with saved metadata now load their running-game Steam Menu
+  icon even when Game Info requests it before Steam has cached the image. Fixes
+  [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).
+
 ## [0.3.14] - 2026-09-20
 
 Add configurable compatibility defaults for non-Steam games

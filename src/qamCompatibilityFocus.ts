@@ -1,7 +1,7 @@
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "./types";
 
 type CompatibilityPolicySaveKind = "category" | "scope";
-type CompatibilityDropdownOrigin = "category" | "scope";
+type CompatibilityDropdownOrigin = "category" | "scope" | "quality";
 
 type CompatibilityPolicySave = {
   id: number;
@@ -18,6 +18,7 @@ type CompatibilityQamRuntime = {
     controlUnmounted: boolean;
     returnVisible: boolean;
     selectionSaved: boolean;
+    focusAttempts: number;
     origin: CompatibilityDropdownOrigin;
   };
   policySaveId: number;
@@ -33,6 +34,7 @@ const newCompatibilityQamRuntime = (): CompatibilityQamRuntime => ({
     controlUnmounted: false,
     returnVisible: false,
     selectionSaved: false,
+    focusAttempts: 0,
     origin: "category",
   },
   policySaveId: 0,
@@ -55,6 +57,9 @@ const compatibilityQamRuntime = (): CompatibilityQamRuntime => {
     && existing.policySaveListeners instanceof Set
     && typeof existing.policySaveId === "number"
   ) {
+    if (typeof existing.dropdown.focusAttempts !== "number") {
+      existing.dropdown.focusAttempts = 0;
+    }
     return existing as CompatibilityQamRuntime;
   }
   const runtime = newCompatibilityQamRuntime();
@@ -152,7 +157,18 @@ export const requestCompatibilityDropdownReturn = (origin: CompatibilityDropdown
   runtime.dropdown.controlUnmounted = false;
   runtime.dropdown.returnVisible = false;
   runtime.dropdown.selectionSaved = false;
+  runtime.dropdown.focusAttempts = 0;
   runtime.dropdown.origin = origin;
+};
+
+/** Count native-focus polling across panel remounts and rerenders. */
+export const claimCompatibilityDropdownFocusAttempt = (maximumAttempts: number) => {
+  if (
+    !runtime.dropdown.returnPending
+    || runtime.dropdown.focusAttempts >= maximumAttempts
+  ) return false;
+  runtime.dropdown.focusAttempts += 1;
+  return true;
 };
 
 export const hasCompatibilityDropdownReturn = () =>
@@ -189,8 +205,8 @@ export const isCompatibilityDropdownReturnReady = () =>
   runtime.dropdown.returnPending && runtime.dropdown.returnVisible;
 
 /**
- * Consume the request only after native gamepad focus succeeds. Failed early
- * attempts remain armed until the current close handoff finishes or aborts.
+ * Complete the handoff after native focus succeeds or the user takes
+ * navigation. Failed early attempts remain armed until the close handoff ends.
  */
 export const consumeCompatibilityDropdownReturn = () => {
   const pending = runtime.dropdown.returnPending;
@@ -198,6 +214,7 @@ export const consumeCompatibilityDropdownReturn = () => {
   runtime.dropdown.controlUnmounted = false;
   runtime.dropdown.returnVisible = false;
   runtime.dropdown.selectionSaved = false;
+  runtime.dropdown.focusAttempts = 0;
   runtime.dropdown.origin = "category";
   return pending;
 };
@@ -207,5 +224,6 @@ export const clearCompatibilityDropdownReturn = () => {
   runtime.dropdown.controlUnmounted = false;
   runtime.dropdown.returnVisible = false;
   runtime.dropdown.selectionSaved = false;
+  runtime.dropdown.focusAttempts = 0;
   runtime.dropdown.origin = "category";
 };

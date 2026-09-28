@@ -81,6 +81,7 @@ import decky
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 from backend import matching, scan_runner, shortcuts_vdf, storage, steam_paths
+from backend.cef_bridge import BigPictureEvaluator
 from backend.providers import community as community_provider
 from backend.providers import delisted as delisted_provider
 from backend.providers import ign as ign_provider
@@ -350,6 +351,7 @@ class Plugin:
         self._data_cache: dict[str, Any] | None = None
         self._data_cache_mtime_ns: int | None = None
         self._delisted_index: dict[str, Any] | None = None
+        self._big_picture = BigPictureEvaluator(decky.logger)
         self._updater = PluginUpdater(
             state_lock=self._data_lock,
             save_callback=self._save_updater_state,
@@ -401,11 +403,15 @@ class Plugin:
 
     async def _unload(self) -> None:
         _plog("load", "backend unload begin")
+        self._big_picture.close_active()
         if self._scan_task and not self._scan_task.done():
             self._scan_task.cancel()
         if self._activity_refresh_task and not self._activity_refresh_task.done():
             self._activity_refresh_task.cancel()
         _plog("load", "backend unloaded")
+
+    async def eval_in_big_picture(self, code: str) -> dict[str, Any]:
+        return await self._big_picture.eval_in_big_picture(code)
 
     def _is_steamos(self) -> bool:
         return steam_paths.is_steamos()
@@ -660,6 +666,64 @@ class Plugin:
                 raise
         return value
 
+    @staticmethod
+    def _validated_trailer_settings(value: Any) -> dict[str, Any]:
+        expected = {"enabled", "audioEnabled", "quality", "hideLogoDuringTrailer", "fadeInDelaySeconds"}
+        if not isinstance(value, dict) or set(value) != expected:
+            raise ValueError("invalid trailer settings")
+        if (
+            type(value["enabled"]) is not bool
+            or type(value["audioEnabled"]) is not bool
+            or type(value["hideLogoDuringTrailer"]) is not bool
+        ):
+            raise ValueError("invalid trailer settings")
+        quality = value["quality"]
+        if type(quality) is str:
+            valid_quality = quality == "auto"
+        else:
+            valid_quality = type(quality) is int and quality in {720, 1080, 1440, 2160}
+        delay = value["fadeInDelaySeconds"]
+        if type(delay) is not int or not 0 <= delay <= 10:
+            raise ValueError("invalid trailer settings")
+        if not valid_quality:
+            raise ValueError("invalid trailer settings")
+        return {
+            "enabled": value["enabled"],
+            "audioEnabled": value["audioEnabled"],
+            "quality": quality,
+            "hideLogoDuringTrailer": value["hideLogoDuringTrailer"],
+            "fadeInDelaySeconds": delay,
+        }
+
+    async def get_trailer_settings(self) -> dict[str, Any]:
+        if not self._load_data():
+            raise RuntimeError("trailer settings could not be loaded")
+        settings = self._data.get("settings")
+        value = settings.get("game_trailers") if isinstance(settings, dict) else None
+        return storage.normalize_trailer_settings(value)
+
+    async def set_trailer_settings(self, value: Any) -> dict[str, Any]:
+        normalized = self._validated_trailer_settings(value)
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("trailer settings could not be loaded")
+            settings = self._data.get("settings")
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "game_trailers" in settings
+            previous = settings.get("game_trailers")
+            settings["game_trailers"] = dict(normalized)
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["game_trailers"] = previous
+                else:
+                    settings.pop("game_trailers", None)
+                raise
+        return normalized
+
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))
@@ -893,6 +957,23 @@ class Plugin:
 
     async def fetch_metadata(self, slug_or_url: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._fetch_metadata_sync, slug_or_url)
+
+    async def find_ign_trailer(
+        self, title: str, game_url: str | None = None
+    ) -> dict[str, Any] | None:
+        try:
+            return await asyncio.to_thread(
+                self._find_ign_trailer_sync, title, game_url
+            )
+        except Exception:
+            return None
+
+    def _find_ign_trailer_sync(
+        self, title: str, game_url: str | None = None
+    ) -> dict[str, Any] | None:
+        return ign_provider.find_trailer(
+            title, game_url, self._graphql, self._ign_trailer_http_text
+        )
 
     @staticmethod
     def _merge_fetched_metadata(
@@ -1942,6 +2023,53 @@ class Plugin:
             _log_tls_verification_failure(request, error)
             raise
 
+    def _ign_trailer_http_text(
+        self, url: str, timeout: int = 12, max_bytes: int = 1_048_576
+    ) -> str:
+        if not ign_provider.is_ign_page_url(url):
+            raise ValueError("IGN trailer pages must use the canonical HTTPS host")
+
+        class _SameHostRedirectHandler(urllib.request.HTTPRedirectHandler):
+            def redirect_request(
+                self, request, file_pointer, code, message, headers, new_url
+            ):
+                if not ign_provider.is_ign_page_url(new_url):
+                    raise urllib.error.HTTPError(
+                        new_url,
+                        code,
+                        "Blocked redirect outside IGN's canonical host",
+                        headers,
+                        file_pointer,
+                    )
+                return super().redirect_request(
+                    request, file_pointer, code, message, headers, new_url
+                )
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+        )
+        bounded_bytes = min(max(int(max_bytes), 1), 1_048_576)
+        bounded_timeout = min(max(int(timeout), 1), 12)
+        opener = urllib.request.build_opener(
+            _SameHostRedirectHandler(),
+            urllib.request.HTTPSHandler(context=_build_https_context()),
+        )
+        with opener.open(request, timeout=bounded_timeout) as response:
+            if not ign_provider.is_ign_page_url(response.geturl()):
+                raise ValueError("IGN trailer response left the canonical HTTPS host")
+            content_length = response.headers.get("Content-Length")
+            if content_length and int(content_length) > bounded_bytes:
+                raise ValueError("IGN trailer response exceeds bounded read limit")
+            payload = response.read(bounded_bytes + 1)
+        if len(payload) > bounded_bytes:
+            raise ValueError("IGN trailer response exceeds bounded read limit")
+        return payload.decode("utf-8", errors="ignore")
+
     @staticmethod
     def _https_url(value: str) -> str:
         return matching.https_url(value)
@@ -1963,9 +2091,24 @@ class Plugin:
         context = _build_https_context()
         try:
             with urllib.request.urlopen(request, timeout=20, context=context) as response:
-                payload = json.loads(response.read().decode("utf-8", errors="ignore"))
+                maximum = ign_provider.IGN_GRAPHQL_MAX_BYTES
+                length = response.headers.get("Content-Length")
+                if length is not None:
+                    try:
+                        declared = int(length)
+                    except ValueError as error:
+                        raise ValueError("IGN GraphQL response has an invalid length") from error
+                    if declared < 0 or declared > maximum:
+                        raise ValueError("IGN GraphQL response is too large")
+                data = response.read(maximum + 1)
+                if len(data) > maximum:
+                    raise ValueError("IGN GraphQL response is too large")
+                payload = json.loads(data.decode("utf-8", errors="ignore"))
         except urllib.error.HTTPError as error:
-            detail = error.read().decode("utf-8", errors="ignore")
+            detail_bytes = error.read(ign_provider.IGN_GRAPHQL_ERROR_MAX_BYTES + 1)
+            if len(detail_bytes) > ign_provider.IGN_GRAPHQL_ERROR_MAX_BYTES:
+                raise ValueError("IGN GraphQL error response is too large") from error
+            detail = detail_bytes.decode("utf-8", errors="ignore")
             raise RuntimeError(f"IGN request failed: {error.code} {detail}") from error
         except Exception as error:
             _log_tls_verification_failure(request, error)

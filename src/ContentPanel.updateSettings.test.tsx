@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TrailerControllerSnapshot } from "./trailers/controller";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -41,7 +42,29 @@ const steam = vi.hoisted(() => ({
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
-const ui = vi.hoisted(() => ({ getGamepadNavigationTrees: vi.fn(), showModal: vi.fn() }));
+const ui = vi.hoisted(() => ({
+  getFocusNavController: vi.fn(),
+  getGamepadNavigationTrees: vi.fn(),
+  showModal: vi.fn(),
+}));
+const trailer = vi.hoisted(() => ({
+  subscribe: vi.fn(() => () => undefined),
+  getSnapshot: vi.fn<() => TrailerControllerSnapshot>(() => ({
+    settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+    status: "Disabled",
+    displayWidth: null,
+    displayHeight: null,
+    targetHeight: 720,
+    settingsLoaded: false,
+    busy: false,
+    settingsError: "",
+    matchRevision: 0,
+  })),
+  setEnabled: vi.fn(),
+  setAudioEnabled: vi.fn(),
+  setHideLogoDuringTrailer: vi.fn(),
+  setQuality: vi.fn(),
+}));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -70,12 +93,14 @@ vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred" },
   getGamepadNavigationTrees: ui.getGamepadNavigationTrees,
+  getFocusNavController: ui.getFocusNavController,
   showModal: ui.showModal,
 }));
 vi.mock("./backend", () => backend);
 vi.mock("./components/qam/DelistedIndexSection", () => ({
   DelistedIndexSection: "DelistedIndexSection",
 }));
+vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersSection: "GameTrailersSection" }));
 vi.mock("./components/qam/LogsSection", () => ({ LogsSection: "LogsSection" }));
 vi.mock("./components/qam/MetadataSection", () => ({
   MetadataSection: "MetadataSection",
@@ -95,17 +120,20 @@ vi.mock("./log", () => ({
   warn: vi.fn(),
 }));
 vi.mock("./steam", () => steam);
+vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({
   useNonSteamGames: () => ({ games: [], loadGames: games.loadGames }),
 }));
 
-import { Content } from "./ContentPanel";
+import { Content, takeCompatibilityDropdownFocus } from "./ContentPanel";
 import {
   clearCompatibilityDropdownReturn,
   clearCompatibilityPolicySave,
   compatibilityDropdownReturnOrigin,
+  hasCompatibilityDropdownReturn,
+  isCompatibilityDropdownSelectionReturn,
 } from "./qamCompatibilityFocus";
 
 const render = () => {
@@ -148,6 +176,9 @@ const versionsSection = (tree: any) =>
 const metadataSection = (tree: any) =>
   children(tree).find((node) => node.type === "MetadataSection");
 
+const gameTrailersSection = (tree: any) =>
+  children(tree).find((node) => node.type === "GameTrailersSection");
+
 const runEffects = () => {
   for (const effect of [...harness.effects]) effect();
 };
@@ -168,12 +199,23 @@ const deferred = <T,>() => {
 
 const makeFocusControls = () => {
   const frames: Array<(time: number) => void> = [];
-  const qamDocument = {
+  let frameCount = 0;
+  let nativeFocusAvailableAt = 0;
+  const documentListeners = new Map<string, Set<(event: any) => void>>();
+  const qamDocument: any = {
     visibilityState: "visible",
     activeElement: null as unknown,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
+    defaultView: null as unknown,
+    addEventListener: vi.fn((name: string, listener: (event: any) => void) => {
+      const listeners = documentListeners.get(name) ?? new Set();
+      listeners.add(listener);
+      documentListeners.set(name, listeners);
+    }),
+    removeEventListener: vi.fn((name: string, listener: (event: any) => void) => {
+      documentListeners.get(name)?.delete(listener);
+    }),
   };
+  qamDocument.defaultView = { closed: false, document: qamDocument };
   const makeButton = () => ({
     className: "",
     disabled: false,
@@ -182,6 +224,7 @@ const makeFocusControls = () => {
   });
   const categoryButton = makeButton();
   const scopeButton = makeButton();
+  const qualityButton = makeButton();
   const control = (button: typeof categoryButton) => ({
     ownerDocument: qamDocument,
     querySelector: vi.fn(() => button),
@@ -190,13 +233,17 @@ const makeFocusControls = () => {
   const scopeA = control(scopeButton);
   const categoryB = control(categoryButton);
   const scopeB = control(scopeButton);
-  ui.getGamepadNavigationTrees.mockReturnValue([{
+  const qualityA = control(qualityButton);
+  const qualityB = control(qualityButton);
+  let navContextActive = true;
+  const navigationTree = {
     Root: {
       m_rgChildren: [
         {
           Element: categoryButton,
           BTakeFocus: () => {
             categoryButton.className = "gpfocus";
+            qamDocument.activeElement = categoryButton;
             return true;
           },
         },
@@ -204,15 +251,43 @@ const makeFocusControls = () => {
           Element: scopeButton,
           BTakeFocus: () => {
             scopeButton.className = "gpfocus";
+            qamDocument.activeElement = scopeButton;
+            return true;
+          },
+        },
+        {
+          Element: qualityButton,
+          BTakeFocus: () => {
+            if (!navContextActive) return true;
+            qualityButton.className = "gpfocus";
+            qamDocument.activeElement = qualityButton;
             return true;
           },
         },
       ],
     },
-  }]);
+  };
+  const focusContext = { m_rgGamepadNavigationTrees: [navigationTree] };
+  const focusNav = {
+    m_ActiveContext: focusContext as typeof focusContext | null,
+    m_LastActiveContext: focusContext,
+    BCanActivateContext: vi.fn(() => true),
+    FindAnActiveContext: vi.fn(() => {
+      navContextActive = true;
+      focusNav.m_ActiveContext = focusContext;
+      return focusContext;
+    }),
+  };
+  ui.getFocusNavController.mockReturnValue(focusNav);
+  ui.getGamepadNavigationTrees.mockImplementation(() =>
+    frameCount >= nativeFocusAvailableAt ? [navigationTree] : [],
+  );
   vi.stubGlobal("window", {
     requestAnimationFrame: (callback: (time: number) => void) => {
-      frames.push(callback);
+      frames.push((time) => {
+        frameCount += 1;
+        callback(time);
+      });
       return frames.length;
     },
     cancelAnimationFrame: vi.fn(),
@@ -222,36 +297,75 @@ const makeFocusControls = () => {
     scopeA,
     categoryB,
     scopeB,
+    qualityA,
+    qualityB,
     categoryButton,
     scopeButton,
+    qualityButton,
+    focusNav,
+    loseNavContext: () => {
+      navContextActive = false;
+      focusNav.m_ActiveContext = null;
+      qualityButton.className = "";
+      qamDocument.activeElement = null;
+    },
+    delayNativeFocusUntil: (frame: number) => { nativeFocusAvailableAt = frame; },
+    stealNativeFocusSilently: () => {
+      qualityButton.className = "";
+      qamDocument.activeElement = null;
+    },
+    dispatchKeyDown: (key: string) => {
+      for (const listener of documentListeners.get("keydown") ?? []) listener({ key });
+    },
+    dispatchButtonDown: (button = 1) => {
+      for (const listener of documentListeners.get("vgp_onbuttondown") ?? []) {
+        listener({ type: "vgp_onbuttondown", detail: { button } });
+      }
+    },
+    listenerCount: (name: string) => documentListeners.get(name)?.size ?? 0,
+    advanceFrames: (count: number) => {
+      for (let attempt = 0; attempt < count && frames.length; attempt += 1) {
+        frames.shift()?.(attempt);
+      }
+    },
     flushFrames: () => {
       for (let attempt = 0; attempt < 200 && frames.length; attempt += 1) {
         frames.shift()?.(attempt);
+        frameCount += 1;
       }
     },
   };
 };
 
-const remountReturnedDropdown = async (origin: "category" | "scope") => {
+const remountReturnedDropdown = async (origin: "category" | "scope" | "quality") => {
   const controls = makeFocusControls();
   render();
   runEffects();
   await flushPromises();
   const first = metadataSection(render());
+  const firstTrailers = gameTrailersSection(render());
   first.props.onCompatibilityDefaultControlRef(controls.categoryA);
   first.props.onCompatibilityDefaultScopeControlRef(controls.scopeA);
   render();
-  first.props.onCompatibilityDefaultMenuWillOpen(origin);
+  if (origin === "quality") {
+    firstTrailers.props.onQualityMenuWillOpen();
+    firstTrailers.props.onQualityControlRef(controls.qualityA);
+    firstTrailers.props.onQualityControlRef(null);
+  } else {
+    first.props.onCompatibilityDefaultMenuWillOpen(origin);
+  }
   if (origin === "category") {
     first.props.onCompatibilityDefaultControlRef(null);
-  } else {
+  } else if (origin === "scope") {
     first.props.onCompatibilityDefaultScopeControlRef(null);
   }
 
   remount();
   const returned = metadataSection(render());
+  const returnedTrailers = gameTrailersSection(render());
   returned.props.onCompatibilityDefaultControlRef(controls.categoryB);
   returned.props.onCompatibilityDefaultScopeControlRef(controls.scopeB);
+  if (origin === "quality") returnedTrailers.props.onQualityControlRef(controls.qualityB);
   render();
   runEffects();
   await flushPromises();
@@ -259,11 +373,34 @@ const remountReturnedDropdown = async (origin: "category" | "scope") => {
 };
 
 describe("Content update settings", () => {
+  it("does not call Steam focus on a detached QAM document", () => {
+    const controls = makeFocusControls();
+    controls.qualityButton.ownerDocument.defaultView = null;
+
+    expect(takeCompatibilityDropdownFocus(controls.qualityA as unknown as HTMLElement)).toBe(false);
+    expect(controls.qualityButton.className).toBe("");
+  });
+
+  it("reactivates the Quick Access context before returning quality focus", () => {
+    const controls = makeFocusControls();
+    controls.loseNavContext();
+
+    expect(takeCompatibilityDropdownFocus(controls.qualityA as unknown as HTMLElement)).toBe(true);
+    expect(controls.focusNav.FindAnActiveContext).toHaveBeenCalledOnce();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+  });
+
   beforeEach(() => {
     vi.resetAllMocks();
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
+    trailer.getSnapshot.mockReturnValue({
+      settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+      status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
+      settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
+    });
+    trailer.setQuality.mockResolvedValue(true);
     games.loadGames.mockResolvedValue([]);
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
@@ -551,6 +688,147 @@ describe("Content update settings", () => {
     controls.flushFrames();
     expect(controls.categoryButton.className).toContain("gpfocus");
     expect(controls.scopeButton.className).not.toContain("gpfocus");
+  });
+
+  it("returns native focus to Video quality after cancellation", async () => {
+    const { controls } = await remountReturnedDropdown("quality");
+    render();
+    runEffects();
+    controls.flushFrames();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    expect(controls.categoryButton.className).not.toContain("gpfocus");
+    expect(controls.scopeButton.className).not.toContain("gpfocus");
+  });
+
+  it("keeps the focus handoff armed when the controller opens the quality popup", async () => {
+    const { controls, returned } = await remountReturnedDropdown("quality");
+    returned();
+
+    const section = gameTrailersSection(render());
+    section.props.onQualityMenuWillOpen();
+    await section.props.onQualityChange("auto");
+    controls.dispatchButtonDown(1);
+
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+    controls.flushFrames();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    controls.dispatchButtonDown(10);
+    expect(hasCompatibilityDropdownReturn()).toBe(false);
+  });
+
+  it("returns native focus to Video quality after a selection", async () => {
+    const controls = makeFocusControls();
+    render();
+    runEffects();
+    await flushPromises();
+    const first = gameTrailersSection(render());
+    first.props.onQualityMenuWillOpen();
+    first.props.onQualityControlRef(controls.qualityA);
+    first.props.onQualityControlRef(null);
+    await first.props.onQualityChange(1080);
+
+    remount();
+    const returned = gameTrailersSection(render());
+    returned.props.onQualityControlRef(controls.qualityB);
+    render();
+    runEffects();
+    await flushPromises();
+    controls.flushFrames();
+
+    expect(trailer.setQuality).toHaveBeenCalledWith(1080);
+    expect(controls.qualityButton.className).toContain("gpfocus");
+  });
+
+  it("keeps an async Auto handoff through remount and releases on navigation after status churn", async () => {
+    const controls = makeFocusControls();
+    controls.delayNativeFocusUntil(24);
+    trailer.getSnapshot.mockReturnValue({
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, fadeInDelaySeconds: 3 },
+      status: "Trailer: Fixture",
+      displayWidth: 1280,
+      displayHeight: 800,
+      targetHeight: 1080,
+      settingsLoaded: true,
+      busy: false,
+      settingsError: "",
+      matchRevision: 0,
+    });
+    render();
+    runEffects();
+    await flushPromises();
+
+    const first = gameTrailersSection(render());
+    first.props.onQualityMenuWillOpen();
+    first.props.onQualityControlRef(controls.qualityA);
+    first.props.onQualityControlRef(null);
+    const save = deferred<boolean>();
+    trailer.setQuality.mockReturnValue(save.promise);
+    const changingQuality = first.props.onQualityChange("auto");
+    expect(isCompatibilityDropdownSelectionReturn()).toBe(false);
+
+    trailer.getSnapshot.mockReturnValue({
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, fadeInDelaySeconds: 3 },
+      status: "Checking the new display target",
+      displayWidth: 1280,
+      displayHeight: 800,
+      targetHeight: 1080,
+      settingsLoaded: true,
+      busy: true,
+      settingsError: "",
+      matchRevision: 0,
+    });
+    remount();
+    let returned = gameTrailersSection(render());
+    returned.props.onQualityControlRef(controls.qualityB);
+    render();
+    runEffects();
+    controls.advanceFrames(30);
+    expect(controls.qualityButton.className).not.toContain("gpfocus");
+
+    save.resolve(true);
+    await changingQuality;
+    expect(isCompatibilityDropdownSelectionReturn()).toBe(true);
+    trailer.getSnapshot.mockReturnValue({
+      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+      status: "Trailer: Fixture",
+      displayWidth: 1280,
+      displayHeight: 800,
+      targetHeight: 800,
+      settingsLoaded: true,
+      busy: false,
+      settingsError: "",
+      matchRevision: 0,
+    });
+    remount();
+    returned = gameTrailersSection(render());
+    returned.props.onQualityControlRef(controls.qualityB);
+    render();
+    runEffects();
+    controls.advanceFrames(80);
+
+    expect(trailer.setQuality).toHaveBeenCalledWith("auto");
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    expect(controls.qualityButton.ownerDocument.activeElement).toBe(controls.qualityButton);
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+
+    // A playback status refresh can leave the row in the tree but remove its
+    // native focus. The next D-pad action belongs to Steam, not the return lease.
+    const updatedSnapshot = trailer.getSnapshot();
+    trailer.getSnapshot.mockReturnValue({
+      ...updatedSnapshot,
+      status: "Trailer playback status refreshed",
+    });
+    render();
+    runEffects();
+    controls.stealNativeFocusSilently();
+    controls.dispatchButtonDown(10);
+
+    expect(hasCompatibilityDropdownReturn()).toBe(false);
+    expect(controls.listenerCount("keydown")).toBe(0);
+    expect(controls.listenerCount("vgp_onbuttondown")).toBe(0);
+    expect(controls.listenerCount("pointerdown")).toBe(0);
+    controls.advanceFrames(20);
+    expect(controls.qualityButton.className).not.toContain("gpfocus");
   });
 
   it("does not allow a second policy save while a remounted QAM is busy", async () => {

@@ -107,6 +107,67 @@ describe("currentRoutePath", () => {
   });
 });
 
+describe("metadata match revisions", () => {
+  it("publishes every saved Steam ID change independently of compatibility revisions", () => {
+    const appId = 0x80000044;
+    const listener = vi.fn();
+    const unsubscribe = core.subscribeMetadataMatchChanges(listener);
+    const startMatchRevision = core.metadataMatchRevisionSnapshot();
+    const startCompatibilityRevision = core.compatibilityRevisionSnapshot();
+    try {
+      core.setMetadataCacheEntry(appId, { steam_appid: 55150 } as any);
+      core.setMetadataCacheEntry(appId, { steam_appid: 55151 } as any);
+      core.setMetadataCacheEntry(appId, { steam_appid: 55151, title: "Unrelated" } as any);
+
+      expect(core.metadataMatchRevisionSnapshot()).toBe(startMatchRevision + 2);
+      expect(core.compatibilityRevisionSnapshot()).toBe(startCompatibilityRevision);
+      expect(listener.mock.calls.map(([changedAppId]) => changedAppId)).toEqual([appId, appId]);
+
+      core.removeMetadataCacheEntry(appId);
+      expect(core.metadataMatchRevisionSnapshot()).toBe(startMatchRevision + 3);
+      expect(listener).toHaveBeenCalledTimes(3);
+    } finally {
+      unsubscribe();
+      delete core.metadataCache[String(appId)];
+    }
+  });
+
+  it("does not publish a match revision for new metadata without a saved Steam ID", () => {
+    const appId = 0x80000046;
+    const listener = vi.fn();
+    const unsubscribe = core.subscribeMetadataMatchChanges(listener);
+    const startMatchRevision = core.metadataMatchRevisionSnapshot();
+    try {
+      core.replaceMetadataCacheEntries({ [String(appId)]: { title: "New record" } as any });
+      expect(core.metadataMatchRevisionSnapshot()).toBe(startMatchRevision);
+      expect(listener).not.toHaveBeenCalled();
+
+      core.replaceMetadataCacheEntries({ [String(appId)]: { steam_appid: 55152 } as any });
+      expect(core.metadataMatchRevisionSnapshot()).toBe(startMatchRevision + 1);
+      expect(listener).toHaveBeenCalledWith(appId, startMatchRevision + 1);
+    } finally {
+      unsubscribe();
+      delete core.metadataCache[String(appId)];
+    }
+  });
+
+  it("ignores malformed and shortcut-domain saved Steam IDs", () => {
+    const appId = 0x80000045;
+    const listener = vi.fn();
+    const unsubscribe = core.subscribeMetadataMatchChanges(listener);
+    const startMatchRevision = core.metadataMatchRevisionSnapshot();
+    try {
+      core.setMetadataCacheEntry(appId, { steam_appid: "not-an-id" } as any);
+      core.setMetadataCacheEntry(appId, { steam_appid: 0x80000045 } as any);
+      expect(core.metadataMatchRevisionSnapshot()).toBe(startMatchRevision);
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+      delete core.metadataCache[String(appId)];
+    }
+  });
+});
+
 describe("normalizedTabText", () => {
   it("ignores trademark marks so a rendered store name still matches its cleaned metadata title", () => {
     const rendered = core.normalizedTabText("STAR WARS\u2122: The Force Unleashed\u2122 II");

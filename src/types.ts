@@ -67,6 +67,34 @@ export type UpdateSettings = {
   automatic_update_checks: boolean;
 };
 
+export type TrailerQuality = "auto" | 720 | 1080 | 1440 | 2160;
+export type IgnTrailerResult = {
+  name: string;
+  candidates: Array<{ format: "mp4"; url: string; height: number }>;
+};
+
+
+/** Metadata-owned Steam trailer preferences. */
+export type TrailerSettings = {
+  enabled: boolean;
+  audioEnabled: boolean;
+  hideLogoDuringTrailer: boolean;
+  quality: TrailerQuality;
+  fadeInDelaySeconds: number;
+};
+
+export type TrailerStatus = {
+  settings: TrailerSettings;
+  appId?: number;
+  sourceAppId?: number | null;
+  status: string;
+  trailerName?: string;
+  gameTitle?: string;
+  displayWidth: number | null;
+  displayHeight: number | null;
+  targetHeight: number;
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;
