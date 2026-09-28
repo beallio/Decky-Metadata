@@ -17,6 +17,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
+    const audioFadeDurationMs = 1200;
     const MAX_METADATA_BYTES = 1024 * 1024;
     const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
@@ -295,7 +296,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     function createStyle() {
         return `
       .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
-      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity 1200ms ease,transform 7000ms ease!important;z-index:1!important;background:#000!important}
+      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
       .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
@@ -828,13 +829,29 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.cleanupVideo(true);
             this.status = rt("stoppedForLaunch");
         }
-        applyCurrentMediaAudioState() {
+        stopAudioFade() {
+            if (this.audioFadeTimer) window.clearInterval(this.audioFadeTimer);
+            this.audioFadeTimer = undefined;
+        }
+        applyCurrentMediaAudioState(fadeIn = false) {
+            this.stopAudioFade();
             const video = this.currentVideo;
             if (!video) return;
-            const audible = this.trailerAudioEnabled && this.currentMediaReady === true;
+            const audible = this.trailerAudioEnabled && this.currentMediaReady === true &&
+                video.classList.contains(visibleClass);
+            video.volume = audible && !fadeIn ? 1 : 0;
             video.muted = !audible;
             video.defaultMuted = !audible;
-            video.volume = audible ? 1 : 0;
+            if (!audible || !fadeIn) return;
+            const startedAt = Date.now();
+            this.audioFadeTimer = window.setInterval(() => {
+                if (this.currentVideo !== video || !video.isConnected) {
+                    this.stopAudioFade();
+                    return;
+                }
+                video.volume = Math.min(1, (Date.now() - startedAt) / audioFadeDurationMs);
+                if (video.volume === 1) this.stopAudioFade();
+            }, 50);
         }
         dispatchAudioChange() {
             const detail = { ownerId: this.ownerId, settingsRevision: this.settingsRevision, audioEnabled: this.trailerAudioEnabled };
@@ -1097,6 +1114,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!candidate.isCurrent() || video.paused) return;
                 target.classList.add(readyClass);
                 video.classList.add(visibleClass);
+                this.applyCurrentMediaAudioState(true);
                 this.syncLogoVisibility();
                 this.updateTrailerHints();
                 this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
@@ -1199,6 +1217,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const clearAttempt = () => {
                 clearWatchdog();
                 if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
+                this.stopAudioFade();
                 this.exitCleanViewing();
                 this.fadeTimer = undefined;
                 this.restoreLogo();
@@ -1694,6 +1713,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.activeSession = undefined;
             this.currentMediaReady = false;
             if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
+            this.stopAudioFade();
             if (this.candidateWatchdog) window.clearTimeout(this.candidateWatchdog);
             this.fadeTimer = undefined;
             this.candidateWatchdog = undefined;

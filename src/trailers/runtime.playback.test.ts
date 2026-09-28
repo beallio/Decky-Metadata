@@ -68,6 +68,7 @@ function fakeClock(start = Date.now()) {
   const clock = {
     get now() { return now; },
     timers,
+    intervals,
     setTimeout(fn, delay) {
       const id = ++timerId;
       timers.set(id, { fn, at: now + delay, delay });
@@ -472,6 +473,57 @@ test('A visible paused trailer resumes the same video after wake without allocat
   h.runtime.handleVisibilityChange();
   assert.equal(h.runtime.currentVideo, undefined, 'hidden playback is cleaned up instead of resumed');
   assert.equal(h.playCalls, 2);
+});
+
+test('Trailer audio stays silent behind the hero and fades in with the video', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  const video = h.video;
+  assert.equal(video.paused, false);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
+  assert.equal(video.muted, true, 'the hidden, playing video must stay silent');
+  assert.equal(video.volume, 0);
+  h.runtime.setTrailerAudioEnabled(false, false);
+  h.runtime.setTrailerAudioEnabled(true, false);
+  assert.equal(video.muted, true, 'changing audio before reveal must not expose it early');
+
+  clock.advance(3000);
+  assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(video.muted, false);
+  assert.equal(video.volume, 0, 'sound starts at zero when the video begins its fade');
+  const fade = clock.intervals.get(h.runtime.audioFadeTimer);
+  assert.ok(fade);
+  clock.advance(600);
+  fade.fn();
+  assert.equal(video.volume, 0.5);
+  clock.advance(600);
+  fade.fn();
+  assert.equal(video.volume, 1);
+  assert.equal(h.runtime.audioFadeTimer, undefined);
+  assert.equal(clock.intervals.size, 0);
+});
+
+test('Muting or stopping a trailer cancels an in-progress audio fade', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  clock.advance(3000);
+  const video = h.video;
+  const fadeId = h.runtime.audioFadeTimer;
+  assert.ok(clock.intervals.has(fadeId));
+  h.runtime.setTrailerAudioEnabled(false, false);
+  assert.equal(video.muted, true);
+  assert.equal(video.volume, 0);
+  assert.equal(clock.intervals.has(fadeId), false);
+
+  h.runtime.setTrailerAudioEnabled(true, false);
+  assert.equal(video.volume, 1, 'unmuting an already visible trailer acts immediately');
+  const next = await readyDirectTrailer({ clock, pageEnteredAt: clock.now - 3000 });
+  clock.advance(0);
+  const nextFadeId = next.runtime.audioFadeTimer;
+  assert.ok(clock.intervals.has(nextFadeId));
+  next.runtime.cleanupVideo(true);
+  assert.equal(clock.intervals.has(nextFadeId), false);
+  assert.equal(next.runtime.audioFadeTimer, undefined);
 });
 
 test('A trailer paused before its reveal resumes and appears after the original artwork delay', async () => {

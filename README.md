@@ -161,10 +161,11 @@ that saved match only to find the Steam trailer. It does not change your
 shortcut artwork. If there is no valid match, no Steam trailer, or no playable
 video, the original Steam artwork stays visible.
 
-Use **Trailer audio** to choose whether a ready trailer plays with sound. New
-trailers start muted. Use **Video quality** to choose Auto, 720p, 1080p, 1440p,
-or 2160p. Auto follows the Big Picture display and uses an available Steam
-version at or below that size when possible.
+Use **Trailer audio** to choose whether a trailer plays with sound. New
+trailers stay silent behind the hero artwork, then sound fades in with the
+video after the three-second delay. Use **Video quality** to choose Auto, 720p,
+1080p, 1440p, or 2160p. Auto follows the Big Picture display and uses an
+available Steam version at or below that size when possible.
 
 Turn on **Hide game logo during trailers** to hide Steam's game logo while a
 trailer is visible. The logo returns when playback stops, fails, or you leave
