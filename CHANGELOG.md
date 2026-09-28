@@ -26,6 +26,8 @@ Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
   game page controls and enlarge the video without restarting it. Press Y or B
   to return. Steam's footer shows the action, and the page returns when
   playback stops or you leave the game.
+- **IGN trailer health.** An hourly check alerts maintainers with one open
+  issue if game lookup, trailer selection, or MP4 delivery stops working.
 
 ### Fixed
 
