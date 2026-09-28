@@ -238,6 +238,72 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
   };
 }
 
+test('A visible status band reveals the hero behind it without moving the band or growing on rescans', async () => {
+  const h = await readyDirectTrailer();
+  const naturalHeight = 400;
+  let statusTop = 400;
+  let visible = false;
+  let suppressed = false;
+  const originalHeight = '400px';
+  h.hero.style = {
+    height: originalHeight,
+    getPropertyValue(name) { return this[name] || ''; },
+    getPropertyPriority() { return ''; },
+    setProperty(name, value) { this[name] = value; },
+    removeProperty(name) { this[name] = ''; },
+  };
+  h.hero.getBoundingClientRect = () => {
+    const height = Number.parseFloat(h.hero.style.height) || naturalHeight;
+    return { width: 1000, height, top: 0, left: 0, right: 1000, bottom: height };
+  };
+  const band = {
+    textContent: 'Steam Cloud: Up to date',
+    parentElement: null,
+    getBoundingClientRect: () => ({
+      width: 1000, height: 30, top: statusTop, left: 0, right: 1000, bottom: statusTop + 30,
+    }),
+    getAttribute: name => name === 'aria-hidden' && suppressed ? 'true' : null,
+  };
+  const label = {
+    parentElement: band,
+    getBoundingClientRect: () => ({
+      width: 180, height: 22, top: statusTop + 4, left: 410, right: 590, bottom: statusTop + 26,
+    }),
+  };
+  // Steam's footer can cover the middle of the row at the default scroll position.
+  h.document.elementFromPoint = (x, y) =>
+    visible && x === 500 && y >= statusTop && y < statusTop + 6 ? label : null;
+
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'no status band leaves the hero unchanged');
+  visible = true;
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 430, 'rescanning must not add a second band height');
+  suppressed = true;
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'an aria-hidden row must not extend the trailer');
+  suppressed = false;
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+
+  visible = false;
+  await h.runtime.scan();
+  assert.equal(h.hero.style.height, originalHeight, 'a hidden band restores the original inline height');
+  visible = true;
+  statusTop = 445;
+  await h.runtime.scan();
+  assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'a distant row is not the hero status band');
+
+  statusTop = 400;
+  await h.runtime.scan();
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.hero.style.height, originalHeight, 'leaving the page restores the original inline height');
+});
+
 test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
   const clock = fakeClock();
   const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });

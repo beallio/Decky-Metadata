@@ -576,6 +576,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.lastSecondaryPressAt = -Infinity;
             this.scanQueued = false;
             this.launchHeld = false;
+            this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => this.queueScan();
             this.handleRouteChange = () => {
@@ -646,6 +647,47 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 event.stopPropagation?.();
                 event.stopImmediatePropagation?.();
             };
+        }
+        restoreStatusBackdrop() {
+            const backdrop = this.statusBackdrop;
+            if (!backdrop) return;
+            this.statusBackdrop = undefined;
+            backdrop.target.style.setProperty("height", backdrop.inlineHeight, backdrop.priority);
+        }
+        syncStatusBackdrop(target) {
+            if (this.statusBackdrop?.target !== target) this.restoreStatusBackdrop();
+            if (!target?.style || typeof document.elementFromPoint !== "function") return;
+            const hero = target.getBoundingClientRect();
+            const naturalHeight = this.statusBackdrop?.naturalHeight ?? hero.height;
+            const edge = hero.top + naturalHeight;
+            let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            let bandHeight = 0;
+            while (element && element !== document.body) {
+                const band = element.getBoundingClientRect();
+                if (Math.abs(band.top - edge) <= 1 && Math.abs(band.width - hero.width) <= 2 &&
+                    band.height >= 24 && band.height <= 40 && element.textContent?.trim() &&
+                    element.getAttribute?.("aria-hidden") !== "true") {
+                    bandHeight = band.height;
+                    break;
+                }
+                element = element.parentElement;
+            }
+            if (!bandHeight) {
+                this.restoreStatusBackdrop();
+                return;
+            }
+            if (this.statusBackdrop?.bandHeight === bandHeight) return;
+            if (this.statusBackdrop) {
+                this.statusBackdrop.bandHeight = bandHeight;
+            } else {
+                this.statusBackdrop = {
+                    target, naturalHeight, bandHeight,
+                    inlineHeight: target.style.getPropertyValue("height"),
+                    priority: target.style.getPropertyPriority("height")
+                };
+            }
+            // Extend the clipped artwork and trailer, not Steam's play-section layout.
+            target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
         }
         mount() {
             this.installStyle();
@@ -980,6 +1022,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
+                this.syncStatusBackdrop(hero.element);
                 this.resumeVisiblePausedVideo(appId, hero.element);
                 this.syncLogoVisibility();
                 if (this.currentVideo?.classList.contains(visibleClass) &&
@@ -1145,6 +1188,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         attachVideo(target, appId, candidates, token, options = {}) {
             let index = 0;
             target.classList.add(targetClass);
+            this.syncStatusBackdrop(target);
             this.currentTarget = target;
             this.currentAppId = appId;
             this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
@@ -1661,6 +1705,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 video.remove();
             }
             this.currentVideo = undefined;
+            this.restoreStatusBackdrop();
             this.currentTarget?.classList.remove(targetClass, readyClass);
             this.currentTarget = undefined;
             this.currentMediaSignature = undefined;

@@ -26,6 +26,9 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
 
 ### Fixed
 
+- Artwork and trailers now show through transparent save-status bars on game
+  pages. The bar stays in place, and the artwork returns to its usual size
+  when the bar is gone.
 - Game trailer quality changes now return D-pad focus after the Steam menu
   closes, including while a trailer is playing. Trailers paused during SteamOS
   sleep resume in place, even when sleep interrupts the initial artwork delay.
