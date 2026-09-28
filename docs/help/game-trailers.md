@@ -1,0 +1,39 @@
+# Watch game trailers
+
+Decky Metadata can show a game trailer over its Library hero artwork. It leaves your artwork unchanged and keeps it visible when no suitable trailer is available.
+
+## Turn on trailers
+
+Open the Quick Access Menu, open Decky Metadata, and find the **Game trailers** section. Turn on **Enabled**; trailers are off by default. Then open a game's main Library page to watch its trailer when one is available.
+
+Decky Metadata checks for a playable Steam trailer first. If Steam has none, it looks for a suitable IGN game trailer. If neither source has a suitable video, the game artwork stays visible.
+
+For a non-Steam shortcut, a saved Steam match in **Decky metadata...** supplies the Steam App ID to check first. If that Steam trailer is not playable, Decky Metadata can fall back to IGN. Without a Steam match, it looks for an IGN trailer using the shortcut's name or a saved IGN game match. If it cannot find a suitable match and video, the shortcut's artwork stays visible.
+
+## Choose trailer settings
+
+Find these settings in the **Game trailers** section:
+
+- **Trailer audio** lets you choose whether trailers play with sound; it is off by default. When enabled, a new trailer stays muted behind the artwork, then its sound fades in as the trailer appears. You can also mute or unmute a visible trailer with your controller.
+- **Video quality** offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**. Auto uses the Big Picture display size to choose an available video size when possible.
+- **Trailer fade-in delay** controls how long the artwork remains before a ready trailer appears. The default is three seconds. Choose from 0 to 10 seconds; at 0, the trailer appears as soon as it is ready.
+- **Hide game logo during trailers** hides Steam's game logo while the trailer is visible. The logo returns when playback stops or fails, or when you leave the game page. This does not hide a logo shown inside the video.
+
+If Steam shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. When the bar is hidden or you leave the game page, the artwork returns to its usual size.
+
+## Use the controller buttons
+
+While a trailer is visible:
+
+- Press **X** on a Steam Deck or Xbox controller (**Square** on PlayStation) to mute or unmute it.
+- Press **Y** (**Triangle** on PlayStation) to enlarge the trailer and hide the game page controls. Press **Y** again or **B** (**Circle** on PlayStation) to return. The video keeps playing.
+
+When the game page is visible, Steam's footer shows the **X** and **Y** actions. Menus and text fields keep their normal button behavior.
+
+## Streaming and TrailerHero
+
+Trailers stream from Steam or IGN. Decky Metadata does not download them for offline playback.
+
+If you have the separate **TrailerHero** Decky plugin installed, uninstall it before turning on **Enabled** for Decky Metadata's **Game trailers**. The two trailer plugins conflict.
+
+[Help home](README.md)
