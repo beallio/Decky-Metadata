@@ -26,6 +26,8 @@ Add opt-in Steam trailer streaming for native games and correctly matched non-St
 
 ### Fixed
 
+- Trailer audio now stays silent behind the hero artwork and fades in with the
+  video when it appears, instead of playing before the video is visible.
 - Artwork and trailers now show through transparent save-status bars on game
   pages. The bar stays in place, and the artwork returns to its usual size
   when the bar is gone.

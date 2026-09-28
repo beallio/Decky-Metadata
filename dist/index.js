@@ -293,7 +293,7 @@ function GameTrailersSection({ state, onEnabledChange, onAudioChange, onHideLogo
     const display = state.displayWidth && state.displayHeight
         ? `${state.displayWidth} × ${state.displayHeight} pixels`
         : "Unavailable";
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers start muted, then use this setting when playback is ready.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Show a Steam trailer on native game pages and shortcuts with a saved Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -8770,6 +8770,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
+    const audioFadeDurationMs = 1200;
     const MAX_METADATA_BYTES = 1024 * 1024;
     const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
@@ -9105,7 +9106,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     function createStyle() {
         return `
       .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
-      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity 1200ms ease,transform 7000ms ease!important;z-index:1!important;background:#000!important}
+      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
       .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
@@ -9707,14 +9708,33 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.cleanupVideo(true);
             this.status = rt("stoppedForLaunch");
         }
-        applyCurrentMediaAudioState() {
+        stopAudioFade() {
+            if (this.audioFadeTimer)
+                window.clearInterval(this.audioFadeTimer);
+            this.audioFadeTimer = undefined;
+        }
+        applyCurrentMediaAudioState(fadeIn = false) {
+            this.stopAudioFade();
             const video = this.currentVideo;
             if (!video)
                 return;
-            const audible = this.trailerAudioEnabled && this.currentMediaReady === true;
+            const audible = this.trailerAudioEnabled && this.currentMediaReady === true &&
+                video.classList.contains(visibleClass);
+            video.volume = audible && !fadeIn ? 1 : 0;
             video.muted = !audible;
             video.defaultMuted = !audible;
-            video.volume = audible ? 1 : 0;
+            if (!audible || !fadeIn)
+                return;
+            const startedAt = Date.now();
+            this.audioFadeTimer = window.setInterval(() => {
+                if (this.currentVideo !== video || !video.isConnected) {
+                    this.stopAudioFade();
+                    return;
+                }
+                video.volume = Math.min(1, (Date.now() - startedAt) / audioFadeDurationMs);
+                if (video.volume === 1)
+                    this.stopAudioFade();
+            }, 50);
         }
         dispatchAudioChange() {
             const detail = { ownerId: this.ownerId, settingsRevision: this.settingsRevision, audioEnabled: this.trailerAudioEnabled };
@@ -10008,6 +10028,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     return;
                 target.classList.add(readyClass);
                 video.classList.add(visibleClass);
+                this.applyCurrentMediaAudioState(true);
                 this.syncLogoVisibility();
                 this.updateTrailerHints();
                 this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
@@ -10127,6 +10148,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 clearWatchdog();
                 if (this.fadeTimer)
                     window.clearTimeout(this.fadeTimer);
+                this.stopAudioFade();
                 this.exitCleanViewing();
                 this.fadeTimer = undefined;
                 this.restoreLogo();
@@ -10700,6 +10722,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.currentMediaReady = false;
             if (this.fadeTimer)
                 window.clearTimeout(this.fadeTimer);
+            this.stopAudioFade();
             if (this.candidateWatchdog)
                 window.clearTimeout(this.candidateWatchdog);
             this.fadeTimer = undefined;

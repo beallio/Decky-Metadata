@@ -50,7 +50,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <ToggleField
           label="Trailer audio"
-          description="New trailers start muted, then use this setting when playback is ready."
+          description="New trailers stay muted until the video appears, then audio fades in with it."
           checked={state.settings.audioEnabled}
           disabled={disabled}
           onChange={onAudioChange}
