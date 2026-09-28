@@ -46,7 +46,7 @@ Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
 - The trailer audio X hint appears when Steam's footer loads after playback
   starts and returns if Steam redraws the footer.
 - Non-Steam games with saved metadata now load their running-game Steam Menu
-  icon even when Game Info requests it before Steam has cached the image. Fixes
+  icon even when Game Info requests it before Steam has cached the image. Closes
   [issue #15](https://github.com/beallio/Decky-Metadata/issues/15).
 
 ## [0.3.14] - 2026-09-20
