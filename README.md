@@ -3,30 +3,16 @@
 [![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
-Decky Metadata makes games you added to Steam feel like a natural part of your
-library. It finds the matching Steam game and adds useful details, news,
-community posts, and controller layouts.
+Decky Metadata adds Steam game details to games you added to Steam yourself. It
+can show descriptions, news, community posts, and controller layouts from the
+matching game. It can also play trailers on game pages. You can correct a match
+if needed, and your custom artwork stays in place.
 
 ![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20260718)
 
-This README describes the current branch. See the [changelog](CHANGELOG.md)
-for released and unreleased changes; screenshots may show an earlier layout.
-
-## What it can add
-
-For a non-Steam game, Decky Metadata can add:
-
-- Descriptions, developers, publishers, release dates, ratings, and screenshots
-- A Steam Deck compatibility status
-- Steam news and community posts
-- Controller layouts from the matching Steam game
-- Useful Steam links in Game Info
-
-Your custom artwork from SteamGridDB stays in place.
-
 ## Install
 
-You need SteamOS Gaming Mode and Decky Loader.
+You need SteamOS Gaming Mode and [Decky Loader](https://decky.xyz/).
 
 1. Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest).
 2. Download `Decky-Metadata.zip`. Do not unzip it.
@@ -35,193 +21,84 @@ You need SteamOS Gaming Mode and Decky Loader.
 5. Under **Install Plugin from ZIP File**, select **Browse**.
 6. Choose `Decky-Metadata.zip`, then select **Install**.
 
-Decky Metadata will appear in the Decky menu after installation.
+Decky Metadata will appear in the Decky menu. See the [installation guide](docs/help/installation.md)
+if you need more help.
 
 ## Get started
 
-Open Decky Metadata from the Quick Access Menu. From there, you can find missing
-metadata, clear saved matches, update the list of games that Steam no longer
-sells, view logs, and check for plugin updates.
+Open Decky Metadata from the Quick Access Menu to find games that need details.
+To edit one game, open its menu and select **Decky metadata...**. Find the right
+game in the Steam Store, paste its page link into **Steam App ID**, and select
+**Apply Steam App ID**. Select **Save** for other details you change. If the
+match is wrong, replace it with the right one.
 
-To work with one game:
-
-1. Open the game's menu.
-2. Select **Decky metadata...**.
-3. Search for the correct Steam game or change the details yourself.
-4. Select **Save** when you finish.
-
-If a game matched incorrectly, clear the match and choose the correct one.
-
-After you save a valid Steam match, the same **Decky metadata...** editor can
-show Steam's cleaned shortcut name. You can preview the change, confirm it,
-and later restore the exact original shortcut name. Decky Metadata never
-changes shortcut names automatically.
-The **Shortcut name** section is selectable with the D-pad, even when no rename
-action is available.
+The editor can preview a cleaner shortcut name. It changes the name only if you
+confirm; you can restore the original name later. See [matching and editing
+games](docs/help/editing-games.md) for the full steps.
 
 ![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=20260907)
 
-## Set the compatibility status
-
-Use Steam's compatibility rating, or choose your own label for the non-Steam
-games in your library.
-
-### Choose a default
-
-Open Decky Metadata in the Quick Access Menu and find **Default compatibility
-status**.
-
-- **Automatic — use matched Steam status** uses the matching Steam game's
-  rating. If none is available, your game's original status stays unchanged.
-- Choose **Verified**, **Playable**, or **Unsupported** to set your own label.
-- **Unknown** shows no compatibility badge.
-
-Leave **Automatic** selected if you just want Steam's rating.
-
-### Choose which games it applies to
-
-If you choose your own label, use **Apply default to**:
-
-| Option | Games included |
-| --- | --- |
-| **Steam-matched games** | Games matched to a game on Steam. |
-| **Saved games without a Steam ID** | Games with saved information but no Steam match, including information you added yourself. |
-| **All games with saved metadata** | Any game with saved information in Decky Metadata. |
-| **All non-Steam games** | Every non-Steam game or app, including entries you have not matched. |
-
-For example, choose **Playable** and **All non-Steam games** to give all your
-added games that label.
-
-Games you leave out still use Steam's rating when one is available, or keep
-their original status. This control is disabled under **Automatic**, but
-remembers your selection.
-
-### Change just one game
-
-Open the game's menu, select **Decky metadata...**, and find **Compatibility
-status**:
-
-- **Use global default** follows the choices above.
-- **Follow Valve** ignores your default and uses Steam's rating for that game.
-  If no rating is available, it keeps the game's original status.
-- Choose **Verified**, **Playable**, **Unsupported**, or **Unknown** to set a
-  label just for this game.
-
-Select **Save** when you finish. A per-game choice takes priority over your
-default.
-
-**When will I see the change?** Other games update straight away. If you have
-a game's **Game Info** tab open, leave that tab and return to see its new
-status. Closing the Quick Access Menu alone does not update that open view.
-
-Choosing a label does not mean Valve tested your game or guarantee how well
-it will run. For more detail, see the
-[compatibility guide](docs/specs/compatibility-status.md).
-
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
 
-## See more in Game Info
+## What you can see
 
-After a game is matched, Game Info can show its artwork, description, developer,
-publisher, release date, and Steam Deck compatibility.
+### Game details and links
 
-A game whose title is made up only of words like `Prototype` now matches its
-Steam entry automatically.
+After you match a game, its **Game Info** page can show a description, release
+date, developer, publisher, screenshots, and Steam Deck compatibility rating.
+It can also show links to the Steam store and other pages when available. Your
+SteamGridDB artwork stays in place, including the game icon, cover, background,
+and logo.
 
 ![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
 
-Game Info can also show links to the Steam store, DLC, and Points Shop when they
-are available. Links that do not apply to the game are left out.
-
 ![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20260717)
 
-## Keep your custom artwork
+### Compatibility status
 
-Decky Metadata works with custom artwork from SteamGridDB. Your Library Home
-icon, capsule, hero, and logo stay in place while Game Info receives the extra
-Steam details.
-The running game's icon also appears in the Steam Menu.
+Use the matching Steam game's compatibility rating, or choose a label for all
+or just some of your non-Steam games. You can also choose a different label for
+one game. A label you choose does not mean Valve tested your copy or promise
+that the game will run well. See [choosing a compatibility
+status](docs/help/compatibility-status.md).
 
-## Stream game trailers
+### Game trailers
 
-**Game trailers** is off by default. Open Decky Metadata in the Quick Access
-Menu and enable it to show a trailer on a game's main Library page. Steam
-trailers have priority; when Steam has no playable movie, Metadata looks for
-a matching IGN game trailer. The artwork stays in place if neither source has
-a suitable video. Metadata waits three seconds before a ready trailer covers
-the hero by default. Use **Trailer fade-in delay** to choose 0–10 seconds;
-zero shows it immediately. Controller controls stay in place. Steam's game
-logo stays visible unless you turn on the optional logo setting.
-
-Watch Hades artwork give way to its trailer on a Steam Deck (silent preview):
+Turn on **Game trailers** to show a video on a game's main Library page. Steam
+trailers play first when available; Decky Metadata can look for a matching IGN
+trailer if Steam has none. Trailers are off by default and stream while you
+watch. See [watching game trailers](docs/help/game-trailers.md) for sound,
+quality, and controller controls.
 
 ![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
 
-If a save-status bar appears below the game artwork, the trailer can show
-through its transparent background without moving the bar. When the bar is
-hidden or you leave the game page, the artwork returns to its usual size.
+### Community posts and news
 
-For a non-Steam shortcut, a saved Steam match in **Decky metadata...** provides
-the Steam trailer first. If you have no Steam match, Metadata can look for
-an IGN game trailer using the shortcut's name or its saved IGN game match.
-Only a trailer clearly linked to the correct game plays. Your shortcut artwork
-does not change, and it stays visible when no suitable video can be found.
-
-Use **Trailer audio** to choose whether a trailer plays with sound. New
-trailers stay silent behind the hero artwork, then sound fades in with the
-video when it appears. Use **Video quality** to choose Auto, 720p, 1080p,
-1440p, or 2160p. Auto follows the Big Picture display and chooses an
-available video size when possible.
-
-Turn on **Hide game logo during trailers** to hide Steam's game logo while a
-trailer is visible. The logo returns when playback stops, fails, or you leave
-the game page. This does not hide logos that appear inside the video itself.
-
-While a trailer is visible, press **X** on a Steam Deck or Xbox controller
-(**Square** on PlayStation) to mute or unmute it. Press **Y** (**Triangle** on
-PlayStation) to enlarge the trailer and hide the game page controls. Press
-**Y** again or **B** (**Circle** on PlayStation) to return. The video keeps
-playing, and Steam's footer shows the X and Y actions when the page is visible.
-Menus and text fields keep their normal button behavior.
-
-Trailers stream from Steam or IGN. Decky Metadata does not download them for
-offline playback. If you also installed the separate **TrailerHero** Decky
-plugin, uninstall that entry before you enable Game trailers in Decky Metadata.
-
-## See community posts and news
-
-Your added game can show posts from the matching Steam Community page. If Steam
-has no cards to show, Decky Metadata can use screenshots from IGN instead.
+A matched game can show Steam Community posts and news. If there are no Steam
+Community cards, Decky Metadata can show screenshots from IGN instead. See
+[community posts and news](docs/help/community-and-news.md).
 
 ![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
 
-News and announcements from the matching Steam game can also appear in the
-normal Activity area.
-Removing metadata also removes that game's injected Activity news immediately.
-
 ![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
 
-## Use Steam controller layouts
+### Controller layouts
 
-Controller Settings can show recommended, official, and community layouts from
-the matching Steam game. Your own layouts and Steam's templates remain
-available.
+Find recommended, official, and community controller layouts from the matching
+Steam game. Your own layouts and Steam's templates remain available. See
+[using controller layouts](docs/help/controller-layouts.md).
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
 
 ## Updates and help
 
-Use the Decky Metadata panel in the Quick Access Menu to check for updates and
-view recent logs.
+Check for updates in the Decky Metadata panel. If something does not work,
+start with the [help pages](docs/help/README.md). You can also view recent logs
+in the panel; include those logs and the versions shown under **Versions** when
+you report a problem. See [updates and troubleshooting](docs/help/updates-and-troubleshooting.md).
 
-If you report a problem, include recent logs and the versions shown in the
-**Versions** panel.
-
-For manual sideload testing, the rolling
-[`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build)
-contains a development ZIP. Its fixed tag is **not** an in-plugin updater
-source. The updater's **Receive development releases** option instead finds
-versioned `vX.Y.Z-dev.g<sha>` prereleases. Testing builds may be less stable.
+This page may describe features not yet in the latest release. See the
+[changelog](CHANGELOG.md) for what changed. Screenshots may show an earlier layout.
 
 ## License and credits
 
