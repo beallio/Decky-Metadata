@@ -24,6 +24,8 @@ All notable changes to this project are documented here in Keep a Changelog form
   and the trailer artwork note has no divider above it.
 - Metadata's section icon now matches the plugin's icon, and Compatibility
   status uses the Steam Deck logo.
+- Metadata's refresh description now has the same space before its divider as
+  the cache description.
 
 ## [0.4.0] - 2026-09-28
 

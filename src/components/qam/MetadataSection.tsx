@@ -12,6 +12,8 @@ import {
 import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
 
+const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md } as const;
+
 type MetadataSectionProps = {
   detectedCount: number;
   savedCount: number;
@@ -91,7 +93,7 @@ export function MetadataSection({
           padding="none"
           bottomSeparator="standard"
         >
-          <div style={compactTextStyle}>
+          <div style={subsectionDescriptionStyle}>
             Find and save metadata for detected non-Steam games that do not have a match yet.
           </div>
         </Field>
@@ -120,7 +122,7 @@ export function MetadataSection({
           padding="none"
           bottomSeparator="standard"
         >
-          <div style={{ ...compactTextStyle, paddingBottom: space.md }}>
+          <div style={subsectionDescriptionStyle}>
             Clear saved matches and metadata so games can be matched again.
           </div>
         </Field>
