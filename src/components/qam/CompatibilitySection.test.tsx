@@ -92,4 +92,20 @@ describe("CompatibilitySection default scope", () => {
     expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("scope");
   });
 
+  it("keeps the selected compatibility label complete and prepares native focus return", () => {
+    const categoryDropdown = (category: DeckCompatibilityCategory | null) =>
+      nodes(render({ compatibilityDefault: category })).find((node) =>
+        node.type === "DropdownItem" && node.props?.label === "Default compatibility status"
+      )?.props;
+    const automatic = categoryDropdown(null);
+    expect(automatic?.renderButtonValue).toBeTypeOf("function");
+    expect((automatic?.renderButtonValue as any)().props.children).toBe(
+      "Automatic — use matched Steam status",
+    );
+    expect((categoryDropdown(3)?.renderButtonValue as any)().props.children).toBe("Verified");
+    onCompatibilityDefaultMenuWillOpen.mockClear();
+    (automatic?.onMenuWillOpen as any)();
+    expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("category");
+  });
+
 });

@@ -107,8 +107,8 @@ export const buttonLabelStyle = {
 export const sectionHeadingStyle = {
   width: "100%",
   paddingTop: space.md,
-  fontWeight: fontWeight.bold,
-  fontSize: fontSize.lg,
+  fontWeight: fontWeight.semibold,
+  fontSize: fontSize.md,
 } as const;
 
 export const focusableBlockStyle = {

@@ -16,6 +16,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 - Quick Access Menu sections no longer draw a divider below their final row.
   Dividers within sections remain.
+- Quick Access Menu now shows full compatibility choices, gives long version
+  and display values their own line, and adds clearer spacing and hierarchy
+  to help text and Metadata subsections.
 
 ## [0.4.0] - 2026-09-28
 

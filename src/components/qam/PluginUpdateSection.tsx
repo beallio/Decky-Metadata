@@ -175,6 +175,7 @@ export function PluginUpdateSection({
       <PanelSectionRow>
         <Field
           label="Installed Version"
+          childrenLayout="below"
           padding="standard"
           focusable={true}
           highlightOnFocus={true}

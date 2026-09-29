@@ -2,6 +2,7 @@ import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
 import { FaShieldAlt } from "react-icons/fa";
 
 import { compactTextStyle, inlineStatusStyle } from "../../styles";
+import { space } from "../../tokens";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -25,6 +26,9 @@ const compatibilityDefaultScopeOptions: Array<{
   { data: "metadata", label: "All games with saved metadata" },
   { data: "all", label: "All non-Steam games" },
 ];
+
+const dropdownValueStyle = { whiteSpace: "normal" } as const;
+const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm } as const;
 
 const scopeDescriptions: Record<CompatibilityDefaultScope, string> = {
   steam: "Applies to saved records with a valid Steam App ID.",
@@ -77,6 +81,11 @@ export function CompatibilitySection({
               onCompatibilityDefaultMenuWillOpen("category");
             }}
             onChange={(option) => onCompatibilityDefaultChange(option.data)}
+            renderButtonValue={() => (
+              <span style={dropdownValueStyle}>
+                {compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label}
+              </span>
+            )}
           />
         </div>
       </PanelSectionRow>
@@ -98,7 +107,7 @@ export function CompatibilitySection({
             onMenuWillOpen={() => onCompatibilityDefaultMenuWillOpen("scope")}
             onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
             renderButtonValue={() => (
-              <span style={{ whiteSpace: "normal" }}>
+              <span style={dropdownValueStyle}>
                 {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
               </span>
             )}
@@ -115,7 +124,7 @@ export function CompatibilitySection({
           <div style={compactTextStyle}>
             {`${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.`}
           </div>
-          <div style={compactTextStyle}>
+          <div style={secondaryHelpStyle}>
             {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}
           </div>
           {compatibilityDefaultError ? (

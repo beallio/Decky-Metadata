@@ -107,6 +107,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <Field
           label="Big Picture display"
+          childrenLayout="below"
           description={state.status}
           padding="standard"
           focusable={true}
