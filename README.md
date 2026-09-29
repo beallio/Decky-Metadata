@@ -76,6 +76,8 @@ trailer if Steam has none. Trailers are off by default and stream while you
 watch. See [watching game trailers](docs/help/game-trailers.md) for sound,
 quality, and controller controls.
 
+Trailers keep a stable height while Steam animates the game page into view, including when a transparent save-status bar is below the artwork. Steam's normal page animation still plays.
+
 ![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
 
 ### Community posts and news

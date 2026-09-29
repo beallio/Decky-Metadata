@@ -67,6 +67,25 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Game-page artwork and trailer geometry
+
+The trailer backdrop calculates CSS height from the target's `offsetHeight` plus
+the status band's `offsetHeight`. Steam scales the entering page, so
+`getBoundingClientRect().height / offsetHeight` is used only to translate the
+original artwork edge into viewport coordinates for hit-testing. Rescans retain
+the original layout height; a change in page scale must not shrink the target,
+add another band, or briefly restore its shorter height.
+
+After a trailer-runtime sizing change, open a Steam game with a visible Cloud
+row from Library Home and record the actual hero and trailer-container layout
+heights from the first visible frame through trailer attachment. Repeat the
+selection after the game details have loaded. Check the default scroll position
+on the physical screen: artwork or video must reach the status band's bottom,
+and the Play controls and band must stay in place. With SDH-Ludusavi Status and
+Clean Gameview enabled, the reserved artwork height must stay the same before
+and after trailer attachment. Also check that hiding the band or leaving the
+page restores the original inline height.
+
 ### Compatibility defaults and Follow Valve
 
 This check changes real plugin settings and may change real shortcut status.

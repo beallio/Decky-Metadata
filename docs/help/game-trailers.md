@@ -21,6 +21,8 @@ Find these settings in the **Game trailers** section:
 
 If Steam shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. When the bar is hidden or you leave the game page, the artwork returns to its usual size.
 
+The trailer keeps the same height as Steam animates the page into view. Steam's normal page animation still plays; it does not make the trailer shrink and grow again.
+
 ## Use the controller buttons
 
 While a trailer is visible:

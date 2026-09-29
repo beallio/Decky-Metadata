@@ -29,6 +29,12 @@ Organize Quick Access Menu settings into collapsible sections.
 - Metadata's refresh description now has the same space before its divider as
   the cache description.
 
+### Fixed
+
+- Trailers no longer shrink and grow again when you open a game page with a
+  save-status bar below the artwork. Steam's normal page animation still plays.
+
+
 ## [0.4.0] - 2026-09-28
 
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.

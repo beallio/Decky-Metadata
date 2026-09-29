@@ -9624,17 +9624,25 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.restoreStatusBackdrop();
             if (!target?.style || typeof document.elementFromPoint !== "function")
                 return;
+            const layoutHeight = target.offsetHeight;
+            if (layoutHeight <= 0) {
+                this.restoreStatusBackdrop();
+                return;
+            }
             const hero = target.getBoundingClientRect();
-            const naturalHeight = this.statusBackdrop?.naturalHeight ?? hero.height;
-            const edge = hero.top + naturalHeight;
+            // Steam scales the page on entry; only hit-testing uses screen heights.
+            const scaleY = hero.height / layoutHeight;
+            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight;
+            const edge = hero.top + naturalHeight * scaleY;
             let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
             let bandHeight = 0;
             while (element && element !== document.body) {
                 const band = element.getBoundingClientRect();
+                const layoutBandHeight = element.offsetHeight;
                 if (Math.abs(band.top - edge) <= 1 && Math.abs(band.width - hero.width) <= 2 &&
-                    band.height >= 24 && band.height <= 40 && element.textContent?.trim() &&
+                    layoutBandHeight >= 24 && layoutBandHeight <= 40 && element.textContent?.trim() &&
                     element.getAttribute?.("aria-hidden") !== "true") {
-                    bandHeight = band.height;
+                    bandHeight = layoutBandHeight;
                     break;
                 }
                 element = element.parentElement;

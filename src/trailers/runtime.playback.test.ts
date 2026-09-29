@@ -243,6 +243,7 @@ test('A visible status band reveals the hero behind it without moving the band o
   const h = await readyDirectTrailer();
   const naturalHeight = 400;
   let statusTop = 400;
+  let scale = 0.95;
   let visible = false;
   let suppressed = false;
   const originalHeight = '400px';
@@ -253,35 +254,47 @@ test('A visible status band reveals the hero behind it without moving the band o
     setProperty(name, value) { this[name] = value; },
     removeProperty(name) { this[name] = ''; },
   };
+  Object.defineProperty(h.hero, 'offsetHeight', {
+    get: () => Number.parseFloat(h.hero.style.height) || naturalHeight,
+  });
   h.hero.getBoundingClientRect = () => {
-    const height = Number.parseFloat(h.hero.style.height) || naturalHeight;
-    return { width: 1000, height, top: 0, left: 0, right: 1000, bottom: height };
+    const height = h.hero.offsetHeight * scale;
+    return { width: 1000 * scale, height, top: 0, left: 0, right: 1000 * scale, bottom: height };
   };
   const band = {
     textContent: 'Steam Cloud: Up to date',
     parentElement: null,
+    offsetHeight: 30,
     getBoundingClientRect: () => ({
-      width: 1000, height: 30, top: statusTop, left: 0, right: 1000, bottom: statusTop + 30,
+      width: 1000 * scale, height: 30 * scale, top: statusTop * scale, left: 0,
+      right: 1000 * scale, bottom: (statusTop + 30) * scale,
     }),
     getAttribute: name => name === 'aria-hidden' && suppressed ? 'true' : null,
   };
   const label = {
     parentElement: band,
     getBoundingClientRect: () => ({
-      width: 180, height: 22, top: statusTop + 4, left: 410, right: 590, bottom: statusTop + 26,
+      width: 180 * scale, height: 22 * scale, top: (statusTop + 4) * scale,
+      left: 410 * scale, right: 590 * scale, bottom: (statusTop + 26) * scale,
     }),
   };
   // Steam's footer can cover the middle of the row at the default scroll position.
   h.document.elementFromPoint = (x, y) =>
-    visible && x === 500 && y >= statusTop && y < statusTop + 6 ? label : null;
+    visible && x === 500 * scale && y >= statusTop * scale && y < (statusTop + 6) * scale ? label : null;
 
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'no status band leaves the hero unchanged');
+  assert.equal(h.hero.offsetHeight, 400, 'no status band leaves the hero unchanged');
   visible = true;
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+  assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom,
+    'the trailer reaches the status-band edge during Steam entry scaling');
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430, 'rescanning must not add a second band height');
+  assert.equal(h.hero.offsetHeight, 430, 'rescanning must not add a second band height');
+  for (scale of [0.97, 0.99, 1]) {
+    await h.runtime.scan();
+    assert.equal(h.hero.offsetHeight, 430, 'page scaling must not change the trailer layout height');
+    assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom);
+  }
   suppressed = true;
   await h.runtime.scan();
   assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'an aria-hidden row must not extend the trailer');
