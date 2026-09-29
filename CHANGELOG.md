@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Organize Quick Access Menu settings into collapsible sections.
+
 ### Added
 
 - **Collapsible Quick Access Menu sections.** Select a section heading to show
