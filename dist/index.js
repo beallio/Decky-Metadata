@@ -178,6 +178,11 @@ var backend = /*#__PURE__*/Object.freeze({
     startScanMissing: startScanMissing
 });
 
+// THIS FILE IS AUTO GENERATED
+function SiSteamdeck (props) {
+  return GenIcon({"attr":{"role":"img","viewBox":"0 0 24 24"},"child":[{"tag":"path","attr":{"d":"M8.999 0v4.309c4.242 0 7.694 3.45 7.694 7.691s-3.452 7.691-7.694 7.691V24c6.617 0 12-5.383 12-12s-5.383-12-12-12Zm0 6.011c-3.313 0-6 2.687-5.998 6a5.999 5.999 0 1 0 5.998-6z"},"child":[]}]})(props);
+}
+
 // Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
 const colors = {
     accent: "#1a9fff",
@@ -187,14 +192,16 @@ const colors = {
     textSecondary: "#cbd5e1"};
 // Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
 const space = {
+    sm: 8,
     md: 12};
 // Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
 const fontSize = {
     sm: 13,
-    lg: 16,
+    md: 14,
     xl: 20,
 };
 const fontWeight = {
+    semibold: 600,
     bold: 700};
 // Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
 const fontFamily = '"Motiva Sans", Arial, sans-serif';
@@ -273,33 +280,65 @@ const buttonLabelStyle = {
 const sectionHeadingStyle = {
     width: "100%",
     paddingTop: space.md,
-    fontWeight: fontWeight.bold,
-    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.md,
 };
 const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
 const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
 
-function DelistedIndexSection({ countText, dateText, busy, onRefresh, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Delisted Steam games", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: countText }) }), dateText ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: dateText }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "standard", disabled: busy, onClick: onRefresh, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh delisted games") }) })] }));
+// THIS FILE IS AUTO GENERATED
+function FaSyncAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
+}function FaPlayCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
+}function FaInfoCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
+}function FaFileAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
+}function FaExclamationTriangle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaChevronUp (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M240.971 130.524l194.343 194.343c9.373 9.373 9.373 24.569 0 33.941l-22.667 22.667c-9.357 9.357-24.522 9.375-33.901.04L224 227.495 69.255 381.516c-9.379 9.335-24.544 9.317-33.901-.04l-22.667-22.667c-9.373-9.373-9.373-24.569 0-33.941L207.03 130.525c9.372-9.373 24.568-9.373 33.941-.001z"},"child":[]}]})(props);
+}function FaChevronDown (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"},"child":[]}]})(props);
+}function FaCheckCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
 }
 
-const qualityOptions = [
-    { data: "auto", label: "Auto — match display" },
-    { data: 720, label: "720p" },
-    { data: 1080, label: "1080p" },
-    { data: 1440, label: "1440p" },
-    { data: 2160, label: "2160p" },
-];
-function GameTrailersSection({ state, onEnabledChange, onAudioChange, onHideLogoChange, onFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
-    const disabled = !state.settingsLoaded || state.busy;
-    const display = state.displayWidth && state.displayHeight
-        ? `${state.displayWidth} × ${state.displayHeight} pixels`
-        : "Unavailable";
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game trailers", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
-}
-
-function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Logs", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "standard", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+const headingStyle = {
+    alignItems: "center",
+    borderRadius: 4,
+    color: "#aeb8c4",
+    cursor: "pointer",
+    display: "flex",
+    fontSize: 16,
+    fontWeight: 700,
+    justifyContent: "space-between",
+    letterSpacing: "0.06em",
+    minHeight: 40,
+    padding: "8px 10px",
+    textTransform: "uppercase",
+};
+const headingLabelStyle = {
+    alignItems: "center",
+    display: "inline-flex",
+    gap: 8,
+    minWidth: 0,
+};
+const headingIconStyle = {
+    display: "inline-flex",
+    flexShrink: 0,
+};
+const focusedHeadingStyle = {
+    ...headingStyle,
+    background: "rgba(102, 182, 236, 0.18)",
+    color: "#fff",
+};
+function CollapsibleSection({ title, icon, children, defaultExpanded = false }) {
+    const [expanded, setExpanded] = SP_REACT.useState(defaultExpanded);
+    const [focused, setFocused] = SP_REACT.useState(false);
+    const id = SP_REACT.useId();
+    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: () => setFocused(true), onBlur: () => setFocused(false), style: focused ? focusedHeadingStyle : headingStyle, children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
 }
 
 const compatibilityDefaultOptions = [
@@ -315,19 +354,45 @@ const compatibilityDefaultScopeOptions = [
     { data: "metadata", label: "All games with saved metadata" },
     { data: "all", label: "All non-Steam games" },
 ];
-const scopeDescription = (scope) => ({
+const dropdownValueStyle = { whiteSpace: "normal" };
+const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm };
+const scopeDescriptions = {
     steam: "Applies to saved records with a valid Steam App ID.",
     "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
     metadata: "Applies to every saved metadata record, with or without a Steam ID.",
     all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
-}[scope]);
-function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onRefreshMetadata, onClearCache, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: false, preferredFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
+};
+function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Compatibility status", icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
                             onCompatibilityDefaultMenuWillOpen("category");
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                             compatibilityDefaultBusy ||
                             compatibilityDefaultScopeBusy ||
-                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescription(compatibilityDefaultScope)} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: { ...compactTextStyle, paddingBottom: space.md }, children: "Clear saved matches and metadata so games can be matched again." }) }) })] }));
+                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
+}
+
+const qualityOptions = [
+    { data: "auto", label: "Auto — match display" },
+    { data: 720, label: "720p" },
+    { data: 1080, label: "1080p" },
+    { data: 1440, label: "1440p" },
+    { data: 2160, label: "2160p" },
+];
+function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onAudioChange, onHideLogoChange, onFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
+    const disabled = !state.settingsLoaded || state.busy;
+    const display = state.displayWidth && state.displayHeight
+        ? `${state.displayWidth} × ${state.displayHeight} pixels`
+        : "Unavailable";
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+}
+
+function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Logs", icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+}
+
+const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md };
+function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Metadata", icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: "Clear saved matches and metadata so games can be matched again." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Delisted Steam games" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh delisted games") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedCountText }) }), delistedDateText ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedDateText }) })) : null] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
@@ -917,13 +982,6 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
 }
 
 // THIS FILE IS AUTO GENERATED
-function FaExclamationTriangle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
-}function FaCheckCircle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
-}
-
-// THIS FILE IS AUTO GENERATED
 function IoMdRefresh (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
 }
@@ -1007,9 +1065,9 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     const lastCheckedText = checkResult?.checked_at
         ? `Last checked: ${new Date(checkResult.checked_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`
         : undefined;
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Updates", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Installed Version", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? "(Local Build)" : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Receive development releases", description: "Includes prerelease builds intended for testing. These builds may contain regressions.", checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Automatically check for updates", description: "Checks in the background while the plugin is loaded.", checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Status", description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMsg }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsxs("div", { children: ["Try again after ", new Date(checkResult.retry_after).toLocaleString()] }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Candidate", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsxs("div", { children: ["New version: v", candidate.version, " (", candidate.channel, ")"] }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: "Warning: Reverting to stable is a downgrade." }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? "Waiting for Decky..." : "Preparing..." })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild && candidate.channel !== "stable"
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Updates", icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Installed Version", childrenLayout: "below", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? "(Local Build)" : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Receive development releases", description: "Includes prerelease builds intended for testing. These builds may contain regressions.", checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Automatically check for updates", description: "Checks in the background while the plugin is loaded.", checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Status", description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMsg }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsxs("div", { children: ["Try again after ", new Date(checkResult.retry_after).toLocaleString()] }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Candidate", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsxs("div", { children: ["New version: v", candidate.version, " (", candidate.channel, ")"] }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: "Warning: Reverting to stable is a downgrade." }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? "Waiting for Decky..." : "Preparing..." })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild && candidate.channel !== "stable"
                             ? "Local builds can only self-update to a stable release. Install this development release manually from GitHub Releases."
-                            : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases." }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: "View Release Notes" }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: "Check now" })] }) }) })] }));
+                            : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases." }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: "View Release Notes" }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: "Check now" })] }) }) })] }));
 }
 
 const STEAM_DECK_CONTROLLER_TYPE = 4;
@@ -1137,7 +1195,7 @@ const formatConnectedControllerTypes = (types) => {
 };
 
 function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
-    return (SP_JSX.jsx(DFL.PanelSection, { title: "Versions", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Controller Types: ", formatConnectedControllerTypes(controllerTypes)] })] }) }) }) }));
+    return (SP_JSX.jsx(CollapsibleSection, { title: "Versions", icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Controller Types: ", formatConnectedControllerTypes(controllerTypes)] })] }) }) }) }));
 }
 
 let verbose = false;
@@ -11692,6 +11750,7 @@ const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
 const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
+const GAMEPAD_BACK_BUTTON = 2;
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
@@ -11895,10 +11954,8 @@ const Content = () => {
                     return;
                 initialPanelFocusComplete.current = true;
                 takeNativeFocus(element);
-                // Taking focus scrolls the summary up, hiding the panel's "Metadata"
-                // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
-                // summary is the first row, so snap the viewport back to the top on
-                // entry to keep the title visible.
+                // Native focus can scroll QAM past its title. Keep the panel header
+                // visible when the initial focus settles.
                 const viewport = findScrollViewport(element);
                 if (viewport) {
                     window.requestAnimationFrame(() => {
@@ -11949,8 +12006,11 @@ const Content = () => {
         const handleUserNavigation = (event) => {
             if (event.type === "vgp_onbuttondown") {
                 const button = Number(event.detail?.button);
-                if (GAMEPAD_DIRECTION_BUTTONS.has(button))
+                // B exits a visible QAM page; the native popup hides QAM while B cancels it.
+                if (GAMEPAD_DIRECTION_BUTTONS.has(button)
+                    || (button === GAMEPAD_BACK_BUTTON && qamDocument.visibilityState === "visible")) {
                     releaseFocusLease();
+                }
                 return;
             }
             if (event.type === "pointerdown") {
@@ -12382,7 +12442,11 @@ const Content = () => {
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
         ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
         : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
+    // A native dropdown remounts QAM; reopen its section before restoring focus.
+    const returningDropdown = hasCompatibilityDropdownReturn()
+        ? compatibilityDropdownReturnOrigin()
+        : null;
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -12396,7 +12460,7 @@ const Content = () => {
                 }, onQualityMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(DelistedIndexSection, { countText: delistedCountText, dateText: delistedDateText, busy: delistedBusy, onRefresh: () => void refreshDelisted() }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*

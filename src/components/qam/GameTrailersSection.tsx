@@ -1,4 +1,6 @@
-import { DropdownItem, Field, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { FaPlayCircle } from "react-icons/fa";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import { inlineStatusStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
@@ -13,6 +15,7 @@ const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
 ];
 
 type GameTrailersSectionProps = {
+  initiallyExpanded?: boolean;
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
@@ -24,6 +27,7 @@ type GameTrailersSectionProps = {
 };
 
 export function GameTrailersSection({
+  initiallyExpanded = false,
   state,
   onEnabledChange,
   onAudioChange,
@@ -39,7 +43,7 @@ export function GameTrailersSection({
     : "Unavailable";
 
   return (
-    <PanelSection title="Game trailers">
+    <CollapsibleSection title="Game trailers" icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <ToggleField
           label="Enabled"
@@ -103,8 +107,10 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <Field
           label="Big Picture display"
+          childrenLayout="below"
           description={state.status}
           padding="standard"
+          bottomSeparator="none"
           focusable={true}
           highlightOnFocus={true}
         >
@@ -118,7 +124,7 @@ export function GameTrailersSection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="standard"
+          bottomSeparator="none"
         >
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
             Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.
@@ -128,6 +134,6 @@ export function GameTrailersSection({
           )}
         </Field>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

@@ -25,7 +25,7 @@ import {
   setUpdateChannel,
   startScanMissing,
 } from "./backend";
-import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
@@ -91,6 +91,7 @@ const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
 const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
+const GAMEPAD_BACK_BUTTON = 2;
 
 type NativeFocusNode = {
   Element?: Element;
@@ -335,10 +336,8 @@ export const Content = () => {
         if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn()) return;
         initialPanelFocusComplete.current = true;
         takeNativeFocus(element);
-        // Taking focus scrolls the summary up, hiding the panel's "Metadata"
-        // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
-        // summary is the first row, so snap the viewport back to the top on
-        // entry to keep the title visible.
+        // Native focus can scroll QAM past its title. Keep the panel header
+        // visible when the initial focus settles.
         const viewport = findScrollViewport(element);
         if (viewport) {
           window.requestAnimationFrame(() => {
@@ -388,7 +387,11 @@ export const Content = () => {
     const handleUserNavigation = (event: Event) => {
       if (event.type === "vgp_onbuttondown") {
         const button = Number((event as CustomEvent).detail?.button);
-        if (GAMEPAD_DIRECTION_BUTTONS.has(button)) releaseFocusLease();
+        // B exits a visible QAM page; the native popup hides QAM while B cancels it.
+        if (GAMEPAD_DIRECTION_BUTTONS.has(button)
+          || (button === GAMEPAD_BACK_BUTTON && qamDocument.visibilityState === "visible")) {
+          releaseFocusLease();
+        }
         return;
       }
       if (event.type === "pointerdown") {
@@ -832,6 +835,11 @@ export const Content = () => {
       ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
       : "";
 
+  // A native dropdown remounts QAM; reopen its section before restoring focus.
+  const returningDropdown = hasCompatibilityDropdownReturn()
+    ? compatibilityDropdownReturnOrigin()
+    : null;
+
   return (
     <Focusable
       ref={focusPanel}
@@ -847,14 +855,21 @@ export const Content = () => {
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}
+        delistedCountText={delistedCountText}
+        delistedDateText={delistedDateText}
+        delistedBusy={delistedBusy}
+        onRefreshMetadata={() => void scanMissing()}
+        onClearCache={() => void clearCache()}
+        onRefreshDelisted={() => void refreshDelisted()}
+      />
+      <CompatibilitySection
+        initiallyExpanded={returningDropdown === "category" || returningDropdown === "scope"}
         compatibilityDefault={compatibilityDefault}
         compatibilityDefaultLoaded={compatibilityDefaultLoaded}
         compatibilityDefaultBusy={compatibilityDefaultBusy}
         compatibilityDefaultError={compatibilityDefaultError}
         compatibilityDefaultScope={compatibilityDefaultScope}
         compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
-        onRefreshMetadata={() => void scanMissing()}
-        onClearCache={() => void clearCache()}
         onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
         onCompatibilityDefaultScopeChange={(scope) => void saveCompatibilityDefaultScope(scope)}
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
@@ -862,6 +877,7 @@ export const Content = () => {
         onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
       />
       <GameTrailersSection
+        initiallyExpanded={returningDropdown === "quality"}
         state={trailerSnapshot}
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
@@ -883,12 +899,6 @@ export const Content = () => {
           noteCompatibilityDropdownControlUnmounted();
         }}
         onQualityControlRef={setTrailerQualityControl}
-      />
-      <DelistedIndexSection
-        countText={delistedCountText}
-        dateText={delistedDateText}
-        busy={delistedBusy}
-        onRefresh={() => void refreshDelisted()}
       />
       <LogsSection
         logsBusy={logsBusy}

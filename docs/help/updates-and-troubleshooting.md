@@ -1,6 +1,6 @@
 # Updates and troubleshooting
 
-Open Decky Metadata from the Quick Access Menu to see its **Updates**, **Logs**, and **Versions** sections.
+Open Decky Metadata from the Quick Access Menu. Select **Updates** or **Logs** to open its controls; **Versions** starts open.
 
 ## Check for updates
 

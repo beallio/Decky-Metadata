@@ -32,10 +32,10 @@ Your personal SteamGridDB artwork stays in place when Decky Metadata adds game d
 
 ## Find missing game details or start again
 
-In the Decky Metadata panel, **Missing metadata** shows how many of your added games do not have saved details. Select **Refresh metadata** to find and save details for these games.
+In the Decky Metadata panel, select **Metadata** to open it. **Missing metadata** shows how many of your added games do not have saved details. Select **Refresh metadata** to find and save details for these games.
 
 To remove saved matches and details for all games so they can be matched again, select **Clear cache**. This is different from **Remove metadata** in one game's editor, which removes only that game's saved details.
 
-If you need to update the list of games Steam no longer sells, go to **Delisted Steam games** and select **Refresh delisted games**.
+To update the list of games Steam no longer sells, find **Delisted Steam games** inside **Metadata** and select **Refresh delisted games**.
 
 For installation, see [Install Decky Metadata](installation.md).

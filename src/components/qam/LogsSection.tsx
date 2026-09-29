@@ -1,4 +1,6 @@
-import { ButtonItem, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
+import { FaFileAlt } from "react-icons/fa";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 type LogsSectionProps = {
   logsBusy: boolean;
@@ -16,7 +18,7 @@ export function LogsSection({
   onToggleDebugLogging,
 }: LogsSectionProps) {
   return (
-    <PanelSection title="Logs">
+    <CollapsibleSection title="Logs" icon={<FaFileAlt size={16} />}>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -31,12 +33,12 @@ export function LogsSection({
         <ToggleField
           label="Debug Logging"
           description="Enables verbose logging for troubleshooting."
-          bottomSeparator="standard"
+          bottomSeparator="none"
           checked={debugLogging}
           disabled={debugLoggingBusy}
           onChange={onToggleDebugLogging}
         />
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

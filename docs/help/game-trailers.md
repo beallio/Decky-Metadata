@@ -4,7 +4,7 @@ Decky Metadata can show a game trailer over its Library hero artwork. It leaves 
 
 ## Turn on trailers
 
-Open the Quick Access Menu, open Decky Metadata, and find the **Game trailers** section. Turn on **Enabled**; trailers are off by default. Then open a game's main Library page to watch its trailer when one is available.
+Open the Quick Access Menu, open Decky Metadata, and select **Game trailers** to open that section. Turn on **Enabled**; trailers are off by default. Then open a game's main Library page to watch its trailer when one is available.
 
 Decky Metadata checks for a playable Steam trailer first. If Steam has none, it looks for a suitable IGN game trailer. If neither source has a suitable video, the game artwork stays visible.
 

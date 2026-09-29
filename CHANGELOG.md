@@ -4,6 +4,31 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Organize Quick Access Menu settings into collapsible sections.
+
+### Added
+
+- **Collapsible Quick Access Menu sections.** Select a section heading to show
+  or hide its controls. Metadata, Compatibility status, Game trailers, Logs,
+  and Updates start closed; Versions starts open. Delisted Steam games now
+  sits under Metadata beside Metadata cache. The main headings are larger
+  and have icons. Background update checks continue while Updates is closed.
+
+### Changed
+
+- Quick Access Menu sections no longer draw a divider below their final row.
+  Dividers within sections remain.
+- Quick Access Menu now shows full compatibility choices, gives long version
+  and display values their own line, and adds clearer spacing and hierarchy
+  to help text and Metadata subsections.
+- Metadata's game counts no longer take controller focus. A divider marks
+  Metadata cache, the Delisted refresh action comes before its count and date,
+  and the trailer artwork note has no divider above it.
+- Metadata's section icon now matches the plugin's icon, and Compatibility
+  status uses the Steam Deck logo.
+- Metadata's refresh description now has the same space before its divider as
+  the cache description.
+
 ## [0.4.0] - 2026-09-28
 
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.
