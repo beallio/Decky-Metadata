@@ -11722,6 +11722,7 @@ const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
 const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
+const GAMEPAD_BACK_BUTTON = 2;
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
@@ -11977,8 +11978,11 @@ const Content = () => {
         const handleUserNavigation = (event) => {
             if (event.type === "vgp_onbuttondown") {
                 const button = Number(event.detail?.button);
-                if (GAMEPAD_DIRECTION_BUTTONS.has(button))
+                // B exits a visible QAM page; the native popup hides QAM while B cancels it.
+                if (GAMEPAD_DIRECTION_BUTTONS.has(button)
+                    || (button === GAMEPAD_BACK_BUTTON && qamDocument.visibilityState === "visible")) {
                     releaseFocusLease();
+                }
                 return;
             }
             if (event.type === "pointerdown") {

@@ -700,6 +700,24 @@ describe("Content update settings", () => {
     expect(controls.scopeButton.className).not.toContain("gpfocus");
   });
 
+  it("releases the dropdown handoff when B leaves visible QAM, not while its popup is open", async () => {
+    const { controls } = await remountReturnedDropdown("quality");
+    render();
+    runEffects();
+    controls.flushFrames();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+
+    const qamDocument = controls.qualityButton.ownerDocument;
+    qamDocument.visibilityState = "hidden";
+    controls.dispatchButtonDown(2);
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+
+    qamDocument.visibilityState = "visible";
+    controls.dispatchButtonDown(2);
+    expect(hasCompatibilityDropdownReturn()).toBe(false);
+  });
+
   it("keeps the focus handoff armed when the controller opens the quality popup", async () => {
     const { controls, returned } = await remountReturnedDropdown("quality");
     returned();
