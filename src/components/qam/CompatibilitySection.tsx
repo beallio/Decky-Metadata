@@ -110,7 +110,7 @@ export function CompatibilitySection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="standard"
+          bottomSeparator="none"
         >
           <div style={compactTextStyle}>
             {`${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.`}

@@ -305,6 +305,7 @@ export function PluginUpdateSection({
       <PanelSectionRow>
           <ButtonItem
             layout="below"
+            bottomSeparator="none"
             onClick={() => checkNow()}
             disabled={isChecking || isInstalling}
           >

@@ -33,7 +33,7 @@ export function LogsSection({
         <ToggleField
           label="Debug Logging"
           description="Enables verbose logging for troubleshooting."
-          bottomSeparator="standard"
+          bottomSeparator="none"
           checked={debugLogging}
           disabled={debugLoggingBusy}
           onChange={onToggleDebugLogging}

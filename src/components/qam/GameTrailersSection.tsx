@@ -122,7 +122,7 @@ export function GameTrailersSection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="standard"
+          bottomSeparator="none"
         >
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
             Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.

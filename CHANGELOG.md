@@ -12,6 +12,11 @@ All notable changes to this project are documented here in Keep a Changelog form
   sits under Metadata beside Metadata cache. The main headings are larger
   and have icons. Background update checks continue while Updates is closed.
 
+### Changed
+
+- Quick Access Menu sections no longer draw a divider below their final row.
+  Dividers within sections remain.
+
 ## [0.4.0] - 2026-09-28
 
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.

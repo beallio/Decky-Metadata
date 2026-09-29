@@ -141,7 +141,7 @@ export function MetadataSection({
       <PanelSectionRow>
         <ButtonItem
           layout="below"
-          bottomSeparator="standard"
+          bottomSeparator="none"
           disabled={delistedBusy}
           onClick={onRefreshDelisted}
         >
