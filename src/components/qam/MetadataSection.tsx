@@ -1,4 +1,5 @@
-import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { ButtonItem, DropdownItem, Field, PanelSectionRow } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import {
   ButtonLabel,
@@ -40,6 +41,7 @@ const scopeDescription = (scope: CompatibilityDefaultScope) => ({
 }[scope]);
 
 type MetadataSectionProps = {
+  initiallyExpanded?: boolean;
   detectedCount: number;
   savedCount: number;
   missingCount: number;
@@ -63,6 +65,7 @@ type MetadataSectionProps = {
 };
 
 export function MetadataSection({
+  initiallyExpanded = false,
   detectedCount,
   savedCount,
   missingCount,
@@ -85,7 +88,7 @@ export function MetadataSection({
   onCompatibilityDefaultScopeControlRef,
 }: MetadataSectionProps) {
   return (
-    <PanelSection title="Metadata">
+    <CollapsibleSection title="Metadata" defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <Field
           focusable={true}
@@ -227,6 +230,6 @@ export function MetadataSection({
           </div>
         </Field>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

@@ -7,13 +7,13 @@ import {
   ButtonItem,
   ConfirmModal,
   Field,
-  PanelSection,
   PanelSectionRow,
   showModal,
   ToggleField,
   Spinner,
   Navigation
 } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { IoMdRefresh } from "react-icons/io";
 
@@ -171,7 +171,7 @@ export function PluginUpdateSection({
     : undefined;
 
   return (
-    <PanelSection title="Updates">
+    <CollapsibleSection title="Updates">
       <PanelSectionRow>
         <Field
           label="Installed Version"
@@ -318,6 +318,6 @@ export function PluginUpdateSection({
             </div>
           </ButtonItem>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

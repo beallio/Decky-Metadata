@@ -1,4 +1,5 @@
-import { Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { Field, PanelSectionRow } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import { compactTextStyle } from "../../styles";
 import { formatConnectedControllerTypes } from "../../steam/controllerTypes";
@@ -17,7 +18,7 @@ export function VersionsSection({
   controllerTypes,
 }: VersionsSectionProps) {
   return (
-    <PanelSection title="Versions">
+    <CollapsibleSection title="Versions" defaultExpanded={true}>
       <PanelSectionRow>
         <Field
           focusable={true}
@@ -34,6 +35,6 @@ export function VersionsSection({
           </div>
         </Field>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

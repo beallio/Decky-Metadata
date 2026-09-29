@@ -1,4 +1,5 @@
-import { ButtonItem, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui";
+import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 type LogsSectionProps = {
   logsBusy: boolean;
@@ -16,7 +17,7 @@ export function LogsSection({
   onToggleDebugLogging,
 }: LogsSectionProps) {
   return (
-    <PanelSection title="Logs">
+    <CollapsibleSection title="Logs">
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -37,6 +38,6 @@ export function LogsSection({
           onChange={onToggleDebugLogging}
         />
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

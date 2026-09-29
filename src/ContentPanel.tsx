@@ -335,10 +335,8 @@ export const Content = () => {
         if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn()) return;
         initialPanelFocusComplete.current = true;
         takeNativeFocus(element);
-        // Taking focus scrolls the summary up, hiding the panel's "Metadata"
-        // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
-        // summary is the first row, so snap the viewport back to the top on
-        // entry to keep the title visible.
+        // Native focus can scroll QAM past its title. Keep the panel header
+        // visible when the initial focus settles.
         const viewport = findScrollViewport(element);
         if (viewport) {
           window.requestAnimationFrame(() => {
@@ -832,6 +830,11 @@ export const Content = () => {
       ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
       : "";
 
+  // A native dropdown remounts QAM; reopen its section before restoring focus.
+  const returningDropdown = hasCompatibilityDropdownReturn()
+    ? compatibilityDropdownReturnOrigin()
+    : null;
+
   return (
     <Focusable
       ref={focusPanel}
@@ -840,6 +843,7 @@ export const Content = () => {
       style={qamPanelStyle}
     >
       <MetadataSection
+        initiallyExpanded={returningDropdown === "category" || returningDropdown === "scope"}
         detectedCount={games.length}
         savedCount={metadataCount}
         missingCount={missing}
@@ -862,6 +866,7 @@ export const Content = () => {
         onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
       />
       <GameTrailersSection
+        initiallyExpanded={returningDropdown === "quality"}
         state={trailerSnapshot}
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}

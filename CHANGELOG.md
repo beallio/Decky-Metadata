@@ -4,6 +4,13 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Collapsible Quick Access Menu sections.** Select a section heading to show
+  or hide its controls. Metadata, Game trailers, Delisted Steam games, Logs,
+  and Updates start closed; Versions starts open. Background update checks
+  continue while Updates is closed.
+
 ## [0.4.0] - 2026-09-28
 
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.

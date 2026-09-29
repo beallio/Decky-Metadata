@@ -1,4 +1,5 @@
-import { DropdownItem, Field, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import { inlineStatusStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
@@ -13,6 +14,7 @@ const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
 ];
 
 type GameTrailersSectionProps = {
+  initiallyExpanded?: boolean;
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
@@ -24,6 +26,7 @@ type GameTrailersSectionProps = {
 };
 
 export function GameTrailersSection({
+  initiallyExpanded = false,
   state,
   onEnabledChange,
   onAudioChange,
@@ -39,7 +42,7 @@ export function GameTrailersSection({
     : "Unavailable";
 
   return (
-    <PanelSection title="Game trailers">
+    <CollapsibleSection title="Game trailers" defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <ToggleField
           label="Enabled"
@@ -128,6 +131,6 @@ export function GameTrailersSection({
           )}
         </Field>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

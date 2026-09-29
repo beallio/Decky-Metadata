@@ -1,4 +1,5 @@
-import { ButtonItem, PanelSection, PanelSectionRow } from "@decky/ui";
+import { ButtonItem, PanelSectionRow } from "@decky/ui";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import { ButtonLabel, inlineStatusStyle } from "../../styles";
 
@@ -16,7 +17,7 @@ export function DelistedIndexSection({
   onRefresh,
 }: DelistedIndexSectionProps) {
   return (
-    <PanelSection title="Delisted Steam games">
+    <CollapsibleSection title="Delisted Steam games">
       <PanelSectionRow>
         <div style={inlineStatusStyle("idle")}>{countText}</div>
       </PanelSectionRow>
@@ -39,6 +40,6 @@ export function DelistedIndexSection({
           )}
         </ButtonItem>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

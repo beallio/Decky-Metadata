@@ -4,7 +4,7 @@ Decky Metadata lets you choose a Steam Deck compatibility status for non-Steam g
 
 ## Choose a default
 
-Open the Quick Access Menu, open Decky Metadata, and find **Default compatibility status** in the **Metadata** section.
+Open the Quick Access Menu, open Decky Metadata, select **Metadata** to open that section, then choose **Default compatibility status**.
 
 Choose one of these options:
 
