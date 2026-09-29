@@ -25,7 +25,7 @@ import {
   setUpdateChannel,
   startScanMissing,
 } from "./backend";
-import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
@@ -848,7 +848,6 @@ export const Content = () => {
       style={qamPanelStyle}
     >
       <MetadataSection
-        initiallyExpanded={returningDropdown === "category" || returningDropdown === "scope"}
         detectedCount={games.length}
         savedCount={metadataCount}
         missingCount={missing}
@@ -856,14 +855,21 @@ export const Content = () => {
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}
+        delistedCountText={delistedCountText}
+        delistedDateText={delistedDateText}
+        delistedBusy={delistedBusy}
+        onRefreshMetadata={() => void scanMissing()}
+        onClearCache={() => void clearCache()}
+        onRefreshDelisted={() => void refreshDelisted()}
+      />
+      <CompatibilitySection
+        initiallyExpanded={returningDropdown === "category" || returningDropdown === "scope"}
         compatibilityDefault={compatibilityDefault}
         compatibilityDefaultLoaded={compatibilityDefaultLoaded}
         compatibilityDefaultBusy={compatibilityDefaultBusy}
         compatibilityDefaultError={compatibilityDefaultError}
         compatibilityDefaultScope={compatibilityDefaultScope}
         compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
-        onRefreshMetadata={() => void scanMissing()}
-        onClearCache={() => void clearCache()}
         onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
         onCompatibilityDefaultScopeChange={(scope) => void saveCompatibilityDefaultScope(scope)}
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
@@ -893,12 +899,6 @@ export const Content = () => {
           noteCompatibilityDropdownControlUnmounted();
         }}
         onQualityControlRef={setTrailerQualityControl}
-      />
-      <DelistedIndexSection
-        countText={delistedCountText}
-        dateText={delistedDateText}
-        busy={delistedBusy}
-        onRefresh={() => void refreshDelisted()}
       />
       <LogsSection
         logsBusy={logsBusy}

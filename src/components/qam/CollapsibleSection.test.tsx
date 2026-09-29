@@ -32,7 +32,7 @@ const children = (node: any): any[] => {
 
 const render = (title: string, defaultExpanded = false) => {
   hookIndex = 0;
-  return CollapsibleSection({ title, defaultExpanded, children: <span>Section controls</span> });
+  return CollapsibleSection({ title, icon: <span />, defaultExpanded, children: <span>Section controls</span> });
 };
 
 const header = (tree: any) => children(tree).find(node => node.type === "Focusable");

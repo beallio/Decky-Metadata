@@ -14,7 +14,7 @@ import {
   Navigation
 } from "@decky/ui";
 import { CollapsibleSection } from "./CollapsibleSection";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
 import { IoMdRefresh } from "react-icons/io";
 
 import { PluginUpdateCandidate, UpdateChannel } from "../../types";
@@ -171,7 +171,7 @@ export function PluginUpdateSection({
     : undefined;
 
   return (
-    <CollapsibleSection title="Updates">
+    <CollapsibleSection title="Updates" icon={<FaSyncAlt size={16} />}>
       <PanelSectionRow>
         <Field
           label="Installed Version"

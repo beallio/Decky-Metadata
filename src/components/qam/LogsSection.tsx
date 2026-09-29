@@ -1,4 +1,5 @@
 import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
+import { FaFileAlt } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 type LogsSectionProps = {
@@ -17,7 +18,7 @@ export function LogsSection({
   onToggleDebugLogging,
 }: LogsSectionProps) {
   return (
-    <CollapsibleSection title="Logs">
+    <CollapsibleSection title="Logs" icon={<FaFileAlt size={16} />}>
       <PanelSectionRow>
         <ButtonItem
           layout="below"

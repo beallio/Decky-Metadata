@@ -1,10 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   DropdownItem: "DropdownItem",
   Field: "Field",
-  PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({
@@ -17,29 +16,9 @@ vi.mock("../../styles", () => ({
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
 
 import { MetadataSection } from "./MetadataSection";
-import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
-type Node = { type?: unknown; props?: { children?: unknown; [key: string]: unknown } };
-
-const nodes = (node: unknown): Node[] => {
-  if (node == null || typeof node === "boolean") return [];
-  if (Array.isArray(node)) return node.flatMap(nodes);
-  if (typeof node !== "object") return [];
-  const element = node as Node;
-  return [element, ...nodes(element.props?.children)];
-};
-
-
-const onCompatibilityDefaultScopeChange = vi.fn();
-const onCompatibilityDefaultMenuWillOpen = vi.fn();
-
-const render = (overrides: {
-  compatibilityDefault?: DeckCompatibilityCategory | null;
-  compatibilityDefaultLoaded?: boolean;
-  compatibilityDefaultBusy?: boolean;
-  compatibilityDefaultScope?: CompatibilityDefaultScope;
-  compatibilityDefaultScopeBusy?: boolean;
-} = {}) => MetadataSection({
+const refreshDelisted = vi.fn();
+const render = (overrides: Partial<Parameters<typeof MetadataSection>[0]> = {}) => MetadataSection({
   detectedCount: 3,
   savedCount: 2,
   missingCount: 1,
@@ -47,64 +26,56 @@ const render = (overrides: {
   scanMessage: "",
   scanStatusKind: "idle",
   cacheBusy: false,
-  compatibilityDefault: 3,
-  compatibilityDefaultLoaded: true,
-  compatibilityDefaultBusy: false,
-  compatibilityDefaultError: "",
-  compatibilityDefaultScope: "all",
-  compatibilityDefaultScopeBusy: false,
+  delistedCountText: "Delisted games: 24",
+  delistedDateText: "Last updated: 9/29/2026",
+  delistedBusy: false,
   onRefreshMetadata: vi.fn(),
   onClearCache: vi.fn(),
-  onCompatibilityDefaultChange: vi.fn(),
-  onCompatibilityDefaultScopeChange,
-  onCompatibilityDefaultMenuWillOpen,
-  onCompatibilityDefaultControlRef: vi.fn(),
-  onCompatibilityDefaultScopeControlRef: vi.fn(),
+  onRefreshDelisted: refreshDelisted,
   ...overrides,
 });
 
-const scopeDropdown = (overrides: Parameters<typeof render>[0] = {}) => {
-  const found = nodes(render(overrides)).find((node) =>
-    node.type === "DropdownItem" && node.props?.label === "Apply default to"
-  );
-  if (!found?.props) throw new Error("compatibility scope dropdown is missing");
-  return found.props;
+const nodes = (node: any): any[] => {
+  if (node == null || typeof node === "boolean") return [];
+  if (Array.isArray(node)) return node.flatMap(nodes);
+  if (typeof node !== "object") return [];
+  return [node, ...nodes(node.props?.children)];
+};
+const text = (node: any): string => {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(text).join("");
+  return text(node.props?.children);
 };
 
-describe("MetadataSection compatibility default scope", () => {
+const refreshButton = (tree: any) => nodes(tree).find(node =>
+  node.type === "ButtonItem" && node.props?.onClick === refreshDelisted
+);
 
-  it("disables the scope while it cannot be applied or saved", () => {
-    expect(scopeDropdown().disabled).toBe(false);
-    // Automatic has no default to scope.
-    expect(scopeDropdown({ compatibilityDefault: null }).disabled).toBe(true);
-    expect(scopeDropdown({ compatibilityDefaultLoaded: false }).disabled).toBe(true);
-    expect(scopeDropdown({ compatibilityDefaultBusy: true }).disabled).toBe(true);
-    expect(scopeDropdown({ compatibilityDefaultScopeBusy: true }).disabled).toBe(true);
-    const automaticScope = scopeDropdown({
-      compatibilityDefault: null,
-      compatibilityDefaultScope: "metadata",
+describe("Metadata delisted-games subsection", () => {
+  beforeEach(() => refreshDelisted.mockClear());
+
+  it("shows the saved index count and date and refreshes that index", () => {
+    const tree = render();
+    expect(text(tree)).toContain("Metadata cache");
+    expect(text(tree)).toContain("Delisted Steam games");
+    expect(text(tree)).toContain("Delisted games: 24");
+    expect(text(tree)).toContain("Last updated: 9/29/2026");
+    expect(nodes(tree).some(node => node.type === "DropdownItem")).toBe(false);
+    expect(refreshButton(tree).props.disabled).toBe(false);
+    refreshButton(tree).props.onClick();
+    expect(refreshDelisted).toHaveBeenCalledOnce();
+  });
+
+  it("shows an unavailable index without an old date and disables a busy refresh", () => {
+    const tree = render({
+      delistedCountText: "Delisted Steam games not downloaded yet",
+      delistedDateText: "",
+      delistedBusy: true,
     });
-    expect(automaticScope.disabled).toBe(true);
-    expect((automaticScope.renderButtonValue as any)().props.children)
-      .toBe("All games with saved metadata");
-    const dropdown = nodes(render({ compatibilityDefaultScopeBusy: true }))
-      .find((node) => node.type === "DropdownItem" && node.props?.label === "Default compatibility status");
-    expect(dropdown?.props?.disabled).toBe(true);
+    expect(text(tree)).toContain("Delisted Steam games not downloaded yet");
+    expect(text(tree)).not.toContain("Last updated:");
+    expect(refreshButton(tree).props.disabled).toBe(true);
+    expect(text(refreshButton(tree))).toContain("Refreshing...");
   });
-
-  it("uses the native readable four-option scope dropdown", () => {
-    const dropdown = scopeDropdown({ compatibilityDefaultScope: "no-steam" });
-    expect(dropdown.layout).toBe("below");
-    expect(dropdown.childrenContainerWidth).toBe("max");
-    expect(dropdown.rgOptions).toEqual([
-      { data: "steam", label: "Steam-matched games" },
-      { data: "no-steam", label: "Saved games without a Steam ID" },
-      { data: "metadata", label: "All games with saved metadata" },
-      { data: "all", label: "All non-Steam games" },
-    ]);
-    expect((dropdown.renderButtonValue as any)().props.children).toBe("Saved games without a Steam ID");
-    (dropdown.onMenuWillOpen as any)();
-    expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("scope");
-  });
-
 });

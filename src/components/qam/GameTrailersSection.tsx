@@ -1,4 +1,5 @@
 import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { FaPlayCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { inlineStatusStyle } from "../../styles";
@@ -42,7 +43,7 @@ export function GameTrailersSection({
     : "Unavailable";
 
   return (
-    <CollapsibleSection title="Game trailers" defaultExpanded={initiallyExpanded}>
+    <CollapsibleSection title="Game trailers" icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <ToggleField
           label="Enabled"

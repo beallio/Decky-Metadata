@@ -7,9 +7,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 ### Added
 
 - **Collapsible Quick Access Menu sections.** Select a section heading to show
-  or hide its controls. Metadata, Game trailers, Delisted Steam games, Logs,
-  and Updates start closed; Versions starts open. Background update checks
-  continue while Updates is closed.
+  or hide its controls. Metadata, Compatibility status, Game trailers, Logs,
+  and Updates start closed; Versions starts open. Delisted Steam games now
+  sits under Metadata beside Metadata cache. The main headings are larger
+  and have icons. Background update checks continue while Updates is closed.
 
 ## [0.4.0] - 2026-09-28
 

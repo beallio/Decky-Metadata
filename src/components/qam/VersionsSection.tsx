@@ -1,4 +1,5 @@
 import { Field, PanelSectionRow } from "@decky/ui";
+import { FaInfoCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { compactTextStyle } from "../../styles";
@@ -18,7 +19,7 @@ export function VersionsSection({
   controllerTypes,
 }: VersionsSectionProps) {
   return (
-    <CollapsibleSection title="Versions" defaultExpanded={true}>
+    <CollapsibleSection title="Versions" icon={<FaInfoCircle size={16} />} defaultExpanded={true}>
       <PanelSectionRow>
         <Field
           focusable={true}
