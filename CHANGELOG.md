@@ -19,6 +19,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 - Quick Access Menu now shows full compatibility choices, gives long version
   and display values their own line, and adds clearer spacing and hierarchy
   to help text and Metadata subsections.
+- Metadata's game counts no longer take controller focus. A divider marks
+  Metadata cache, the Delisted refresh action comes before its count and date,
+  and the trailer artwork note has no divider above it.
+- Metadata's section icon now matches the plugin's icon, and Compatibility
+  status uses the Steam Deck logo.
 
 ## [0.4.0] - 2026-09-28
 

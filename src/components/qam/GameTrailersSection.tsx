@@ -110,6 +110,7 @@ export function GameTrailersSection({
           childrenLayout="below"
           description={state.status}
           padding="standard"
+          bottomSeparator="none"
           focusable={true}
           highlightOnFocus={true}
         >

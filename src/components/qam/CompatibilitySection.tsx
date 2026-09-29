@@ -1,5 +1,5 @@
 import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
-import { FaShieldAlt } from "react-icons/fa";
+import { SiSteamdeck } from "react-icons/si";
 
 import { compactTextStyle, inlineStatusStyle } from "../../styles";
 import { space } from "../../tokens";
@@ -67,7 +67,7 @@ export function CompatibilitySection({
   onCompatibilityDefaultScopeControlRef,
 }: CompatibilitySectionProps) {
   return (
-    <CollapsibleSection title="Compatibility status" icon={<FaShieldAlt size={16} />} defaultExpanded={initiallyExpanded}>
+    <CollapsibleSection title="Compatibility status" icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultControlRef}>
           <DropdownItem

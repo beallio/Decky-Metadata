@@ -67,6 +67,23 @@ describe("Metadata delisted-games subsection", () => {
     expect(refreshDelisted).toHaveBeenCalledOnce();
   });
 
+  it("places the delisted refresh action before its details with or without a date", () => {
+    for (const date of ["Last updated: 9/29/2026", ""]) {
+      const rows = nodes(render({ delistedDateText: date }))
+        .filter((node) => node.type === "PanelSectionRow");
+      const heading = rows.findIndex((row) => text(row) === "Delisted Steam games");
+      const action = rows.findIndex((row) =>
+        nodes(row).some((node) => node.type === "ButtonItem" && node.props?.onClick === refreshDelisted)
+      );
+      const count = rows.findIndex((row) => text(row) === "Delisted games: 24");
+      expect(action).toBe(heading + 1);
+      expect(count).toBe(action + 1);
+      if (date) {
+        expect(rows.findIndex((row) => text(row) === date)).toBe(count + 1);
+      }
+    }
+  });
+
   it("shows an unavailable index without an old date and disables a busy refresh", () => {
     const tree = render({
       delistedCountText: "Delisted Steam games not downloaded yet",

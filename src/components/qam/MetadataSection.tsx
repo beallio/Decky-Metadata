@@ -1,5 +1,5 @@
 import { ButtonItem, Field, PanelSectionRow } from "@decky/ui";
-import { FaDatabase } from "react-icons/fa";
+import { FaTags } from "react-icons/fa6";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import {
@@ -44,12 +44,10 @@ export function MetadataSection({
   onRefreshDelisted,
 }: MetadataSectionProps) {
   return (
-    <CollapsibleSection title="Metadata" icon={<FaDatabase size={16} />}>
+    <CollapsibleSection title="Metadata" icon={<FaTags size={16} />}>
       <PanelSectionRow>
         <Field
-          focusable={true}
-          highlightOnFocus={false}
-          preferredFocus={true}
+          focusable={false}
           childrenLayout="below"
           padding="standard"
           bottomSeparator="none"
@@ -91,7 +89,7 @@ export function MetadataSection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="none"
+          bottomSeparator="standard"
         >
           <div style={compactTextStyle}>
             Find and save metadata for detected non-Steam games that do not have a match yet.
@@ -131,14 +129,6 @@ export function MetadataSection({
         <div style={sectionHeadingStyle}>Delisted Steam games</div>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={inlineStatusStyle("idle")}>{delistedCountText}</div>
-      </PanelSectionRow>
-      {delistedDateText ? (
-        <PanelSectionRow>
-          <div style={inlineStatusStyle("idle")}>{delistedDateText}</div>
-        </PanelSectionRow>
-      ) : null}
-      <PanelSectionRow>
         <ButtonItem
           layout="below"
           bottomSeparator="none"
@@ -152,6 +142,14 @@ export function MetadataSection({
           )}
         </ButtonItem>
       </PanelSectionRow>
+      <PanelSectionRow>
+        <div style={inlineStatusStyle("idle")}>{delistedCountText}</div>
+      </PanelSectionRow>
+      {delistedDateText ? (
+        <PanelSectionRow>
+          <div style={inlineStatusStyle("idle")}>{delistedDateText}</div>
+        </PanelSectionRow>
+      ) : null}
     </CollapsibleSection>
   );
 }
