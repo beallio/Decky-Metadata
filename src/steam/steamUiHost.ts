@@ -1,4 +1,4 @@
-type SteamUiDocument = Pick<Document, "querySelector" | "querySelectorAll" | "defaultView">;
+export type SteamUiDocument = Pick<Document, "querySelector" | "querySelectorAll" | "defaultView">;
 
 export const steamUiWindow = () => {
   const candidates: any[] = [globalThis];
@@ -13,7 +13,7 @@ export const steamUiWindow = () => {
   ) ?? globalThis;
 };
 
-const steamUiDocuments = (): SteamUiDocument[] => {
+export const steamUiDocuments = (): SteamUiDocument[] => {
   // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
   // host bridge for every consumer so cards and Game Info inspect one ordered,
   // deduplicated set of real browser documents.

@@ -33,6 +33,7 @@ import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
+import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
@@ -83,6 +84,7 @@ import { useNonSteamGames } from "./useNonSteamGames";
 import { getConnectedControllerTypes } from "./steam";
 import { trailerController } from "./trailers/controller";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
+import { protonDbBadgeController } from "./protondb/controller";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -214,6 +216,13 @@ export const Content = () => {
   useEffect(() => miniAchievementsController.subscribe(() => {
     setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
   }), []);
+  const [protonDbSnapshot, setProtonDbSnapshot] = useState(protonDbBadgeController.getSnapshot());
+  useEffect(() => {
+    const refresh = () => setProtonDbSnapshot(protonDbBadgeController.getSnapshot());
+    const unsubscribe = protonDbBadgeController.subscribe(refresh);
+    refresh();
+    return unsubscribe;
+  }, []);
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const initialPendingCompatibilityPolicySave =
     initialCompatibilityPolicySave
@@ -266,6 +275,7 @@ export const Content = () => {
   const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] =
     useState<HTMLDivElement | null>(null);
   const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
+  const [protonDbCoverControl, setProtonDbCoverControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -280,6 +290,10 @@ export const Content = () => {
   const setTrailerQualityControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setTrailerQualityControlState(element);
+  }, []);
+  const setProtonDbCoverControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setProtonDbCoverControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -311,7 +325,7 @@ export const Content = () => {
   }, []);
 
   useEffect(() => {
-    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl;
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl || protonDbCoverControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -329,7 +343,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -358,11 +372,12 @@ export const Content = () => {
     const origin = compatibilityDropdownReturnOrigin();
     const control = origin === "scope"
       ? compatibilityDefaultScopeControl
-      : origin === "quality" ? trailerQualityControl : compatibilityDefaultControl;
-    const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded;
-    const busy = origin === "quality"
-      ? trailerSnapshot.busy
-      : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+      : origin === "quality" ? trailerQualityControl
+      : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+    const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
+      : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+    const busy = origin === "quality" ? trailerSnapshot.busy
+      : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
     if (!isCompatibilityDropdownReturnReady() || !control) return;
     let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
       ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
@@ -470,6 +485,9 @@ export const Content = () => {
     trailerQualityControl,
     trailerSnapshot.busy,
     trailerSnapshot.settingsLoaded,
+    protonDbCoverControl,
+    protonDbSnapshot.busy,
+    protonDbSnapshot.settingsLoaded,
   ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
@@ -881,6 +899,29 @@ export const Content = () => {
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
         onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
         onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
+      />
+      <ProtonDbBadgesSection
+        initiallyExpanded={returningDropdown === "protondb-cover-position"}
+        snapshot={protonDbSnapshot}
+        onSettingsChange={(settings) => protonDbBadgeController.setSettings(settings)}
+        onCoverPositionChange={async (coverPosition) => {
+          requestCompatibilityDropdownReturn("protondb-cover-position");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            return await protonDbBadgeController.setSettings({
+              ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+            });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) {
+              setCompatibilityDropdownReturnVersion(version => version + 1);
+            }
+          }
+        }}
+        onCoverPositionMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("protondb-cover-position");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
+        onCoverPositionControlRef={setProtonDbCoverControl}
       />
       <GameTrailersSection
         initiallyExpanded={returningDropdown === "quality"}

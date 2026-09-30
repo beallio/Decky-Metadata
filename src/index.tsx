@@ -9,6 +9,10 @@ import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
+import { protonDbBadgeController } from "./protondb/controller";
+import { decorateProtonDbCover, subscribeProtonDbCoverChanges } from "./protondb/Badges";
+import { installProtonDbGameView } from "./protondb/gameView";
+import { installProtonDbStoreBadge } from "./protondb/store";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -71,9 +75,13 @@ export default definePlugin(() => {
     log.warn("bridge", "compatibility default load failed", error)
   );
 
+  protonDbBadgeController.mount();
   let unpatchSteam: (() => void) | undefined;
   try {
-    unpatchSteam = installSteamPatches();
+    unpatchSteam = installSteamPatches({
+      decorateCover: decorateProtonDbCover,
+      subscribeCoverChanges: subscribeProtonDbCoverChanges,
+    });
   } catch (error) {
     log.warn("bridge", "installSteamPatches failed", error);
     void frontendLog("patch", "installSteamPatches failed", {
@@ -83,6 +91,8 @@ export default definePlugin(() => {
   const stopMetadataBootstrap = startMetadataBootstrap();
   const stopTrailerController = startTrailerController();
   const stopMiniAchievementsController = startMiniAchievementsController();
+  const stopProtonDbGameView = installProtonDbGameView();
+  const stopProtonDbStoreBadge = installProtonDbStoreBadge();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -99,6 +109,9 @@ export default definePlugin(() => {
     onDismount() {
       stopTrailerController();
       stopMiniAchievementsController();
+      stopProtonDbStoreBadge();
+      stopProtonDbGameView();
+      protonDbBadgeController.stop();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.

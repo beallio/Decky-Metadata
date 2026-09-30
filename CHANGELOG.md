@@ -19,6 +19,13 @@ Organize Quick Access Menu settings into collapsible sections.
   disabling it restores the native display. Turn off mini achievements in
   Decky UI Restored before enabling this feature. It does not add achievement
   tracking to non-Steam games.
+- **ProtonDB tier badges.** An opt-in section adds community rating icons to
+  Home and Library covers for Steam games and matched non-Steam shortcuts,
+  a Steam-styled button before the game page's controller button, and a
+  bottom-center Steam Store badge. Ratings use ProtonDB's tier colors and
+  direct summary data only, with a shared 24-hour cache. Choose each surface,
+  cover position, or focused/hovered covers only. No Gateway analysis is used;
+  missing matches or ratings stay hidden, and network errors are not Borked.
 
 ### Changed
 

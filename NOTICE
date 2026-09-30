@@ -44,6 +44,19 @@ GNU General Public License v3.0 or later.
     Decky UI Restored
     https://github.com/beallio/Decky-UI-Restored
 
+ProtonDB badge integration
+--------------------------
+The cover marker design and Store-page integration approach are based on
+ProtonDB Badges by bschelst and the beallio fork. Ratings and medal colors come
+from ProtonDB. Decky Metadata uses direct ProtonDB summaries only, not the
+separate compatibility analysis service.
+
+    ProtonDB Badges
+    Licensed under the GNU General Public License v3.0
+    https://github.com/bschelst/protondb-decky
+    https://github.com/beallio/protondb-decky
+    https://www.protondb.com
+
 Steam trailer runtime
 ---------------------
 src/trailers/runtime.ts adapts the Steam trailer streaming runtime from
