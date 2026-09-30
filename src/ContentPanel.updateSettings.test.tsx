@@ -102,6 +102,7 @@ vi.mock("./components/qam/CompatibilitySection", () => ({
 }));
 vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersSection: "GameTrailersSection" }));
 vi.mock("./components/qam/LogsSection", () => ({ LogsSection: "LogsSection" }));
+vi.mock("./components/qam/MiniAchievementsSection", () => ({ MiniAchievementsSection: "MiniAchievementsSection" }));
 vi.mock("./components/qam/MetadataSection", () => ({
   MetadataSection: "MetadataSection",
 }));
@@ -121,6 +122,13 @@ vi.mock("./log", () => ({
 }));
 vi.mock("./steam", () => steam);
 vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
+vi.mock("./steam/miniAchievementsController", () => ({
+  miniAchievementsController: {
+    getSnapshot: () => ({ enabled: false, settingsLoaded: false, busy: false, settingsError: "" }),
+    subscribe: () => () => undefined,
+    setEnabled: vi.fn(),
+  },
+}));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({

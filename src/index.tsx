@@ -8,6 +8,7 @@ import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import { startTrailerController } from "./trailers/controller";
+import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -81,6 +82,7 @@ export default definePlugin(() => {
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
   const stopTrailerController = startTrailerController();
+  const stopMiniAchievementsController = startMiniAchievementsController();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -96,6 +98,7 @@ export default definePlugin(() => {
     icon: <FaTags />,
     onDismount() {
       stopTrailerController();
+      stopMiniAchievementsController();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.

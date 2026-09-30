@@ -125,6 +125,8 @@ const setUpdateChannel = callable("set_update_channel");
 const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
 const getTrailerSettings = callable("get_trailer_settings");
 const setTrailerSettings = callable("set_trailer_settings");
+const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
+const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
 const findIgnTrailer = callable("find_ign_trailer");
 const evalInBigPicture = callable("eval_in_big_picture");
 
@@ -151,6 +153,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getDelistedIndexStatus: getDelistedIndexStatus,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
+    getMiniAchievementsEnabled: getMiniAchievementsEnabled,
     getMissingMetadataCount: getMissingMetadataCount,
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
@@ -172,6 +175,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
     setDebugLogging: setDebugLogging,
+    setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setTrailerSettings: setTrailerSettings,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -287,7 +291,9 @@ const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }))
 const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
 
 // THIS FILE IS AUTO GENERATED
-function FaSyncAlt (props) {
+function FaTrophy (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"},"child":[]}]})(props);
+}function FaSyncAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
 }function FaPlayCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
@@ -388,6 +394,10 @@ function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
     return (SP_JSX.jsxs(CollapsibleSection, { title: "Logs", icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+}
+
+function MiniAchievementsSection({ state, onEnabledChange }) {
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Mini achievements", icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable mini achievements", description: "Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default.", checked: state.enabled, disabled: !state.settingsLoaded || state.busy, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Before enabling this, turn off Enable mini achievements in Decky UI Restored. Use only one mini-achievements toggle at a time. This restores Steam's display; it does not add achievement tracking to non-Steam games." }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
 }
 
 const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md };
@@ -1203,6 +1213,10 @@ const setVerboseLogging = (enabled) => {
     verbose = !!enabled;
 };
 const prefix = (area) => `[Decky Metadata][${area}]`;
+const debug = (area, message, ...args) => {
+    if (verbose)
+        console.debug(prefix(area), message, ...args);
+};
 const info = (area, message, ...args) => {
     if (verbose)
         console.info(prefix(area), message, ...args);
@@ -11749,6 +11763,761 @@ const startTrailerController = () => {
     return () => trailerController.stop();
 };
 
+// Native restoration adapted from Decky UI Restored (GPL-3.0-or-later).
+// See NOTICE for source attribution.
+const APP_ROUTE = "/library/app/:appid";
+const MAX_ANCESTOR_DEPTH = 2000;
+const MAX_FIBER_NODES = 300000;
+const MAX_FIBER_ANCHORS = 2000;
+const INSTANCE_PATCH_FLAG = "__deckyMetadataMiniAchievementsRestore";
+const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000];
+// Decky's declaration is broader than the native afterPatch callback used here.
+const patchAfter = DFL.afterPatch;
+function isSteamObject(value) {
+    return typeof value === "object" && value !== null;
+}
+function safeDebug(message, ...args) {
+    try {
+        debug("miniAchievements", message, ...args);
+    }
+    catch {
+        // Logging must never escape into Steam's render path.
+    }
+}
+function safeInfo(message, ...args) {
+    try {
+        info("miniAchievements", message, ...args);
+    }
+    catch {
+        // Logging must never make installation or cleanup fail.
+    }
+}
+function safeWarn(message, ...args) {
+    try {
+        warn("miniAchievements", message, ...args);
+    }
+    catch {
+        // Logging must never escape into Steam's render path.
+    }
+}
+function hasMiniAchievementsSignature(type) {
+    if (typeof type !== "function")
+        return false;
+    try {
+        const prototype = type.prototype;
+        if (!isSteamObject(prototype))
+            return false;
+        const source = type.toString();
+        return (source.includes('onSeek("achievements")') ||
+            source.includes("onSeek('achievements')"));
+    }
+    catch {
+        return false;
+    }
+}
+function withAchievementSeek(props, handler) {
+    if (!isSteamObject(props))
+        return props;
+    try {
+        if (props.onSeek != null)
+            return props;
+        return { ...props, onSeek: handler };
+    }
+    catch {
+        return props;
+    }
+}
+function findAncestorStateNode(fiber, predicate) {
+    try {
+        let current = isSteamObject(fiber) ? fiber : undefined;
+        for (let depth = 0; current && depth < MAX_ANCESTOR_DEPTH; depth += 1) {
+            const stateNode = current.stateNode;
+            if (isSteamObject(stateNode) && predicate(stateNode))
+                return stateNode;
+            current = isSteamObject(current.return) ? current.return : undefined;
+        }
+    }
+    catch {
+        // Fibers are Steam internals and may change while the tree is inspected.
+    }
+    return undefined;
+}
+function resolveSeekController(instance) {
+    try {
+        const fiber = instance._reactInternals ?? instance._reactInternalFiber;
+        return findAncestorStateNode(fiber, (stateNode) => typeof stateNode.SeekToSection === "function");
+    }
+    catch {
+        return undefined;
+    }
+}
+function getFiberFromElement(element) {
+    if (!isSteamObject(element))
+        return undefined;
+    try {
+        const key = Object.keys(element).find((candidate) => candidate.startsWith("__reactFiber$") ||
+            candidate.startsWith("__reactContainer$"));
+        const fiber = key ? element[key] : undefined;
+        return isSteamObject(fiber) ? fiber : undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+function getFiberFromDocument(document) {
+    if (!isSteamObject(document))
+        return undefined;
+    try {
+        const bodyFiber = getFiberFromElement(document.body);
+        if (bodyFiber)
+            return bodyFiber;
+        const querySelectorAll = document.querySelectorAll;
+        if (typeof querySelectorAll !== "function")
+            return undefined;
+        const elements = querySelectorAll.call(document, "*");
+        const inspectedLimit = Math.min(elements.length, MAX_FIBER_ANCHORS);
+        for (let inspected = 0; inspected < inspectedLimit; inspected += 1) {
+            const fiber = getFiberFromElement(elements[inspected]);
+            if (fiber)
+                return fiber;
+        }
+    }
+    catch {
+        // Popup documents can disappear during navigation.
+    }
+    return undefined;
+}
+function popupValues(collection) {
+    try {
+        if (Array.isArray(collection))
+            return collection;
+        if (!isSteamObject(collection))
+            return [];
+        const values = collection.values;
+        if (typeof values === "function") {
+            return Array.from(values.call(collection));
+        }
+        let iterator;
+        if (Symbol.iterator in collection)
+            iterator = collection[Symbol.iterator];
+        if (typeof iterator === "function") {
+            return Array.from(collection);
+        }
+    }
+    catch {
+        // Treat malformed popup collections as empty.
+    }
+    return [];
+}
+function isBigPicturePopup(popup, document) {
+    try {
+        const popupObject = isSteamObject(popup) ? popup : undefined;
+        const popupData = isSteamObject(popupObject?.m_popup)
+            ? popupObject.m_popup
+            : undefined;
+        const documentObject = isSteamObject(document) ? document : undefined;
+        const titles = [
+            popupObject?.m_strTitle,
+            popupObject?.title,
+            popupData?.name,
+            documentObject?.title,
+        ];
+        return titles.some((title) => title === "Steam Big Picture Mode");
+    }
+    catch {
+        return false;
+    }
+}
+function getBigPictureDocument(popupManager) {
+    try {
+        if (!isSteamObject(popupManager))
+            return undefined;
+        const getPopups = popupManager.GetPopups;
+        const collection = popupManager.m_rgPopups ??
+            (typeof getPopups === "function" ? getPopups.call(popupManager) : undefined);
+        const candidates = [];
+        for (const popup of popupValues(collection)) {
+            try {
+                const popupObject = isSteamObject(popup) ? popup : undefined;
+                const popupData = isSteamObject(popupObject?.m_popup)
+                    ? popupObject.m_popup
+                    : undefined;
+                const document = popupData?.document;
+                if (!document || !getFiberFromDocument(document))
+                    continue;
+                candidates.push({
+                    document,
+                    isBigPicture: isBigPicturePopup(popup, document),
+                });
+            }
+            catch {
+                // Skip individual popups that are closing or malformed.
+            }
+        }
+        return (candidates.find((candidate) => candidate.isBigPicture)?.document ??
+            candidates[0]?.document);
+    }
+    catch {
+        return undefined;
+    }
+}
+function captureMiniAchievements(popupManager) {
+    try {
+        const document = getBigPictureDocument(popupManager);
+        let rootFiber = getFiberFromDocument(document);
+        if (!rootFiber)
+            return { MiniClass: undefined, instances: [] };
+        for (let depth = 0; depth < MAX_ANCESTOR_DEPTH; depth += 1) {
+            const parent = rootFiber.return;
+            if (!isSteamObject(parent))
+                break;
+            rootFiber = parent;
+        }
+        const stack = [rootFiber];
+        const instances = [];
+        const seenInstances = new Set();
+        let MiniClass;
+        let visited = 0;
+        while (stack.length > 0 && visited < MAX_FIBER_NODES) {
+            const fiber = stack.pop();
+            if (!fiber)
+                continue;
+            visited += 1;
+            const type = fiber.elementType || fiber.type;
+            if (hasMiniAchievementsSignature(type)) {
+                MiniClass ?? (MiniClass = type);
+                const instance = fiber.stateNode;
+                if (isSteamObject(instance) && !seenInstances.has(instance)) {
+                    seenInstances.add(instance);
+                    instances.push(instance);
+                }
+            }
+            // Push sibling first so the child is visited first.
+            if (isSteamObject(fiber.sibling))
+                stack.push(fiber.sibling);
+            if (isSteamObject(fiber.child))
+                stack.push(fiber.child);
+        }
+        return { MiniClass, instances };
+    }
+    catch {
+        return { MiniClass: undefined, instances: [] };
+    }
+}
+/** Install the native mini-achievements restoration and return its disposer. */
+function installMiniAchievementsPatch() {
+    safeInfo("installing mini-achievements patch");
+    let routePatch;
+    let routePatchRegistered = false;
+    let routeRenderOwner;
+    let routeRenderPatch;
+    let prototypePatch;
+    let captureBurstActive = false;
+    let captureAttemptIndex = 0;
+    let captureTimer;
+    let disposed = false;
+    const restoredInstances = new Map();
+    const refreshTimers = new Map();
+    const finishCaptureBurst = () => {
+        captureTimer = undefined;
+        captureBurstActive = false;
+        captureAttemptIndex = 0;
+    };
+    const cancelCaptureBurst = () => {
+        if (captureTimer !== undefined) {
+            try {
+                clearTimeout(captureTimer);
+            }
+            catch (error) {
+                safeWarn("capture timer cleanup failed", error);
+            }
+        }
+        finishCaptureBurst();
+    };
+    const cancelRefreshTimers = () => {
+        for (const timer of refreshTimers.values()) {
+            try {
+                clearTimeout(timer);
+            }
+            catch (error) {
+                safeWarn("instance refresh timer cleanup failed", error);
+            }
+        }
+        refreshTimers.clear();
+    };
+    const scheduleRefresh = (instance) => {
+        try {
+            if (refreshTimers.has(instance))
+                return;
+            let timer;
+            timer = setTimeout(() => {
+                if (refreshTimers.get(instance) === timer)
+                    refreshTimers.delete(instance);
+                try {
+                    const forceUpdate = instance.forceUpdate;
+                    if (typeof forceUpdate === "function")
+                        forceUpdate.call(instance);
+                }
+                catch {
+                    // A detached instance is harmless; never throw into Steam.
+                }
+            }, 0);
+            refreshTimers.set(instance, timer);
+        }
+        catch {
+            // Refreshing is best-effort; never fail the native render path.
+        }
+    };
+    const restoreInstance = (instance) => {
+        try {
+            const existing = instance[INSTANCE_PATCH_FLAG];
+            if (typeof existing === "function")
+                return existing;
+            if (existing != null)
+                return undefined;
+            const originalDescriptor = Object.getOwnPropertyDescriptor(instance, "props");
+            let rawProps = instance.props;
+            const onSeek = (section) => {
+                try {
+                    const controller = resolveSeekController(instance);
+                    const seek = controller?.SeekToSection;
+                    if (typeof seek === "function") {
+                        seek.call(controller, section);
+                    }
+                }
+                catch {
+                    // Native currently has no achievements target; activation no-ops.
+                }
+            };
+            let wrappedProps = withAchievementSeek(rawProps, onSeek);
+            let cleaned = false;
+            const cleanup = () => {
+                if (cleaned)
+                    return;
+                cleaned = true;
+                try {
+                    if (originalDescriptor && "value" in originalDescriptor) {
+                        Object.defineProperty(instance, "props", {
+                            ...originalDescriptor,
+                            value: rawProps,
+                        });
+                    }
+                    else if (originalDescriptor) {
+                        Object.defineProperty(instance, "props", originalDescriptor);
+                        originalDescriptor.set?.call(instance, rawProps);
+                    }
+                    else {
+                        delete instance.props;
+                        let prototype = Object.getPrototypeOf(instance);
+                        let inheritedDescriptor;
+                        while (prototype) {
+                            inheritedDescriptor = Object.getOwnPropertyDescriptor(prototype, "props");
+                            if (inheritedDescriptor)
+                                break;
+                            prototype = Object.getPrototypeOf(prototype);
+                        }
+                        if (inheritedDescriptor?.set) {
+                            inheritedDescriptor.set.call(instance, rawProps);
+                        }
+                        else if (inheritedDescriptor &&
+                            "value" in inheritedDescriptor &&
+                            inheritedDescriptor.writable) {
+                            instance.props = rawProps;
+                        }
+                        else if (rawProps !== undefined) {
+                            Object.defineProperty(instance, "props", {
+                                configurable: true,
+                                enumerable: true,
+                                writable: true,
+                                value: rawProps,
+                            });
+                        }
+                    }
+                }
+                catch (error) {
+                    safeWarn("instance props restoration failed", error);
+                }
+                try {
+                    if (instance[INSTANCE_PATCH_FLAG] === cleanup) {
+                        delete instance[INSTANCE_PATCH_FLAG];
+                    }
+                }
+                catch (error) {
+                    safeWarn("instance ownership marker cleanup failed", error);
+                }
+                scheduleRefresh(instance);
+            };
+            Object.defineProperty(instance, INSTANCE_PATCH_FLAG, {
+                configurable: true,
+                enumerable: false,
+                writable: true,
+                value: cleanup,
+            });
+            try {
+                Object.defineProperty(instance, "props", {
+                    configurable: true,
+                    enumerable: originalDescriptor?.enumerable ?? false,
+                    get: () => wrappedProps,
+                    set: (value) => {
+                        rawProps = value;
+                        wrappedProps = withAchievementSeek(rawProps, onSeek);
+                    },
+                });
+            }
+            catch (error) {
+                try {
+                    delete instance[INSTANCE_PATCH_FLAG];
+                }
+                catch {
+                    // Preserve the original props-definition failure.
+                }
+                throw error;
+            }
+            scheduleRefresh(instance);
+            return cleanup;
+        }
+        catch {
+            // A malformed or detached instance must never break the Steam UI.
+            return undefined;
+        }
+    };
+    const registerRestoredInstance = (instance) => {
+        const cleanup = restoreInstance(instance);
+        if (cleanup)
+            restoredInstances.set(instance, cleanup);
+    };
+    const disposeRouteRenderPatch = () => {
+        if (!routeRenderPatch) {
+            routeRenderOwner = undefined;
+            return true;
+        }
+        try {
+            routeRenderPatch.unpatch();
+            routeRenderPatch = undefined;
+            routeRenderOwner = undefined;
+            return true;
+        }
+        catch (error) {
+            safeWarn("route render trigger unpatch failed", error);
+            return false;
+        }
+    };
+    let scheduleNextCaptureAttempt;
+    const attemptCaptureAndPatch = () => {
+        try {
+            if (disposed || prototypePatch) {
+                finishCaptureBurst();
+                return;
+            }
+            let popupManager;
+            if (typeof window !== "undefined") {
+                const browserWindow = window;
+                popupManager = browserWindow.g_PopupManager;
+            }
+            const { MiniClass, instances } = captureMiniAchievements(popupManager);
+            if (!MiniClass) {
+                safeDebug("MiniAchievements is not mounted; capture will retry if scheduled");
+                scheduleNextCaptureAttempt();
+                return;
+            }
+            if (typeof MiniClass.prototype.render !== "function") {
+                finishCaptureBurst();
+                return;
+            }
+            const patch = patchAfter(MiniClass.prototype, "render", function (_args, result) {
+                if (!disposed && isSteamObject(this))
+                    registerRestoredInstance(this);
+                return result;
+            });
+            if (!patch || typeof patch.unpatch !== "function") {
+                finishCaptureBurst();
+                return;
+            }
+            prototypePatch = patch;
+            for (const instance of instances)
+                registerRestoredInstance(instance);
+            finishCaptureBurst();
+            safeInfo("native MiniAchievements class captured and patched", `${instances.length} mounted instance(s) refreshed`);
+        }
+        catch (error) {
+            finishCaptureBurst();
+            safeWarn("MiniAchievements capture failed", error);
+        }
+    };
+    scheduleNextCaptureAttempt = () => {
+        try {
+            if (disposed || prototypePatch) {
+                finishCaptureBurst();
+                return;
+            }
+            const delay = CAPTURE_RETRY_DELAYS_MS[captureAttemptIndex];
+            if (delay === undefined) {
+                finishCaptureBurst();
+                return;
+            }
+            captureAttemptIndex += 1;
+            captureTimer = setTimeout(() => {
+                captureTimer = undefined;
+                attemptCaptureAndPatch();
+            }, delay);
+        }
+        catch (error) {
+            finishCaptureBurst();
+            safeWarn("MiniAchievements capture scheduling failed", error);
+        }
+    };
+    const scheduleCaptureBurst = () => {
+        try {
+            if (disposed || prototypePatch || captureBurstActive)
+                return;
+            captureBurstActive = true;
+            captureAttemptIndex = 0;
+            scheduleNextCaptureAttempt();
+        }
+        catch (error) {
+            finishCaptureBurst();
+            safeWarn("MiniAchievements capture burst failed", error);
+        }
+    };
+    try {
+        routePatch = routerHook.addPatch(APP_ROUTE, (props) => {
+            try {
+                const children = isSteamObject(props) ? props.children : undefined;
+                const ownerCandidate = isSteamObject(children) ? children.props : undefined;
+                const owner = isSteamObject(ownerCandidate) ? ownerCandidate : undefined;
+                if (owner !== routeRenderOwner && !disposeRouteRenderPatch()) {
+                    return props;
+                }
+                if (typeof owner?.renderFunc !== "function") {
+                    safeDebug("app-details route renderFunc is unavailable");
+                    return props;
+                }
+                if (!routeRenderPatch) {
+                    routeRenderPatch = patchAfter(owner, "renderFunc", (_args, renderedTree) => {
+                        scheduleCaptureBurst();
+                        return renderedTree;
+                    });
+                    routeRenderOwner = owner;
+                }
+                // Cover enabling while an app-details page is already committed.
+                scheduleCaptureBurst();
+            }
+            catch (error) {
+                safeWarn("app-details capture trigger installation failed", error);
+            }
+            return props;
+        });
+        routePatchRegistered = true;
+    }
+    catch (error) {
+        safeWarn("app-details route hook registration failed", error);
+    }
+    return () => {
+        if (disposed)
+            return;
+        disposed = true;
+        cancelCaptureBurst();
+        cancelRefreshTimers();
+        if (!disposeRouteRenderPatch()) {
+            safeWarn("route render trigger could not be fully removed");
+        }
+        if (routePatchRegistered) {
+            try {
+                routerHook.removePatch(APP_ROUTE, routePatch);
+            }
+            catch (error) {
+                safeWarn("app-details route hook removal failed", error);
+            }
+            routePatchRegistered = false;
+        }
+        if (prototypePatch) {
+            const patch = prototypePatch;
+            prototypePatch = undefined;
+            try {
+                patch.unpatch();
+            }
+            catch (error) {
+                safeWarn("MiniAchievements render patch removal failed", error);
+            }
+        }
+        for (const cleanup of restoredInstances.values()) {
+            try {
+                cleanup();
+            }
+            catch (error) {
+                safeWarn("instance props cleanup failed", error);
+            }
+        }
+        restoredInstances.clear();
+        safeInfo("mini-achievements patch removed");
+    };
+}
+
+const initialSnapshot = () => ({
+    enabled: false,
+    settingsLoaded: false,
+    busy: false,
+    settingsError: "",
+});
+/** Own the patch outside QAM so closing a section or panel cannot disable it. */
+class MiniAchievementsController {
+    constructor() {
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: initialSnapshot()
+        });
+        Object.defineProperty(this, "disposePatch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = initialSnapshot();
+        this.emit();
+        void getMiniAchievementsEnabled().then((enabled) => {
+            if (!this.isCurrent(generation))
+                return;
+            this.snapshot = { ...this.snapshot, enabled, settingsLoaded: true };
+            this.applyRuntime();
+            this.emit();
+        }).catch((error) => {
+            if (!this.isCurrent(generation))
+                return;
+            this.snapshot = {
+                ...this.snapshot,
+                settingsError: `Mini achievements could not be loaded. Reload the plugin to retry: ${String(error)}`,
+            };
+            warn("bridge", "mini-achievements setting load failed", error);
+            this.emit();
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        const dispose = this.disposePatch;
+        this.disposePatch = undefined;
+        try {
+            dispose?.();
+        }
+        catch (error$1) {
+            error("patch", "mini-achievements cleanup failed", error$1);
+        }
+        this.snapshot = initialSnapshot();
+        this.emit();
+        this.listeners.clear();
+    }
+    async setEnabled(enabled) {
+        if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
+            return false;
+        if (enabled === this.snapshot.enabled)
+            return true;
+        const generation = this.generation;
+        this.snapshot = { ...this.snapshot, busy: true, settingsError: "" };
+        this.emit();
+        try {
+            const confirmed = await setMiniAchievementsEnabled(enabled);
+            if (!this.isCurrent(generation))
+                return false;
+            this.snapshot = { ...this.snapshot, enabled: confirmed, busy: false };
+            const applied = this.applyRuntime();
+            this.emit();
+            return applied;
+        }
+        catch (error) {
+            if (!this.isCurrent(generation))
+                return false;
+            this.snapshot = {
+                ...this.snapshot,
+                busy: false,
+                settingsError: `Mini achievements could not be saved: ${String(error)}`,
+            };
+            warn("bridge", "mini-achievements setting save failed", error);
+            this.emit();
+            return false;
+        }
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    applyRuntime() {
+        try {
+            if (this.snapshot.enabled) {
+                this.disposePatch ?? (this.disposePatch = installMiniAchievementsPatch());
+            }
+            else {
+                const dispose = this.disposePatch;
+                this.disposePatch = undefined;
+                dispose?.();
+            }
+            return true;
+        }
+        catch (error$1) {
+            this.snapshot = {
+                ...this.snapshot,
+                settingsError: `Mini achievements could not be applied. Reload the plugin: ${String(error$1)}`,
+            };
+            error("patch", "mini-achievements runtime transition failed", error$1);
+            return false;
+        }
+    }
+    emit() {
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* A closing QAM panel cannot block the feature. */ }
+        }
+    }
+}
+const miniAchievementsController = new MiniAchievementsController();
+function startMiniAchievementsController() {
+    miniAchievementsController.mount();
+    return () => miniAchievementsController.stop();
+}
+
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
 // Keep retrying native focus while Steam rebuilds the navigation tree. The
@@ -11853,6 +12622,10 @@ const Content = () => {
     const [trailerSnapshot, setTrailerSnapshot] = SP_REACT.useState(trailerController.getSnapshot());
     SP_REACT.useEffect(() => trailerController.subscribe(() => {
         setTrailerSnapshot(trailerController.getSnapshot());
+    }), []);
+    const [miniAchievementsSnapshot, setMiniAchievementsSnapshot] = SP_REACT.useState(miniAchievementsController.getSnapshot());
+    SP_REACT.useEffect(() => miniAchievementsController.subscribe(() => {
+        setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
     }), []);
     const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
     const initialPendingCompatibilityPolicySave = initialCompatibilityPolicySave
@@ -12468,7 +13241,7 @@ const Content = () => {
                 }, onQualityMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(MiniAchievementsSection, { state: miniAchievementsSnapshot, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*
@@ -13667,6 +14440,7 @@ var index = DFL.definePlugin(() => {
     }
     const stopMetadataBootstrap = startMetadataBootstrap();
     const stopTrailerController = startTrailerController();
+    const stopMiniAchievementsController = startMiniAchievementsController();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     return {
@@ -13680,6 +14454,7 @@ var index = DFL.definePlugin(() => {
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
             stopTrailerController();
+            stopMiniAchievementsController();
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
             // the held Game Info intent before it does so during an in-place import.

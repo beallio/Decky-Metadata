@@ -34,6 +34,16 @@ distributed under the GNU General Public License v3.0 or later, as stated in the
 accompanying LICENSE file. The BSD 3-Clause attribution above is retained for
 the Decky Plugin Template; the GPL terms govern this project as a whole.
 
+Mini achievements restoration
+-----------------------------
+src/steam/miniAchievements.ts adapts the native achievement-bar restoration
+from Decky UI Restored by beallio (the Decky-SteamAchievements source checkout).
+The source project and Decky Metadata are distributed under the
+GNU General Public License v3.0 or later.
+
+    Decky UI Restored
+    https://github.com/beallio/Decky-UI-Restored
+
 Steam trailer runtime
 ---------------------
 src/trailers/runtime.ts adapts the Steam trailer streaming runtime from

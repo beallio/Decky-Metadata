@@ -28,8 +28,8 @@ if you need more help.
 
 Open Decky Metadata from the Quick Access Menu to find games that need details.
 Select a section heading to show its controls. **Versions** starts open;
-**Metadata**, **Compatibility status**, **Game trailers**, **Logs**, and
-**Updates** start closed. Press A on a heading or select it to open or close
+**Metadata**, **Compatibility status**, **Game trailers**, **Mini achievements**,
+**Logs**, and **Updates** start closed. Press A on a heading or select it to open or close
 that section. **Metadata** includes the cache and **Delisted Steam games**
 tools. **Compatibility status** is immediately below it.
 
@@ -79,6 +79,17 @@ quality, and controller controls.
 Trailers keep a stable height while Steam animates the game page into view, including when a transparent save-status bar is below the artwork. Steam's normal page animation still plays.
 
 ![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
+
+### Mini achievements
+
+Open **Mini achievements** and turn on **Enable mini achievements** to restore
+Steam's small achievement progress bar beside Play Time on game details pages.
+It is off by default and uses Steam's own progress data; it does not add
+achievement tracking to non-Steam games.
+
+Before enabling it here, turn off **Enable mini achievements** in **Decky UI
+Restored**. Use only one plugin's mini-achievements toggle at a time. Its other
+fixes can stay enabled. See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements).
 
 ### Community posts and news
 
