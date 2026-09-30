@@ -18,6 +18,7 @@ import {
   UpdateRpcResult,
   UpdateSettings,
   TrailerSettings,
+  ProtonDbBadgeSettings,
   IgnTrailerResult,
 } from "./types";
 
@@ -182,6 +183,13 @@ export const getMiniAchievementsEnabled = callable<[], boolean>("get_mini_achiev
 export const setMiniAchievementsEnabled = callable<[enabled: boolean], boolean>(
   "set_mini_achievements_enabled"
 );
+export const getProtonDbBadgeSettings = callable<[], ProtonDbBadgeSettings>(
+  "get_protondb_badge_settings"
+);
+export const setProtonDbBadgeSettings = callable<
+  [settings: ProtonDbBadgeSettings],
+  ProtonDbBadgeSettings
+>("set_protondb_badge_settings");
 export const findIgnTrailer = callable<
   [title: string, gameUrl?: string | null],
   IgnTrailerResult | null
