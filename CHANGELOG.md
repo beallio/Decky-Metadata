@@ -26,6 +26,9 @@ Organize Quick Access Menu settings into collapsible sections.
   direct summary data only, with a shared 24-hour cache. Choose each surface,
   cover position, or focused/hovered covers only. No Gateway analysis is used;
   missing matches or ratings stay hidden, and network errors are not Borked.
+  Home and Library switches remain independent on Steam's shared cover
+  renderer. Store badges follow the active main window and recover after a
+  Store page reload.
 
 ### Changed
 

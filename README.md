@@ -79,6 +79,8 @@ The game-page button comes before the controller button and uses Steam's
 button style. Select it, or the Store badge, to open the game's ProtonDB page.
 Cover icons do not change how you select or launch a game. Choose a cover
 corner, or show cover icons only when a game is focused or hovered.
+The four view switches are separate. Turning off the main switch keeps your
+choices for each view.
 
 The colors mean **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
 These are ProtonDB community ratings, not Valve certification or a guarantee
