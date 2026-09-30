@@ -1,5 +1,5 @@
 import { executeInTab, fetchNoCors } from "@decky/api";
-import { findModuleExport } from "@decky/ui";
+import { Router } from "@decky/ui";
 import type { ProtonDbTier } from "../types";
 import { protonDbBadgeController } from "./controller";
 import { PROTONDB_COLORS, protonDbTierLabel } from "./Icon";
@@ -397,14 +397,12 @@ const resolveStoreTarget = (value: unknown): StoreCefTarget | undefined => {
 
 const findSteamHistory = (): SteamHistoryBoundary | undefined => {
   try {
-    const candidate = findModuleExport((moduleExport: unknown) => {
-      if (typeof moduleExport !== "object" || moduleExport === null || Array.isArray(moduleExport) ||
-          !("m_history" in moduleExport) || !isSteamHistoryBoundary(moduleExport.m_history)) return false;
-      return true;
-    });
-    if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate) ||
-        !("m_history" in candidate) || !isSteamHistoryBoundary(candidate.m_history)) return undefined;
-    return candidate.m_history;
+    // tempNavStore's exported History publishes before its location catches up.
+    // Use the active main-window History, which owns Steam's actual Store route.
+    const mainWindow: unknown = Router.WindowStore?.GamepadUIMainWindowInstance;
+    if (typeof mainWindow !== "object" || mainWindow === null ||
+        !("m_history" in mainWindow) || !isSteamHistoryBoundary(mainWindow.m_history)) return undefined;
+    return mainWindow.m_history;
   } catch {
     return undefined;
   }

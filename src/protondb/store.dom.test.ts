@@ -2,7 +2,10 @@ import { runInNewContext } from "node:vm";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/api", () => ({ executeInTab: vi.fn(), fetchNoCors: vi.fn() }));
-vi.mock("@decky/ui", () => ({ findModuleExport: vi.fn() }));
+vi.mock("@decky/ui", () => ({
+  findModuleExport: vi.fn(),
+  Router: { WindowStore: { GamepadUIMainWindowInstance: {} } },
+}));
 vi.mock("./controller", () => ({
   protonDbBadgeController: {
     getSnapshot: vi.fn(),
@@ -22,7 +25,10 @@ vi.mock("./Icon", () => ({
   protonDbTierLabel: (tier: string) => tier.charAt(0).toUpperCase() + tier.slice(1),
 }));
 
-import { buildStoreBadgeScript, type StoreBadgePayload } from "./store";
+import { executeInTab, fetchNoCors } from "@decky/api";
+import { findModuleExport, Router } from "@decky/ui";
+import { protonDbBadgeController } from "./controller";
+import { buildStoreBadgeScript, installProtonDbStoreBadge, type StoreBadgePayload } from "./store";
 
 type MutationFixture = { addedNodes?: FakeElement[]; removedNodes?: FakeElement[] };
 type MutationCallback = (records: MutationFixture[]) => void;
@@ -298,5 +304,67 @@ describe("ProtonDB Store badge DOM", () => {
     installScript(harness, null);
     expect(badgeIn(harness.document)).toBeNull();
     expect(styleIn(harness.document)).toBeNull();
+  });
+
+  it("shows and removes the Store badge with main-window navigation even when temp history is one route behind", async () => {
+    const harness = createHarness();
+    const currentListeners = new Set<() => void>();
+    const staleListeners = new Set<() => void>();
+    const mainHistory = {
+      location: { pathname: "/library/home" },
+      listen: (listener: () => void) => {
+        currentListeners.add(listener);
+        return () => currentListeners.delete(listener);
+      },
+    };
+    const staleHistory = {
+      location: { pathname: "/library/home" },
+      listen: (listener: () => void) => {
+        staleListeners.add(listener);
+        return () => staleListeners.delete(listener);
+      },
+    };
+    Object.assign(Router.WindowStore!.GamepadUIMainWindowInstance!, { m_history: mainHistory });
+    vi.mocked(findModuleExport).mockReturnValue({ m_history: staleHistory });
+    vi.mocked(protonDbBadgeController.getSnapshot).mockReturnValue({
+      settingsLoaded: true, busy: false, settingsError: "",
+      settings: {
+        enabled: true, home: true, library: true, gameView: true, store: true,
+        focusOnly: false, coverPosition: "bottom-left",
+      },
+    });
+    vi.mocked(protonDbBadgeController.subscribe).mockReturnValue(() => undefined);
+    vi.mocked(protonDbBadgeController.subscribeRating).mockReturnValue(() => undefined);
+    vi.mocked(protonDbBadgeController.getRating).mockReturnValue({
+      tier: "gold", status: "ready", updatedAt: 1,
+    });
+    vi.mocked(fetchNoCors).mockImplementation(async () => new Response(JSON.stringify([{
+      type: "page", id: "store-target", title: "Test game on Steam",
+      url: "https://store.steampowered.com/app/12345/",
+    }])));
+    vi.mocked(executeInTab).mockImplementation(async (_title, _async, script) => ({
+      success: true,
+      result: runInNewContext(script, {
+        window: harness.window, document: harness.document, MutationObserver: FakeMutationObserver,
+      }),
+    }));
+    const stop = installProtonDbStoreBadge();
+    try {
+      expect(badgeIn(harness.document)).toBeNull();
+      mainHistory.location.pathname = "/steamweb";
+      staleListeners.forEach(listener => listener());
+      currentListeners.forEach(listener => listener());
+      await vi.waitFor(() => {
+        expect(badgeIn(harness.document)?.href).toBe("https://www.protondb.com/app/12345");
+        expect(badgeIn(harness.document)?.getAttribute("data-protondb-tier")).toBe("gold");
+      });
+      staleHistory.location.pathname = "/steamweb";
+      mainHistory.location.pathname = "/library/home";
+      staleListeners.forEach(listener => listener());
+      currentListeners.forEach(listener => listener());
+      await vi.waitFor(() => expect(badgeIn(harness.document)).toBeNull());
+    } finally {
+      stop();
+    }
   });
 });

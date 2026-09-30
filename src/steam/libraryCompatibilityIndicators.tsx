@@ -24,6 +24,8 @@ import {
 } from "./steamUiModules";
 
 const DECK_DISPLAY = 1;
+// Steam's shared cover renderer uses context 2 for the Home carousel.
+const HOME_CARD_CONTEXT = 2;
 
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
@@ -941,7 +943,7 @@ export const installLibraryCompatibilityIndicators = (
             targets.gridIndicatorClassName,
             overview,
           ),
-          "library",
+          args[0]?.context === HOME_CARD_CONTEXT ? "home" : "library",
           args[0]?.app,
         ),
       );
