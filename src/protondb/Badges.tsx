@@ -22,9 +22,10 @@ export type NativeProtonDbButtonProps = {
 
 const CARD_CLASS = "decky-metadata-protondb-card";
 const COVER_KEY = "decky-metadata-protondb-cover";
+// Steam raises focused artwork to z-index 12; the badge must stay above it.
 const COVER_CSS = `
 .decky-metadata-protondb-host{display:contents;pointer-events:none}
-.decky-metadata-protondb-cover{position:absolute;z-index:3;left:8px;bottom:8px;width:22px;height:22px;padding:3px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.12);pointer-events:none;display:flex;align-items:center;justify-content:center}
+.decky-metadata-protondb-cover{position:absolute;z-index:13;left:8px;bottom:8px;width:22px;height:22px;padding:3px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.12);pointer-events:none;display:flex;align-items:center;justify-content:center}
 .decky-metadata-protondb-cover svg{width:100%;height:100%}
 .decky-metadata-protondb-cover--top-left{top:8px;bottom:auto}
 .decky-metadata-protondb-cover--top-right{top:8px;right:8px;left:auto;bottom:auto}
