@@ -28,6 +28,7 @@ import {
 import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
+import { MiniAchievementsSection } from "./components/qam/MiniAchievementsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
@@ -81,6 +82,7 @@ import {
 import { useNonSteamGames } from "./useNonSteamGames";
 import { getConnectedControllerTypes } from "./steam";
 import { trailerController } from "./trailers/controller";
+import { miniAchievementsController } from "./steam/miniAchievementsController";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -207,6 +209,10 @@ export const Content = () => {
   const [trailerSnapshot, setTrailerSnapshot] = useState(trailerController.getSnapshot());
   useEffect(() => trailerController.subscribe(() => {
     setTrailerSnapshot(trailerController.getSnapshot());
+  }), []);
+  const [miniAchievementsSnapshot, setMiniAchievementsSnapshot] = useState(miniAchievementsController.getSnapshot());
+  useEffect(() => miniAchievementsController.subscribe(() => {
+    setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
   }), []);
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const initialPendingCompatibilityPolicySave =
@@ -899,6 +905,10 @@ export const Content = () => {
           noteCompatibilityDropdownControlUnmounted();
         }}
         onQualityControlRef={setTrailerQualityControl}
+      />
+      <MiniAchievementsSection
+        state={miniAchievementsSnapshot}
+        onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
       />
       <LogsSection
         logsBusy={logsBusy}

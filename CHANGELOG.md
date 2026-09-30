@@ -13,6 +13,12 @@ Organize Quick Access Menu settings into collapsible sections.
   and Updates start closed; Versions starts open. Delisted Steam games now
   sits under Metadata beside Metadata cache. The main headings are larger
   and have icons. Background update checks continue while Updates is closed.
+- **Mini achievements.** An independent, default-off Quick Access Menu toggle
+  restores Steam's small achievement progress bar beside Play Time using
+  Steam's own component and data. The setting is saved across reloads, and
+  disabling it restores the native display. Turn off mini achievements in
+  Decky UI Restored before enabling this feature. It does not add achievement
+  tracking to non-Steam games.
 
 ### Changed
 

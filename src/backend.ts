@@ -178,6 +178,10 @@ export const setTrailerSettings = callable<
   [settings: TrailerSettings],
   TrailerSettings
 >("set_trailer_settings");
+export const getMiniAchievementsEnabled = callable<[], boolean>("get_mini_achievements_enabled");
+export const setMiniAchievementsEnabled = callable<[enabled: boolean], boolean>(
+  "set_mini_achievements_enabled"
+);
 export const findIgnTrailer = callable<
   [title: string, gameUrl?: string | null],
   IgnTrailerResult | null

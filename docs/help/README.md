@@ -13,6 +13,7 @@ setup steps.
 
 - [Choose a compatibility status](compatibility-status.md) — set a default for your library or a label for one game.
 - [Watch game trailers](game-trailers.md) — turn trailers on and set sound, video quality, and controls.
+- [Restore mini achievements](updates-and-troubleshooting.md#mini-achievements) — restore Steam's progress bar and avoid conflicts with Decky UI Restored.
 - [See community posts and news](community-and-news.md) — find posts, screenshots, and Activity news.
 - [Use controller layouts](controller-layouts.md) — find layouts from a matching Steam game.
 

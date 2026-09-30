@@ -724,6 +724,36 @@ class Plugin:
                 raise
         return normalized
 
+    async def get_mini_achievements_enabled(self) -> bool:
+        if not self._load_data():
+            raise RuntimeError("mini achievements settings could not be loaded")
+        settings = self._data.get("settings")
+        value = settings.get("mini_achievements_enabled") if isinstance(settings, dict) else None
+        return value if type(value) is bool else False
+
+    async def set_mini_achievements_enabled(self, enabled: Any) -> bool:
+        if type(enabled) is not bool:
+            raise ValueError("invalid mini achievements setting")
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("mini achievements settings could not be loaded")
+            settings = self._data.get("settings")
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "mini_achievements_enabled" in settings
+            previous = settings.get("mini_achievements_enabled")
+            settings["mini_achievements_enabled"] = enabled
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["mini_achievements_enabled"] = previous
+                else:
+                    settings.pop("mini_achievements_enabled", None)
+                raise
+        return enabled
+
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))
