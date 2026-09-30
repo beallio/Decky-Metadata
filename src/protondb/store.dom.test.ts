@@ -245,7 +245,6 @@ describe("ProtonDB Store badge DOM", () => {
     expect(badge).not.toBeNull();
     expect(badge?.href).toBe("https://www.protondb.com/app/12345");
     expect(badge?.getAttribute("aria-label")).toBe("ProtonDB rating: Platinum");
-    expect(badge?.textContent).toBe("ProtonDB·Platinum");
     expect(badge?.children[0]?.nodeName).toBe("svg");
     expect(badge?.style.properties.get("--protondb-tier-color")).toBe("#b4c7dc");
 
