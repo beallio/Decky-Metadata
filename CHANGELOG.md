@@ -22,8 +22,9 @@ Organize Quick Access Menu settings into collapsible sections.
 - **ProtonDB tier badges.** An opt-in section adds community rating icons to
   Home and Library covers for Steam games and matched non-Steam shortcuts,
   a Steam-styled button before the game page's controller button, and a
-  bottom-center Steam Store badge. Ratings use ProtonDB's tier colors and
-  direct summary data only, with a shared 24-hour cache. Choose each surface,
+  bottom-right Steam Store badge with a tier-only label. Ratings use
+  ProtonDB's tier colors and direct summary data only, with a shared
+  24-hour cache. Choose each surface,
   cover position, or focused/hovered covers only. No Gateway analysis is used;
   missing matches or ratings stay hidden, and network errors are not Borked.
   Home and Library switches remain independent on Steam's shared cover
@@ -49,6 +50,9 @@ Organize Quick Access Menu settings into collapsible sections.
 
 - Trailers no longer shrink and grow again when you open a game page with a
   save-status bar below the artwork. Steam's normal page animation still plays.
+- ProtonDB cover badges stay above Steam's selected-card artwork in Home and
+  Library, including focus-only mode. The badge is visible on the current
+  selection instead of appearing only after you move to another game.
 
 
 ## [0.4.0] - 2026-09-28

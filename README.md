@@ -77,6 +77,7 @@ pages. It supports Steam games and non-Steam games with a saved Steam match.
 
 The game-page button comes before the controller button and uses Steam's
 button style. Select it, or the Store badge, to open the game's ProtonDB page.
+The Store badge shows only the tier name at the bottom right.
 Cover icons do not change how you select or launch a game. Choose a cover
 corner, or show cover icons only when a game is focused or hovered.
 The four view switches are separate. Turning off the main switch keeps your
