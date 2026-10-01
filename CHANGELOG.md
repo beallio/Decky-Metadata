@@ -4,15 +4,16 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Organize Quick Access Menu settings into collapsible sections.
+Add ProtonDB badges, mini achievements, and collapsible settings
 
 ### Added
 
 - **Collapsible Quick Access Menu sections.** Select a section heading to show
-  or hide its controls. Metadata, Compatibility status, Game trailers, Logs,
-  and Updates start closed; Versions starts open. Delisted Steam games now
-  sits under Metadata beside Metadata cache. The main headings are larger
-  and have icons. Background update checks continue while Updates is closed.
+  or hide its controls. Metadata, Compatibility status, ProtonDB badges, Game
+  trailers, Mini achievements, Logs, and Updates start closed; Versions starts
+  open. The Delisted Steam games tool sits under Metadata beside Metadata
+  cache. The main headings are larger and have icons. Background update checks
+  continue while Updates is closed.
 - **Mini achievements.** An independent, default-off Quick Access Menu toggle
   restores Steam's small achievement progress bar beside Play Time using
   Steam's own component and data. The setting is saved across reloads, and
@@ -20,7 +21,7 @@ Organize Quick Access Menu settings into collapsible sections.
   Decky UI Restored before enabling this feature. It does not add achievement
   tracking to non-Steam games.
 - **ProtonDB tier badges.** An opt-in section adds community rating icons to
-  Home and Library covers for Steam games and automatically matched shortcuts,
+  Home and Library covers for Steam games and matched non-Steam games,
   a Steam-styled button before the game page's controller button, and a
   bottom-right, icon-only Steam Store badge. Ratings use
   ProtonDB's tier colors and direct summary data only, with a shared

@@ -28,10 +28,11 @@ if you need more help.
 
 Open Decky Metadata from the Quick Access Menu to find games that need details.
 Select a section heading to show its controls. **Versions** starts open;
-**Metadata**, **Compatibility status**, **Game trailers**, **Mini achievements**,
-**Logs**, and **Updates** start closed. Press A on a heading or select it to open or close
-that section. **Metadata** includes the cache and **Delisted Steam games**
-tools. **Compatibility status** is immediately below it.
+**Metadata**, **Compatibility status**, **ProtonDB badges**, **Game trailers**,
+**Mini achievements**, **Logs**, and **Updates** start closed. Press A on a
+heading or select it to open or close that section. **Metadata** includes the
+cache and **Delisted Steam games** tools. **Compatibility status** is immediately
+below it.
 
 To edit one game, open its menu and select **Decky metadata...**. Find the right
 game in the Steam Store, paste its page link into **Steam App ID**, and select
