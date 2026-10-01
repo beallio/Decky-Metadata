@@ -56,6 +56,8 @@ Organize Quick Access Menu settings into collapsible sections.
   Steam-first/Algolia name fallback. Changed or cleared matches refresh mounted
   cover and game-page badges without retaining the previous rating. Direct
   ProtonDB tiers are retained without Gateway analysis.
+- ProtonDB cover hosts remain mounted on native Library tab routes, including
+  the Non-Steam tab, instead of disappearing when the tab updates its route.
 
 
 ## [0.4.0] - 2026-09-28
