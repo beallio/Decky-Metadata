@@ -73,11 +73,13 @@ status](docs/help/compatibility-status.md).
 Open **ProtonDB badges** in the Decky Metadata panel and turn on **Enable
 ProtonDB badges**. It is off by default. You can show ratings on Home and Library
 game covers, beside the controller button on game pages, and on Steam Store
-pages. It supports Steam games and non-Steam games with a saved Steam match.
+pages. Steam games use their own app IDs. Non-Steam games are looked up by
+their shortcut names, using Steam first and ProtonDB's title index when Steam
+finds no match. You do not need a saved Metadata match for these badges.
 
 The game-page button comes before the controller button and uses Steam's
 button style. Select it, or the Store badge, to open the game's ProtonDB page.
-The Store badge shows only the tier name at the bottom right.
+The Store badge is a colored icon at the bottom right, with no visible text.
 Cover icons do not change how you select or launch a game. Choose a cover
 corner, or show cover icons only when a game is focused or hovered.
 The four view switches are separate. Turning off the main switch keeps your

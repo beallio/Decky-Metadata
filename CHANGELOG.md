@@ -20,9 +20,9 @@ Organize Quick Access Menu settings into collapsible sections.
   Decky UI Restored before enabling this feature. It does not add achievement
   tracking to non-Steam games.
 - **ProtonDB tier badges.** An opt-in section adds community rating icons to
-  Home and Library covers for Steam games and matched non-Steam shortcuts,
+  Home and Library covers for Steam games and automatically matched shortcuts,
   a Steam-styled button before the game page's controller button, and a
-  bottom-right Steam Store badge with a tier-only label. Ratings use
+  bottom-right, icon-only Steam Store badge. Ratings use
   ProtonDB's tier colors and direct summary data only, with a shared
   24-hour cache. Choose each surface,
   cover position, or focused/hovered covers only. No Gateway analysis is used;
@@ -50,9 +50,11 @@ Organize Quick Access Menu settings into collapsible sections.
 
 - Trailers no longer shrink and grow again when you open a game page with a
   save-status bar below the artwork. Steam's normal page animation still plays.
-- ProtonDB cover badges stay above Steam's selected-card artwork in Home and
-  Library, including focus-only mode. The badge is visible on the current
-  selection instead of appearing only after you move to another game.
+- ProtonDB Home and Library icons use the local ProtonDB Badges fork's native
+  footer hosts, React portals, and Steam-first/Algolia name lookup instead of
+  native card-render injection and saved Metadata Steam matches. Direct
+  ProtonDB tiers are retained without Gateway analysis. Focus, hover, card
+  reuse, and teardown follow the fork's cover layout and lifecycle.
 
 
 ## [0.4.0] - 2026-09-28

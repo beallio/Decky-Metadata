@@ -46,10 +46,12 @@ GNU General Public License v3.0 or later.
 
 ProtonDB badge integration
 --------------------------
-The cover marker design and Store-page integration approach are based on
-ProtonDB Badges by bschelst and the beallio fork. Ratings and medal colors come
-from ProtonDB. Decky Metadata uses direct ProtonDB summaries only, not the
-separate compatibility analysis service.
+The native footer hosts, React portal cover renderer, and Steam/Algolia title
+lookup in src/protondb/covers.tsx, steamSearch.ts, and matchTitle.ts are adapted
+from the local beallio fork of ProtonDB Badges by bschelst. The fork's cover
+layout and icon geometry are retained. Ratings and medal colors come from
+ProtonDB's direct summaries, not the separate compatibility analysis service.
+The Store-page integration approach is also based on ProtonDB Badges.
 
     ProtonDB Badges
     Licensed under the GNU General Public License v3.0
