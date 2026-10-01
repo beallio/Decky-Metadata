@@ -5,6 +5,7 @@ import { CollapsibleSection } from "./CollapsibleSection";
 import { inlineStatusStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
+import { featureConflictNotice } from "../../pluginConflicts";
 
 const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
   { data: "auto", label: "Auto — match display" },
@@ -38,6 +39,8 @@ export function GameTrailersSection({
   onQualityControlRef,
 }: GameTrailersSectionProps) {
   const disabled = !state.settingsLoaded || state.busy;
+  const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
+  const conflictNotice = featureConflictNotice(state.conflict, "game trailers", state.settings.enabled);
   const display = state.displayWidth && state.displayHeight
     ? `${state.displayWidth} × ${state.displayHeight} pixels`
     : "Unavailable";
@@ -49,10 +52,17 @@ export function GameTrailersSection({
           label="Enabled"
           description="Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match."
           checked={state.settings.enabled}
-          disabled={disabled}
+          disabled={enableDisabled}
           onChange={onEnabledChange}
         />
       </PanelSectionRow>
+      {conflictNotice ? (
+        <PanelSectionRow>
+          <Field focusable={false} padding="none" bottomSeparator="none">
+            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
       <PanelSectionRow>
         <ToggleField
           label="Trailer audio"

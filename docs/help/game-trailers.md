@@ -36,6 +36,15 @@ When the game page is visible, Steam's footer shows the **X** and **Y** actions.
 
 Trailers stream from Steam or IGN. Decky Metadata does not download them for offline playback.
 
-If you have the separate **TrailerHero** Decky plugin installed, uninstall it before turning on **Enabled** for Decky Metadata's **Game trailers**. The two trailer plugins conflict.
+If **TrailerHero** is enabled in Decky Loader, Decky Metadata pauses its trailers
+and prevents turning them on. The **Game trailers** section tells you to disable
+TrailerHero. Disable it in Decky Loader; hiding it from the menu is not enough.
+
+Your trailer settings stay saved. If **Enabled** was on, trailers resume when
+TrailerHero is disabled or removed. You can turn **Enabled** off while paused
+to keep Metadata's trailers off.
+
+If Metadata cannot check other plugins, it shows a warning instead of blocking
+trailers. Check manually that TrailerHero is disabled before enabling ours.
 
 [Help home](README.md)

@@ -1,5 +1,6 @@
 import { evalInBigPicture, findIgnTrailer, getTrailerSettings, setTrailerSettings } from "../backend";
 import type { IgnTrailerResult, TrailerQuality, TrailerSettings, TrailerStatus } from "../types";
+import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import {
   currentRoutePath,
   getNativeOverview,
@@ -69,6 +70,8 @@ export type TrailerControllerSnapshot = TrailerStatus & {
   busy: boolean;
   settingsError: string;
   matchRevision: number;
+  conflict: FeatureConflict;
+  effectiveEnabled: boolean;
 };
 
 type OwnerRecord = {
@@ -177,6 +180,8 @@ export class TrailerController {
   private audioWindows = new Map<Window, EventListener>();
   private unsubscribeMatchChanges: (() => void) | undefined;
   private snapshot: TrailerControllerSnapshot;
+  private conflict: FeatureConflict;
+  private unsubscribeConflicts: (() => void) | undefined;
 
   private handleAudioChange = (event: Event) => {
     const detail = (event as CustomEvent).detail;
@@ -187,7 +192,8 @@ export class TrailerController {
     void this.updateSettings({ audioEnabled: detail.audioEnabled });
   };
 
-  constructor() {
+  constructor(private readonly conflicts: PluginConflictSource = pluginConflicts) {
+    this.conflict = conflicts.getConflict("trailers");
     this.snapshot = this.buildSnapshot();
   }
 
@@ -202,6 +208,8 @@ export class TrailerController {
     if (this.mounted) return;
     this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     this.mounted = true;
+    this.conflict = this.conflicts.getConflict("trailers");
+    this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
     this.pendingSettingsWrites = 0;
     this.settingsBusy = false;
     this.destroyOlderRuntimes();
@@ -222,6 +230,8 @@ export class TrailerController {
     if (!this.mounted) return;
     this.mounted = false;
     this.ignRequestEpoch += 1;
+    this.unsubscribeConflicts?.();
+    this.unsubscribeConflicts = undefined;
     this.ignRequested = false;
     this.ignLookup = null;
     this.ignFallback = undefined;
@@ -270,13 +280,56 @@ export class TrailerController {
     return this.updateSettings({ fadeInDelaySeconds });
   }
 
+  private isEffectivelyEnabled(): boolean {
+    return this.mounted && this.settingsLoaded && this.settings.enabled && !this.conflict.pluginName;
+  }
+
+  private effectiveSettings(): TrailerSettings {
+    const enabled = this.isEffectivelyEnabled();
+    return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
+  }
+
+  private syncConflict(): void {
+    const next = this.conflicts.getConflict("trailers");
+    if (next.pluginName === this.conflict.pluginName &&
+        next.detectionAvailable === this.conflict.detectionAvailable) return;
+    const wasEnabled = this.isEffectivelyEnabled();
+    this.conflict = next;
+    if (wasEnabled !== this.isEffectivelyEnabled()) {
+      this.ignRequestEpoch += 1;
+      this.ignRequested = false;
+      this.ignLookup = null;
+      this.ignFallback = undefined;
+      this.identity = null;
+      this.runtimeSnapshot = undefined;
+      this.settingsRevision += 1;
+      this.publishOwner();
+      this.updateReachableRuntimes();
+      if (!this.isEffectivelyEnabled()) {
+        // A Steam-tab runtime may be outside the directly reachable windows.
+        const ownerId = JSON.stringify(this.ownerId);
+        const settings = JSON.stringify(this.effectiveSettings());
+        const revision = this.settingsRevision;
+        void this.runInSteamTab(`(() => {
+          const runtime = window.${RUNTIME_KEY};
+          if (runtime?.ownerId !== ${ownerId} || typeof runtime.update !== "function") return;
+          return runtime.update(${settings}, ${revision}, null, undefined);
+        })()`);
+      } else {
+        void this.poll();
+      }
+    }
+    this.emit();
+  }
+
   private buildSnapshot(): TrailerControllerSnapshot {
     const remote = this.runtimeSnapshot;
     return {
       settings: { ...this.settings },
       appId: remote?.appId,
       sourceAppId: remote?.sourceAppId ?? this.identity?.sourceAppId,
-      status: this.status,
+      status: this.conflict.pluginName && this.settings.enabled
+        ? `Paused while ${this.conflict.pluginName} is enabled` : this.status,
       trailerName: remote?.trailerName,
       gameTitle: remote?.gameTitle,
       displayWidth: remote?.displayWidth ?? null,
@@ -286,6 +339,8 @@ export class TrailerController {
       busy: this.settingsBusy,
       settingsError: this.settingsError,
       matchRevision: this.matchRevision,
+      conflict: this.conflict,
+      effectiveEnabled: this.isEffectivelyEnabled(),
     };
   }
 
@@ -319,6 +374,7 @@ export class TrailerController {
 
   private async updateSettings(change: Partial<TrailerSettings>): Promise<boolean> {
     if (!this.mounted || !this.settingsLoaded) return false;
+    if (change.enabled === true && !this.settings.enabled && this.conflict.pluginName) return false;
     const previous = { ...this.settings };
     const next = normalizeSettings({ ...this.settings, ...change });
     if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
@@ -337,7 +393,7 @@ export class TrailerController {
     const direct = this.updateReachableRuntimes();
     this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
     this.emit();
-    if (!direct && next.enabled) void this.poll();
+    if (!direct && this.isEffectivelyEnabled()) void this.poll();
 
     let succeeded = true;
     const save = this.settingsSaveQueue.then(async () => {
@@ -369,7 +425,7 @@ export class TrailerController {
         this.emit();
       }
     }
-    if (succeeded && this.ownsMount(ownerId) && next.enabled) void this.poll();
+    if (succeeded && this.ownsMount(ownerId) && this.isEffectivelyEnabled()) void this.poll();
     return succeeded;
   }
 
@@ -382,7 +438,7 @@ export class TrailerController {
     const record: OwnerRecord = {
       ownerId: this.ownerId,
       active: this.mounted,
-      settings: { ...this.settings },
+      settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
       settingsRevision: this.settingsRevision,
       identity: this.identity,
       ignFallback: this.ignFallback,
@@ -425,7 +481,7 @@ export class TrailerController {
   private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string; ignLookup?: IgnLookup }> {
     const route = currentRoutePath();
     const pageAppId = parseTrailerRootRoute(route);
-    if (!this.settings.enabled) return { identity: null, status: "Disabled" };
+    if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
     if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page" };
     if (pageAppId !== this.pageAppId) {
       this.pageAppId = pageAppId;
@@ -477,6 +533,11 @@ export class TrailerController {
   private async refreshPageIdentity() {
     if (!this.mounted) return;
     const next = await this.resolveCurrentIdentity();
+    if (!this.isEffectivelyEnabled()) {
+      next.identity = null;
+      next.ignLookup = null;
+      next.status = "Disabled";
+    }
     const lookup = next.ignLookup ?? null;
     if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup))) return;
     this.ignRequestEpoch += 1;
@@ -490,7 +551,7 @@ export class TrailerController {
     this.publishOwner();
     const direct = this.updateReachableRuntimes();
     this.emit();
-    if (!direct && this.settings.enabled && this.identity) void this.installOrUpdate();
+    if (!direct && this.isEffectivelyEnabled() && this.identity) void this.installOrUpdate();
   }
 
   private updateReachableRuntimes() {
@@ -500,7 +561,7 @@ export class TrailerController {
         const runtime = (doc.defaultView as any)?.[RUNTIME_KEY];
         if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
             typeof runtime.update !== "function") continue;
-        const result = runtime.update(this.settings, this.settingsRevision, this.identity, this.ignFallback);
+        const result = runtime.update(this.effectiveSettings(), this.settingsRevision, this.identity, this.ignFallback);
         if (isRuntimeSnapshot(result)) this.runtimeSnapshot = result;
         found = true;
       } catch { /* The CEF bridge can recover a missing or inaccessible runtime. */ }
@@ -527,7 +588,7 @@ export class TrailerController {
 
   private buildInstallScript() {
     return `(() => {
-      const settings = ${JSON.stringify(this.settings)};
+      const settings = ${JSON.stringify(this.effectiveSettings())};
       const ownerId = ${JSON.stringify(this.ownerId)};
       const settingsRevision = ${this.settingsRevision};
       const identity = ${JSON.stringify(this.identity)};
@@ -558,7 +619,7 @@ export class TrailerController {
   }
 
   private async installOrUpdate() {
-    if (!this.mounted || !this.settings.enabled || !this.identity) return;
+    if (!this.isEffectivelyEnabled() || !this.identity) return;
     if (this.installInFlight) {
       this.pendingInstall = true;
       return;
@@ -568,11 +629,12 @@ export class TrailerController {
     try {
       do {
         this.pendingInstall = false;
+        if (!this.isEffectivelyEnabled() || !this.identity) return;
         const result = await this.runInSteamTab(this.buildInstallScript());
         if (!this.mounted || this.ownerId !== ownerId || (window as any)[OWNER_KEY]?.ownerId !== ownerId) return;
         this.applyRemoteResult(result);
         this.refreshAudioListeners();
-      } while (this.mounted && this.ownerId === ownerId && this.pendingInstall);
+      } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
     } finally {
       this.installInFlight = false;
       if (this.mounted && this.pendingInstall) void this.installOrUpdate();
@@ -595,7 +657,7 @@ export class TrailerController {
   }
 
   private async loadIgnFallback() {
-    if (!this.mounted || !this.settings.enabled || !this.identity || this.ignRequested) return;
+    if (!this.isEffectivelyEnabled() || !this.identity || this.ignRequested) return;
     this.ignRequested = true;
     const epoch = this.ignRequestEpoch;
     const ownerId = this.ownerId;
@@ -620,7 +682,7 @@ export class TrailerController {
     try {
       this.refreshAudioListeners();
       await this.refreshPageIdentity();
-      if (!this.mounted || this.installInFlight) return;
+      if (!this.isEffectivelyEnabled() || this.installInFlight) return;
       if (this.readReachableRuntime()) {
         this.emit();
         if (this.runtimeSnapshot?.needsIgnFallback) void this.loadIgnFallback();
@@ -630,7 +692,7 @@ export class TrailerController {
       if (!this.mounted) return;
       if (result?.runtimeMissing === true) {
         this.applyRemoteResult(result);
-        if (this.settings.enabled && this.identity) await this.installOrUpdate();
+        if (this.isEffectivelyEnabled() && this.identity) await this.installOrUpdate();
       } else {
         this.applyRemoteResult(result);
       }

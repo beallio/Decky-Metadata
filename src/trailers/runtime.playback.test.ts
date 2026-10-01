@@ -760,6 +760,28 @@ test('Sleep, disabling trailers, and unload each restore a hidden native logo', 
   }
 });
 
+test('A queued enabled install cannot restore playback after owner conflict suspension', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ hideLogoDuringTrailer: true, clock, pageEnteredAt: clock.now });
+  clock.advance(3000);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '0');
+  const owner = h.window.__deckyMetadataTrailerOwner;
+  owner.settings = { ...owner.settings, enabled: false };
+  owner.settingsRevision = 1;
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  const serializedFactory = source.slice(start, end).replace(/^export\s+/, '');
+
+  vm.runInContext(`(${serializedFactory})({enabled:true,audioEnabled:true,quality:'auto',hideLogoDuringTrailer:true},
+    'test-owner', 0, {en:{}}, {pageAppId:570,sourceAppId:570})`, h.context);
+
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '1');
+  assert.equal(h.video, undefined);
+  await h.runtime.scan();
+  clock.advance(3000);
+  assert.equal(h.video, undefined);
+  h.runtime.destroy();
+});
+
 test('A denied wake resume restores artwork and does not retry on every scan', async () => {
   const h = await readyDirectTrailer({ failWake: true });
   const video = h.video;

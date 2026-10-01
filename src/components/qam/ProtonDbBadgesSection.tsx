@@ -4,6 +4,7 @@ import { ProtonDbIcon } from "../../protondb/Icon";
 import { compactTextStyle, inlineStatusStyle } from "../../styles";
 import type { ProtonDbBadgeSnapshot } from "../../protondb/controller";
 import type { ProtonDbBadgeSettings } from "../../types";
+import { featureConflictNotice } from "../../pluginConflicts";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 type ProtonDbBadgesSectionProps = {
@@ -33,6 +34,8 @@ export function ProtonDbBadgesSection({
   const { settings } = snapshot;
   const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
   const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+  const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
+  const conflictNotice = featureConflictNotice(snapshot.conflict, "ProtonDB badges", settings.enabled);
   const updateSetting = <K extends keyof ProtonDbBadgeSettings>(key: K, value: ProtonDbBadgeSettings[K]) => {
     void onSettingsChange({ ...settings, [key]: value });
   };
@@ -44,7 +47,7 @@ export function ProtonDbBadgesSection({
           label="Enable ProtonDB badges"
           description="Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status."
           checked={settings.enabled}
-          disabled={controlsDisabled}
+          disabled={enableDisabled}
           onChange={(enabled) => updateSetting("enabled", enabled)}
         />
       </PanelSectionRow>
@@ -121,9 +124,9 @@ export function ProtonDbBadgesSection({
           <div style={compactTextStyle}>
             Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.
           </div>
-          <div style={compactTextStyle}>
-            If the separate ProtonDB Badges plugin is also enabled, it can show overlapping badges here. Disable one plugin's badges to avoid duplicates.
-          </div>
+          {conflictNotice ? (
+            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+          ) : null}
           {snapshot.settingsError ? (
             <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
           ) : null}

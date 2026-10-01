@@ -60,6 +60,8 @@ const trailer = vi.hoisted(() => ({
     busy: false,
     settingsError: "",
     matchRevision: 0,
+    conflict: { pluginName: null, detectionAvailable: true },
+    effectiveEnabled: false,
   })),
   setEnabled: vi.fn(),
   setAudioEnabled: vi.fn(),
@@ -429,6 +431,7 @@ describe("Content update settings", () => {
       settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
       status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
       settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
     });
     trailer.setQuality.mockResolvedValue(true);
     protonDb.getSnapshot.mockReturnValue({
@@ -437,6 +440,7 @@ describe("Content update settings", () => {
         focusOnly: false, coverPosition: "bottom-left",
       },
       settingsLoaded: true, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     protonDb.subscribe.mockReturnValue(() => undefined);
     protonDb.setSettings.mockResolvedValue(true);
@@ -843,6 +847,7 @@ describe("Content update settings", () => {
       busy: false,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     render();
     runEffects();
@@ -867,6 +872,7 @@ describe("Content update settings", () => {
       busy: true,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     remount();
     let returned = gameTrailersSection(render());
@@ -889,6 +895,7 @@ describe("Content update settings", () => {
       busy: false,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     remount();
     returned = gameTrailersSection(render());

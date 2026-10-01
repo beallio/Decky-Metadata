@@ -429,7 +429,7 @@ export const installProtonDbStoreBadge = (): (() => void) => {
   const isEligible = (): boolean => {
     if (stopped || !onStoreRoute) return false;
     const snapshot = protonDbBadgeController.getSnapshot();
-    return snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.store;
+    return snapshot.effectiveEnabled && snapshot.settings.store;
   };
 
   const clearDiscoveryTimer = (): void => {
