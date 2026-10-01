@@ -279,7 +279,7 @@ const storeBadgeScript = (payload: StoreBadgePayload | null, revision: number | 
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = "#" + badgeId + "{position:fixed!important;left:auto!important;right:calc(20px + env(safe-area-inset-right,0px))!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:none!important;display:inline-flex!important;align-items:center!important;gap:10px!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px 20px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;font:600 19px/1.2 system-ui,sans-serif!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}";
+      style.textContent = "#" + badgeId + "{position:fixed!important;left:auto!important;right:calc(20px + env(safe-area-inset-right,0px))!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}";
     }
 
     badge = existingBadge || document.createElement("a");
@@ -293,13 +293,7 @@ const storeBadgeScript = (payload: StoreBadgePayload | null, revision: number | 
 
     const tierChanged = badge.getAttribute("data-protondb-tier") !== statePayload.tier;
     if (tierChanged) {
-      badge.replaceChildren(
-        createAtom(),
-        Object.assign(document.createElement("span"), {
-          className: "decky-metadata-protondb-store-tier",
-          textContent: statePayload.label,
-        }),
-      );
+      badge.replaceChildren(createAtom());
       badge.setAttribute("data-protondb-tier", statePayload.tier);
     }
     badge.href = "https://www.protondb.com/app/" + statePayload.steamAppId;
