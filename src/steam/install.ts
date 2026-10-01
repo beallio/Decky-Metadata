@@ -26,7 +26,6 @@ import {
   tryFetchMetadataForApp,
 } from "./metadataPatch";
 import { installLibraryCompatibilityIndicators } from "./libraryCompatibilityIndicators";
-import type { LibraryCompatibilityIndicatorDependencies } from "./libraryCompatibilityIndicators";
 import { installMainWindowHistoryRedirect, installSteamNavigationRedirect } from "./navigationRedirect";
 import { installClickTrace, installHistoryInstanceTrace, installNavigationTrace } from "./diagnostics";
 import { setContextMenuTraceEnabled } from "../contextMenuPatch";
@@ -60,9 +59,7 @@ const reportControllerLayoutFailure = (failure: ControllerLayoutFailure): void =
   ).catch(() => undefined);
 };
 
-export const installSteamPatches = (
-  coverHooks: Pick<LibraryCompatibilityIndicatorDependencies, "decorateCover" | "subscribeCoverChanges"> = {},
-): Unpatch => {
+export const installSteamPatches = (): Unpatch => {
   configureActivityMetadataLoader(ensureMetadataCache, applyMetadata);
   const unpatchers: Unpatch[] = [];
   let patchesCancelled = false;
@@ -102,7 +99,7 @@ export const installSteamPatches = (
 
     installNativeNewsHistoryRedirects(unpatchers);
     installMetadataPatches(unpatchers);
-    safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers, coverHooks));
+    safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
     installCommunityFeedPatch(unpatchers);
     installRouterRenderPatches(unpatchers, {
       ensureMetadataCache,

@@ -24,8 +24,6 @@ import {
 } from "./steamUiModules";
 
 const DECK_DISPLAY = 1;
-// Steam's shared cover renderer uses context 2 for the Home carousel.
-const HOME_CARD_CONTEXT = 2;
 
 type ModuleFinder = (predicate: (module: any) => any) => any;
 type ModuleSourceFinder = (fragments: string[]) => any;
@@ -58,8 +56,6 @@ export type LibraryCompatibilityIndicatorDependencies = {
   metadataForApp: (appId: number) => MetadataData | undefined;
   isNativeNonSteamShortcut: (overview: any) => boolean;
   useCompatibilityRevision: (subscribe: (listener: () => void) => Unpatch) => void;
-  decorateCover?: (output: unknown, overview: unknown, surface: "home" | "library") => unknown;
-  subscribeCoverChanges?: (listener: () => void) => Unpatch;
 };
 
 type LibraryCompatibilityTargets = {
@@ -421,7 +417,6 @@ export const installLibraryCompatibilityIndicators = (
   let retryId: number | undefined;
   let homeDiscoveryRetryId: number | undefined;
   let homeCacheUnsubscribe: Unpatch | undefined;
-  let coverCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
   const mountedHomeCarousels = new Set<any>();
   const mountedHomeGrids = new Map<any, MountedHomeGrid>();
@@ -454,13 +449,6 @@ export const installLibraryCompatibilityIndicators = (
       cacheCleanup?.();
     } catch {
       // Continue teardown if Steam has already removed the subscription.
-    }
-    const coverCleanup = coverCacheUnsubscribe;
-    coverCacheUnsubscribe = undefined;
-    try {
-      coverCleanup?.();
-    } catch {
-      // Continue releasing native renderers if a cover subscription has ended.
     }
     mountedHomeCarousels.clear();
     mountedHomeGrids.forEach(({ restore }, grid) => {
@@ -559,17 +547,13 @@ export const installLibraryCompatibilityIndicators = (
       appId: number,
       output: unknown,
       decorate: (output: unknown, overview: unknown) => unknown,
-      surface: "home" | "library",
       renderedOverview?: { appid?: unknown },
     ) => {
       const overview = renderedOverview ?? dependencies.getOverview(appId);
       if (Number(overview?.appid) !== Number(appId)) return output;
-      const withCompatibility = dependencies.isNativeNonSteamShortcut(overview)
+      return dependencies.isNativeNonSteamShortcut(overview)
         ? decorate(output, overview)
         : output;
-      return dependencies.decorateCover
-        ? dependencies.decorateCover(withCompatibility, overview, surface)
-        : withCompatibility;
     };
 
     const carouselWrapperFor = (carousel: any) => {
@@ -591,7 +575,6 @@ export const installLibraryCompatibilityIndicators = (
             targets.homeClassName,
             overview,
           ),
-          "home",
         );
       };
       mountedHomeCarouselWrappers.set(carousel, wrapper);
@@ -943,7 +926,6 @@ export const installLibraryCompatibilityIndicators = (
             targets.gridIndicatorClassName,
             overview,
           ),
-          args[0]?.context === HOME_CARD_CONTEXT ? "home" : "library",
           args[0]?.app,
         ),
       );
@@ -957,11 +939,6 @@ export const installLibraryCompatibilityIndicators = (
     }
     installed = true;
     homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
-    coverCacheUnsubscribe = dependencies.subscribeCoverChanges?.(() => {
-      if (!active) return;
-      refreshMountedHomeCarousels();
-      dependencies.refreshCompatibilitySurfaces();
-    });
     refreshMountedHomeCarousels();
     reportInstalled(resolutionAttempts);
     dependencies.refreshCompatibilitySurfaces();
