@@ -13,7 +13,7 @@ vi.mock("../steam/core", () => ({
   metadataCache: fixtures.metadataCache,
 }));
 
-import { resetProtonDbAppIdResolution, resolveProtonDbAppId } from "./identity";
+import { getResolvedProtonDbAppId, resetProtonDbAppIdResolution, resolveProtonDbAppId } from "./identity";
 
 const shortcutId = 3015223078;
 const native = (name: string, id = shortcutId) => {
@@ -40,6 +40,7 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     fixtures.metadataCache["620"] = { steam_appid: 570 };
     vi.mocked(fetchNoCors).mockRejectedValue(new Error("No name request is valid for this native Steam game"));
     expect(await resolveProtonDbAppId(620, overview)).toBe(620);
+    expect(getResolvedProtonDbAppId(620, overview)).toBe(620);
     expect(fetchNoCors).not.toHaveBeenCalled();
   });
 
@@ -57,6 +58,7 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     fixtures.metadataCache[String(shortcutId)] = { steam_appid: savedId };
     vi.mocked(fetchNoCors).mockRejectedValue(new Error("A valid saved ID must not make a name request"));
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(570);
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBe(570);
     expect(fetchNoCors).not.toHaveBeenCalled();
   });
 
@@ -71,11 +73,13 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     const overview = native("Hades");
     vi.mocked(fetchNoCors).mockResolvedValue(steamGame("Hades", 1145360));
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBe(1145360);
     fixtures.metadataCache[String(shortcutId)] = { steam_appid: 570 };
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(570);
     fixtures.metadataCache[String(shortcutId)] = { steam_appid: 620 };
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(620);
     delete fixtures.metadataCache[String(shortcutId)];
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBe(1145360);
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
     expect(fetchNoCors).toHaveBeenCalledTimes(1);
   });
@@ -130,6 +134,7 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
   it("rejects a stale overview rather than searching another game's name", async () => {
     const overview = native("Hades");
     expect(await resolveProtonDbAppId(shortcutId, { ...overview, appid: shortcutId + 1 })).toBeNull();
+    expect(getResolvedProtonDbAppId(shortcutId, { ...overview, appid: shortcutId + 1 })).toBeNull();
     expect(fetchNoCors).not.toHaveBeenCalled();
   });
 
@@ -139,6 +144,7 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     expect(await Promise.all([resolveProtonDbAppId(shortcutId, overview), resolveProtonDbAppId(shortcutId, overview)])).toEqual([1145360, 1145360]);
     expect(fetchNoCors).toHaveBeenCalledTimes(1);
     overview.display_name = "Brotato";
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBeUndefined();
     vi.mocked(fetchNoCors).mockResolvedValueOnce(steamGame("Brotato", 1942280));
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1942280);
   });
@@ -149,6 +155,7 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     vi.mocked(fetchNoCors).mockImplementationOnce(() => pending.promise);
     const old = resolveProtonDbAppId(shortcutId, overview);
     resetProtonDbAppIdResolution();
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBeUndefined();
     vi.mocked(fetchNoCors).mockResolvedValueOnce(steamGame("Hades", 1145360));
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
     pending.resolve(steamGame("Hades", 123));

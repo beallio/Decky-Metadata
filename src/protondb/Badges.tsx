@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { getNativeOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { protonDbBadgeController } from "./controller";
-import { resolveProtonDbAppId, savedProtonDbAppId } from "./identity";
+import { getResolvedProtonDbAppId, resolveProtonDbAppId, savedProtonDbAppId } from "./identity";
 import { ProtonDbIcon, protonDbTierLabel } from "./Icon";
 
 export type NativeProtonDbButtonProps = {
@@ -34,16 +34,19 @@ function useSourceAppId(displayedAppId: number, overview: unknown, active: boole
   const name = getNativeOverview(displayedAppId)?.display_name ??
     (overview && typeof overview === "object" && "display_name" in overview ? overview.display_name : "");
   const savedId = savedProtonDbAppId(displayedAppId);
+  const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
   const [resolved, setResolved] = useState<{ displayedAppId: number; name: unknown; savedId: number | null; id: number | null } | null>(null);
   useEffect(() => {
-    if (!active) return;
+    if (!active || knownId !== undefined) return;
     let cancelled = false;
     void resolveProtonDbAppId(displayedAppId, overview).then(id => {
       if (!cancelled) setResolved({ displayedAppId, name, savedId, id });
     });
     return () => { cancelled = true; };
-  }, [displayedAppId, name, savedId, active]);
-  return active && resolved?.displayedAppId === displayedAppId && resolved.name === name && resolved.savedId === savedId ? resolved.id : null;
+  }, [displayedAppId, name, savedId, active, knownId]);
+  if (!active) return null;
+  if (knownId !== undefined) return knownId;
+  return resolved?.displayedAppId === displayedAppId && resolved.name === name && resolved.savedId === savedId ? resolved.id : null;
 }
 
 function useBadgeTier(sourceAppId: number | null, active: boolean) {

@@ -92,6 +92,11 @@ that your copy works now. Games with no match or rating have no badge. Ratings
 are fetched directly from ProtonDB, shared between views, and refreshed after
 24 hours while the game is visible. No additional compatibility service is used.
 
+Cached badges appear with game covers and controls when you return to a view.
+They stay with those items during Steam's page animation instead of disappearing
+as soon as navigation starts. A first lookup can still take time while the
+match or rating is fetched.
+
 If you also use **ProtonDB Badges**, turn off one plugin's overlapping badges
 to avoid duplicates. Store badges require CEF Remote Debugging in Decky's
 Developer settings.

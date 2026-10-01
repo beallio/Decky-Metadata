@@ -58,6 +58,10 @@ Organize Quick Access Menu settings into collapsible sections.
   ProtonDB tiers are retained without Gateway analysis.
 - ProtonDB cover hosts remain mounted on native Library tab routes, including
   the Non-Steam tab, instead of disappearing when the tab updates its route.
+- Cached ProtonDB badges no longer appear late or disappear early when moving
+  between Home, Library, and game pages. Cover badges stay with their native
+  cards during page animations, and the game-page badge stays with the
+  controller and settings controls.
 
 
 ## [0.4.0] - 2026-09-28

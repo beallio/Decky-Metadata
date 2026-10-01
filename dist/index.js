@@ -5609,7 +5609,6 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     let retryId;
     let homeDiscoveryRetryId;
     let homeCacheUnsubscribe;
-    let coverCacheUnsubscribe;
     const indicatorUnsubscribers = new Set();
     const mountedHomeCarousels = new Set();
     const mountedHomeGrids = new Map();
@@ -5644,14 +5643,6 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         catch {
             // Continue teardown if Steam has already removed the subscription.
-        }
-        const coverCleanup = coverCacheUnsubscribe;
-        coverCacheUnsubscribe = undefined;
-        try {
-            coverCleanup?.();
-        }
-        catch {
-            // Continue releasing native renderers if a cover subscription has ended.
         }
         mountedHomeCarousels.clear();
         mountedHomeGrids.forEach(({ restore }, grid) => {
@@ -5751,16 +5742,13 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 className: props.className,
             });
         };
-        const decorateForApp = (appId, output, decorate, surface, renderedOverview) => {
+        const decorateForApp = (appId, output, decorate, renderedOverview) => {
             const overview = renderedOverview ?? dependencies.getOverview(appId);
             if (Number(overview?.appid) !== Number(appId))
                 return output;
-            const withCompatibility = dependencies.isNativeNonSteamShortcut(overview)
+            return dependencies.isNativeNonSteamShortcut(overview)
                 ? decorate(output, overview)
                 : output;
-            return dependencies.decorateCover
-                ? dependencies.decorateCover(withCompatibility, overview, surface)
-                : withCompatibility;
         };
         const carouselWrapperFor = (carousel) => {
             const existing = mountedHomeCarouselWrappers.get(carousel);
@@ -5774,7 +5762,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 // The top-level `appid` remains a supported fallback for the alternate
                 // renderer shape used by older clients.
                 const appId = Number(props?.appid ?? props?.app?.appid);
-                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview), "home");
+                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
             };
             mountedHomeCarouselWrappers.set(carousel, wrapper);
             return wrapper;
@@ -6114,7 +6102,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 cleanup();
                 return;
             }
-            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), "library", args[0]?.app));
+            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app));
             if (typeof gridUnpatch !== "function") {
                 cleanup();
                 return;
@@ -6126,12 +6114,6 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         installed = true;
         homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
-        coverCacheUnsubscribe = dependencies.subscribeCoverChanges?.(() => {
-            if (!active)
-                return;
-            refreshMountedHomeCarousels();
-            dependencies.refreshCompatibilitySurfaces();
-        });
         refreshMountedHomeCarousels();
         reportInstalled(resolutionAttempts);
         dependencies.refreshCompatibilitySurfaces();
@@ -8525,7 +8507,7 @@ const reportControllerLayoutFailure = (failure) => {
     warn("controller-layouts", "supplemental layouts disabled", failure);
     void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
 };
-const installSteamPatches = (coverHooks = {}) => {
+const installSteamPatches = () => {
     configureActivityMetadataLoader(ensureMetadataCache, applyMetadata);
     const unpatchers = [];
     let patchesCancelled = false;
@@ -8567,7 +8549,7 @@ const installSteamPatches = (coverHooks = {}) => {
         });
         installNativeNewsHistoryRedirects(unpatchers);
         installMetadataPatches(unpatchers);
-        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers, coverHooks));
+        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
         installCommunityFeedPatch(unpatchers);
         installRouterRenderPatches(unpatchers, {
             ensureMetadataCache,
@@ -12583,7 +12565,7 @@ function startMiniAchievementsController() {
 }
 
 const PROTONDB_RATING_TTL_MS = 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 5000;
+const FETCH_TIMEOUT_MS$1 = 5000;
 const RETRY_COOLDOWN_MS = 30000;
 const SUMMARY_URL = "https://www.protondb.com/api/v1/reports/summaries";
 const protonDbTiers = {
@@ -12734,7 +12716,7 @@ class ProtonDbRatingCache {
         this.clearExpiry(entry);
         const request = {
             lifecycle: this.lifecycle,
-            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
+            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS$1),
         };
         entry.request = request;
         this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
@@ -14858,92 +14840,574 @@ const MetadataPage = () => {
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
 };
 
-const canonicalSavedSteamAppId = (value) => {
+const HTML_ENTITIES = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    trade: '™',
+    reg: '®',
+    copy: '©'
+};
+function unescapeHtml(value) {
+    return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
+        if (entity[0] === '#') {
+            const hex = entity[1] === 'x' || entity[1] === 'X';
+            const code = parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+            if (!Number.isFinite(code) || code < 0 || code > 0x10ffff)
+                return match;
+            try {
+                return String.fromCodePoint(code);
+            }
+            catch {
+                return match;
+            }
+        }
+        return HTML_ENTITIES[entity.toLowerCase()] ?? match;
+    });
+}
+/**
+ * Normalise a game title for comparison against Steam search results.
+ *
+ * Ported from Decky-Metadata's backend/matching.py:normalise_match_title.
+ * Drops bracketed segments, articles, edition/remaster wording and region or
+ * version tokens, then collapses everything that is not alphanumeric.
+ *
+ * Unlike the Python original, a removal that would leave the title with no
+ * letters is skipped: "Prototype" and "Prototype 2" are games, not version
+ * markers, and stripping the word leaves nothing to match on.
+ */
+const TITLE_REMOVALS = [
+    /\b(?:the|a|an)\b/g,
+    /\b(?:remaster(?:ed)?|hd|definitive|ultimate|complete|goty|edition)\b/g,
+    /\b(?:usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b/g
+];
+function normaliseMatchTitle(title) {
+    let text = unescapeHtml(String(title ?? ''))
+        .toLowerCase()
+        .replace(/[\u2122\u00ae\u00a9]/g, '')
+        .replace(/\[[^\]]+\]|\([^)]*\)/g, ' ');
+    for (const removal of TITLE_REMOVALS) {
+        const stripped = text.replace(removal, ' ');
+        if (/[a-z]/.test(stripped)) {
+            text = stripped;
+        }
+    }
+    return text
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+// Markers that identify a store entry as something other than the main game.
+// Ported from Decky-Metadata's NON_PRIMARY_STEAM_TITLE_PATTERNS.
+const NON_PRIMARY_PATTERNS = [
+    /\bdemo\b/,
+    /\bbeta\b/,
+    /\bplaytest\b/,
+    /\bprototype\b/,
+    /\bsoundtrack\b/,
+    /\bost\b/,
+    /\bseason\s+pass\b/,
+    /\bdlc\b/,
+    /\bpack\b/,
+    /\bbundle\b/,
+    /\bartbook\b/,
+    /\bart\s+book\b/,
+    /\btrailer\b/,
+    /\bdedicated\s+server\b/,
+    /\bserver\b/,
+    /\btest\b/
+];
+/**
+ * Which "not the main game" markers a title carries.
+ *
+ * normaliseMatchTitle strips words like "demo" and "beta", so a demo entry can
+ * normalise onto the base game's title. Comparing the markers of the query and
+ * of the candidate keeps that apart, while still letting a title whose real
+ * name contains a marker (Prototype, Test Drive) match itself.
+ */
+function nonPrimaryMarkers(title) {
+    const text = unescapeHtml(String(title ?? '')).toLowerCase();
+    return NON_PRIMARY_PATTERNS.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
+}
+
+const SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
+const FETCH_TIMEOUT_MS = 2000;
+const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
+const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
+const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
+async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS) {
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+    });
+    return Promise.race([fetchPromise, timeoutPromise]);
+}
+async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
+    const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Algolia-Application-Id': ALGOLIA_APPLICATION_ID,
+            'X-Algolia-API-Key': ALGOLIA_SEARCH_KEY,
+            Origin: 'https://www.protondb.com',
+            Referer: 'https://www.protondb.com/'
+        },
+        body: JSON.stringify({
+            query: gameName,
+            facetFilters: [['appType:Game']],
+            restrictSearchableAttributes: ['name'],
+            attributesToRetrieve: ['name', 'objectID'],
+            attributesToHighlight: [],
+            attributesToSnippet: [],
+            hitsPerPage: 10
+        })
+    }));
+    if (res.status !== 200)
+        return null;
+    const hits = (await res.json())?.hits;
+    if (!Array.isArray(hits))
+        return null;
+    const match = hits.find((item) => typeof item?.name === 'string' &&
+        typeof item.objectID === 'string' &&
+        /^[1-9]\d*$/.test(item.objectID) &&
+        normaliseMatchTitle(item.name) === query &&
+        nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+    return typeof match?.objectID === 'string' ? match.objectID : null;
+}
+/**
+ * Resolve a non-Steam shortcut name to a Steam app ID.
+ *
+ * Uses the store search endpoint rather than the community autocomplete: it
+ * returns full store titles ("Assassin's Creed™: Director's Cut Edition")
+ * where the autocomplete only returns short ones ("Assassin's Creed"), so
+ * more shortcuts normalise onto a candidate. Results are pinned to English so
+ * the candidate names match what normaliseMatchTitle expects.
+ * If Steam returns no acceptable match, try ProtonDB's SteamDB title index.
+ * Transport errors do not trigger the fallback.
+ */
+async function findSteamAppIdByName(gameName) {
+    const query = normaliseMatchTitle(gameName);
+    if (!query)
+        return null;
+    const queryMarkers = new Set(nonPrimaryMarkers(gameName));
+    try {
+        const params = new URLSearchParams({
+            term: gameName,
+            cc: 'US',
+            l: 'english'
+        });
+        const res = await fetchWithTimeout(fetchNoCors(`${SEARCH_URL}?${params.toString()}`, { method: 'GET' }));
+        if (res.status === 200) {
+            const items = (await res.json())?.items;
+            if (!Array.isArray(items))
+                return null;
+            const match = items.find((item) => item?.type === 'app' &&
+                item?.name &&
+                normaliseMatchTitle(item.name) === query &&
+                nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+            if (typeof match?.id === 'number')
+                return String(match.id);
+            return await findAlgoliaAppIdByName(gameName, query, queryMarkers);
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+    return null;
+}
+
+const resolutions = new Map();
+let generation = 0;
+const resetProtonDbAppIdResolution = () => {
+    generation += 1;
+    resolutions.clear();
+};
+const steamAppId = (value) => {
     if (typeof value === "string" && !/^\d{1,10}$/.test(value))
         return null;
-    if (typeof value !== "number" && typeof value !== "string")
+    if (typeof value !== "string" && typeof value !== "number")
         return null;
-    const steamAppId = Number(value);
-    return Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000
-        ? steamAppId
-        : null;
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
 };
-const resolveProtonDbAppId = (displayedAppId, overview) => {
-    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff) {
+const savedProtonDbAppId = (displayedAppId) => steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
+/** Read known identity without making navigation wait for an effect or Promise. */
+const getResolvedProtonDbAppId = (displayedAppId, overview) => {
+    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff)
         return null;
-    }
-    if (!overview || typeof overview !== "object" || Array.isArray(overview))
+    if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
+        !("appid" in overview) || overview.appid !== displayedAppId)
         return null;
-    if (!("appid" in overview) || overview.appid !== displayedAppId)
+    const native = getNativeOverview(displayedAppId) ?? overview;
+    if (!("appid" in native) || native.appid !== displayedAppId ||
+        !("app_type" in native) || typeof native.app_type !== "number" ||
+        !Number.isSafeInteger(native.app_type))
         return null;
-    if (!("app_type" in overview) ||
-        typeof overview.app_type !== "number" ||
-        !Number.isSafeInteger(overview.app_type)) {
-        return null;
-    }
     try {
-        if (isNativeNonSteamShortcut(overview)) {
-            const metadataKey = String(displayedAppId);
-            if (!Object.prototype.hasOwnProperty.call(metadataCache, metadataKey))
-                return null;
-            return canonicalSavedSteamAppId(metadataCache[metadataKey]?.steam_appid);
+        if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native))
+            return displayedAppId;
+        const savedId = savedProtonDbAppId(displayedAppId);
+        if (savedId !== null)
+            return savedId;
+        if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim())
+            return null;
+        const resolution = resolutions.get(displayedAppId);
+        return resolution?.name === native.display_name ? resolution.id : undefined;
+    }
+    catch {
+        return null;
+    }
+};
+/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
+const resolveProtonDbAppId = async (displayedAppId, overview) => {
+    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
+    if (knownId !== undefined)
+        return knownId;
+    const native = (getNativeOverview(displayedAppId) ?? overview);
+    const name = native.display_name;
+    const requestedGeneration = generation;
+    try {
+        let resolution = resolutions.get(displayedAppId);
+        if (resolution?.name !== name) {
+            const promise = findSteamAppIdByName(name).then(result => {
+                if (generation !== requestedGeneration)
+                    return null;
+                const current = getNativeOverview(displayedAppId);
+                if (current && current.display_name !== name)
+                    return null;
+                const id = steamAppId(result);
+                if (resolution)
+                    resolution.id = id;
+                return id;
+            });
+            resolution = { name, promise };
+            resolutions.set(displayedAppId, resolution);
         }
-        return displayedAppId < 0x80000000 ? displayedAppId : null;
+        const result = await resolution.promise;
+        if (generation !== requestedGeneration)
+            return null;
+        return savedProtonDbAppId(displayedAppId) ?? result;
     }
     catch {
         return null;
     }
 };
 
-const CARD_CLASS = "decky-metadata-protondb-card";
-const COVER_KEY = "decky-metadata-protondb-cover";
+const protonDbCoverSurface = (path) => {
+    if (/^\/(?:routes\/)?library\/home(?:\/|$)/.test(path ?? ""))
+        return "home";
+    if (/^\/(?:routes\/)?library(?:\/(?:collections|tab)(?:\/|$)|\/?$)/.test(path ?? ""))
+        return "library";
+    return null;
+};
+
+// Native mounting boundaries and icon layout are from the local ProtonDB fork.
+const COVER_SELECTOR = "._1pwP4eeP1zQD7PEgmsep0W";
+const FOOTER_SELECTOR = "._3BPFqWN5T-x8njyrRYM1CX";
+const OVERLAY_SELECTOR = "._2GRcKrPZsMSF6glMPRMZei";
+const HOST_CLASS = "decky-metadata-protondb-cover-host";
+const STYLE_ID = "decky-metadata-protondb-covers-style";
+const APP_ID_FROM_SRC = /\/(?:assets|customimages)\/(\d+)/;
 const COVER_CSS = `
-.decky-metadata-protondb-host{display:contents;pointer-events:none}
-.decky-metadata-protondb-cover{position:absolute;z-index:3;left:8px;bottom:8px;width:22px;height:22px;padding:3px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.12);pointer-events:none;display:flex;align-items:center;justify-content:center}
-.decky-metadata-protondb-cover svg{width:100%;height:100%}
-.decky-metadata-protondb-cover--top-left{top:8px;bottom:auto}
-.decky-metadata-protondb-cover--top-right{top:8px;right:8px;left:auto;bottom:auto}
+.${HOST_CLASS}{display:contents}
+.decky-metadata-protondb-cover{width:20px;height:20px;padding:2px;border-radius:20px;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:1}
+.decky-metadata-protondb-cover--bottom-left{flex-shrink:0}
+.decky-metadata-protondb-cover--top-left{position:absolute;top:4px;left:4px}
+.decky-metadata-protondb-cover--top-right{position:absolute;top:4px;right:4px}
 .decky-metadata-protondb-cover--focus{opacity:0}
-.${CARD_CLASS}:hover .decky-metadata-protondb-cover--focus,
-.${CARD_CLASS}.gpfocus .decky-metadata-protondb-cover--focus,
-.${CARD_CLASS}.gpfocuswithin .decky-metadata-protondb-cover--focus,
-.${CARD_CLASS}:focus-within .decky-metadata-protondb-cover--focus,
-.${CARD_CLASS}:has(.gpfocus) .decky-metadata-protondb-cover--focus{opacity:1}
+.WYgDg9NyCcMIVuMyZ_NBC.gpfocus .decky-metadata-protondb-cover--focus,
+${COVER_SELECTOR}.gpfocuswithin .decky-metadata-protondb-cover--focus,
+${COVER_SELECTOR}:focus-within .decky-metadata-protondb-cover--focus,
+${COVER_SELECTOR}:hover .decky-metadata-protondb-cover--focus{opacity:1;transition:opacity .6s cubic-bezier(0,.73,.48,1)}
 `;
-const styleLeases = new WeakMap();
-function acquireCoverStyle(document) {
-    let entry = styleLeases.get(document);
-    if (!entry) {
-        const style = document.createElement("style");
-        style.dataset.deckyMetadataProtondb = "covers";
-        style.textContent = COVER_CSS;
-        (document.head ?? document.documentElement).appendChild(style);
-        entry = { style, count: 0 };
-        styleLeases.set(document, entry);
+const CoverIcon = SP_REACT.memo(function CoverIcon({ appId, sourceId, tier, position, focusOnly }) {
+    if (!tier || sourceId === null)
+        return null;
+    const color = PROTONDB_COLORS[tier];
+    return (SP_JSX.jsx("div", { className: `decky-metadata-protondb-cover decky-metadata-protondb-cover--${position}${focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`, "data-appid": appId, "data-protondb-appid": sourceId, "data-protondb-tier": tier, role: "img", "aria-label": `ProtonDB ${protonDbTierLabel(tier)}`, title: `ProtonDB: ${protonDbTierLabel(tier)}`, children: SP_JSX.jsxs("svg", { viewBox: "0 0 512 512", width: "16", height: "16", "aria-hidden": "true", children: [SP_JSX.jsx("circle", { cx: "256", cy: "256", r: "36", fill: color }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28" }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28", transform: "rotate(60 256 256)" }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28", transform: "rotate(120 256 256)" })] }) }));
+});
+const appIdFromCover = (cover) => {
+    const tileId = cover.closest("[data-id]")?.getAttribute("data-id");
+    const imageId = cover.querySelector("img")?.getAttribute("src")?.match(APP_ID_FROM_SRC)?.[1];
+    const id = Number(tileId || imageId);
+    return Number.isSafeInteger(id) && id > 0 && id <= 0xffffffff ? id : null;
+};
+const currentSurface = () => {
+    const mainWindow = DFL.Router.WindowStore?.GamepadUIMainWindowInstance;
+    return protonDbCoverSurface(mainWindow?.m_history?.location?.pathname);
+};
+const installProtonDbCoverBadges = () => {
+    const creators = new Set();
+    for (const module of DFL.createModuleMapping(value => typeof value?.createRoot === "function").values()) {
+        creators.add(module.createRoot);
     }
-    const lease = entry;
-    lease.count += 1;
-    return () => {
-        lease.count -= 1;
-        if (lease.count === 0) {
-            lease.style.remove();
-            styleLeases.delete(document);
+    if (creators.size !== 1)
+        throw new Error(`Expected one native React createRoot export; found ${creators.size}`);
+    const createRoot = creators.values().next().value;
+    const hosts = new Map();
+    const surfaces = new WeakMap();
+    const affected = new Set();
+    let disposed = false;
+    let document = null;
+    let root = null;
+    let style = null;
+    let observer = null;
+    let renderQueued = false;
+    let observerQueued = false;
+    let nextKey = 0;
+    let settings = protonDbBadgeController.getSnapshot().settings;
+    const surfaceEnabled = (surface) => {
+        const snapshot = protonDbBadgeController.getSnapshot();
+        return snapshot.settingsLoaded && snapshot.settings.enabled && surface !== null && snapshot.settings[surface];
+    };
+    const queueRender = () => {
+        if (disposed || !root || renderQueued)
+            return;
+        renderQueued = true;
+        queueMicrotask(() => {
+            renderQueued = false;
+            if (disposed || !root)
+                return;
+            const renderRoot = root;
+            // Mutation-observer work runs after Steam's commit. Flush these portals
+            // before paint instead of leaving them behind React's concurrent queue.
+            SP_REACTDOM.flushSync(() => renderRoot.render(Array.from(hosts.values(), entry => SP_REACTDOM.createPortal(SP_REACT.createElement(CoverIcon, {
+                appId: entry.appId, sourceId: entry.sourceId, tier: entry.tier,
+                position: settings.coverPosition, focusOnly: settings.focusOnly,
+            }), entry.host, String(entry.key)))));
+        });
+    };
+    const releaseEntry = (cover, entry) => {
+        entry.revision += 1;
+        entry.disposeRating?.();
+        entry.disposeRating = undefined;
+        entry.host.remove();
+        hosts.delete(cover);
+        queueRender();
+    };
+    const loadTier = (cover, entry, overview) => {
+        const revision = ++entry.revision;
+        entry.disposeRating?.();
+        entry.disposeRating = undefined;
+        entry.sourceId = null;
+        entry.tier = null;
+        queueRender();
+        const applySource = (sourceId) => {
+            if (disposed || !surfaceEnabled(entry.surface) || hosts.get(cover) !== entry || entry.revision !== revision || sourceId === null)
+                return;
+            entry.sourceId = sourceId;
+            const refresh = () => {
+                if (disposed || hosts.get(cover) !== entry || entry.revision !== revision)
+                    return;
+                const tier = protonDbBadgeController.getRating(sourceId).tier;
+                if (entry.tier === tier)
+                    return;
+                entry.tier = tier;
+                queueRender();
+            };
+            entry.disposeRating = protonDbBadgeController.subscribeRating(sourceId, refresh);
+            refresh();
+        };
+        const knownId = getResolvedProtonDbAppId(entry.appId, overview);
+        if (knownId !== undefined)
+            applySource(knownId);
+        else
+            void resolveProtonDbAppId(entry.appId, overview).then(applySource);
+    };
+    const reconcile = (cover) => {
+        const existing = hosts.get(cover);
+        const appId = appIdFromCover(cover);
+        const footer = cover.querySelector(FOOTER_SELECTOR);
+        const overlay = footer?.closest(OVERLAY_SELECTOR);
+        const surface = existing?.surface ?? surfaces.get(cover) ?? currentSurface();
+        if (surface !== null)
+            surfaces.set(cover, surface);
+        const valid = cover.isConnected && cover.ownerDocument === document && appId !== null &&
+            footer && overlay && cover.contains(overlay) && surfaceEnabled(surface);
+        if (existing && (!valid || existing.footer !== footer || existing.host.parentElement !== footer)) {
+            releaseEntry(cover, existing);
+        }
+        if (!valid || !document || !footer || appId === null || surface === null)
+            return;
+        const overview = getNativeOverview(appId) ?? getOverview(appId);
+        const name = overview?.display_name ?? "";
+        let entry = hosts.get(cover);
+        if (!entry) {
+            const host = document.createElement("div");
+            host.className = HOST_CLASS;
+            footer.prepend(host);
+            entry = { host, footer, appId, name, surface, key: nextKey++, revision: 0, sourceId: null, tier: null };
+            hosts.set(cover, entry);
+            loadTier(cover, entry, overview);
+        }
+        else if (entry.appId !== appId || entry.name !== name) {
+            entry.appId = appId;
+            entry.name = name;
+            loadTier(cover, entry, overview);
         }
     };
-}
+    const collect = (node) => {
+        if (node.nodeType !== 1)
+            return;
+        const element = node;
+        if (element.closest(`.${HOST_CLASS}`) && !element.classList.contains(HOST_CLASS))
+            return;
+        const cover = element.closest(COVER_SELECTOR);
+        if (cover)
+            affected.add(cover);
+        for (const child of element.querySelectorAll(COVER_SELECTOR))
+            affected.add(child);
+    };
+    const detachDocument = () => {
+        observer?.disconnect();
+        observer = null;
+        affected.clear();
+        root?.unmount();
+        root = null;
+        for (const entry of hosts.values()) {
+            entry.revision += 1;
+            entry.disposeRating?.();
+            entry.host.remove();
+        }
+        hosts.clear();
+        style?.remove();
+        style = null;
+        document = null;
+    };
+    const scan = () => {
+        if (!document)
+            return;
+        for (const [cover, entry] of hosts) {
+            if (!cover.isConnected || !entry.footer.isConnected || entry.host.parentElement !== entry.footer || !cover.contains(entry.footer)) {
+                releaseEntry(cover, entry);
+            }
+        }
+        for (const cover of document.querySelectorAll(COVER_SELECTOR))
+            reconcile(cover);
+    };
+    const syncDocument = () => {
+        if (disposed)
+            return;
+        const snapshot = protonDbBadgeController.getSnapshot();
+        // Observe Steam's main document even on Game Info so the next cover mount
+        // is handled in the same turn, not by the one-second discovery fallback.
+        const nextDocument = snapshot.settingsLoaded && settings.enabled && (settings.home || settings.library)
+            ? findSteamUiDocumentMatch(candidate => candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(COVER_SELECTOR)
+                ? candidate : undefined) ?? null
+            : null;
+        if (nextDocument === document)
+            return;
+        detachDocument();
+        if (!nextDocument?.body)
+            return;
+        document = nextDocument;
+        root = createRoot(document.createElement("div"));
+        style = document.createElement("style");
+        style.id = STYLE_ID;
+        style.textContent = COVER_CSS;
+        document.head.appendChild(style);
+        const popup = document.defaultView;
+        if (!popup)
+            return;
+        const Observer = Reflect.get(popup, "MutationObserver");
+        observer = new Observer(records => {
+            for (const record of records) {
+                const target = record.target;
+                if (target.closest?.(`.${HOST_CLASS}`))
+                    continue;
+                collect(target);
+                for (const node of record.addedNodes)
+                    collect(node);
+                for (const node of record.removedNodes)
+                    collect(node);
+            }
+            if (observerQueued || disposed)
+                return;
+            observerQueued = true;
+            queueMicrotask(() => {
+                observerQueued = false;
+                if (disposed || !document)
+                    return;
+                for (const [cover, entry] of hosts) {
+                    if (!cover.isConnected || !entry.footer.isConnected || entry.host.parentElement !== entry.footer || !cover.contains(entry.footer))
+                        affected.add(cover);
+                }
+                const covers = Array.from(affected);
+                affected.clear();
+                for (const cover of covers)
+                    reconcile(cover);
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "data-id"] });
+        scan();
+    };
+    const refreshSettings = () => {
+        if (disposed)
+            return;
+        settings = protonDbBadgeController.getSnapshot().settings;
+        syncDocument();
+        scan();
+        queueRender();
+    };
+    const unsubscribe = protonDbBadgeController.subscribe(refreshSettings);
+    const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
+        if (disposed)
+            return;
+        for (const [cover, entry] of hosts) {
+            if (entry.appId === appId)
+                loadTier(cover, entry, getNativeOverview(appId) ?? getOverview(appId));
+        }
+    });
+    const maintenance = setInterval(syncDocument, 1000);
+    refreshSettings();
+    return () => {
+        if (disposed)
+            return;
+        disposed = true;
+        unsubscribe();
+        unsubscribeMatch();
+        clearInterval(maintenance);
+        detachDocument();
+    };
+};
+
 function useBadgeSnapshot(displayedAppId) {
     const [, update] = SP_REACT.useState(0);
     SP_REACT.useEffect(() => {
         const refresh = () => update(value => value + 1);
         const unsubscribe = protonDbBadgeController.subscribe(refresh);
+        const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
+            if (appId === displayedAppId)
+                refresh();
+        });
         refresh();
-        return unsubscribe;
-    }, []);
-    SP_REACT.useEffect(() => subscribeMetadataMatchChanges(appId => {
-        if (appId === displayedAppId)
-            update(value => value + 1);
-    }), [displayedAppId]);
+        return () => { unsubscribe(); unsubscribeMatch(); };
+    }, [displayedAppId]);
     return protonDbBadgeController.getSnapshot();
+}
+function useSourceAppId(displayedAppId, overview, active) {
+    const name = getNativeOverview(displayedAppId)?.display_name ??
+        (overview && typeof overview === "object" && "display_name" in overview ? overview.display_name : "");
+    const savedId = savedProtonDbAppId(displayedAppId);
+    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
+    const [resolved, setResolved] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        if (!active || knownId !== undefined)
+            return;
+        let cancelled = false;
+        void resolveProtonDbAppId(displayedAppId, overview).then(id => {
+            if (!cancelled)
+                setResolved({ displayedAppId, name, savedId, id });
+        });
+        return () => { cancelled = true; };
+    }, [displayedAppId, name, savedId, active, knownId]);
+    if (!active)
+        return null;
+    if (knownId !== undefined)
+        return knownId;
+    return resolved?.displayedAppId === displayedAppId && resolved.name === name && resolved.savedId === savedId ? resolved.id : null;
 }
 function useBadgeTier(sourceAppId, active) {
     const [, update] = SP_REACT.useState(0);
@@ -14955,74 +15419,12 @@ function useBadgeTier(sourceAppId, active) {
         refresh();
         return unsubscribe;
     }, [sourceAppId, active]);
-    // Derive from the current source ID, never retain an old game's rating in state.
     return active && sourceAppId !== null ? protonDbBadgeController.getRating(sourceAppId).tier : null;
-}
-function ProtonDbCoverBadge({ displayedAppId, overview, surface }) {
-    const host = SP_REACT.useRef(null);
-    const [visible, setVisible] = SP_REACT.useState(false);
-    const snapshot = useBadgeSnapshot(displayedAppId);
-    const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings[surface];
-    const sourceAppId = active ? resolveProtonDbAppId(displayedAppId, overview) : null;
-    const tier = useBadgeTier(sourceAppId, active && visible);
-    SP_REACT.useLayoutEffect(() => {
-        const element = host.current;
-        if (!active || !element) {
-            setVisible(false);
-            return;
-        }
-        const cover = element.closest(`.${CARD_CLASS}`);
-        if (!cover)
-            return;
-        const popup = element.ownerDocument.defaultView;
-        if (!popup)
-            return;
-        const constructor = Reflect.get(popup, "IntersectionObserver");
-        if (typeof constructor !== "function")
-            return;
-        // Use Steam's popup realm; SharedJSContext has a different viewport.
-        const Observer = constructor;
-        const releaseStyle = acquireCoverStyle(element.ownerDocument);
-        const observer = new Observer(entries => {
-            setVisible(entries.some(entry => entry.isIntersecting));
-        });
-        observer.observe(cover);
-        return () => { observer.disconnect(); releaseStyle(); };
-    }, [active, displayedAppId]);
-    return (SP_JSX.jsx("span", { ref: host, className: "decky-metadata-protondb-host", style: { display: "contents", pointerEvents: "none" }, children: tier ? (SP_JSX.jsx("span", { className: `decky-metadata-protondb-cover decky-metadata-protondb-cover--${snapshot.settings.coverPosition}${snapshot.settings.focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`, role: "img", "aria-label": `ProtonDB ${protonDbTierLabel(tier)}`, title: `ProtonDB: ${protonDbTierLabel(tier)}`, children: SP_JSX.jsx(ProtonDbIcon, { tier: tier }) })) : null }));
-}
-function decorateProtonDbCover(output, overview, surface) {
-    if (!SP_REACT.isValidElement(output) || typeof output.props.className !== "string")
-        return output;
-    if (!overview || typeof overview !== "object" || !("appid" in overview) || typeof overview.appid !== "number")
-        return output;
-    const children = Array.isArray(output.props.children) ? output.props.children : [output.props.children];
-    if (children.some(child => SP_REACT.isValidElement(child) && child.key === COVER_KEY))
-        return output;
-    return SP_REACT.cloneElement(output, {
-        className: `${output.props.className} ${CARD_CLASS}`,
-        children: [...children, SP_REACT.createElement(ProtonDbCoverBadge, {
-                key: COVER_KEY, displayedAppId: overview.appid, overview, surface,
-            })],
-    });
-}
-function subscribeProtonDbCoverChanges(listener) {
-    let previous = protonDbBadgeController.getSnapshot();
-    return protonDbBadgeController.subscribe(() => {
-        const next = protonDbBadgeController.getSnapshot();
-        const changed = previous.settingsLoaded !== next.settingsLoaded ||
-            previous.settings.enabled !== next.settings.enabled || previous.settings.home !== next.settings.home ||
-            previous.settings.library !== next.settings.library || previous.settings.focusOnly !== next.settings.focusOnly ||
-            previous.settings.coverPosition !== next.settings.coverPosition;
-        previous = next;
-        if (changed)
-            listener();
-    });
 }
 function ProtonDbGameButton({ displayedAppId, overview, Button, className }) {
     const snapshot = useBadgeSnapshot(displayedAppId);
     const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.gameView;
-    const sourceAppId = active ? resolveProtonDbAppId(displayedAppId, overview) : null;
+    const sourceAppId = useSourceAppId(displayedAppId, overview, active);
     const tier = useBadgeTier(sourceAppId, active);
     if (!tier || sourceAppId === null)
         return null;
@@ -15103,7 +15505,7 @@ function installProtonDbGameView() {
     let stopped = false;
     let targets;
     const observers = new Map();
-    let scheduled;
+    let captureQueued = false;
     let generation = 0;
     const captureTimers = new Set();
     const patches = new Map();
@@ -15119,9 +15521,10 @@ function installProtonDbGameView() {
             if (!owner || observers.has(owner))
                 continue;
             const observer = new MutationObserver(() => {
-                if (stopped || scheduled !== undefined)
+                if (stopped || captureQueued)
                     return;
-                scheduled = setTimeout(() => { scheduled = undefined; capture(); }, 0);
+                captureQueued = true;
+                queueMicrotask(() => { captureQueued = false; capture(); });
             });
             observer.observe(body, { childList: true, subtree: true });
             observers.set(owner, observer);
@@ -15155,7 +15558,9 @@ function installProtonDbGameView() {
                     if (stopped || !recordValue(args[0]) || !recordValue(args[0].overview))
                         return result;
                     const overview = args[0].overview;
-                    if (typeof overview.appid !== "number" || !isCurrentGameDetailRoute(currentRoutePath(), overview.appid))
+                    // Steam retains outgoing controls during its page animation. Their
+                    // overview, not the destination route, owns the badge's lifetime.
+                    if (typeof overview.appid !== "number")
                         return result;
                     const button = SP_REACT.createElement(ProtonDbGameButton, {
                         key: BUTTON_KEY, displayedAppId: overview.appid, overview,
@@ -15170,7 +15575,7 @@ function installProtonDbGameView() {
                     refreshTargets.add(parentToRefresh);
                     const refresh = parentToRefresh.forceUpdate;
                     if (typeof refresh === "function")
-                        refresh.call(parentToRefresh);
+                        SP_REACTDOM.flushSync(() => refresh.call(parentToRefresh));
                 }
             }
         }
@@ -15210,7 +15615,6 @@ function installProtonDbGameView() {
         generation += 1;
         for (const observer of observers.values())
             observer.disconnect();
-        clearTimeout(scheduled);
         for (const timer of captureTimers)
             clearTimeout(timer);
         captureTimers.clear();
@@ -15474,7 +15878,7 @@ const storeBadgeScript = (payload, revision) => {
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = "#" + badgeId + "{position:fixed!important;left:50%!important;right:auto!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:translateX(-50%)!important;display:inline-flex!important;align-items:center!important;gap:10px!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px 20px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;font:600 19px/1.2 system-ui,sans-serif!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}#" + badgeId + " .decky-metadata-protondb-store-separator{opacity:.55!important}";
+      style.textContent = "#" + badgeId + "{position:fixed!important;left:auto!important;right:calc(20px + env(safe-area-inset-right,0px))!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}";
     }
 
     badge = existingBadge || document.createElement("a");
@@ -15488,21 +15892,7 @@ const storeBadgeScript = (payload, revision) => {
 
     const tierChanged = badge.getAttribute("data-protondb-tier") !== statePayload.tier;
     if (tierChanged) {
-      badge.replaceChildren(
-        createAtom(),
-        Object.assign(document.createElement("span"), {
-          className: "decky-metadata-protondb-store-attribution",
-          textContent: "ProtonDB",
-        }),
-        Object.assign(document.createElement("span"), {
-          className: "decky-metadata-protondb-store-separator",
-          textContent: "·",
-        }),
-        Object.assign(document.createElement("span"), {
-          className: "decky-metadata-protondb-store-tier",
-          textContent: statePayload.label,
-        }),
-      );
+      badge.replaceChildren(createAtom());
       badge.setAttribute("data-protondb-tier", statePayload.tier);
     }
     badge.href = "https://www.protondb.com/app/" + statePayload.steamAppId;
@@ -15591,16 +15981,13 @@ const resolveStoreTarget = (value) => {
 };
 const findSteamHistory = () => {
     try {
-        const candidate = DFL.findModuleExport((moduleExport) => {
-            if (typeof moduleExport !== "object" || moduleExport === null || Array.isArray(moduleExport) ||
-                !("m_history" in moduleExport) || !isSteamHistoryBoundary(moduleExport.m_history))
-                return false;
-            return true;
-        });
-        if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate) ||
-            !("m_history" in candidate) || !isSteamHistoryBoundary(candidate.m_history))
+        // tempNavStore's exported History publishes before its location catches up.
+        // Use the active main-window History, which owns Steam's actual Store route.
+        const mainWindow = DFL.Router.WindowStore?.GamepadUIMainWindowInstance;
+        if (typeof mainWindow !== "object" || mainWindow === null ||
+            !("m_history" in mainWindow) || !isSteamHistoryBoundary(mainWindow.m_history))
             return undefined;
-        return candidate.m_history;
+        return mainWindow.m_history;
     }
     catch {
         return undefined;
@@ -15882,13 +16269,11 @@ var index = DFL.definePlugin(() => {
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
+    resetProtonDbAppIdResolution();
     protonDbBadgeController.mount();
     let unpatchSteam;
     try {
-        unpatchSteam = installSteamPatches({
-            decorateCover: decorateProtonDbCover,
-            subscribeCoverChanges: subscribeProtonDbCoverChanges,
-        });
+        unpatchSteam = installSteamPatches();
     }
     catch (error) {
         warn("bridge", "installSteamPatches failed", error);
@@ -15899,6 +16284,7 @@ var index = DFL.definePlugin(() => {
     const stopMetadataBootstrap = startMetadataBootstrap();
     const stopTrailerController = startTrailerController();
     const stopMiniAchievementsController = startMiniAchievementsController();
+    const stopProtonDbCovers = installProtonDbCoverBadges();
     const stopProtonDbGameView = installProtonDbGameView();
     const stopProtonDbStoreBadge = installProtonDbStoreBadge();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
@@ -15915,9 +16301,11 @@ var index = DFL.definePlugin(() => {
         onDismount() {
             stopTrailerController();
             stopMiniAchievementsController();
+            stopProtonDbCovers();
             stopProtonDbStoreBadge();
             stopProtonDbGameView();
             protonDbBadgeController.stop();
+            resetProtonDbAppIdResolution();
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
             // the held Game Info intent before it does so during an in-place import.

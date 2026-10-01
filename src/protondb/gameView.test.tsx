@@ -13,6 +13,7 @@ vi.mock("@decky/ui", () => ({ afterPatch: (target: object, key: string,
   Reflect.set(target, key, (...args: unknown[]) => handler(args, Reflect.apply(original, target, args)));
   return { unpatch: () => Reflect.set(target, key, original) };
 } }));
+vi.mock("react-dom", () => ({ flushSync: (render: () => void) => render() }));
 vi.mock("../log", () => ({ warn: vi.fn() }));
 vi.mock("../steam/core", () => ({
   GAME_DETAIL_ROUTES: ["/library/app/:appid"], currentRoutePath: () => native.route,
@@ -88,14 +89,16 @@ describe("private native action-row capture", () => {
     expect(owner.forceUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it("does not add the old game's action when the native row is reused after navigation", async () => {
+  it("keeps the outgoing game's badge with its native controls during navigation", async () => {
     dispose = installProtonDbGameView();
     await vi.advanceTimersByTimeAsync(0);
-    native.route = "/library/app/571";
-    expect(buttonsFor(570).map(button => React.isValidElement<{ id: string }>(button) ? button.props.id : null))
-      .toEqual(["controller", "settings"]);
-    const currentButton = buttonsFor(571)[0];
-    expect(React.isValidElement(currentButton) && currentButton.type).toBe("ProtonDbGameButton");
+    for (const route of ["/library/home", "/library/app/571"]) {
+      native.route = route;
+      const outgoing = buttonsFor(570)[0];
+      expect(React.isValidElement<{ displayedAppId: number }>(outgoing) && outgoing.props.displayedAppId).toBe(570);
+    }
+    const incoming = buttonsFor(571)[0];
+    expect(React.isValidElement<{ displayedAppId: number }>(incoming) && incoming.props.displayedAppId).toBe(571);
   });
 
   it("captures a first game page whose action row appears after the initial retry burst", async () => {
@@ -107,7 +110,7 @@ describe("private native action-row capture", () => {
       .toEqual(["controller", "settings"]);
     native.row = row;
     notifyMutation();
-    await vi.advanceTimersByTimeAsync(0);
+    await Promise.resolve();
     const first = buttonsFor(570)[0];
     expect(React.isValidElement(first) && first.type).toBe("ProtonDbGameButton");
   });

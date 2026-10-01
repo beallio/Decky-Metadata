@@ -1,12 +1,12 @@
 import { createModuleMapping, Router } from "@decky/ui";
 import { createElement, memo } from "react";
 import type { ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { getNativeOverview, getOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { findSteamUiDocumentMatch } from "../steam/steamUiHost";
 import type { ProtonDbBadgeSettings, ProtonDbTier } from "../types";
 import { protonDbBadgeController } from "./controller";
-import { resolveProtonDbAppId } from "./identity";
+import { getResolvedProtonDbAppId, resolveProtonDbAppId } from "./identity";
 import { PROTONDB_COLORS, protonDbTierLabel } from "./Icon";
 import { protonDbCoverSurface, type CoverSurface } from "./coverSurface";
 
@@ -34,7 +34,7 @@ type NativeRoot = { render(children: ReactNode): void; unmount(): void };
 type NativeRootCreator = (container: HTMLElement) => NativeRoot;
 type HostEntry = {
   host: HTMLElement; footer: Element; appId: number; key: number;
-  name: string; sourceId: number | null; revision: number;
+  name: string; surface: CoverSurface; sourceId: number | null; revision: number;
   tier: ProtonDbTier | null; disposeRating?: () => void;
 };
 
@@ -80,6 +80,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
   if (creators.size !== 1) throw new Error(`Expected one native React createRoot export; found ${creators.size}`);
   const createRoot = creators.values().next().value as NativeRootCreator;
   const hosts = new Map<Element, HostEntry>();
+  const surfaces = new WeakMap<Element, CoverSurface>();
   const affected = new Set<Element>();
   let disposed = false;
   let document: Document | null = null;
@@ -91,9 +92,8 @@ export const installProtonDbCoverBadges = (): (() => void) => {
   let nextKey = 0;
   let settings = protonDbBadgeController.getSnapshot().settings;
 
-  const surfaceEnabled = (): boolean => {
+  const surfaceEnabled = (surface: CoverSurface | null): boolean => {
     const snapshot = protonDbBadgeController.getSnapshot();
-    const surface = currentSurface();
     return snapshot.settingsLoaded && snapshot.settings.enabled && surface !== null && snapshot.settings[surface];
   };
 
@@ -103,12 +103,15 @@ export const installProtonDbCoverBadges = (): (() => void) => {
     queueMicrotask(() => {
       renderQueued = false;
       if (disposed || !root) return;
-      root.render(Array.from(hosts.values(), entry => createPortal(
+      const renderRoot = root;
+      // Mutation-observer work runs after Steam's commit. Flush these portals
+      // before paint instead of leaving them behind React's concurrent queue.
+      flushSync(() => renderRoot.render(Array.from(hosts.values(), entry => createPortal(
         createElement(CoverIcon, {
           appId: entry.appId, sourceId: entry.sourceId, tier: entry.tier,
           position: settings.coverPosition, focusOnly: settings.focusOnly,
         }), entry.host, String(entry.key),
-      )));
+      ))));
     });
   };
 
@@ -128,8 +131,8 @@ export const installProtonDbCoverBadges = (): (() => void) => {
     entry.sourceId = null;
     entry.tier = null;
     queueRender();
-    void resolveProtonDbAppId(entry.appId, overview).then(sourceId => {
-      if (disposed || !surfaceEnabled() || hosts.get(cover) !== entry || entry.revision !== revision || sourceId === null) return;
+    const applySource = (sourceId: number | null): void => {
+      if (disposed || !surfaceEnabled(entry.surface) || hosts.get(cover) !== entry || entry.revision !== revision || sourceId === null) return;
       entry.sourceId = sourceId;
       const refresh = () => {
         if (disposed || hosts.get(cover) !== entry || entry.revision !== revision) return;
@@ -140,7 +143,10 @@ export const installProtonDbCoverBadges = (): (() => void) => {
       };
       entry.disposeRating = protonDbBadgeController.subscribeRating(sourceId, refresh);
       refresh();
-    });
+    };
+    const knownId = getResolvedProtonDbAppId(entry.appId, overview);
+    if (knownId !== undefined) applySource(knownId);
+    else void resolveProtonDbAppId(entry.appId, overview).then(applySource);
   };
 
   const reconcile = (cover: Element): void => {
@@ -148,12 +154,14 @@ export const installProtonDbCoverBadges = (): (() => void) => {
     const appId = appIdFromCover(cover);
     const footer = cover.querySelector(FOOTER_SELECTOR);
     const overlay = footer?.closest(OVERLAY_SELECTOR);
+    const surface = existing?.surface ?? surfaces.get(cover) ?? currentSurface();
+    if (surface !== null) surfaces.set(cover, surface);
     const valid = cover.isConnected && cover.ownerDocument === document && appId !== null &&
-      footer && overlay && cover.contains(overlay) && surfaceEnabled();
+      footer && overlay && cover.contains(overlay) && surfaceEnabled(surface);
     if (existing && (!valid || existing.footer !== footer || existing.host.parentElement !== footer)) {
       releaseEntry(cover, existing);
     }
-    if (!valid || !document || !footer || appId === null) return;
+    if (!valid || !document || !footer || appId === null || surface === null) return;
     const overview = getNativeOverview(appId) ?? getOverview(appId);
     const name = overview?.display_name ?? "";
     let entry = hosts.get(cover);
@@ -161,7 +169,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
       const host = document.createElement("div");
       host.className = HOST_CLASS;
       footer.prepend(host);
-      entry = { host, footer, appId, name, key: nextKey++, revision: 0, sourceId: null, tier: null };
+      entry = { host, footer, appId, name, surface, key: nextKey++, revision: 0, sourceId: null, tier: null };
       hosts.set(cover, entry);
       loadTier(cover, entry, overview);
     } else if (entry.appId !== appId || entry.name !== name) {
@@ -209,8 +217,13 @@ export const installProtonDbCoverBadges = (): (() => void) => {
 
   const syncDocument = (): void => {
     if (disposed) return;
-    const nextDocument = surfaceEnabled()
-      ? findSteamUiDocumentMatch(candidate => candidate.querySelector(COVER_SELECTOR) ? candidate as Document : undefined) ?? null
+    const snapshot = protonDbBadgeController.getSnapshot();
+    // Observe Steam's main document even on Game Info so the next cover mount
+    // is handled in the same turn, not by the one-second discovery fallback.
+    const nextDocument = snapshot.settingsLoaded && settings.enabled && (settings.home || settings.library)
+      ? findSteamUiDocumentMatch(candidate =>
+        candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(COVER_SELECTOR)
+          ? candidate as Document : undefined) ?? null
       : null;
     if (nextDocument === document) return;
     detachDocument();
