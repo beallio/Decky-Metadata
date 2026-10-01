@@ -18,6 +18,8 @@ if (api._version != API_VERSION) {
 const callable = api.callable;
 const routerHook = api.routerHook;
 const toaster = api.toaster;
+const executeInTab = api.executeInTab;
+const fetchNoCors = api.fetchNoCors;
 
 var DefaultContext = {
   color: undefined,
@@ -127,6 +129,8 @@ const getTrailerSettings = callable("get_trailer_settings");
 const setTrailerSettings = callable("set_trailer_settings");
 const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
 const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
+const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
+const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
 const findIgnTrailer = callable("find_ign_trailer");
 const evalInBigPicture = callable("eval_in_big_picture");
 
@@ -157,6 +161,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getMissingMetadataCount: getMissingMetadataCount,
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
+    getProtonDbBadgeSettings: getProtonDbBadgeSettings,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
     getSystemVersions: getSystemVersions,
@@ -176,6 +181,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
     setDebugLogging: setDebugLogging,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
+    setProtonDbBadgeSettings: setProtonDbBadgeSettings,
     setTrailerSettings: setTrailerSettings,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -360,7 +366,7 @@ const compatibilityDefaultScopeOptions = [
     { data: "metadata", label: "All games with saved metadata" },
     { data: "all", label: "All non-Steam games" },
 ];
-const dropdownValueStyle = { whiteSpace: "normal" };
+const dropdownValueStyle$1 = { whiteSpace: "normal" };
 const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm };
 const scopeDescriptions = {
     steam: "Applies to saved records with a valid Steam App ID.",
@@ -371,10 +377,10 @@ const scopeDescriptions = {
 function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
     return (SP_JSX.jsxs(CollapsibleSection, { title: "Compatibility status", icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
                             onCompatibilityDefaultMenuWillOpen("category");
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                             compatibilityDefaultBusy ||
                             compatibilityDefaultScopeBusy ||
-                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
+                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
 }
 
 const qualityOptions = [
@@ -1206,6 +1212,35 @@ const formatConnectedControllerTypes = (types) => {
 
 function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
     return (SP_JSX.jsx(CollapsibleSection, { title: "Versions", icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Controller Types: ", formatConnectedControllerTypes(controllerTypes)] })] }) }) }) }));
+}
+
+const PROTONDB_COLORS = {
+    platinum: "#b4c7dc",
+    gold: "#cfb53b",
+    silver: "#a6a6a6",
+    bronze: "#cd7f32",
+    borked: "#ff0000",
+};
+const protonDbTierLabel = (tier) => tier.charAt(0).toUpperCase() + tier.slice(1);
+function ProtonDbIcon({ tier, size }) {
+    const style = tier ? { color: PROTONDB_COLORS[tier] } : undefined;
+    return (SP_JSX.jsxs("svg", { viewBox: "0 0 32 32", width: size ?? "100%", height: size ?? "100%", style: style, "aria-hidden": "true", children: [SP_JSX.jsx("circle", { cx: "16", cy: "16", r: "2.3", fill: "currentColor" }), SP_JSX.jsxs("g", { fill: "none", stroke: "currentColor", strokeWidth: "1.7", children: [SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(60 16 16)" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(120 16 16)" })] })] }));
+}
+
+const coverPositionOptions = [
+    { data: "bottom-left", label: "Bottom left" },
+    { data: "top-left", label: "Top left" },
+    { data: "top-right", label: "Top right" },
+];
+const dropdownValueStyle = { whiteSpace: "normal" };
+function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettingsChange, onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef, }) {
+    const { settings } = snapshot;
+    const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
+    const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const updateSetting = (key, value) => {
+        void onSettingsChange({ ...settings, [key]: value });
+    };
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: controlsDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "If the separate ProtonDB Badges plugin is also enabled, it can show overlapping badges here. Disable one plugin's badges to avoid duplicates." }), snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
 
 let verbose = false;
@@ -5283,34 +5318,31 @@ const findSteamUiDocumentMatch = (finder) => {
     return undefined;
 };
 
-const DECK_DISPLAY = 1;
-const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
-const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
-const steamUiCardDocument = () => {
-    return findSteamUiDocumentMatch((document) => document.querySelector("[data-id]") ? document : undefined);
-};
-/**
- * Decky's module finder sees the observer/memo export, not LibraryItemBox's
- * renderer source. Query only webpack factory text, then load its one match.
- * This never walks React or MobX state.
- */
+const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
+    typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
+/** Inspect webpack factories, never observable Steam stores or render-time state. */
 const findSteamModulesBySource = (fragments) => {
-    const chunks = steamUiWindow().webpackChunksteamui;
-    if (!chunks?.push)
+    const host = steamUiWindow();
+    const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
+    if (!Array.isArray(chunks))
         return [];
     let webpackRequire;
     try {
-        chunks.push([[Symbol("decky-metadata-library-compatibility")], {}, (requireFn) => {
-                webpackRequire = requireFn;
+        chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
+                if (isWebpackRequire(requireFn))
+                    webpackRequire = requireFn;
             }]);
-        const moduleIds = Object.keys(webpackRequire?.m ?? {}).filter((id) => {
-            const factory = webpackRequire.m[id];
+        const requireModule = webpackRequire;
+        if (!requireModule)
+            return [];
+        const moduleIds = Object.keys(requireModule.m).filter((id) => {
+            const factory = requireModule.m[id];
             const source = typeof factory === "function" ? factory.toString() : "";
             return fragments.every((fragment) => source.includes(fragment));
         });
         return moduleIds.flatMap((moduleId) => {
             try {
-                return [webpackRequire(moduleId)];
+                return [requireModule(moduleId)];
             }
             catch {
                 return [];
@@ -5326,8 +5358,22 @@ const findSteamModuleBySource = (fragments) => {
     return candidates.length === 1 ? candidates[0] : undefined;
 };
 const findLiveModuleChild = (predicate) => {
-    const liveFinder = steamUiWindow().DFL?.findModuleChild;
-    return typeof liveFinder === "function" ? liveFinder(predicate) : DFL.findModuleChild(predicate);
+    const host = steamUiWindow();
+    const dfl = "DFL" in host ? host.DFL : undefined;
+    if (dfl && typeof dfl === "object" && "findModuleChild" in dfl &&
+        typeof dfl.findModuleChild === "function") {
+        // DFL's runtime export shares Decky's module-finder callback contract.
+        const liveFinder = dfl.findModuleChild;
+        return liveFinder(predicate);
+    }
+    return DFL.findModuleChild(predicate);
+};
+
+const DECK_DISPLAY = 1;
+const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
+const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
+const steamUiCardDocument = () => {
+    return findSteamUiDocumentMatch((document) => document.querySelector("[data-id]") ? document : undefined);
 };
 const findOneSourceExport = (modules, predicate) => {
     const matches = modules.filter(predicate);
@@ -5563,6 +5609,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
     let retryId;
     let homeDiscoveryRetryId;
     let homeCacheUnsubscribe;
+    let coverCacheUnsubscribe;
     const indicatorUnsubscribers = new Set();
     const mountedHomeCarousels = new Set();
     const mountedHomeGrids = new Map();
@@ -5597,6 +5644,14 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         catch {
             // Continue teardown if Steam has already removed the subscription.
+        }
+        const coverCleanup = coverCacheUnsubscribe;
+        coverCacheUnsubscribe = undefined;
+        try {
+            coverCleanup?.();
+        }
+        catch {
+            // Continue releasing native renderers if a cover subscription has ended.
         }
         mountedHomeCarousels.clear();
         mountedHomeGrids.forEach(({ restore }, grid) => {
@@ -5696,13 +5751,16 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 className: props.className,
             });
         };
-        const decorateForApp = (appId, output, decorate, renderedOverview) => {
+        const decorateForApp = (appId, output, decorate, surface, renderedOverview) => {
             const overview = renderedOverview ?? dependencies.getOverview(appId);
-            if (Number(overview?.appid) !== Number(appId) ||
-                !dependencies.isNativeNonSteamShortcut(overview)) {
+            if (Number(overview?.appid) !== Number(appId))
                 return output;
-            }
-            return decorate(output, overview);
+            const withCompatibility = dependencies.isNativeNonSteamShortcut(overview)
+                ? decorate(output, overview)
+                : output;
+            return dependencies.decorateCover
+                ? dependencies.decorateCover(withCompatibility, overview, surface)
+                : withCompatibility;
         };
         const carouselWrapperFor = (carousel) => {
             const existing = mountedHomeCarouselWrappers.get(carousel);
@@ -5716,7 +5774,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 // The top-level `appid` remains a supported fallback for the alternate
                 // renderer shape used by older clients.
                 const appId = Number(props?.appid ?? props?.app?.appid);
-                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview), "home");
             };
             mountedHomeCarouselWrappers.set(carousel, wrapper);
             return wrapper;
@@ -6056,7 +6114,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 cleanup();
                 return;
             }
-            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app));
+            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), "library", args[0]?.app));
             if (typeof gridUnpatch !== "function") {
                 cleanup();
                 return;
@@ -6068,6 +6126,12 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         installed = true;
         homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
+        coverCacheUnsubscribe = dependencies.subscribeCoverChanges?.(() => {
+            if (!active)
+                return;
+            refreshMountedHomeCarousels();
+            dependencies.refreshCompatibilitySurfaces();
+        });
         refreshMountedHomeCarousels();
         reportInstalled(resolutionAttempts);
         dependencies.refreshCompatibilitySurfaces();
@@ -8461,7 +8525,7 @@ const reportControllerLayoutFailure = (failure) => {
     warn("controller-layouts", "supplemental layouts disabled", failure);
     void frontendLog("patch", "controller layout supplementation disabled", failure, "warning").catch(() => undefined);
 };
-const installSteamPatches = () => {
+const installSteamPatches = (coverHooks = {}) => {
     configureActivityMetadataLoader(ensureMetadataCache, applyMetadata);
     const unpatchers = [];
     let patchesCancelled = false;
@@ -8503,7 +8567,7 @@ const installSteamPatches = () => {
         });
         installNativeNewsHistoryRedirects(unpatchers);
         installMetadataPatches(unpatchers);
-        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
+        safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers, coverHooks));
         installCommunityFeedPatch(unpatchers);
         installRouterRenderPatches(unpatchers, {
             ensureMetadataCache,
@@ -8797,7 +8861,7 @@ const isNativeShortcut = (value) => {
         return false;
     }
 };
-const validSteamAppId = (value) => {
+const validSteamAppId$1 = (value) => {
     if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value)))
         return null;
     const appId = Number(value);
@@ -8839,7 +8903,7 @@ const resolveTrailerSource = (context) => {
     }
     if (!isNativeShortcut(context.overview))
         return null;
-    const sourceAppId = validSteamAppId(context.metadata?.steam_appid);
+    const sourceAppId = validSteamAppId$1(context.metadata?.steam_appid);
     if (!sourceAppId && !nativeTrailerGameTitle(context.overview) &&
         !(typeof context.metadata?.title === "string" && context.metadata.title.trim()) &&
         !ignGameUrl(context.metadata))
@@ -12518,6 +12582,392 @@ function startMiniAchievementsController() {
     return () => miniAchievementsController.stop();
 }
 
+const PROTONDB_RATING_TTL_MS = 24 * 60 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 5000;
+const RETRY_COOLDOWN_MS = 30000;
+const SUMMARY_URL = "https://www.protondb.com/api/v1/reports/summaries";
+const protonDbTiers = {
+    platinum: true,
+    gold: true,
+    silver: true,
+    bronze: true,
+    borked: true,
+};
+const isProtonDbTier$1 = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(protonDbTiers, value);
+const fetchProtonDbTier = async (steamAppId) => {
+    const response = await fetchNoCors(`${SUMMARY_URL}/${steamAppId}.json`, { method: "GET" });
+    if (response.status === 404)
+        return null;
+    if (response.status !== 200) {
+        throw new Error(`ProtonDB summary request failed with HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (!payload || typeof payload !== "object" || Array.isArray(payload) || !("tier" in payload)) {
+        throw new Error("ProtonDB returned a malformed summary");
+    }
+    const tier = payload.tier;
+    if (tier === null || tier === "pending")
+        return null;
+    if (!isProtonDbTier$1(tier))
+        throw new Error("ProtonDB returned an invalid tier");
+    return tier;
+};
+const validSteamAppId = (steamAppId) => Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000;
+const ratingValue = (tier, status, updatedAt) => Object.freeze({ tier, status, updatedAt });
+const invalidRating = ratingValue(null, "idle", null);
+/** Shared in-memory ratings; fetches are owned by the currently visible subscribers. */
+class ProtonDbRatingCache {
+    constructor(fetchTier = fetchProtonDbTier) {
+        Object.defineProperty(this, "fetchTier", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchTier
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "lifecycle", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "enabled", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+    }
+    getRating(steamAppId) {
+        if (!validSteamAppId(steamAppId))
+            return invalidRating;
+        return this.getEntry(steamAppId).rating;
+    }
+    subscribeRating(steamAppId, listener) {
+        if (!validSteamAppId(steamAppId))
+            return () => undefined;
+        const entry = this.getEntry(steamAppId);
+        entry.listeners.add(listener);
+        this.loadIfNeeded(steamAppId, entry);
+        return () => {
+            entry.listeners.delete(listener);
+            if (entry.listeners.size === 0)
+                this.clearExpiry(entry);
+        };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        if (this.enabled) {
+            for (const [steamAppId, entry] of this.entries)
+                this.loadIfNeeded(steamAppId, entry);
+        }
+    }
+    setEnabled(enabled) {
+        if (this.enabled === enabled)
+            return;
+        this.enabled = enabled;
+        if (!enabled) {
+            for (const entry of this.entries.values()) {
+                this.clearExpiry(entry);
+                this.cancelRequest(entry, true);
+            }
+            return;
+        }
+        if (this.mounted) {
+            for (const [steamAppId, entry] of this.entries)
+                this.loadIfNeeded(steamAppId, entry);
+        }
+    }
+    stop() {
+        this.lifecycle += 1;
+        this.mounted = false;
+        this.enabled = false;
+        for (const entry of this.entries.values()) {
+            this.clearExpiry(entry);
+            entry.listeners.clear();
+            this.cancelRequest(entry, false);
+            entry.retryAfter = 0;
+        }
+    }
+    getEntry(steamAppId) {
+        let entry = this.entries.get(steamAppId);
+        if (!entry) {
+            entry = { rating: ratingValue(null, "idle", null), listeners: new Set(), retryAfter: 0 };
+            this.entries.set(steamAppId, entry);
+        }
+        return entry;
+    }
+    isActive(entry) {
+        return this.mounted && this.enabled && entry.listeners.size > 0;
+    }
+    loadIfNeeded(steamAppId, entry) {
+        if (!this.isActive(entry) || entry.request)
+            return;
+        const now = Date.now();
+        const { status, updatedAt } = entry.rating;
+        if (updatedAt !== null && now - updatedAt < PROTONDB_RATING_TTL_MS) {
+            if (status === "ready") {
+                this.scheduleExpiry(steamAppId, entry);
+                return;
+            }
+            if (status === "error" && now < entry.retryAfter)
+                return;
+            if (status !== "error")
+                return;
+        }
+        else if (status === "error" && now < entry.retryAfter) {
+            return;
+        }
+        this.clearExpiry(entry);
+        const request = {
+            lifecycle: this.lifecycle,
+            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
+        };
+        entry.request = request;
+        this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
+        let pending;
+        try {
+            pending = this.fetchTier(steamAppId);
+        }
+        catch (error) {
+            this.failRequest(entry, request, error);
+            return;
+        }
+        void Promise.resolve(pending).then((tier) => this.completeRequest(steamAppId, entry, request, tier), (error) => this.failRequest(entry, request, error));
+    }
+    completeRequest(steamAppId, entry, request, tier) {
+        if (!this.isCurrentRequest(entry, request))
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        entry.retryAfter = 0;
+        this.setRating(entry, tier, "ready", Date.now());
+        this.scheduleExpiry(steamAppId, entry);
+    }
+    failRequest(entry, request, _error) {
+        if (!this.isCurrentRequest(entry, request))
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        entry.retryAfter = Date.now() + RETRY_COOLDOWN_MS;
+        this.setRating(entry, entry.rating.tier, "error", entry.rating.updatedAt);
+    }
+    isCurrentRequest(entry, request) {
+        return this.lifecycle === request.lifecycle && entry.request === request && this.mounted && this.enabled;
+    }
+    scheduleExpiry(steamAppId, entry) {
+        if (!this.isActive(entry) || entry.rating.updatedAt === null || entry.expiryTimer !== undefined)
+            return;
+        const remaining = Math.max(0, entry.rating.updatedAt + PROTONDB_RATING_TTL_MS - Date.now());
+        entry.expiryTimer = globalThis.setTimeout(() => {
+            entry.expiryTimer = undefined;
+            this.loadIfNeeded(steamAppId, entry);
+        }, remaining);
+    }
+    clearExpiry(entry) {
+        if (entry.expiryTimer !== undefined) {
+            globalThis.clearTimeout(entry.expiryTimer);
+            entry.expiryTimer = undefined;
+        }
+    }
+    cancelRequest(entry, notify) {
+        const request = entry.request;
+        if (!request)
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        const { tier, updatedAt } = entry.rating;
+        const status = updatedAt === null ? "idle" : "ready";
+        this.setRating(entry, tier, status, updatedAt, notify);
+    }
+    setRating(entry, tier, status, updatedAt, notify = true) {
+        const previous = entry.rating;
+        if (previous.tier === tier && previous.status === status && previous.updatedAt === updatedAt)
+            return;
+        entry.rating = ratingValue(tier, status, updatedAt);
+        if (!notify)
+            return;
+        for (const listener of entry.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // One mounted surface must not prevent other rating subscribers from updating.
+            }
+        }
+    }
+}
+const protonDbRatingCache = new ProtonDbRatingCache();
+
+const DEFAULT_PROTON_DB_BADGE_SETTINGS = Object.freeze({
+    enabled: false,
+    home: true,
+    library: true,
+    gameView: true,
+    store: true,
+    focusOnly: false,
+    coverPosition: "bottom-left",
+});
+const backendSettingsStore = {
+    get: getProtonDbBadgeSettings,
+    set: setProtonDbBadgeSettings,
+};
+const copySettings = (settings) => Object.freeze({
+    enabled: settings.enabled,
+    home: settings.home,
+    library: settings.library,
+    gameView: settings.gameView,
+    store: settings.store,
+    focusOnly: settings.focusOnly,
+    coverPosition: settings.coverPosition,
+});
+const errorText = (error, fallback) => error instanceof Error && error.message ? error.message : fallback;
+class ProtonDbBadgeController {
+    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache) {
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "ratings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ratings
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "lifecycle", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: Object.freeze({
+                settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
+                settingsLoaded: false,
+                busy: false,
+                settingsError: "",
+            })
+        });
+    }
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const lifecycle = ++this.lifecycle;
+        this.ratings.mount();
+        this.publish({ busy: true, settingsLoaded: false, settingsError: "" });
+        void this.settingsStore.get().then((settings) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            const saved = copySettings(settings);
+            this.ratings.setEnabled(saved.enabled);
+            this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
+        }, (error) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            this.ratings.setEnabled(false);
+            this.publish({
+                settingsLoaded: false,
+                busy: false,
+                settingsError: errorText(error, "Unable to load ProtonDB badge settings."),
+            });
+        });
+    }
+    stop() {
+        this.mounted = false;
+        this.lifecycle += 1;
+        this.ratings.stop();
+        this.publish({
+            settingsLoaded: false,
+            busy: false,
+            settingsError: "",
+        });
+        this.listeners.clear();
+    }
+    async setSettings(settings) {
+        if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
+            return false;
+        const lifecycle = this.lifecycle;
+        const requested = copySettings(settings);
+        this.publish({ busy: true, settingsError: "" });
+        try {
+            const saved = copySettings(await this.settingsStore.set(requested));
+            if (!this.isCurrent(lifecycle))
+                return false;
+            this.ratings.setEnabled(saved.enabled);
+            this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
+            return true;
+        }
+        catch (error) {
+            if (!this.isCurrent(lifecycle))
+                return false;
+            this.publish({
+                busy: false,
+                settingsError: errorText(error, "Unable to save ProtonDB badge settings."),
+            });
+            return false;
+        }
+    }
+    getRating(steamAppId) {
+        return this.ratings.getRating(steamAppId);
+    }
+    subscribeRating(steamAppId, listener) {
+        return this.ratings.subscribeRating(steamAppId, listener);
+    }
+    isCurrent(lifecycle) {
+        return this.mounted && this.lifecycle === lifecycle;
+    }
+    publish(update) {
+        this.snapshot = Object.freeze({ ...this.snapshot, ...update });
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // One settings consumer must not block the other mounted consumers.
+            }
+        }
+    }
+}
+const protonDbBadgeController = new ProtonDbBadgeController();
+
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
 // Keep retrying native focus while Steam rebuilds the navigation tree. The
@@ -12627,6 +13077,13 @@ const Content = () => {
     SP_REACT.useEffect(() => miniAchievementsController.subscribe(() => {
         setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
     }), []);
+    const [protonDbSnapshot, setProtonDbSnapshot] = SP_REACT.useState(protonDbBadgeController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setProtonDbSnapshot(protonDbBadgeController.getSnapshot());
+        const unsubscribe = protonDbBadgeController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
     const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
     const initialPendingCompatibilityPolicySave = initialCompatibilityPolicySave
         && initialCompatibilityPolicySave.pendingKind !== null
@@ -12662,6 +13119,7 @@ const Content = () => {
     const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
     const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
     const [trailerQualityControl, setTrailerQualityControlState] = SP_REACT.useState(null);
+    const [protonDbCoverControl, setProtonDbCoverControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
@@ -12678,6 +13136,11 @@ const Content = () => {
         if (!element)
             noteCompatibilityDropdownControlUnmounted();
         setTrailerQualityControlState(element);
+    }, []);
+    const setProtonDbCoverControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setProtonDbCoverControlState(element);
     }, []);
     const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
         const shared = compatibilityPolicySaveSnapshot();
@@ -12700,7 +13163,7 @@ const Content = () => {
             : "");
     }, []);
     SP_REACT.useEffect(() => {
-        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl;
+        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl || protonDbCoverControl;
         if (!mountedControl)
             return;
         const qamDocument = mountedControl.ownerDocument;
@@ -12722,7 +13185,7 @@ const Content = () => {
         qamDocument.addEventListener("visibilitychange", observeVisibility);
         observeVisibility();
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl]);
+    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -12750,11 +13213,12 @@ const Content = () => {
         const origin = compatibilityDropdownReturnOrigin();
         const control = origin === "scope"
             ? compatibilityDefaultScopeControl
-            : origin === "quality" ? trailerQualityControl : compatibilityDefaultControl;
-        const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded;
-        const busy = origin === "quality"
-            ? trailerSnapshot.busy
-            : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+            : origin === "quality" ? trailerQualityControl
+                : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+        const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
+            : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+        const busy = origin === "quality" ? trailerSnapshot.busy
+            : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
         if (!isCompatibilityDropdownReturnReady() || !control)
             return;
         let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
@@ -12868,6 +13332,9 @@ const Content = () => {
         trailerQualityControl,
         trailerSnapshot.busy,
         trailerSnapshot.settingsLoaded,
+        protonDbCoverControl,
+        protonDbSnapshot.busy,
+        protonDbSnapshot.settingsLoaded,
     ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
@@ -13227,7 +13694,23 @@ const Content = () => {
     const returningDropdown = hasCompatibilityDropdownReturn()
         ? compatibilityDropdownReturnOrigin()
         : null;
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (settings) => protonDbBadgeController.setSettings(settings), onCoverPositionChange: async (coverPosition) => {
+                    requestCompatibilityDropdownReturn("protondb-cover-position");
+                    noteCompatibilityDropdownControlUnmounted();
+                    try {
+                        return await protonDbBadgeController.setSettings({
+                            ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+                        });
+                    }
+                    finally {
+                        if (noteCompatibilityDropdownSelectionSaved()) {
+                            setCompatibilityDropdownReturnVersion(version => version + 1);
+                        }
+                    }
+                }, onCoverPositionMenuWillOpen: () => {
+                    requestCompatibilityDropdownReturn("protondb-cover-position");
+                    noteCompatibilityDropdownControlUnmounted();
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -14375,6 +14858,977 @@ const MetadataPage = () => {
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
 };
 
+const canonicalSavedSteamAppId = (value) => {
+    if (typeof value === "string" && !/^\d{1,10}$/.test(value))
+        return null;
+    if (typeof value !== "number" && typeof value !== "string")
+        return null;
+    const steamAppId = Number(value);
+    return Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000
+        ? steamAppId
+        : null;
+};
+const resolveProtonDbAppId = (displayedAppId, overview) => {
+    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff) {
+        return null;
+    }
+    if (!overview || typeof overview !== "object" || Array.isArray(overview))
+        return null;
+    if (!("appid" in overview) || overview.appid !== displayedAppId)
+        return null;
+    if (!("app_type" in overview) ||
+        typeof overview.app_type !== "number" ||
+        !Number.isSafeInteger(overview.app_type)) {
+        return null;
+    }
+    try {
+        if (isNativeNonSteamShortcut(overview)) {
+            const metadataKey = String(displayedAppId);
+            if (!Object.prototype.hasOwnProperty.call(metadataCache, metadataKey))
+                return null;
+            return canonicalSavedSteamAppId(metadataCache[metadataKey]?.steam_appid);
+        }
+        return displayedAppId < 0x80000000 ? displayedAppId : null;
+    }
+    catch {
+        return null;
+    }
+};
+
+const CARD_CLASS = "decky-metadata-protondb-card";
+const COVER_KEY = "decky-metadata-protondb-cover";
+const COVER_CSS = `
+.decky-metadata-protondb-host{display:contents;pointer-events:none}
+.decky-metadata-protondb-cover{position:absolute;z-index:3;left:8px;bottom:8px;width:22px;height:22px;padding:3px;border-radius:50%;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.12);pointer-events:none;display:flex;align-items:center;justify-content:center}
+.decky-metadata-protondb-cover svg{width:100%;height:100%}
+.decky-metadata-protondb-cover--top-left{top:8px;bottom:auto}
+.decky-metadata-protondb-cover--top-right{top:8px;right:8px;left:auto;bottom:auto}
+.decky-metadata-protondb-cover--focus{opacity:0}
+.${CARD_CLASS}:hover .decky-metadata-protondb-cover--focus,
+.${CARD_CLASS}.gpfocus .decky-metadata-protondb-cover--focus,
+.${CARD_CLASS}.gpfocuswithin .decky-metadata-protondb-cover--focus,
+.${CARD_CLASS}:focus-within .decky-metadata-protondb-cover--focus,
+.${CARD_CLASS}:has(.gpfocus) .decky-metadata-protondb-cover--focus{opacity:1}
+`;
+const styleLeases = new WeakMap();
+function acquireCoverStyle(document) {
+    let entry = styleLeases.get(document);
+    if (!entry) {
+        const style = document.createElement("style");
+        style.dataset.deckyMetadataProtondb = "covers";
+        style.textContent = COVER_CSS;
+        (document.head ?? document.documentElement).appendChild(style);
+        entry = { style, count: 0 };
+        styleLeases.set(document, entry);
+    }
+    const lease = entry;
+    lease.count += 1;
+    return () => {
+        lease.count -= 1;
+        if (lease.count === 0) {
+            lease.style.remove();
+            styleLeases.delete(document);
+        }
+    };
+}
+function useBadgeSnapshot(displayedAppId) {
+    const [, update] = SP_REACT.useState(0);
+    SP_REACT.useEffect(() => {
+        const refresh = () => update(value => value + 1);
+        const unsubscribe = protonDbBadgeController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => subscribeMetadataMatchChanges(appId => {
+        if (appId === displayedAppId)
+            update(value => value + 1);
+    }), [displayedAppId]);
+    return protonDbBadgeController.getSnapshot();
+}
+function useBadgeTier(sourceAppId, active) {
+    const [, update] = SP_REACT.useState(0);
+    SP_REACT.useEffect(() => {
+        if (!active || sourceAppId === null)
+            return;
+        const refresh = () => update(value => value + 1);
+        const unsubscribe = protonDbBadgeController.subscribeRating(sourceAppId, refresh);
+        refresh();
+        return unsubscribe;
+    }, [sourceAppId, active]);
+    // Derive from the current source ID, never retain an old game's rating in state.
+    return active && sourceAppId !== null ? protonDbBadgeController.getRating(sourceAppId).tier : null;
+}
+function ProtonDbCoverBadge({ displayedAppId, overview, surface }) {
+    const host = SP_REACT.useRef(null);
+    const [visible, setVisible] = SP_REACT.useState(false);
+    const snapshot = useBadgeSnapshot(displayedAppId);
+    const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings[surface];
+    const sourceAppId = active ? resolveProtonDbAppId(displayedAppId, overview) : null;
+    const tier = useBadgeTier(sourceAppId, active && visible);
+    SP_REACT.useLayoutEffect(() => {
+        const element = host.current;
+        if (!active || !element) {
+            setVisible(false);
+            return;
+        }
+        const cover = element.closest(`.${CARD_CLASS}`);
+        if (!cover)
+            return;
+        const popup = element.ownerDocument.defaultView;
+        if (!popup)
+            return;
+        const constructor = Reflect.get(popup, "IntersectionObserver");
+        if (typeof constructor !== "function")
+            return;
+        // Use Steam's popup realm; SharedJSContext has a different viewport.
+        const Observer = constructor;
+        const releaseStyle = acquireCoverStyle(element.ownerDocument);
+        const observer = new Observer(entries => {
+            setVisible(entries.some(entry => entry.isIntersecting));
+        });
+        observer.observe(cover);
+        return () => { observer.disconnect(); releaseStyle(); };
+    }, [active, displayedAppId]);
+    return (SP_JSX.jsx("span", { ref: host, className: "decky-metadata-protondb-host", style: { display: "contents", pointerEvents: "none" }, children: tier ? (SP_JSX.jsx("span", { className: `decky-metadata-protondb-cover decky-metadata-protondb-cover--${snapshot.settings.coverPosition}${snapshot.settings.focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`, role: "img", "aria-label": `ProtonDB ${protonDbTierLabel(tier)}`, title: `ProtonDB: ${protonDbTierLabel(tier)}`, children: SP_JSX.jsx(ProtonDbIcon, { tier: tier }) })) : null }));
+}
+function decorateProtonDbCover(output, overview, surface) {
+    if (!SP_REACT.isValidElement(output) || typeof output.props.className !== "string")
+        return output;
+    if (!overview || typeof overview !== "object" || !("appid" in overview) || typeof overview.appid !== "number")
+        return output;
+    const children = Array.isArray(output.props.children) ? output.props.children : [output.props.children];
+    if (children.some(child => SP_REACT.isValidElement(child) && child.key === COVER_KEY))
+        return output;
+    return SP_REACT.cloneElement(output, {
+        className: `${output.props.className} ${CARD_CLASS}`,
+        children: [...children, SP_REACT.createElement(ProtonDbCoverBadge, {
+                key: COVER_KEY, displayedAppId: overview.appid, overview, surface,
+            })],
+    });
+}
+function subscribeProtonDbCoverChanges(listener) {
+    let previous = protonDbBadgeController.getSnapshot();
+    return protonDbBadgeController.subscribe(() => {
+        const next = protonDbBadgeController.getSnapshot();
+        const changed = previous.settingsLoaded !== next.settingsLoaded ||
+            previous.settings.enabled !== next.settings.enabled || previous.settings.home !== next.settings.home ||
+            previous.settings.library !== next.settings.library || previous.settings.focusOnly !== next.settings.focusOnly ||
+            previous.settings.coverPosition !== next.settings.coverPosition;
+        previous = next;
+        if (changed)
+            listener();
+    });
+}
+function ProtonDbGameButton({ displayedAppId, overview, Button, className }) {
+    const snapshot = useBadgeSnapshot(displayedAppId);
+    const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.gameView;
+    const sourceAppId = active ? resolveProtonDbAppId(displayedAppId, overview) : null;
+    const tier = useBadgeTier(sourceAppId, active);
+    if (!tier || sourceAppId === null)
+        return null;
+    const label = `ProtonDB: ${protonDbTierLabel(tier)}`;
+    return (SP_JSX.jsx(Button, { className: className, direction: "bottom", bNavStop: true, onClick: () => {
+            DFL.Navigation.NavigateToExternalWeb(`https://www.protondb.com/app/${sourceAppId}`);
+        }, toolTipContent: label, "aria-label": label, children: SP_JSX.jsx(ProtonDbIcon, { tier: tier }) }));
+}
+
+// Decky's generic declaration cannot express the native render callback boundary.
+const patchNative = DFL.afterPatch;
+const BUTTON_KEY = "decky-metadata-protondb-game-view";
+const CAPTURE_DELAYS = [0, 50, 250, 1000];
+const recordValue = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+function moduleValues(fragments) {
+    const values = [];
+    for (const module of findSteamModulesBySource(fragments)) {
+        values.push(module);
+        if (recordValue(module))
+            values.push(...Object.values(module));
+    }
+    return values;
+}
+function resolveNativeTargets() {
+    const actionStyles = moduleValues(["AppButtons", "ActionButtonAndStatusPanel", "PlaySection"])
+        .find(value => recordValue(value) && typeof value.AppButtons === "string");
+    const controllerStyles = moduleValues(["MenuButton", "ControllerConfigButton"])
+        .find(value => recordValue(value) && typeof value.MenuButton === "string" && typeof value.ControllerConfigButton === "string");
+    const tooltip = moduleValues(["tool-tip-source", "bNavStop", "toolTipContent:"])
+        .find(value => typeof value === "function" &&
+        ["tool-tip-source", "bNavStop", "toolTipContent:"].every(fragment => value.toString().includes(fragment)));
+    if (!recordValue(actionStyles) || typeof actionStyles.AppButtons !== "string" ||
+        !recordValue(controllerStyles) || typeof controllerStyles.MenuButton !== "string" ||
+        typeof controllerStyles.ControllerConfigButton !== "string" || typeof tooltip !== "function")
+        return;
+    // The fingerprinted native tooltip export supplies Steam's focusable button shell.
+    const Button = tooltip;
+    return { appButtons: actionStyles.AppButtons,
+        buttonClass: `${controllerStyles.MenuButton} ${controllerStyles.ControllerConfigButton}`, Button };
+}
+function prependBadge(node, appButtonsClass, badge) {
+    if (Array.isArray(node)) {
+        const children = node.map(child => prependBadge(child, appButtonsClass, badge));
+        return children.every((child, index) => child === node[index]) ? node : children;
+    }
+    if (!SP_REACT.isValidElement(node))
+        return node;
+    const original = node.props.children;
+    if (node.props.className === appButtonsClass) {
+        const children = Array.isArray(original) ? original : [original];
+        if (children.some(child => SP_REACT.isValidElement(child) && child.key === BUTTON_KEY))
+            return node;
+        return SP_REACT.cloneElement(node, { children: [badge, ...children] });
+    }
+    if (original === undefined)
+        return node;
+    const children = prependBadge(original, appButtonsClass, badge);
+    return children === original ? node : SP_REACT.cloneElement(node, { children });
+}
+function fiberOf(element) {
+    for (const key of Object.keys(element)) {
+        if (!key.startsWith("__reactFiber$") && !key.startsWith("__reactContainer$"))
+            continue;
+        const fiber = Reflect.get(element, key);
+        if (recordValue(fiber))
+            return recordValue(fiber.current) ? fiber.current : fiber;
+    }
+}
+function actionRowType(fiber) {
+    const type = fiber.elementType ?? fiber.type;
+    if (!recordValue(type) || type.$$typeof !== Symbol.for("react.forward_ref") || typeof type.render !== "function")
+        return;
+    const source = type.render.toString();
+    return source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel") ? type : undefined;
+}
+/** Capture the private forwardRef from its real DOM fiber; it is not a webpack export. */
+function installProtonDbGameView() {
+    let stopped = false;
+    let targets;
+    const observers = new Map();
+    let scheduled;
+    let generation = 0;
+    const captureTimers = new Set();
+    const patches = new Map();
+    const refreshTargets = new Set();
+    const routeCleanups = [];
+    const capture = () => {
+        if (stopped)
+            return;
+        const documents = steamUiDocuments();
+        for (const document of documents) {
+            const body = document.querySelector("body");
+            const owner = body?.ownerDocument;
+            if (!owner || observers.has(owner))
+                continue;
+            const observer = new MutationObserver(() => {
+                if (stopped || scheduled !== undefined)
+                    return;
+                scheduled = setTimeout(() => { scheduled = undefined; capture(); }, 0);
+            });
+            observer.observe(body, { childList: true, subtree: true });
+            observers.set(owner, observer);
+        }
+        targets ?? (targets = resolveNativeTargets());
+        if (!targets)
+            return;
+        const resolved = targets;
+        const selector = resolved.appButtons.split(/\s+/).filter(Boolean)
+            .map(token => `[class~=${JSON.stringify(token)}]`).join("");
+        if (!selector)
+            return;
+        for (const document of documents) {
+            const rows = document.querySelectorAll(selector);
+            for (const row of Array.from(rows)) {
+                let fiber = fiberOf(row);
+                let foundType;
+                let parentToRefresh;
+                for (let depth = 0; fiber && depth < 128; depth += 1) {
+                    foundType ?? (foundType = actionRowType(fiber));
+                    const state = fiber.stateNode;
+                    if (foundType && recordValue(state) && typeof state.forceUpdate === "function") {
+                        parentToRefresh = state;
+                        break;
+                    }
+                    fiber = recordValue(fiber.return) ? fiber.return : undefined;
+                }
+                if (!foundType || patches.has(foundType))
+                    continue;
+                const patch = patchNative(foundType, "render", (args, result) => {
+                    if (stopped || !recordValue(args[0]) || !recordValue(args[0].overview))
+                        return result;
+                    const overview = args[0].overview;
+                    if (typeof overview.appid !== "number" || !isCurrentGameDetailRoute(currentRoutePath(), overview.appid))
+                        return result;
+                    const button = SP_REACT.createElement(ProtonDbGameButton, {
+                        key: BUTTON_KEY, displayedAppId: overview.appid, overview,
+                        Button: resolved.Button, className: resolved.buttonClass,
+                    });
+                    // Steam supplies a rendered React tree here, not external input.
+                    const rendered = result;
+                    return prependBadge(rendered, resolved.appButtons, button);
+                });
+                patches.set(foundType, patch);
+                if (parentToRefresh) {
+                    refreshTargets.add(parentToRefresh);
+                    const refresh = parentToRefresh.forceUpdate;
+                    if (typeof refresh === "function")
+                        refresh.call(parentToRefresh);
+                }
+            }
+        }
+    };
+    const scheduleCapture = () => {
+        if (stopped)
+            return;
+        generation += 1;
+        const current = generation;
+        for (const timer of captureTimers)
+            clearTimeout(timer);
+        captureTimers.clear();
+        for (const delay of CAPTURE_DELAYS) {
+            const timer = setTimeout(() => {
+                captureTimers.delete(timer);
+                if (!stopped && current === generation) {
+                    try {
+                        capture();
+                    }
+                    catch (error) {
+                        warn("protondb", "game button capture failed", error);
+                    }
+                }
+            }, delay);
+            captureTimers.add(timer);
+        }
+    };
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
+        routeCleanups.push(() => routerHook.removePatch(route, patch));
+    }
+    scheduleCapture();
+    return () => {
+        if (stopped)
+            return;
+        stopped = true;
+        generation += 1;
+        for (const observer of observers.values())
+            observer.disconnect();
+        clearTimeout(scheduled);
+        for (const timer of captureTimers)
+            clearTimeout(timer);
+        captureTimers.clear();
+        for (const dispose of routeCleanups)
+            dispose();
+        for (const patch of patches.values())
+            patch.unpatch();
+        patches.clear();
+        for (const target of refreshTargets) {
+            const refresh = target.forceUpdate;
+            if (typeof refresh === "function") {
+                try {
+                    refresh.call(target);
+                }
+                catch { /* A closed game view has no owner to refresh. */ }
+            }
+        }
+        refreshTargets.clear();
+    };
+}
+
+const LOCAL_CDP_TARGETS_URL = "http://localhost:8080/json";
+const STEAM_STORE_ROUTE = "/steamweb";
+const TARGET_DISCOVERY_INTERVAL_MS = 1500;
+const MAX_STEAM_APP_ID = 0x80000000;
+const STORE_TIER_KEYS = {
+    platinum: true,
+    gold: true,
+    silver: true,
+    bronze: true,
+    borked: true,
+};
+let storeScriptRevision = Math.max(1, Date.now() * 1000);
+const nextStoreScriptRevision = () => {
+    storeScriptRevision += 1;
+    if (!Number.isSafeInteger(storeScriptRevision))
+        storeScriptRevision = Math.max(1, Date.now() * 1000);
+    return storeScriptRevision;
+};
+const isSteamAppId = (value) => typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value < MAX_STEAM_APP_ID;
+const isProtonDbTier = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(STORE_TIER_KEYS, value);
+const isStoreBadgePayload = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "steamAppId" in value && isSteamAppId(value.steamAppId) &&
+    "tier" in value && isProtonDbTier(value.tier);
+const isSteamHistoryBoundary = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "listen" in value && typeof value.listen === "function";
+const validTargetText = (value, maximumLength) => typeof value === "string" && value.length > 0 && value.length <= maximumLength &&
+    value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value);
+const parseStoreAppId = (value) => {
+    if (!validTargetText(value, 2048))
+        return undefined;
+    try {
+        const url = new URL(value);
+        if (url.protocol !== "https:" || url.hostname !== "store.steampowered.com" ||
+            url.username !== "" || url.password !== "" || url.port !== "")
+            return undefined;
+        const match = /^\/app\/([1-9][0-9]*)(?:\/|$)/.exec(url.pathname);
+        if (!match)
+            return undefined;
+        const steamAppId = Number(match[1]);
+        return isSteamAppId(steamAppId) ? steamAppId : undefined;
+    }
+    catch {
+        return undefined;
+    }
+};
+const makeScriptPayload = (payload) => {
+    if (!payload)
+        return null;
+    if (!isStoreBadgePayload(payload))
+        throw new TypeError("Invalid ProtonDB Store badge payload");
+    return {
+        steamAppId: payload.steamAppId,
+        tier: payload.tier,
+        color: PROTONDB_COLORS[payload.tier],
+        label: protonDbTierLabel(payload.tier),
+    };
+};
+const storeBadgeScript = (payload, revision) => {
+    const serializedPayload = JSON.stringify(makeScriptPayload(payload));
+    const serializedRevision = JSON.stringify(revision);
+    return `(function () {
+  "use strict";
+  const requestedPayload = ${serializedPayload};
+  const requestedRevision = ${serializedRevision};
+  const ownerKey = "__deckyMetadataProtonDbStoreBadgeV1";
+  const revisionKey = "__deckyMetadataProtonDbStoreBadgeRevisionV1";
+  const badgeId = "decky-metadata-protondb-store-badge";
+  const styleId = "decky-metadata-protondb-store-badge-style";
+  const ownerAttribute = "data-decky-metadata-protondb-store";
+  const validTiers = Object.freeze({ platinum: true, gold: true, silver: true, bronze: true, borked: true });
+  const isAppId = function (value) {
+    return Number.isSafeInteger(value) && value > 0 && value < 2147483648;
+  };
+  const isPayload = function (value) {
+    return value !== null && typeof value === "object" && isAppId(value.steamAppId) &&
+      typeof value.tier === "string" && Object.prototype.hasOwnProperty.call(validTiers, value.tier) &&
+      typeof value.color === "string" && value.color.length > 0 && value.color.length <= 64 &&
+      typeof value.label === "string" && value.label.length > 0 && value.label.length <= 64;
+  };
+  const appIdOnCurrentStorePage = function () {
+    try {
+      const location = window.location;
+      if (!location || location.protocol !== "https:" || location.hostname !== "store.steampowered.com" ||
+          location.port !== "") return null;
+      const match = /^\\/app\\/([1-9][0-9]*)(?:\\/|$)/.exec(location.pathname);
+      if (!match) return null;
+      const appId = Number(match[1]);
+      return isAppId(appId) ? appId : null;
+    } catch {
+      return null;
+    }
+  };
+  const removeOwnedNode = function (id, kind) {
+    try {
+      const node = document.getElementById(id);
+      if (node && node.getAttribute(ownerAttribute) === kind && typeof node.remove === "function") node.remove();
+    } catch {}
+  };
+  const removeOrphanedDom = function () {
+    removeOwnedNode(badgeId, "badge");
+    removeOwnedNode(styleId, "style");
+  };
+  const currentRevision = window[revisionKey];
+  const highWater = Number.isSafeInteger(currentRevision) && currentRevision >= 0 ? currentRevision : 0;
+  const revision = requestedRevision === null ? highWater + 1 : requestedRevision;
+  if (!Number.isSafeInteger(revision) || revision < highWater) return false;
+  window[revisionKey] = revision;
+  const existing = window[ownerKey];
+  if (requestedPayload === null || !isPayload(requestedPayload) ||
+      appIdOnCurrentStorePage() !== requestedPayload.steamAppId) {
+    if (existing && typeof existing.dispose === "function") existing.dispose();
+    else removeOrphanedDom();
+    return requestedPayload === null;
+  }
+  if (existing && typeof existing.update === "function") {
+    existing.update(requestedPayload, revision);
+    return true;
+  }
+
+  let disposed = false;
+  let stateRevision = revision;
+  let statePayload = requestedPayload;
+  let observedRoot = null;
+  let observedBody = null;
+  let rootObserver = null;
+  let bodyObserver = null;
+  let badge = null;
+  let style = null;
+  const restoreHistoryMethods = [];
+  const state = { update: update, dispose: dispose };
+
+  function pageStillMatches() {
+    return !disposed && appIdOnCurrentStorePage() === statePayload.steamAppId;
+  }
+
+  function handleNavigation() {
+    if (disposed) return;
+    if (!pageStillMatches()) {
+      dispose();
+      return;
+    }
+    render();
+  }
+
+  function addHistoryObserver(methodName) {
+    try {
+      const history = window.history;
+      const original = history && history[methodName];
+      if (typeof original !== "function") return;
+      const wrapped = function () {
+        const result = Reflect.apply(original, this, arguments);
+        handleNavigation();
+        return result;
+      };
+      history[methodName] = wrapped;
+      if (history[methodName] === wrapped) {
+        restoreHistoryMethods.push(function () {
+          if (window.history && window.history[methodName] === wrapped) history[methodName] = original;
+        });
+      }
+    } catch {}
+  }
+
+  function observeDocument() {
+    const root = document.documentElement;
+    if (root && root !== observedRoot) {
+      if (rootObserver) rootObserver.disconnect();
+      observedRoot = root;
+      rootObserver = new MutationObserver(function () { render(); });
+      rootObserver.observe(root, { childList: true });
+    }
+    const body = document.body;
+    if (body !== observedBody) {
+      if (bodyObserver) bodyObserver.disconnect();
+      observedBody = body;
+      bodyObserver = null;
+      if (body) {
+        bodyObserver = new MutationObserver(function (records) {
+          if (disposed) return;
+          const externalChange = records.some(function (record) {
+            const added = Array.from(record.addedNodes || []);
+            const removed = Array.from(record.removedNodes || []);
+            return added.some(function (node) { return node !== badge; }) || removed.length > 0;
+          });
+          if (externalChange) render();
+        });
+        bodyObserver.observe(body, { childList: true });
+      }
+    }
+  }
+
+  function ownedNode(id, kind) {
+    const node = document.getElementById(id);
+    if (!node) return null;
+    return node.getAttribute(ownerAttribute) === kind ? node : false;
+  }
+
+  function createAtom() {
+    const namespace = "http://www.w3.org/2000/svg";
+    const atom = document.createElementNS(namespace, "svg");
+    atom.setAttribute("viewBox", "0 0 32 32");
+    atom.setAttribute("aria-hidden", "true");
+    atom.setAttribute("focusable", "false");
+    atom.setAttribute("class", "decky-metadata-protondb-store-atom");
+    ["rotate(0 16 16)", "rotate(60 16 16)", "rotate(120 16 16)"].forEach(function (rotation) {
+      const orbit = document.createElementNS(namespace, "ellipse");
+      orbit.setAttribute("cx", "16");
+      orbit.setAttribute("cy", "16");
+      orbit.setAttribute("rx", "13");
+      orbit.setAttribute("ry", "5.2");
+      orbit.setAttribute("transform", rotation);
+      atom.appendChild(orbit);
+    });
+    const nucleus = document.createElementNS(namespace, "circle");
+    nucleus.setAttribute("cx", "16");
+    nucleus.setAttribute("cy", "16");
+    nucleus.setAttribute("r", "2.3");
+    nucleus.setAttribute("fill", "currentColor");
+    nucleus.setAttribute("stroke", "none");
+    atom.appendChild(nucleus);
+    return atom;
+  }
+
+  function render() {
+    if (disposed) return;
+    if (!pageStillMatches()) {
+      dispose();
+      return;
+    }
+    observeDocument();
+    const body = document.body;
+    const styleHost = document.head || document.documentElement;
+    if (!body || !styleHost) return;
+
+    const existingBadge = ownedNode(badgeId, "badge");
+    if (existingBadge === false) return;
+    const existingStyle = ownedNode(styleId, "style");
+    if (existingStyle === false) return;
+    style = existingStyle || document.createElement("style");
+    if (!existingStyle) {
+      style.id = styleId;
+      style.setAttribute(ownerAttribute, "style");
+      style.textContent = "#" + badgeId + "{position:fixed!important;left:50%!important;right:auto!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:translateX(-50%)!important;display:inline-flex!important;align-items:center!important;gap:10px!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px 20px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;font:600 19px/1.2 system-ui,sans-serif!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}#" + badgeId + " .decky-metadata-protondb-store-separator{opacity:.55!important}";
+    }
+
+    badge = existingBadge || document.createElement("a");
+    if (!existingBadge) {
+      badge.id = badgeId;
+      badge.setAttribute(ownerAttribute, "badge");
+      badge.setAttribute("aria-label", "ProtonDB rating");
+      badge.target = "_blank";
+      badge.rel = "noopener noreferrer";
+    }
+
+    const tierChanged = badge.getAttribute("data-protondb-tier") !== statePayload.tier;
+    if (tierChanged) {
+      badge.replaceChildren(
+        createAtom(),
+        Object.assign(document.createElement("span"), {
+          className: "decky-metadata-protondb-store-attribution",
+          textContent: "ProtonDB",
+        }),
+        Object.assign(document.createElement("span"), {
+          className: "decky-metadata-protondb-store-separator",
+          textContent: "·",
+        }),
+        Object.assign(document.createElement("span"), {
+          className: "decky-metadata-protondb-store-tier",
+          textContent: statePayload.label,
+        }),
+      );
+      badge.setAttribute("data-protondb-tier", statePayload.tier);
+    }
+    badge.href = "https://www.protondb.com/app/" + statePayload.steamAppId;
+    badge.title = "ProtonDB rating: " + statePayload.label;
+    badge.setAttribute("aria-label", "ProtonDB rating: " + statePayload.label);
+    badge.style.setProperty("--protondb-tier-color", statePayload.color);
+    if (style.parentNode !== styleHost) styleHost.appendChild(style);
+    if (badge.parentNode !== body) body.appendChild(badge);
+  }
+
+  function update(nextPayload, nextRevision) {
+    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return;
+    stateRevision = nextRevision;
+    if (!isPayload(nextPayload) || appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
+      dispose();
+      return;
+    }
+    statePayload = nextPayload;
+    render();
+  }
+
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    if (rootObserver) rootObserver.disconnect();
+    if (bodyObserver) bodyObserver.disconnect();
+    window.removeEventListener("popstate", handleNavigation);
+    window.removeEventListener("hashchange", handleNavigation);
+    window.removeEventListener("pagehide", dispose);
+    window.removeEventListener("pageleave", dispose);
+    document.removeEventListener("pageleave", dispose);
+    restoreHistoryMethods.forEach(function (restore) {
+      try { restore(); } catch {}
+    });
+    removeOrphanedDom();
+    if (window[ownerKey] === state) delete window[ownerKey];
+  }
+
+  window[ownerKey] = state;
+  window.addEventListener("popstate", handleNavigation);
+  window.addEventListener("hashchange", handleNavigation);
+  window.addEventListener("pagehide", dispose);
+  window.addEventListener("pageleave", dispose);
+  document.addEventListener("pageleave", dispose);
+  addHistoryObserver("pushState");
+  addHistoryObserver("replaceState");
+  render();
+  return true;
+})();`;
+};
+const isSafeTargetId = (value) => validTargetText(value, 256);
+const parseStoreCefPageTarget = (value) => {
+    if (typeof value !== "object" || value === null || Array.isArray(value) ||
+        !("type" in value) || value.type !== "page" ||
+        !("title" in value) || !validTargetText(value.title, 512))
+        return undefined;
+    const id = "id" in value && isSafeTargetId(value.id) ? value.id : undefined;
+    return { id, title: value.title, url: "url" in value ? value.url : undefined };
+};
+const resolveStoreTarget = (value) => {
+    if (!Array.isArray(value))
+        return undefined;
+    const pageTargets = [];
+    for (const candidate of value) {
+        const pageTarget = parseStoreCefPageTarget(candidate);
+        if (pageTarget)
+            pageTargets.push(pageTarget);
+    }
+    const candidates = [];
+    for (const pageTarget of pageTargets) {
+        if (!pageTarget.id)
+            continue;
+        const steamAppId = parseStoreAppId(pageTarget.url);
+        if (steamAppId === undefined)
+            continue;
+        candidates.push({ id: pageTarget.id, title: pageTarget.title, steamAppId });
+    }
+    if (candidates.length !== 1)
+        return undefined;
+    const [target] = candidates;
+    const matchingTitleCount = pageTargets.filter((candidate) => candidate.title === target.title).length;
+    const matchingIdCount = pageTargets.filter((candidate) => candidate.id === target.id).length;
+    if (matchingTitleCount !== 1 || matchingIdCount !== 1)
+        return undefined;
+    return target;
+};
+const findSteamHistory = () => {
+    try {
+        const candidate = DFL.findModuleExport((moduleExport) => {
+            if (typeof moduleExport !== "object" || moduleExport === null || Array.isArray(moduleExport) ||
+                !("m_history" in moduleExport) || !isSteamHistoryBoundary(moduleExport.m_history))
+                return false;
+            return true;
+        });
+        if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate) ||
+            !("m_history" in candidate) || !isSteamHistoryBoundary(candidate.m_history))
+            return undefined;
+        return candidate.m_history;
+    }
+    catch {
+        return undefined;
+    }
+};
+const routePath = (history) => {
+    const pathname = history.location?.pathname;
+    return typeof pathname === "string" ? pathname : "";
+};
+const isDisposer = (value) => typeof value === "function";
+const listStoreCefTargets = async () => {
+    try {
+        const response = await fetchNoCors(LOCAL_CDP_TARGETS_URL, { method: "GET" });
+        if (response.status !== 200)
+            return undefined;
+        return resolveStoreTarget(await response.json());
+    }
+    catch {
+        return undefined;
+    }
+};
+/** Owns the current Store target, rating subscription, route listener, and discovery timer. */
+const installProtonDbStoreBadge = () => {
+    let stopped = false;
+    let eligible = false;
+    let onStoreRoute = false;
+    let discoveryRunning = false;
+    let discoveryTimer;
+    let discoveryRevision = 0;
+    let currentTarget;
+    let currentTargetSignature;
+    let pendingSignature;
+    let injectionGeneration = 0;
+    let ratingDisposer;
+    let removeHistoryListener;
+    const isEligible = () => {
+        if (stopped || !onStoreRoute)
+            return false;
+        const snapshot = protonDbBadgeController.getSnapshot();
+        return snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.store;
+    };
+    const clearDiscoveryTimer = () => {
+        if (discoveryTimer === undefined)
+            return;
+        globalThis.clearTimeout(discoveryTimer);
+        discoveryTimer = undefined;
+    };
+    const executeBadgeScript = async (target, payload) => {
+        const script = storeBadgeScript(payload, nextStoreScriptRevision());
+        try {
+            const result = await executeInTab(target.title, false, script);
+            return result.success && result.result === true;
+        }
+        catch {
+            return false;
+        }
+    };
+    const releaseRating = () => {
+        const dispose = ratingDisposer;
+        ratingDisposer = undefined;
+        if (!dispose)
+            return;
+        try {
+            dispose();
+        }
+        catch { /* A torn-down rating controller has already released it. */ }
+    };
+    const clearCurrentTarget = () => {
+        const target = currentTarget;
+        currentTarget = undefined;
+        currentTargetSignature = undefined;
+        pendingSignature = undefined;
+        injectionGeneration += 1;
+        releaseRating();
+        if (target)
+            executeBadgeScript(target, null);
+    };
+    const applyCurrentRating = () => {
+        if (!isEligible() || !currentTarget)
+            return;
+        const target = currentTarget;
+        const tier = protonDbBadgeController.getRating(target.steamAppId).tier;
+        const payload = tier ? { steamAppId: target.steamAppId, tier } : null;
+        const signature = target.id + "\u0000" + target.title + "\u0000" + target.steamAppId + "\u0000" + (tier || "none");
+        if (signature === currentTargetSignature || signature === pendingSignature)
+            return;
+        const generation = ++injectionGeneration;
+        pendingSignature = signature;
+        void executeBadgeScript(target, payload).then(applied => {
+            if (generation !== injectionGeneration)
+                return;
+            pendingSignature = undefined;
+            if (applied && isEligible() && currentTarget?.id === target.id &&
+                currentTarget.title === target.title && currentTarget.steamAppId === target.steamAppId) {
+                currentTargetSignature = signature;
+            }
+        });
+    };
+    const onRatingChanged = () => {
+        if (!isEligible() || !currentTarget)
+            return;
+        applyCurrentRating();
+    };
+    const setCurrentTarget = async (target) => {
+        if (!target) {
+            clearCurrentTarget();
+            return;
+        }
+        if (currentTarget && currentTarget.id === target.id && currentTarget.title === target.title &&
+            currentTarget.steamAppId === target.steamAppId) {
+            const tier = protonDbBadgeController.getRating(target.steamAppId).tier;
+            if (tier && currentTargetSignature) {
+                const presenceScript = `(() => {
+          const badge = document.getElementById("decky-metadata-protondb-store-badge");
+          return !!badge && badge.getAttribute("data-protondb-tier") === ${JSON.stringify(tier)}
+            && badge.getAttribute("href") === ${JSON.stringify(`https://www.protondb.com/app/${target.steamAppId}`)};
+        })()`;
+                try {
+                    const present = await executeInTab(target.title, false, presenceScript);
+                    if (!isEligible() || currentTarget?.id !== target.id)
+                        return;
+                    if (!present.success || present.result !== true)
+                        currentTargetSignature = undefined;
+                }
+                catch {
+                    if (!isEligible())
+                        return;
+                    currentTargetSignature = undefined;
+                }
+            }
+            applyCurrentRating();
+            return;
+        }
+        const previous = currentTarget;
+        if (previous && previous.id !== target.id)
+            executeBadgeScript(previous, null);
+        const appChanged = !previous || previous.steamAppId !== target.steamAppId;
+        currentTarget = target;
+        currentTargetSignature = undefined;
+        pendingSignature = undefined;
+        injectionGeneration += 1;
+        if (appChanged) {
+            releaseRating();
+            ratingDisposer = protonDbBadgeController.subscribeRating(target.steamAppId, onRatingChanged);
+        }
+        applyCurrentRating();
+    };
+    const scheduleDiscovery = () => {
+        if (!isEligible() || discoveryTimer !== undefined || discoveryRunning)
+            return;
+        discoveryTimer = globalThis.setTimeout(() => {
+            discoveryTimer = undefined;
+            void discoverTarget();
+        }, TARGET_DISCOVERY_INTERVAL_MS);
+    };
+    const discoverTarget = async () => {
+        if (!isEligible() || discoveryRunning)
+            return;
+        discoveryRunning = true;
+        const currentDiscoveryRevision = ++discoveryRevision;
+        try {
+            const target = await listStoreCefTargets();
+            if (!isEligible() || currentDiscoveryRevision !== discoveryRevision)
+                return;
+            await setCurrentTarget(target);
+        }
+        finally {
+            discoveryRunning = false;
+            if (isEligible())
+                scheduleDiscovery();
+        }
+    };
+    const stopDiscovery = () => {
+        eligible = false;
+        discoveryRevision += 1;
+        clearDiscoveryTimer();
+        clearCurrentTarget();
+    };
+    const syncEligibility = () => {
+        const nextEligibility = isEligible();
+        if (nextEligibility === eligible) {
+            if (nextEligibility && discoveryTimer === undefined && !discoveryRunning)
+                void discoverTarget();
+            return;
+        }
+        eligible = nextEligibility;
+        if (!nextEligibility) {
+            stopDiscovery();
+            return;
+        }
+        if (discoveryTimer === undefined && !discoveryRunning)
+            void discoverTarget();
+    };
+    const history = findSteamHistory();
+    if (history) {
+        onStoreRoute = routePath(history) === STEAM_STORE_ROUTE;
+        try {
+            const unlisten = history.listen(() => {
+                onStoreRoute = routePath(history) === STEAM_STORE_ROUTE;
+                syncEligibility();
+            });
+            if (isDisposer(unlisten))
+                removeHistoryListener = unlisten;
+        }
+        catch {
+            onStoreRoute = false;
+        }
+    }
+    const removeControllerListener = protonDbBadgeController.subscribe(syncEligibility);
+    syncEligibility();
+    return () => {
+        if (stopped)
+            return;
+        stopped = true;
+        stopDiscovery();
+        removeControllerListener();
+        const removeHistory = removeHistoryListener;
+        removeHistoryListener = undefined;
+        if (removeHistory) {
+            try {
+                removeHistory();
+            }
+            catch { /* Steam may have already discarded this History instance. */ }
+        }
+        onStoreRoute = false;
+    };
+};
+
 const METADATA_ROUTE = "/decky-metadata/:appid";
 const installInPlaceReloadGuard = (onFailedReload) => {
     const loader = globalThis.DeckyPluginLoader;
@@ -14428,9 +15882,13 @@ var index = DFL.definePlugin(() => {
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
+    protonDbBadgeController.mount();
     let unpatchSteam;
     try {
-        unpatchSteam = installSteamPatches();
+        unpatchSteam = installSteamPatches({
+            decorateCover: decorateProtonDbCover,
+            subscribeCoverChanges: subscribeProtonDbCoverChanges,
+        });
     }
     catch (error) {
         warn("bridge", "installSteamPatches failed", error);
@@ -14441,6 +15899,8 @@ var index = DFL.definePlugin(() => {
     const stopMetadataBootstrap = startMetadataBootstrap();
     const stopTrailerController = startTrailerController();
     const stopMiniAchievementsController = startMiniAchievementsController();
+    const stopProtonDbGameView = installProtonDbGameView();
+    const stopProtonDbStoreBadge = installProtonDbStoreBadge();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     return {
@@ -14455,6 +15915,9 @@ var index = DFL.definePlugin(() => {
         onDismount() {
             stopTrailerController();
             stopMiniAchievementsController();
+            stopProtonDbStoreBadge();
+            stopProtonDbGameView();
+            protonDbBadgeController.stop();
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
             // the held Game Info intent before it does so during an in-place import.

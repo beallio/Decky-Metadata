@@ -68,6 +68,35 @@ one game. A label you choose does not mean Valve tested your copy or promise
 that the game will run well. See [choosing a compatibility
 status](docs/help/compatibility-status.md).
 
+### ProtonDB ratings
+
+Open **ProtonDB badges** in the Decky Metadata panel and turn on **Enable
+ProtonDB badges**. It is off by default. You can show ratings on Home and Library
+game covers, beside the controller button on game pages, and on Steam Store
+pages. Steam games use their own app IDs. Non-Steam games use their saved
+Metadata Steam App ID first. If no valid ID is saved, the shortcut name is
+looked up using Steam, then ProtonDB's title index when Steam finds no match.
+Changing or clearing a saved match updates badges that are already on screen.
+
+The game-page button comes before the controller button and uses Steam's
+button style. Select it, or the Store badge, to open the game's ProtonDB page.
+The Store badge is a colored icon at the bottom right, with no visible text.
+Cover icons do not change how you select or launch a game. Choose a cover
+corner, or show cover icons only when a game is focused or hovered.
+The four view switches are separate. Turning off the main switch keeps your
+choices for each view.
+
+The colors mean **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
+These are ProtonDB community ratings, not Valve certification or a guarantee
+that your copy works now. Games with no match or rating have no badge. Ratings
+are fetched directly from ProtonDB, shared between views, and refreshed after
+24 hours while the game is visible. No additional compatibility service is used.
+
+If you also use **ProtonDB Badges**, turn off one plugin's overlapping badges
+to avoid duplicates. Store badges require CEF Remote Debugging in Decky's
+Developer settings.
+
+
 ### Game trailers
 
 Turn on **Game trailers** to show a video on a game's main Library page. Steam

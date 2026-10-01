@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrailerControllerSnapshot } from "./trailers/controller";
+import type { ProtonDbBadgeSnapshot } from "./protondb/controller";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -65,6 +66,11 @@ const trailer = vi.hoisted(() => ({
   setHideLogoDuringTrailer: vi.fn(),
   setQuality: vi.fn(),
 }));
+const protonDb = vi.hoisted(() => ({
+  getSnapshot: vi.fn<() => ProtonDbBadgeSnapshot>(),
+  subscribe: vi.fn(),
+  setSettings: vi.fn(),
+}));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -103,6 +109,7 @@ vi.mock("./components/qam/CompatibilitySection", () => ({
 vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersSection: "GameTrailersSection" }));
 vi.mock("./components/qam/LogsSection", () => ({ LogsSection: "LogsSection" }));
 vi.mock("./components/qam/MiniAchievementsSection", () => ({ MiniAchievementsSection: "MiniAchievementsSection" }));
+vi.mock("./components/qam/ProtonDbBadgesSection", () => ({ ProtonDbBadgesSection: "ProtonDbBadgesSection" }));
 vi.mock("./components/qam/MetadataSection", () => ({
   MetadataSection: "MetadataSection",
 }));
@@ -129,6 +136,7 @@ vi.mock("./steam/miniAchievementsController", () => ({
     setEnabled: vi.fn(),
   },
 }));
+vi.mock("./protondb/controller", () => ({ protonDbBadgeController: protonDb }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({
@@ -233,6 +241,7 @@ const makeFocusControls = () => {
   const categoryButton = makeButton();
   const scopeButton = makeButton();
   const qualityButton = makeButton();
+  const protonDbButton = makeButton();
   const control = (button: typeof categoryButton) => ({
     ownerDocument: qamDocument,
     querySelector: vi.fn(() => button),
@@ -243,6 +252,8 @@ const makeFocusControls = () => {
   const scopeB = control(scopeButton);
   const qualityA = control(qualityButton);
   const qualityB = control(qualityButton);
+  const protonDbA = control(protonDbButton);
+  const protonDbB = control(protonDbButton);
   let navContextActive = true;
   const navigationTree = {
     Root: {
@@ -269,6 +280,14 @@ const makeFocusControls = () => {
             if (!navContextActive) return true;
             qualityButton.className = "gpfocus";
             qamDocument.activeElement = qualityButton;
+            return true;
+          },
+        },
+        {
+          Element: protonDbButton,
+          BTakeFocus: () => {
+            protonDbButton.className = "gpfocus";
+            qamDocument.activeElement = protonDbButton;
             return true;
           },
         },
@@ -310,6 +329,9 @@ const makeFocusControls = () => {
     categoryButton,
     scopeButton,
     qualityButton,
+    protonDbButton,
+    protonDbA,
+    protonDbB,
     focusNav,
     loseNavContext: () => {
       navContextActive = false;
@@ -409,6 +431,15 @@ describe("Content update settings", () => {
       settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
     });
     trailer.setQuality.mockResolvedValue(true);
+    protonDb.getSnapshot.mockReturnValue({
+      settings: {
+        enabled: true, home: true, library: true, gameView: true, store: true,
+        focusOnly: false, coverPosition: "bottom-left",
+      },
+      settingsLoaded: true, busy: false, settingsError: "",
+    });
+    protonDb.subscribe.mockReturnValue(() => undefined);
+    protonDb.setSettings.mockResolvedValue(true);
     games.loadGames.mockResolvedValue([]);
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
@@ -435,6 +466,17 @@ describe("Content update settings", () => {
     clearCompatibilityDropdownReturn();
     clearCompatibilityPolicySave();
     vi.unstubAllGlobals();
+  });
+
+  it("picks up badge preferences that finish loading between panel render and subscription", () => {
+    const ready = protonDb.getSnapshot();
+    protonDb.getSnapshot.mockReturnValue({ ...ready, settingsLoaded: false, busy: true });
+    render();
+    protonDb.getSnapshot.mockReturnValue(ready);
+    runEffects();
+    const section = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    expect(section.props.snapshot.settingsLoaded).toBe(true);
+    expect(section.props.snapshot.busy).toBe(false);
   });
 
   it("falls back to defaults and marks settings loaded after a failed envelope", async () => {
@@ -763,6 +805,29 @@ describe("Content update settings", () => {
 
     expect(trailer.setQuality).toHaveBeenCalledWith(1080);
     expect(controls.qualityButton.className).toContain("gpfocus");
+  });
+
+  it("returns native focus to the ProtonDB cover position after selecting a corner", async () => {
+    const controls = makeFocusControls();
+    render();
+    runEffects();
+    await flushPromises();
+    const first = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    first.props.onCoverPositionMenuWillOpen();
+    first.props.onCoverPositionControlRef(controls.protonDbA);
+    first.props.onCoverPositionControlRef(null);
+    await first.props.onCoverPositionChange("top-right");
+    remount();
+    const returned = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    expect(returned.props.initiallyExpanded).toBe(true);
+    returned.props.onCoverPositionControlRef(controls.protonDbB);
+    render();
+    runEffects();
+    await flushPromises();
+    controls.flushFrames();
+    expect(controls.protonDbButton.className).toContain("gpfocus");
+    expect(controls.qualityButton.className).not.toContain("gpfocus");
+    expect(controls.categoryButton.className).not.toContain("gpfocus");
   });
 
   it("keeps an async Auto handoff through remount and releases on navigation after status churn", async () => {

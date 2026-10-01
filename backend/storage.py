@@ -18,6 +18,32 @@ DEFAULT_TRAILER_SETTINGS: dict[str, Any] = {
 }
 TRAILER_QUALITIES = ("auto", 720, 1080, 1440, 2160)
 
+DEFAULT_PROTONDB_BADGE_SETTINGS: dict[str, Any] = {
+    "enabled": False,
+    "home": True,
+    "library": True,
+    "gameView": True,
+    "store": True,
+    "focusOnly": False,
+    "coverPosition": "bottom-left",
+}
+PROTONDB_COVER_POSITIONS = ("bottom-left", "top-left", "top-right")
+
+
+def normalize_protondb_badge_settings(value: Any) -> dict[str, Any]:
+    settings = value if isinstance(value, dict) else {}
+    normalized = {
+        key: settings[key] if type(settings.get(key)) is bool else default
+        for key, default in DEFAULT_PROTONDB_BADGE_SETTINGS.items()
+        if type(default) is bool
+    }
+    position = settings.get("coverPosition")
+    normalized["coverPosition"] = (
+        position if isinstance(position, str) and position in PROTONDB_COVER_POSITIONS
+        else DEFAULT_PROTONDB_BADGE_SETTINGS["coverPosition"]
+    )
+    return normalized
+
 
 def normalize_trailer_settings(value: Any) -> dict[str, Any]:
     """Normalize saved trailer preferences without coercing incorrect types."""
@@ -68,6 +94,7 @@ def default_data() -> dict[str, Any]:
             "deck_compat_default": None,
             "game_trailers": dict(DEFAULT_TRAILER_SETTINGS),
             "mini_achievements_enabled": False,
+            "protondb_badges": dict(DEFAULT_PROTONDB_BADGE_SETTINGS),
         },
         "update_settings": {},
         "update_check_cache": {},
@@ -128,6 +155,12 @@ def load_data(
     else:
         # Keep legacy files unchanged until this preference is explicitly saved.
         merged["settings"].pop("mini_achievements_enabled", None)
+    if isinstance(payload_settings, dict) and "protondb_badges" in payload_settings:
+        merged["settings"]["protondb_badges"] = normalize_protondb_badge_settings(
+            payload_settings["protondb_badges"]
+        )
+    else:
+        merged["settings"].pop("protondb_badges", None)
 
     has_scope = isinstance(payload_settings, dict) and "deck_compat_default_scope" in payload_settings
     has_legacy_scope = isinstance(payload_settings, dict) and "deck_compat_default_matched_only" in payload_settings

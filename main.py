@@ -754,6 +754,47 @@ class Plugin:
                 raise
         return enabled
 
+    async def get_protondb_badge_settings(self) -> dict[str, Any]:
+        if not self._load_data():
+            raise RuntimeError("ProtonDB badge settings could not be loaded")
+        settings = self._data.get("settings")
+        value = settings.get("protondb_badges") if isinstance(settings, dict) else None
+        return storage.normalize_protondb_badge_settings(value)
+
+    async def set_protondb_badge_settings(self, value: Any) -> dict[str, Any]:
+        if (
+            not isinstance(value, dict)
+            or set(value) != set(storage.DEFAULT_PROTONDB_BADGE_SETTINGS)
+            or any(
+                type(value[key]) is not bool
+                for key, default in storage.DEFAULT_PROTONDB_BADGE_SETTINGS.items()
+                if type(default) is bool
+            )
+            or not isinstance(value["coverPosition"], str)
+            or value["coverPosition"] not in storage.PROTONDB_COVER_POSITIONS
+        ):
+            raise ValueError("invalid ProtonDB badge settings")
+        normalized = storage.normalize_protondb_badge_settings(value)
+        with self._data_guard():
+            if not self._load_data():
+                raise RuntimeError("ProtonDB badge settings could not be loaded")
+            settings = self._data.get("settings")
+            if not isinstance(settings, dict):
+                settings = {}
+                self._data["settings"] = settings
+            was_present = "protondb_badges" in settings
+            previous = settings.get("protondb_badges")
+            settings["protondb_badges"] = normalized
+            try:
+                self._save_data()
+            except Exception:
+                if was_present:
+                    settings["protondb_badges"] = previous
+                else:
+                    settings.pop("protondb_badges", None)
+                raise
+        return normalized
+
     async def get_metadata(self, app_id: int) -> MetadataRecord | None:
         self._load_data()
         return self._data["metadata"].get(str(app_id))
