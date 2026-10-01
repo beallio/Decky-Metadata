@@ -28,10 +28,11 @@ if you need more help.
 
 Open Decky Metadata from the Quick Access Menu to find games that need details.
 Select a section heading to show its controls. **Versions** starts open;
-**Metadata**, **Compatibility status**, **Game trailers**, **Mini achievements**,
-**Logs**, and **Updates** start closed. Press A on a heading or select it to open or close
-that section. **Metadata** includes the cache and **Delisted Steam games**
-tools. **Compatibility status** is immediately below it.
+**Metadata**, **Compatibility status**, **ProtonDB badges**, **Game trailers**,
+**Mini achievements**, **Logs**, and **Updates** start closed. Press A on a
+heading or select it to open or close that section. **Metadata** includes the
+cache and **Delisted Steam games** tools. **Compatibility status** is immediately
+below it.
 
 To edit one game, open its menu and select **Decky metadata...**. Find the right
 game in the Steam Store, paste its page link into **Steam App ID**, and select
@@ -91,6 +92,11 @@ These are ProtonDB community ratings, not Valve certification or a guarantee
 that your copy works now. Games with no match or rating have no badge. Ratings
 are fetched directly from ProtonDB, shared between views, and refreshed after
 24 hours while the game is visible. No additional compatibility service is used.
+
+Cached badges appear with game covers and controls when you return to a view.
+They stay with those items during Steam's page animation instead of disappearing
+as soon as navigation starts. A first lookup can still take time while the
+match or rating is fetched.
 
 If you also use **ProtonDB Badges**, turn off one plugin's overlapping badges
 to avoid duplicates. Store badges require CEF Remote Debugging in Decky's

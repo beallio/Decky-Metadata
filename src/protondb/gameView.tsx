@@ -2,10 +2,10 @@ import { routerHook } from "@decky/api";
 import { afterPatch } from "@decky/ui";
 import { cloneElement, createElement, isValidElement } from "react";
 import type { ComponentType, ReactElement, ReactNode } from "react";
+import { flushSync } from "react-dom";
 import * as log from "../log";
-import { GAME_DETAIL_ROUTES, currentRoutePath, isCurrentGameDetailRoute } from "../steam/core";
+import { GAME_DETAIL_ROUTES } from "../steam/core";
 import { findSteamModulesBySource } from "../steam/steamUiModules";
-import { findSteamUiDocumentMatch } from "../steam/steamUiHost";
 import { ProtonDbGameButton } from "./Badges";
 import type { NativeProtonDbButtonProps } from "./Badges";
 import { steamUiDocuments } from "../steam/steamUiHost";
@@ -90,7 +90,7 @@ export function installProtonDbGameView(): () => void {
   let stopped = false;
   let targets: NativeTargets | undefined;
   const observers = new Map<Document, MutationObserver>();
-  let scheduled: CaptureTimer | undefined;
+  let captureQueued = false;
   let generation = 0;
   const captureTimers = new Set<CaptureTimer>();
   const patches = new Map<object, Patch>();
@@ -105,8 +105,9 @@ export function installProtonDbGameView(): () => void {
       const owner = body?.ownerDocument;
       if (!owner || observers.has(owner)) continue;
       const observer = new MutationObserver(() => {
-        if (stopped || scheduled !== undefined) return;
-        scheduled = setTimeout(() => { scheduled = undefined; capture(); }, 0);
+        if (stopped || captureQueued) return;
+        captureQueued = true;
+        queueMicrotask(() => { captureQueued = false; capture(); });
       });
       observer.observe(body, { childList: true, subtree: true });
       observers.set(owner, observer);
@@ -136,7 +137,9 @@ export function installProtonDbGameView(): () => void {
         const patch = patchNative(foundType, "render", (args, result) => {
           if (stopped || !recordValue(args[0]) || !recordValue(args[0].overview)) return result;
           const overview = args[0].overview;
-          if (typeof overview.appid !== "number" || !isCurrentGameDetailRoute(currentRoutePath(), overview.appid)) return result;
+          // Steam retains outgoing controls during its page animation. Their
+          // overview, not the destination route, owns the badge's lifetime.
+          if (typeof overview.appid !== "number") return result;
           const button = createElement(ProtonDbGameButton, {
             key: BUTTON_KEY, displayedAppId: overview.appid, overview,
             Button: resolved.Button, className: resolved.buttonClass,
@@ -149,7 +152,7 @@ export function installProtonDbGameView(): () => void {
         if (parentToRefresh) {
           refreshTargets.add(parentToRefresh);
           const refresh = parentToRefresh.forceUpdate;
-          if (typeof refresh === "function") refresh.call(parentToRefresh);
+          if (typeof refresh === "function") flushSync(() => refresh.call(parentToRefresh));
         }
       }
     }
@@ -181,7 +184,6 @@ export function installProtonDbGameView(): () => void {
     stopped = true;
     generation += 1;
     for (const observer of observers.values()) observer.disconnect();
-    clearTimeout(scheduled);
     for (const timer of captureTimers) clearTimeout(timer);
     captureTimers.clear();
     for (const dispose of routeCleanups) dispose();

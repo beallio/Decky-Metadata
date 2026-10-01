@@ -1,7 +1,7 @@
 import { getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
 import { findSteamAppIdByName } from "./steamSearch";
 
-type Resolution = { name: string; promise: Promise<number | null> };
+type Resolution = { name: string; promise: Promise<number | null>; id?: number | null };
 const resolutions = new Map<number, Resolution>();
 let generation = 0;
 
@@ -20,10 +20,10 @@ const steamAppId = (value: unknown): number | null => {
 export const savedProtonDbAppId = (displayedAppId: number): number | null =>
   steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
 
-/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
-export const resolveProtonDbAppId = async (
+/** Read known identity without making navigation wait for an effect or Promise. */
+export const getResolvedProtonDbAppId = (
   displayedAppId: number, overview: unknown,
-): Promise<number | null> => {
+): number | null | undefined => {
   if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff) return null;
   if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
       !("appid" in overview) || overview.appid !== displayedAppId) return null;
@@ -37,15 +37,32 @@ export const resolveProtonDbAppId = async (
     const savedId = savedProtonDbAppId(displayedAppId);
     if (savedId !== null) return savedId;
     if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim()) return null;
-    const name = native.display_name;
-    const requestedGeneration = generation;
+    const resolution = resolutions.get(displayedAppId);
+    return resolution?.name === native.display_name ? resolution.id : undefined;
+  } catch {
+    return null;
+  }
+};
+
+/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
+export const resolveProtonDbAppId = async (
+  displayedAppId: number, overview: unknown,
+): Promise<number | null> => {
+  const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
+  if (knownId !== undefined) return knownId;
+  const native = (getNativeOverview(displayedAppId) ?? overview) as { display_name: string };
+  const name = native.display_name;
+  const requestedGeneration = generation;
+  try {
     let resolution = resolutions.get(displayedAppId);
     if (resolution?.name !== name) {
       const promise = findSteamAppIdByName(name).then(result => {
         if (generation !== requestedGeneration) return null;
         const current = getNativeOverview(displayedAppId);
         if (current && current.display_name !== name) return null;
-        return steamAppId(result);
+        const id = steamAppId(result);
+        if (resolution) resolution.id = id;
+        return id;
       });
       resolution = { name, promise };
       resolutions.set(displayedAppId, resolution);
