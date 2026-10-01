@@ -111,7 +111,7 @@ trailer if Steam has none. Trailers are off by default and stream while you
 watch. See [watching game trailers](docs/help/game-trailers.md) for sound,
 quality, and controller controls.
 
-Trailers keep a stable height while Steam animates the game page into view, including when a transparent save-status bar is below the artwork. Steam's normal page animation still plays.
+Trailers keep a stable height while Steam opens or closes the game page, including after you turn the status theme off and on. Switching from the artwork to a trailer does not add another size change. Steam's normal page animation still plays.
 
 The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi status bar. A theme's hidden, compact, or moved indicator does not add extra trailer space.
 

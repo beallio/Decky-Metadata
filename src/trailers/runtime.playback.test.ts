@@ -112,6 +112,7 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
       this.classList = {
         add: (...names) => names.forEach(name => classes.add(name)),
         remove: (...names) => names.forEach(name => classes.delete(name)),
+        contains: name => classes.has(name),
       };
     }
     getAttribute(name) { return name === 'style' ? this.asset : ''; }
@@ -357,6 +358,67 @@ test('A visible status band reveals the hero behind it without moving the band o
   h.document.URL = h.window.location.href;
   await h.runtime.scan();
   assert.equal(h.hero.style.height, originalHeight, 'leaving the page restores the original inline height');
+});
+
+test('An early theme reservation is adopted before trailer attachment and never counted twice', async () => {
+  const h = await readyDirectTrailer();
+  const naturalHeight = 400;
+  const bandHeight = 52;
+  const values = new Map();
+  h.hero.style = {
+    getPropertyValue: name => values.get(name) || '',
+    getPropertyPriority: () => '',
+    setProperty: (name, value) => values.set(name, value),
+    removeProperty: name => values.delete(name),
+  };
+  Object.defineProperty(h.hero, 'offsetHeight', {
+    get: () => Math.max(Number.parseFloat(values.get('height')) || naturalHeight,
+      naturalHeight + Number.parseFloat(values.get('--sdh-status-band-height') || '30')),
+  });
+  h.hero.getBoundingClientRect = () => ({
+    top: 0, left: 0, width: 1000, height: h.hero.offsetHeight, right: 1000, bottom: h.hero.offsetHeight,
+  });
+  const band = {
+    textContent: 'Steam Cloud: Up to date', parentElement: null, offsetHeight: bandHeight,
+    classList: { contains: name => name === 'native-cloud-row' },
+    getAttribute: () => null,
+    getBoundingClientRect: () => ({ top: naturalHeight, left: 0, width: 1000, height: bandHeight,
+      right: 1000, bottom: naturalHeight + bandHeight }),
+  };
+  const label = { parentElement: band, getBoundingClientRect: () => ({
+    top: naturalHeight + 4, left: 400, width: 200, height: 22,
+  }) };
+  h.window.DFL = { playSectionClasses: { CloudStatusRow: 'native-cloud-row' },
+    appDetailsHeaderClasses: { HeaderBackgroundImage: 'native-background' } };
+  h.hero.closest = selector => selector === '.native-background' ? h.hero : null;
+  h.document.elementFromPoint = (x, y) => x === 500 && y >= naturalHeight && y < naturalHeight + 6 ? label : null;
+  const computedStyle = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => element === h.hero ? {
+    ...computedStyle(element),
+    getPropertyValue: name => name === '--sdh-status-band-reserved' ? '1'
+      : name === '--CGV-image-height' ? '400px'
+        : name === '--sdh-status-band-height' ? values.get(name) || '' : '',
+  } : computedStyle(element);
+  h.hero.ownerDocument = h.document;
+  h.document.defaultView = h.window;
+
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452);
+  assert.equal(h.runtime.statusBackdrop.naturalHeight, 400);
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452);
+  const querySelectorAll = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('native-cloud-row') ? [band] : querySelectorAll(selector);
+  h.document.elementFromPoint = () => null;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452, 'a covered row keeps its layout reservation without an inline paint extension');
+  assert.equal(h.runtime.statusBackdrop, undefined);
+
+  h.runtime.steamUnavailable = true;
+  h.runtime.ignFallback = null;
+  h.runtime.currentMediaSignature = undefined;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 430, 'a final lookup failure returns the original theme reservation');
 });
 
 test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
