@@ -19,7 +19,7 @@ Find these settings in the **Game trailers** section:
 - **Trailer fade-in delay** controls how long the artwork remains before a ready trailer appears. The default is three seconds. Choose from 0 to 10 seconds; at 0, the trailer appears as soon as it is ready.
 - **Hide game logo during trailers** hides Steam's game logo while the trailer is visible. The logo returns when playback stops or fails, or when you leave the game page. This does not hide a logo shown inside the video.
 
-If Steam shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. When the bar is hidden or you leave the game page, the artwork returns to its usual size.
+If Steam or SDH-Ludusavi shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. It follows the bar's actual height, including when a theme makes the bar taller. A hidden, compact, or moved indicator does not add full-width trailer space. When you leave the game page, the artwork returns to its usual size. This does not change the trailer's fit, position, or playback.
 
 The trailer keeps the same height as Steam animates the page into view. Steam's normal page animation still plays; it does not make the trailer shrink and grow again.
 

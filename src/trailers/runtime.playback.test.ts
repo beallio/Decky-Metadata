@@ -244,6 +244,12 @@ test('A visible status band reveals the hero behind it without moving the band o
   const naturalHeight = 400;
   let statusTop = 400;
   let scale = 0.95;
+  let bandHeight = 52;
+  let bandOpacity = '1';
+  let bandPosition = 'static';
+  let nativeBand = true;
+  let bandClipped = false;
+  h.window.DFL = { playSectionClasses: { CloudStatusRow: 'native-cloud-row' } };
   let visible = false;
   let suppressed = false;
   const originalHeight = '400px';
@@ -261,13 +267,21 @@ test('A visible status band reveals the hero behind it without moving the band o
     const height = h.hero.offsetHeight * scale;
     return { width: 1000 * scale, height, top: 0, left: 0, right: 1000 * scale, bottom: height };
   };
+  const bandParent = {
+    parentElement: null,
+    getBoundingClientRect: () => ({
+      left: 0, top: 0, right: 1000 * scale, bottom: (statusTop + 8) * scale,
+    }),
+  };
   const band = {
     textContent: 'Steam Cloud: Up to date',
-    parentElement: null,
-    offsetHeight: 30,
+    parentElement: bandParent,
+    classList: { contains: name => nativeBand && name === 'native-cloud-row' },
+    matches: selector => selector.includes('native-cloud-row'),
+    get offsetHeight() { return bandHeight; },
     getBoundingClientRect: () => ({
-      width: 1000 * scale, height: 30 * scale, top: statusTop * scale, left: 0,
-      right: 1000 * scale, bottom: (statusTop + 30) * scale,
+      width: 1000 * scale, height: bandHeight * scale, top: statusTop * scale, left: 0,
+      right: 1000 * scale, bottom: (statusTop + bandHeight) * scale,
     }),
     getAttribute: name => name === 'aria-hidden' && suppressed ? 'true' : null,
   };
@@ -278,6 +292,12 @@ test('A visible status band reveals the hero behind it without moving the band o
       left: 410 * scale, right: 590 * scale, bottom: (statusTop + 26) * scale,
     }),
   };
+  const computedStyle = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => element === band
+    ? { display: 'flex', visibility: 'visible', opacity: bandOpacity, position: bandPosition }
+    : element === bandParent
+      ? { ...computedStyle(element), overflowY: bandClipped ? 'hidden' : 'visible' }
+      : computedStyle(element);
   // Steam's footer can cover the middle of the row at the default scroll position.
   h.document.elementFromPoint = (x, y) =>
     visible && x === 500 * scale && y >= statusTop * scale && y < (statusTop + 6) * scale ? label : null;
@@ -289,10 +309,10 @@ test('A visible status band reveals the hero behind it without moving the band o
   assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom,
     'the trailer reaches the status-band edge during Steam entry scaling');
   await h.runtime.scan();
-  assert.equal(h.hero.offsetHeight, 430, 'rescanning must not add a second band height');
+  assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight, 'rescanning must not add a second band height');
   for (scale of [0.97, 0.99, 1]) {
     await h.runtime.scan();
-    assert.equal(h.hero.offsetHeight, 430, 'page scaling must not change the trailer layout height');
+    assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight, 'page scaling must not change the trailer layout height');
     assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom);
   }
   suppressed = true;
@@ -300,7 +320,28 @@ test('A visible status band reveals the hero behind it without moving the band o
   assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'an aria-hidden row must not extend the trailer');
   suppressed = false;
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+  assert.equal(h.hero.getBoundingClientRect().bottom, naturalHeight + bandHeight);
+  bandOpacity = '0';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a theme-hidden row must not extend the trailer');
+  bandOpacity = '1';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight);
+  bandHeight = 44;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight + 44, 'a shorter theme band must shrink the backdrop without cumulative growth');
+  bandPosition = 'fixed';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a relocated overlay is not an in-flow artwork band');
+  bandPosition = 'static';
+  bandClipped = true;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a theme-clipped row must not reserve its hidden height');
+  bandClipped = false;
+  nativeBand = false;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'an unrelated full-width row must not extend the trailer');
+  nativeBand = true;
 
   visible = false;
   await h.runtime.scan();

@@ -3,7 +3,7 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.3";
+    const runtimeVersion = "0.1.4";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -23,6 +23,44 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
     const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
     const translations = injectedTranslations || { en: {} };
+    let nativeStatusRowClass;
+    const isStatusBand = (element) => {
+        if (element.getAttribute?.("data-sdh-ludusavi-status-row") === "true" ||
+            element.getAttribute?.("data-sdh-ludusavi-artwork-band") === "true") return true;
+        if (!nativeStatusRowClass) {
+            const candidates = [window];
+            try { candidates.push(window.opener); } catch { }
+            try { if (window.parent !== window) candidates.push(window.parent); } catch { }
+            for (const candidate of candidates) {
+                try {
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow;
+                    if (typeof value === "string" && value) {
+                        nativeStatusRowClass = value;
+                        break;
+                    }
+                } catch { }
+            }
+        }
+        return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
+    };
+    const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
+    const isPaintedStatusBand = (element) => {
+        if (element.getAttribute?.("aria-hidden") === "true") return false;
+        const band = element.getBoundingClientRect();
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            if (ancestor.hidden) return false;
+            const style = getComputedStyle(ancestor);
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0)) return false;
+            if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky")) return false;
+            if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
+                const bounds = ancestor.getBoundingClientRect();
+                if ((clipsOverflow(style.overflowX || style.overflow) && (band.left < bounds.left || band.right > bounds.right)) ||
+                    (clipsOverflow(style.overflowY || style.overflow) && (band.top < bounds.top || band.bottom > bounds.bottom))) return false;
+            }
+        }
+        return true;
+    };
     const safeMediaUrl = (value, base) => {
         if (typeof value !== "string" || !value.trim()) return null;
         let parsed;
@@ -596,7 +634,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.launchHeld = false;
             this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
-            this.handleResize = () => this.queueScan();
+            this.handleResize = () => {
+                if (this.currentTarget) {
+                    this.restoreStatusBackdrop();
+                    this.syncStatusBackdrop(this.currentTarget);
+                }
+                this.queueScan();
+            };
             this.handleRouteChange = () => {
                 if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
                     activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
@@ -691,8 +735,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 const band = element.getBoundingClientRect();
                 const layoutBandHeight = element.offsetHeight;
                 if (Math.abs(band.top - edge) <= 1 && Math.abs(band.width - hero.width) <= 2 &&
-                    layoutBandHeight >= 24 && layoutBandHeight <= 40 && element.textContent?.trim() &&
-                    element.getAttribute?.("aria-hidden") !== "true") {
+                    layoutBandHeight > 0 && element.textContent?.trim() &&
+                    isStatusBand(element) && isPaintedStatusBand(element)) {
                     bandHeight = layoutBandHeight;
                     break;
                 }
@@ -723,6 +767,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
+                if (document.head) {
+                    this.themeObserver = new MutationObserver(() => this.handleResize());
+                    this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
+                }
             }
             document.addEventListener("pointerdown", this.handleLaunchIntent, true);
             document.addEventListener("click", this.handleLaunchIntent, true);
@@ -840,6 +888,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.destroyed = true;
             this.requestToken += 1;
             this.observer?.disconnect();
+            this.themeObserver?.disconnect();
             if (this.scanTimer) window.clearInterval(this.scanTimer);
             if (this.queuedScanTimer) window.clearTimeout(this.queuedScanTimer);
             for (const routeWindow of this.routeWindows ?? []) {

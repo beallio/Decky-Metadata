@@ -113,6 +113,8 @@ quality, and controller controls.
 
 Trailers keep a stable height while Steam animates the game page into view, including when a transparent save-status bar is below the artwork. Steam's normal page animation still plays.
 
+The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi status bar. A theme's hidden, compact, or moved indicator does not add extra trailer space.
+
 ![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
 
 ### Mini achievements

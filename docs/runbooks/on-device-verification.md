@@ -116,6 +116,13 @@ Clean Gameview enabled, the reserved artwork height must stay the same before
 and after trailer attachment. Also check that hiding the band or leaving the
 page restores the original inline height.
 
+Repeat with a taller themed row, a compact relocated indicator, and a row hidden by
+display, visibility, or opacity. Only an aligned, full-width, in-flow native or
+Ludusavi status band may extend the trailer; use its measured layout height rather
+than a 30-pixel assumption. Shrinking or hiding the band must restore the correct
+height without cumulative growth. Keep the same video element playing and confirm
+that its object fit and position do not change.
+
 ### Compatibility defaults and Follow Valve
 
 This check changes real plugin settings and may change real shortcut status.
