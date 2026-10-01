@@ -4,7 +4,7 @@ import { fetchNoCors } from "@decky/api";
 
 const fixtures = vi.hoisted(() => ({
   native: new Map<number, { appid: number; app_type: number; display_name: string }>(),
-  metadataCache: {} as Record<string, { steam_appid: number }>,
+  metadataCache: {} as Record<string, { steam_appid: unknown }>,
 }));
 vi.mock("@decky/api", () => ({ fetchNoCors: vi.fn() }));
 vi.mock("../steam/core", () => ({
@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
-describe("fork-aligned ProtonDB identity", () => {
+describe("ID-first ProtonDB identity with fork fallback", () => {
   it("keeps native Steam identity direct rather than resolving a saved metadata alias", async () => {
     const overview = { appid: 620, app_type: 1, display_name: "Portal 2" };
     fixtures.native.set(620, overview);
@@ -43,14 +43,54 @@ describe("fork-aligned ProtonDB identity", () => {
     expect(fetchNoCors).not.toHaveBeenCalled();
   });
 
-  it("uses the fork's normalized title and marker matching instead of a saved pin", async () => {
+  it("uses the fork's normalized title and marker matching when no saved ID exists", async () => {
     const overview = native("Assassin's Creed: Director's Cut");
-    fixtures.metadataCache[String(shortcutId)] = { steam_appid: 570 };
     vi.mocked(fetchNoCors).mockResolvedValue(response({ items: [
       { type: "app", name: "Assassin's Creed: Director's Cut Edition Demo", id: 100 },
       { type: "app", name: "Assassin's Creed™: Director's Cut Edition", id: 15100 },
     ] }));
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(15100);
+  });
+
+  it.each([570, "570"])("uses an authoritative saved ID %s without consulting name search", async savedId => {
+    const overview = native("Name that does not match the saved game");
+    fixtures.metadataCache[String(shortcutId)] = { steam_appid: savedId };
+    vi.mocked(fetchNoCors).mockRejectedValue(new Error("A valid saved ID must not make a name request"));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(570);
+    expect(fetchNoCors).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 0, -1, "invalid", "570.5", 570.5, true, 2147483648])("falls back when saved ID %s is invalid", async savedId => {
+    const overview = native("Hades");
+    fixtures.metadataCache[String(shortcutId)] = { steam_appid: savedId };
+    vi.mocked(fetchNoCors).mockResolvedValue(steamGame("Hades", 1145360));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+  });
+
+  it("gives a changed saved ID priority over a cached fallback and uses the fallback again after clearing", async () => {
+    const overview = native("Hades");
+    vi.mocked(fetchNoCors).mockResolvedValue(steamGame("Hades", 1145360));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+    fixtures.metadataCache[String(shortcutId)] = { steam_appid: 570 };
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(570);
+    fixtures.metadataCache[String(shortcutId)] = { steam_appid: 620 };
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(620);
+    delete fixtures.metadataCache[String(shortcutId)];
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+    expect(fetchNoCors).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not let a late name result override a new saved ID or contaminate the fallback cache", async () => {
+    const overview = native("Hades");
+    const pending = Promise.withResolvers<Response>();
+    vi.mocked(fetchNoCors).mockImplementationOnce(() => pending.promise);
+    const search = resolveProtonDbAppId(shortcutId, overview);
+    fixtures.metadataCache[String(shortcutId)] = { steam_appid: 570 };
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(570);
+    pending.resolve(steamGame("Hades", 1145360));
+    expect(await search).toBe(570);
+    delete fixtures.metadataCache[String(shortcutId)];
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
   });
 
   it("finds a delisted shortcut through the exact Steam-first Algolia fallback", async () => {

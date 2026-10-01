@@ -1,4 +1,4 @@
-import { getNativeOverview, isNativeNonSteamShortcut } from "../steam/core";
+import { getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
 import { findSteamAppIdByName } from "./steamSearch";
 
 type Resolution = { name: string; promise: Promise<number | null> };
@@ -11,12 +11,16 @@ export const resetProtonDbAppIdResolution = (): void => {
 };
 
 const steamAppId = (value: unknown): number | null => {
-  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+  if (typeof value === "string" && !/^\d{1,10}$/.test(value)) return null;
+  if (typeof value !== "string" && typeof value !== "number") return null;
   const id = Number(value);
-  return Number.isSafeInteger(id) && id < 0x80000000 ? id : null;
+  return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
 };
 
-/** Native Steam IDs are direct; shortcuts use the local fork's name search. */
+export const savedProtonDbAppId = (displayedAppId: number): number | null =>
+  steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
+
+/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
 export const resolveProtonDbAppId = async (
   displayedAppId: number, overview: unknown,
 ): Promise<number | null> => {
@@ -30,19 +34,25 @@ export const resolveProtonDbAppId = async (
 
   try {
     if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native)) return displayedAppId;
+    const savedId = savedProtonDbAppId(displayedAppId);
+    if (savedId !== null) return savedId;
     if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim()) return null;
     const name = native.display_name;
-    const existing = resolutions.get(displayedAppId);
-    if (existing?.name === name) return existing.promise;
     const requestedGeneration = generation;
-    const promise = findSteamAppIdByName(name).then(result => {
-      if (generation !== requestedGeneration) return null;
-      const current = getNativeOverview(displayedAppId);
-      if (current && current.display_name !== name) return null;
-      return steamAppId(result);
-    });
-    resolutions.set(displayedAppId, { name, promise });
-    return promise;
+    let resolution = resolutions.get(displayedAppId);
+    if (resolution?.name !== name) {
+      const promise = findSteamAppIdByName(name).then(result => {
+        if (generation !== requestedGeneration) return null;
+        const current = getNativeOverview(displayedAppId);
+        if (current && current.display_name !== name) return null;
+        return steamAppId(result);
+      });
+      resolution = { name, promise };
+      resolutions.set(displayedAppId, resolution);
+    }
+    const result = await resolution.promise;
+    if (generation !== requestedGeneration) return null;
+    return savedProtonDbAppId(displayedAppId) ?? result;
   } catch {
     return null;
   }

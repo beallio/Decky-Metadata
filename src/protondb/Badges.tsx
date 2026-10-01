@@ -1,9 +1,9 @@
 import { Navigation } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { getNativeOverview } from "../steam/core";
+import { getNativeOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { protonDbBadgeController } from "./controller";
-import { resolveProtonDbAppId } from "./identity";
+import { resolveProtonDbAppId, savedProtonDbAppId } from "./identity";
 import { ProtonDbIcon, protonDbTierLabel } from "./Icon";
 
 export type NativeProtonDbButtonProps = {
@@ -16,30 +16,34 @@ export type NativeProtonDbButtonProps = {
   children?: ReactNode;
 };
 
-function useBadgeSnapshot() {
+function useBadgeSnapshot(displayedAppId: number) {
   const [, update] = useState(0);
   useEffect(() => {
     const refresh = () => update(value => value + 1);
     const unsubscribe = protonDbBadgeController.subscribe(refresh);
+    const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
+      if (appId === displayedAppId) refresh();
+    });
     refresh();
-    return unsubscribe;
-  }, []);
+    return () => { unsubscribe(); unsubscribeMatch(); };
+  }, [displayedAppId]);
   return protonDbBadgeController.getSnapshot();
 }
 
 function useSourceAppId(displayedAppId: number, overview: unknown, active: boolean) {
   const name = getNativeOverview(displayedAppId)?.display_name ??
     (overview && typeof overview === "object" && "display_name" in overview ? overview.display_name : "");
-  const [resolved, setResolved] = useState<{ displayedAppId: number; name: unknown; id: number | null } | null>(null);
+  const savedId = savedProtonDbAppId(displayedAppId);
+  const [resolved, setResolved] = useState<{ displayedAppId: number; name: unknown; savedId: number | null; id: number | null } | null>(null);
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
     void resolveProtonDbAppId(displayedAppId, overview).then(id => {
-      if (!cancelled) setResolved({ displayedAppId, name, id });
+      if (!cancelled) setResolved({ displayedAppId, name, savedId, id });
     });
     return () => { cancelled = true; };
-  }, [displayedAppId, name, active]);
-  return active && resolved?.displayedAppId === displayedAppId && resolved.name === name ? resolved.id : null;
+  }, [displayedAppId, name, savedId, active]);
+  return active && resolved?.displayedAppId === displayedAppId && resolved.name === name && resolved.savedId === savedId ? resolved.id : null;
 }
 
 function useBadgeTier(sourceAppId: number | null, active: boolean) {
@@ -60,7 +64,7 @@ export function ProtonDbGameButton({ displayedAppId, overview, Button, className
   Button: ComponentType<NativeProtonDbButtonProps>;
   className: string;
 }) {
-  const snapshot = useBadgeSnapshot();
+  const snapshot = useBadgeSnapshot(displayedAppId);
   const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.gameView;
   const sourceAppId = useSourceAppId(displayedAppId, overview, active);
   const tier = useBadgeTier(sourceAppId, active);

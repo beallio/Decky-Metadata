@@ -2,7 +2,7 @@ import { createModuleMapping, Router } from "@decky/ui";
 import { createElement, memo } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { getNativeOverview, getOverview } from "../steam/core";
+import { getNativeOverview, getOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { findSteamUiDocumentMatch } from "../steam/steamUiHost";
 import type { ProtonDbBadgeSettings, ProtonDbTier } from "../types";
 import { protonDbBadgeController } from "./controller";
@@ -260,12 +260,19 @@ export const installProtonDbCoverBadges = (): (() => void) => {
     queueRender();
   };
   const unsubscribe = protonDbBadgeController.subscribe(refreshSettings);
+  const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
+    if (disposed) return;
+    for (const [cover, entry] of hosts) {
+      if (entry.appId === appId) loadTier(cover, entry, getNativeOverview(appId) ?? getOverview(appId));
+    }
+  });
   const maintenance = setInterval(syncDocument, 1_000);
   refreshSettings();
   return () => {
     if (disposed) return;
     disposed = true;
     unsubscribe();
+    unsubscribeMatch();
     clearInterval(maintenance);
     detachDocument();
   };
