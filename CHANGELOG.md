@@ -51,10 +51,11 @@ Organize Quick Access Menu settings into collapsible sections.
 - Trailers no longer shrink and grow again when you open a game page with a
   save-status bar below the artwork. Steam's normal page animation still plays.
 - ProtonDB Home and Library icons use the local ProtonDB Badges fork's native
-  footer hosts, React portals, and Steam-first/Algolia name lookup instead of
-  native card-render injection and saved Metadata Steam matches. Direct
-  ProtonDB tiers are retained without Gateway analysis. Focus, hover, card
-  reuse, and teardown follow the fork's cover layout and lifecycle.
+  footer hosts and React portals. Steam games use their native app IDs, and
+  shortcuts prefer a valid saved Metadata Steam App ID before the fork's
+  Steam-first/Algolia name fallback. Changed or cleared matches refresh mounted
+  cover and game-page badges without retaining the previous rating. Direct
+  ProtonDB tiers are retained without Gateway analysis.
 
 
 ## [0.4.0] - 2026-09-28

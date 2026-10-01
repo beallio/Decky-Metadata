@@ -73,9 +73,10 @@ status](docs/help/compatibility-status.md).
 Open **ProtonDB badges** in the Decky Metadata panel and turn on **Enable
 ProtonDB badges**. It is off by default. You can show ratings on Home and Library
 game covers, beside the controller button on game pages, and on Steam Store
-pages. Steam games use their own app IDs. Non-Steam games are looked up by
-their shortcut names, using Steam first and ProtonDB's title index when Steam
-finds no match. You do not need a saved Metadata match for these badges.
+pages. Steam games use their own app IDs. Non-Steam games use their saved
+Metadata Steam App ID first. If no valid ID is saved, the shortcut name is
+looked up using Steam, then ProtonDB's title index when Steam finds no match.
+Changing or clearing a saved match updates badges that are already on screen.
 
 The game-page button comes before the controller button and uses Steam's
 button style. Select it, or the Store badge, to open the game's ProtonDB page.
