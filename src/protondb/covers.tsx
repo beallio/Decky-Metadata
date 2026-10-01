@@ -8,6 +8,7 @@ import type { ProtonDbBadgeSettings, ProtonDbTier } from "../types";
 import { protonDbBadgeController } from "./controller";
 import { resolveProtonDbAppId } from "./identity";
 import { PROTONDB_COLORS, protonDbTierLabel } from "./Icon";
+import { protonDbCoverSurface, type CoverSurface } from "./coverSurface";
 
 // Native mounting boundaries and icon layout are from the local ProtonDB fork.
 const COVER_SELECTOR = "._1pwP4eeP1zQD7PEgmsep0W";
@@ -29,7 +30,6 @@ ${COVER_SELECTOR}:focus-within .decky-metadata-protondb-cover--focus,
 ${COVER_SELECTOR}:hover .decky-metadata-protondb-cover--focus{opacity:1;transition:opacity .6s cubic-bezier(0,.73,.48,1)}
 `;
 
-type Surface = "home" | "library";
 type NativeRoot = { render(children: ReactNode): void; unmount(): void };
 type NativeRootCreator = (container: HTMLElement) => NativeRoot;
 type HostEntry = {
@@ -65,14 +65,11 @@ const appIdFromCover = (cover: Element): number | null => {
   return Number.isSafeInteger(id) && id > 0 && id <= 0xffffffff ? id : null;
 };
 
-const currentSurface = (): Surface | null => {
+const currentSurface = (): CoverSurface | null => {
   const mainWindow = Router.WindowStore?.GamepadUIMainWindowInstance as unknown as {
     m_history?: { location?: { pathname?: string } };
   } | undefined;
-  const path = mainWindow?.m_history?.location?.pathname;
-  if (/^\/(?:routes\/)?library\/home(?:\/|$)/.test(path ?? "")) return "home";
-  if (/^\/(?:routes\/)?library(?:\/collections(?:\/|$)|\/?$)/.test(path ?? "")) return "library";
-  return null;
+  return protonDbCoverSurface(mainWindow?.m_history?.location?.pathname);
 };
 
 export const installProtonDbCoverBadges = (): (() => void) => {
