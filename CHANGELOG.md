@@ -56,8 +56,10 @@ Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feat
 
 ### Fixed
 
-- Trailers no longer shrink and grow again when you open a game page with a
-  save-status bar below the artwork. Steam's normal page animation still plays.
+- Trailers no longer shrink and grow again when you open or close a game page
+  with a save-status bar below the artwork, including after turning its theme
+  off and on. Taller full-width bars get more trailer space; hidden, compact,
+  or moved indicators do not. Steam's normal page animation still plays.
 - ProtonDB Home and Library icons use the local ProtonDB Badges fork's native
   footer hosts and React portals. Steam games use their native app IDs, and
   shortcuts prefer a valid saved Metadata Steam App ID before the fork's

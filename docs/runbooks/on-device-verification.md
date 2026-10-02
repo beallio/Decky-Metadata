@@ -100,11 +100,18 @@ mini-achievements features enabled is not a supported coexistence mode.
 ### Game-page artwork and trailer geometry
 
 The trailer backdrop calculates CSS height from the target's `offsetHeight` plus
-the status band's `offsetHeight`. Steam scales the entering page, so
+the status band's `offsetHeight`, after subtracting any early CSS reservation.
+The `--sdh-status-band-reserved` flag and Clean Gameview image-height variable
+identify that reservation. Steam scales the entering page, so
 `getBoundingClientRect().height / offsetHeight` is used only to translate the
 original artwork edge into viewport coordinates for hit-testing. Rescans retain
 the original layout height; a change in page scale must not shrink the target,
-add another band, or briefly restore its shorter height.
+add another band, or briefly restore its shorter height. Layout-row discovery
+does not depend on hit-testing: temporary coverage preserves valid layout space
+without claiming a paintable backdrop. A native-window shared reservation record
+saves the first genuine inline variable value and restores it only for its current
+owner. Trailer disable or final playback/lookup failure releases that ownership.
+Animated route exit retains it until the header disconnects.
 
 After a trailer-runtime sizing change, open a Steam game with a visible Cloud
 row from Library Home and record the actual hero and trailer-container layout
@@ -115,6 +122,20 @@ and the Play controls and band must stay in place. With SDH-Ludusavi Status and
 Clean Gameview enabled, the reserved artwork height must stay the same before
 and after trailer attachment. Also check that hiding the band or leaving the
 page restores the original inline height.
+
+Turn SDH-Ludusavi Status off and on without changing its color choices, then repeat
+entry, trailer attachment, and exit for both a Steam Cloud page and an eligible
+non-Steam Ludusavi page. Capture only the native header image, not Library Home's
+separate carousel image. The first visible header frame must have the same layout
+height as the frame after trailer attachment; the last connected exit frame must
+not recrop. Restore all theme choices and retain the user's trailer-audio setting.
+
+Repeat with a taller themed row, a compact relocated indicator, and a row hidden by
+display, visibility, or opacity. Only an aligned, full-width, in-flow native or
+Ludusavi status band may extend the trailer; use its measured layout height rather
+than a 30-pixel assumption. Shrinking or hiding the band must restore the correct
+height without cumulative growth. Keep the same video element playing and confirm
+that its object fit and position do not change.
 
 ### Compatibility defaults and Follow Valve
 
