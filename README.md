@@ -8,7 +8,7 @@ can show descriptions, news, community posts, and controller layouts from the
 matching game. It can also play trailers on game pages. You can correct a match
 if needed, and your custom artwork stays in place.
 
-![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20260718)
+![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202610011846)
 
 ## Install
 
@@ -43,9 +43,9 @@ The editor can preview a cleaner shortcut name. It changes the name only if you
 confirm; you can restore the original name later. See [matching and editing
 games](docs/help/editing-games.md) for the full steps.
 
-![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=20260907)
+![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=202610011846)
 
-![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=20260717)
+![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=202610011846)
 
 ## What you can see
 
@@ -57,9 +57,9 @@ It can also show links to the Steam store and other pages when available. Your
 SteamGridDB artwork stays in place, including the game icon, cover, background,
 and logo.
 
-![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=20260717)
+![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=202610011846)
 
-![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20260717)
+![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202610011846)
 
 ### Compatibility status
 
@@ -115,7 +115,7 @@ Trailers keep a stable height while Steam opens or closes the game page, includi
 
 The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi status bar. A theme's hidden, compact, or moved indicator does not add extra trailer space.
 
-![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=20260928)
+![Hades artwork giving way to a game trailer on Steam Deck](assets/decky-metadata-trailers.webp?cacheBuster=202610011846)
 
 ### Mini achievements
 
@@ -134,9 +134,9 @@ A matched game can show Steam Community posts and news. If there are no Steam
 Community cards, Decky Metadata can show screenshots from IGN instead. See
 [community posts and news](docs/help/community-and-news.md).
 
-![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=20260717)
+![Steam Community content for Warhammer 40,000: Space Marine](assets/decky-metadata-community.png?cacheBuster=202610011846)
 
-![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=20260717)
+![Steam activity news for Warhammer 40,000: Space Marine](assets/decky-metadata-activity-news.png?cacheBuster=202610011846)
 
 ### Controller layouts
 
@@ -144,7 +144,7 @@ Find recommended, official, and community controller layouts from the matching
 Steam game. Your own layouts and Steam's templates remain available. See
 [using controller layouts](docs/help/controller-layouts.md).
 
-![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=20260717)
+![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=202610011846)
 
 ## Updates and help
 
