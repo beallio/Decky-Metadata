@@ -58,6 +58,8 @@ Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feat
 
 ### Fixed
 
+- Quick Access Menu section headings stay in view when D-pad focus reaches
+  them below expanded controls or long plugin-conflict notes.
 - Trailers no longer shrink and grow again when you open or close a game page
   with a save-status bar below the artwork, including after turning its theme
   off and on. Taller full-width bars get more trailer space; hidden, compact,
