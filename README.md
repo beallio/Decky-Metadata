@@ -98,9 +98,10 @@ They stay with those items during Steam's page animation instead of disappearing
 as soon as navigation starts. A first lookup can still take time while the
 match or rating is fetched.
 
-If you also use **ProtonDB Badges**, turn off one plugin's overlapping badges
-to avoid duplicates. Store badges require CEF Remote Debugging in Decky's
-Developer settings.
+If **ProtonDB Badges** is enabled in Decky Loader, Decky Metadata pauses its
+badges and prevents turning them on. Disable that plugin to use Metadata's
+badges. See [other Decky plugins](#other-decky-plugins). Store badges require CEF
+Remote Debugging in Decky's Developer settings.
 
 
 ### Game trailers
@@ -145,6 +146,29 @@ Steam game. Your own layouts and Steam's templates remain available. See
 [using controller layouts](docs/help/controller-layouts.md).
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=202610011846)
+
+## Other Decky plugins
+
+Use only one plugin for each of these features:
+
+- **ProtonDB Badges** prevents Decky Metadata's ProtonDB badges from running.
+- **TrailerHero** prevents Decky Metadata's game trailers from running.
+
+The affected section names the other plugin and tells you to disable it in
+Decky Loader. Hiding a plugin from the menu does not disable it. Other Metadata
+features remain available.
+
+Your saved choices stay in place. If our switch was on, the feature resumes
+when the other plugin is disabled or removed. You can turn our switch off while
+it is paused if you do not want it to resume.
+
+If a disabled TrailerHero player keeps running, Metadata waits rather than
+starting a second player. Finish any running game and restart Steam after
+disabling or removing TrailerHero.
+
+If the panel cannot check other plugins, it shows a warning instead of blocking
+the feature. In that case, check manually that only one provider is enabled.
+Mini achievements still needs its separate manual check in Decky UI Restored.
 
 ## Updates and help
 

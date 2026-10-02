@@ -863,6 +863,28 @@ test('Sleep, disabling trailers, and unload each restore a hidden native logo', 
   }
 });
 
+test('A queued enabled install cannot restore playback after owner conflict suspension', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ hideLogoDuringTrailer: true, clock, pageEnteredAt: clock.now });
+  clock.advance(3000);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '0');
+  const owner = h.window.__deckyMetadataTrailerOwner;
+  owner.settings = { ...owner.settings, enabled: false };
+  owner.settingsRevision = 1;
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  const serializedFactory = source.slice(start, end).replace(/^export\s+/, '');
+
+  vm.runInContext(`(${serializedFactory})({enabled:true,audioEnabled:true,quality:'auto',hideLogoDuringTrailer:true},
+    'test-owner', 0, {en:{}}, {pageAppId:570,sourceAppId:570})`, h.context);
+
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '1');
+  assert.equal(h.video, undefined);
+  await h.runtime.scan();
+  clock.advance(3000);
+  assert.equal(h.video, undefined);
+  h.runtime.destroy();
+});
+
 test('A denied wake resume restores artwork and does not retry on every scan', async () => {
   const h = await readyDirectTrailer({ failWake: true });
   const video = h.video;
@@ -1254,15 +1276,34 @@ test('Native Steam pages use their own ID; subpages and mismatched heroes make n
   assert.equal(h.getAttached().appId, 570);
 });
 
-test('An active standalone trailer marker blocks the Metadata overlay without taking ownership', async () => {
-  for (const marker of ['style', 'video']) {
-    const h = setup();
-    h.document.getElementById = id => marker === 'style' && id === 'decky-trailerhero-style' ? {} : null;
-    h.document.querySelector = selector => marker === 'video' && selector === '.decky-trailerhero-video' ? {} : null;
-    await h.runtime.scan();
-    assert.match(h.runtime.snapshot().status, /Another trailer plugin is active/);
-    assert.equal(h.runtime.currentVideo, undefined);
-  }
+test('Current TrailerHero residue stops owned playback and lets it resume only after removal', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, hideLogoDuringTrailer: true });
+  clock.advance(3000);
+  const ownedVideo = h.video;
+  assert.equal(ownedVideo.paused, false);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '0');
+  h.runtime.getTrailer = async () => ({
+    ok: true, name: 'Playable Steam trailer',
+    candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }],
+  });
+  let peerPresent = true;
+  h.document.querySelector = selector =>
+    peerPresent && selector === '.trailerhero-video' ? {} : null;
+
+  await h.runtime.scan();
+
+  assert.equal(ownedVideo.paused, true);
+  assert.equal(ownedVideo.isConnected, false);
+  assert.equal(h.video, undefined);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '1');
+  peerPresent = false;
+  await h.runtime.scan();
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  clock.advance(3000);
+  assert.equal(h.video.isConnected, true);
+  assert.equal(h.video.paused, false);
+  h.runtime.destroy();
 });
 
 test('A failed Steam metadata visit stays terminal until the page is left or re-enabled', async () => {

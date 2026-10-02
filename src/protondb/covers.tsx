@@ -94,7 +94,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
 
   const surfaceEnabled = (surface: CoverSurface | null): boolean => {
     const snapshot = protonDbBadgeController.getSnapshot();
-    return snapshot.settingsLoaded && snapshot.settings.enabled && surface !== null && snapshot.settings[surface];
+    return snapshot.effectiveEnabled && surface !== null && snapshot.settings[surface];
   };
 
   const queueRender = (): void => {
@@ -220,7 +220,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
     const snapshot = protonDbBadgeController.getSnapshot();
     // Observe Steam's main document even on Game Info so the next cover mount
     // is handled in the same turn, not by the one-second discovery fallback.
-    const nextDocument = snapshot.settingsLoaded && settings.enabled && (settings.home || settings.library)
+    const nextDocument = snapshot.effectiveEnabled && (settings.home || settings.library)
       ? findSteamUiDocumentMatch(candidate =>
         candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(COVER_SELECTOR)
           ? candidate as Document : undefined) ?? null

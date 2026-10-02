@@ -68,7 +68,7 @@ export function ProtonDbGameButton({ displayedAppId, overview, Button, className
   className: string;
 }) {
   const snapshot = useBadgeSnapshot(displayedAppId);
-  const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.gameView;
+  const active = snapshot.effectiveEnabled && snapshot.settings.gameView;
   const sourceAppId = useSourceAppId(displayedAppId, overview, active);
   const tier = useBadgeTier(sourceAppId, active);
   if (!tier || sourceAppId === null) return null;

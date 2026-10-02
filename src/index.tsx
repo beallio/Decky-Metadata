@@ -14,6 +14,7 @@ import { installProtonDbCoverBadges } from "./protondb/covers";
 import { resetProtonDbAppIdResolution } from "./protondb/identity";
 import { installProtonDbGameView } from "./protondb/gameView";
 import { installProtonDbStoreBadge } from "./protondb/store";
+import { startPluginConflicts } from "./pluginConflicts";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -57,6 +58,7 @@ const installInPlaceReloadGuard = (onFailedReload: () => void) => {
 };
 
 export default definePlugin(() => {
+  const stopPluginConflicts = startPluginConflicts();
   beginCompatibilityLifecycle();
   let retainedReloadBaselines = false;
   const reloadGuard = installInPlaceReloadGuard(() => {
@@ -113,6 +115,7 @@ export default definePlugin(() => {
       stopProtonDbStoreBadge();
       stopProtonDbGameView();
       protonDbBadgeController.stop();
+      stopPluginConflicts();
       resetProtonDbAppIdResolution();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain

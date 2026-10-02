@@ -56,7 +56,13 @@ export function CollapsibleSection({ title, icon, children, defaultExpanded = fa
         aria-expanded={expanded}
         aria-controls={id}
         onActivate={() => setExpanded(value => !value)}
-        onFocus={() => setFocused(true)}
+        onFocus={(event) => {
+          const heading = event.currentTarget;
+          setFocused(true);
+          heading.ownerDocument.defaultView?.requestAnimationFrame(() => {
+            if (heading.isConnected) heading.scrollIntoView({ block: "nearest", inline: "nearest" });
+          });
+        }}
         onBlur={() => setFocused(false)}
         style={focused ? focusedHeadingStyle : headingStyle}
       >

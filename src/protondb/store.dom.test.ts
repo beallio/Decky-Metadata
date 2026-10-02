@@ -327,6 +327,7 @@ describe("ProtonDB Store badge DOM", () => {
     vi.mocked(findModuleExport).mockReturnValue({ m_history: staleHistory });
     vi.mocked(protonDbBadgeController.getSnapshot).mockReturnValue({
       settingsLoaded: true, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
       settings: {
         enabled: true, home: true, library: true, gameView: true, store: true,
         focusOnly: false, coverPosition: "bottom-left",

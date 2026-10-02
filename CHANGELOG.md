@@ -4,7 +4,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Add ProtonDB badges, mini achievements, and collapsible settings
+Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feature guards
 
 ### Added
 
@@ -31,6 +31,15 @@ Add ProtonDB badges, mini achievements, and collapsible settings
   Home and Library switches remain independent on Steam's shared cover
   renderer. Store badges follow the active main window and recover after a
   Store page reload.
+- **Known plugin conflict guards.** Decky Metadata pauses its ProtonDB badges
+  while ProtonDB Badges is enabled in Decky Loader, and its game trailers while
+  TrailerHero is enabled. The affected section names the other plugin and
+  prevents enabling the duplicate feature. Saved choices are kept; an enabled
+  feature resumes when the conflict clears unless you turn its switch off.
+  If detection is unavailable, the panel warns without blocking unrelated
+  features. Mini achievements keeps its manual Decky UI Restored warning.
+  Current TrailerHero player and style markers also prevent duplicate playback
+  when that plugin leaves an injected player behind after Loader disables it.
 
 ### Changed
 
@@ -49,6 +58,8 @@ Add ProtonDB badges, mini achievements, and collapsible settings
 
 ### Fixed
 
+- Quick Access Menu section headings stay in view when D-pad focus reaches
+  them below expanded controls or long plugin-conflict notes.
 - Trailers no longer shrink and grow again when you open or close a game page
   with a save-status bar below the artwork, including after turning its theme
   off and on. Taller full-width bars get more trailer space; hidden, compact,

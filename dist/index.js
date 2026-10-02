@@ -350,7 +350,14 @@ function CollapsibleSection({ title, icon, children, defaultExpanded = false }) 
     const [expanded, setExpanded] = SP_REACT.useState(defaultExpanded);
     const [focused, setFocused] = SP_REACT.useState(false);
     const id = SP_REACT.useId();
-    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: () => setFocused(true), onBlur: () => setFocused(false), style: focused ? focusedHeadingStyle : headingStyle, children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
+    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => {
+                    const heading = event.currentTarget;
+                    setFocused(true);
+                    heading.ownerDocument.defaultView?.requestAnimationFrame(() => {
+                        if (heading.isConnected)
+                            heading.scrollIntoView({ block: "nearest", inline: "nearest" });
+                    });
+                }, onBlur: () => setFocused(false), style: focused ? focusedHeadingStyle : headingStyle, children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
 }
 
 const compatibilityDefaultOptions = [
@@ -383,6 +390,178 @@ function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault,
                             compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
 }
 
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        return `${conflict.pluginName} is enabled in Decky Loader. Disable that plugin to use ${feature} here.` +
+            (savedEnabled ? " Your setting is saved; this feature will resume when the other plugin is disabled." : "");
+    }
+    return conflict.detectionAvailable ? ""
+        : `Could not check for conflicting plugins. Use only one ${feature} provider at a time.`;
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
+}
+
 const qualityOptions = [
     { data: "auto", label: "Auto — match display" },
     { data: 720, label: "720p" },
@@ -392,10 +571,12 @@ const qualityOptions = [
 ];
 function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onAudioChange, onHideLogoChange, onFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const disabled = !state.settingsLoaded || state.busy;
+    const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
+    const conflictNotice = featureConflictNotice(state.conflict, "game trailers", state.settings.enabled);
     const display = state.displayWidth && state.displayHeight
         ? `${state.displayWidth} × ${state.displayHeight} pixels`
         : "Unavailable";
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match.", checked: state.settings.enabled, disabled: disabled, onChange: onEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match.", checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -1237,10 +1418,12 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     const { settings } = snapshot;
     const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
+    const conflictNotice = featureConflictNotice(snapshot.conflict, "ProtonDB badges", settings.enabled);
     const updateSetting = (key, value) => {
         void onSettingsChange({ ...settings, [key]: value });
     };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: controlsDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "If the separate ProtonDB Badges plugin is also enabled, it can show overlapping badges here. Disable one plugin's badges to avoid duplicates." }), snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
 
 let verbose = false;
@@ -8898,7 +9081,7 @@ const resolveTrailerSource = (context) => {
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.3";
+    const runtimeVersion = "0.1.7";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -8918,6 +9101,62 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
     const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
     const translations = injectedTranslations || { en: {} };
+    let nativeStatusRowClass;
+    let nativeBackgroundClass;
+    const isStatusBand = (element) => {
+        if (!nativeStatusRowClass || !nativeBackgroundClass) {
+            const candidates = [window];
+            try {
+                candidates.push(window.opener);
+            }
+            catch { }
+            try {
+                if (window.parent !== window)
+                    candidates.push(window.parent);
+            }
+            catch { }
+            for (const candidate of candidates) {
+                try {
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow;
+                    if (typeof value === "string" && value) {
+                        nativeStatusRowClass = value;
+                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage;
+                        if (typeof background === "string" && background)
+                            nativeBackgroundClass = background;
+                        break;
+                    }
+                }
+                catch { }
+            }
+        }
+        if (element.getAttribute?.("data-sdh-ludusavi-status-row") === "true" ||
+            element.getAttribute?.("data-sdh-ludusavi-artwork-band") === "true")
+            return true;
+        return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
+    };
+    const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
+    const isPaintedStatusBand = (element) => {
+        if (element.getAttribute?.("aria-hidden") === "true")
+            return false;
+        const band = element.getBoundingClientRect();
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            if (ancestor.hidden)
+                return false;
+            const style = getComputedStyle(ancestor);
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0))
+                return false;
+            if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky"))
+                return false;
+            if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
+                const bounds = ancestor.getBoundingClientRect();
+                if ((clipsOverflow(style.overflowX || style.overflow) && (band.left < bounds.left || band.right > bounds.right)) ||
+                    (clipsOverflow(style.overflowY || style.overflow) && (band.top < bounds.top || band.bottom > bounds.bottom)))
+                    return false;
+            }
+        }
+        return true;
+    };
     const safeMediaUrl = (value, base) => {
         if (typeof value !== "string" || !value.trim())
             return null;
@@ -9593,7 +9832,13 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.launchHeld = false;
             this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
-            this.handleResize = () => this.queueScan();
+            this.handleResize = () => {
+                if (this.currentTarget) {
+                    this.restoreStatusBackdrop();
+                    this.syncStatusBackdrop(this.currentTarget);
+                }
+                this.queueScan();
+            };
             this.handleRouteChange = () => {
                 if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
                     activeRouteText().toLowerCase().includes("#quickaccess")))
@@ -9672,12 +9917,80 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 event.stopImmediatePropagation?.();
             };
         }
+        reservedBandHeight(target) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height"))
+                return 0;
+            const value = Number.parseFloat(style.getPropertyValue("--sdh-status-band-height") || "30");
+            return Number.isFinite(value) ? Math.max(0, value) : 0;
+        }
+        reserveThemeBand(target, height) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height") || !nativeBackgroundClass)
+                return;
+            const background = target.closest?.("." + nativeBackgroundClass);
+            if (!background)
+                return;
+            if (this.reservationBackground !== background)
+                this.releaseThemeBand();
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations ?? (host.__sdhStatusBandReservations = new WeakMap());
+            let reservation = reservations.get(background);
+            if (!reservation) {
+                reservation = {
+                    original: background.style.getPropertyValue("--sdh-status-band-height"),
+                    priority: background.style.getPropertyPriority("--sdh-status-band-height"),
+                    owner: this
+                };
+                reservations.set(background, reservation);
+            }
+            reservation.owner = this;
+            this.reservationBackground = background;
+            const value = height + "px";
+            if (background.style.getPropertyValue("--sdh-status-band-height") !== value ||
+                background.style.getPropertyPriority("--sdh-status-band-height") !== "") {
+                background.style.setProperty("--sdh-status-band-height", value);
+            }
+        }
+        releaseThemeBand() {
+            const background = this.reservationBackground;
+            this.reservationBackground = undefined;
+            if (!background)
+                return;
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations;
+            const reservation = reservations?.get(background);
+            if (reservation?.owner !== this)
+                return;
+            if (reservation.original)
+                background.style.setProperty("--sdh-status-band-height", reservation.original, reservation.priority);
+            else
+                background.style.removeProperty("--sdh-status-band-height");
+            reservations.delete(background);
+        }
         restoreStatusBackdrop() {
             const backdrop = this.statusBackdrop;
             if (!backdrop)
                 return;
             this.statusBackdrop = undefined;
             backdrop.target.style.setProperty("height", backdrop.inlineHeight, backdrop.priority);
+        }
+        statusBandLayoutHeight(element, hero, edge) {
+            if (!isStatusBand(element) || !element.textContent?.trim())
+                return 0;
+            const band = element.getBoundingClientRect();
+            if (element.offsetHeight <= 0 || Math.abs(band.top - edge) > 1 ||
+                Math.abs(band.width - hero.width) > 2)
+                return 0;
+            const style = getComputedStyle(element);
+            const ownSuppression = element.getAttribute?.("data-sdh-ludusavi-paint-suppressed") === "true";
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ownSuppression) ||
+                style.position === "absolute" || style.position === "fixed" || style.position === "sticky")
+                return 0;
+            return element.offsetHeight;
         }
         syncStatusBackdrop(target) {
             if (this.statusBackdrop?.target !== target)
@@ -9692,25 +10005,46 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             const hero = target.getBoundingClientRect();
             // Steam scales the page on entry; only hit-testing uses screen heights.
             const scaleY = hero.height / layoutHeight;
-            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight;
+            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
             const edge = hero.top + naturalHeight * scaleY;
             let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
             let bandHeight = 0;
+            let reservationHeight = 0;
+            let hasStatusBand = false;
             while (element && element !== document.body) {
-                const band = element.getBoundingClientRect();
-                const layoutBandHeight = element.offsetHeight;
-                if (Math.abs(band.top - edge) <= 1 && Math.abs(band.width - hero.width) <= 2 &&
-                    layoutBandHeight >= 24 && layoutBandHeight <= 40 && element.textContent?.trim() &&
-                    element.getAttribute?.("aria-hidden") !== "true") {
-                    bandHeight = layoutBandHeight;
-                    break;
+                if (isStatusBand(element))
+                    hasStatusBand = true;
+                const height = this.statusBandLayoutHeight(element, hero, edge);
+                if (height) {
+                    reservationHeight = height;
+                    if (isPaintedStatusBand(element)) {
+                        bandHeight = height;
+                        break;
+                    }
                 }
                 element = element.parentElement;
             }
+            if (!reservationHeight) {
+                // Occlusion must not change layout; paint still requires the hit-test above.
+                isStatusBand(target);
+                const selector = '[data-sdh-ludusavi-status-row="true"]' +
+                    (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
+                for (const row of document.querySelectorAll(selector)) {
+                    hasStatusBand = true;
+                    reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
+                    if (reservationHeight)
+                        break;
+                }
+            }
             if (!bandHeight) {
                 this.restoreStatusBackdrop();
+                if (hasStatusBand)
+                    this.reserveThemeBand(target, reservationHeight);
+                else
+                    this.releaseThemeBand();
                 return;
             }
+            this.reserveThemeBand(target, bandHeight);
             if (this.statusBackdrop?.bandHeight === bandHeight)
                 return;
             if (this.statusBackdrop) {
@@ -9735,6 +10069,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                         this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
+                if (document.head) {
+                    this.themeObserver = new MutationObserver(() => this.handleResize());
+                    this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
+                }
             }
             document.addEventListener("pointerdown", this.handleLaunchIntent, true);
             document.addEventListener("click", this.handleLaunchIntent, true);
@@ -9796,6 +10134,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             if (!this.settings.enabled) {
                 this.pageEnteredAt = undefined;
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("disabled");
                 return this.snapshot();
             }
@@ -9858,6 +10197,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.destroyed = true;
             this.requestToken += 1;
             this.observer?.disconnect();
+            this.themeObserver?.disconnect();
             if (this.scanTimer)
                 window.clearInterval(this.scanTimer);
             if (this.queuedScanTimer)
@@ -9873,6 +10213,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
             document.removeEventListener("visibilitychange", this.handleVisibilityChange);
             this.cleanupVideo(true);
+            this.releaseThemeBand();
             document.getElementById(styleId)?.remove();
         }
         installStyle() {
@@ -10079,6 +10420,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         async scan() {
             if (this.destroyed)
                 return;
+            if (this.reservationBackground?.isConnected === false)
+                this.releaseThemeBand();
             const owner = findOwnerRecord();
             if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
                 this.destroy();
@@ -10098,6 +10441,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.checkRootRoute();
             if (!this.settings.enabled) {
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("disabled");
                 return;
             }
@@ -10105,10 +10449,12 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.cleanupVideo(true);
                 return;
             }
-            if (document.getElementById("decky-trailerhero-style") ||
+            if (document.getElementById("trailerhero-style") ||
+                document.querySelector(".trailerhero-video") ||
+                document.getElementById("decky-trailerhero-style") ||
                 document.querySelector(".decky-trailerhero-video")) {
                 this.cleanupVideo(true);
-                this.status = "Another trailer plugin is active; remove it before enabling Metadata trailers";
+                this.status = "Another trailer plugin is still active. Disable it and reload Steam UI before using Metadata trailers.";
                 return;
             }
             if (this.launchHeld) {
@@ -10198,6 +10544,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.pendingRequestToken = undefined;
             if (!trailer.ok || !trailer.candidates?.length) {
                 this.failedVisit = { appId, hero: hero.element };
+                this.releaseThemeBand();
                 this.status = trailer.error || rt("noGameTrailer");
                 return;
             }
@@ -10234,6 +10581,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     return;
                 this.failedVisit = { appId, hero };
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("autoplayBlocked");
             });
         }
@@ -10416,6 +10764,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     }
                     this.failedVisit = { appId, hero: target };
                     this.cleanupVideo();
+                    this.releaseThemeBand();
                     this.status = rt("noGameTrailer");
                     return;
                 }
@@ -11111,7 +11460,13 @@ const runtimeMissingScript = `(() => {
     : { status: 'Steam UI unavailable', runtimeMissing: true };
 })()`;
 class TrailerController {
-    constructor() {
+    constructor(conflicts = pluginConflicts) {
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
         Object.defineProperty(this, "settings", {
             enumerable: true,
             configurable: true,
@@ -11286,6 +11641,18 @@ class TrailerController {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "conflict", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "handleAudioChange", {
             enumerable: true,
             configurable: true,
@@ -11315,6 +11682,7 @@ class TrailerController {
             writable: true,
             value: () => this.snapshot
         });
+        this.conflict = conflicts.getConflict("trailers");
         this.snapshot = this.buildSnapshot();
     }
     mount() {
@@ -11322,6 +11690,8 @@ class TrailerController {
             return;
         this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
         this.mounted = true;
+        this.conflict = this.conflicts.getConflict("trailers");
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
         this.pendingSettingsWrites = 0;
         this.settingsBusy = false;
         this.destroyOlderRuntimes();
@@ -11344,6 +11714,8 @@ class TrailerController {
             return;
         this.mounted = false;
         this.ignRequestEpoch += 1;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
         this.ignRequested = false;
         this.ignLookup = null;
         this.ignFallback = undefined;
@@ -11396,13 +11768,55 @@ class TrailerController {
     setFadeInDelaySeconds(fadeInDelaySeconds) {
         return this.updateSettings({ fadeInDelaySeconds });
     }
+    isEffectivelyEnabled() {
+        return this.mounted && this.settingsLoaded && this.settings.enabled && !this.conflict.pluginName;
+    }
+    effectiveSettings() {
+        const enabled = this.isEffectivelyEnabled();
+        return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
+    }
+    syncConflict() {
+        const next = this.conflicts.getConflict("trailers");
+        if (next.pluginName === this.conflict.pluginName &&
+            next.detectionAvailable === this.conflict.detectionAvailable)
+            return;
+        const wasEnabled = this.isEffectivelyEnabled();
+        this.conflict = next;
+        if (wasEnabled !== this.isEffectivelyEnabled()) {
+            this.ignRequestEpoch += 1;
+            this.ignRequested = false;
+            this.ignLookup = null;
+            this.ignFallback = undefined;
+            this.identity = null;
+            this.runtimeSnapshot = undefined;
+            this.settingsRevision += 1;
+            this.publishOwner();
+            this.updateReachableRuntimes();
+            if (!this.isEffectivelyEnabled()) {
+                // A Steam-tab runtime may be outside the directly reachable windows.
+                const ownerId = JSON.stringify(this.ownerId);
+                const settings = JSON.stringify(this.effectiveSettings());
+                const revision = this.settingsRevision;
+                void this.runInSteamTab(`(() => {
+          const runtime = window.${RUNTIME_KEY};
+          if (runtime?.ownerId !== ${ownerId} || typeof runtime.update !== "function") return;
+          return runtime.update(${settings}, ${revision}, null, undefined);
+        })()`);
+            }
+            else {
+                void this.poll();
+            }
+        }
+        this.emit();
+    }
     buildSnapshot() {
         const remote = this.runtimeSnapshot;
         return {
             settings: { ...this.settings },
             appId: remote?.appId,
             sourceAppId: remote?.sourceAppId ?? this.identity?.sourceAppId,
-            status: this.status,
+            status: this.conflict.pluginName && this.settings.enabled
+                ? `Paused while ${this.conflict.pluginName} is enabled` : this.status,
             trailerName: remote?.trailerName,
             gameTitle: remote?.gameTitle,
             displayWidth: remote?.displayWidth ?? null,
@@ -11412,6 +11826,8 @@ class TrailerController {
             busy: this.settingsBusy,
             settingsError: this.settingsError,
             matchRevision: this.matchRevision,
+            conflict: this.conflict,
+            effectiveEnabled: this.isEffectivelyEnabled(),
         };
     }
     emit() {
@@ -11449,6 +11865,8 @@ class TrailerController {
     async updateSettings(change) {
         if (!this.mounted || !this.settingsLoaded)
             return false;
+        if (change.enabled === true && !this.settings.enabled && this.conflict.pluginName)
+            return false;
         const previous = { ...this.settings };
         const next = normalizeSettings({ ...this.settings, ...change });
         if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
@@ -11467,7 +11885,7 @@ class TrailerController {
         const direct = this.updateReachableRuntimes();
         this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
         this.emit();
-        if (!direct && next.enabled)
+        if (!direct && this.isEffectivelyEnabled())
             void this.poll();
         let succeeded = true;
         const save = this.settingsSaveQueue.then(async () => {
@@ -11500,7 +11918,7 @@ class TrailerController {
                 this.emit();
             }
         }
-        if (succeeded && this.ownsMount(ownerId) && next.enabled)
+        if (succeeded && this.ownsMount(ownerId) && this.isEffectivelyEnabled())
             void this.poll();
         return succeeded;
     }
@@ -11512,7 +11930,7 @@ class TrailerController {
         const record = {
             ownerId: this.ownerId,
             active: this.mounted,
-            settings: { ...this.settings },
+            settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
             settingsRevision: this.settingsRevision,
             identity: this.identity,
             ignFallback: this.ignFallback,
@@ -11565,7 +11983,7 @@ class TrailerController {
     async resolveCurrentIdentity() {
         const route = currentRoutePath();
         const pageAppId = parseTrailerRootRoute(route);
-        if (!this.settings.enabled)
+        if (!this.isEffectivelyEnabled())
             return { identity: null, status: "Disabled" };
         if (!pageAppId)
             return { identity: null, status: "Open a game's main Steam Library page" };
@@ -11624,6 +12042,11 @@ class TrailerController {
         if (!this.mounted)
             return;
         const next = await this.resolveCurrentIdentity();
+        if (!this.isEffectivelyEnabled()) {
+            next.identity = null;
+            next.ignLookup = null;
+            next.status = "Disabled";
+        }
         const lookup = next.ignLookup ?? null;
         if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup)))
             return;
@@ -11638,7 +12061,7 @@ class TrailerController {
         this.publishOwner();
         const direct = this.updateReachableRuntimes();
         this.emit();
-        if (!direct && this.settings.enabled && this.identity)
+        if (!direct && this.isEffectivelyEnabled() && this.identity)
             void this.installOrUpdate();
     }
     updateReachableRuntimes() {
@@ -11649,7 +12072,7 @@ class TrailerController {
                 if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
                     typeof runtime.update !== "function")
                     continue;
-                const result = runtime.update(this.settings, this.settingsRevision, this.identity, this.ignFallback);
+                const result = runtime.update(this.effectiveSettings(), this.settingsRevision, this.identity, this.ignFallback);
                 if (isRuntimeSnapshot(result))
                     this.runtimeSnapshot = result;
                 found = true;
@@ -11678,7 +12101,7 @@ class TrailerController {
     }
     buildInstallScript() {
         return `(() => {
-      const settings = ${JSON.stringify(this.settings)};
+      const settings = ${JSON.stringify(this.effectiveSettings())};
       const ownerId = ${JSON.stringify(this.ownerId)};
       const settingsRevision = ${this.settingsRevision};
       const identity = ${JSON.stringify(this.identity)};
@@ -11707,7 +12130,7 @@ class TrailerController {
         }
     }
     async installOrUpdate() {
-        if (!this.mounted || !this.settings.enabled || !this.identity)
+        if (!this.isEffectivelyEnabled() || !this.identity)
             return;
         if (this.installInFlight) {
             this.pendingInstall = true;
@@ -11718,12 +12141,14 @@ class TrailerController {
         try {
             do {
                 this.pendingInstall = false;
+                if (!this.isEffectivelyEnabled() || !this.identity)
+                    return;
                 const result = await this.runInSteamTab(this.buildInstallScript());
                 if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId)
                     return;
                 this.applyRemoteResult(result);
                 this.refreshAudioListeners();
-            } while (this.mounted && this.ownerId === ownerId && this.pendingInstall);
+            } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
         }
         finally {
             this.installInFlight = false;
@@ -11749,7 +12174,7 @@ class TrailerController {
             void this.loadIgnFallback();
     }
     async loadIgnFallback() {
-        if (!this.mounted || !this.settings.enabled || !this.identity || this.ignRequested)
+        if (!this.isEffectivelyEnabled() || !this.identity || this.ignRequested)
             return;
         this.ignRequested = true;
         const epoch = this.ignRequestEpoch;
@@ -11778,7 +12203,7 @@ class TrailerController {
         try {
             this.refreshAudioListeners();
             await this.refreshPageIdentity();
-            if (!this.mounted || this.installInFlight)
+            if (!this.isEffectivelyEnabled() || this.installInFlight)
                 return;
             if (this.readReachableRuntime()) {
                 this.emit();
@@ -11791,7 +12216,7 @@ class TrailerController {
                 return;
             if (result?.runtimeMissing === true) {
                 this.applyRemoteResult(result);
-                if (this.settings.enabled && this.identity)
+                if (this.isEffectivelyEnabled() && this.identity)
                     await this.installOrUpdate();
             }
             else {
@@ -12818,7 +13243,7 @@ const copySettings = (settings) => Object.freeze({
 });
 const errorText = (error, fallback) => error instanceof Error && error.message ? error.message : fallback;
 class ProtonDbBadgeController {
-    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache) {
+    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts) {
         Object.defineProperty(this, "settingsStore", {
             enumerable: true,
             configurable: true,
@@ -12830,6 +13255,12 @@ class ProtonDbBadgeController {
             configurable: true,
             writable: true,
             value: ratings
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
         });
         Object.defineProperty(this, "listeners", {
             enumerable: true,
@@ -12849,16 +13280,25 @@ class ProtonDbBadgeController {
             writable: true,
             value: false
         });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         Object.defineProperty(this, "snapshot", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: Object.freeze({
-                settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
-                settingsLoaded: false,
-                busy: false,
-                settingsError: "",
-            })
+            value: void 0
+        });
+        this.snapshot = Object.freeze({
+            settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
+            settingsLoaded: false,
+            busy: false,
+            settingsError: "",
+            conflict: conflicts.getConflict("protondb"),
+            effectiveEnabled: false,
         });
     }
     getSnapshot() {
@@ -12874,17 +13314,21 @@ class ProtonDbBadgeController {
         this.mounted = true;
         const lifecycle = ++this.lifecycle;
         this.ratings.mount();
-        this.publish({ busy: true, settingsLoaded: false, settingsError: "" });
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("protondb") });
+        });
+        this.publish({
+            busy: true, settingsLoaded: false, settingsError: "",
+            conflict: this.conflicts.getConflict("protondb"),
+        });
         void this.settingsStore.get().then((settings) => {
             if (!this.isCurrent(lifecycle))
                 return;
             const saved = copySettings(settings);
-            this.ratings.setEnabled(saved.enabled);
             this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
         }, (error) => {
             if (!this.isCurrent(lifecycle))
                 return;
-            this.ratings.setEnabled(false);
             this.publish({
                 settingsLoaded: false,
                 busy: false,
@@ -12895,6 +13339,8 @@ class ProtonDbBadgeController {
     stop() {
         this.mounted = false;
         this.lifecycle += 1;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
         this.ratings.stop();
         this.publish({
             settingsLoaded: false,
@@ -12906,6 +13352,8 @@ class ProtonDbBadgeController {
     async setSettings(settings) {
         if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
             return false;
+        if (settings.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName)
+            return false;
         const lifecycle = this.lifecycle;
         const requested = copySettings(settings);
         this.publish({ busy: true, settingsError: "" });
@@ -12913,7 +13361,6 @@ class ProtonDbBadgeController {
             const saved = copySettings(await this.settingsStore.set(requested));
             if (!this.isCurrent(lifecycle))
                 return false;
-            this.ratings.setEnabled(saved.enabled);
             this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
             return true;
         }
@@ -12937,7 +13384,12 @@ class ProtonDbBadgeController {
         return this.mounted && this.lifecycle === lifecycle;
     }
     publish(update) {
-        this.snapshot = Object.freeze({ ...this.snapshot, ...update });
+        const settings = update.settings ?? this.snapshot.settings;
+        const conflict = update.conflict ?? this.snapshot.conflict;
+        const settingsLoaded = update.settingsLoaded ?? this.snapshot.settingsLoaded;
+        const effectiveEnabled = this.mounted && settingsLoaded && settings.enabled && !conflict.pluginName;
+        this.snapshot = Object.freeze({ ...this.snapshot, ...update, effectiveEnabled });
+        this.ratings.setEnabled(effectiveEnabled);
         for (const listener of this.listeners) {
             try {
                 listener();
@@ -15160,7 +15612,7 @@ const installProtonDbCoverBadges = () => {
     let settings = protonDbBadgeController.getSnapshot().settings;
     const surfaceEnabled = (surface) => {
         const snapshot = protonDbBadgeController.getSnapshot();
-        return snapshot.settingsLoaded && snapshot.settings.enabled && surface !== null && snapshot.settings[surface];
+        return snapshot.effectiveEnabled && surface !== null && snapshot.settings[surface];
     };
     const queueRender = () => {
         if (disposed || !root || renderQueued)
@@ -15293,7 +15745,7 @@ const installProtonDbCoverBadges = () => {
         const snapshot = protonDbBadgeController.getSnapshot();
         // Observe Steam's main document even on Game Info so the next cover mount
         // is handled in the same turn, not by the one-second discovery fallback.
-        const nextDocument = snapshot.settingsLoaded && settings.enabled && (settings.home || settings.library)
+        const nextDocument = snapshot.effectiveEnabled && (settings.home || settings.library)
             ? findSteamUiDocumentMatch(candidate => candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(COVER_SELECTOR)
                 ? candidate : undefined) ?? null
             : null;
@@ -15423,7 +15875,7 @@ function useBadgeTier(sourceAppId, active) {
 }
 function ProtonDbGameButton({ displayedAppId, overview, Button, className }) {
     const snapshot = useBadgeSnapshot(displayedAppId);
-    const active = snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.gameView;
+    const active = snapshot.effectiveEnabled && snapshot.settings.gameView;
     const sourceAppId = useSourceAppId(displayedAppId, overview, active);
     const tier = useBadgeTier(sourceAppId, active);
     if (!tier || sourceAppId === null)
@@ -16027,7 +16479,7 @@ const installProtonDbStoreBadge = () => {
         if (stopped || !onStoreRoute)
             return false;
         const snapshot = protonDbBadgeController.getSnapshot();
-        return snapshot.settingsLoaded && snapshot.settings.enabled && snapshot.settings.store;
+        return snapshot.effectiveEnabled && snapshot.settings.store;
     };
     const clearDiscoveryTimer = () => {
         if (discoveryTimer === undefined)
@@ -16251,6 +16703,7 @@ const installInPlaceReloadGuard = (onFailedReload) => {
     };
 };
 var index = DFL.definePlugin(() => {
+    const stopPluginConflicts = startPluginConflicts();
     beginCompatibilityLifecycle();
     let retainedReloadBaselines = false;
     const reloadGuard = installInPlaceReloadGuard(() => {
@@ -16305,6 +16758,7 @@ var index = DFL.definePlugin(() => {
             stopProtonDbStoreBadge();
             stopProtonDbGameView();
             protonDbBadgeController.stop();
+            stopPluginConflicts();
             resetProtonDbAppIdResolution();
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
