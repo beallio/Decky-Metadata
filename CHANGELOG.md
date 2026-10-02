@@ -38,6 +38,8 @@ Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feat
   feature resumes when the conflict clears unless you turn its switch off.
   If detection is unavailable, the panel warns without blocking unrelated
   features. Mini achievements keeps its manual Decky UI Restored warning.
+  Current TrailerHero player and style markers also prevent duplicate playback
+  when that plugin leaves an injected player behind after Loader disables it.
 
 ### Changed
 

@@ -44,6 +44,11 @@ Your trailer settings stay saved. If **Enabled** was on, trailers resume when
 TrailerHero is disabled or removed. You can turn **Enabled** off while paused
 to keep Metadata's trailers off.
 
+TrailerHero 1.7.1 can leave its player running after you disable it. If **Big
+Picture display** says another trailer plugin is still active, finish any
+running game and restart Steam after disabling or removing TrailerHero.
+Metadata waits until the old player is gone instead of starting a second one.
+
 If Metadata cannot check other plugins, it shows a warning instead of blocking
 trailers. Check manually that TrailerHero is disabled before enabling ours.
 

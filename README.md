@@ -162,6 +162,10 @@ Your saved choices stay in place. If our switch was on, the feature resumes
 when the other plugin is disabled or removed. You can turn our switch off while
 it is paused if you do not want it to resume.
 
+If a disabled TrailerHero player keeps running, Metadata waits rather than
+starting a second player. Finish any running game and restart Steam after
+disabling or removing TrailerHero.
+
 If the panel cannot check other plugins, it shows a warning instead of blocking
 the feature. In that case, check manually that only one provider is enabled.
 Mini achievements still needs its separate manual check in Decky UI Restored.

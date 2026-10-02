@@ -3,7 +3,7 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.6";
+    const runtimeVersion = "0.1.7";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -1189,10 +1189,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.cleanupVideo(true);
                 return;
             }
-            if (document.getElementById("decky-trailerhero-style") ||
+            if (document.getElementById("trailerhero-style") ||
+                document.querySelector(".trailerhero-video") ||
+                document.getElementById("decky-trailerhero-style") ||
                 document.querySelector(".decky-trailerhero-video")) {
                 this.cleanupVideo(true);
-                this.status = "Another trailer plugin is active; remove it before enabling Metadata trailers";
+                this.status = "Another trailer plugin is still active. Disable it and reload Steam UI before using Metadata trailers.";
                 return;
             }
             if (this.launchHeld) {
