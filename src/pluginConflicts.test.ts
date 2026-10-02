@@ -42,10 +42,12 @@ describe("known-plugin feature conflicts", () => {
     monitor.mount();
     expect(monitor.getConflict("protondb")).toEqual({ pluginName: "ProtonDB Badges", detectionAvailable: true });
     expect(monitor.getConflict("trailers")).toEqual({ pluginName: null, detectionAvailable: true });
+    expect(monitor.getConflict("miniAchievements")).toEqual({ pluginName: "Decky UI Restored", detectionAvailable: true });
     fixture.inventory.plugins = [{ name: "TrailerHero" }, { name: "protondb-decky" }];
     fixture.update();
     expect(monitor.getConflict("protondb").pluginName).toBeNull();
     expect(monitor.getConflict("trailers").pluginName).toBe("TrailerHero");
+    expect(monitor.getConflict("miniAchievements")).toEqual({ pluginName: null, detectionAvailable: true });
   });
 
   it("does not mistake hidden or update-frozen plugins for disabled plugins", () => {
@@ -86,6 +88,27 @@ describe("known-plugin feature conflicts", () => {
     fixture.inventory.plugins = [];
     fixture.update();
     expect(monitor.getConflict("trailers")).toEqual({ pluginName: null, detectionAvailable: true });
+  });
+
+  it("blocks mini achievements by plugin activity without reading the peer's feature settings", () => {
+    const fixture = loaderFixture(["Decky UI Restored"]);
+    Object.defineProperty(fixture.inventory.plugins[0], "settings", {
+      get: () => { throw new Error("Peer settings must not be inspected"); },
+    });
+    fixture.inventory.hiddenPlugins = ["Decky UI Restored"];
+    fixture.inventory.frozenPlugins = ["Decky UI Restored"];
+    const monitor = monitorFor(() => fixture.loader);
+    monitor.mount();
+    expect(monitor.getConflict("miniAchievements").pluginName).toBe("Decky UI Restored");
+    fixture.inventory.disabledPlugins = [{ name: "Decky UI Restored" }];
+    fixture.update();
+    expect(monitor.getConflict("miniAchievements").pluginName).toBeNull();
+    fixture.inventory.disabledPlugins = [];
+    fixture.update();
+    expect(monitor.getConflict("miniAchievements").pluginName).toBe("Decky UI Restored");
+    fixture.inventory.plugins = [];
+    fixture.update();
+    expect(monitor.getConflict("miniAchievements").pluginName).toBeNull();
   });
 
   it("reports unavailable detection rather than inventing a conflict from an unsupported inventory", () => {

@@ -133,7 +133,10 @@ vi.mock("./steam", () => steam);
 vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
 vi.mock("./steam/miniAchievementsController", () => ({
   miniAchievementsController: {
-    getSnapshot: () => ({ enabled: false, settingsLoaded: false, busy: false, settingsError: "" }),
+    getSnapshot: () => ({
+      enabled: false, settingsLoaded: false, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
+    }),
     subscribe: () => () => undefined,
     setEnabled: vi.fn(),
   },

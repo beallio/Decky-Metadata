@@ -1,4 +1,4 @@
-export type ConflictingFeature = "protondb" | "trailers";
+export type ConflictingFeature = "protondb" | "trailers" | "miniAchievements";
 
 export type FeatureConflict = Readonly<{
   pluginName: string | null;
@@ -15,8 +15,9 @@ const CLEAR: FeatureConflict = Object.freeze({ pluginName: null, detectionAvaila
 const KNOWN_CONFLICTS: Record<ConflictingFeature, FeatureConflict> = {
   protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
   trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+  miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
 };
-const FEATURES: readonly ConflictingFeature[] = ["protondb", "trailers"];
+const FEATURES: readonly ConflictingFeature[] = ["protondb", "trailers", "miniAchievements"];
 const FALLBACK_POLL_MS = 1_000;
 
 type StateEvents = Pick<EventTarget, "addEventListener" | "removeEventListener">;
@@ -43,6 +44,7 @@ export class PluginConflictMonitor implements PluginConflictSource {
   private readonly conflicts: Record<ConflictingFeature, FeatureConflict> = {
     protondb: UNAVAILABLE,
     trailers: UNAVAILABLE,
+    miniAchievements: UNAVAILABLE,
   };
   private readonly handleUpdate = () => this.refresh();
 

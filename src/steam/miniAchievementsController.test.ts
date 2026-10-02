@@ -9,6 +9,7 @@ vi.mock("../log", () => ({ warn: vi.fn(), error: vi.fn() }));
 vi.mock("./miniAchievements", () => ({ installMiniAchievementsPatch: () => () => undefined }));
 
 import { MiniAchievementsController } from "./miniAchievementsController";
+import { PluginConflictMonitor } from "../pluginConflicts";
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -18,13 +19,35 @@ const deferred = <T,>() => {
 };
 const flush = async () => { for (let index = 0; index < 4; index += 1) await Promise.resolve(); };
 
+const conflictFixture = () => {
+  const inventory = {
+    plugins: [] as Array<{ name: string }>,
+    disabledPlugins: [] as Array<{ name: string }>,
+  };
+  const events = new EventTarget();
+  const monitor = new PluginConflictMonitor(() => ({
+    deckyState: { publicState: () => inventory, eventBus: events },
+  }));
+  monitor.mount();
+  const setPeerEnabled = (enabled: boolean) => {
+    inventory.plugins = enabled ? [{ name: "Decky UI Restored" }] : [];
+    events.dispatchEvent(new Event("update"));
+  };
+  return { monitor, setPeerEnabled };
+};
+
 let controller: MiniAchievementsController;
+let conflicts: ReturnType<typeof conflictFixture>;
 beforeEach(() => {
   backend.getMiniAchievementsEnabled.mockReset().mockResolvedValue(false);
   backend.setMiniAchievementsEnabled.mockReset().mockImplementation(async enabled => enabled);
-  controller = new MiniAchievementsController();
+  conflicts = conflictFixture();
+  controller = new MiniAchievementsController(conflicts.monitor);
 });
-afterEach(() => controller.stop());
+afterEach(() => {
+  controller.stop();
+  conflicts.monitor.stop();
+});
 
 describe("mini-achievements saved state", () => {
   it("keeps the toggle unavailable until the saved preference has loaded", async () => {
@@ -72,7 +95,7 @@ describe("mini-achievements saved state", () => {
     await flush();
     oldLoad.resolve(true);
     await flush();
-    expect(controller.getSnapshot()).toEqual({ enabled: false, settingsLoaded: true, busy: false, settingsError: "" });
+    expect(controller.getSnapshot()).toMatchObject({ enabled: false, settingsLoaded: true, busy: false });
   });
 
   it("ignores a save completion after unload and a new mount", async () => {
@@ -86,7 +109,7 @@ describe("mini-achievements saved state", () => {
     await flush();
     oldSave.resolve(true);
     expect(await enabling).toBe(false);
-    expect(controller.getSnapshot()).toEqual({ enabled: false, settingsLoaded: true, busy: false, settingsError: "" });
+    expect(controller.getSnapshot()).toMatchObject({ enabled: false, settingsLoaded: true, busy: false });
   });
 
   it("keeps an unavailable preference disabled rather than claiming a saved default", async () => {
@@ -96,5 +119,48 @@ describe("mini-achievements saved state", () => {
     expect(controller.getSnapshot()).toMatchObject({ enabled: false, settingsLoaded: false, busy: false });
     expect(controller.getSnapshot().settingsError).toContain("settings unavailable");
     expect(await controller.setEnabled(true)).toBe(false);
+  });
+});
+
+describe("mini-achievements plugin conflict transitions", () => {
+  it("keeps an enabled preference paused when its load completes after the peer becomes active", async () => {
+    const load = deferred<boolean>();
+    backend.getMiniAchievementsEnabled.mockReturnValue(load.promise);
+    controller.mount();
+    conflicts.setPeerEnabled(true);
+    load.resolve(true);
+    await flush();
+    expect(controller.getSnapshot()).toMatchObject({ enabled: true, settingsLoaded: true, effectiveEnabled: false });
+    expect(backend.setMiniAchievementsEnabled).not.toHaveBeenCalled();
+    conflicts.setPeerEnabled(false);
+    expect(controller.getSnapshot().effectiveEnabled).toBe(true);
+  });
+
+  it("keeps a pending enable save paused if the peer appears before confirmation", async () => {
+    controller.mount();
+    await flush();
+    const save = deferred<boolean>();
+    backend.setMiniAchievementsEnabled.mockReturnValue(save.promise);
+    const enabling = controller.setEnabled(true);
+    conflicts.setPeerEnabled(true);
+    save.resolve(true);
+    expect(await enabling).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({ enabled: true, busy: false, effectiveEnabled: false });
+    conflicts.setPeerEnabled(false);
+    expect(controller.getSnapshot().effectiveEnabled).toBe(true);
+  });
+
+  it("allows opting out while paused, blocks re-enabling, and does not resume after an opt-out", async () => {
+    backend.getMiniAchievementsEnabled.mockResolvedValue(true);
+    conflicts.setPeerEnabled(true);
+    controller.mount();
+    await flush();
+    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: false });
+    expect(await controller.setEnabled(false)).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({ enabled: false, effectiveEnabled: false });
+    expect(await controller.setEnabled(true)).toBe(false);
+    conflicts.setPeerEnabled(false);
+    expect(controller.getSnapshot()).toMatchObject({ enabled: false, effectiveEnabled: false });
+    expect(backend.setMiniAchievementsEnabled.mock.calls).toEqual([[false]]);
   });
 });

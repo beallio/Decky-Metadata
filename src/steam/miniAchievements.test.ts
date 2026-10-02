@@ -9,6 +9,12 @@ const mocks = vi.hoisted(() => ({
   warn: vi.fn(),
 }));
 
+const backend = vi.hoisted(() => ({
+  getMiniAchievementsEnabled: vi.fn<() => Promise<boolean>>(),
+  setMiniAchievementsEnabled: vi.fn<(enabled: boolean) => Promise<boolean>>(),
+}));
+vi.mock("../backend", () => backend);
+
 vi.mock("@decky/api", () => ({
   routerHook: {
     addPatch: mocks.addPatch,
@@ -25,6 +31,8 @@ vi.mock("../log", () => ({
 }));
 
 import { installMiniAchievementsPatch } from "./miniAchievements";
+import { MiniAchievementsController } from "./miniAchievementsController";
+import { PluginConflictMonitor } from "../pluginConflicts";
 
 type SteamObject = Record<string, unknown>;
 type RouteCallback = (props: unknown) => unknown;
@@ -54,6 +62,8 @@ interface InstalledPage {
 
 let routeCallback: RouteCallback | undefined;
 let patches: PatchRecord[] = [];
+const controllers: MiniAchievementsController[] = [];
+const conflictMonitors: PluginConflictMonitor[] = [];
 
 function isSteamObject(value: unknown): value is SteamObject {
   return typeof value === "object" && value !== null;
@@ -205,6 +215,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   routeCallback = undefined;
   patches = [];
+  backend.getMiniAchievementsEnabled.mockReset().mockResolvedValue(false);
+  backend.setMiniAchievementsEnabled.mockReset().mockImplementation(async enabled => enabled);
 
   mocks.addPatch.mockReset();
   mocks.addPatch.mockImplementation(
@@ -226,6 +238,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  for (const controller of controllers.splice(0)) controller.stop();
+  for (const monitor of conflictMonitors.splice(0)) monitor.stop();
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -388,5 +402,65 @@ describe("installMiniAchievementsPatch", () => {
 
     expect(popupReads).toBe(0);
     expect(mocks.removePatch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("mini-achievements plugin conflict ownership", () => {
+  it("removes our native restoration while UI Restored is active and resumes after disable or removal", async () => {
+    const fixture = makeNativeFixture();
+    vi.stubGlobal("window", { g_PopupManager: fixture.manager });
+    const inventory = {
+      plugins: [] as Array<{ name: string }>,
+      disabledPlugins: [] as Array<{ name: string }>,
+    };
+    const events = new EventTarget();
+    const monitor = new PluginConflictMonitor(() => ({
+      deckyState: { publicState: () => inventory, eventBus: events },
+    }));
+    conflictMonitors.push(monitor);
+    monitor.mount();
+    backend.getMiniAchievementsEnabled.mockResolvedValue(true);
+    const controller = new MiniAchievementsController(monitor);
+    controllers.push(controller);
+    controller.mount();
+    for (let index = 0; index < 4; index += 1) await Promise.resolve();
+    const owner: SteamObject = { renderFunc: () => ({ native: true }) };
+    const showPage = () => {
+      if (!routeCallback) throw new Error("router hook did not register its callback");
+      routeCallback({ children: { props: owner } });
+      vi.runAllTimers();
+    };
+    showPage();
+    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+
+    inventory.plugins = [{ name: "Decky UI Restored" }];
+    events.dispatchEvent(new Event("update"));
+    vi.runAllTimers();
+    expect(fixture.instance.displayedProgress).toBeNull();
+    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: false });
+    expect(backend.setMiniAchievementsEnabled).not.toHaveBeenCalled();
+
+    inventory.disabledPlugins = [{ name: "Decky UI Restored" }];
+    events.dispatchEvent(new Event("update"));
+    showPage();
+    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: true });
+
+    inventory.disabledPlugins = [];
+    events.dispatchEvent(new Event("update"));
+    vi.runAllTimers();
+    expect(fixture.instance.displayedProgress).toBeNull();
+    inventory.plugins = [];
+    events.dispatchEvent(new Event("update"));
+    showPage();
+    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+
+    controller.stop();
+    inventory.plugins = [{ name: "Decky UI Restored" }];
+    events.dispatchEvent(new Event("update"));
+    inventory.plugins = [];
+    events.dispatchEvent(new Event("update"));
+    vi.runAllTimers();
+    expect(fixture.instance.displayedProgress).toBeNull();
   });
 });
