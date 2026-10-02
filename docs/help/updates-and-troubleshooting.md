@@ -24,14 +24,16 @@ This brings back Steam's small achievement progress bar beside Play Time on
 game details pages. It uses Steam's existing data. Matching a non-Steam game
 does not add achievement tracking to that game.
 
-If you use **Decky UI Restored** (formerly Achievements Restored), turn off its
-**Enable mini achievements** toggle before enabling this one. Use only one
-mini-achievements toggle at a time. You can leave its other fixes enabled.
+When **Decky UI Restored** is enabled in Decky Loader, Metadata pauses its mini
+achievements. It does not check the other plugin's feature settings. Disable or
+remove Decky UI Restored to use Metadata's display; hiding the plugin does not
+disable it. Your choice stays saved and the display resumes when the conflict
+clears, unless you turn Metadata's switch off while it is paused.
 
 If a setting cannot load or save, the section shows an error. A failed save
 keeps the previous setting active. Reload the plugin to retry a failed load.
 If the bar is missing, check the game's achievement progress in Steam and
-confirm the other plugin's mini-achievements toggle is off.
+confirm Decky UI Restored is disabled in Decky Loader.
 
 ## Share useful troubleshooting information
 

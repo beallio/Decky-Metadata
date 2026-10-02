@@ -395,8 +395,9 @@ const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
 const KNOWN_CONFLICTS = {
     protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
     trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
 };
-const FEATURES = ["protondb", "trailers"];
+const FEATURES = ["protondb", "trailers", "miniAchievements"];
 const FALLBACK_POLL_MS = 1000;
 const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
 const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
@@ -443,6 +444,7 @@ class PluginConflictMonitor {
             value: {
                 protondb: UNAVAILABLE,
                 trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
             }
         });
         Object.defineProperty(this, "handleUpdate", {
@@ -584,7 +586,10 @@ function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onT
 }
 
 function MiniAchievementsSection({ state, onEnabledChange }) {
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Mini achievements", icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable mini achievements", description: "Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default.", checked: state.enabled, disabled: !state.settingsLoaded || state.busy, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Before enabling this, turn off Enable mini achievements in Decky UI Restored. Use only one mini-achievements toggle at a time. This restores Steam's display; it does not add achievement tracking to non-Steam games." }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
+    const enableDisabled = !state.settingsLoaded || state.busy ||
+        (Boolean(state.conflict.pluginName) && !state.enabled);
+    const conflictNotice = featureConflictNotice(state.conflict, "mini achievements", state.enabled);
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Mini achievements", icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable mini achievements", description: "Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default.", checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "This restores Steam's display; it does not add achievement tracking to non-Steam games." }), conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
 }
 
 const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md };
@@ -12824,15 +12829,23 @@ function installMiniAchievementsPatch() {
     };
 }
 
-const initialSnapshot = () => ({
+const initialSnapshot = (conflict) => ({
     enabled: false,
+    conflict,
+    effectiveEnabled: false,
     settingsLoaded: false,
     busy: false,
     settingsError: "",
 });
 /** Own the patch outside QAM so closing a section or panel cannot disable it. */
 class MiniAchievementsController {
-    constructor() {
+    constructor(conflicts = pluginConflicts) {
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
         Object.defineProperty(this, "mounted", {
             enumerable: true,
             configurable: true,
@@ -12849,9 +12862,15 @@ class MiniAchievementsController {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: initialSnapshot()
+            value: void 0
         });
         Object.defineProperty(this, "disposePatch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
             enumerable: true,
             configurable: true,
             writable: true,
@@ -12878,13 +12897,19 @@ class MiniAchievementsController {
                 return () => { this.listeners.delete(listener); };
             }
         });
+        this.snapshot = initialSnapshot(conflicts.getConflict("miniAchievements"));
     }
     mount() {
         if (this.mounted)
             return;
         this.mounted = true;
         const generation = ++this.generation;
-        this.snapshot = initialSnapshot();
+        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.snapshot = { ...this.snapshot, conflict: this.conflicts.getConflict("miniAchievements") };
+            this.applyRuntime();
+            this.emit();
+        });
         this.emit();
         void getMiniAchievementsEnabled().then((enabled) => {
             if (!this.isCurrent(generation))
@@ -12908,6 +12933,8 @@ class MiniAchievementsController {
             return;
         this.mounted = false;
         this.generation += 1;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
         const dispose = this.disposePatch;
         this.disposePatch = undefined;
         try {
@@ -12916,12 +12943,14 @@ class MiniAchievementsController {
         catch (error$1) {
             error("patch", "mini-achievements cleanup failed", error$1);
         }
-        this.snapshot = initialSnapshot();
+        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
         this.emit();
         this.listeners.clear();
     }
     async setEnabled(enabled) {
         if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
+            return false;
+        if (enabled && !this.snapshot.enabled && this.snapshot.conflict.pluginName)
             return false;
         if (enabled === this.snapshot.enabled)
             return true;
@@ -12954,8 +12983,13 @@ class MiniAchievementsController {
         return this.mounted && generation === this.generation;
     }
     applyRuntime() {
+        const effectiveEnabled = this.mounted && this.snapshot.settingsLoaded &&
+            this.snapshot.enabled && !this.snapshot.conflict.pluginName;
+        if (this.snapshot.effectiveEnabled !== effectiveEnabled) {
+            this.snapshot = { ...this.snapshot, effectiveEnabled };
+        }
         try {
-            if (this.snapshot.enabled) {
+            if (effectiveEnabled) {
                 this.disposePatch ?? (this.disposePatch = installMiniAchievementsPatch());
             }
             else {

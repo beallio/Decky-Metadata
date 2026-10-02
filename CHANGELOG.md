@@ -17,8 +17,8 @@ Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feat
 - **Mini achievements.** An independent, default-off Quick Access Menu toggle
   restores Steam's small achievement progress bar beside Play Time using
   Steam's own component and data. The setting is saved across reloads, and
-  disabling it restores the native display. Turn off mini achievements in
-  Decky UI Restored before enabling this feature. It does not add achievement
+  disabling it restores the native display. Metadata pauses its restoration
+  while Decky UI Restored is enabled in Decky Loader. It does not add achievement
   tracking to non-Steam games.
 - **ProtonDB tier badges.** An opt-in section adds community rating icons to
   Home and Library covers for Steam games and matched non-Steam games,
@@ -32,12 +32,13 @@ Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feat
   renderer. Store badges follow the active main window and recover after a
   Store page reload.
 - **Known plugin conflict guards.** Decky Metadata pauses its ProtonDB badges
-  while ProtonDB Badges is enabled in Decky Loader, and its game trailers while
-  TrailerHero is enabled. The affected section names the other plugin and
-  prevents enabling the duplicate feature. Saved choices are kept; an enabled
-  feature resumes when the conflict clears unless you turn its switch off.
-  If detection is unavailable, the panel warns without blocking unrelated
-  features. Mini achievements keeps its manual Decky UI Restored warning.
+  while ProtonDB Badges is enabled in Decky Loader, its game trailers while
+  TrailerHero is enabled, and its mini achievements while Decky UI Restored is
+  enabled. Detection uses plugin activity, not the other plugins' feature
+  settings. The affected section names the other plugin and prevents enabling
+  the duplicate feature. Saved choices are kept; an enabled feature resumes
+  when the conflict clears unless you turn its switch off. If detection is
+  unavailable, the panel warns without blocking unrelated features.
   Current TrailerHero player and style markers also prevent duplicate playback
   when that plugin leaves an injected player behind after Loader disables it.
 

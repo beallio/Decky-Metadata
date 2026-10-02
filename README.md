@@ -153,6 +153,8 @@ Use only one plugin for each of these features:
 
 - **ProtonDB Badges** prevents Decky Metadata's ProtonDB badges from running.
 - **TrailerHero** prevents Decky Metadata's game trailers from running.
+- **Decky UI Restored** prevents Decky Metadata's mini achievements from running,
+  even if its own mini-achievements setting is off.
 
 The affected section names the other plugin and tells you to disable it in
 Decky Loader. Hiding a plugin from the menu does not disable it. Other Metadata
@@ -168,7 +170,6 @@ disabling or removing TrailerHero.
 
 If the panel cannot check other plugins, it shows a warning instead of blocking
 the feature. In that case, check manually that only one provider is enabled.
-Mini achievements still needs its separate manual check in Decky UI Restored.
 
 ## Updates and help
 
