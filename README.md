@@ -3,12 +3,14 @@
 [![Latest release](https://img.shields.io/github/v/release/beallio/Decky-Metadata)](https://github.com/beallio/Decky-Metadata/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
-Decky Metadata adds Steam game details to games you added to Steam yourself. It
+Decky Metadata adds Steam game details to non-Steam games in your library. It
 can show descriptions, news, community posts, and controller layouts from the
-matching game. It can also play trailers on game pages. You can correct a match
-if needed, and your custom artwork stays in place.
+matching game without replacing your custom artwork. For Steam and non-Steam
+games, you can also show ProtonDB community ratings and watch game trailers.
+For Steam games, you can restore the small achievement progress bar beside
+Play Time.
 
-![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202610011846)
+![Metadata controls in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20261003)
 
 ## Install
 
@@ -71,38 +73,20 @@ status](docs/help/compatibility-status.md).
 
 ### ProtonDB ratings
 
-Open **ProtonDB badges** in the Decky Metadata panel and turn on **Enable
-ProtonDB badges**. It is off by default. You can show ratings on Home and Library
-game covers, beside the controller button on game pages, and on Steam Store
-pages. Steam games use their own app IDs. Non-Steam games use their saved
-Metadata Steam App ID first. If no valid ID is saved, the shortcut name is
-looked up using Steam, then ProtonDB's title index when Steam finds no match.
-Changing or clearing a saved match updates badges that are already on screen.
+Open **ProtonDB badges** and turn on **Enable ProtonDB badges**. It is off by
+default. Choose ratings on Home covers, Library covers, game pages, or Steam
+Store pages. Each view has its own switch. You can choose a cover corner and
+show cover badges only when a game is focused or hovered.
 
-The game-page button comes before the controller button and uses Steam's
-button style. Select it, or the Store badge, to open the game's ProtonDB page.
-The Store badge is a colored icon at the bottom right, with no visible text.
-Cover icons do not change how you select or launch a game. Choose a cover
-corner, or show cover icons only when a game is focused or hovered.
-The four view switches are separate. Turning off the main switch keeps your
-choices for each view.
+Select the game-page button or Store badge to open that game's ProtonDB reports.
+The ratings are **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
+They describe community experience, not Valve certification or a guarantee
+that your copy will run. Games without a match or rating have no badge.
 
-The colors mean **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
-These are ProtonDB community ratings, not Valve certification or a guarantee
-that your copy works now. Games with no match or rating have no badge. Ratings
-are fetched directly from ProtonDB, shared between views, and refreshed after
-24 hours while the game is visible. No additional compatibility service is used.
+See the [ProtonDB guide](docs/help/protondb-badges.md) for controls, matching,
+Store requirements, and troubleshooting.
 
-Cached badges appear with game covers and controls when you return to a view.
-They stay with those items during Steam's page animation instead of disappearing
-as soon as navigation starts. A first lookup can still take time while the
-match or rating is fetched.
-
-If **ProtonDB Badges** is enabled in Decky Loader, Decky Metadata pauses its
-badges and prevents turning them on. Disable that plugin to use Metadata's
-badges. See [other Decky plugins](#other-decky-plugins). Store badges require CEF
-Remote Debugging in Decky's Developer settings.
-
+![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
 
 ### Game trailers
 
@@ -125,9 +109,10 @@ Steam's small achievement progress bar beside Play Time on game details pages.
 It is off by default and uses Steam's own progress data; it does not add
 achievement tracking to non-Steam games.
 
-Before enabling it here, turn off **Enable mini achievements** in **Decky UI
-Restored**. Use only one plugin's mini-achievements toggle at a time. Its other
-fixes can stay enabled. See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements).
+See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
+for setup, supported games, and troubleshooting.
+
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261003)
 
 ### Community posts and news
 
@@ -147,30 +132,6 @@ Steam game. Your own layouts and Steam's templates remain available. See
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=202610011846)
 
-## Other Decky plugins
-
-Use only one plugin for each of these features:
-
-- **ProtonDB Badges** prevents Decky Metadata's ProtonDB badges from running.
-- **TrailerHero** prevents Decky Metadata's game trailers from running.
-- **Decky UI Restored** prevents Decky Metadata's mini achievements from running,
-  even if its own mini-achievements setting is off.
-
-The affected section names the other plugin and tells you to disable it in
-Decky Loader. Hiding a plugin from the menu does not disable it. Other Metadata
-features remain available.
-
-Your saved choices stay in place. If our switch was on, the feature resumes
-when the other plugin is disabled or removed. You can turn our switch off while
-it is paused if you do not want it to resume.
-
-If a disabled TrailerHero player keeps running, Metadata waits rather than
-starting a second player. Finish any running game and restart Steam after
-disabling or removing TrailerHero.
-
-If the panel cannot check other plugins, it shows a warning instead of blocking
-the feature. In that case, check manually that only one provider is enabled.
-
 ## Updates and help
 
 Check for updates in the Decky Metadata panel. If something does not work,
@@ -178,8 +139,8 @@ start with the [help pages](docs/help/README.md). You can also view recent logs
 in the panel; include those logs and the versions shown under **Versions** when
 you report a problem. See [updates and troubleshooting](docs/help/updates-and-troubleshooting.md).
 
-This page may describe features not yet in the latest release. See the
-[changelog](CHANGELOG.md) for what changed. Screenshots may show an earlier layout.
+See the [changelog](CHANGELOG.md) for release changes. The images show examples
+from Steam Gaming Mode; artwork and layout can vary with your games and themes.
 
 ## License and credits
 

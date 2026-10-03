@@ -12,6 +12,7 @@ setup steps.
 ## Choose what appears
 
 - [Choose a compatibility status](compatibility-status.md) — set a default for your library or a label for one game.
+- [Show ProtonDB ratings](protondb-badges.md) — choose badges for covers, game pages, and the Steam Store.
 - [Watch game trailers](game-trailers.md) — turn trailers on and set sound, video quality, and controls.
 - [Restore mini achievements](updates-and-troubleshooting.md#mini-achievements) — restore Steam's progress bar and avoid conflicts with Decky UI Restored.
 - [See community posts and news](community-and-news.md) — find posts, screenshots, and Activity news.
@@ -20,3 +21,7 @@ setup steps.
 ## Keep it working
 
 - [Updates and troubleshooting](updates-and-troubleshooting.md) — check for updates, find versions and logs, and get help with common problems.
+
+If a section is closed, select its heading or press **A** to open it. **Versions**
+starts open; the other sections start closed. **Metadata cache** and **Delisted
+Steam games** are inside **Metadata**.

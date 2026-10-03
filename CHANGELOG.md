@@ -4,79 +4,52 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Add ProtonDB badges, mini achievements, collapsible settings, and duplicate-feature guards
+Add ProtonDB badges, mini achievements, and collapsible settings
 
 ### Added
 
-- **Collapsible Quick Access Menu sections.** Select a section heading to show
-  or hide its controls. Metadata, Compatibility status, ProtonDB badges, Game
-  trailers, Mini achievements, Logs, and Updates start closed; Versions starts
-  open. The Delisted Steam games tool sits under Metadata beside Metadata
-  cache. The main headings are larger and have icons. Background update checks
-  continue while Updates is closed.
-- **Mini achievements.** An independent, default-off Quick Access Menu toggle
-  restores Steam's small achievement progress bar beside Play Time using
-  Steam's own component and data. The setting is saved across reloads, and
-  disabling it restores the native display. Metadata pauses its restoration
-  while Decky UI Restored is enabled in Decky Loader. It does not add achievement
-  tracking to non-Steam games.
-- **ProtonDB tier badges.** An opt-in section adds community rating icons to
-  Home and Library covers for Steam games and matched non-Steam games,
-  a Steam-styled button before the game page's controller button, and a
-  bottom-right, icon-only Steam Store badge. Ratings use
-  ProtonDB's tier colors and direct summary data only, with a shared
-  24-hour cache. Choose each surface,
-  cover position, or focused/hovered covers only. No Gateway analysis is used;
-  missing matches or ratings stay hidden, and network errors are not Borked.
-  Home and Library switches remain independent on Steam's shared cover
-  renderer. Store badges follow the active main window and recover after a
-  Store page reload.
-- **Known plugin conflict guards.** Decky Metadata pauses its ProtonDB badges
-  while ProtonDB Badges is enabled in Decky Loader, its game trailers while
-  TrailerHero is enabled, and its mini achievements while Decky UI Restored is
-  enabled. Detection uses plugin activity, not the other plugins' feature
-  settings. The affected section names the other plugin and prevents enabling
-  the duplicate feature. Saved choices are kept; an enabled feature resumes
-  when the conflict clears unless you turn its switch off. If detection is
-  unavailable, the panel warns without blocking unrelated features.
-  Current TrailerHero player and style markers also prevent duplicate playback
-  when that plugin leaves an injected player behind after Loader disables it.
+- **ProtonDB badges.** Optional community ratings on Home and Library covers,
+  game pages, and Steam Store pages. Each view has its own switch, with cover
+  position and focus/hover controls. Select a game-page or Store badge to open
+  its reports. Ratings are shared across views and cached for 24 hours; games
+  without a match or tier stay hidden, and lookup errors are not Borked ratings.
+- **Mini achievements.** A default-off setting restores Steam's small
+  achievement progress bar beside Play Time. It uses Steam's own data and
+  does not add achievement tracking to non-Steam games.
+- **Collapsible Quick Access Menu sections.** Select a heading or press A to
+  show its controls. Versions starts open; other sections start closed.
+  Background update checks continue while Updates is closed.
+- **Known plugin conflict guards.** Metadata pauses badges while ProtonDB
+  Badges is active, trailers while TrailerHero is active, and mini achievements
+  while Decky UI Restored is active. The panel names the peer. Detection checks
+  plugin activity, not the peer's individual settings. Saved choices resume
+  when the conflict clears unless you turn our switch off while paused.
+  Residual TrailerHero players also prevent duplicate trailer playback.
 
 ### Changed
 
-- Quick Access Menu sections no longer draw a divider below their final row.
-  Dividers within sections remain.
-- Quick Access Menu now shows full compatibility choices, gives long version
-  and display values their own line, and adds clearer spacing and hierarchy
-  to help text and Metadata subsections.
-- Metadata's game counts no longer take controller focus. A divider marks
-  Metadata cache, the Delisted refresh action comes before its count and date,
-  and the trailer artwork note has no divider above it.
-- Metadata's section icon now matches the plugin's icon, and Compatibility
-  status uses the Steam Deck logo.
-- Metadata's refresh description now has the same space before its divider as
-  the cache description.
+- Quick Access Menu headings have larger text and icons. Compatibility choices,
+  version values, and help text are easier to read.
+- Metadata cache and Delisted Steam games are grouped inside Metadata.
+  Game counts no longer take controller focus.
+- Sections no longer draw a divider after their final control; internal
+  dividers and spacing make the tool groups clearer.
+- The README gives a short product tour. Detailed help covers ProtonDB
+  controls, matching, mini achievements, and plugin conflict behavior.
 
 ### Fixed
 
-- Quick Access Menu section headings stay in view when D-pad focus reaches
-  them below expanded controls or long plugin-conflict notes.
-- Trailers no longer shrink and grow again when you open or close a game page
-  with a save-status bar below the artwork, including after turning its theme
-  off and on. Taller full-width bars get more trailer space; hidden, compact,
-  or moved indicators do not. Steam's normal page animation still plays.
-- ProtonDB Home and Library icons use the local ProtonDB Badges fork's native
-  footer hosts and React portals. Steam games use their native app IDs, and
-  shortcuts prefer a valid saved Metadata Steam App ID before the fork's
-  Steam-first/Algolia name fallback. Changed or cleared matches refresh mounted
-  cover and game-page badges without retaining the previous rating. Direct
-  ProtonDB tiers are retained without Gateway analysis.
-- ProtonDB cover hosts remain mounted on native Library tab routes, including
-  the Non-Steam tab, instead of disappearing when the tab updates its route.
-- Cached ProtonDB badges no longer appear late or disappear early when moving
-  between Home, Library, and game pages. Cover badges stay with their native
-  cards during page animations, and the game-page badge stays with the
-  controller and settings controls.
+- Section headings stay in view when D-pad focus reaches them below expanded
+  controls or long help notes. Dropdown cancellation and return preserve focus.
+- Trailers keep a stable height when a game page opens or closes with a visible
+  save-status bar, including after a theme is turned off and on. Taller
+  full-width bars get more trailer space; hidden, compact, or moved indicators
+  do not add extra space. Steam's normal page animation still plays.
+- ProtonDB badges stay with their native covers and controls during page
+  animations and remain available on Library tabs, including Non-Steam.
+- Non-Steam badges prefer a valid saved Metadata Steam App ID, then a title
+  lookup. Correcting or clearing the match updates visible badges without
+  retaining the previous game's rating.
 
 
 ## [0.4.0] - 2026-09-28
