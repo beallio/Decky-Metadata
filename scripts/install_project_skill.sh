@@ -21,12 +21,17 @@ if [[ -z "$dest" ]]; then
   [[ "$agent" == codex ]] && dest="${CODEX_HOME:-$HOME/.codex}/skills/$skill" || dest="$HOME/.claude/skills/$skill"
 fi
 dest="$(realpath -m -s "$dest")"; parent="$(dirname "$dest")"
+mapfile -t git_local_env < <(git rev-parse --local-env-vars)
+destination_worktree_root() (
+  unset "${git_local_env[@]}"
+  git -C "$1" rev-parse --show-toplevel 2>/dev/null
+)
 external=""; probe="$parent"
 while [[ ! -e "$probe" && "$probe" != / ]]; do probe="$(dirname "$probe")"; done
-if worktree="$(git -C "$probe" rev-parse --show-toplevel 2>/dev/null)" && [[ "$(realpath -m "$worktree")" != "$repo_root" ]]; then external="$worktree"; fi
+if worktree="$(destination_worktree_root "$probe")" && [[ "$(realpath -m "$worktree")" != "$repo_root" ]]; then external="$worktree"; fi
 if [[ -L "$dest" ]]; then
   target="$(realpath -m "$dest")"
-  if target_repo="$(git -C "$target" rev-parse --show-toplevel 2>/dev/null)" && [[ "$(realpath -m "$target_repo")" != "$repo_root" ]]; then external="$target_repo"; fi
+  if target_repo="$(destination_worktree_root "$target")" && [[ "$(realpath -m "$target_repo")" != "$repo_root" ]]; then external="$target_repo"; fi
 fi
 action=dry-run; ((install)) && action=install
 printf 'source: %s\ndestination: %s\naction: %s\n' "$source_path" "$dest" "$action"

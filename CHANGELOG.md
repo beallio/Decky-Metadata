@@ -52,6 +52,8 @@ Add ProtonDB badges, mini achievements, and collapsible settings
 - Non-Steam badges prefer a valid saved Metadata Steam App ID, then a title
   lookup. Correcting or clearing the match updates visible badges without
   retaining the previous game's rating.
+- Project skill installation checks the destination repository correctly when
+  invoked from a Git hook, without bypassing external-worktree protection.
 
 
 ## [0.4.0] - 2026-09-28

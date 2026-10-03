@@ -80,6 +80,10 @@ scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
 
 Use `--install` explicitly. The skill installer refuses external Git worktrees unless `--allow-external-worktree` is also supplied.
 
+The skill installer checks the destination's own Git repository, even when
+called from a Git hook. Inherited hook-local Git variables do not change that
+check or bypass the external-worktree opt-in.
+
 ## Documentation status
 
 [Compatibility behavior](../specs/compatibility-status.md) and this runbook are
