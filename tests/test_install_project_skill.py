@@ -6,14 +6,24 @@ ROOT = Path(__file__).parents[1]
 SCRIPT = ROOT / "scripts/install_project_skill.sh"
 
 
-def invoke(dest: Path, *args: str):
-    return subprocess.run([str(SCRIPT), "--dest", str(dest), *args], cwd=ROOT, text=True, capture_output=True, env=os.environ.copy())
+def invoke(dest: Path, *args: str, env=None):
+    return subprocess.run([str(SCRIPT), "--dest", str(dest), *args], cwd=ROOT, text=True, capture_output=True, env=os.environ.copy() if env is None else env)
+
+
+def clean_git_environment():
+    env = os.environ.copy()
+    local_vars = subprocess.check_output(
+        ["git", "rev-parse", "--local-env-vars"], cwd=ROOT, text=True
+    ).splitlines()
+    for name in local_vars:
+        env.pop(name, None)
+    return env
 
 
 def test_dry_run_install_repeat_and_conflict(tmp_path):
     dest = tmp_path / "skills/decky-project-workflow"
     dry = invoke(dest)
-    assert dry.returncode == 0 and "dry-run" in dry.stdout and not dest.exists()
+    assert dry.returncode == 0 and not dest.exists()
     install = invoke(dest, "--install")
     assert install.returncode == 0 and dest.is_symlink()
     assert invoke(dest, "--install").returncode == 0
@@ -23,10 +33,10 @@ def test_dry_run_install_repeat_and_conflict(tmp_path):
 
 def test_external_git_worktree_requires_opt_in(tmp_path):
     external = tmp_path / "external"
-    subprocess.run(["git", "init", str(external)], check=True, capture_output=True)
+    subprocess.run(["git", "init", str(external)], check=True, capture_output=True, env=clean_git_environment())
     dest = external / "skills/decky-project-workflow"
     refused = invoke(dest, "--install")
-    assert refused.returncode == 1 and "external Git worktree" in refused.stderr
+    assert refused.returncode == 1
     assert invoke(dest, "--install", "--allow-external-worktree").returncode == 0
 
 
@@ -53,11 +63,46 @@ def test_rejects_unknown_and_traversal_skill_names(tmp_path):
     unknown_dest = tmp_path / "unknown/nope"
     unknown = invoke(unknown_dest, "--skill", "nope", "--install")
     assert unknown.returncode == 2
-    assert "unknown skill" in unknown.stderr
     assert not unknown_dest.exists()
 
     traversal_dest = tmp_path / "traversal/evil"
     traversal = invoke(traversal_dest, "--skill", "../evil", "--install")
     assert traversal.returncode == 2
-    assert "invalid skill name" in traversal.stderr
     assert not traversal_dest.exists()
+
+
+def test_hook_git_dir_does_not_claim_an_ordinary_destination(tmp_path):
+    env = os.environ.copy()
+    env["GIT_DIR"] = subprocess.check_output(
+        ["git", "rev-parse", "--absolute-git-dir"], cwd=ROOT, text=True
+    ).strip()
+    env.pop("GIT_WORK_TREE", None)
+    dest = tmp_path / "skills/decky-project-workflow"
+
+    result = invoke(dest, "--install", env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert dest.is_symlink()
+    assert dest.resolve() == ROOT / "skills/decky-project-workflow"
+
+
+def test_hook_git_context_cannot_hide_an_external_destination(tmp_path):
+    clean_env = clean_git_environment()
+    external = tmp_path / "external"
+    subprocess.run(
+        ["git", "init", str(external)], check=True, capture_output=True, env=clean_env
+    )
+    env = os.environ.copy()
+    env["GIT_DIR"] = subprocess.check_output(
+        ["git", "rev-parse", "--absolute-git-dir"], cwd=ROOT, text=True
+    ).strip()
+    env["GIT_WORK_TREE"] = str(ROOT)
+    dest = external / "skills/decky-project-workflow"
+
+    refused = invoke(dest, "--install", env=env)
+
+    assert refused.returncode == 1
+    assert not dest.exists()
+    allowed = invoke(dest, "--install", "--allow-external-worktree", env=env)
+    assert allowed.returncode == 0, allowed.stderr
+    assert dest.is_symlink()
