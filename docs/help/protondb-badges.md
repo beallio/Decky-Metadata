@@ -13,6 +13,8 @@ These ratings are separate from Valve's Steam Deck compatibility labels. Neither
 
 Closing the section or Quick Access Menu does not turn badges off. Turning the main switch off keeps your choices for each view.
 
+![Community rating icons on Library covers](../../assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
+
 ## Choose where badges appear
 
 | Setting | Where the rating appears |

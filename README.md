@@ -10,7 +10,7 @@ games, you can also show ProtonDB community ratings and watch game trailers.
 For Steam games, you can restore the small achievement progress bar beside
 Play Time.
 
-![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202610011846)
+![Metadata controls in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20261003)
 
 ## Install
 
@@ -86,6 +86,8 @@ that your copy will run. Games without a match or rating have no badge.
 See the [ProtonDB guide](docs/help/protondb-badges.md) for controls, matching,
 Store requirements, and troubleshooting.
 
+![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
+
 ### Game trailers
 
 Turn on **Game trailers** to show a video on a game's main Library page. Steam
@@ -109,6 +111,8 @@ achievement tracking to non-Steam games.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
 for setup, supported games, and troubleshooting.
+
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261003)
 
 ### Community posts and news
 

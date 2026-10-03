@@ -29,6 +29,8 @@ This brings back Steam's small achievement progress bar beside Play Time on
 game details pages. It uses Steam's existing data. Matching a non-Steam game
 does not add achievement tracking to that game.
 
+![Brotato's native achievement progress beside Play Time](../../assets/decky-metadata-mini-achievements.png?cacheBuster=20261003)
+
 When **Decky UI Restored** is enabled in Decky Loader, Metadata pauses its mini
 achievements. The panel names the conflict. Detection checks the whole plugin,
 not its individual feature settings, so turning off only the peer's mini
