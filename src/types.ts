@@ -95,6 +95,18 @@ export type TrailerStatus = {
   targetHeight: number;
 };
 
+export type ProtonDbTier = "platinum" | "gold" | "silver" | "bronze" | "borked";
+
+export type ProtonDbBadgeSettings = {
+  enabled: boolean;
+  home: boolean;
+  library: boolean;
+  gameView: boolean;
+  store: boolean;
+  focusOnly: boolean;
+  coverPosition: "bottom-left" | "top-left" | "top-right";
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;

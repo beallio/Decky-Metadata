@@ -34,6 +34,31 @@ distributed under the GNU General Public License v3.0 or later, as stated in the
 accompanying LICENSE file. The BSD 3-Clause attribution above is retained for
 the Decky Plugin Template; the GPL terms govern this project as a whole.
 
+Mini achievements restoration
+-----------------------------
+src/steam/miniAchievements.ts adapts the native achievement-bar restoration
+from Decky UI Restored by beallio (the Decky-SteamAchievements source checkout).
+The source project and Decky Metadata are distributed under the
+GNU General Public License v3.0 or later.
+
+    Decky UI Restored
+    https://github.com/beallio/Decky-UI-Restored
+
+ProtonDB badge integration
+--------------------------
+The native footer hosts, React portal cover renderer, and Steam/Algolia title
+lookup in src/protondb/covers.tsx, steamSearch.ts, and matchTitle.ts are adapted
+from the local beallio fork of ProtonDB Badges by bschelst. The fork's cover
+layout and icon geometry are retained. Ratings and medal colors come from
+ProtonDB's direct summaries, not the separate compatibility analysis service.
+The Store-page integration approach is also based on ProtonDB Badges.
+
+    ProtonDB Badges
+    Licensed under the GNU General Public License v3.0
+    https://github.com/bschelst/protondb-decky
+    https://github.com/beallio/protondb-decky
+    https://www.protondb.com
+
 Steam trailer runtime
 ---------------------
 src/trailers/runtime.ts adapts the Steam trailer streaming runtime from

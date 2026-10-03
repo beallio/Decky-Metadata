@@ -67,6 +67,85 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Mini achievements
+
+This feature changes both the frontend and a backend preference. Install a
+full-plugin ZIP before checking it; a frontend-only deployment cannot add the
+settings RPCs. Record both plugins' original settings and Loader enabled states
+before changing them. Disable **Decky UI Restored** in Decky Loader before
+testing Metadata's restoration; leave the peer's feature settings unchanged.
+
+1. Use a Steam game with recorded achievement progress. With Decky UI Restored
+   disabled and Metadata's toggle off, capture the native page and progress.
+2. Open Metadata's **Mini achievements** section with D-pad/A. Confirm the new
+   preference starts off, the section starts closed, and conflict notices are readable.
+   Enable it on the already-mounted game page. Check the visible bar beside
+   Play Time against Steam's native progress; do not use a synthetic counter.
+3. Return Home, then open the game later. Check that restoration still works
+   after the initial capture attempts have ended. Visit another Steam game and
+   return. Exercise the native achievement control and Back navigation.
+4. Disable and re-enable on a mounted page. Check that disabling restores the
+   baseline display, that enabling does not duplicate the bar, and that a QAM
+   close/reopen does not change the saved preference.
+   Enable Decky UI Restored in Loader and verify Metadata removes only its own
+   restoration, preserves its saved choice, and shows the named conflict.
+   Metadata must remain paused even when the peer's mini-achievements setting
+   is off, because detection is plugin-level. Disable or remove the peer and
+   verify Metadata resumes. While paused, turn Metadata's switch off and verify
+   it cannot be re-enabled until the peer is disabled, and does not resume after
+   the peer is disabled. Hiding or freezing the peer must not clear the guard.
+5. Reload with the preference on and off. Check the corresponding display, then
+   unload Metadata and confirm its restoration is removed. Visit matched and
+   unmatched shortcuts to check that their existing metadata, links, and
+   controller behavior are unchanged; this feature adds no achievement mapping.
+6. Run the applicable quick-link/re-render suite from the table above. Restore
+   the original preferences and Loader enabled states. If both plugins are
+   enabled, Metadata must stay paused regardless of the peer's feature settings.
+
+The supported configuration has one active restoration owner. Metadata's
+plugin-level guard prevents its restoration from running alongside enabled
+Decky UI Restored.
+
+### Game-page artwork and trailer geometry
+
+The trailer backdrop calculates CSS height from the target's `offsetHeight` plus
+the status band's `offsetHeight`, after subtracting any early CSS reservation.
+The `--sdh-status-band-reserved` flag and Clean Gameview image-height variable
+identify that reservation. Steam scales the entering page, so
+`getBoundingClientRect().height / offsetHeight` is used only to translate the
+original artwork edge into viewport coordinates for hit-testing. Rescans retain
+the original layout height; a change in page scale must not shrink the target,
+add another band, or briefly restore its shorter height. Layout-row discovery
+does not depend on hit-testing: temporary coverage preserves valid layout space
+without claiming a paintable backdrop. A native-window shared reservation record
+saves the first genuine inline variable value and restores it only for its current
+owner. Trailer disable or final playback/lookup failure releases that ownership.
+Animated route exit retains it until the header disconnects.
+
+After a trailer-runtime sizing change, open a Steam game with a visible Cloud
+row from Library Home and record the actual hero and trailer-container layout
+heights from the first visible frame through trailer attachment. Repeat the
+selection after the game details have loaded. Check the default scroll position
+on the physical screen: artwork or video must reach the status band's bottom,
+and the Play controls and band must stay in place. With SDH-Ludusavi Status and
+Clean Gameview enabled, the reserved artwork height must stay the same before
+and after trailer attachment. Also check that hiding the band or leaving the
+page restores the original inline height.
+
+Turn SDH-Ludusavi Status off and on without changing its color choices, then repeat
+entry, trailer attachment, and exit for both a Steam Cloud page and an eligible
+non-Steam Ludusavi page. Capture only the native header image, not Library Home's
+separate carousel image. The first visible header frame must have the same layout
+height as the frame after trailer attachment; the last connected exit frame must
+not recrop. Restore all theme choices and retain the user's trailer-audio setting.
+
+Repeat with a taller themed row, a compact relocated indicator, and a row hidden by
+display, visibility, or opacity. Only an aligned, full-width, in-flow native or
+Ludusavi status band may extend the trailer; use its measured layout height rather
+than a 30-pixel assumption. Shrinking or hiding the band must restore the correct
+height without cumulative growth. Keep the same video element playing and confirm
+that its object fit and position do not change.
+
 ### Compatibility defaults and Follow Valve
 
 This check changes real plugin settings and may change real shortcut status.

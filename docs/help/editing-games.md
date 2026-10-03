@@ -15,6 +15,11 @@ The editor's **Search IGN metadata** section searches IGN metadata, not Steam ma
 
 If the match is wrong, repeat those steps with the correct game's app ID or URL. To remove a match instead, clear the **Steam App ID** field and select **Apply Steam App ID**. This clears the pinned match; you can then add the correct one. **Remove metadata** removes the game's saved metadata, rather than just clearing its Steam match.
 
+A saved Steam App ID also takes priority when Metadata chooses a ProtonDB
+rating for the shortcut. Correcting or clearing the match updates badges that
+are already on screen. If no valid ID is saved, badge matching can use the
+shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
+
 ## Change or fill in details
 
 Use the editor's **Search IGN metadata** section to search by the game's name. Select the result that describes your game to fill in its source information. You can also edit the fields in the editor yourself. Select **Save** when you finish editing. Applying a Steam App ID saves that match separately; use **Save** to save your other edits.
@@ -32,10 +37,10 @@ Your personal SteamGridDB artwork stays in place when Decky Metadata adds game d
 
 ## Find missing game details or start again
 
-In the Decky Metadata panel, **Missing metadata** shows how many of your added games do not have saved details. Select **Refresh metadata** to find and save details for these games.
+In the Decky Metadata panel, select **Metadata** to open it. **Missing metadata** shows how many of your added games do not have saved details. Select **Refresh metadata** to find and save details for these games.
 
 To remove saved matches and details for all games so they can be matched again, select **Clear cache**. This is different from **Remove metadata** in one game's editor, which removes only that game's saved details.
 
-If you need to update the list of games Steam no longer sells, go to **Delisted Steam games** and select **Refresh delisted games**.
+To update the list of games Steam no longer sells, find **Delisted Steam games** inside **Metadata** and select **Refresh delisted games**.
 
 For installation, see [Install Decky Metadata](installation.md).

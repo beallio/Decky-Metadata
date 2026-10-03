@@ -112,6 +112,7 @@ async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
       this.classList = {
         add: (...names) => names.forEach(name => classes.add(name)),
         remove: (...names) => names.forEach(name => classes.delete(name)),
+        contains: name => classes.has(name),
       };
     }
     getAttribute(name) { return name === 'style' ? this.asset : ''; }
@@ -243,6 +244,13 @@ test('A visible status band reveals the hero behind it without moving the band o
   const h = await readyDirectTrailer();
   const naturalHeight = 400;
   let statusTop = 400;
+  let scale = 0.95;
+  let bandHeight = 52;
+  let bandOpacity = '1';
+  let bandPosition = 'static';
+  let nativeBand = true;
+  let bandClipped = false;
+  h.window.DFL = { playSectionClasses: { CloudStatusRow: 'native-cloud-row' } };
   let visible = false;
   let suppressed = false;
   const originalHeight = '400px';
@@ -253,41 +261,88 @@ test('A visible status band reveals the hero behind it without moving the band o
     setProperty(name, value) { this[name] = value; },
     removeProperty(name) { this[name] = ''; },
   };
+  Object.defineProperty(h.hero, 'offsetHeight', {
+    get: () => Number.parseFloat(h.hero.style.height) || naturalHeight,
+  });
   h.hero.getBoundingClientRect = () => {
-    const height = Number.parseFloat(h.hero.style.height) || naturalHeight;
-    return { width: 1000, height, top: 0, left: 0, right: 1000, bottom: height };
+    const height = h.hero.offsetHeight * scale;
+    return { width: 1000 * scale, height, top: 0, left: 0, right: 1000 * scale, bottom: height };
+  };
+  const bandParent = {
+    parentElement: null,
+    getBoundingClientRect: () => ({
+      left: 0, top: 0, right: 1000 * scale, bottom: (statusTop + 8) * scale,
+    }),
   };
   const band = {
     textContent: 'Steam Cloud: Up to date',
-    parentElement: null,
+    parentElement: bandParent,
+    classList: { contains: name => nativeBand && name === 'native-cloud-row' },
+    matches: selector => selector.includes('native-cloud-row'),
+    get offsetHeight() { return bandHeight; },
     getBoundingClientRect: () => ({
-      width: 1000, height: 30, top: statusTop, left: 0, right: 1000, bottom: statusTop + 30,
+      width: 1000 * scale, height: bandHeight * scale, top: statusTop * scale, left: 0,
+      right: 1000 * scale, bottom: (statusTop + bandHeight) * scale,
     }),
     getAttribute: name => name === 'aria-hidden' && suppressed ? 'true' : null,
   };
   const label = {
     parentElement: band,
     getBoundingClientRect: () => ({
-      width: 180, height: 22, top: statusTop + 4, left: 410, right: 590, bottom: statusTop + 26,
+      width: 180 * scale, height: 22 * scale, top: (statusTop + 4) * scale,
+      left: 410 * scale, right: 590 * scale, bottom: (statusTop + 26) * scale,
     }),
   };
+  const computedStyle = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => element === band
+    ? { display: 'flex', visibility: 'visible', opacity: bandOpacity, position: bandPosition }
+    : element === bandParent
+      ? { ...computedStyle(element), overflowY: bandClipped ? 'hidden' : 'visible' }
+      : computedStyle(element);
   // Steam's footer can cover the middle of the row at the default scroll position.
   h.document.elementFromPoint = (x, y) =>
-    visible && x === 500 && y >= statusTop && y < statusTop + 6 ? label : null;
+    visible && x === 500 * scale && y >= statusTop * scale && y < (statusTop + 6) * scale ? label : null;
 
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'no status band leaves the hero unchanged');
+  assert.equal(h.hero.offsetHeight, 400, 'no status band leaves the hero unchanged');
   visible = true;
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+  assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom,
+    'the trailer reaches the status-band edge during Steam entry scaling');
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430, 'rescanning must not add a second band height');
+  assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight, 'rescanning must not add a second band height');
+  for (scale of [0.97, 0.99, 1]) {
+    await h.runtime.scan();
+    assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight, 'page scaling must not change the trailer layout height');
+    assert.equal(h.hero.getBoundingClientRect().bottom, band.getBoundingClientRect().bottom);
+  }
   suppressed = true;
   await h.runtime.scan();
   assert.equal(h.hero.getBoundingClientRect().bottom, 400, 'an aria-hidden row must not extend the trailer');
   suppressed = false;
   await h.runtime.scan();
-  assert.equal(h.hero.getBoundingClientRect().bottom, 430);
+  assert.equal(h.hero.getBoundingClientRect().bottom, naturalHeight + bandHeight);
+  bandOpacity = '0';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a theme-hidden row must not extend the trailer');
+  bandOpacity = '1';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight + bandHeight);
+  bandHeight = 44;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight + 44, 'a shorter theme band must shrink the backdrop without cumulative growth');
+  bandPosition = 'fixed';
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a relocated overlay is not an in-flow artwork band');
+  bandPosition = 'static';
+  bandClipped = true;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'a theme-clipped row must not reserve its hidden height');
+  bandClipped = false;
+  nativeBand = false;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, naturalHeight, 'an unrelated full-width row must not extend the trailer');
+  nativeBand = true;
 
   visible = false;
   await h.runtime.scan();
@@ -303,6 +358,67 @@ test('A visible status band reveals the hero behind it without moving the band o
   h.document.URL = h.window.location.href;
   await h.runtime.scan();
   assert.equal(h.hero.style.height, originalHeight, 'leaving the page restores the original inline height');
+});
+
+test('An early theme reservation is adopted before trailer attachment and never counted twice', async () => {
+  const h = await readyDirectTrailer();
+  const naturalHeight = 400;
+  const bandHeight = 52;
+  const values = new Map();
+  h.hero.style = {
+    getPropertyValue: name => values.get(name) || '',
+    getPropertyPriority: () => '',
+    setProperty: (name, value) => values.set(name, value),
+    removeProperty: name => values.delete(name),
+  };
+  Object.defineProperty(h.hero, 'offsetHeight', {
+    get: () => Math.max(Number.parseFloat(values.get('height')) || naturalHeight,
+      naturalHeight + Number.parseFloat(values.get('--sdh-status-band-height') || '30')),
+  });
+  h.hero.getBoundingClientRect = () => ({
+    top: 0, left: 0, width: 1000, height: h.hero.offsetHeight, right: 1000, bottom: h.hero.offsetHeight,
+  });
+  const band = {
+    textContent: 'Steam Cloud: Up to date', parentElement: null, offsetHeight: bandHeight,
+    classList: { contains: name => name === 'native-cloud-row' },
+    getAttribute: () => null,
+    getBoundingClientRect: () => ({ top: naturalHeight, left: 0, width: 1000, height: bandHeight,
+      right: 1000, bottom: naturalHeight + bandHeight }),
+  };
+  const label = { parentElement: band, getBoundingClientRect: () => ({
+    top: naturalHeight + 4, left: 400, width: 200, height: 22,
+  }) };
+  h.window.DFL = { playSectionClasses: { CloudStatusRow: 'native-cloud-row' },
+    appDetailsHeaderClasses: { HeaderBackgroundImage: 'native-background' } };
+  h.hero.closest = selector => selector === '.native-background' ? h.hero : null;
+  h.document.elementFromPoint = (x, y) => x === 500 && y >= naturalHeight && y < naturalHeight + 6 ? label : null;
+  const computedStyle = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => element === h.hero ? {
+    ...computedStyle(element),
+    getPropertyValue: name => name === '--sdh-status-band-reserved' ? '1'
+      : name === '--CGV-image-height' ? '400px'
+        : name === '--sdh-status-band-height' ? values.get(name) || '' : '',
+  } : computedStyle(element);
+  h.hero.ownerDocument = h.document;
+  h.document.defaultView = h.window;
+
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452);
+  assert.equal(h.runtime.statusBackdrop.naturalHeight, 400);
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452);
+  const querySelectorAll = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('native-cloud-row') ? [band] : querySelectorAll(selector);
+  h.document.elementFromPoint = () => null;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.offsetHeight, 452, 'a covered row keeps its layout reservation without an inline paint extension');
+  assert.equal(h.runtime.statusBackdrop, undefined);
+
+  h.runtime.steamUnavailable = true;
+  h.runtime.ignFallback = null;
+  h.runtime.currentMediaSignature = undefined;
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 430, 'a final lookup failure returns the original theme reservation');
 });
 
 test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
@@ -747,6 +863,28 @@ test('Sleep, disabling trailers, and unload each restore a hidden native logo', 
   }
 });
 
+test('A queued enabled install cannot restore playback after owner conflict suspension', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ hideLogoDuringTrailer: true, clock, pageEnteredAt: clock.now });
+  clock.advance(3000);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '0');
+  const owner = h.window.__deckyMetadataTrailerOwner;
+  owner.settings = { ...owner.settings, enabled: false };
+  owner.settingsRevision = 1;
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  const serializedFactory = source.slice(start, end).replace(/^export\s+/, '');
+
+  vm.runInContext(`(${serializedFactory})({enabled:true,audioEnabled:true,quality:'auto',hideLogoDuringTrailer:true},
+    'test-owner', 0, {en:{}}, {pageAppId:570,sourceAppId:570})`, h.context);
+
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '1');
+  assert.equal(h.video, undefined);
+  await h.runtime.scan();
+  clock.advance(3000);
+  assert.equal(h.video, undefined);
+  h.runtime.destroy();
+});
+
 test('A denied wake resume restores artwork and does not retry on every scan', async () => {
   const h = await readyDirectTrailer({ failWake: true });
   const video = h.video;
@@ -1138,15 +1276,34 @@ test('Native Steam pages use their own ID; subpages and mismatched heroes make n
   assert.equal(h.getAttached().appId, 570);
 });
 
-test('An active standalone trailer marker blocks the Metadata overlay without taking ownership', async () => {
-  for (const marker of ['style', 'video']) {
-    const h = setup();
-    h.document.getElementById = id => marker === 'style' && id === 'decky-trailerhero-style' ? {} : null;
-    h.document.querySelector = selector => marker === 'video' && selector === '.decky-trailerhero-video' ? {} : null;
-    await h.runtime.scan();
-    assert.match(h.runtime.snapshot().status, /Another trailer plugin is active/);
-    assert.equal(h.runtime.currentVideo, undefined);
-  }
+test('Current TrailerHero residue stops owned playback and lets it resume only after removal', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, hideLogoDuringTrailer: true });
+  clock.advance(3000);
+  const ownedVideo = h.video;
+  assert.equal(ownedVideo.paused, false);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '0');
+  h.runtime.getTrailer = async () => ({
+    ok: true, name: 'Playable Steam trailer',
+    candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }],
+  });
+  let peerPresent = true;
+  h.document.querySelector = selector =>
+    peerPresent && selector === '.trailerhero-video' ? {} : null;
+
+  await h.runtime.scan();
+
+  assert.equal(ownedVideo.paused, true);
+  assert.equal(ownedVideo.isConnected, false);
+  assert.equal(h.video, undefined);
+  assert.equal(h.context.getComputedStyle(h.logo).opacity, '1');
+  peerPresent = false;
+  await h.runtime.scan();
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  clock.advance(3000);
+  assert.equal(h.video.isConnected, true);
+  assert.equal(h.video.paused, false);
+  h.runtime.destroy();
 });
 
 test('A failed Steam metadata visit stays terminal until the page is left or re-enabled', async () => {

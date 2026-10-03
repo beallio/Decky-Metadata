@@ -1,4 +1,3 @@
-import { findModuleChild } from "@decky/ui";
 import { cloneElement, createElement, isValidElement, useEffect, useState } from "react";
 import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
@@ -18,6 +17,11 @@ import {
   Unpatch,
 } from "./core";
 import { findSteamUiDocumentMatch, steamUiWindow } from "./steamUiHost";
+import {
+  findLiveModuleChild,
+  findSteamModuleBySource,
+  findSteamModulesBySource,
+} from "./steamUiModules";
 
 const DECK_DISPLAY = 1;
 
@@ -72,46 +76,6 @@ type MountedHomeGrid = {
   restore: () => boolean;
 };
 
-/**
- * Decky's module finder sees the observer/memo export, not LibraryItemBox's
- * renderer source. Query only webpack factory text, then load its one match.
- * This never walks React or MobX state.
- */
-const findSteamModulesBySource: ModuleSourceCandidatesFinder = (fragments) => {
-  const chunks = (steamUiWindow() as any).webpackChunksteamui;
-  if (!chunks?.push) return [];
-
-  let webpackRequire: any;
-  try {
-    chunks.push([[Symbol("decky-metadata-library-compatibility")], {}, (requireFn: any) => {
-      webpackRequire = requireFn;
-    }]);
-    const moduleIds = Object.keys(webpackRequire?.m ?? {}).filter((id) => {
-      const factory = webpackRequire.m[id];
-      const source = typeof factory === "function" ? factory.toString() : "";
-      return fragments.every((fragment) => source.includes(fragment));
-    });
-    return moduleIds.flatMap((moduleId) => {
-      try {
-        return [webpackRequire(moduleId)];
-      } catch {
-        return [];
-      }
-    });
-  } catch {
-    return [];
-  }
-};
-
-const findSteamModuleBySource: ModuleSourceFinder = (fragments) => {
-  const candidates = findSteamModulesBySource(fragments);
-  return candidates.length === 1 ? candidates[0] : undefined;
-};
-
-const findLiveModuleChild: ModuleFinder = (predicate) => {
-  const liveFinder = (steamUiWindow() as any).DFL?.findModuleChild;
-  return typeof liveFinder === "function" ? liveFinder(predicate) : findModuleChild(predicate);
-};
 
 const findOneSourceExport = (modules: any[], predicate: (module: any) => boolean): any | undefined => {
   const matches = modules.filter(predicate);
@@ -586,13 +550,10 @@ export const installLibraryCompatibilityIndicators = (
       renderedOverview?: { appid?: unknown },
     ) => {
       const overview = renderedOverview ?? dependencies.getOverview(appId);
-      if (
-        Number(overview?.appid) !== Number(appId) ||
-        !dependencies.isNativeNonSteamShortcut(overview)
-      ) {
-        return output;
-      }
-      return decorate(output, overview);
+      if (Number(overview?.appid) !== Number(appId)) return output;
+      return dependencies.isNativeNonSteamShortcut(overview)
+        ? decorate(output, overview)
+        : output;
     };
 
     const carouselWrapperFor = (carousel: any) => {

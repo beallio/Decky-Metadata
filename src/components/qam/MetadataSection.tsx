@@ -1,4 +1,6 @@
-import { ButtonItem, DropdownItem, Field, PanelSection, PanelSectionRow } from "@decky/ui";
+import { ButtonItem, Field, PanelSectionRow } from "@decky/ui";
+import { FaTags } from "react-icons/fa6";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 import {
   ButtonLabel,
@@ -9,35 +11,8 @@ import {
 } from "../../styles";
 import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
-import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
-const compatibilityDefaultOptions: Array<{
-  data: DeckCompatibilityCategory | null;
-  label: string;
-}> = [
-  { data: null, label: "Automatic — use matched Steam status" },
-  { data: 3, label: "Verified" },
-  { data: 2, label: "Playable" },
-  { data: 1, label: "Unsupported" },
-  { data: 0, label: "Unknown" },
-];
-
-const compatibilityDefaultScopeOptions: Array<{
-  data: CompatibilityDefaultScope;
-  label: string;
-}> = [
-  { data: "steam", label: "Steam-matched games" },
-  { data: "no-steam", label: "Saved games without a Steam ID" },
-  { data: "metadata", label: "All games with saved metadata" },
-  { data: "all", label: "All non-Steam games" },
-];
-
-const scopeDescription = (scope: CompatibilityDefaultScope) => ({
-  steam: "Applies to saved records with a valid Steam App ID.",
-  "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
-  metadata: "Applies to every saved metadata record, with or without a Steam ID.",
-  all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
-}[scope]);
+const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md } as const;
 
 type MetadataSectionProps = {
   detectedCount: number;
@@ -47,19 +22,12 @@ type MetadataSectionProps = {
   scanMessage: string;
   scanStatusKind: StatusKind;
   cacheBusy: boolean;
-  compatibilityDefault: DeckCompatibilityCategory | null;
-  compatibilityDefaultLoaded: boolean;
-  compatibilityDefaultBusy: boolean;
-  compatibilityDefaultError: string;
-  compatibilityDefaultScope: CompatibilityDefaultScope;
-  compatibilityDefaultScopeBusy: boolean;
+  delistedCountText: string;
+  delistedDateText?: string;
+  delistedBusy: boolean;
   onRefreshMetadata: () => void;
   onClearCache: () => void;
-  onCompatibilityDefaultChange: (category: DeckCompatibilityCategory | null) => void;
-  onCompatibilityDefaultScopeChange: (scope: CompatibilityDefaultScope) => void;
-  onCompatibilityDefaultMenuWillOpen: (origin: "category" | "scope") => void;
-  onCompatibilityDefaultControlRef: (element: HTMLDivElement | null) => void;
-  onCompatibilityDefaultScopeControlRef: (element: HTMLDivElement | null) => void;
+  onRefreshDelisted: () => void;
 };
 
 export function MetadataSection({
@@ -70,27 +38,18 @@ export function MetadataSection({
   scanMessage,
   scanStatusKind,
   cacheBusy,
-  compatibilityDefault,
-  compatibilityDefaultLoaded,
-  compatibilityDefaultBusy,
-  compatibilityDefaultError,
-  compatibilityDefaultScope,
-  compatibilityDefaultScopeBusy,
+  delistedCountText,
+  delistedDateText,
+  delistedBusy,
   onRefreshMetadata,
   onClearCache,
-  onCompatibilityDefaultChange,
-  onCompatibilityDefaultScopeChange,
-  onCompatibilityDefaultMenuWillOpen,
-  onCompatibilityDefaultControlRef,
-  onCompatibilityDefaultScopeControlRef,
+  onRefreshDelisted,
 }: MetadataSectionProps) {
   return (
-    <PanelSection title="Metadata">
+    <CollapsibleSection title="Metadata" icon={<FaTags size={16} />}>
       <PanelSectionRow>
         <Field
-          focusable={true}
-          highlightOnFocus={false}
-          preferredFocus={true}
+          focusable={false}
           childrenLayout="below"
           padding="standard"
           bottomSeparator="none"
@@ -106,65 +65,6 @@ export function MetadataSection({
               <b>{"Missing metadata"}:</b> {missingCount}
             </div>
           </div>
-        </Field>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div ref={onCompatibilityDefaultControlRef}>
-          <DropdownItem
-            label="Default compatibility status"
-            layout="below"
-            childrenContainerWidth="max"
-            rgOptions={compatibilityDefaultOptions}
-            selectedOption={compatibilityDefault}
-            disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
-            onMenuWillOpen={() => {
-              onCompatibilityDefaultMenuWillOpen("category");
-            }}
-            onChange={(option) => onCompatibilityDefaultChange(option.data)}
-          />
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div ref={onCompatibilityDefaultScopeControlRef}>
-          <DropdownItem
-            label="Apply default to"
-            layout="below"
-            childrenContainerWidth="max"
-            bottomSeparator="none"
-            rgOptions={compatibilityDefaultScopeOptions}
-            selectedOption={compatibilityDefaultScope}
-            disabled={
-              !compatibilityDefaultLoaded ||
-              compatibilityDefaultBusy ||
-              compatibilityDefaultScopeBusy ||
-              compatibilityDefault === null
-            }
-            onMenuWillOpen={() => onCompatibilityDefaultMenuWillOpen("scope")}
-            onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
-            renderButtonValue={() => (
-              <span style={{ whiteSpace: "normal" }}>
-                {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
-              </span>
-            )}
-          />
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <Field
-          focusable={false}
-          childrenLayout="below"
-          padding="none"
-          bottomSeparator="standard"
-        >
-          <div style={compactTextStyle}>
-            {`${scopeDescription(compatibilityDefaultScope)} Per-game choices take priority.`}
-          </div>
-          <div style={compactTextStyle}>
-            {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}
-          </div>
-          {compatibilityDefaultError ? (
-            <div style={inlineStatusStyle("error")}>{compatibilityDefaultError}</div>
-          ) : null}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
@@ -191,9 +91,9 @@ export function MetadataSection({
           focusable={false}
           childrenLayout="below"
           padding="none"
-          bottomSeparator="none"
+          bottomSeparator="standard"
         >
-          <div style={compactTextStyle}>
+          <div style={subsectionDescriptionStyle}>
             Find and save metadata for detected non-Steam games that do not have a match yet.
           </div>
         </Field>
@@ -222,11 +122,36 @@ export function MetadataSection({
           padding="none"
           bottomSeparator="standard"
         >
-          <div style={{ ...compactTextStyle, paddingBottom: space.md }}>
+          <div style={subsectionDescriptionStyle}>
             Clear saved matches and metadata so games can be matched again.
           </div>
         </Field>
       </PanelSectionRow>
-    </PanelSection>
+      <PanelSectionRow>
+        <div style={sectionHeadingStyle}>Delisted Steam games</div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          bottomSeparator="none"
+          disabled={delistedBusy}
+          onClick={onRefreshDelisted}
+        >
+          {delistedBusy ? (
+            <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
+          ) : (
+            "Refresh delisted games"
+          )}
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <div style={inlineStatusStyle("idle")}>{delistedCountText}</div>
+      </PanelSectionRow>
+      {delistedDateText ? (
+        <PanelSectionRow>
+          <div style={inlineStatusStyle("idle")}>{delistedDateText}</div>
+        </PanelSectionRow>
+      ) : null}
+    </CollapsibleSection>
   );
 }

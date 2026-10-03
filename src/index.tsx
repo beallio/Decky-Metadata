@@ -8,6 +8,13 @@ import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import { startTrailerController } from "./trailers/controller";
+import { startMiniAchievementsController } from "./steam/miniAchievementsController";
+import { protonDbBadgeController } from "./protondb/controller";
+import { installProtonDbCoverBadges } from "./protondb/covers";
+import { resetProtonDbAppIdResolution } from "./protondb/identity";
+import { installProtonDbGameView } from "./protondb/gameView";
+import { installProtonDbStoreBadge } from "./protondb/store";
+import { startPluginConflicts } from "./pluginConflicts";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -51,6 +58,7 @@ const installInPlaceReloadGuard = (onFailedReload: () => void) => {
 };
 
 export default definePlugin(() => {
+  const stopPluginConflicts = startPluginConflicts();
   beginCompatibilityLifecycle();
   let retainedReloadBaselines = false;
   const reloadGuard = installInPlaceReloadGuard(() => {
@@ -70,6 +78,8 @@ export default definePlugin(() => {
     log.warn("bridge", "compatibility default load failed", error)
   );
 
+  resetProtonDbAppIdResolution();
+  protonDbBadgeController.mount();
   let unpatchSteam: (() => void) | undefined;
   try {
     unpatchSteam = installSteamPatches();
@@ -81,6 +91,10 @@ export default definePlugin(() => {
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
   const stopTrailerController = startTrailerController();
+  const stopMiniAchievementsController = startMiniAchievementsController();
+  const stopProtonDbCovers = installProtonDbCoverBadges();
+  const stopProtonDbGameView = installProtonDbGameView();
+  const stopProtonDbStoreBadge = installProtonDbStoreBadge();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -96,6 +110,13 @@ export default definePlugin(() => {
     icon: <FaTags />,
     onDismount() {
       stopTrailerController();
+      stopMiniAchievementsController();
+      stopProtonDbCovers();
+      stopProtonDbStoreBadge();
+      stopProtonDbGameView();
+      protonDbBadgeController.stop();
+      stopPluginConflicts();
+      resetProtonDbAppIdResolution();
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.

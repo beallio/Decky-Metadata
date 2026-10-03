@@ -3,7 +3,7 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.3";
+    const runtimeVersion = "0.1.7";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -23,6 +23,47 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
     const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
     const translations = injectedTranslations || { en: {} };
+    let nativeStatusRowClass;
+    let nativeBackgroundClass;
+    const isStatusBand = (element) => {
+        if (!nativeStatusRowClass || !nativeBackgroundClass) {
+            const candidates = [window];
+            try { candidates.push(window.opener); } catch { }
+            try { if (window.parent !== window) candidates.push(window.parent); } catch { }
+            for (const candidate of candidates) {
+                try {
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow;
+                    if (typeof value === "string" && value) {
+                        nativeStatusRowClass = value;
+                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage;
+                        if (typeof background === "string" && background) nativeBackgroundClass = background;
+                        break;
+                    }
+                } catch { }
+            }
+        }
+        if (element.getAttribute?.("data-sdh-ludusavi-status-row") === "true" ||
+            element.getAttribute?.("data-sdh-ludusavi-artwork-band") === "true") return true;
+        return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
+    };
+    const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
+    const isPaintedStatusBand = (element) => {
+        if (element.getAttribute?.("aria-hidden") === "true") return false;
+        const band = element.getBoundingClientRect();
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            if (ancestor.hidden) return false;
+            const style = getComputedStyle(ancestor);
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0)) return false;
+            if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky")) return false;
+            if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
+                const bounds = ancestor.getBoundingClientRect();
+                if ((clipsOverflow(style.overflowX || style.overflow) && (band.left < bounds.left || band.right > bounds.right)) ||
+                    (clipsOverflow(style.overflowY || style.overflow) && (band.top < bounds.top || band.bottom > bounds.bottom))) return false;
+            }
+        }
+        return true;
+    };
     const safeMediaUrl = (value, base) => {
         if (typeof value !== "string" || !value.trim()) return null;
         let parsed;
@@ -596,7 +637,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.launchHeld = false;
             this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
-            this.handleResize = () => this.queueScan();
+            this.handleResize = () => {
+                if (this.currentTarget) {
+                    this.restoreStatusBackdrop();
+                    this.syncStatusBackdrop(this.currentTarget);
+                }
+                this.queueScan();
+            };
             this.handleRouteChange = () => {
                 if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
                     activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
@@ -666,34 +713,116 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 event.stopImmediatePropagation?.();
             };
         }
+        reservedBandHeight(target) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height")) return 0;
+            const value = Number.parseFloat(style.getPropertyValue("--sdh-status-band-height") || "30");
+            return Number.isFinite(value) ? Math.max(0, value) : 0;
+        }
+        reserveThemeBand(target, height) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height") || !nativeBackgroundClass) return;
+            const background = target.closest?.("." + nativeBackgroundClass);
+            if (!background) return;
+            if (this.reservationBackground !== background) this.releaseThemeBand();
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations ??= new WeakMap();
+            let reservation = reservations.get(background);
+            if (!reservation) {
+                reservation = {
+                    original: background.style.getPropertyValue("--sdh-status-band-height"),
+                    priority: background.style.getPropertyPriority("--sdh-status-band-height"),
+                    owner: this
+                };
+                reservations.set(background, reservation);
+            }
+            reservation.owner = this;
+            this.reservationBackground = background;
+            const value = height + "px";
+            if (background.style.getPropertyValue("--sdh-status-band-height") !== value ||
+                background.style.getPropertyPriority("--sdh-status-band-height") !== "") {
+                background.style.setProperty("--sdh-status-band-height", value);
+            }
+        }
+        releaseThemeBand() {
+            const background = this.reservationBackground;
+            this.reservationBackground = undefined;
+            if (!background) return;
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations;
+            const reservation = reservations?.get(background);
+            if (reservation?.owner !== this) return;
+            if (reservation.original) background.style.setProperty("--sdh-status-band-height", reservation.original, reservation.priority);
+            else background.style.removeProperty("--sdh-status-band-height");
+            reservations.delete(background);
+        }
         restoreStatusBackdrop() {
             const backdrop = this.statusBackdrop;
             if (!backdrop) return;
             this.statusBackdrop = undefined;
             backdrop.target.style.setProperty("height", backdrop.inlineHeight, backdrop.priority);
         }
+        statusBandLayoutHeight(element, hero, edge) {
+            if (!isStatusBand(element) || !element.textContent?.trim()) return 0;
+            const band = element.getBoundingClientRect();
+            if (element.offsetHeight <= 0 || Math.abs(band.top - edge) > 1 ||
+                Math.abs(band.width - hero.width) > 2) return 0;
+            const style = getComputedStyle(element);
+            const ownSuppression = element.getAttribute?.("data-sdh-ludusavi-paint-suppressed") === "true";
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ownSuppression) ||
+                style.position === "absolute" || style.position === "fixed" || style.position === "sticky") return 0;
+            return element.offsetHeight;
+        }
         syncStatusBackdrop(target) {
             if (this.statusBackdrop?.target !== target) this.restoreStatusBackdrop();
             if (!target?.style || typeof document.elementFromPoint !== "function") return;
-            const hero = target.getBoundingClientRect();
-            const naturalHeight = this.statusBackdrop?.naturalHeight ?? hero.height;
-            const edge = hero.top + naturalHeight;
-            let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
-            let bandHeight = 0;
-            while (element && element !== document.body) {
-                const band = element.getBoundingClientRect();
-                if (Math.abs(band.top - edge) <= 1 && Math.abs(band.width - hero.width) <= 2 &&
-                    band.height >= 24 && band.height <= 40 && element.textContent?.trim() &&
-                    element.getAttribute?.("aria-hidden") !== "true") {
-                    bandHeight = band.height;
-                    break;
-                }
-                element = element.parentElement;
-            }
-            if (!bandHeight) {
+            const layoutHeight = target.offsetHeight;
+            if (layoutHeight <= 0) {
                 this.restoreStatusBackdrop();
                 return;
             }
+            const hero = target.getBoundingClientRect();
+            // Steam scales the page on entry; only hit-testing uses screen heights.
+            const scaleY = hero.height / layoutHeight;
+            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
+            const edge = hero.top + naturalHeight * scaleY;
+            let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            let bandHeight = 0;
+            let reservationHeight = 0;
+            let hasStatusBand = false;
+            while (element && element !== document.body) {
+                if (isStatusBand(element)) hasStatusBand = true;
+                const height = this.statusBandLayoutHeight(element, hero, edge);
+                if (height) {
+                    reservationHeight = height;
+                    if (isPaintedStatusBand(element)) {
+                        bandHeight = height;
+                        break;
+                    }
+                }
+                element = element.parentElement;
+            }
+            if (!reservationHeight) {
+                // Occlusion must not change layout; paint still requires the hit-test above.
+                isStatusBand(target);
+                const selector = '[data-sdh-ludusavi-status-row="true"]' +
+                    (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
+                for (const row of document.querySelectorAll(selector)) {
+                    hasStatusBand = true;
+                    reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
+                    if (reservationHeight) break;
+                }
+            }
+            if (!bandHeight) {
+                this.restoreStatusBackdrop();
+                if (hasStatusBand) this.reserveThemeBand(target, reservationHeight);
+                else this.releaseThemeBand();
+                return;
+            }
+            this.reserveThemeBand(target, bandHeight);
             if (this.statusBackdrop?.bandHeight === bandHeight) return;
             if (this.statusBackdrop) {
                 this.statusBackdrop.bandHeight = bandHeight;
@@ -715,6 +844,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
+                if (document.head) {
+                    this.themeObserver = new MutationObserver(() => this.handleResize());
+                    this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
+                }
             }
             document.addEventListener("pointerdown", this.handleLaunchIntent, true);
             document.addEventListener("click", this.handleLaunchIntent, true);
@@ -772,6 +905,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!this.settings.enabled) {
                 this.pageEnteredAt = undefined;
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("disabled");
                 return this.snapshot();
             }
@@ -832,6 +966,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.destroyed = true;
             this.requestToken += 1;
             this.observer?.disconnect();
+            this.themeObserver?.disconnect();
             if (this.scanTimer) window.clearInterval(this.scanTimer);
             if (this.queuedScanTimer) window.clearTimeout(this.queuedScanTimer);
             for (const routeWindow of this.routeWindows ?? []) {
@@ -845,6 +980,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
             document.removeEventListener("visibilitychange", this.handleVisibilityChange);
             this.cleanupVideo(true);
+            this.releaseThemeBand();
             document.getElementById(styleId)?.remove();
         }
         installStyle() {
@@ -1027,6 +1163,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         async scan() {
             if (this.destroyed) return;
+            if (this.reservationBackground?.isConnected === false) this.releaseThemeBand();
             const owner = findOwnerRecord();
             if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
                 this.destroy();
@@ -1044,6 +1181,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.checkRootRoute();
             if (!this.settings.enabled) {
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("disabled");
                 return;
             }
@@ -1051,10 +1189,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.cleanupVideo(true);
                 return;
             }
-            if (document.getElementById("decky-trailerhero-style") ||
+            if (document.getElementById("trailerhero-style") ||
+                document.querySelector(".trailerhero-video") ||
+                document.getElementById("decky-trailerhero-style") ||
                 document.querySelector(".decky-trailerhero-video")) {
                 this.cleanupVideo(true);
-                this.status = "Another trailer plugin is active; remove it before enabling Metadata trailers";
+                this.status = "Another trailer plugin is still active. Disable it and reload Steam UI before using Metadata trailers.";
                 return;
             }
             if (this.launchHeld) {
@@ -1139,6 +1279,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pendingRequestToken = undefined;
             if (!trailer.ok || !trailer.candidates?.length) {
                 this.failedVisit = { appId, hero: hero.element };
+                this.releaseThemeBand();
                 this.status = trailer.error || rt("noGameTrailer");
                 return;
             }
@@ -1172,6 +1313,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!candidate.isCurrent()) return;
                 this.failedVisit = { appId, hero };
                 this.cleanupVideo(true);
+                this.releaseThemeBand();
                 this.status = rt("autoplayBlocked");
             });
         }
@@ -1334,6 +1476,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     }
                     this.failedVisit = { appId, hero: target };
                     this.cleanupVideo();
+                    this.releaseThemeBand();
                     this.status = rt("noGameTrailer");
                     return;
                 }

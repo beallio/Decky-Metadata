@@ -89,7 +89,7 @@ def test_capture_rejects_state_outside_tmp():
     result = subprocess.run(
         [str(ROOT / "scripts/deck/capture.sh")],
         cwd=ROOT,
-        env={**os.environ, "DECKY_TMP_ROOT": str(ROOT / "unsafe-capture")},
+        env={**os.environ, "DECKY_TMP_ROOT": "/var/unsafe-decky-capture"},
         text=True,
         capture_output=True,
     )

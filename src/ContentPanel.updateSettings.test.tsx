@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrailerControllerSnapshot } from "./trailers/controller";
+import type { ProtonDbBadgeSnapshot } from "./protondb/controller";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -59,11 +60,18 @@ const trailer = vi.hoisted(() => ({
     busy: false,
     settingsError: "",
     matchRevision: 0,
+    conflict: { pluginName: null, detectionAvailable: true },
+    effectiveEnabled: false,
   })),
   setEnabled: vi.fn(),
   setAudioEnabled: vi.fn(),
   setHideLogoDuringTrailer: vi.fn(),
   setQuality: vi.fn(),
+}));
+const protonDb = vi.hoisted(() => ({
+  getSnapshot: vi.fn<() => ProtonDbBadgeSnapshot>(),
+  subscribe: vi.fn(),
+  setSettings: vi.fn(),
 }));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
@@ -97,11 +105,13 @@ vi.mock("@decky/ui", () => ({
   showModal: ui.showModal,
 }));
 vi.mock("./backend", () => backend);
-vi.mock("./components/qam/DelistedIndexSection", () => ({
-  DelistedIndexSection: "DelistedIndexSection",
+vi.mock("./components/qam/CompatibilitySection", () => ({
+  CompatibilitySection: "CompatibilitySection",
 }));
 vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersSection: "GameTrailersSection" }));
 vi.mock("./components/qam/LogsSection", () => ({ LogsSection: "LogsSection" }));
+vi.mock("./components/qam/MiniAchievementsSection", () => ({ MiniAchievementsSection: "MiniAchievementsSection" }));
+vi.mock("./components/qam/ProtonDbBadgesSection", () => ({ ProtonDbBadgesSection: "ProtonDbBadgesSection" }));
 vi.mock("./components/qam/MetadataSection", () => ({
   MetadataSection: "MetadataSection",
 }));
@@ -121,6 +131,17 @@ vi.mock("./log", () => ({
 }));
 vi.mock("./steam", () => steam);
 vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
+vi.mock("./steam/miniAchievementsController", () => ({
+  miniAchievementsController: {
+    getSnapshot: () => ({
+      enabled: false, settingsLoaded: false, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
+    }),
+    subscribe: () => () => undefined,
+    setEnabled: vi.fn(),
+  },
+}));
+vi.mock("./protondb/controller", () => ({ protonDbBadgeController: protonDb }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({
@@ -173,8 +194,8 @@ const updateSection = (tree: any) =>
 const versionsSection = (tree: any) =>
   children(tree).find((node) => node.type === "VersionsSection");
 
-const metadataSection = (tree: any) =>
-  children(tree).find((node) => node.type === "MetadataSection");
+const compatibilitySection = (tree: any) =>
+  children(tree).find((node) => node.type === "CompatibilitySection");
 
 const gameTrailersSection = (tree: any) =>
   children(tree).find((node) => node.type === "GameTrailersSection");
@@ -225,6 +246,7 @@ const makeFocusControls = () => {
   const categoryButton = makeButton();
   const scopeButton = makeButton();
   const qualityButton = makeButton();
+  const protonDbButton = makeButton();
   const control = (button: typeof categoryButton) => ({
     ownerDocument: qamDocument,
     querySelector: vi.fn(() => button),
@@ -235,6 +257,8 @@ const makeFocusControls = () => {
   const scopeB = control(scopeButton);
   const qualityA = control(qualityButton);
   const qualityB = control(qualityButton);
+  const protonDbA = control(protonDbButton);
+  const protonDbB = control(protonDbButton);
   let navContextActive = true;
   const navigationTree = {
     Root: {
@@ -261,6 +285,14 @@ const makeFocusControls = () => {
             if (!navContextActive) return true;
             qualityButton.className = "gpfocus";
             qamDocument.activeElement = qualityButton;
+            return true;
+          },
+        },
+        {
+          Element: protonDbButton,
+          BTakeFocus: () => {
+            protonDbButton.className = "gpfocus";
+            qamDocument.activeElement = protonDbButton;
             return true;
           },
         },
@@ -302,6 +334,9 @@ const makeFocusControls = () => {
     categoryButton,
     scopeButton,
     qualityButton,
+    protonDbButton,
+    protonDbA,
+    protonDbB,
     focusNav,
     loseNavContext: () => {
       navContextActive = false;
@@ -342,7 +377,7 @@ const remountReturnedDropdown = async (origin: "category" | "scope" | "quality")
   render();
   runEffects();
   await flushPromises();
-  const first = metadataSection(render());
+  const first = compatibilitySection(render());
   const firstTrailers = gameTrailersSection(render());
   first.props.onCompatibilityDefaultControlRef(controls.categoryA);
   first.props.onCompatibilityDefaultScopeControlRef(controls.scopeA);
@@ -361,7 +396,7 @@ const remountReturnedDropdown = async (origin: "category" | "scope" | "quality")
   }
 
   remount();
-  const returned = metadataSection(render());
+  const returned = compatibilitySection(render());
   const returnedTrailers = gameTrailersSection(render());
   returned.props.onCompatibilityDefaultControlRef(controls.categoryB);
   returned.props.onCompatibilityDefaultScopeControlRef(controls.scopeB);
@@ -369,7 +404,7 @@ const remountReturnedDropdown = async (origin: "category" | "scope" | "quality")
   render();
   runEffects();
   await flushPromises();
-  return { controls, first, returned: () => metadataSection(render()) };
+  return { controls, first, returned: () => compatibilitySection(render()) };
 };
 
 describe("Content update settings", () => {
@@ -399,8 +434,19 @@ describe("Content update settings", () => {
       settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
       status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
       settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
     });
     trailer.setQuality.mockResolvedValue(true);
+    protonDb.getSnapshot.mockReturnValue({
+      settings: {
+        enabled: true, home: true, library: true, gameView: true, store: true,
+        focusOnly: false, coverPosition: "bottom-left",
+      },
+      settingsLoaded: true, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
+    });
+    protonDb.subscribe.mockReturnValue(() => undefined);
+    protonDb.setSettings.mockResolvedValue(true);
     games.loadGames.mockResolvedValue([]);
     steam.refreshMetadataCache.mockResolvedValue(undefined);
     steam.ensureCompatibilityDefault.mockResolvedValue(null);
@@ -427,6 +473,17 @@ describe("Content update settings", () => {
     clearCompatibilityDropdownReturn();
     clearCompatibilityPolicySave();
     vi.unstubAllGlobals();
+  });
+
+  it("picks up badge preferences that finish loading between panel render and subscription", () => {
+    const ready = protonDb.getSnapshot();
+    protonDb.getSnapshot.mockReturnValue({ ...ready, settingsLoaded: false, busy: true });
+    render();
+    protonDb.getSnapshot.mockReturnValue(ready);
+    runEffects();
+    const section = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    expect(section.props.snapshot.settingsLoaded).toBe(true);
+    expect(section.props.snapshot.busy).toBe(false);
   });
 
   it("falls back to defaults and marks settings loaded after a failed envelope", async () => {
@@ -477,7 +534,7 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    const loaded = metadataSection(render());
+    const loaded = compatibilitySection(render());
     expect(loaded.props.compatibilityDefault).toBe(3);
     expect(loaded.props.compatibilityDefaultLoaded).toBe(true);
     loaded.props.onCompatibilityDefaultChange(2);
@@ -485,7 +542,7 @@ describe("Content update settings", () => {
 
     expect(backend.setCompatibilityDefault).toHaveBeenCalledWith(2);
     expect(steam.setConfirmedCompatibilityDefault).toHaveBeenCalledWith(2, 1);
-    expect(metadataSection(render()).props.compatibilityDefault).toBe(2);
+    expect(compatibilitySection(render()).props.compatibilityDefault).toBe(2);
   });
 
   it("keeps the confirmed global compatibility default after a failed save", async () => {
@@ -496,10 +553,10 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    metadataSection(render()).props.onCompatibilityDefaultChange(2);
+    compatibilitySection(render()).props.onCompatibilityDefaultChange(2);
     await flushPromises();
 
-    const afterFailure = metadataSection(render());
+    const afterFailure = compatibilitySection(render());
     expect(afterFailure.props.compatibilityDefault).toBe(3);
     expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
     expect(steam.setConfirmedCompatibilityDefault).not.toHaveBeenCalled();
@@ -515,13 +572,13 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    metadataSection(render()).props.onCompatibilityDefaultChange(2);
+    compatibilitySection(render()).props.onCompatibilityDefaultChange(2);
     steam.isCompatibilityLifecycleCurrent.mockReturnValue(false);
     resolveSave(2);
     await flushPromises();
 
     expect(steam.setConfirmedCompatibilityDefault).not.toHaveBeenCalled();
-    expect(metadataSection(render()).props.compatibilityDefault).toBe(3);
+    expect(compatibilitySection(render()).props.compatibilityDefault).toBe(3);
   });
 
   it("recovers the mounted QAM when bootstrap later confirms the shared setting", async () => {
@@ -534,14 +591,14 @@ describe("Content update settings", () => {
     render();
     runEffects();
     await flushPromises();
-    expect(metadataSection(render()).props.compatibilityDefaultLoaded).toBe(false);
-    expect(metadataSection(render()).props.compatibilityDefaultError).toContain("initial load failed");
+    expect(compatibilitySection(render()).props.compatibilityDefaultLoaded).toBe(false);
+    expect(compatibilitySection(render()).props.compatibilityDefaultError).toContain("initial load failed");
 
     steam.compatibilityDefaultSnapshot.mockReturnValue(2);
     steam.compatibilityDefaultLoadedSnapshot.mockReturnValue(true);
     notify();
 
-    const recovered = metadataSection(render());
+    const recovered = compatibilitySection(render());
     expect(recovered.props.compatibilityDefault).toBe(2);
     expect(recovered.props.compatibilityDefaultLoaded).toBe(true);
     expect(recovered.props.compatibilityDefaultError).toBe("");
@@ -559,14 +616,14 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    const loaded = metadataSection(render());
+    const loaded = compatibilitySection(render());
     expect(loaded.props.compatibilityDefaultScope).toBe("all");
     loaded.props.onCompatibilityDefaultScopeChange("steam");
     await flushPromises();
 
     expect(backend.setCompatibilityDefaultScope).toHaveBeenCalledWith("steam");
     expect(steam.setConfirmedCompatibilityDefaultScope).toHaveBeenCalledWith("steam", 1);
-    expect(metadataSection(render()).props.compatibilityDefaultScope).toBe("steam");
+    expect(compatibilitySection(render()).props.compatibilityDefaultScope).toBe("steam");
   });
 
   it("restores the previous scope and reports the failure after a failed scope save", async () => {
@@ -577,10 +634,10 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    metadataSection(render()).props.onCompatibilityDefaultScopeChange("all");
+    compatibilitySection(render()).props.onCompatibilityDefaultScopeChange("all");
     await flushPromises();
 
-    const afterFailure = metadataSection(render());
+    const afterFailure = compatibilitySection(render());
     expect(afterFailure.props.compatibilityDefaultScope).toBe("metadata");
     expect(afterFailure.props.compatibilityDefaultError).toContain("disk unavailable");
     expect(steam.setConfirmedCompatibilityDefaultScope).not.toHaveBeenCalled();
@@ -605,17 +662,17 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    const loaded = metadataSection(render());
+    const loaded = compatibilitySection(render());
     loaded.props.onCompatibilityDefaultScopeChange("steam");
     // Controller activation can arrive again before React has rendered busy.
     loaded.props.onCompatibilityDefaultScopeChange("all");
-    metadataSection(render()).props.onCompatibilityDefaultChange(null);
+    compatibilitySection(render()).props.onCompatibilityDefaultChange(null);
     expect(backend.setCompatibilityDefaultScope).toHaveBeenCalledTimes(1);
     expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
 
     finishScope("steam");
     await flushPromises();
-    const saved = metadataSection(render());
+    const saved = compatibilitySection(render());
     expect(saved.props.compatibilityDefaultScope).toBe("steam");
     expect(saved.props.compatibilityDefault).toBe(3);
     expect(saved.props.compatibilityDefaultScopeBusy).toBe(false);
@@ -623,8 +680,8 @@ describe("Content update settings", () => {
     backend.setCompatibilityDefault.mockResolvedValue(null);
     saved.props.onCompatibilityDefaultChange(null);
     await flushPromises();
-    expect(metadataSection(render()).props.compatibilityDefault).toBeNull();
-    expect(metadataSection(render()).props.compatibilityDefaultScope).toBe("steam");
+    expect(compatibilitySection(render()).props.compatibilityDefault).toBeNull();
+    expect(compatibilitySection(render()).props.compatibilityDefaultScope).toBe("steam");
   });
 
   it("keeps a deferred scope save busy and visible after the QAM remounts", async () => {
@@ -700,6 +757,24 @@ describe("Content update settings", () => {
     expect(controls.scopeButton.className).not.toContain("gpfocus");
   });
 
+  it("releases the dropdown handoff when B leaves visible QAM, not while its popup is open", async () => {
+    const { controls } = await remountReturnedDropdown("quality");
+    render();
+    runEffects();
+    controls.flushFrames();
+    expect(controls.qualityButton.className).toContain("gpfocus");
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+
+    const qamDocument = controls.qualityButton.ownerDocument;
+    qamDocument.visibilityState = "hidden";
+    controls.dispatchButtonDown(2);
+    expect(hasCompatibilityDropdownReturn()).toBe(true);
+
+    qamDocument.visibilityState = "visible";
+    controls.dispatchButtonDown(2);
+    expect(hasCompatibilityDropdownReturn()).toBe(false);
+  });
+
   it("keeps the focus handoff armed when the controller opens the quality popup", async () => {
     const { controls, returned } = await remountReturnedDropdown("quality");
     returned();
@@ -739,6 +814,29 @@ describe("Content update settings", () => {
     expect(controls.qualityButton.className).toContain("gpfocus");
   });
 
+  it("returns native focus to the ProtonDB cover position after selecting a corner", async () => {
+    const controls = makeFocusControls();
+    render();
+    runEffects();
+    await flushPromises();
+    const first = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    first.props.onCoverPositionMenuWillOpen();
+    first.props.onCoverPositionControlRef(controls.protonDbA);
+    first.props.onCoverPositionControlRef(null);
+    await first.props.onCoverPositionChange("top-right");
+    remount();
+    const returned = children(render()).find(node => node.type === "ProtonDbBadgesSection");
+    expect(returned.props.initiallyExpanded).toBe(true);
+    returned.props.onCoverPositionControlRef(controls.protonDbB);
+    render();
+    runEffects();
+    await flushPromises();
+    controls.flushFrames();
+    expect(controls.protonDbButton.className).toContain("gpfocus");
+    expect(controls.qualityButton.className).not.toContain("gpfocus");
+    expect(controls.categoryButton.className).not.toContain("gpfocus");
+  });
+
   it("keeps an async Auto handoff through remount and releases on navigation after status churn", async () => {
     const controls = makeFocusControls();
     controls.delayNativeFocusUntil(24);
@@ -752,6 +850,7 @@ describe("Content update settings", () => {
       busy: false,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     render();
     runEffects();
@@ -776,6 +875,7 @@ describe("Content update settings", () => {
       busy: true,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     remount();
     let returned = gameTrailersSection(render());
@@ -798,6 +898,7 @@ describe("Content update settings", () => {
       busy: false,
       settingsError: "",
       matchRevision: 0,
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,
     });
     remount();
     returned = gameTrailersSection(render());
@@ -871,7 +972,7 @@ describe("Content update settings", () => {
     render();
     runEffects();
     await flushPromises();
-    const first = metadataSection(render());
+    const first = compatibilitySection(render());
     first.props.onCompatibilityDefaultMenuWillOpen("scope");
     first.props.onCompatibilityDefaultScopeChange("metadata");
 
@@ -881,7 +982,7 @@ describe("Content update settings", () => {
     renderReloaded();
     runEffects();
     await flushPromises();
-    const pending = metadataSection(renderReloaded());
+    const pending = compatibilitySection(renderReloaded());
     expect(pending.props.compatibilityDefaultScopeBusy).toBe(true);
     pending.props.onCompatibilityDefaultChange(2);
     expect(backend.setCompatibilityDefault).not.toHaveBeenCalled();
@@ -890,14 +991,14 @@ describe("Content update settings", () => {
     await flushPromises();
     renderReloaded();
     runEffects();
-    const settled = metadataSection(renderReloaded());
+    const settled = compatibilitySection(renderReloaded());
     expect(settled.props.compatibilityDefault).toBe(3);
     expect(settled.props.compatibilityDefaultScope).toBe("metadata");
     expect(settled.props.compatibilityDefaultScopeBusy).toBe(false);
 
     confirmedCategory = null;
     revisionListeners.forEach((listener) => listener());
-    const automatic = metadataSection(renderReloaded());
+    const automatic = compatibilitySection(renderReloaded());
     expect(automatic.props.compatibilityDefault).toBeNull();
     expect(automatic.props.compatibilityDefaultScope).toBe("metadata");
     expect(automatic.props.compatibilityDefaultScopeBusy).toBe(false);
@@ -912,19 +1013,19 @@ describe("Content update settings", () => {
     render();
     runEffects();
     await flushPromises();
-    metadataSection(render()).props.onCompatibilityDefaultScopeChange("steam");
+    compatibilitySection(render()).props.onCompatibilityDefaultScopeChange("steam");
 
     const renderReloaded = await importReloadedContent();
     renderReloaded();
     runEffects();
     await flushPromises();
-    expect(metadataSection(renderReloaded()).props.compatibilityDefaultScopeBusy).toBe(true);
+    expect(compatibilitySection(renderReloaded()).props.compatibilityDefaultScopeBusy).toBe(true);
 
     save.reject(new Error("disk unavailable"));
     await flushPromises();
     renderReloaded();
     runEffects();
-    const failed = metadataSection(renderReloaded());
+    const failed = compatibilitySection(renderReloaded());
     expect(failed.props.compatibilityDefaultScopeBusy).toBe(false);
     expect(failed.props.compatibilityDefaultScope).toBe("all");
     expect(failed.props.compatibilityDefaultError).toContain("disk unavailable");
@@ -935,7 +1036,7 @@ describe("Content update settings", () => {
     runEffects();
     await flushPromises();
 
-    const section = metadataSection(render());
+    const section = compatibilitySection(render());
     section.props.onCompatibilityDefaultMenuWillOpen("category");
     expect(compatibilityDropdownReturnOrigin()).toBe("category");
     section.props.onCompatibilityDefaultMenuWillOpen("scope");

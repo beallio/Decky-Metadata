@@ -4,6 +4,58 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-03
+
+Add ProtonDB badges, mini achievements, and collapsible settings
+
+### Added
+
+- **ProtonDB badges.** Optional community ratings on Home and Library covers,
+  game pages, and Steam Store pages. Each view has its own switch, with cover
+  position and focus/hover controls. Select a game-page or Store badge to open
+  its reports. Ratings are shared across views and cached for 24 hours; games
+  without a match or tier stay hidden, and lookup errors are not Borked ratings.
+- **Mini achievements.** A default-off setting restores Steam's small
+  achievement progress bar beside Play Time. It uses Steam's own data and
+  does not add achievement tracking to non-Steam games.
+- **Collapsible Quick Access Menu sections.** Select a heading or press A to
+  show its controls. Versions starts open; other sections start closed.
+  Background update checks continue while Updates is closed.
+- **Known plugin conflict guards.** Metadata pauses badges while ProtonDB
+  Badges is active, trailers while TrailerHero is active, and mini achievements
+  while Decky UI Restored is active. The panel names the peer. Detection checks
+  plugin activity, not the peer's individual settings. Saved choices resume
+  when the conflict clears unless you turn our switch off while paused.
+  Residual TrailerHero players also prevent duplicate trailer playback.
+
+### Changed
+
+- Quick Access Menu headings have larger text and icons. Compatibility choices,
+  version values, and help text are easier to read.
+- Metadata cache and Delisted Steam games are grouped inside Metadata.
+  Game counts no longer take controller focus.
+- Sections no longer draw a divider after their final control; internal
+  dividers and spacing make the tool groups clearer.
+- The README gives a short product tour. Detailed help covers ProtonDB
+  controls, matching, mini achievements, and plugin conflict behavior.
+
+### Fixed
+
+- Section headings stay in view when D-pad focus reaches them below expanded
+  controls or long help notes. Dropdown cancellation and return preserve focus.
+- Trailers keep a stable height when a game page opens or closes with a visible
+  save-status bar, including after a theme is turned off and on. Taller
+  full-width bars get more trailer space; hidden, compact, or moved indicators
+  do not add extra space. Steam's normal page animation still plays.
+- ProtonDB badges stay with their native covers and controls during page
+  animations and remain available on Library tabs, including Non-Steam.
+- Non-Steam badges prefer a valid saved Metadata Steam App ID, then a title
+  lookup. Correcting or clearing the match updates visible badges without
+  retaining the previous game's rating.
+- Project skill installation checks the destination repository correctly when
+  invoked from a Git hook, without bypassing external-worktree protection.
+
+
 ## [0.4.0] - 2026-09-28
 
 Add opt-in game trailer streaming with Steam-first playback and an IGN fallback.

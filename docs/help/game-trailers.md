@@ -4,7 +4,7 @@ Decky Metadata can show a game trailer over its Library hero artwork. It leaves 
 
 ## Turn on trailers
 
-Open the Quick Access Menu, open Decky Metadata, and find the **Game trailers** section. Turn on **Enabled**; trailers are off by default. Then open a game's main Library page to watch its trailer when one is available.
+Open the Quick Access Menu, open Decky Metadata, and select **Game trailers** to open that section. Turn on **Enabled**; trailers are off by default. Then open a game's main Library page to watch its trailer when one is available.
 
 Decky Metadata checks for a playable Steam trailer first. If Steam has none, it looks for a suitable IGN game trailer. If neither source has a suitable video, the game artwork stays visible.
 
@@ -19,7 +19,9 @@ Find these settings in the **Game trailers** section:
 - **Trailer fade-in delay** controls how long the artwork remains before a ready trailer appears. The default is three seconds. Choose from 0 to 10 seconds; at 0, the trailer appears as soon as it is ready.
 - **Hide game logo during trailers** hides Steam's game logo while the trailer is visible. The logo returns when playback stops or fails, or when you leave the game page. This does not hide a logo shown inside the video.
 
-If Steam shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. When the bar is hidden or you leave the game page, the artwork returns to its usual size.
+If Steam or SDH-Ludusavi shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. It follows the bar's actual height, including when a theme makes the bar taller. A hidden, compact, or moved indicator does not add full-width trailer space. When you leave the game page, the artwork returns to its usual size. This does not change the trailer's fit, position, or playback.
+
+The artwork and trailer keep the same height as Steam opens or closes the page, including when you turn the status theme off and on before opening it. Steam's normal page animation still plays; switching to the trailer does not add another size change.
 
 ## Use the controller buttons
 
@@ -34,6 +36,20 @@ When the game page is visible, Steam's footer shows the **X** and **Y** actions.
 
 Trailers stream from Steam or IGN. Decky Metadata does not download them for offline playback.
 
-If you have the separate **TrailerHero** Decky plugin installed, uninstall it before turning on **Enabled** for Decky Metadata's **Game trailers**. The two trailer plugins conflict.
+If **TrailerHero** is enabled in Decky Loader, Decky Metadata pauses its trailers
+and prevents turning them on. The **Game trailers** section tells you to disable
+TrailerHero. Disable it in Decky Loader; hiding it from the menu is not enough.
+
+Your trailer settings stay saved. If **Enabled** was on, trailers resume when
+TrailerHero is disabled or removed. You can turn **Enabled** off while paused
+to keep Metadata's trailers off.
+
+TrailerHero 1.7.1 can leave its player running after you disable it. If **Big
+Picture display** says another trailer plugin is still active, finish any
+running game and restart Steam after disabling or removing TrailerHero.
+Metadata waits until the old player is gone instead of starting a second one.
+
+If Metadata cannot check other plugins, it shows a warning instead of blocking
+trailers. Check manually that TrailerHero is disabled before enabling ours.
 
 [Help home](README.md)

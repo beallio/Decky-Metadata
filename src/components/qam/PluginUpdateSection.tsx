@@ -7,14 +7,14 @@ import {
   ButtonItem,
   ConfirmModal,
   Field,
-  PanelSection,
   PanelSectionRow,
   showModal,
   ToggleField,
   Spinner,
   Navigation
 } from "@decky/ui";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { CollapsibleSection } from "./CollapsibleSection";
+import { FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
 import { IoMdRefresh } from "react-icons/io";
 
 import { PluginUpdateCandidate, UpdateChannel } from "../../types";
@@ -171,10 +171,11 @@ export function PluginUpdateSection({
     : undefined;
 
   return (
-    <PanelSection title="Updates">
+    <CollapsibleSection title="Updates" icon={<FaSyncAlt size={16} />}>
       <PanelSectionRow>
         <Field
           label="Installed Version"
+          childrenLayout="below"
           padding="standard"
           focusable={true}
           highlightOnFocus={true}
@@ -305,6 +306,7 @@ export function PluginUpdateSection({
       <PanelSectionRow>
           <ButtonItem
             layout="below"
+            bottomSeparator="none"
             onClick={() => checkNow()}
             disabled={isChecking || isInstalling}
           >
@@ -318,6 +320,6 @@ export function PluginUpdateSection({
             </div>
           </ButtonItem>
       </PanelSectionRow>
-    </PanelSection>
+    </CollapsibleSection>
   );
 }

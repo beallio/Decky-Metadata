@@ -1,7 +1,7 @@
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "./types";
 
 type CompatibilityPolicySaveKind = "category" | "scope";
-type CompatibilityDropdownOrigin = "category" | "scope" | "quality";
+type CompatibilityDropdownOrigin = "category" | "scope" | "quality" | "protondb-cover-position";
 
 type CompatibilityPolicySave = {
   id: number;

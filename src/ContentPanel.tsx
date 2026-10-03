@@ -25,13 +25,15 @@ import {
   setUpdateChannel,
   startScanMissing,
 } from "./backend";
-import { DelistedIndexSection } from "./components/qam/DelistedIndexSection";
+import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
+import { MiniAchievementsSection } from "./components/qam/MiniAchievementsSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
+import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
@@ -81,6 +83,8 @@ import {
 import { useNonSteamGames } from "./useNonSteamGames";
 import { getConnectedControllerTypes } from "./steam";
 import { trailerController } from "./trailers/controller";
+import { miniAchievementsController } from "./steam/miniAchievementsController";
+import { protonDbBadgeController } from "./protondb/controller";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -91,6 +95,7 @@ const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
 const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
+const GAMEPAD_BACK_BUTTON = 2;
 
 type NativeFocusNode = {
   Element?: Element;
@@ -207,6 +212,17 @@ export const Content = () => {
   useEffect(() => trailerController.subscribe(() => {
     setTrailerSnapshot(trailerController.getSnapshot());
   }), []);
+  const [miniAchievementsSnapshot, setMiniAchievementsSnapshot] = useState(miniAchievementsController.getSnapshot());
+  useEffect(() => miniAchievementsController.subscribe(() => {
+    setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
+  }), []);
+  const [protonDbSnapshot, setProtonDbSnapshot] = useState(protonDbBadgeController.getSnapshot());
+  useEffect(() => {
+    const refresh = () => setProtonDbSnapshot(protonDbBadgeController.getSnapshot());
+    const unsubscribe = protonDbBadgeController.subscribe(refresh);
+    refresh();
+    return unsubscribe;
+  }, []);
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const initialPendingCompatibilityPolicySave =
     initialCompatibilityPolicySave
@@ -259,6 +275,7 @@ export const Content = () => {
   const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] =
     useState<HTMLDivElement | null>(null);
   const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
+  const [protonDbCoverControl, setProtonDbCoverControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -273,6 +290,10 @@ export const Content = () => {
   const setTrailerQualityControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setTrailerQualityControlState(element);
+  }, []);
+  const setProtonDbCoverControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setProtonDbCoverControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -304,7 +325,7 @@ export const Content = () => {
   }, []);
 
   useEffect(() => {
-    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl;
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl || protonDbCoverControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -322,7 +343,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -335,10 +356,8 @@ export const Content = () => {
         if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn()) return;
         initialPanelFocusComplete.current = true;
         takeNativeFocus(element);
-        // Taking focus scrolls the summary up, hiding the panel's "Metadata"
-        // title (Steam's gamepad focus scroll ignores CSS scroll-padding). The
-        // summary is the first row, so snap the viewport back to the top on
-        // entry to keep the title visible.
+        // Native focus can scroll QAM past its title. Keep the panel header
+        // visible when the initial focus settles.
         const viewport = findScrollViewport(element);
         if (viewport) {
           window.requestAnimationFrame(() => {
@@ -353,11 +372,12 @@ export const Content = () => {
     const origin = compatibilityDropdownReturnOrigin();
     const control = origin === "scope"
       ? compatibilityDefaultScopeControl
-      : origin === "quality" ? trailerQualityControl : compatibilityDefaultControl;
-    const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded : compatibilityDefaultLoaded;
-    const busy = origin === "quality"
-      ? trailerSnapshot.busy
-      : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+      : origin === "quality" ? trailerQualityControl
+      : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+    const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
+      : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+    const busy = origin === "quality" ? trailerSnapshot.busy
+      : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
     if (!isCompatibilityDropdownReturnReady() || !control) return;
     let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
       ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
@@ -388,7 +408,11 @@ export const Content = () => {
     const handleUserNavigation = (event: Event) => {
       if (event.type === "vgp_onbuttondown") {
         const button = Number((event as CustomEvent).detail?.button);
-        if (GAMEPAD_DIRECTION_BUTTONS.has(button)) releaseFocusLease();
+        // B exits a visible QAM page; the native popup hides QAM while B cancels it.
+        if (GAMEPAD_DIRECTION_BUTTONS.has(button)
+          || (button === GAMEPAD_BACK_BUTTON && qamDocument.visibilityState === "visible")) {
+          releaseFocusLease();
+        }
         return;
       }
       if (event.type === "pointerdown") {
@@ -461,6 +485,9 @@ export const Content = () => {
     trailerQualityControl,
     trailerSnapshot.busy,
     trailerSnapshot.settingsLoaded,
+    protonDbCoverControl,
+    protonDbSnapshot.busy,
+    protonDbSnapshot.settingsLoaded,
   ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
@@ -832,6 +859,11 @@ export const Content = () => {
       ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
       : "";
 
+  // A native dropdown remounts QAM; reopen its section before restoring focus.
+  const returningDropdown = hasCompatibilityDropdownReturn()
+    ? compatibilityDropdownReturnOrigin()
+    : null;
+
   return (
     <Focusable
       ref={focusPanel}
@@ -847,21 +879,52 @@ export const Content = () => {
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}
+        delistedCountText={delistedCountText}
+        delistedDateText={delistedDateText}
+        delistedBusy={delistedBusy}
+        onRefreshMetadata={() => void scanMissing()}
+        onClearCache={() => void clearCache()}
+        onRefreshDelisted={() => void refreshDelisted()}
+      />
+      <CompatibilitySection
+        initiallyExpanded={returningDropdown === "category" || returningDropdown === "scope"}
         compatibilityDefault={compatibilityDefault}
         compatibilityDefaultLoaded={compatibilityDefaultLoaded}
         compatibilityDefaultBusy={compatibilityDefaultBusy}
         compatibilityDefaultError={compatibilityDefaultError}
         compatibilityDefaultScope={compatibilityDefaultScope}
         compatibilityDefaultScopeBusy={compatibilityDefaultScopeBusy}
-        onRefreshMetadata={() => void scanMissing()}
-        onClearCache={() => void clearCache()}
         onCompatibilityDefaultChange={(category) => void saveCompatibilityDefault(category)}
         onCompatibilityDefaultScopeChange={(scope) => void saveCompatibilityDefaultScope(scope)}
         onCompatibilityDefaultMenuWillOpen={requestCompatibilityDropdownReturn}
         onCompatibilityDefaultControlRef={setCompatibilityDefaultControl}
         onCompatibilityDefaultScopeControlRef={setCompatibilityDefaultScopeControl}
       />
+      <ProtonDbBadgesSection
+        initiallyExpanded={returningDropdown === "protondb-cover-position"}
+        snapshot={protonDbSnapshot}
+        onSettingsChange={(settings) => protonDbBadgeController.setSettings(settings)}
+        onCoverPositionChange={async (coverPosition) => {
+          requestCompatibilityDropdownReturn("protondb-cover-position");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            return await protonDbBadgeController.setSettings({
+              ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+            });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) {
+              setCompatibilityDropdownReturnVersion(version => version + 1);
+            }
+          }
+        }}
+        onCoverPositionMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("protondb-cover-position");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
+        onCoverPositionControlRef={setProtonDbCoverControl}
+      />
       <GameTrailersSection
+        initiallyExpanded={returningDropdown === "quality"}
         state={trailerSnapshot}
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
@@ -884,11 +947,9 @@ export const Content = () => {
         }}
         onQualityControlRef={setTrailerQualityControl}
       />
-      <DelistedIndexSection
-        countText={delistedCountText}
-        dateText={delistedDateText}
-        busy={delistedBusy}
-        onRefresh={() => void refreshDelisted()}
+      <MiniAchievementsSection
+        state={miniAchievementsSnapshot}
+        onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
       />
       <LogsSection
         logsBusy={logsBusy}
