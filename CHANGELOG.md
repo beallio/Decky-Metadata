@@ -10,7 +10,8 @@ Correct metadata summaries, release dates, and Library UI behavior
 
 - Metadata imports and Game Info use the source's short summary first, with
   readable longer text as a fallback. Manual text, literal angle brackets, and
-  paragraph/list spacing are preserved. Unrelated saves and automatic Steam-name
+  paragraph/list spacing are preserved, including after delayed metadata loads
+  and while Game Info pages close. Unrelated saves and automatic Steam-name
   lookups keep saved descriptions and dates. Clearing a description while a
   Steam match loads also keeps it cleared.
 - Steam dates accept both English month-first and day-first forms. New and

@@ -1,4 +1,4 @@
-import { currentRoutePath, gameDetailAppIdFromPath, getOverview, isCurrentGameInfoRoute, isNativeNonSteamShortcut, metadataCache, type Unpatch } from "./core";
+import { currentRoutePath, gameDetailAppIdFromPath, getOverview, isCurrentGameInfoRoute, isNativeNonSteamShortcut, metadataCache, subscribeCompatibilityRevision, subscribeMetadataMatchChanges, type Unpatch } from "./core";
 import { findLiveModuleChild } from "./steamUiModules";
 import { steamUiDocuments, steamUiWindow } from "./steamUiHost";
 
@@ -46,6 +46,7 @@ export type DescriptionPresentationDependencies = {
   ownerAppId: (owner: HTMLElement) => number;
   visible: (owner: HTMLElement) => boolean;
   listen: (callback: () => void) => Unpatch;
+  revisions: (callback: () => void) => Unpatch;
   observe: (target: Node, callback: () => void) => Unpatch;
   visibility?: (owner: HTMLElement, callback: () => void) => Unpatch;
   schedule: (callback: () => void, delay: number) => number;
@@ -71,6 +72,10 @@ const defaultDependencies = (): DescriptionPresentationDependencies => {
         callback();
       }) ?? (() => {});
     },
+    revisions: (callback) => {
+      const stops = [subscribeCompatibilityRevision(callback), subscribeMetadataMatchChanges(callback)];
+      return () => stops.forEach((stop) => stop());
+    },
     observe: (target, callback) => {
       const observer = new MutationObserver(callback);
       observer.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
@@ -95,50 +100,51 @@ export const installMetadataDescriptions = (
   const classes = dependencies.classes();
   if (!classes || !selector(classes.owner) || !selector(classes.description)) return;
   let disposed = false;
-  let owner: HTMLElement | undefined;
-  let ownerAppId = 0;
-  let ownerStops: Unpatch[] = [];
+  type Owner = {
+    appId: number;
+    stops: Unpatch[];
+    originals: Map<HTMLElement, { marker: string | null; spacing: string; priority: string }>;
+  };
+  const owners = new Map<HTMLElement, Owner>();
   let discoveryStops: Unpatch[] = [];
   let discoveryExpiry: number | undefined;
-  const originals = new Map<HTMLElement, { marker: string | null; spacing: string; priority: string }>();
-  const restore = (leaf: HTMLElement) => {
-    const original = originals.get(leaf);
+  const restore = (record: Owner, leaf: HTMLElement) => {
+    const original = record.originals.get(leaf);
     if (!original) return;
     if (original.marker === null) leaf.removeAttribute(MARKER);
     else leaf.setAttribute(MARKER, original.marker);
     if (original.spacing) leaf.style.setProperty("white-space", original.spacing, original.priority);
     else leaf.style.removeProperty("white-space");
-    originals.delete(leaf);
+    record.originals.delete(leaf);
   };
   const stopDiscovery = () => {
     discoveryStops.splice(0).forEach((stop) => stop());
     if (discoveryExpiry !== undefined) dependencies.cancel(discoveryExpiry);
     discoveryExpiry = undefined;
   };
-  const releaseOwner = () => {
-    ownerStops.splice(0).forEach((stop) => stop());
-    for (const leaf of originals.keys()) restore(leaf);
-    owner = undefined;
-    ownerAppId = 0;
+  const releaseOwner = (owner: HTMLElement, record: Owner) => {
+    record.stops.splice(0).forEach((stop) => stop());
+    for (const leaf of record.originals.keys()) restore(record, leaf);
+    owners.delete(owner);
   };
-  const refreshOwner = () => {
-    if (!owner) return;
-    if (!dependencies.visible(owner) || dependencies.ownerAppId(owner) !== ownerAppId || !dependencies.eligible(ownerAppId)) {
-      releaseOwner();
+  const refreshOwner = (owner: HTMLElement, record: Owner) => {
+    if (!dependencies.visible(owner) || dependencies.ownerAppId(owner) !== record.appId || !dependencies.eligible(record.appId)) {
+      releaseOwner(owner, record);
       return;
     }
     const leaves = Array.from(owner.querySelectorAll<HTMLElement>(selector(classes.description)));
-    for (const leaf of originals.keys()) if (!leaves.includes(leaf)) restore(leaf);
+    for (const leaf of record.originals.keys()) if (!leaves.includes(leaf)) restore(record, leaf);
     for (const leaf of leaves) {
-      if (!originals.has(leaf)) originals.set(leaf, {
+      if (!record.originals.has(leaf)) record.originals.set(leaf, {
         marker: leaf.getAttribute(MARKER),
         spacing: leaf.style.getPropertyValue("white-space"),
         priority: leaf.style.getPropertyPriority("white-space"),
       });
-      if (leaf.getAttribute(MARKER) !== String(ownerAppId)) leaf.setAttribute(MARKER, String(ownerAppId));
+      if (leaf.getAttribute(MARKER) !== String(record.appId)) leaf.setAttribute(MARKER, String(record.appId));
       if (leaf.style.getPropertyValue("white-space") !== "pre-wrap" || leaf.style.getPropertyPriority("white-space") !== "important") leaf.style.setProperty("white-space", "pre-wrap", "important");
     }
   };
+  const hasCurrentOwner = (appId: number) => Array.from(owners.values()).some((record) => record.appId === appId);
   const discover = () => {
     if (disposed) return;
     const route = dependencies.route();
@@ -147,47 +153,46 @@ export const installMetadataDescriptions = (
     for (const doc of dependencies.documents()) {
       const matched = Array.from(doc.querySelectorAll<HTMLElement>(selector(classes.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
       if (!matched) continue;
-      releaseOwner();
-      owner = matched;
-      ownerAppId = appId;
       stopDiscovery();
-      ownerStops.push(dependencies.observe(matched, refreshOwnerAndRecover));
-      if (dependencies.visibility) ownerStops.push(dependencies.visibility(matched, refreshOwnerAndRecover));
-      refreshOwner();
+      // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
+      if (!owners.has(matched)) {
+        const record: Owner = { appId, stops: [], originals: new Map() };
+        owners.set(matched, record);
+        const refresh = () => {
+          if (disposed) return;
+          refreshOwner(matched, record);
+          if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId)) reconcile();
+        };
+        record.stops.push(dependencies.observe(matched, refresh));
+        if (dependencies.visibility) record.stops.push(dependencies.visibility(matched, refresh));
+        refreshOwner(matched, record);
+      }
       return;
     }
   };
   const reconcile = () => {
+    if (disposed) return;
     stopDiscovery();
-    refreshOwner();
+    for (const [owner, record] of owners) refreshOwner(owner, record);
     const route = dependencies.route();
     const appId = gameDetailAppIdFromPath(route);
     if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId)) return;
-    if (owner && ownerAppId === appId) return;
+    if (hasCurrentOwner(appId)) return;
     discover();
-    if (owner && ownerAppId === appId) return;
+    if (hasCurrentOwner(appId)) return;
     // Discovery exists only while entering this exact Game Info surface. It
     // expires even if Steam never mounts the expected owner.
     for (const doc of dependencies.documents()) if (doc.body) discoveryStops.push(dependencies.observe(doc.body, discover));
     discoveryExpiry = dependencies.schedule(stopDiscovery, 2000);
   };
-  const refreshOwnerAndRecover = () => {
-    const previousAppId = ownerAppId;
-    refreshOwner();
-    if (!disposed && !owner && previousAppId > 0 &&
-        isCurrentGameInfoRoute(dependencies.route(), previousAppId) && dependencies.eligible(previousAppId)) {
-      // Steam can replace the entire Game Info owner without changing route.
-      // Reuse the bounded entry discovery rather than leaving a document-wide
-      // observer resident after the old owner disappears.
-      reconcile();
-    }
-  };
   const unlisten = dependencies.listen(reconcile);
+  const unsubscribeRevisions = dependencies.revisions(reconcile);
   unpatchers.push(() => {
     disposed = true;
     unlisten();
+    unsubscribeRevisions();
     stopDiscovery();
-    releaseOwner();
+    for (const [owner, record] of owners) releaseOwner(owner, record);
   });
   reconcile();
 };

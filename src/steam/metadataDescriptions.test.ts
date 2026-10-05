@@ -3,7 +3,7 @@ vi.mock("@decky/ui", () => ({ findModuleChild: vi.fn() }));
 vi.mock("@decky/api", () => ({ callable: vi.fn(() => vi.fn()) }));
 import { descriptionOwnerAppId, installMetadataDescriptions, type DescriptionPresentationDependencies } from "./metadataDescriptions";
 
-const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number } = {}) => {
+const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number; hydrateOnSubscribe?: boolean } = {}) => {
   const makeLeaf = () => {
     const values = new Map<string, [string, string]>([["white-space", ["normal", ""]]]);
     const attributes = new Map<string, string>();
@@ -25,19 +25,27 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
   let ownerVisible = true;
   let route = "/library/app/10/tab/GameInfo";
   let eligible = options.allowed ?? true;
+  const ownerIds = new Map<HTMLElement, number>();
+  const hiddenOwners = new Set<HTMLElement>();
+  let outgoing: HTMLElement[] = [];
   let mounted = !options.delayed;
-  let owner = { isConnected: true, querySelectorAll: () => [leaf] } as unknown as HTMLElement;
+  const initialLeaf = leaf;
+  let owner = { isConnected: true, querySelectorAll: () => [outgoing.length ? initialLeaf : leaf] } as unknown as HTMLElement;
+  ownerIds.set(owner, appId);
+  let revisionListener = () => {};
+  const unsubscribeRevision = vi.fn(() => { revisionListener = () => {}; });
   const observers: Array<{ target: Node; callback: () => void; active: boolean }> = [];
   let routeListener = () => {};
   let expire = () => {};
-  const doc = { body: {}, querySelectorAll: () => mounted ? [owner] : [] } as unknown as Document;
+  const doc = { body: {}, querySelectorAll: () => mounted ? [...outgoing, owner] : [] } as unknown as Document;
   const dependencies: DescriptionPresentationDependencies = {
     documents: () => [doc],
     classes: () => ({ owner: "info", description: "description" }),
     route: () => route,
-    eligible: (id) => eligible && id === appId,
-    ownerAppId: () => appId,
-    visible: (candidate) => candidate.isConnected && ownerVisible,
+    eligible: () => eligible,
+    ownerAppId: (candidate) => ownerIds.get(candidate) ?? 0,
+    visible: (candidate) => candidate.isConnected && !hiddenOwners.has(candidate) && (candidate !== owner || ownerVisible),
+    revisions: (callback) => { revisionListener = callback; if (options.hydrateOnSubscribe) eligible = true; return unsubscribeRevision; },
     listen: (callback) => { routeListener = callback; return vi.fn(); },
     observe: (target, callback) => {
       const record = { target, callback, active: true };
@@ -50,7 +58,7 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
   dependencies.visibility = dependencies.observe;
   const unpatchers: Array<() => void> = [];
   installMetadataDescriptions(unpatchers, dependencies);
-  return { owner, dependencies, observers, unpatchers, expire: () => expire(),
+  return { owner, dependencies, unsubscribeRevision, observers, unpatchers, expire: () => expire(),
     mount: () => { mounted = true; observers.filter((o) => o.active).forEach((o) => o.callback()); }, leaf: () => leaf,
     changeRoute: (value: string) => { route = value; routeListener(); },
     replace: () => { const old = leaf; leaf = makeLeaf(); observers.filter((o) => o.active).forEach((o) => o.callback()); return old; },
@@ -59,12 +67,29 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
       const previousLeaf = leaf;
       Object.defineProperty(previousOwner, "isConnected", { value: false });
       owner = { isConnected: true, querySelectorAll: () => [leaf] } as unknown as HTMLElement;
+      ownerIds.set(owner, appId);
       leaf = makeLeaf();
       observers.filter((o) => o.active).forEach((o) => o.callback());
       return previousLeaf;
     },
     remove: () => { ownerVisible = false; observers.filter((o) => o.active).forEach((o) => o.callback()); },
-    scope: (id: number, allowed: boolean) => { appId = id; eligible = allowed; routeListener(); },
+    scope: (id: number, allowed: boolean) => { appId = id; ownerIds.set(owner, id); eligible = allowed; revisionListener(); },
+    hydrate: () => { eligible = true; revisionListener(); },
+    nextOwner: (id: number) => {
+      const previousOwner = owner;
+      const previousLeaf = leaf;
+      outgoing.push(owner);
+      appId = id;
+      leaf = makeLeaf();
+      const nextLeaf = leaf;
+      owner = { isConnected: true, querySelectorAll: () => [nextLeaf] } as unknown as HTMLElement;
+      ownerIds.set(owner, id);
+      route = `/library/app/${id}/tab/GameInfo`;
+      routeListener();
+      return { owner: previousOwner, leaf: previousLeaf,
+        hide: () => { hiddenOwners.add(previousOwner); observers.filter((o) => o.active).forEach((o) => o.callback()); },
+      };
+    },
   };
 };
 
@@ -96,6 +121,45 @@ describe("native description presentation ownership", () => {
     const unmatched = harness({ allowed: false });
     expect(unmatched.observers.filter((o) => o.active)).toHaveLength(0);
     expect(unmatched.leaf().getAttribute("data-decky-metadata-description")).toBeNull();
+  });
+  it("attaches after metadata hydration and restores removed eligibility without navigation", () => {
+    const h = harness({ allowed: false });
+    expect(h.observers.filter((o) => o.active)).toHaveLength(0);
+    h.hydrate();
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("10");
+    h.scope(10, false);
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBeNull();
+    expect(h.leaf().style.getPropertyValue("white-space")).toBe("normal");
+    expect(h.observers.filter((o) => o.active)).toHaveLength(0);
+    h.hydrate();
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("10");
+    h.unpatchers.forEach((cleanup) => cleanup());
+    expect(h.unsubscribeRevision).toHaveBeenCalledTimes(1);
+    h.hydrate();
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBeNull();
+  });
+  it("catches up metadata that arrives while the revision listener is installed", () => {
+    const h = harness({ allowed: false, hydrateOnSubscribe: true });
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("10");
+    h.unpatchers.forEach((cleanup) => cleanup());
+    expect(h.observers.filter((o) => o.active)).toHaveLength(0);
+  });
+  it("keeps both visible transition owners formatted and restores each independently", () => {
+    const h = harness();
+    const outgoing = h.nextOwner(11);
+    expect(outgoing.leaf.getAttribute("data-decky-metadata-description")).toBe("10");
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("11");
+    expect(h.observers.filter((o) => o.active)).toHaveLength(4);
+    outgoing.hide();
+    expect(outgoing.leaf.getAttribute("data-decky-metadata-description")).toBeNull();
+    expect(outgoing.leaf.style.getPropertyValue("white-space")).toBe("normal");
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("11");
+    expect(h.observers.filter((o) => o.active)).toHaveLength(2);
+    const next = h.nextOwner(12);
+    h.unpatchers.forEach((cleanup) => cleanup());
+    expect(next.leaf.getAttribute("data-decky-metadata-description")).toBeNull();
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBeNull();
+    expect(h.observers.filter((o) => o.active)).toHaveLength(0);
   });
   it("owns the exact eligible Game Info leaf and preserves plain text", () => {
     const h = harness();

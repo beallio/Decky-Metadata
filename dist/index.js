@@ -5622,6 +5622,10 @@ const defaultDependencies$1 = () => {
                 callback();
             }) ?? (() => { });
         },
+        revisions: (callback) => {
+            const stops = [subscribeCompatibilityRevision(callback), subscribeMetadataMatchChanges(callback)];
+            return () => stops.forEach((stop) => stop());
+        },
         observe: (target, callback) => {
             const observer = new MutationObserver(callback);
             observer.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
@@ -5644,14 +5648,11 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
     if (!classes || !selector(classes.owner) || !selector(classes.description))
         return;
     let disposed = false;
-    let owner;
-    let ownerAppId = 0;
-    let ownerStops = [];
+    const owners = new Map();
     let discoveryStops = [];
     let discoveryExpiry;
-    const originals = new Map();
-    const restore = (leaf) => {
-        const original = originals.get(leaf);
+    const restore = (record, leaf) => {
+        const original = record.originals.get(leaf);
         if (!original)
             return;
         if (original.marker === null)
@@ -5662,7 +5663,7 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
             leaf.style.setProperty("white-space", original.spacing, original.priority);
         else
             leaf.style.removeProperty("white-space");
-        originals.delete(leaf);
+        record.originals.delete(leaf);
     };
     const stopDiscovery = () => {
         discoveryStops.splice(0).forEach((stop) => stop());
@@ -5670,37 +5671,35 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
             dependencies.cancel(discoveryExpiry);
         discoveryExpiry = undefined;
     };
-    const releaseOwner = () => {
-        ownerStops.splice(0).forEach((stop) => stop());
-        for (const leaf of originals.keys())
-            restore(leaf);
-        owner = undefined;
-        ownerAppId = 0;
+    const releaseOwner = (owner, record) => {
+        record.stops.splice(0).forEach((stop) => stop());
+        for (const leaf of record.originals.keys())
+            restore(record, leaf);
+        owners.delete(owner);
     };
-    const refreshOwner = () => {
-        if (!owner)
-            return;
-        if (!dependencies.visible(owner) || dependencies.ownerAppId(owner) !== ownerAppId || !dependencies.eligible(ownerAppId)) {
-            releaseOwner();
+    const refreshOwner = (owner, record) => {
+        if (!dependencies.visible(owner) || dependencies.ownerAppId(owner) !== record.appId || !dependencies.eligible(record.appId)) {
+            releaseOwner(owner, record);
             return;
         }
         const leaves = Array.from(owner.querySelectorAll(selector(classes.description)));
-        for (const leaf of originals.keys())
+        for (const leaf of record.originals.keys())
             if (!leaves.includes(leaf))
-                restore(leaf);
+                restore(record, leaf);
         for (const leaf of leaves) {
-            if (!originals.has(leaf))
-                originals.set(leaf, {
+            if (!record.originals.has(leaf))
+                record.originals.set(leaf, {
                     marker: leaf.getAttribute(MARKER),
                     spacing: leaf.style.getPropertyValue("white-space"),
                     priority: leaf.style.getPropertyPriority("white-space"),
                 });
-            if (leaf.getAttribute(MARKER) !== String(ownerAppId))
-                leaf.setAttribute(MARKER, String(ownerAppId));
+            if (leaf.getAttribute(MARKER) !== String(record.appId))
+                leaf.setAttribute(MARKER, String(record.appId));
             if (leaf.style.getPropertyValue("white-space") !== "pre-wrap" || leaf.style.getPropertyPriority("white-space") !== "important")
                 leaf.style.setProperty("white-space", "pre-wrap", "important");
         }
     };
+    const hasCurrentOwner = (appId) => Array.from(owners.values()).some((record) => record.appId === appId);
     const discover = () => {
         if (disposed)
             return;
@@ -5712,28 +5711,40 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
             const matched = Array.from(doc.querySelectorAll(selector(classes.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
             if (!matched)
                 continue;
-            releaseOwner();
-            owner = matched;
-            ownerAppId = appId;
             stopDiscovery();
-            ownerStops.push(dependencies.observe(matched, refreshOwnerAndRecover));
-            if (dependencies.visibility)
-                ownerStops.push(dependencies.visibility(matched, refreshOwnerAndRecover));
-            refreshOwner();
+            // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
+            if (!owners.has(matched)) {
+                const record = { appId, stops: [], originals: new Map() };
+                owners.set(matched, record);
+                const refresh = () => {
+                    if (disposed)
+                        return;
+                    refreshOwner(matched, record);
+                    if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId))
+                        reconcile();
+                };
+                record.stops.push(dependencies.observe(matched, refresh));
+                if (dependencies.visibility)
+                    record.stops.push(dependencies.visibility(matched, refresh));
+                refreshOwner(matched, record);
+            }
             return;
         }
     };
     const reconcile = () => {
+        if (disposed)
+            return;
         stopDiscovery();
-        refreshOwner();
+        for (const [owner, record] of owners)
+            refreshOwner(owner, record);
         const route = dependencies.route();
         const appId = gameDetailAppIdFromPath(route);
         if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
             return;
-        if (owner && ownerAppId === appId)
+        if (hasCurrentOwner(appId))
             return;
         discover();
-        if (owner && ownerAppId === appId)
+        if (hasCurrentOwner(appId))
             return;
         // Discovery exists only while entering this exact Game Info surface. It
         // expires even if Steam never mounts the expected owner.
@@ -5742,23 +5753,15 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
                 discoveryStops.push(dependencies.observe(doc.body, discover));
         discoveryExpiry = dependencies.schedule(stopDiscovery, 2000);
     };
-    const refreshOwnerAndRecover = () => {
-        const previousAppId = ownerAppId;
-        refreshOwner();
-        if (!disposed && !owner && previousAppId > 0 &&
-            isCurrentGameInfoRoute(dependencies.route(), previousAppId) && dependencies.eligible(previousAppId)) {
-            // Steam can replace the entire Game Info owner without changing route.
-            // Reuse the bounded entry discovery rather than leaving a document-wide
-            // observer resident after the old owner disappears.
-            reconcile();
-        }
-    };
     const unlisten = dependencies.listen(reconcile);
+    const unsubscribeRevisions = dependencies.revisions(reconcile);
     unpatchers.push(() => {
         disposed = true;
         unlisten();
+        unsubscribeRevisions();
         stopDiscovery();
-        releaseOwner();
+        for (const [owner, record] of owners)
+            releaseOwner(owner, record);
     });
     reconcile();
 };
