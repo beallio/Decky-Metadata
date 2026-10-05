@@ -501,7 +501,7 @@ export class TrailerController {
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
       try { await ensureMetadataCache(); }
       catch { return { identity: null, status: "Saved Steam matches are not available" }; }
-      if (!this.mounted) return { identity: null, status: "Disabled" };
+      if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
     }
     const metadata = metadataCache[String(pageAppId)] ?? null;
     const resolved = resolveTrailerSource({

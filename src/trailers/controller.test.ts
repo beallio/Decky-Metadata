@@ -25,6 +25,7 @@ vi.mock("../steam/metadataPatch", () => ({ ensureMetadataCache: vi.fn(async () =
 
 import { DEFAULT_TRAILER_SETTINGS, TrailerController } from "./controller";
 import type { TrailerSettings } from "../types";
+import { ensureMetadataCache } from "../steam/metadataPatch";
 
 const nativeOverview = (appid: number) => ({ appid, app_type: 1 });
 const flush = async () => { for (let index = 0; index < 12; index += 1) await Promise.resolve(); };
@@ -62,6 +63,8 @@ const mountController = (settings: Partial<TrailerSettings> = { enabled: true },
 describe("TrailerController behavior", () => {
   beforeEach(() => {
     steam.route = "/routes/library/app/570";
+    steam.metadataState.metadataLoaded = true;
+    vi.mocked(ensureMetadataCache).mockReset().mockResolvedValue(undefined);
     steam.overview.clear();
     steam.metadataCache = {};
     steam.currentRoutePath.mockImplementation(() => steam.route);
@@ -107,6 +110,34 @@ describe("TrailerController behavior", () => {
     expect(controller.identity).toEqual({ pageAppId: 730, sourceAppId: 730 });
     expect(steam.getNativeOverview).toHaveBeenCalledWith(730);
     expect(backend.evalInBigPicture).not.toHaveBeenCalled();
+    controller.stop();
+  });
+
+  it("does not read a shortcut source after Off while metadata hydration is pending", async () => {
+    const shortcutId = 0x80000010;
+    steam.route = `/routes/library/app/${shortcutId}`;
+    steam.overview.set(shortcutId, { appid: shortcutId, app_type: 1073741824, display_name: "Fixture" });
+    steam.metadataState.metadataLoaded = false;
+    const hydrated = deferred<void>();
+    vi.mocked(ensureMetadataCache).mockReturnValue(hydrated.promise);
+    let sourceReads = 0;
+    steam.metadataCache[String(shortcutId)] = {
+      get steam_appid() { sourceReads++; return 570; },
+    };
+    const controller = mountController({ enabled: true });
+    const pendingIdentity = controller.refreshPageIdentity();
+    await flush();
+    await controller.setEnabled(false);
+    steam.metadataState.metadataLoaded = true;
+    hydrated.resolve();
+    await pendingIdentity;
+    expect(sourceReads).toBe(0);
+    expect(controller.identity).toBeNull();
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
+    await controller.setEnabled(true);
+    await flush();
+    expect(sourceReads).toBeGreaterThan(0);
+    expect(controller.identity).toEqual({ pageAppId: shortcutId, sourceAppId: 570 });
     controller.stop();
   });
 

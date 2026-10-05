@@ -12292,7 +12292,7 @@ class TrailerController {
             catch {
                 return { identity: null, status: "Saved Steam matches are not available" };
             }
-            if (!this.mounted)
+            if (!this.isEffectivelyEnabled())
                 return { identity: null, status: "Disabled" };
         }
         const metadata = metadataCache[String(pageAppId)] ?? null;
