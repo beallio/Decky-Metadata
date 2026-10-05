@@ -145,9 +145,14 @@ const documents = (): Document[] => {
 const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
-  return owner?.active && runtime?.ownerId === owner.ownerId
-    ? runtime.snapshot()
-    : { status: 'Steam UI unavailable', runtimeMissing: true };
+  if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
+    return { status: 'Steam UI unavailable', runtimeMissing: true };
+  }
+  // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
+  if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
+    return runtime.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
+  }
+  return runtime.snapshot();
 })()`;
 
 export class TrailerController {
@@ -393,6 +398,7 @@ export class TrailerController {
     const direct = this.updateReachableRuntimes();
     this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
     this.emit();
+    if (!direct) void this.runInSteamTab(runtimeMissingScript);
     if (!direct && this.isEffectivelyEnabled()) void this.poll();
 
     let succeeded = true;
@@ -414,7 +420,7 @@ export class TrailerController {
         this.settings = { ...this.confirmedSettings };
         this.settingsRevision += 1;
         this.publishOwner();
-        this.updateReachableRuntimes();
+        if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript);
         this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
         this.status = "Trailer settings were restored";
       }

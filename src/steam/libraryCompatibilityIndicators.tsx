@@ -1038,6 +1038,9 @@ export const installNativeGridCompatibilityDispatcher = (
       useEffect(() => {
         const update = () => setRevision((revision) => revision + 1);
         created.listeners.add(update);
+        // Hydration can publish after render but before this passive effect.
+        // Catch up once attached, as the regular compatibility hook does.
+        update();
         return () => { created.listeners.delete(update); };
       }, []);
       return created.render?.(props) ?? null;
@@ -1052,6 +1055,9 @@ export const installNativeGridCompatibilityDispatcher = (
   current.owner = owner;
   current.decorate = options.decorate;
   current.render = options.render;
+  // Decky's chain-aware unpatch can remove a predecessor while our wrapper
+  // stays mounted. Reuse its current chain, never the installation snapshot.
+  current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
   if (target.type === current.original && current.wrapper) {
     target.type = current.wrapper;
   } else if (target.type !== current.wrapper) {
@@ -1072,6 +1078,7 @@ export const installNativeGridCompatibilityDispatcher = (
     current.render = undefined;
     // Restore only our exact head. A peer wrapper published later remains.
     // The captured dispatcher stays inert in Steam's mounted memo cache.
+    current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
     if (target.type === current.wrapper) target.type = current.original;
     publish();
   };

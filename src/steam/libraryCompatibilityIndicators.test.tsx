@@ -1,5 +1,6 @@
 import * as ReactModule from "react";
 import { describe, expect, it, vi } from "vitest";
+import { afterPatch } from "@decky/ui/dist/utils/patcher";
 
 const { createElement, Fragment } = ReactModule;
 
@@ -1749,6 +1750,61 @@ describe("native memo grid dispatcher reload ownership", () => {
     const native = icon?.type(icon.props);
     return native?.type(native.props).props.children ?? null;
   };
+  it("catches metadata published between a null render and passive subscription", () => {
+    const target = makeTarget();
+    const listeners = new Set<() => void>();
+    let category: number | null = null;
+    const cleanup = installNativeGridCompatibilityDispatcher(target, {
+      patch,
+      decorate: (_args, output, Owned) => decorateGridCompatibility(output, Native, Owned, "grid-icons", "grid-compat"),
+      render: () => category === null ? null : createElement(Native, { category }),
+      subscribeRevision: (listener) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    });
+    reactHooks.effects.length = 0;
+    const cachedCard = target.type();
+    expect(renderedCategory(cachedCard)).toBeNull();
+    category = 3;
+    listeners.forEach((listener) => listener());
+    reactHooks.setRevision.mockClear();
+    const unmount = reactHooks.effects[0]();
+    expect(reactHooks.setRevision).toHaveBeenCalledOnce();
+    expect(renderedCategory(cachedCard)).toBe(3);
+    if (typeof unmount === "function") unmount();
+    cleanup();
+  });
+  it("does not restore a removed Decky predecessor on unload or reload", () => {
+    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
+    try {
+      const target = makeTarget();
+      const original = target.type;
+      const append = (label: string) => (_args: any[], output: any) =>
+        createElement("div", { ...output.props }, ...[output.props.children].flat(), label);
+      const retained = afterPatch(target, "type", append("retained-controller"));
+      const retiredHandler = vi.fn(append("retired-controller"));
+      const retired = afterPatch(target, "type", retiredHandler);
+      const options = {
+        patch: (component: any, handler: (args: any[], output: any) => any) =>
+          afterPatch(component, "type", handler).unpatch,
+        decorate: (_args: any[], output: any, Owned: any) =>
+          decorateGridCompatibility(output, Native, Owned, "grid-icons", "grid-compat"),
+        render: () => createElement(Native, { category: 3 }),
+        subscribeRevision: () => () => {},
+      };
+      const firstCleanup = installNativeGridCompatibilityDispatcher(target, options);
+      const mountedMemo = target.type;
+      retired.unpatch();
+      expect(renderedCategory(mountedMemo())).toBe(3);
+      firstCleanup();
+      expect(target.type().props.children).toEqual(["controller", "retained-controller"]);
+      const cleanup = installNativeGridCompatibilityDispatcher(target, options);
+      expect(renderedCategory(target.type())).toBe(3);
+      expect(target.type().props.children.slice(0, 2)).toEqual(["controller", "retained-controller"]);
+      expect(retiredHandler).not.toHaveBeenCalled();
+      cleanup();
+      retained.unpatch();
+      expect(target.type).toBe(original);
+    } finally { debug.mockRestore(); }
+  });
   it("keeps a mounted memo closure live across repeated plugin reloads and inert on unload", () => {
     const target = makeTarget();
     const original = target.type;

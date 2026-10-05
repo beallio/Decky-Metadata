@@ -179,13 +179,26 @@ def description_html_to_text(value: str) -> str:
     """Convert provider markup once, before it crosses the plain-text boundary."""
     text = re.sub(r"\s+", " ", str(value or ""))
     text = re.sub(r"<(script|style)\b[^>]*>.*?</\1\s*>", "", text, flags=re.I | re.S)
-    text = re.sub(r"<li\b[^>]*>", "\n- ", text, flags=re.I)
-    text = re.sub(r"</li\s*>", "", text, flags=re.I)
+    # Keep item boundaries until markup and entities have been converted. An
+    # empty/image-only item must not manufacture a nonempty description.
+    item_start, item_end = "\x00li\x00", "\x00/li\x00"
+    text = re.sub(r"<li\b[^>]*>", item_start, text, flags=re.I)
+    text = re.sub(r"</li\s*>", item_end, text, flags=re.I)
     text = re.sub(r"</?(?:p|div|h[1-6])\b[^>]*>", "\n\n", text, flags=re.I)
     text = re.sub(r"</?(?:ul|ol)\b[^>]*>", "\n", text, flags=re.I)
     text = re.sub(r"<br\b[^>]*>", "\n", text, flags=re.I)
     text = re.sub(r"<[^>]+>", "", text)
     text = html.unescape(text)
+    empty_item = re.escape(item_start) + r"\s*" + re.escape(item_end)
+    while True:
+        without_empty_items = re.sub(empty_item, "", text)
+        if without_empty_items == text:
+            break
+        text = without_empty_items
+    # A parent with only a nested list has no separate text to mark.
+    text = re.sub(re.escape(item_start) + r"\s*(?=" + re.escape(item_start) + ")", "", text)
+    text = re.sub(re.escape(item_start) + r"\s*", "\n- ", text)
+    text = text.replace(item_end, "")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)
     return re.sub(r"\n{3,}", "\n\n", text).strip()

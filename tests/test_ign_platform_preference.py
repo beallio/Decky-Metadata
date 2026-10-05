@@ -220,3 +220,19 @@ def test_ign_primary_description_chooses_cleaned_summary(short, long, expected):
     result = ign.game_to_metadata({"metadata": {"names": {"name": "Game"}, "descriptions": {"short": short, "long": long}}})
     assert result["description"] == expected
     assert result["short_description"] == expected
+
+
+@pytest.mark.parametrize(("short", "long", "expected"), [
+    ("<ul><li></li></ul>", "Readable fallback", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></li></ul>", "", ""),
+])
+def test_ign_empty_list_descriptions_do_not_block_fallback(short, long, expected):
+    result = ign.game_to_metadata({"metadata": {"names": {"name": "Game"}, "descriptions": {"short": short, "long": long}}})
+    assert result["description"] == expected
+    assert result["short_description"] == expected
+
+
+def test_ign_short_only_description_retains_category_inference():
+    result = ign.game_to_metadata({"metadata": {"names": {"name": "Game"}, "descriptions": {"short": "A multiplayer co-op game"}}})
+    assert result["description"] == "A multiplayer co-op game"
+    assert result["store_categories"] == [1, 36, 9, 38]

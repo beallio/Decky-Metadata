@@ -1,5 +1,23 @@
 // @ts-nocheck -- the serialized player is exercised through deliberately dynamic CEF/MSE fixtures.
-import { it as test } from "vitest";
+import { it as test, vi } from "vitest";
+
+const bridgeControllerBackend = vi.hoisted(() => ({
+  evalInBigPicture: vi.fn(),
+  setTrailerSettings: vi.fn(async settings => settings),
+  getTrailerSettings: vi.fn(),
+  findIgnTrailer: vi.fn(),
+}));
+vi.mock("../backend", () => bridgeControllerBackend);
+vi.mock("../steam/core", () => ({
+  currentRoutePath: () => "/routes/library/app/570",
+  getNativeOverview: () => ({ appid: 570, app_type: 1 }),
+  isNativeNonSteamShortcut: () => false,
+  metadataCache: {}, metadataState: { metadataLoaded: true },
+  metadataMatchRevisionSnapshot: () => 0,
+  subscribeMetadataMatchChanges: () => () => {},
+}));
+vi.mock("../steam/metadataPatch", () => ({ ensureMetadataCache: async () => {} }));
+import { TrailerController } from "./controller";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -2035,4 +2053,53 @@ test('On to Off removes monitoring and ignores queued callbacks and late media, 
   assert.equal([...h.listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0), activeListeners);
   h.runtime.destroy();
   assert.equal(h.clock.intervals.size, 0);
+});
+
+
+test('Bridge-only Steam runtime resumes one real player after Off and On between controller polls', async () => {
+  const h = await monitoredTrailerFixture();
+  const sharedWindow = {
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    addEventListener() {}, removeEventListener() {},
+  };
+  vi.stubGlobal('window', sharedWindow);
+  vi.stubGlobal('document', { documentElement: {}, defaultView: sharedWindow });
+  const controller = new TrailerController();
+  Object.assign(controller, {
+    mounted: true, settingsLoaded: true, ownerId: 'test-owner',
+    settings: { ...h.runtime.settings }, confirmedSettings: { ...h.runtime.settings },
+    identity: { pageAppId: 570, sourceAppId: 570 },
+  });
+  controller.publishOwner();
+  h.window.opener = sharedWindow;
+  delete h.window.__deckyMetadataTrailerOwner;
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  bridgeControllerBackend.evalInBigPicture.mockImplementation(async code => vm.runInContext(code, h.context));
+  try {
+    h.runtime.mount();
+    for (let index = 0; index < 30; index++) await Promise.resolve();
+    assert.ok(h.runtime.currentVideo?.isConnected);
+    const initialVideos = h.createdVideos;
+    await controller.setEnabled(false);
+    // Also model Off arriving through the last owner scan before it suspends.
+    await h.runtime.scan();
+    assert.equal(h.runtime.settings.enabled, false);
+    assert.equal(h.runtime.currentVideo, undefined);
+    assert.equal(h.clock.intervals.size, 0);
+    assert.equal(controller.identity.pageAppId, 570);
+    await controller.setEnabled(true);
+    for (let index = 0; index < 40; index++) await Promise.resolve();
+    await controller.poll();
+    assert.equal(h.runtime.settings.enabled, true);
+    assert.ok(h.runtime.currentVideo?.isConnected);
+    assert.equal(h.runtime.currentTarget, h.hero);
+    assert.equal(h.createdVideos, initialVideos + 1);
+    assert.equal(h.clock.intervals.size, 1);
+    assert.equal(h.observers.filter(observer => observer.connected).length, 2);
+  } finally {
+    controller.stop();
+    h.runtime.destroy();
+    vi.unstubAllGlobals();
+    bridgeControllerBackend.evalInBigPicture.mockReset();
+  }
 });

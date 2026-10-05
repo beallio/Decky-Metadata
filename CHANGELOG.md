@@ -11,7 +11,8 @@ Correct metadata summaries, release dates, and Library UI behavior
 - Metadata imports and Game Info use the source's short summary first, with
   readable longer text as a fallback. Manual text, literal angle brackets, and
   paragraph/list spacing are preserved. Unrelated saves and automatic Steam-name
-  lookups keep saved descriptions and dates.
+  lookups keep saved descriptions and dates. Clearing a description while a
+  Steam match loads also keeps it cleared.
 - Steam dates accept both English month-first and day-first forms. New and
   edited dates keep the local calendar day; clearing a date also clears it from
   Game Info. Correct or re-import an affected
@@ -21,7 +22,8 @@ Correct metadata summaries, release dates, and Library UI behavior
   the current indicator. An update from an older loaded version can require one
   Steam restart to refresh cached cards.
 - Turning trailers off stops unused monitoring and restores artwork. Turning
-  them on resumes one player. Other causes of scrolling lag can remain.
+  them on resumes one player, including when the Steam tab receives settings
+  through the plugin bridge. Other causes of scrolling lag can remain.
 
 ## [0.5.0] - 2026-10-03
 

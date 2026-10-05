@@ -6574,6 +6574,9 @@ const installNativeGridCompatibilityDispatcher = (target, options) => {
             SP_REACT.useEffect(() => {
                 const update = () => setRevision((revision) => revision + 1);
                 created.listeners.add(update);
+                // Hydration can publish after render but before this passive effect.
+                // Catch up once attached, as the regular compatibility hook does.
+                update();
                 return () => { created.listeners.delete(update); };
             }, []);
             return created.render?.(props) ?? null;
@@ -6588,6 +6591,9 @@ const installNativeGridCompatibilityDispatcher = (target, options) => {
     current.owner = owner;
     current.decorate = options.decorate;
     current.render = options.render;
+    // Decky's chain-aware unpatch can remove a predecessor while our wrapper
+    // stays mounted. Reuse its current chain, never the installation snapshot.
+    current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
     if (target.type === current.original && current.wrapper) {
         target.type = current.wrapper;
     }
@@ -6608,6 +6614,7 @@ const installNativeGridCompatibilityDispatcher = (target, options) => {
         current.render = undefined;
         // Restore only our exact head. A peer wrapper published later remains.
         // The captured dispatcher stays inert in Steam's mounted memo cache.
+        current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
         if (target.type === current.wrapper)
             target.type = current.original;
         publish();
@@ -11811,9 +11818,14 @@ const documents = () => {
 const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
-  return owner?.active && runtime?.ownerId === owner.ownerId
-    ? runtime.snapshot()
-    : { status: 'Steam UI unavailable', runtimeMissing: true };
+  if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
+    return { status: 'Steam UI unavailable', runtimeMissing: true };
+  }
+  // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
+  if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
+    return runtime.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
+  }
+  return runtime.snapshot();
 })()`;
 class TrailerController {
     constructor(conflicts = pluginConflicts) {
@@ -12241,6 +12253,8 @@ class TrailerController {
         const direct = this.updateReachableRuntimes();
         this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
         this.emit();
+        if (!direct)
+            void this.runInSteamTab(runtimeMissingScript);
         if (!direct && this.isEffectivelyEnabled())
             void this.poll();
         let succeeded = true;
@@ -12262,7 +12276,8 @@ class TrailerController {
                 this.settings = { ...this.confirmedSettings };
                 this.settingsRevision += 1;
                 this.publishOwner();
-                this.updateReachableRuntimes();
+                if (!this.updateReachableRuntimes())
+                    void this.runInSteamTab(runtimeMissingScript);
                 this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
                 this.status = "Trailer settings were restored";
             }
@@ -14934,7 +14949,7 @@ const metadataValuesEqual = (left, right) => JSON.stringify(left) === JSON.strin
 /**
  * A metadata load can complete after the user has begun editing. Keep each
  * field changed since that request started, while still hydrating every field
- * the user has not touched.
+ * the user has not touched. Description and summary form one editable value.
  */
 const mergeHydratedMetadata = (saved, baseline, current) => {
     const merged = { ...saved };
@@ -14943,6 +14958,11 @@ const mergeHydratedMetadata = (saved, baseline, current) => {
         if (!metadataValuesEqual(current[key], baseline[key])) {
             merged[key] = current[key];
         }
+    }
+    if (!metadataValuesEqual(current.description, baseline.description) ||
+        !metadataValuesEqual(current.short_description, baseline.short_description)) {
+        merged.description = current.description;
+        merged.short_description = current.short_description;
     }
     return merged;
 };

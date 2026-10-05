@@ -59,6 +59,13 @@ def test_provider_description_preserves_blocks_and_decodes_once():
     assert matching.description_html_to_text("<h2>Flight</h2><div>Fly &lt;pilot&gt;</div><ul><li>First</li><li>Second</li></ul>") == "Flight\n\nFly <pilot>\n\n- First\n- Second"
 
 
+def test_provider_description_lists_only_mark_items_with_text():
+    assert matching.description_html_to_text("<ul><li></li><li><img src='cover.png'></li><li>&nbsp;</li></ul>") == ""
+    assert matching.description_html_to_text("<ul><li><ul><li><img src='cover.png'></li></ul></li></ul>") == ""
+    assert matching.description_html_to_text("<ul><li><p>First</p><ul><li></li><li>Nested</li></ul></li><li>Last</li></ul>") == "- First\n\n- Nested\n\n- Last"
+    assert matching.description_html_to_text("<ul><li><ul><li>Nested</li></ul></li></ul>") == "- Nested"
+
+
 @pytest.mark.parametrize("value", ["Apr 18, 2011", "18 Apr, 2011", "April 18, 2011", "18 April, 2011"])
 def test_english_dates_include_day_first_comma(value):
     import datetime

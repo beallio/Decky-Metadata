@@ -174,7 +174,7 @@ const metadataValuesEqual = (left: unknown, right: unknown): boolean =>
 /**
  * A metadata load can complete after the user has begun editing. Keep each
  * field changed since that request started, while still hydrating every field
- * the user has not touched.
+ * the user has not touched. Description and summary form one editable value.
  */
 const mergeHydratedMetadata = (
   saved: MetadataData,
@@ -187,6 +187,13 @@ const mergeHydratedMetadata = (
     if (!metadataValuesEqual(current[key as keyof MetadataData], baseline[key as keyof MetadataData])) {
       merged[key] = current[key as keyof MetadataData];
     }
+  }
+  if (
+    !metadataValuesEqual(current.description, baseline.description) ||
+    !metadataValuesEqual(current.short_description, baseline.short_description)
+  ) {
+    merged.description = current.description;
+    merged.short_description = current.short_description;
   }
   return merged as MetadataData;
 };

@@ -26,6 +26,9 @@ Use the editor's **Search IGN metadata** section to search by the game's name. S
 
 ## Descriptions and release dates
 
+Description edits, including clearing the field, stay in place while an applied
+Steam match finishes loading. Other fields can still receive the new source data.
+
 The description field and Game Info use the saved short summary when available,
 then the saved longer description. Imports keep the source's wording. If a source
 has no usable summary, its longer text supplies the description. Paragraphs and

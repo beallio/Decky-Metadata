@@ -387,3 +387,16 @@ def test_store_primary_description_chooses_cleaned_summary(monkeypatch, short, a
     result = plugin._steam_appdetails_for_appid(1967260)
     assert result.get("description", "") == expected
     assert result.get("short_description", "") == expected
+
+
+@pytest.mark.parametrize(("short", "about", "detail", "expected"), [
+    ("<ul><li></li></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></li></ul>", "", "Detailed fallback", "Detailed fallback"),
+    ("<ul><li></li></ul>", "<ul><li><img src='cover.png'></li></ul>", "<ul><li>&nbsp;</li></ul>", ""),
+])
+def test_store_empty_list_descriptions_do_not_block_fallback(monkeypatch, short, about, detail, expected):
+    plugin = make_plugin()
+    monkeypatch.setattr(plugin, "_http_json", lambda *_args, **_kwargs: {"1967260": {"success": True, "data": {"short_description": short, "about_the_game": about, "detailed_description": detail}}})
+    result = plugin._steam_appdetails_for_appid(1967260)
+    assert result.get("description", "") == expected
+    assert result.get("short_description", "") == expected

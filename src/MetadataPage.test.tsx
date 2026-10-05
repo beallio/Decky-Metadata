@@ -802,6 +802,32 @@ describe("MetadataPage compatibility status", () => {
     }));
   });
 
+  it.each([[null, "save"], ["NativeTextarea", "save"], [null, "enrichment"], ["NativeTextarea", "enrichment"]])("keeps an explicit clear during pending %s/%s", async (component, phase) => {
+    textarea.component = component;
+    const pendingSave = deferred<any>();
+    const pendingEnrichment = deferred<any>();
+    configureShortcutPanel({ metadata: { description: "Long", short_description: "" } });
+    state.values[8] = "15200";
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, value) => value);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    const description = () => walk(renderPage(), node => node.type === (component || "textarea"))[0];
+    if (phase === "save") description().props.onChange({ target: { value: "" } });
+    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Long", steam_appid: 15200, title: "Acknowledged title" }));
+    await flushAsyncWork();
+    if (phase === "enrichment") description().props.onChange({ target: { value: "" } });
+    expect(description().props.value).toBe("");
+    expect(state.values[0].title).toBe("Acknowledged title");
+    pendingEnrichment.resolve(makeMetadata({ description: "Provider prose", short_description: "Provider summary", steam_appid: 15200, title: "Enriched title", developers: [{ name: "Developer", url: "" }] }));
+    await applying;
+    expect(description().props.value).toBe("");
+    expect(state.values[0]).toMatchObject({ description: "", short_description: "", title: "Enriched title" });
+    expect(state.values[1]).toBe("Developer");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "", short_description: "", title: "Enriched title" }));
+    textarea.component = null;
+  });
+
   it("reconciles every untouched field from a successful Steam enrichment", async () => {
     const pendingEnrichment = deferred<any>();
     const saved = makeMetadata({

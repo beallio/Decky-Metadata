@@ -203,7 +203,7 @@ def game_to_metadata(game: dict[str, Any]) -> dict[str, Any]:
     rating = matching.rating_to_percent((game.get("primaryReview") or {}).get("score"))
     release_date = first_release_date(game.get("objectRegions") or [])
     categories = infer_store_categories(
-        " ".join([title, long_desc, " ".join(genres), " ".join(features)])
+        " ".join([title, long_desc or short_desc, " ".join(genres), " ".join(features)])
     )
     screenshots = ign_images_to_screenshots(game)
     return {

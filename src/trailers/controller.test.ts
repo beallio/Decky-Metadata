@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const backend = vi.hoisted(() => ({
-  evalInBigPicture: vi.fn(async () => ({ status: "Steam UI unavailable", runtimeMissing: true })),
+  evalInBigPicture: vi.fn(async (_code: string) => ({ status: "Steam UI unavailable", runtimeMissing: true })),
   getTrailerSettings: vi.fn(async () => ({ enabled: false, audioEnabled: false, quality: "auto" })),
   setTrailerSettings: vi.fn(async (settings: unknown) => settings),
   findIgnTrailer: vi.fn(async () => null as unknown),
@@ -110,6 +110,54 @@ describe("TrailerController behavior", () => {
     expect(controller.identity).toEqual({ pageAppId: 730, sourceAppId: 730 });
     expect(steam.getNativeOverview).toHaveBeenCalledWith(730);
     expect(backend.evalInBigPicture).not.toHaveBeenCalled();
+    controller.stop();
+  });
+
+  it("delivers Off and On settings to a bridge-only runtime without an intervening poll or identity change", async () => {
+    steam.overview.set(570, nativeOverview(570));
+    const controller = mountController({ enabled: true });
+    await controller.refreshPageIdentity();
+    delete (window as any).__deckyMetadataTrailerRuntime;
+    let settings = { ...controller.settings };
+    let revision = controller.settingsRevision;
+    const remoteRuntime = {
+      ownerId: "owner",
+      update: vi.fn((next: TrailerSettings, nextRevision: number) => {
+        if (nextRevision >= revision) {
+          settings = { ...next };
+          revision = nextRevision;
+        }
+        return remoteRuntime.snapshot();
+      }),
+      snapshot: () => ({ status: settings.enabled ? "Trailer active" : "Disabled" }),
+    };
+    const remoteWindow = {
+      opener: window,
+      __deckyMetadataTrailerRuntime: remoteRuntime,
+    };
+    backend.evalInBigPicture.mockImplementation(async (code: string) =>
+      new Function("window", `return ${code}`)(remoteWindow));
+
+    await controller.setEnabled(false);
+    await flush();
+    // No status poll is allowed to erase the unchanged cached identity during Off.
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    // A final active scan can observe Off from the opener before monitoring stops.
+    const owner = (window as any).__deckyMetadataTrailerOwner;
+    remoteRuntime.update(owner.settings, owner.settingsRevision);
+    expect(settings.enabled).toBe(false);
+    await controller.setEnabled(true);
+    await flush();
+    await controller.poll();
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(settings.enabled).toBe(true);
+    expect(controller.getSnapshot().status).toBe("Trailer active");
+
+    await controller.setAudioEnabled(true);
+    await controller.setQuality(1080);
+    await flush();
+    expect(settings).toMatchObject({ enabled: true, audioEnabled: true, quality: 1080 });
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
     controller.stop();
   });
 
