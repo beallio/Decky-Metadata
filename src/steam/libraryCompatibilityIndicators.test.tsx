@@ -118,9 +118,63 @@ describe("resolveLibraryCompatibilityIndicator", () => {
 describe("Library card compatibility decoration", () => {
   const CompatibilityIndicator = () => null;
 
+  it("removes cached owned indicators when a distinct native indicator exists", () => {
+    const ReactiveIndicator = () => null;
+    const native = createElement(CompatibilityIndicator, { display: 1 });
+    const owned = createElement(ReactiveIndicator, { key: "decky-metadata-compatibility-grid" });
+    const output = createElement("div", { className: "grid-icons" }, "controller", native, owned);
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat");
+    expect(decorated.props.children).toEqual(["controller", native]);
+    expect(decorateGridCompatibility(decorated, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat")).toBe(decorated);
+  });
+
+  it("finds native marks in fragments and removes nested owned marks without changing controller children", () => {
+    const ReactiveIndicator = () => null;
+    const native = createElement(CompatibilityIndicator, { display: 1 });
+    const controller = createElement("i", { key: "controller" });
+    const output = createElement("div", { className: "grid-icons" },
+      createElement(Fragment, {}, native, controller,
+        createElement(Fragment, {}, createElement(ReactiveIndicator, { key: "decky-metadata-compatibility-grid" }), false)));
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat");
+    const fragment = (decorated.props.children as any[])[0];
+    expect(fragment.type).toBe(Fragment);
+    expect(fragment.props.children.slice(0, 2)).toEqual([native, controller]);
+    expect(fragment.props.children[2].props.children).toEqual([false]);
+    expect(decorateGridCompatibility(decorated, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat")).toBe(decorated);
+  });
+
+  it("keeps the native Home slot and removes only cached owned marks", () => {
+    const ReactiveIndicator = () => null;
+    const native = createElement(CompatibilityIndicator, { display: 1 });
+    const controller = createElement("i", { key: "controller" });
+    const output = createElement("div", {}, "art", "in-library", native,
+      createElement(ReactiveIndicator, { key: "decky-metadata-compatibility-home" }), controller);
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, ReactiveIndicator, "home-compat");
+    expect(decorated.props.children).toEqual(["art", "in-library", native, controller]);
+  });
+
+  it("replaces retired wrappers and keeps exactly one current owned mark across repeated renders", () => {
+    const ReactiveIndicator = () => null;
+    const RetiredIndicator = () => null;
+    const output = createElement("div", { className: "grid-icons" },
+      createElement(Fragment, {}, "controller"), false, null,
+      createElement(RetiredIndicator, { key: "decky-metadata-compatibility-grid" }));
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat", nativeShortcut);
+    expect(decorated.props.children).toHaveLength(4);
+    expect(decorated.props.children[3].type).toBe(ReactiveIndicator);
+    expect(decorateGridCompatibility(decorated, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat", nativeShortcut)).toBe(decorated);
+    const native = createElement(CompatibilityIndicator, { display: 1 });
+    const cached = createElement("div", { className: "grid-icons" }, ...(decorated.props.children as any[]), native);
+    const nativeOnly = decorateGridCompatibility(cached, CompatibilityIndicator, ReactiveIndicator, "grid-icons", "grid-compat");
+    expect(nativeOnly.props.children).toEqual([...(decorated.props.children as any[]).slice(0, 3), native]);
+    const nextGeneration = () => null;
+    const backToOwned = createElement("div", { className: "grid-icons" }, ...(nativeOnly.props.children as any[]).slice(0, 3));
+    expect(decorateGridCompatibility(backToOwned, CompatibilityIndicator, nextGeneration, "grid-icons", "grid-compat").props.children[3].type).toBe(nextGeneration);
+  });
+
   it("adds Steam's native indicator to the Home carousel at its native slot", () => {
     const output = createElement("div", {}, "art", "in-library", false, "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat");
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "home-compat");
     const children = decorated.props.children as unknown[];
 
     expect(children).toHaveLength(4);
@@ -133,7 +187,7 @@ describe("Library card compatibility decoration", () => {
 
   it("keeps a non-placeholder Home child when Steam changes the card shape", () => {
     const output = createElement("div", {}, "art", "in-library", "new-native-child", "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat");
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "home-compat");
 
     expect(decorated.props.children).toMatchObject([
       "art",
@@ -151,7 +205,7 @@ describe("Library card compatibility decoration", () => {
       createElement("div", { className: "outside" }, "outside"),
       createElement("div", { className: "grid-icons" }, "existing"),
     );
-    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, "grid-icons", "grid-compat");
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "grid-icons", "grid-compat");
     const gridIcons = (decorated.props.children as any[])[1];
     const children = gridIcons.props.children as unknown[];
 
@@ -163,7 +217,7 @@ describe("Library card compatibility decoration", () => {
     expect((children[1] as any).key).toBe("decky-metadata-compatibility-grid");
   });
 
-  it("keeps existing native or plugin indicators and unrelated false, null, fragment, and icon-row children", () => {
+  it("keeps native indicators and unrelated children while replacing retired owned elements", () => {
     const output = createElement(
       "div",
       {},
@@ -182,8 +236,8 @@ describe("Library card compatibility decoration", () => {
       createElement("div", { className: "outside" }, "keep"),
     );
 
-    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, "home-compat")).toBe(output);
-    expect(decorateGridCompatibility(gridOutput, CompatibilityIndicator, "grid-icons", "grid-compat")).toBe(gridOutput);
+    expect(decorateCarouselCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "home-compat")).toBe(output);
+    expect((decorateGridCompatibility(gridOutput, CompatibilityIndicator, CompatibilityIndicator, "grid-icons", "grid-compat").props.children as any[])[0].props.children).toHaveLength(3);
   });
 });
 
@@ -369,6 +423,18 @@ describe("installLibraryCompatibilityIndicators", () => {
     const capsule = tree.props.children;
     return { capsule, output: capsule.type(capsule.props) };
   };
+
+  it("normalizes a cached native plus owned grid pair through the installed renderer", () => {
+    const h = makeHarness();
+    const blank = createElement("div", { className: "grid-icons" }, "controller");
+    const owned = h.gridHandler!([{ app: nativeShortcut }], blank);
+    const native = createElement(h.indicator, { display: 1 });
+    const cached = createElement("div", { className: "grid-icons" }, ...owned.props.children, native);
+    const rendered = h.gridHandler!([{ app: nativeShortcut }], cached);
+    expect(rendered.props.children).toEqual(["controller", native]);
+    expect(h.gridHandler!([{ app: nativeShortcut }], rendered)).toBe(rendered);
+    h.unpatchers.forEach((cleanup) => cleanup());
+  });
 
   const mountedHomeCard = (harness: any, cellRenderer: any) => {
     const recomputeGridSize = vi.fn();

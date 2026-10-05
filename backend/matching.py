@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import html
 import re
 import time
@@ -169,6 +170,27 @@ def clean_html_text(value: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", re.sub(r"[ \t]+", " ", text)).strip()
 
 
+def normalize_description_text(value: str) -> str:
+    """Saved descriptions are plain text; entities and angle brackets are literal."""
+    return str(value or "").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def description_html_to_text(value: str) -> str:
+    """Convert provider markup once, before it crosses the plain-text boundary."""
+    text = re.sub(r"\s+", " ", str(value or ""))
+    text = re.sub(r"<(script|style)\b[^>]*>.*?</\1\s*>", "", text, flags=re.I | re.S)
+    text = re.sub(r"<li\b[^>]*>", "\n- ", text, flags=re.I)
+    text = re.sub(r"</li\s*>", "", text, flags=re.I)
+    text = re.sub(r"</?(?:p|div|h[1-6])\b[^>]*>", "\n\n", text, flags=re.I)
+    text = re.sub(r"</?(?:ul|ol)\b[^>]*>", "\n", text, flags=re.I)
+    text = re.sub(r"<br\b[^>]*>", "\n", text, flags=re.I)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r" *\n *", "\n", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
+
+
 def clean_game_title(name: str) -> str:
     text = html.unescape(str(name or ""))
     text = re.sub(r"[\u2122\u00ae\u00a9]", "", text)
@@ -191,18 +213,32 @@ def date_to_epoch(value: Any) -> int:
     if not value:
         return 0
     text = str(value).strip()
-    formats = ["%Y-%m-%d", "%b %d, %Y", "%B %d, %Y", "%d %b %Y", "%d %B %Y"]
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}T.*", text):
+        text = text[:10]
+    iso = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", text)
+    months = {name: index for index, names in enumerate((
+        ("jan", "january"), ("feb", "february"), ("mar", "march"),
+        ("apr", "april"), ("may",), ("jun", "june"), ("jul", "july"),
+        ("aug", "august"), ("sep", "september"), ("oct", "october"),
+        ("nov", "november"), ("dec", "december")), 1) for name in names}
     try:
-        if re.fullmatch(r"\d{4}-\d{2}-\d{2}T.*", text):
-            text = text[:10]
-        for fmt in formats:
-            try:
-                return int(time.mktime(time.strptime(text, fmt)))
-            except Exception:
-                pass
-    except Exception:
+        if iso:
+            year, month, day = map(int, iso.groups())
+        else:
+            first = re.fullmatch(r"([A-Za-z]+) (\d{1,2}),? (\d{4})", text)
+            last = re.fullmatch(r"(\d{1,2}) ([A-Za-z]+),? (\d{4})", text)
+            if first:
+                month_name, day, year = first.groups()
+            elif last:
+                day, month_name, year = last.groups()
+            else:
+                return 0
+            month = months[month_name.casefold()]
+            year, day = int(year), int(day)
+        date = datetime.datetime(year, month, day)
+        return int(time.mktime(date.timetuple()))
+    except (ValueError, KeyError, OverflowError, OSError):
         return 0
-    return 0
 
 
 def safe_int(value: Any) -> int | None:

@@ -83,6 +83,33 @@ describe("TrailerController behavior", () => {
     vi.unstubAllGlobals();
   });
 
+  it("does not resolve sources or install a player while Off, then resumes the current page once enabled", async () => {
+    const controller = mountController({ enabled: true });
+    steam.overview.set(570, nativeOverview(570));
+    steam.overview.set(730, nativeOverview(730));
+    await controller.poll();
+    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    await controller.setEnabled(false);
+    await flush();
+    steam.getNativeOverview.mockClear();
+    backend.evalInBigPicture.mockClear();
+    backend.findIgnTrailer.mockClear();
+    for (const appId of [570, 440, 730]) {
+      steam.route = `/routes/library/app/${appId}`;
+      await controller.poll();
+    }
+    expect(controller.identity).toBeNull();
+    expect(steam.getNativeOverview).not.toHaveBeenCalled();
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
+    expect(backend.evalInBigPicture).not.toHaveBeenCalled();
+    await controller.setEnabled(true);
+    await flush();
+    expect(controller.identity).toEqual({ pageAppId: 730, sourceAppId: 730 });
+    expect(steam.getNativeOverview).toHaveBeenCalledWith(730);
+    expect(backend.evalInBigPicture).not.toHaveBeenCalled();
+    controller.stop();
+  });
+
   it("keeps controller identity valid on the root route while the QAM hash is open", async () => {
     steam.route = "/routes/library/app/570#quickaccess";
     steam.overview.set(570, nativeOverview(570));

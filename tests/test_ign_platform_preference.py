@@ -213,3 +213,10 @@ def test_game_to_metadata_surfaces_platforms() -> None:
     )
 
     assert result["platforms"] == ["windows-pc"]
+
+
+@pytest.mark.parametrize(("short", "long", "expected"), [("<p>Summary</p>", "<p>Long</p>", "Summary"), ("<br>", "<div>Fallback</div>", "Fallback"), ("<p></p>", "<div></div>", "")])
+def test_ign_primary_description_chooses_cleaned_summary(short, long, expected):
+    result = ign.game_to_metadata({"metadata": {"names": {"name": "Game"}, "descriptions": {"short": short, "long": long}}})
+    assert result["description"] == expected
+    assert result["short_description"] == expected

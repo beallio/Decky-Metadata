@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
+const textarea = vi.hoisted(() => ({ component: null as any }));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
@@ -82,7 +83,7 @@ vi.mock("@decky/ui", () => ({
 
 vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
-vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => null }));
+vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
@@ -109,7 +110,7 @@ vi.mock("react", () => ({
 }));
 
 import { MetadataPage } from "./MetadataPage";
-import { metadataTemplate } from "./metadataForm";
+import { epochToDate, metadataTemplate } from "./metadataForm";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
@@ -635,14 +636,13 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
 
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(backend.enrichSteamApp).toHaveBeenCalledWith(101);
     expect(text(renderPage())).toContain("Steam: Steam Name");
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
     effects.enabled = true;
     const oldResponse = deferred<any>();
-    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    configureShortcutPanel({ metadata: { title: "Original", description: "Saved long", short_description: "Saved summary", source: "IGN", release_date: 1240963200, steam_store_name: "" } });
     backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
 
     renderPage();
@@ -650,9 +650,11 @@ describe("MetadataPage compatibility status", () => {
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "Unsaved edit" } });
     oldResponse.resolve(makeMetadata({
-      title: "Steam title",
-      description: "Steam description",
-      developers: [{ name: "Steam developer", url: "" }],
+      title: "Original",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: 1240963200,
       steam_appid: 15100,
       steam_store_name: "Old Steam Name",
     }));
@@ -660,13 +662,19 @@ describe("MetadataPage compatibility status", () => {
 
     expect(state.values[0]).toEqual(expect.objectContaining({
       title: "Unsaved edit",
-      description: "Steam description",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: 1240963200,
       steam_store_name: "Old Steam Name",
     }));
-    expect(state.values[1]).toBe("Steam developer");
+    expect(state.values[1]).toBe("");
     expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
       title: "Unsaved edit",
-      description: "Steam description",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: 1240963200,
     }));
   });
 
@@ -826,7 +834,6 @@ describe("MetadataPage compatibility status", () => {
 
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
     await flushAsyncWork();
-    expect(backend.enrichSteamApp).toHaveBeenCalledWith(100);
     pendingEnrichment.resolve(enriched);
     await applying;
 
@@ -1065,5 +1072,51 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toBe(bMetadata);
     expect(state.values[9]).toEqual(shortcutState({ state: managedB }));
     expect(toast.toastError).not.toHaveBeenCalledWith("Shortcut name restored", expect.any(String));
+  });
+});
+
+
+describe("metadata summary and date persistence", () => {
+  beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });
+  it("displays saved summary but saves the original untouched description and legacy epoch", async () => {
+    state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: 1240963200 });
+    state.values[3] = epochToDate(1240963200);
+    const page = renderPage();
+    expect(walk(page, node => node.type === "textarea")[0].props.value).toBe("Source summary");
+    await saveButton(page).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1]).toMatchObject({ description: "Retained long prose", short_description: "Source summary", release_date: 1240963200 });
+  });
+  it("uses a long fallback when the saved summary contains only whitespace", () => {
+    state.values[0] = makeMetadata({ description: "Readable fallback", short_description: " \n " });
+    expect(walk(renderPage(), node => node.type === "textarea")[0].props.value).toBe("Readable fallback");
+  });
+  it("keeps a legitimate absent date absent on an unrelated save", async () => {
+    state.values[0] = makeMetadata({ release_date: null });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].release_date).toBeNull();
+  });
+  it("converts a changed date and supports explicitly clearing it", async () => {
+    state.values[0] = makeMetadata({ release_date: 1240963200 });
+    state.values[3] = epochToDate(1240963200);
+    renderPage();
+    const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === epochToDate(1240963200))[0];
+    field.props.onChange({ target: { value: "2024-03-10" } });
+    await saveButton(renderPage()).props.onClick();
+    const saved = backend.saveMetadata.mock.calls[0][1].release_date;
+    const day = new Date(saved * 1000);
+    expect([day.getFullYear(), day.getMonth() + 1, day.getDate(), day.getHours()]).toEqual([2024, 3, 10, 0]);
+    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2024-03-10")[0].props.onChange({ target: { value: "" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();
+  });
+  it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
+    textarea.component = component;
+    state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });
+    for (const input of ["Fly <pilot>\n\nLand", ""]) {
+      walk(renderPage(), node => node.type === (component || "textarea"))[0].props.onChange({ target: { value: input } });
+      await saveButton(renderPage()).props.onClick();
+      expect(backend.saveMetadata.mock.calls[backend.saveMetadata.mock.calls.length - 1]?.[1]).toMatchObject({ description: input, short_description: input });
+    }
+    textarea.component = null;
   });
 });

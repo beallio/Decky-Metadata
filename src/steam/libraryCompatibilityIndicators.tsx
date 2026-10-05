@@ -1,4 +1,4 @@
-import { cloneElement, createElement, isValidElement, useEffect, useState } from "react";
+import { Fragment, cloneElement, createElement, isValidElement, useEffect, useState } from "react";
 import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
@@ -121,30 +121,60 @@ const childrenOf = (element: ReactElement<CompatibilityCardProps>): ReactNode[] 
   return Array.isArray(children) ? children : [children];
 };
 
-const hasIndicator = (children: ReactNode[], indicator: ElementType, key: string) =>
-  children.some((child) => isValidElement(child) && (child.type === indicator || child.key === key));
+const containsIndicator = (children: ReactNode[], predicate: (element: ReactElement) => boolean): boolean =>
+  children.some((child) => isValidElement<CompatibilityCardProps>(child) && (
+    predicate(child) || (child.type === Fragment && containsIndicator(childrenOf(child), predicate))
+  ));
+
+const normalizeIndicators = (children: ReactNode[], nativeIndicator: ElementType, indicator: ElementType, key: string) => {
+  const nativePresent = containsIndicator(children, (child) => child.type === nativeIndicator && child.key !== key);
+  let keptOwned = false;
+  const normalize = (nodes: ReactNode[]): ReactNode[] => nodes.flatMap((child) => {
+    if (!isValidElement<CompatibilityCardProps>(child)) return [child];
+    if (child.key === key) {
+      if (nativePresent || keptOwned || child.type !== indicator) return [];
+      keptOwned = true;
+    }
+    if (child.type === Fragment) {
+      const original = childrenOf(child);
+      const cleaned = normalize(original);
+      if (cleaned.length !== original.length || cleaned.some((node, index) => node !== original[index])) return [cloneElement(child, { children: cleaned })];
+    }
+    return [child];
+  });
+  return normalize(children);
+};
+const hasIndicator = (children: ReactNode[], nativeIndicator: ElementType, indicator: ElementType, key: string) =>
+  containsIndicator(children, (child) => child.type === nativeIndicator || (child.type === indicator && child.key === key));
+
+const unchangedChildren = (children: ReactNode[], original: ReactNode[]) =>
+  children.length === original.length && children.every((child, index) => child === original[index]);
 
 export function decorateCarouselCompatibility(
   output: ReactElement<CompatibilityCardProps>,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): ReactElement<CompatibilityCardProps>;
 export function decorateCarouselCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): T;
 export function decorateCarouselCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): T {
   if (!isValidElement<CompatibilityCardProps>(output)) return output;
-  const children = childrenOf(output);
-  if (hasIndicator(children, indicator, HOME_INDICATOR_KEY)) return output;
+  const originalChildren = childrenOf(output);
+  const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, HOME_INDICATOR_KEY);
+  if (hasIndicator(children, nativeIndicator, indicator, HOME_INDICATOR_KEY)) return (unchangedChildren(children, originalChildren) ? output : cloneElement(output, { children })) as T;
 
   // Steam's GameCapsule places compatibility after its in-library marker. A
   // shortcut suppresses that native slot with `false`; replace only that
@@ -167,6 +197,7 @@ export function decorateCarouselCompatibility<T>(
 
 const decorateGridIconRow = (
   node: ReactNode,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -174,8 +205,9 @@ const decorateGridIconRow = (
 ): ReactNode => {
   if (!isValidElement<CompatibilityCardProps>(node)) return node;
   if (node.props.className === iconRowClassName) {
-    const children = childrenOf(node);
-    if (hasIndicator(children, indicator, GRID_INDICATOR_KEY)) return node;
+    const originalChildren = childrenOf(node);
+    const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, GRID_INDICATOR_KEY);
+    if (hasIndicator(children, nativeIndicator, indicator, GRID_INDICATOR_KEY)) return unchangedChildren(children, originalChildren) ? node : cloneElement(node, { children });
     return cloneElement(node, {
       children: [
         ...children,
@@ -193,7 +225,7 @@ const decorateGridIconRow = (
   if (originalChildren === undefined) return node;
   const children = childrenOf(node);
   const decoratedChildren = children.map((child) =>
-    decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview)
+    decorateGridIconRow(child, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview)
   );
   if (decoratedChildren.every((child, index) => child === children[index])) return node;
   return cloneElement(node, {
@@ -203,6 +235,7 @@ const decorateGridIconRow = (
 
 export function decorateGridCompatibility(
   output: ReactElement<CompatibilityCardProps>,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -210,6 +243,7 @@ export function decorateGridCompatibility(
 ): ReactElement<CompatibilityCardProps>;
 export function decorateGridCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -217,6 +251,7 @@ export function decorateGridCompatibility<T>(
 ): T;
 export function decorateGridCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -224,6 +259,7 @@ export function decorateGridCompatibility<T>(
 ): T {
   const decorated = decorateGridIconRow(
     output as ReactNode,
+    nativeIndicator,
     indicator,
     iconRowClassName,
     indicatorClassName,
@@ -571,6 +607,7 @@ export const installLibraryCompatibilityIndicators = (
           output,
           (card, overview) => decorateCarouselCompatibility(
             card,
+            targets.indicator,
             ReactiveCompatibilityIndicator,
             targets.homeClassName,
             overview,
@@ -921,6 +958,7 @@ export const installLibraryCompatibilityIndicators = (
           output,
           (card, overview) => decorateGridCompatibility(
             card,
+            targets.indicator,
             ReactiveCompatibilityIndicator,
             targets.gridIconsClassName,
             targets.gridIndicatorClassName,

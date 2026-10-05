@@ -35,7 +35,7 @@ export const reassertMatchedAppData = (
   const details = appData?.details;
   if (!details) return false;
 
-  const description = metadata.description || metadata.short_description || "";
+  const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
   const descriptionsData = {
     strFullDescription: description,
     strSnippet: description,

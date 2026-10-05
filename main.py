@@ -1171,7 +1171,9 @@ class Plugin:
         )
         return {"source": source, "page": clean_page, "items": items}
 
-    async def enrich_steam_app(self, app_id: int) -> dict[str, Any] | None:
+    async def enrich_steam_app(self, app_id: int, mode: str) -> dict[str, Any] | None:
+        if mode not in {"metadata", "steam-name"}:
+            raise ValueError("Invalid Steam enrichment mode")
         self._load_data()
         key = str(app_id)
         metadata = self._data["metadata"].get(key)
@@ -1183,9 +1185,19 @@ class Plugin:
         # a newer manual Steam match with an old network response.
         snapshot = dict(metadata)
         title = str(snapshot.get("title") or "")
-        enriched = await asyncio.to_thread(
-            self._metadata_with_steam_news_sync, snapshot, title
-        )
+        if mode == "steam-name":
+            steam_appid = self._safe_int(snapshot.get("steam_appid"))
+            if not steam_appid or steam_appid <= 0:
+                return None
+            details = await asyncio.to_thread(self._steam_appdetails_for_appid, steam_appid)
+            name = matching.clean_game_title(str((details or {}).get("steam_store_name") or ""))
+            if not name:
+                return None
+            enriched = {**snapshot, "steam_store_name": name}
+        else:
+            enriched = await asyncio.to_thread(
+                self._metadata_with_steam_news_sync, snapshot, title
+            )
         with self._data_guard():
             self._load_data()
             current = self._data["metadata"].get(key)
@@ -1197,7 +1209,7 @@ class Plugin:
                     outcome="stale",
                 )
                 return None
-            cleaned = self._sanitize_metadata(enriched)
+            cleaned = dict(enriched) if mode == "steam-name" else self._sanitize_metadata(enriched)
             cleaned["updated_at"] = now()
             self._data["metadata"][key] = cleaned
             self._save_data()
@@ -1358,7 +1370,7 @@ class Plugin:
             return False
         title = self._clean_game_title(str(metadata.get("title") or ""))
         source = str(metadata.get("source") or "").strip().casefold()
-        has_description = bool(self._clean_html_text(str(metadata.get("description") or metadata.get("short_description") or "")))
+        has_description = any(matching.normalize_description_text(str(metadata.get(field) or "")).strip() for field in ("short_description", "description"))
         return bool(title and (source not in {"", "manual"} or has_description))
 
     def _metadata_needs_scan(self, app_id: int) -> bool:
@@ -1659,10 +1671,8 @@ class Plugin:
                 deck_compat_override = None
 
         title = self._clean_game_title(str(metadata.get("title") or ""))
-        description = self._clean_html_text(str(metadata.get("description") or ""))
-        short_description = self._clean_html_text(
-            str(metadata.get("short_description") or "")
-        )
+        description = matching.normalize_description_text(str(metadata.get("description") or ""))
+        short_description = matching.normalize_description_text(str(metadata.get("short_description") or ""))
 
         steam_appid = self._safe_int(metadata.get("steam_appid"))
         raw_steam_store_name = metadata.get("steam_store_name")
