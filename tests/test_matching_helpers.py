@@ -66,6 +66,18 @@ def test_provider_description_lists_only_mark_items_with_text():
     assert matching.description_html_to_text("<ul><li><ul><li>Nested</li></ul></li></ul>") == "- Nested"
 
 
+@pytest.mark.parametrize(("markup", "expected"), [
+    ("<ul><li></ul>", ""),
+    ("<ul><li><img src='cover.png'></ul>", ""),
+    ("<ul><li><img src='cover.png'><li>&nbsp;</ul>", ""),
+    ("<ul><li><img src='cover.png'><li>Real<li></ul>", "- Real"),
+    ("<ul><li><ul><li>Nested</ul></ul>", "- Nested"),
+    ("<ul><li>Parent<ul><li><img src='cover.png'><li>Nested</ul><li>Last</ul>", "- Parent\n\n- Nested\n\n- Last"),
+])
+def test_provider_description_implicit_list_item_endings(markup, expected):
+    assert matching.description_html_to_text(markup) == expected
+
+
 @pytest.mark.parametrize("value", ["Apr 18, 2011", "18 Apr, 2011", "April 18, 2011", "18 April, 2011"])
 def test_english_dates_include_day_first_comma(value):
     import datetime

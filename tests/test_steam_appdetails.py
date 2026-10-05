@@ -393,6 +393,12 @@ def test_store_primary_description_chooses_cleaned_summary(monkeypatch, short, a
     ("<ul><li></li></ul>", "Readable fallback", "Details", "Readable fallback"),
     ("<ul><li><img src='cover.png'></li></ul>", "", "Detailed fallback", "Detailed fallback"),
     ("<ul><li></li></ul>", "<ul><li><img src='cover.png'></li></ul>", "<ul><li>&nbsp;</li></ul>", ""),
+    ("<ul><li></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'><li>&nbsp;</ul>", "", "", ""),
+    ("<ul><li><img src='cover.png'><li>Real<li></ul>", "Long", "Details", "- Real"),
+    ("<ul><li><ul><li>Nested</ul></ul>", "Long", "Details", "- Nested"),
+    ("<ul><li>Parent<ul><li><img src='cover.png'><li>Nested</ul><li>Last</ul>", "Long", "Details", "- Parent\n\n- Nested\n\n- Last"),
 ])
 def test_store_empty_list_descriptions_do_not_block_fallback(monkeypatch, short, about, detail, expected):
     plugin = make_plugin()

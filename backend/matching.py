@@ -179,6 +179,29 @@ def description_html_to_text(value: str) -> str:
     """Convert provider markup once, before it crosses the plain-text boundary."""
     text = re.sub(r"\s+", " ", str(value or ""))
     text = re.sub(r"<(script|style)\b[^>]*>.*?</\1\s*>", "", text, flags=re.I | re.S)
+    # HTML permits </li> to be omitted before the next item or its list's end.
+    # Track each list separately so nested items cannot close their parent item.
+    open_items = [False]
+
+    def close_implicit_item(match: re.Match) -> str:
+        tag, closing = match.group(2).lower(), bool(match.group(1))
+        markup = match.group(0)
+        if tag == "li":
+            prefix = "</li>" if not closing and open_items[-1] else ""
+            open_items[-1] = not closing
+            return prefix + markup
+        if not closing:
+            open_items.append(False)
+            return markup
+        prefix = "</li>" if open_items[-1] else ""
+        if len(open_items) > 1:
+            open_items.pop()
+        else:
+            open_items[-1] = False
+        return prefix + markup
+
+    text = re.sub(r"<(/?)(ul|ol|li)\b[^>]*>", close_implicit_item, text, flags=re.I)
+    text += "</li>" * sum(open_items)
     # Keep item boundaries until markup and entities have been converted. An
     # empty/image-only item must not manufacture a nonempty description.
     item_start, item_end = "\x00li\x00", "\x00/li\x00"

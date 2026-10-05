@@ -31,8 +31,9 @@ Steam match finishes loading. Other fields can still receive the new source data
 
 The description field and Game Info use the saved short summary when available,
 then the saved longer description. Imports keep the source's wording. If a source
-has no usable summary, its longer text supplies the description. Paragraphs and
-list items keep their spacing in Game Info.
+has no usable summary, its longer text supplies the description. Empty or
+image-only list items do not block this fallback. Paragraphs and list items keep
+their spacing in Game Info.
 
 You can replace the description with your own text, including line breaks and
 literal text such as `<pilot>`, or clear it. Save applies your description edit.

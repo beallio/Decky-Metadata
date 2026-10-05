@@ -225,6 +225,12 @@ def test_ign_primary_description_chooses_cleaned_summary(short, long, expected):
 @pytest.mark.parametrize(("short", "long", "expected"), [
     ("<ul><li></li></ul>", "Readable fallback", "Readable fallback"),
     ("<ul><li><img src='cover.png'></li></ul>", "", ""),
+    ("<ul><li></ul>", "Readable fallback", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></ul>", "Readable fallback", "Readable fallback"),
+    ("<ul><li><img src='cover.png'><li>&nbsp;</ul>", "", ""),
+    ("<ul><li><img src='cover.png'><li>Real<li></ul>", "Long", "- Real"),
+    ("<ul><li><ul><li>Nested</ul></ul>", "Long", "- Nested"),
+    ("<ul><li>Parent<ul><li><img src='cover.png'><li>Nested</ul><li>Last</ul>", "Long", "- Parent\n\n- Nested\n\n- Last"),
 ])
 def test_ign_empty_list_descriptions_do_not_block_fallback(short, long, expected):
     result = ign.game_to_metadata({"metadata": {"names": {"name": "Game"}, "descriptions": {"short": short, "long": long}}})
