@@ -4675,9 +4675,11 @@ const applyMetadataToOverview = (appId, overview) => {
     reassertMatchedAppData(appData, metadata, screenshots);
     try {
         const releaseDate = metadata.release_date;
-        if (typeof releaseDate === "number" && releaseDate > 0) {
-            overview.rt_original_release_date = releaseDate;
-            overview.rt_steam_release_date = releaseDate;
+        if (releaseDate === null || (typeof releaseDate === "number" && releaseDate > 0)) {
+            // Steam uses zero for an absent calendar date. An explicit saved null
+            // must clear the previous value; an omitted field keeps native data.
+            overview.rt_original_release_date = releaseDate ?? 0;
+            overview.rt_steam_release_date = releaseDate ?? 0;
         }
     }
     catch (_error) {
@@ -5053,6 +5055,8 @@ const installMetadataPatches = (unpatchers) => {
     if (overviewProto?.GetCanonicalReleaseDate) {
         unpatchers.push(patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
             const metadata = metadataCache[String(thisValue?.appid)];
+            if (isNativeNonSteamShortcut(thisValue) && metadata?.release_date === null)
+                return 0;
             if (isNonSteamApp(thisValue) && metadata?.release_date) {
                 return metadata.release_date;
             }

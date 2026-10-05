@@ -13,7 +13,8 @@ Correct metadata summaries, release dates, and Library UI behavior
   paragraph/list spacing are preserved. Unrelated saves and automatic Steam-name
   lookups keep saved descriptions and dates.
 - Steam dates accept both English month-first and day-first forms. New and
-  edited dates keep the local calendar day. Correct or re-import an affected
+  edited dates keep the local calendar day; clearing a date also clears it from
+  Game Info. Correct or re-import an affected
   old date per game; existing timestamps are not changed in bulk.
 - Library cards keep one compatibility indicator when Steam's native indicator
   and Metadata's indicator appear together during navigation.
