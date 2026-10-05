@@ -6144,6 +6144,9 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         const ReactiveCompatibilityIndicator = (props) => {
             dependencies.useCompatibilityRevision(subscribeIndicator);
+            return renderIndicator(props);
+        };
+        const renderIndicator = (props) => {
             if (!active)
                 return null;
             const appId = Number(props.overview?.appid);
@@ -6521,7 +6524,15 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 cleanup();
                 return;
             }
-            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, targets.indicator, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app));
+            const decorateGrid = (args, output, owned) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, targets.indicator, owned, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app);
+            gridUnpatch = provided.patchGridRenderer
+                ? dependencies.patchGridRenderer(targets.grid, (args, output) => decorateGrid(args, output, ReactiveCompatibilityIndicator))
+                : installNativeGridCompatibilityDispatcher(targets.grid, {
+                    patch: dependencies.patchGridRenderer,
+                    decorate: decorateGrid,
+                    render: renderIndicator,
+                    subscribeRevision: subscribeCompatibilityRevision,
+                });
             if (typeof gridUnpatch !== "function") {
                 cleanup();
                 return;
@@ -6539,6 +6550,68 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         scheduleMountedHomeDiscoveryRetry();
     };
     installWhenTargetsResolve();
+};
+/**
+ * React retains a memo's resolved function in mounted cards. Keep its owned
+ * dispatcher stable across reload, while swapping only the active generation.
+ * Native card components, hooks, focus and peer wrappers retain their identity.
+ */
+const installNativeGridCompatibilityDispatcher = (target, options) => {
+    const host = globalThis;
+    const registry = host.__deckyMetadataGridCompatibilityDispatchers ?? (host.__deckyMetadataGridCompatibilityDispatchers = new WeakMap());
+    let state = registry.get(target);
+    if (!state) {
+        const created = {
+            original: undefined,
+            wrapper: undefined,
+            indicator: () => null,
+            listeners: new Set(),
+        };
+        // These listeners belong to mounted React leaves. No Steam subscription or
+        // monitoring survives unload; the small bridge only publishes activation.
+        created.indicator = function LiveGridCompatibilityIndicator(props) {
+            const [, setRevision] = SP_REACT.useState(0);
+            SP_REACT.useEffect(() => {
+                const update = () => setRevision((revision) => revision + 1);
+                created.listeners.add(update);
+                return () => { created.listeners.delete(update); };
+            }, []);
+            return created.render?.(props) ?? null;
+        };
+        registry.set(target, created);
+        state = created;
+    }
+    const current = state;
+    const publish = () => current.listeners.forEach((listener) => listener());
+    const owner = Symbol("decky-metadata-grid-generation");
+    current.unsubscribe?.();
+    current.owner = owner;
+    current.decorate = options.decorate;
+    current.render = options.render;
+    if (target.type === current.original && current.wrapper) {
+        target.type = current.wrapper;
+    }
+    else if (target.type !== current.wrapper) {
+        current.original = target.type;
+        options.patch(target, (args, output) => current.decorate?.(args, output, current.indicator) ?? output);
+        current.wrapper = target.type;
+    }
+    current.unsubscribe = options.subscribeRevision(publish);
+    publish();
+    return () => {
+        if (current.owner !== owner)
+            return;
+        current.unsubscribe?.();
+        current.unsubscribe = undefined;
+        current.owner = undefined;
+        current.decorate = undefined;
+        current.render = undefined;
+        // Restore only our exact head. A peer wrapper published later remains.
+        // The captured dispatcher stays inert in Steam's mounted memo cache.
+        if (target.type === current.wrapper)
+            target.type = current.original;
+        publish();
+    };
 };
 
 const firstUrlishArgIndex = (args, firstOnly = false) => {

@@ -17,7 +17,9 @@ Correct metadata summaries, release dates, and Library UI behavior
   Game Info. Correct or re-import an affected
   old date per game; existing timestamps are not changed in bulk.
 - Library cards keep one compatibility indicator when Steam's native indicator
-  and Metadata's indicator appear together during navigation.
+  and Metadata's indicator appear together during navigation. Reloaded cards use
+  the current indicator. An update from an older loaded version can require one
+  Steam restart to refresh cached cards.
 - Turning trailers off stops unused monitoring and restores artwork. Turning
   them on resumes one player. Other causes of scrolling lag can remain.
 

@@ -76,6 +76,9 @@ one game. A label you choose does not mean Valve tested your copy or promise
 that the game will run well. See [choosing a compatibility
 status](docs/help/compatibility-status.md).
 
+If an older Metadata version was already loaded, restart Steam after the update
+to refresh cached Library indicators.
+
 ### ProtonDB ratings
 
 Open **ProtonDB badges** and turn on **Enable ProtonDB badges**. It is off by

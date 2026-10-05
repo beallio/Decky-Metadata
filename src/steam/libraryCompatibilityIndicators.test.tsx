@@ -40,6 +40,7 @@ import {
   decorateCarouselCompatibility,
   decorateGridCompatibility,
   installLibraryCompatibilityIndicators,
+  installNativeGridCompatibilityDispatcher,
   type LibraryCompatibilityIndicatorDependencies,
   resolveLibraryCompatibilityIndicator,
 } from "./libraryCompatibilityIndicators";
@@ -1720,5 +1721,105 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("native memo grid dispatcher reload ownership", () => {
+  const Native = (props: any) => createElement("span", {}, props.category);
+  const makeTarget = (): { type: (...args: any[]) => any } => ({ type: () => createElement("div", { className: "grid-icons" }, "controller") });
+  const patch = (target: any, handler: (args: any[], output: any) => any) => {
+    const original = target.type;
+    let active = true;
+    const wrapper = (...args: any[]) => {
+      const output = original(...args);
+      return active ? handler(args, output) : output;
+    };
+    target.type = wrapper;
+    return () => { active = false; if (target.type === wrapper) target.type = original; };
+  };
+  const install = (target: any, category: number) => installNativeGridCompatibilityDispatcher(target, {
+    patch,
+    decorate: (_args, output, Owned) => decorateGridCompatibility(output, Native, Owned, "grid-icons", "grid-compat"),
+    render: () => createElement(Native, { category }),
+    subscribeRevision: () => () => {},
+  });
+  const renderedCategory = (output: any) => {
+    const icon = [output.props.children].flat().find((child: any) => child?.key === "decky-metadata-compatibility-grid");
+    const native = icon?.type(icon.props);
+    return native?.type(native.props).props.children ?? null;
+  };
+  it("keeps a mounted memo closure live across repeated plugin reloads and inert on unload", () => {
+    const target = makeTarget();
+    const original = target.type;
+    let cleanup = install(target, 3);
+    const mountedMemo = target.type;
+    const cachedCard = mountedMemo();
+    expect(renderedCategory(cachedCard)).toBe(3);
+    for (const category of [2, 1, 3]) {
+      cleanup();
+      expect(target.type).toBe(original);
+      expect(renderedCategory(mountedMemo())).toBeNull();
+      expect(renderedCategory(cachedCard)).toBeNull();
+      cleanup = install(target, category);
+      expect(renderedCategory(cachedCard)).toBe(category);
+      expect(renderedCategory(mountedMemo())).toBe(category);
+      expect(mountedMemo().props.children).toHaveLength(2);
+    }
+    cleanup();
+    expect(target.type).toBe(original);
+  });
+  it("publishes activation to mounted leaves and disconnects Steam updates while unloaded", () => {
+    const target = makeTarget();
+    const steamListeners = new Set<() => void>();
+    const subscribeRevision = (listener: () => void) => {
+      steamListeners.add(listener);
+      return () => { steamListeners.delete(listener); };
+    };
+    const options = {
+      patch,
+      decorate: (_args: any[], output: any, Owned: any) => decorateGridCompatibility(output, Native, Owned, "grid-icons", "grid-compat"),
+      render: () => createElement(Native, { category: 2 }),
+      subscribeRevision,
+    };
+    const cleanup = installNativeGridCompatibilityDispatcher(target, options);
+    reactHooks.effects.length = 0;
+    const cachedCard = target.type();
+    expect(renderedCategory(cachedCard)).toBe(2);
+    const unmount = reactHooks.effects[0]();
+    reactHooks.setRevision.mockClear();
+    steamListeners.forEach((listener) => listener());
+    expect(reactHooks.setRevision).toHaveBeenCalledOnce();
+    cleanup();
+    expect(steamListeners.size).toBe(0);
+    expect(renderedCategory(cachedCard)).toBeNull();
+    reactHooks.setRevision.mockClear();
+    steamListeners.forEach((listener) => listener());
+    expect(reactHooks.setRevision).not.toHaveBeenCalled();
+    const nextCleanup = installNativeGridCompatibilityDispatcher(target, options);
+    expect(reactHooks.setRevision).toHaveBeenCalledOnce();
+    expect(renderedCategory(cachedCard)).toBe(2);
+    if (typeof unmount === "function") unmount();
+    nextCleanup();
+  });
+  it("preserves a peer renderer installed after Metadata and normalizes one owned icon", () => {
+    const target = makeTarget();
+    const firstCleanup = install(target, 3);
+    const oldMemo = target.type;
+    const peer = (...args: any[]) => {
+      const output = oldMemo(...args);
+      return createElement("div", { ...output.props }, ...[output.props.children].flat(), "peer-controller");
+    };
+    target.type = peer;
+    firstCleanup();
+    expect(target.type).toBe(peer);
+    const cleanup = install(target, 2);
+    const rendered = target.type();
+    expect(renderedCategory(rendered)).toBe(2);
+    expect(rendered.props.children).toHaveLength(3);
+    expect(rendered.props.children[2]).toBe("peer-controller");
+    cleanup();
+    expect(target.type).toBe(peer);
+    expect(renderedCategory(oldMemo())).toBeNull();
   });
 });
