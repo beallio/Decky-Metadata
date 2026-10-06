@@ -3903,7 +3903,7 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
     const details = appData?.details;
     if (!details)
         return false;
-    const description = metadata.description || metadata.short_description || "";
+    const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
     const descriptionsData = {
         strFullDescription: description,
         strSnippet: description,
@@ -4675,9 +4675,11 @@ const applyMetadataToOverview = (appId, overview) => {
     reassertMatchedAppData(appData, metadata, screenshots);
     try {
         const releaseDate = metadata.release_date;
-        if (typeof releaseDate === "number" && releaseDate > 0) {
-            overview.rt_original_release_date = releaseDate;
-            overview.rt_steam_release_date = releaseDate;
+        if (releaseDate === null || (typeof releaseDate === "number" && releaseDate > 0)) {
+            // Steam uses zero for an absent calendar date. An explicit saved null
+            // must clear the previous value; an omitted field keeps native data.
+            overview.rt_original_release_date = releaseDate ?? 0;
+            overview.rt_steam_release_date = releaseDate ?? 0;
         }
     }
     catch (_error) {
@@ -5053,6 +5055,8 @@ const installMetadataPatches = (unpatchers) => {
     if (overviewProto?.GetCanonicalReleaseDate) {
         unpatchers.push(patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
             const metadata = metadataCache[String(thisValue?.appid)];
+            if (isNativeNonSteamShortcut(thisValue) && metadata?.release_date === null)
+                return 0;
             if (isNonSteamApp(thisValue) && metadata?.release_date) {
                 return metadata.release_date;
             }
@@ -5557,6 +5561,211 @@ const findLiveModuleChild = (predicate) => {
     return DFL.findModuleChild(predicate);
 };
 
+const MARKER = "data-decky-metadata-description";
+const selector = (className) => /^[A-Za-z_-][A-Za-z0-9_-]*$/.test(className) ? `.${className}` : "";
+const resolveClasses = () => {
+    const inspect = (module) => {
+        if (!module || typeof module !== "object")
+            return undefined;
+        if (typeof module.GameDescription === "string" && typeof module.Description === "string" && typeof module.DescriptionStatsCtn === "string")
+            return module;
+        if (typeof module.GameInfoContainer === "string" && typeof module.GameInfoQuickLinks === "string")
+            return module;
+        for (const value of Object.values(module)) {
+            if (!value || typeof value !== "object")
+                continue;
+            if (typeof value.GameDescription === "string" && typeof value.DescriptionStatsCtn === "string")
+                return value;
+            if (typeof value.GameInfoContainer === "string" && typeof value.GameInfoQuickLinks === "string")
+                return value;
+        }
+        return undefined;
+    };
+    const descriptions = findLiveModuleChild((module) => {
+        const found = inspect(module);
+        return found?.GameDescription ? found : undefined;
+    });
+    const details = findLiveModuleChild((module) => {
+        const found = inspect(module);
+        return found?.GameInfoContainer ? found : undefined;
+    });
+    return descriptions && details ? { owner: details.GameInfoContainer, description: descriptions.GameDescription } : undefined;
+};
+/** Read one confirmed scalar prop on host ancestors, never enumerate Steam stores. */
+const descriptionOwnerAppId = (owner) => {
+    const fiberKey = Object.keys(owner).find((key) => key.startsWith("__reactFiber$"));
+    let fiber = fiberKey ? owner[fiberKey] : undefined;
+    for (let depth = 0; fiber && depth < 16; depth++, fiber = fiber.return) {
+        const appId = Number(fiber.memoizedProps?.overview?.appid);
+        if (Number.isSafeInteger(appId) && appId > 0)
+            return appId;
+    }
+    return 0;
+};
+const defaultDependencies$1 = () => {
+    let latestRoute;
+    return {
+        documents: () => steamUiDocuments(),
+        classes: resolveClasses,
+        route: () => latestRoute ?? currentRoutePath(),
+        eligible: (appId) => {
+            const overview = getOverview(appId);
+            return Number(overview?.appid) === appId && isNativeNonSteamShortcut(overview) && !!metadataCache[String(appId)];
+        },
+        ownerAppId: descriptionOwnerAppId,
+        visible: (owner) => owner.isConnected && owner.getClientRects().length > 0,
+        listen: (callback) => {
+            const host = steamUiWindow();
+            const history = host.SteamUIStore?.m_WindowStore?.MainWindowInstance?.m_history ?? host.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
+            return history?.listen?.((location) => {
+                latestRoute = [location?.pathname, location?.search, location?.hash].filter(Boolean).join(" ");
+                callback();
+            }) ?? (() => { });
+        },
+        revisions: (callback) => {
+            const stops = [subscribeCompatibilityRevision(callback), subscribeMetadataMatchChanges(callback)];
+            return () => stops.forEach((stop) => stop());
+        },
+        observe: (target, callback) => {
+            const observer = new MutationObserver(callback);
+            observer.observe(target, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
+            return () => observer.disconnect();
+        },
+        visibility: (owner, callback) => {
+            const Constructor = owner.ownerDocument.defaultView?.IntersectionObserver;
+            if (!Constructor)
+                return () => { };
+            const observer = new Constructor(callback);
+            observer.observe(owner);
+            return () => observer.disconnect();
+        },
+        schedule: (callback, delay) => window.setTimeout(callback, delay),
+        cancel: (id) => window.clearTimeout(id),
+    };
+};
+const installMetadataDescriptions = (unpatchers, dependencies = defaultDependencies$1()) => {
+    const classes = dependencies.classes();
+    if (!classes || !selector(classes.owner) || !selector(classes.description))
+        return;
+    let disposed = false;
+    const owners = new Map();
+    let discoveryStops = [];
+    let discoveryExpiry;
+    const restore = (record, leaf) => {
+        const original = record.originals.get(leaf);
+        if (!original)
+            return;
+        if (original.marker === null)
+            leaf.removeAttribute(MARKER);
+        else
+            leaf.setAttribute(MARKER, original.marker);
+        if (original.spacing)
+            leaf.style.setProperty("white-space", original.spacing, original.priority);
+        else
+            leaf.style.removeProperty("white-space");
+        record.originals.delete(leaf);
+    };
+    const stopDiscovery = () => {
+        discoveryStops.splice(0).forEach((stop) => stop());
+        if (discoveryExpiry !== undefined)
+            dependencies.cancel(discoveryExpiry);
+        discoveryExpiry = undefined;
+    };
+    const releaseOwner = (owner, record) => {
+        record.stops.splice(0).forEach((stop) => stop());
+        for (const leaf of record.originals.keys())
+            restore(record, leaf);
+        owners.delete(owner);
+    };
+    const refreshOwner = (owner, record) => {
+        if (!dependencies.visible(owner) || dependencies.ownerAppId(owner) !== record.appId || !dependencies.eligible(record.appId)) {
+            releaseOwner(owner, record);
+            return;
+        }
+        const leaves = Array.from(owner.querySelectorAll(selector(classes.description)));
+        for (const leaf of record.originals.keys())
+            if (!leaves.includes(leaf))
+                restore(record, leaf);
+        for (const leaf of leaves) {
+            if (!record.originals.has(leaf))
+                record.originals.set(leaf, {
+                    marker: leaf.getAttribute(MARKER),
+                    spacing: leaf.style.getPropertyValue("white-space"),
+                    priority: leaf.style.getPropertyPriority("white-space"),
+                });
+            if (leaf.getAttribute(MARKER) !== String(record.appId))
+                leaf.setAttribute(MARKER, String(record.appId));
+            if (leaf.style.getPropertyValue("white-space") !== "pre-wrap" || leaf.style.getPropertyPriority("white-space") !== "important")
+                leaf.style.setProperty("white-space", "pre-wrap", "important");
+        }
+    };
+    const hasCurrentOwner = (appId) => Array.from(owners.values()).some((record) => record.appId === appId);
+    const discover = () => {
+        if (disposed)
+            return;
+        const route = dependencies.route();
+        const appId = gameDetailAppIdFromPath(route);
+        if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
+            return;
+        for (const doc of dependencies.documents()) {
+            const matched = Array.from(doc.querySelectorAll(selector(classes.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
+            if (!matched)
+                continue;
+            stopDiscovery();
+            // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
+            if (!owners.has(matched)) {
+                const record = { appId, stops: [], originals: new Map() };
+                owners.set(matched, record);
+                const refresh = () => {
+                    if (disposed)
+                        return;
+                    refreshOwner(matched, record);
+                    if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId))
+                        reconcile();
+                };
+                record.stops.push(dependencies.observe(matched, refresh));
+                if (dependencies.visibility)
+                    record.stops.push(dependencies.visibility(matched, refresh));
+                refreshOwner(matched, record);
+            }
+            return;
+        }
+    };
+    const reconcile = () => {
+        if (disposed)
+            return;
+        stopDiscovery();
+        for (const [owner, record] of owners)
+            refreshOwner(owner, record);
+        const route = dependencies.route();
+        const appId = gameDetailAppIdFromPath(route);
+        if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
+            return;
+        if (hasCurrentOwner(appId))
+            return;
+        discover();
+        if (hasCurrentOwner(appId))
+            return;
+        // Discovery exists only while entering this exact Game Info surface. It
+        // expires even if Steam never mounts the expected owner.
+        for (const doc of dependencies.documents())
+            if (doc.body)
+                discoveryStops.push(dependencies.observe(doc.body, discover));
+        discoveryExpiry = dependencies.schedule(stopDiscovery, 2000);
+    };
+    const unlisten = dependencies.listen(reconcile);
+    const unsubscribeRevisions = dependencies.revisions(reconcile);
+    unpatchers.push(() => {
+        disposed = true;
+        unlisten();
+        unsubscribeRevisions();
+        stopDiscovery();
+        for (const [owner, record] of owners)
+            releaseOwner(owner, record);
+    });
+    reconcile();
+};
+
 const DECK_DISPLAY = 1;
 const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
 const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
@@ -5582,13 +5791,37 @@ const childrenOf = (element) => {
     const children = element.props.children;
     return Array.isArray(children) ? children : [children];
 };
-const hasIndicator = (children, indicator, key) => children.some((child) => SP_REACT.isValidElement(child) && (child.type === indicator || child.key === key));
-function decorateCarouselCompatibility(output, indicator, className, overview) {
+const containsIndicator = (children, predicate) => children.some((child) => SP_REACT.isValidElement(child) && (predicate(child) || (child.type === SP_REACT.Fragment && containsIndicator(childrenOf(child), predicate))));
+const normalizeIndicators = (children, nativeIndicator, indicator, key) => {
+    const nativePresent = containsIndicator(children, (child) => child.type === nativeIndicator && child.key !== key);
+    let keptOwned = false;
+    const normalize = (nodes) => nodes.flatMap((child) => {
+        if (!SP_REACT.isValidElement(child))
+            return [child];
+        if (child.key === key) {
+            if (nativePresent || keptOwned || child.type !== indicator)
+                return [];
+            keptOwned = true;
+        }
+        if (child.type === SP_REACT.Fragment) {
+            const original = childrenOf(child);
+            const cleaned = normalize(original);
+            if (cleaned.length !== original.length || cleaned.some((node, index) => node !== original[index]))
+                return [SP_REACT.cloneElement(child, { children: cleaned })];
+        }
+        return [child];
+    });
+    return normalize(children);
+};
+const hasIndicator = (children, nativeIndicator, indicator, key) => containsIndicator(children, (child) => child.type === nativeIndicator || (child.type === indicator && child.key === key));
+const unchangedChildren = (children, original) => children.length === original.length && children.every((child, index) => child === original[index]);
+function decorateCarouselCompatibility(output, nativeIndicator, indicator, className, overview) {
     if (!SP_REACT.isValidElement(output))
         return output;
-    const children = childrenOf(output);
-    if (hasIndicator(children, indicator, HOME_INDICATOR_KEY))
-        return output;
+    const originalChildren = childrenOf(output);
+    const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, HOME_INDICATOR_KEY);
+    if (hasIndicator(children, nativeIndicator, indicator, HOME_INDICATOR_KEY))
+        return (unchangedChildren(children, originalChildren) ? output : SP_REACT.cloneElement(output, { children }));
     // Steam's GameCapsule places compatibility after its in-library marker. A
     // shortcut suppresses that native slot with `false`; replace only that
     // confirmed placeholder. If Steam changes the shape, insert our indicator
@@ -5607,13 +5840,14 @@ function decorateCarouselCompatibility(output, indicator, className, overview) {
     // `isValidElement` proves T is this React element while preserving callers' concrete type.
     return decorated;
 }
-const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassName, overview) => {
+const decorateGridIconRow = (node, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview) => {
     if (!SP_REACT.isValidElement(node))
         return node;
     if (node.props.className === iconRowClassName) {
-        const children = childrenOf(node);
-        if (hasIndicator(children, indicator, GRID_INDICATOR_KEY))
-            return node;
+        const originalChildren = childrenOf(node);
+        const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, GRID_INDICATOR_KEY);
+        if (hasIndicator(children, nativeIndicator, indicator, GRID_INDICATOR_KEY))
+            return unchangedChildren(children, originalChildren) ? node : SP_REACT.cloneElement(node, { children });
         return SP_REACT.cloneElement(node, {
             children: [
                 ...children,
@@ -5630,15 +5864,15 @@ const decorateGridIconRow = (node, indicator, iconRowClassName, indicatorClassNa
     if (originalChildren === undefined)
         return node;
     const children = childrenOf(node);
-    const decoratedChildren = children.map((child) => decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview));
+    const decoratedChildren = children.map((child) => decorateGridIconRow(child, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview));
     if (decoratedChildren.every((child, index) => child === children[index]))
         return node;
     return SP_REACT.cloneElement(node, {
         children: Array.isArray(originalChildren) ? decoratedChildren : decoratedChildren[0],
     });
 };
-function decorateGridCompatibility(output, indicator, iconRowClassName, indicatorClassName, overview) {
-    const decorated = decorateGridIconRow(output, indicator, iconRowClassName, indicatorClassName, overview);
+function decorateGridCompatibility(output, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview) {
+    const decorated = decorateGridIconRow(output, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview);
     return decorated;
 }
 const resolveTargets = (dependencies) => {
@@ -5913,6 +6147,9 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         }
         const ReactiveCompatibilityIndicator = (props) => {
             dependencies.useCompatibilityRevision(subscribeIndicator);
+            return renderIndicator(props);
+        };
+        const renderIndicator = (props) => {
             if (!active)
                 return null;
             const appId = Number(props.overview?.appid);
@@ -5950,7 +6187,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 // The top-level `appid` remains a supported fallback for the alternate
                 // renderer shape used by older clients.
                 const appId = Number(props?.appid ?? props?.app?.appid);
-                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
+                return decorateForApp(appId, output, (card, overview) => decorateCarouselCompatibility(card, targets.indicator, ReactiveCompatibilityIndicator, targets.homeClassName, overview));
             };
             mountedHomeCarouselWrappers.set(carousel, wrapper);
             return wrapper;
@@ -6290,7 +6527,15 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 cleanup();
                 return;
             }
-            gridUnpatch = dependencies.patchGridRenderer(targets.grid, (args, output) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, ReactiveCompatibilityIndicator, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app));
+            const decorateGrid = (args, output, owned) => decorateForApp(Number(args[0]?.app?.appid), output, (card, overview) => decorateGridCompatibility(card, targets.indicator, owned, targets.gridIconsClassName, targets.gridIndicatorClassName, overview), args[0]?.app);
+            gridUnpatch = provided.patchGridRenderer
+                ? dependencies.patchGridRenderer(targets.grid, (args, output) => decorateGrid(args, output, ReactiveCompatibilityIndicator))
+                : installNativeGridCompatibilityDispatcher(targets.grid, {
+                    patch: dependencies.patchGridRenderer,
+                    decorate: decorateGrid,
+                    render: renderIndicator,
+                    subscribeRevision: subscribeCompatibilityRevision,
+                });
             if (typeof gridUnpatch !== "function") {
                 cleanup();
                 return;
@@ -6308,6 +6553,75 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         scheduleMountedHomeDiscoveryRetry();
     };
     installWhenTargetsResolve();
+};
+/**
+ * React retains a memo's resolved function in mounted cards. Keep its owned
+ * dispatcher stable across reload, while swapping only the active generation.
+ * Native card components, hooks, focus and peer wrappers retain their identity.
+ */
+const installNativeGridCompatibilityDispatcher = (target, options) => {
+    const host = globalThis;
+    const registry = host.__deckyMetadataGridCompatibilityDispatchers ?? (host.__deckyMetadataGridCompatibilityDispatchers = new WeakMap());
+    let state = registry.get(target);
+    if (!state) {
+        const created = {
+            original: undefined,
+            wrapper: undefined,
+            indicator: () => null,
+            listeners: new Set(),
+        };
+        // These listeners belong to mounted React leaves. No Steam subscription or
+        // monitoring survives unload; the small bridge only publishes activation.
+        created.indicator = function LiveGridCompatibilityIndicator(props) {
+            const [, setRevision] = SP_REACT.useState(0);
+            SP_REACT.useEffect(() => {
+                const update = () => setRevision((revision) => revision + 1);
+                created.listeners.add(update);
+                // Hydration can publish after render but before this passive effect.
+                // Catch up once attached, as the regular compatibility hook does.
+                update();
+                return () => { created.listeners.delete(update); };
+            }, []);
+            return created.render?.(props) ?? null;
+        };
+        registry.set(target, created);
+        state = created;
+    }
+    const current = state;
+    const publish = () => current.listeners.forEach((listener) => listener());
+    const owner = Symbol("decky-metadata-grid-generation");
+    current.unsubscribe?.();
+    current.owner = owner;
+    current.decorate = options.decorate;
+    current.render = options.render;
+    // Decky's chain-aware unpatch can remove a predecessor while our wrapper
+    // stays mounted. Reuse its current chain, never the installation snapshot.
+    current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
+    if (target.type === current.original && current.wrapper) {
+        target.type = current.wrapper;
+    }
+    else if (target.type !== current.wrapper) {
+        current.original = target.type;
+        options.patch(target, (args, output) => current.decorate?.(args, output, current.indicator) ?? output);
+        current.wrapper = target.type;
+    }
+    current.unsubscribe = options.subscribeRevision(publish);
+    publish();
+    return () => {
+        if (current.owner !== owner)
+            return;
+        current.unsubscribe?.();
+        current.unsubscribe = undefined;
+        current.owner = undefined;
+        current.decorate = undefined;
+        current.render = undefined;
+        // Restore only our exact head. A peer wrapper published later remains.
+        // The captured dispatcher stays inert in Steam's mounted memo cache.
+        current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
+        if (target.type === current.wrapper)
+            target.type = current.original;
+        publish();
+    };
 };
 
 const firstUrlishArgIndex = (args, firstOnly = false) => {
@@ -8737,6 +9051,7 @@ const installSteamPatches = () => {
         });
         installNativeNewsHistoryRedirects(unpatchers);
         installMetadataPatches(unpatchers);
+        safeInstallStep("metadataDescriptions", () => installMetadataDescriptions(unpatchers));
         safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
         installCommunityFeedPatch(unpatchers);
         installRouterRenderPatches(unpatchers, {
@@ -9086,7 +9401,7 @@ const resolveTrailerSource = (context) => {
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.7";
+    const runtimeVersion = "0.1.8";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -9825,7 +10140,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.ignFallback = normalizeIgnFallback(initialIgnFallback);
             this.needsIgnFallback = false;
             this.steamUnavailable = false;
-            this.status = rt("waitingGamePage");
+            this.status = rt(this.settings.enabled ? "waitingGamePage" : "disabled");
             this.requestToken = 0;
             this.trailerCache = new Map();
             this.resumeAttemptCandidate = undefined;
@@ -9838,6 +10153,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
                 if (this.currentTarget) {
                     this.restoreStatusBackdrop();
                     this.syncStatusBackdrop(this.currentTarget);
@@ -9845,6 +10162,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.queueScan();
             };
             this.handleRouteChange = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
                 if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
                     activeRouteText().toLowerCase().includes("#quickaccess")))
                     this.exitCleanViewing();
@@ -9852,6 +10171,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     void this.scan();
             };
             this.handleVisibilityChange = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
                 this.failedVisit = undefined;
                 if (document.hidden) {
                     this.pageEnteredAt = undefined;
@@ -9863,8 +10184,14 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     void this.scan();
                 }
             };
-            this.handleLaunchIntent = (event) => this.stopTrailerForLaunch(event.target);
+            this.handleLaunchIntent = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                this.stopTrailerForLaunch(event.target);
+            };
             this.handleLaunchKeyDown = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
                 if (this.cleanViewingOverlay && (event.key === "Escape" || event.key === "Backspace")) {
                     this.exitCleanViewing();
                     event.preventDefault();
@@ -9885,6 +10212,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 }
             };
             this.handleGamepadButtonDown = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
                 const button = Number(event?.detail?.button);
                 if (event?.detail?.is_repeat || this.steamSideMenuVisible())
                     return;
@@ -10066,16 +10395,31 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
         }
         mount() {
+            this.mounted = true;
             this.installStyle();
             this.cleanupVideo();
+            this.startMonitoring();
+            if (this.settings.enabled)
+                void this.scan();
+        }
+        startMonitoring() {
+            if (!this.mounted || this.monitoring || this.destroyed || !this.settings.enabled)
+                return;
+            this.monitoring = true;
+            const generation = this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
+            const isCurrent = () => this.monitoring && !this.destroyed && this.settings.enabled &&
+                generation === this.monitoringGeneration;
             if (document.body) {
                 this.observer = new MutationObserver((mutations) => {
+                    if (!isCurrent())
+                        return;
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation)))
                         this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
                 if (document.head) {
-                    this.themeObserver = new MutationObserver(() => this.handleResize());
+                    this.themeObserver = new MutationObserver(() => { if (isCurrent())
+                        this.handleResize(); });
                     this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
                 }
             }
@@ -10096,9 +10440,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
             window.addEventListener("resize", this.handleResize);
             document.addEventListener("visibilitychange", this.handleVisibilityChange);
-            this.scanTimer = window.setInterval(() => { if (!document.hidden)
-                void this.scan(); }, routeScanIntervalMs);
-            void this.scan();
+            this.scanTimer = window.setInterval(() => {
+                if (isCurrent() && !document.hidden)
+                    void this.scan();
+            }, routeScanIntervalMs);
         }
         update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
             if (Number.isSafeInteger(revision) && revision < this.settingsRevision)
@@ -10137,6 +10482,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer)
                 this.syncLogoVisibility();
             if (!this.settings.enabled) {
+                this.stopMonitoring();
                 this.pageEnteredAt = undefined;
                 this.cleanupVideo(true);
                 this.releaseThemeBand();
@@ -10144,6 +10490,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 return this.snapshot();
             }
             if (!previous.enabled) {
+                this.startMonitoring();
                 this.launchHeld = false;
                 this.failedVisit = undefined;
                 this.steamUnavailable = false;
@@ -10200,26 +10547,36 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         destroy() {
             this.destroyed = true;
-            this.requestToken += 1;
+            this.stopMonitoring();
+            this.cleanupVideo(true);
+            this.releaseThemeBand();
+            document.getElementById(styleId)?.remove();
+        }
+        stopMonitoring() {
+            this.monitoring = false;
+            this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
             this.observer?.disconnect();
             this.themeObserver?.disconnect();
+            this.observer = undefined;
+            this.themeObserver = undefined;
             if (this.scanTimer)
                 window.clearInterval(this.scanTimer);
             if (this.queuedScanTimer)
                 window.clearTimeout(this.queuedScanTimer);
+            this.scanTimer = undefined;
+            this.queuedScanTimer = undefined;
+            this.scanQueued = false;
             for (const routeWindow of this.routeWindows ?? []) {
                 routeWindow.removeEventListener("hashchange", this.handleRouteChange);
                 routeWindow.removeEventListener("popstate", this.handleRouteChange);
             }
+            this.routeWindows = [];
             window.removeEventListener("resize", this.handleResize);
             document.removeEventListener("pointerdown", this.handleLaunchIntent, true);
             document.removeEventListener("click", this.handleLaunchIntent, true);
             document.removeEventListener("keydown", this.handleLaunchKeyDown, true);
             document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
             document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-            this.cleanupVideo(true);
-            this.releaseThemeBand();
-            document.getElementById(styleId)?.remove();
         }
         installStyle() {
             let style = document.getElementById(styleId);
@@ -10413,17 +10770,21 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
         }
         queueScan() {
-            if (this.scanQueued || this.destroyed)
+            if (this.scanQueued || this.destroyed || !this.settings.enabled)
                 return;
             this.scanQueued = true;
+            const generation = this.monitoringGeneration;
             this.queuedScanTimer = window.setTimeout(() => {
+                if (generation !== this.monitoringGeneration)
+                    return;
                 this.queuedScanTimer = undefined;
                 this.scanQueued = false;
-                void this.scan();
+                if (!this.destroyed && this.settings.enabled)
+                    void this.scan();
             }, queuedScanDelayMs);
         }
         async scan() {
-            if (this.destroyed)
+            if (this.destroyed || !this.settings.enabled)
                 return;
             if (this.reservationBackground?.isConnected === false)
                 this.releaseThemeBand();
@@ -11460,9 +11821,14 @@ const documents = () => {
 const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
-  return owner?.active && runtime?.ownerId === owner.ownerId
-    ? runtime.snapshot()
-    : { status: 'Steam UI unavailable', runtimeMissing: true };
+  if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
+    return { status: 'Steam UI unavailable', runtimeMissing: true };
+  }
+  // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
+  if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
+    return runtime.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
+  }
+  return runtime.snapshot();
 })()`;
 class TrailerController {
     constructor(conflicts = pluginConflicts) {
@@ -11890,6 +12256,8 @@ class TrailerController {
         const direct = this.updateReachableRuntimes();
         this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
         this.emit();
+        if (!direct)
+            void this.runInSteamTab(runtimeMissingScript);
         if (!direct && this.isEffectivelyEnabled())
             void this.poll();
         let succeeded = true;
@@ -11911,7 +12279,8 @@ class TrailerController {
                 this.settings = { ...this.confirmedSettings };
                 this.settingsRevision += 1;
                 this.publishOwner();
-                this.updateReachableRuntimes();
+                if (!this.updateReachableRuntimes())
+                    void this.runInSteamTab(runtimeMissingScript);
                 this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
                 this.status = "Trailer settings were restored";
             }
@@ -12014,7 +12383,7 @@ class TrailerController {
             catch {
                 return { identity: null, status: "Saved Steam matches are not available" };
             }
-            if (!this.mounted)
+            if (!this.isEffectivelyEnabled())
                 return { identity: null, status: "Disabled" };
         }
         const metadata = metadataCache[String(pageAppId)] ?? null;
@@ -14312,15 +14681,21 @@ const epochToDate = (value) => {
     const date = new Date(value * 1000);
     if (Number.isNaN(date.getTime()))
         return "";
-    return date.toISOString().slice(0, 10);
+    return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 const dateToEpoch = (value) => {
     if (!value.trim())
         return null;
-    const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
-    if (Number.isNaN(timestamp))
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if (!match)
         return null;
-    return Math.floor(timestamp / 1000);
+    const [year, month, day] = match.slice(1).map(Number);
+    const date = new Date(0);
+    date.setFullYear(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day)
+        return null;
+    return Math.floor(date.getTime() / 1000);
 };
 const parseRating = (value) => {
     if (!value.trim())
@@ -14577,7 +14952,7 @@ const metadataValuesEqual = (left, right) => JSON.stringify(left) === JSON.strin
 /**
  * A metadata load can complete after the user has begun editing. Keep each
  * field changed since that request started, while still hydrating every field
- * the user has not touched.
+ * the user has not touched. Description and summary form one editable value.
  */
 const mergeHydratedMetadata = (saved, baseline, current) => {
     const merged = { ...saved };
@@ -14586,6 +14961,11 @@ const mergeHydratedMetadata = (saved, baseline, current) => {
         if (!metadataValuesEqual(current[key], baseline[key])) {
             merged[key] = current[key];
         }
+    }
+    if (!metadataValuesEqual(current.description, baseline.description) ||
+        !metadataValuesEqual(current.short_description, baseline.short_description)) {
+        merged.description = current.description;
+        merged.short_description = current.short_description;
     }
     return merged;
 };
@@ -14660,6 +15040,7 @@ const MetadataPage = () => {
     const publisherTextRef = SP_REACT.useRef(publisherText);
     const releaseTextRef = SP_REACT.useRef(releaseText);
     const ratingTextRef = SP_REACT.useRef(ratingText);
+    const releaseBaselineRef = SP_REACT.useRef({ text: epochToDate(metadata.release_date), epoch: metadata.release_date });
     const formRevisionRef = SP_REACT.useRef(0);
     const busyRef = SP_REACT.useRef(false);
     const busyEntryRef = SP_REACT.useRef(null);
@@ -14676,6 +15057,7 @@ const MetadataPage = () => {
         const nextDeveloperText = personsToText(next.developers);
         const nextPublisherText = personsToText(next.publishers);
         const nextReleaseText = epochToDate(next.release_date);
+        releaseBaselineRef.current = { text: nextReleaseText, epoch: next.release_date };
         const nextRatingText = next.rating == null ? "" : String(next.rating);
         developerTextRef.current = nextDeveloperText;
         publisherTextRef.current = nextPublisherText;
@@ -14720,6 +15102,7 @@ const MetadataPage = () => {
             publisherTextRef.current = value;
             setPublisherText(value);
         }
+        releaseBaselineRef.current = { text: epochToDate(reconciled.release_date), epoch: reconciled.release_date };
         if (releaseTextRef.current === baselineText.releaseText) {
             const value = epochToDate(reconciled.release_date);
             releaseTextRef.current = value;
@@ -14804,8 +15187,9 @@ const MetadataPage = () => {
                     publisherTextRef.current = nextPublisherText;
                     setPublisherText(nextPublisherText);
                 }
+                releaseBaselineRef.current = { text: epochToDate(hydrated.release_date), epoch: hydrated.release_date };
                 if (releaseTextRef.current === baselineReleaseText) {
-                    const nextReleaseText = epochToDate(saved.release_date);
+                    const nextReleaseText = epochToDate(hydrated.release_date);
                     releaseTextRef.current = nextReleaseText;
                     setReleaseText(nextReleaseText);
                 }
@@ -14872,7 +15256,7 @@ const MetadataPage = () => {
         };
         setSteamNameLoading(true);
         setSteamNameUnavailable(false);
-        void enrichSteamApp(appId)
+        void enrichSteamApp(appId, "steam-name")
             .then((enriched) => {
             const current = metadataRef.current;
             if (!isCurrentEditorEntry(requestedEntry) ||
@@ -14944,7 +15328,7 @@ const MetadataPage = () => {
         title: cleanTitle(metadata.title),
         developers: textToPersons(developerText),
         publishers: textToPersons(publisherText),
-        release_date: dateToEpoch(releaseText),
+        release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.epoch : dateToEpoch(releaseText),
         rating: parseRating(ratingText),
         store_categories: metadata.store_categories || [],
     }), [developerText, metadata, publisherText, ratingText, releaseText]);
@@ -15040,7 +15424,7 @@ const MetadataPage = () => {
                 // Keep edits that happened before this enrichment started too.
                 ...saveBaselineText,
             };
-            const enriched = await enrichSteamApp(appId);
+            const enriched = await enrichSteamApp(appId, "metadata");
             if (!isCurrentEditorEntry(requestedEntry) ||
                 normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed) {
                 return;
@@ -15293,11 +15677,11 @@ const MetadataPage = () => {
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.description, onChange: (e) => updateMetadata((prev) => ({
+                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
                                                 ...prev,
                                                 description: e.target.value,
                                                 short_description: e.target.value,
-                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.description, onChange: (e) => updateMetadata((prev) => ({
+                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,

@@ -3,7 +3,7 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.7";
+    const runtimeVersion = "0.1.8";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
@@ -625,7 +625,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.ignFallback = normalizeIgnFallback(initialIgnFallback);
             this.needsIgnFallback = false;
             this.steamUnavailable = false;
-            this.status = rt("waitingGamePage");
+            this.status = rt(this.settings.enabled ? "waitingGamePage" : "disabled");
             this.requestToken = 0;
             this.trailerCache = new Map();
             this.resumeAttemptCandidate = undefined;
@@ -638,6 +638,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.statusBackdrop = undefined;
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => {
+                if (this.destroyed || !this.settings.enabled) return;
                 if (this.currentTarget) {
                     this.restoreStatusBackdrop();
                     this.syncStatusBackdrop(this.currentTarget);
@@ -645,11 +646,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.queueScan();
             };
             this.handleRouteChange = () => {
+                if (this.destroyed || !this.settings.enabled) return;
                 if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
                     activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
                 if (this.checkRootRoute()) void this.scan();
             };
             this.handleVisibilityChange = () => {
+                if (this.destroyed || !this.settings.enabled) return;
                 this.failedVisit = undefined;
                 if (document.hidden) {
                     this.pageEnteredAt = undefined;
@@ -661,8 +664,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     void this.scan();
                 }
             };
-            this.handleLaunchIntent = (event) => this.stopTrailerForLaunch(event.target);
+            this.handleLaunchIntent = (event) => {
+                if (this.destroyed || !this.settings.enabled) return;
+                this.stopTrailerForLaunch(event.target);
+            };
             this.handleLaunchKeyDown = (event) => {
+                if (this.destroyed || !this.settings.enabled) return;
                 if (this.cleanViewingOverlay && (event.key === "Escape" || event.key === "Backspace")) {
                     this.exitCleanViewing();
                     event.preventDefault();
@@ -680,6 +687,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 catch { return false; }
             };
             this.handleGamepadButtonDown = (event) => {
+                if (this.destroyed || !this.settings.enabled) return;
                 const button = Number(event?.detail?.button);
                 if (event?.detail?.is_repeat || this.steamSideMenuVisible()) return;
                 const editable = (element) => element instanceof HTMLElement && Boolean(
@@ -837,15 +845,26 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
         }
         mount() {
+            this.mounted = true;
             this.installStyle();
             this.cleanupVideo();
+            this.startMonitoring();
+            if (this.settings.enabled) void this.scan();
+        }
+        startMonitoring() {
+            if (!this.mounted || this.monitoring || this.destroyed || !this.settings.enabled) return;
+            this.monitoring = true;
+            const generation = this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
+            const isCurrent = () => this.monitoring && !this.destroyed && this.settings.enabled &&
+                generation === this.monitoringGeneration;
             if (document.body) {
                 this.observer = new MutationObserver((mutations) => {
+                    if (!isCurrent()) return;
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
                 if (document.head) {
-                    this.themeObserver = new MutationObserver(() => this.handleResize());
+                    this.themeObserver = new MutationObserver(() => { if (isCurrent()) this.handleResize(); });
                     this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
                 }
             }
@@ -866,8 +885,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             window.addEventListener("resize", this.handleResize);
             document.addEventListener("visibilitychange", this.handleVisibilityChange);
-            this.scanTimer = window.setInterval(() => { if (!document.hidden) void this.scan(); }, routeScanIntervalMs);
-            void this.scan();
+            this.scanTimer = window.setInterval(() => {
+                if (isCurrent() && !document.hidden) void this.scan();
+            }, routeScanIntervalMs);
         }
         update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
             if (Number.isSafeInteger(revision) && revision < this.settingsRevision) return this.snapshot();
@@ -903,6 +923,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (previous.audioEnabled !== this.settings.audioEnabled) this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
             if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer) this.syncLogoVisibility();
             if (!this.settings.enabled) {
+                this.stopMonitoring();
                 this.pageEnteredAt = undefined;
                 this.cleanupVideo(true);
                 this.releaseThemeBand();
@@ -910,6 +931,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 return this.snapshot();
             }
             if (!previous.enabled) {
+                this.startMonitoring();
                 this.launchHeld = false;
                 this.failedVisit = undefined;
                 this.steamUnavailable = false;
@@ -964,24 +986,34 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         destroy() {
             this.destroyed = true;
-            this.requestToken += 1;
+            this.stopMonitoring();
+            this.cleanupVideo(true);
+            this.releaseThemeBand();
+            document.getElementById(styleId)?.remove();
+        }
+        stopMonitoring() {
+            this.monitoring = false;
+            this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
             this.observer?.disconnect();
             this.themeObserver?.disconnect();
+            this.observer = undefined;
+            this.themeObserver = undefined;
             if (this.scanTimer) window.clearInterval(this.scanTimer);
             if (this.queuedScanTimer) window.clearTimeout(this.queuedScanTimer);
+            this.scanTimer = undefined;
+            this.queuedScanTimer = undefined;
+            this.scanQueued = false;
             for (const routeWindow of this.routeWindows ?? []) {
                 routeWindow.removeEventListener("hashchange", this.handleRouteChange);
                 routeWindow.removeEventListener("popstate", this.handleRouteChange);
             }
+            this.routeWindows = [];
             window.removeEventListener("resize", this.handleResize);
             document.removeEventListener("pointerdown", this.handleLaunchIntent, true);
             document.removeEventListener("click", this.handleLaunchIntent, true);
             document.removeEventListener("keydown", this.handleLaunchKeyDown, true);
             document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
             document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-            this.cleanupVideo(true);
-            this.releaseThemeBand();
-            document.getElementById(styleId)?.remove();
         }
         installStyle() {
             let style = document.getElementById(styleId);
@@ -1153,16 +1185,18 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
         }
         queueScan() {
-            if (this.scanQueued || this.destroyed) return;
+            if (this.scanQueued || this.destroyed || !this.settings.enabled) return;
             this.scanQueued = true;
+            const generation = this.monitoringGeneration;
             this.queuedScanTimer = window.setTimeout(() => {
+                if (generation !== this.monitoringGeneration) return;
                 this.queuedScanTimer = undefined;
                 this.scanQueued = false;
-                void this.scan();
+                if (!this.destroyed && this.settings.enabled) void this.scan();
             }, queuedScanDelayMs);
         }
         async scan() {
-            if (this.destroyed) return;
+            if (this.destroyed || !this.settings.enabled) return;
             if (this.reservationBackground?.isConnected === false) this.releaseThemeBand();
             const owner = findOwnerRecord();
             if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {

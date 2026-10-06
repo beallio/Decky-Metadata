@@ -1923,3 +1923,42 @@ describe("compatibility metadata application", () => {
     expect(() => refreshCompatibilitySurfaces()).not.toThrow();
   });
 });
+
+
+describe("native release date clearing", () => {
+  it("clears a saved shortcut date without clearing native or missing-field dates", () => {
+    class NativeOverview {
+      appid = 0;
+      app_type = 1073741824;
+      rt_original_release_date = 1207724400;
+      rt_steam_release_date = 1207724400;
+      BIsShortcut() { return this.app_type === 1073741824; }
+      BIsModOrShortcut() { return this.BIsShortcut(); }
+      GetCanonicalReleaseDate() { return this.rt_original_release_date; }
+    }
+    const matched = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId });
+    const native = Object.assign(new NativeOverview(), { appid: matchedSteamAppId, app_type: 0 });
+    const missingDate = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId + 1 });
+    const unmatched = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId + 2 });
+    const overviews = new Map([matched, native, missingDate, unmatched].map(item => [item.appid, item]));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = { allApps: [...overviews.values()], GetAppOverviewByAppID: (id: number) => overviews.get(id) };
+    host.appDetailsStore = { GetAppData: () => ({ details: {} }) };
+    setRoute(`/library/app/${matchedShortcutAppId}/tab/GameInfo`);
+    metadataCache[String(matched.appid)] = { steam_appid: matchedSteamAppId, release_date: 1710057600 } as any;
+    metadataCache[String(native.appid)] = { release_date: null } as any;
+    metadataCache[String(missingDate.appid)] = { steam_appid: matchedSteamAppId } as any;
+    installMetadataPatches(unpatchers);
+    applyMetadata(matched.appid);
+    expect(matched.GetCanonicalReleaseDate()).toBe(1710057600);
+    metadataCache[String(matched.appid)] = { steam_appid: matchedSteamAppId, release_date: null } as any;
+    applyMetadata(matched.appid);
+    expect(matched.GetCanonicalReleaseDate()).toBe(0);
+    expect([matched.rt_original_release_date, matched.rt_steam_release_date]).toEqual([0, 0]);
+    for (const overview of [native, missingDate, unmatched]) {
+      applyMetadata(overview.appid);
+      expect(overview.GetCanonicalReleaseDate()).toBe(1207724400);
+      expect([overview.rt_original_release_date, overview.rt_steam_release_date]).toEqual([1207724400, 1207724400]);
+    }
+  });
+});

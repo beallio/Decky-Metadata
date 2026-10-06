@@ -4,6 +4,28 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Correct metadata summaries, release dates, and Library UI behavior
+
+### Fixed
+
+- Metadata imports and Game Info use the source's short summary first, with
+  readable longer text as a fallback. Manual text, literal angle brackets, and
+  paragraph/list spacing are preserved, including after delayed metadata loads
+  and while Game Info pages close. Unrelated saves and automatic Steam-name
+  lookups keep saved descriptions and dates. Clearing a description while a
+  Steam match loads also keeps it cleared.
+- Steam dates accept both English month-first and day-first forms. New and
+  edited dates keep the local calendar day; clearing a date also clears it from
+  Game Info. Correct or re-import an affected
+  old date per game; existing timestamps are not changed in bulk.
+- Library cards keep one compatibility indicator when Steam's native indicator
+  and Metadata's indicator appear together during navigation. Reloaded cards use
+  the current indicator. An update from an older loaded version can require one
+  Steam restart to refresh cached cards.
+- Turning trailers off stops unused monitoring and restores artwork. Turning
+  them on resumes one player, including when the Steam tab receives settings
+  through the plugin bridge. Other causes of scrolling lag can remain.
+
 ## [0.5.0] - 2026-10-03
 
 Add ProtonDB badges, mini achievements, and collapsible settings

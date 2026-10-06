@@ -47,14 +47,19 @@ export const epochToDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+  return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
 export const dateToEpoch = (value: string) => {
   if (!value.trim()) return null;
-  const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
-  if (Number.isNaN(timestamp)) return null;
-  return Math.floor(timestamp / 1000);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return null;
+  const [year, month, day] = match.slice(1).map(Number);
+  const date = new Date(0);
+  date.setFullYear(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return Math.floor(date.getTime() / 1000);
 };
 
 export const parseRating = (value: string) => {

@@ -194,10 +194,8 @@ def game_to_metadata(game: dict[str, Any]) -> dict[str, Any]:
     names = meta.get("names") or {}
     descriptions = meta.get("descriptions") or {}
     title = names.get("name") or names.get("short") or game.get("slug") or ""
-    long_desc = matching.clean_html_text(
-        descriptions.get("long") or descriptions.get("short") or ""
-    )
-    short_desc = matching.clean_html_text(descriptions.get("short") or long_desc)
+    short_desc = matching.description_html_to_text(descriptions.get("short") or "")
+    long_desc = matching.description_html_to_text(descriptions.get("long") or "")
     producers = attributes_to_people(game.get("producers") or [])
     publishers = attributes_to_people(game.get("publishers") or [])
     genres = attributes_to_names(game.get("genres") or [])
@@ -205,7 +203,7 @@ def game_to_metadata(game: dict[str, Any]) -> dict[str, Any]:
     rating = matching.rating_to_percent((game.get("primaryReview") or {}).get("score"))
     release_date = first_release_date(game.get("objectRegions") or [])
     categories = infer_store_categories(
-        " ".join([title, long_desc, " ".join(genres), " ".join(features)])
+        " ".join([title, long_desc or short_desc, " ".join(genres), " ".join(features)])
     )
     screenshots = ign_images_to_screenshots(game)
     return {
@@ -213,7 +211,7 @@ def game_to_metadata(game: dict[str, Any]) -> dict[str, Any]:
         "id": game.get("id") or game.get("slug") or title,
         "source": "IGN",
         "source_url": absolute_ign_url(game.get("url") or game.get("slug")),
-        "description": long_desc or short_desc,
+        "description": short_desc or long_desc,
         "short_description": short_desc or long_desc,
         "developers": producers,
         "publishers": publishers,
@@ -272,7 +270,7 @@ def search_metadata(query: str, limit: int, graphql: GraphqlFn) -> list[dict[str
                 "slug": node.get("slug"),
                 "url": absolute_ign_url(node.get("url") or node.get("slug")),
                 "title": title,
-                "description": matching.clean_html_text(descriptions.get("short") or ""),
+                "description": matching.description_html_to_text(descriptions.get("short") or ""),
                 "rating": matching.rating_to_percent(
                     ((node.get("primaryReview") or {}).get("score"))
                 ),

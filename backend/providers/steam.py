@@ -364,22 +364,12 @@ def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: Pl
             if steam_store_name:
                 details["steam_store_name"] = steam_store_name
 
-        description = matching.clean_html_text(
-            str(
-                data.get("detailed_description")
-                or data.get("about_the_game")
-                or data.get("short_description")
-                or ""
-            )
-        )
+        short_description = matching.description_html_to_text(data.get("short_description") or "")
+        candidates = [short_description, matching.description_html_to_text(data.get("about_the_game") or ""), matching.description_html_to_text(data.get("detailed_description") or "")]
+        description = next((text for text in candidates if text), "")
         if description:
             details["description"] = description
-
-        short_description = matching.clean_html_text(
-            str(data.get("short_description") or "")
-        )
-        if short_description:
-            details["short_description"] = short_description
+            details["short_description"] = short_description or description
 
         developers = [
             {"name": str(name).strip(), "url": ""}
