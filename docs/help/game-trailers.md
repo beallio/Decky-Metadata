@@ -8,6 +8,11 @@ Open the Quick Access Menu, open Decky Metadata, and select **Game trailers** to
 
 Decky Metadata checks for a playable Steam trailer first. If Steam has none, it looks for a suitable IGN game trailer. If neither source has a suitable video, the game artwork stays visible.
 
+Turning **Enabled** off stops trailer scans, timers, and artwork tracking and
+restores the game's artwork and logo. Turning it on starts tracking the current
+game again. This removes unused trailer work while off; other causes of scrolling
+lag can remain.
+
 For a non-Steam shortcut, a saved Steam match in **Decky metadata...** supplies the Steam App ID to check first. If that Steam trailer is not playable, Decky Metadata can fall back to IGN. Without a Steam match, it looks for an IGN trailer using the shortcut's name or a saved IGN game match. If it cannot find a suitable match and video, the shortcut's artwork stays visible.
 
 ## Choose trailer settings

@@ -1923,3 +1923,129 @@ describe("compatibility metadata application", () => {
     expect(() => refreshCompatibilitySurfaces()).not.toThrow();
   });
 });
+
+
+describe("native release date clearing", () => {
+  it("clears a saved shortcut date without clearing native or missing-field dates", () => {
+    class NativeOverview {
+      appid = 0;
+      app_type = 1073741824;
+      rt_original_release_date = 1207724400;
+      rt_steam_release_date = 1207724400;
+      BIsShortcut() { return this.app_type === 1073741824; }
+      BIsModOrShortcut() { return this.BIsShortcut(); }
+      GetCanonicalReleaseDate() { return this.rt_original_release_date; }
+    }
+    const matched = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId });
+    const native = Object.assign(new NativeOverview(), { appid: matchedSteamAppId, app_type: 0 });
+    const missingDate = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId + 1 });
+    const unmatched = Object.assign(new NativeOverview(), { appid: matchedShortcutAppId + 2 });
+    const overviews = new Map([matched, native, missingDate, unmatched].map(item => [item.appid, item]));
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = { allApps: [...overviews.values()], GetAppOverviewByAppID: (id: number) => overviews.get(id) };
+    host.appDetailsStore = { GetAppData: () => ({ details: {} }) };
+    setRoute(`/library/app/${matchedShortcutAppId}/tab/GameInfo`);
+    const savedMetadata: MetadataData = { title: "Saved", id: "date", source: "Manual", description: "Untouched", store_categories: [], steam_dlc_appids: [], has_points_shop: false, steam_appid: matchedSteamAppId, release_date: "2024-03-10" };
+    metadataCache[String(matched.appid)] = savedMetadata;
+    metadataCache[String(native.appid)] = { ...savedMetadata, release_date: null };
+    metadataCache[String(missingDate.appid)] = { title: "No date", id: "missing", source: "Manual", description: "", store_categories: [], steam_dlc_appids: [], has_points_shop: false, steam_appid: matchedSteamAppId };
+    installMetadataPatches(unpatchers);
+    applyMetadata(matched.appid);
+    const shownDay = new Date(matched.GetCanonicalReleaseDate() * 1000);
+    expect([shownDay.getFullYear(), shownDay.getMonth() + 1, shownDay.getDate()]).toEqual([2024, 3, 10]);
+    expect([matched.rt_original_release_date, matched.rt_steam_release_date]).toEqual([matched.GetCanonicalReleaseDate(), matched.GetCanonicalReleaseDate()]);
+    metadataCache[String(matched.appid)] = { ...savedMetadata, release_date: null };
+    applyMetadata(matched.appid);
+    expect(matched.GetCanonicalReleaseDate()).toBe(0);
+    expect([matched.rt_original_release_date, matched.rt_steam_release_date]).toEqual([0, 0]);
+    for (const overview of [native, missingDate, unmatched]) {
+      applyMetadata(overview.appid);
+      expect(overview.GetCanonicalReleaseDate()).toBe(1207724400);
+      expect([overview.rt_original_release_date, overview.rt_steam_release_date]).toEqual([1207724400, 1207724400]);
+    }
+  });
+  it("reprojects cached fields on timezone notification without changing metadata and unregisters on unload", () => {
+    const originalZone = process.env.TZ;
+    const listeners = new Set<() => void>();
+    const host = globalThis as Record<string, unknown>;
+    class NativeOverview {
+      appid = matchedShortcutAppId;
+      app_type = 1073741824;
+      rt_original_release_date = 1207724400;
+      rt_steam_release_date = 1207724400;
+      __cachedReleaseYearString: string | undefined = "2008";
+      BIsShortcut() { return true; }
+      GetCanonicalReleaseDate() { return this.rt_original_release_date; }
+      GetCanonicalReleaseYear() {
+        return this.__cachedReleaseYearString ??= String(new Date(this.GetCanonicalReleaseDate() * 1000).getFullYear());
+      }
+    }
+    const overview = new NativeOverview();
+    const metadata: MetadataData = { title: "Saved", id: "date", source: "Manual", description: "Untouched", store_categories: [], steam_dlc_appids: [], has_points_shop: false, release_date: "2024-03-10" };
+    try {
+      process.env.TZ = "America/Los_Angeles";
+      host.SteamClient = { Settings: { RegisterForTimeZoneChange: (callback: () => void) => {
+        listeners.add(callback);
+        return { unregister: () => listeners.delete(callback) };
+      } } };
+      host.appStore = { allApps: [overview] };
+      host.appDetailsStore = {};
+      metadataCache[String(overview.appid)] = metadata;
+      installMetadataPatches(unpatchers);
+      applyMetadata(overview.appid);
+      expect(overview.rt_original_release_date).toBe(1710057600);
+      expect(overview.GetCanonicalReleaseYear()).toBe("2024");
+      process.env.TZ = "Asia/Tokyo";
+      listeners.forEach(listener => listener());
+      expect(overview.GetCanonicalReleaseDate()).toBe(1709996400);
+      expect([overview.rt_original_release_date, overview.rt_steam_release_date]).toEqual([1709996400, 1709996400]);
+      expect(metadata.release_date).toBe("2024-03-10");
+      unpatchers.splice(0).reverse().forEach(unpatch => unpatch());
+      process.env.TZ = "UTC";
+      listeners.forEach(listener => listener());
+      expect([overview.rt_original_release_date, overview.rt_steam_release_date]).toEqual([1709996400, 1709996400]);
+    } finally {
+      if (originalZone === undefined) delete process.env.TZ;
+      else process.env.TZ = originalZone;
+      delete host.SteamClient;
+    }
+  });
+  it("repaints a mounted date after bootstrap when its numeric fields were already current", async () => {
+    vi.useFakeTimers();
+    const host = globalThis as Record<string, unknown>;
+    class NativeOverview {
+      appid = matchedShortcutAppId;
+      app_type = 1073741824;
+      rt_original_release_date = 1207724400;
+      rt_steam_release_date = 1207724400;
+      BIsShortcut() { return true; }
+      GetCanonicalReleaseDate() { return this.rt_original_release_date; }
+    }
+    const overview = new NativeOverview();
+    class NativeDateView {
+      props = { overview };
+      label = "";
+      forceUpdate() {
+        this.label = new Date(this.props.overview.GetCanonicalReleaseDate() * 1000).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+      }
+    }
+    const view = new NativeDateView();
+    const element = { isConnected: true, getClientRects: () => [1], __reactFiber$date: { stateNode: view, return: null } };
+    setRoute(`/library/app/${matchedShortcutAppId}/tab/GameInfo`);
+    host.window = { location: { pathname: `/library/app/${matchedShortcutAppId}/tab/GameInfo` }, setTimeout };
+    host.appStore = { allApps: [overview], GetAppOverviewByAppID: () => overview };
+    host.appDetailsStore = {};
+    vi.stubGlobal("document", { querySelector: () => element, querySelectorAll: () => [element] });
+    vi.stubGlobal("DFL", { findModuleChild: (predicate: (module: unknown) => unknown) => predicate({ InnerContainer: "nativeInner", GameDescription: "nativeDescription", DescriptionStatsCtn: "nativeStats" }) });
+    mocks.getAllMetadata.mockResolvedValue({ [matchedShortcutAppId]: { title: "Saved", id: "date", source: "Manual", description: "", store_categories: [], release_date: "2008-04-09", steam_dlc_appids: [], has_points_shop: false } });
+    mocks.getCompatibilityDefault.mockResolvedValue(null);
+    const stop = startMetadataBootstrap();
+    try {
+      await vi.advanceTimersByTimeAsync(0);
+      expect(view.label).toBe("Apr 9, 2008");
+    } finally {
+      stop();
+      vi.unstubAllGlobals();
+    }
+  });
+});

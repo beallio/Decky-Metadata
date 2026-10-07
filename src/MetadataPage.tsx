@@ -57,8 +57,7 @@ import {
 } from "./types";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import {
-  dateToEpoch,
-  epochToDate,
+  normalizeReleaseDate,
   metadataTemplate,
   parseRating,
   parseSteamAppId,
@@ -174,7 +173,7 @@ const metadataValuesEqual = (left: unknown, right: unknown): boolean =>
 /**
  * A metadata load can complete after the user has begun editing. Keep each
  * field changed since that request started, while still hydrating every field
- * the user has not touched.
+ * the user has not touched. Description and summary form one editable value.
  */
 const mergeHydratedMetadata = (
   saved: MetadataData,
@@ -187,6 +186,13 @@ const mergeHydratedMetadata = (
     if (!metadataValuesEqual(current[key as keyof MetadataData], baseline[key as keyof MetadataData])) {
       merged[key] = current[key as keyof MetadataData];
     }
+  }
+  if (
+    !metadataValuesEqual(current.description, baseline.description) ||
+    !metadataValuesEqual(current.short_description, baseline.short_description)
+  ) {
+    merged.description = current.description;
+    merged.short_description = current.short_description;
   }
   return merged as MetadataData;
 };
@@ -276,6 +282,7 @@ export const MetadataPage = () => {
   const publisherTextRef = useRef(publisherText);
   const releaseTextRef = useRef(releaseText);
   const ratingTextRef = useRef(ratingText);
+  const releaseBaselineRef = useRef({ text: metadata.release_date ?? "", value: metadata.release_date });
   const formRevisionRef = useRef(0);
   const busyRef = useRef(false);
   const busyEntryRef = useRef<number | null>(null);
@@ -298,7 +305,8 @@ export const MetadataPage = () => {
     setMetadata(next);
     const nextDeveloperText = personsToText(next.developers);
     const nextPublisherText = personsToText(next.publishers);
-    const nextReleaseText = epochToDate(next.release_date);
+    const nextReleaseText = next.release_date ?? "";
+    releaseBaselineRef.current = { text: nextReleaseText, value: next.release_date };
     const nextRatingText = next.rating == null ? "" : String(next.rating);
     developerTextRef.current = nextDeveloperText;
     publisherTextRef.current = nextPublisherText;
@@ -351,8 +359,9 @@ export const MetadataPage = () => {
       publisherTextRef.current = value;
       setPublisherText(value);
     }
+    releaseBaselineRef.current = { text: reconciled.release_date ?? "", value: reconciled.release_date };
     if (releaseTextRef.current === baselineText.releaseText) {
-      const value = epochToDate(reconciled.release_date);
+      const value = reconciled.release_date ?? "";
       releaseTextRef.current = value;
       setReleaseText(value);
     }
@@ -431,8 +440,9 @@ export const MetadataPage = () => {
           publisherTextRef.current = nextPublisherText;
           setPublisherText(nextPublisherText);
         }
+        releaseBaselineRef.current = { text: hydrated.release_date ?? "", value: hydrated.release_date };
         if (releaseTextRef.current === baselineReleaseText) {
-          const nextReleaseText = epochToDate(saved.release_date);
+          const nextReleaseText = hydrated.release_date ?? "";
           releaseTextRef.current = nextReleaseText;
           setReleaseText(nextReleaseText);
         }
@@ -502,7 +512,7 @@ export const MetadataPage = () => {
     };
     setSteamNameLoading(true);
     setSteamNameUnavailable(false);
-    void enrichSteamApp(appId)
+    void enrichSteamApp(appId, "steam-name")
       .then((enriched) => {
         const current = metadataRef.current;
         if (
@@ -582,7 +592,7 @@ export const MetadataPage = () => {
       title: cleanTitle(metadata.title),
       developers: textToPersons(developerText),
       publishers: textToPersons(publisherText),
-      release_date: dateToEpoch(releaseText),
+      release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.value : normalizeReleaseDate(releaseText),
       rating: parseRating(ratingText),
       store_categories: metadata.store_categories || [],
     }),
@@ -679,7 +689,7 @@ export const MetadataPage = () => {
         // Keep edits that happened before this enrichment started too.
         ...saveBaselineText,
       };
-      const enriched = await enrichSteamApp(appId);
+      const enriched = await enrichSteamApp(appId, "metadata");
       if (
         !isCurrentEditorEntry(requestedEntry) ||
         normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed
@@ -1052,7 +1062,7 @@ export const MetadataPage = () => {
                 {GamepadTextArea ? (
                   <GamepadTextArea
                     className={editorFocusTargetClassName}
-                    value={metadata.description}
+                    value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
                     onChange={(e) =>
                       updateMetadata((prev) => ({
                         ...prev,
@@ -1072,7 +1082,7 @@ export const MetadataPage = () => {
                       ref={descriptionRef}
                       className={editorFocusTargetClassName}
                       tabIndex={0}
-                      value={metadata.description}
+                      value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
                       onChange={(e) =>
                         updateMetadata((prev) => ({
                           ...prev,

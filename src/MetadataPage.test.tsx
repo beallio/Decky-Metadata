@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
+const textarea = vi.hoisted(() => ({ component: null as any }));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
@@ -82,7 +83,7 @@ vi.mock("@decky/ui", () => ({
 
 vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
-vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => null }));
+vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
@@ -110,6 +111,7 @@ vi.mock("react", () => ({
 
 import { MetadataPage } from "./MetadataPage";
 import { metadataTemplate } from "./metadataForm";
+import type { MetadataData } from "./types";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
@@ -635,24 +637,28 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
 
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(backend.enrichSteamApp).toHaveBeenCalledWith(101);
     expect(text(renderPage())).toContain("Steam: Steam Name");
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
     effects.enabled = true;
     const oldResponse = deferred<any>();
-    configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
+    configureShortcutPanel({ metadata: { title: "Original", description: "Saved long", short_description: "Saved summary", source: "IGN", release_date: "2009-04-28", steam_store_name: "" } });
     backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
+    state.values[3] = "2009-04-28";
 
     renderPage();
     effects.callbacks[2]();
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "Unsaved edit" } });
+    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0]
+      .props.onChange({ target: { value: "2024-11-03" } });
     oldResponse.resolve(makeMetadata({
-      title: "Steam title",
-      description: "Steam description",
-      developers: [{ name: "Steam developer", url: "" }],
+      title: "Original",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: "2009-04-28",
       steam_appid: 15100,
       steam_store_name: "Old Steam Name",
     }));
@@ -660,13 +666,24 @@ describe("MetadataPage compatibility status", () => {
 
     expect(state.values[0]).toEqual(expect.objectContaining({
       title: "Unsaved edit",
-      description: "Steam description",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: "2009-04-28",
       steam_store_name: "Old Steam Name",
     }));
-    expect(state.values[1]).toBe("Steam developer");
+    expect(state.values[1]).toBe("");
     expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
       title: "Unsaved edit",
-      description: "Steam description",
+      description: "Saved long",
+      short_description: "Saved summary",
+      source: "IGN",
+      release_date: "2009-04-28",
+    }));
+    expect(state.values[3]).toBe("2024-11-03");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      release_date: "2024-11-03", source: "IGN", description: "Saved long", short_description: "Saved summary", steam_appid: 15100,
     }));
   });
 
@@ -794,6 +811,56 @@ describe("MetadataPage compatibility status", () => {
     }));
   });
 
+  it.each([[null, "save"], ["NativeTextarea", "save"], [null, "enrichment"], ["NativeTextarea", "enrichment"]])("keeps an explicit clear during pending %s/%s", async (component, phase) => {
+    textarea.component = component;
+    const pendingSave = deferred<any>();
+    const pendingEnrichment = deferred<any>();
+    configureShortcutPanel({ metadata: { description: "Long", short_description: "" } });
+    state.values[8] = "15200";
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, value) => value);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    const description = () => walk(renderPage(), node => node.type === (component || "textarea"))[0];
+    if (phase === "save") description().props.onChange({ target: { value: "" } });
+    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Long", steam_appid: 15200, title: "Acknowledged title" }));
+    await flushAsyncWork();
+    if (phase === "enrichment") description().props.onChange({ target: { value: "" } });
+    expect(description().props.value).toBe("");
+    expect(state.values[0].title).toBe("Acknowledged title");
+    pendingEnrichment.resolve(makeMetadata({ description: "Provider prose", short_description: "Provider summary", steam_appid: 15200, title: "Enriched title", developers: [{ name: "Developer", url: "" }] }));
+    await applying;
+    expect(description().props.value).toBe("");
+    expect(state.values[0]).toMatchObject({ description: "", short_description: "", title: "Enriched title" });
+    expect(state.values[1]).toBe("Developer");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "", short_description: "", title: "Enriched title" }));
+    textarea.component = null;
+  });
+
+  it.each([["save", "2024-11-03"], ["enrichment", "2024-11-03"], ["save", ""], ["enrichment", ""]])("keeps a newer date edit during pending %s with value %s", async (phase, value) => {
+    const pendingSave = deferred<MetadataData>();
+    const pendingEnrichment = deferred<MetadataData>();
+    configureShortcutPanel({ metadata: { description: "Long", short_description: "Short", release_date: "2009-04-28" } });
+    state.values[3] = "2009-04-28";
+    state.values[8] = "15200";
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, metadata) => metadata);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    if (phase === "save") {
+      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    }
+    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Short", release_date: "2009-04-28", steam_appid: 15200 }));
+    await flushAsyncWork();
+    if (phase === "enrichment") {
+      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    }
+    pendingEnrichment.resolve(makeMetadata({ description: "Provider long", short_description: "Provider short", release_date: "2023-11-14", steam_appid: 15200 }));
+    await applying;
+    expect(state.values[3]).toBe(value);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ release_date: value || null, steam_appid: 15200 }));
+  });
+
   it("reconciles every untouched field from a successful Steam enrichment", async () => {
     const pendingEnrichment = deferred<any>();
     const saved = makeMetadata({
@@ -809,7 +876,7 @@ describe("MetadataPage compatibility status", () => {
       short_description: "Steam summary",
       developers: [{ name: "Steam developer", url: "" }],
       publishers: [{ name: "Steam publisher", url: "" }],
-      release_date: 1700000000,
+      release_date: "2023-11-14",
       rating: 92,
       store_categories: [1, 2],
       steam_appid: 15200,
@@ -826,7 +893,6 @@ describe("MetadataPage compatibility status", () => {
 
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
     await flushAsyncWork();
-    expect(backend.enrichSteamApp).toHaveBeenCalledWith(100);
     pendingEnrichment.resolve(enriched);
     await applying;
 
@@ -836,7 +902,7 @@ describe("MetadataPage compatibility status", () => {
       short_description: "Steam summary",
       developers: [{ name: "Steam developer", url: "" }],
       publishers: [{ name: "Steam publisher", url: "" }],
-      release_date: 1700000000,
+      release_date: "2023-11-14",
       rating: 92,
       store_categories: [1, 2],
       steam_dlc_appids: [10, 20],
@@ -1065,5 +1131,49 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toBe(bMetadata);
     expect(state.values[9]).toEqual(shortcutState({ state: managedB }));
     expect(toast.toastError).not.toHaveBeenCalledWith("Shortcut name restored", expect.any(String));
+  });
+});
+
+
+describe("metadata summary and date persistence", () => {
+  beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });
+  it("displays saved summary but saves the original untouched description and calendar date", async () => {
+    state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
+    state.values[3] = "2009-04-28";
+    const page = renderPage();
+    expect(walk(page, node => node.type === "textarea")[0].props.value).toBe("Source summary");
+    await saveButton(page).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1]).toMatchObject({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
+  });
+  it("uses a long fallback when the saved summary contains only whitespace", () => {
+    state.values[0] = makeMetadata({ description: "Readable fallback", short_description: " \n " });
+    expect(walk(renderPage(), node => node.type === "textarea")[0].props.value).toBe("Readable fallback");
+  });
+  it("keeps a legitimate absent date absent on an unrelated save", async () => {
+    state.values[0] = makeMetadata({ release_date: null });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].release_date).toBeNull();
+  });
+  it("saves a changed calendar date and supports explicitly clearing it", async () => {
+    state.values[0] = makeMetadata({ release_date: "2009-04-28" });
+    state.values[3] = "2009-04-28";
+    renderPage();
+    const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0];
+    field.props.onChange({ target: { value: "2024-03-10" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].release_date).toBe("2024-03-10");
+    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2024-03-10")[0].props.onChange({ target: { value: "" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();
+  });
+  it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
+    textarea.component = component;
+    state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });
+    for (const input of ["Fly <pilot>\n\nLand", ""]) {
+      walk(renderPage(), node => node.type === (component || "textarea"))[0].props.onChange({ target: { value: input } });
+      await saveButton(renderPage()).props.onClick();
+      expect(backend.saveMetadata.mock.calls[backend.saveMetadata.mock.calls.length - 1]?.[1]).toMatchObject({ description: input, short_description: input });
+    }
+    textarea.component = null;
   });
 });

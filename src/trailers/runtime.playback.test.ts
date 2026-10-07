@@ -1,5 +1,23 @@
 // @ts-nocheck -- the serialized player is exercised through deliberately dynamic CEF/MSE fixtures.
-import { it as test } from "vitest";
+import { it as test, vi } from "vitest";
+
+const bridgeControllerBackend = vi.hoisted(() => ({
+  evalInBigPicture: vi.fn(),
+  setTrailerSettings: vi.fn(async settings => settings),
+  getTrailerSettings: vi.fn(),
+  findIgnTrailer: vi.fn(),
+}));
+vi.mock("../backend", () => bridgeControllerBackend);
+vi.mock("../steam/core", () => ({
+  currentRoutePath: () => "/routes/library/app/570",
+  getNativeOverview: () => ({ appid: 570, app_type: 1 }),
+  isNativeNonSteamShortcut: () => false,
+  metadataCache: {}, metadataState: { metadataLoaded: true },
+  metadataMatchRevisionSnapshot: () => 0,
+  subscribeMetadataMatchChanges: () => () => {},
+}));
+vi.mock("../steam/metadataPatch", () => ({ ensureMetadataCache: async () => {} }));
+import { TrailerController } from "./controller";
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -1936,4 +1954,152 @@ test('Play intent stops immediately and holds the page beyond 22 seconds until a
   h.runtime.handleVisibilityChange();
   await Promise.resolve();
   assert.equal(h.runtime.launchHeld, false);
+});
+
+
+async function monitoredTrailerFixture() {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, fadeInDelaySeconds: 0 });
+  const observers = [];
+  h.context.MutationObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe() { this.connected = true; }
+    disconnect() { this.connected = false; }
+  };
+  const listeners = new Map();
+  for (const [target, prefix] of [[h.window, 'window'], [h.document, 'document']]) {
+    target.addEventListener = (name, handler) => {
+      const key = prefix + name;
+      const handlers = listeners.get(key) ?? new Set();
+      handlers.add(handler); listeners.set(key, handlers);
+    };
+    target.removeEventListener = (name, handler) => listeners.get(prefix + name)?.delete(handler);
+  }
+  h.document.head = { appendChild() {} };
+  let discoveries = 0;
+  const query = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => { discoveries++; return query(selector); };
+  let layouts = 0;
+  const bounds = h.hero.getBoundingClientRect;
+  h.hero.getBoundingClientRect = () => { layouts++; return bounds(); };
+  h.runtime.rememberTrailer(570, { ok: true, name: 'Fixture', candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] });
+  return { ...h, clock, observers, listeners, get createdVideos() { return h.createdVideos; }, get discoveries() { return discoveries; }, get layouts() { return layouts; } };
+}
+
+test('Fresh Off starts no trailer observers, timers, input or route listeners', async () => {
+  const h = await monitoredTrailerFixture();
+  const settings = { ...h.runtime.settings, enabled: false };
+  h.runtime.destroy();
+  h.runtime = new h.api.Runtime(settings, 'test-owner', 1);
+  h.runtime.mount();
+  assert.equal(h.observers.filter(observer => observer.connected).length, 0);
+  assert.equal(h.clock.intervals.size, 0);
+  assert.equal([...h.listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0), 0);
+  const before = [h.discoveries, h.layouts];
+  h.runtime.handleResize();
+  h.runtime.handleRouteChange();
+  h.runtime.handleGamepadButtonDown({ detail: { button: 3 } });
+  await h.runtime.scan();
+  h.clock.advance(20000);
+  assert.deepEqual([h.discoveries, h.layouts], before);
+  assert.equal(h.runtime.currentVideo, undefined);
+});
+
+test('On to Off removes monitoring and ignores queued callbacks and late media, then On creates one player', async () => {
+  const h = await monitoredTrailerFixture();
+  h.runtime.mount();
+  for (let index = 0; index < 30; index++) await Promise.resolve();
+  assert.ok(h.runtime.currentVideo?.isConnected);
+  assert.equal(h.observers.filter(observer => observer.connected).length, 2);
+  h.runtime.queueScan();
+  const queued = [...h.clock.timers.values()].map(timer => timer.fn);
+  let release;
+  h.context.fetch = () => new Promise(resolve => { release = resolve; });
+  const late = h.runtime.getTrailer(999);
+  const priorVideos = h.createdVideos;
+  const retiredObservers = [...h.observers];
+  h.runtime.update({ ...h.runtime.settings, enabled: false }, 1);
+  assert.equal(h.observers.filter(observer => observer.connected).length, 0);
+  assert.equal(h.clock.intervals.size, 0);
+  assert.equal([...h.listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0), 0);
+  assert.equal(h.runtime.currentVideo, undefined);
+  const before = [h.discoveries, h.layouts];
+  for (const observer of h.observers) observer.callback([{ type: 'attributes', target: h.hero }]);
+  h.runtime.handleResize();
+  h.runtime.handleRouteChange();
+  for (const callback of queued) callback();
+  for (const timer of h.clock.intervals.values()) timer.fn();
+  h.clock.advance(20000);
+  release(responseBody(JSON.stringify({ 999: { data: { movies: [movie] } } })));
+  assert.equal((await late).ok, false);
+  await h.runtime.scan();
+  assert.deepEqual([h.discoveries, h.layouts], before);
+  assert.equal(h.createdVideos, priorVideos);
+  h.runtime.update({ ...h.runtime.settings, enabled: true }, 2);
+  for (let index = 0; index < 30; index++) await Promise.resolve();
+  assert.ok(h.runtime.currentVideo?.isConnected);
+  assert.equal(h.createdVideos, priorVideos + 1);
+  assert.equal(h.observers.filter(observer => observer.connected).length, 2);
+  assert.equal(h.clock.intervals.size, 1);
+  const activeListeners = [...h.listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0);
+  const resumedWork = [h.discoveries, h.layouts];
+  for (const observer of retiredObservers) observer.callback([{ type: 'attributes', target: h.hero }]);
+  for (const callback of queued) callback();
+  assert.deepEqual([h.discoveries, h.layouts], resumedWork, 'retired monitoring cannot work in the next generation');
+  h.runtime.update({ ...h.runtime.settings }, 3);
+  h.runtime.update({ ...h.runtime.settings }, 4);
+  assert.equal(h.observers.filter(observer => observer.connected).length, 2);
+  assert.equal(h.clock.intervals.size, 1);
+  assert.equal([...h.listeners.values()].reduce((sum, handlers) => sum + handlers.size, 0), activeListeners);
+  h.runtime.destroy();
+  assert.equal(h.clock.intervals.size, 0);
+});
+
+
+test('Bridge-only Steam runtime resumes one real player after Off and On between controller polls', async () => {
+  const h = await monitoredTrailerFixture();
+  const sharedWindow = {
+    setTimeout, clearTimeout, setInterval, clearInterval,
+    addEventListener() {}, removeEventListener() {},
+  };
+  vi.stubGlobal('window', sharedWindow);
+  vi.stubGlobal('document', { documentElement: {}, defaultView: sharedWindow });
+  const controller = new TrailerController();
+  Object.assign(controller, {
+    mounted: true, settingsLoaded: true, ownerId: 'test-owner',
+    settings: { ...h.runtime.settings }, confirmedSettings: { ...h.runtime.settings },
+    identity: { pageAppId: 570, sourceAppId: 570 },
+  });
+  controller.publishOwner();
+  h.window.opener = sharedWindow;
+  delete h.window.__deckyMetadataTrailerOwner;
+  h.window.__deckyMetadataTrailerRuntime = h.runtime;
+  bridgeControllerBackend.evalInBigPicture.mockImplementation(async code => vm.runInContext(code, h.context));
+  try {
+    h.runtime.mount();
+    for (let index = 0; index < 30; index++) await Promise.resolve();
+    assert.ok(h.runtime.currentVideo?.isConnected);
+    const initialVideos = h.createdVideos;
+    await controller.setEnabled(false);
+    // Also model Off arriving through the last owner scan before it suspends.
+    await h.runtime.scan();
+    assert.equal(h.runtime.settings.enabled, false);
+    assert.equal(h.runtime.currentVideo, undefined);
+    assert.equal(h.clock.intervals.size, 0);
+    assert.equal(controller.identity.pageAppId, 570);
+    await controller.setEnabled(true);
+    for (let index = 0; index < 40; index++) await Promise.resolve();
+    await controller.poll();
+    assert.equal(h.runtime.settings.enabled, true);
+    assert.ok(h.runtime.currentVideo?.isConnected);
+    assert.equal(h.runtime.currentTarget, h.hero);
+    assert.equal(h.createdVideos, initialVideos + 1);
+    assert.equal(h.clock.intervals.size, 1);
+    assert.equal(h.observers.filter(observer => observer.connected).length, 2);
+  } finally {
+    controller.stop();
+    h.runtime.destroy();
+    vi.unstubAllGlobals();
+    bridgeControllerBackend.evalInBigPicture.mockReset();
+  }
 });

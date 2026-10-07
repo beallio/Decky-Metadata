@@ -28,6 +28,7 @@ def test_legacy_data_stays_unchanged_until_badges_are_enabled(tmp_path, monkeypa
     plugin = make_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
     payload = {
+        "release_date_format": "date-only-v1",
         "metadata": {"123": {"title": "Keep", "steam_appid": 620, "steam_store_state": "available"}},
         "settings": {"debug_logging": False, "unrelated": {"keep": True}},
         "update_settings": {"update_channel": "development"},
@@ -95,7 +96,7 @@ def test_incomplete_or_unknown_preference_schema_is_rejected(tmp_path, monkeypat
 def test_bad_saved_values_do_not_enable_network_features_or_rewrite_file(tmp_path, monkeypatch) -> None:
     plugin = make_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
-    original = json.dumps({"settings": {"protondb_badges": {
+    original = json.dumps({"release_date_format": "date-only-v1", "settings": {"protondb_badges": {
         "enabled": "true", "library": False, "focusOnly": True, "coverPosition": "top-left",
     }}}, separators=(",", ":"))
     plugin._data_file.write_text(original, encoding="utf-8")

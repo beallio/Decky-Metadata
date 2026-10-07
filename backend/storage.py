@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import copy
+import datetime
 import json
 import logging
 import os
 from pathlib import Path
 from typing import Any, Callable
+
+from backend import matching
+
+RELEASE_DATE_FORMAT = "date-only-v1"
 
 PlogFn = Callable[..., None]
 
@@ -84,6 +89,7 @@ def compatibility_default_scope(value: Any) -> str | None:
 
 def default_data() -> dict[str, Any]:
     return {
+        "release_date_format": RELEASE_DATE_FORMAT,
         "metadata": {},
         # Name-management history is intentionally separate from editable
         # metadata. Removing or refreshing metadata must never strand a user
@@ -101,6 +107,29 @@ def default_data() -> dict[str, Any]:
     }
 
 
+def migrate_release_dates(payload: dict[str, Any]) -> bool:
+    if payload.get("release_date_format") == RELEASE_DATE_FORMAT:
+        return False
+    for record in (payload.get("metadata") or {}).values():
+        if not isinstance(record, dict) or "release_date" not in record:
+            continue
+        value = record["release_date"]
+        canonical = matching.normalize_release_date(value)
+        if isinstance(value, str) and value == canonical:
+            continue
+        try:
+            if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+                raise ValueError("Not a legacy timestamp")
+            timestamp = int(value)
+            if timestamp <= 0:
+                raise ValueError("Absent legacy timestamp")
+            record["release_date"] = datetime.datetime.fromtimestamp(timestamp).date().isoformat()
+        except (ValueError, TypeError, OverflowError, OSError):
+            record["release_date"] = None
+    payload["release_date_format"] = RELEASE_DATE_FORMAT
+    return True
+
+
 
 def load_data(
     data_file: Path,
@@ -113,7 +142,7 @@ def load_data(
     except OSError as error:
         plog("load", "failed stat metadata settings", level=logging.ERROR, exc=True, path=data_file, error=error)
         return None
-    if cache is not None and cache_mtime_ns == mtime_ns:
+    if cache is not None and cache_mtime_ns == mtime_ns and cache.get("release_date_format") == RELEASE_DATE_FORMAT:
         return copy.deepcopy(cache), cache, cache_mtime_ns
     try:
         payload = json.loads(data_file.read_text(encoding="utf-8"))
@@ -122,16 +151,23 @@ def load_data(
         return None
     if not isinstance(payload, dict):
         return None
+    # Persist the raw payload first. A failed replacement must not publish
+    # converted dates, and unrelated fields must survive byte-for-value.
+    if migrate_release_dates(payload):
+        _, mtime_ns = save_data(data_file, payload)
     merged = default_data()
-    merged["metadata"].update(payload.get("metadata") or {})
+    merged.update(payload)
+    merged["metadata"] = dict(payload.get("metadata") or {})
     shortcut_names = payload.get("shortcut_names")
+    merged["shortcut_names"] = {}
     if isinstance(shortcut_names, dict):
         merged["shortcut_names"].update(shortcut_names)
     payload_settings = payload.get("settings")
+    merged["settings"] = dict(default_data()["settings"])
     if isinstance(payload_settings, dict):
         merged["settings"].update(payload_settings)
-    merged["update_settings"].update(payload.get("update_settings") or {})
-    merged["update_check_cache"].update(payload.get("update_check_cache") or {})
+    merged["update_settings"] = dict(payload.get("update_settings") or {})
+    merged["update_check_cache"] = dict(payload.get("update_check_cache") or {})
     merged["settings"]["debug_logging"] = bool(merged["settings"].get("debug_logging", False))
     if isinstance(payload_settings, dict) and "game_trailers" in payload_settings:
         merged["settings"]["game_trailers"] = normalize_trailer_settings(

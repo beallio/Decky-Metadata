@@ -1,4 +1,4 @@
-import { cloneElement, createElement, isValidElement, useEffect, useState } from "react";
+import { Fragment, cloneElement, createElement, isValidElement, useEffect, useState } from "react";
 import type { ElementType, ReactElement, ReactNode } from "react";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
@@ -121,30 +121,60 @@ const childrenOf = (element: ReactElement<CompatibilityCardProps>): ReactNode[] 
   return Array.isArray(children) ? children : [children];
 };
 
-const hasIndicator = (children: ReactNode[], indicator: ElementType, key: string) =>
-  children.some((child) => isValidElement(child) && (child.type === indicator || child.key === key));
+const containsIndicator = (children: ReactNode[], predicate: (element: ReactElement) => boolean): boolean =>
+  children.some((child) => isValidElement<CompatibilityCardProps>(child) && (
+    predicate(child) || (child.type === Fragment && containsIndicator(childrenOf(child), predicate))
+  ));
+
+const normalizeIndicators = (children: ReactNode[], nativeIndicator: ElementType, indicator: ElementType, key: string) => {
+  const nativePresent = containsIndicator(children, (child) => child.type === nativeIndicator && child.key !== key);
+  let keptOwned = false;
+  const normalize = (nodes: ReactNode[]): ReactNode[] => nodes.flatMap((child) => {
+    if (!isValidElement<CompatibilityCardProps>(child)) return [child];
+    if (child.key === key) {
+      if (nativePresent || keptOwned || child.type !== indicator) return [];
+      keptOwned = true;
+    }
+    if (child.type === Fragment) {
+      const original = childrenOf(child);
+      const cleaned = normalize(original);
+      if (cleaned.length !== original.length || cleaned.some((node, index) => node !== original[index])) return [cloneElement(child, { children: cleaned })];
+    }
+    return [child];
+  });
+  return normalize(children);
+};
+const hasIndicator = (children: ReactNode[], nativeIndicator: ElementType, indicator: ElementType, key: string) =>
+  containsIndicator(children, (child) => child.type === nativeIndicator || (child.type === indicator && child.key === key));
+
+const unchangedChildren = (children: ReactNode[], original: ReactNode[]) =>
+  children.length === original.length && children.every((child, index) => child === original[index]);
 
 export function decorateCarouselCompatibility(
   output: ReactElement<CompatibilityCardProps>,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): ReactElement<CompatibilityCardProps>;
 export function decorateCarouselCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): T;
 export function decorateCarouselCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   className: string,
   overview?: unknown,
 ): T {
   if (!isValidElement<CompatibilityCardProps>(output)) return output;
-  const children = childrenOf(output);
-  if (hasIndicator(children, indicator, HOME_INDICATOR_KEY)) return output;
+  const originalChildren = childrenOf(output);
+  const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, HOME_INDICATOR_KEY);
+  if (hasIndicator(children, nativeIndicator, indicator, HOME_INDICATOR_KEY)) return (unchangedChildren(children, originalChildren) ? output : cloneElement(output, { children })) as T;
 
   // Steam's GameCapsule places compatibility after its in-library marker. A
   // shortcut suppresses that native slot with `false`; replace only that
@@ -167,6 +197,7 @@ export function decorateCarouselCompatibility<T>(
 
 const decorateGridIconRow = (
   node: ReactNode,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -174,8 +205,9 @@ const decorateGridIconRow = (
 ): ReactNode => {
   if (!isValidElement<CompatibilityCardProps>(node)) return node;
   if (node.props.className === iconRowClassName) {
-    const children = childrenOf(node);
-    if (hasIndicator(children, indicator, GRID_INDICATOR_KEY)) return node;
+    const originalChildren = childrenOf(node);
+    const children = normalizeIndicators(originalChildren, nativeIndicator, indicator, GRID_INDICATOR_KEY);
+    if (hasIndicator(children, nativeIndicator, indicator, GRID_INDICATOR_KEY)) return unchangedChildren(children, originalChildren) ? node : cloneElement(node, { children });
     return cloneElement(node, {
       children: [
         ...children,
@@ -193,7 +225,7 @@ const decorateGridIconRow = (
   if (originalChildren === undefined) return node;
   const children = childrenOf(node);
   const decoratedChildren = children.map((child) =>
-    decorateGridIconRow(child, indicator, iconRowClassName, indicatorClassName, overview)
+    decorateGridIconRow(child, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview)
   );
   if (decoratedChildren.every((child, index) => child === children[index])) return node;
   return cloneElement(node, {
@@ -203,6 +235,7 @@ const decorateGridIconRow = (
 
 export function decorateGridCompatibility(
   output: ReactElement<CompatibilityCardProps>,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -210,6 +243,7 @@ export function decorateGridCompatibility(
 ): ReactElement<CompatibilityCardProps>;
 export function decorateGridCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -217,6 +251,7 @@ export function decorateGridCompatibility<T>(
 ): T;
 export function decorateGridCompatibility<T>(
   output: T,
+  nativeIndicator: ElementType,
   indicator: ElementType,
   iconRowClassName: string,
   indicatorClassName: string,
@@ -224,6 +259,7 @@ export function decorateGridCompatibility<T>(
 ): T {
   const decorated = decorateGridIconRow(
     output as ReactNode,
+    nativeIndicator,
     indicator,
     iconRowClassName,
     indicatorClassName,
@@ -527,6 +563,9 @@ export const installLibraryCompatibilityIndicators = (
       className?: string;
     }) => {
       dependencies.useCompatibilityRevision(subscribeIndicator);
+      return renderIndicator(props);
+    };
+    const renderIndicator = (props: { overview?: { appid?: unknown }; className?: string }) => {
       if (!active) return null;
       const appId = Number(props.overview?.appid);
       const category = resolveLibraryCompatibilityIndicator({
@@ -571,6 +610,7 @@ export const installLibraryCompatibilityIndicators = (
           output,
           (card, overview) => decorateCarouselCompatibility(
             card,
+            targets.indicator,
             ReactiveCompatibilityIndicator,
             targets.homeClassName,
             overview,
@@ -914,21 +954,27 @@ export const installLibraryCompatibilityIndicators = (
         cleanup();
         return;
       }
-      gridUnpatch = dependencies.patchGridRenderer(
-        targets.grid,
-        (args, output) => decorateForApp(
-          Number(args[0]?.app?.appid),
-          output,
-          (card, overview) => decorateGridCompatibility(
-            card,
-            ReactiveCompatibilityIndicator,
-            targets.gridIconsClassName,
-            targets.gridIndicatorClassName,
-            overview,
-          ),
-          args[0]?.app,
+      const decorateGrid = (args: any[], output: unknown, owned: ElementType) => decorateForApp(
+        Number(args[0]?.app?.appid),
+        output,
+        (card, overview) => decorateGridCompatibility(
+          card,
+          targets.indicator,
+          owned,
+          targets.gridIconsClassName,
+          targets.gridIndicatorClassName,
+          overview,
         ),
+        args[0]?.app,
       );
+      gridUnpatch = provided.patchGridRenderer
+        ? dependencies.patchGridRenderer(targets.grid, (args, output) => decorateGrid(args, output, ReactiveCompatibilityIndicator))
+        : installNativeGridCompatibilityDispatcher(targets.grid, {
+          patch: dependencies.patchGridRenderer,
+          decorate: decorateGrid,
+          render: renderIndicator,
+          subscribeRevision: subscribeCompatibilityRevision,
+        });
       if (typeof gridUnpatch !== "function") {
         cleanup();
         return;
@@ -946,4 +992,94 @@ export const installLibraryCompatibilityIndicators = (
   };
 
   installWhenTargetsResolve();
+};
+
+type NativeGridDispatcherOptions = {
+  patch: (target: any, handler: (args: any[], output: any) => any) => Unpatch;
+  decorate: (args: any[], output: any, owned: ElementType) => any;
+  render: (props: any) => ReactNode;
+  subscribeRevision: (listener: () => void) => Unpatch;
+};
+type NativeGridDispatcher = {
+  original: any;
+  wrapper: any;
+  indicator: ElementType;
+  owner?: symbol;
+  decorate?: NativeGridDispatcherOptions["decorate"];
+  render?: NativeGridDispatcherOptions["render"];
+  unsubscribe?: Unpatch;
+  listeners: Set<() => void>;
+};
+
+/**
+ * React retains a memo's resolved function in mounted cards. Keep its owned
+ * dispatcher stable across reload, while swapping only the active generation.
+ * Native card components, hooks, focus and peer wrappers retain their identity.
+ */
+export const installNativeGridCompatibilityDispatcher = (
+  target: any,
+  options: NativeGridDispatcherOptions,
+): Unpatch => {
+  const host = globalThis as any;
+  const registry: WeakMap<object, NativeGridDispatcher> = host.__deckyMetadataGridCompatibilityDispatchers ??=
+    new WeakMap<object, NativeGridDispatcher>();
+  let state = registry.get(target);
+  if (!state) {
+    const created: NativeGridDispatcher = {
+      original: undefined,
+      wrapper: undefined,
+      indicator: () => null,
+      listeners: new Set(),
+    };
+    // These listeners belong to mounted React leaves. No Steam subscription or
+    // monitoring survives unload; the small bridge only publishes activation.
+    created.indicator = function LiveGridCompatibilityIndicator(props: any) {
+      const [, setRevision] = useState(0);
+      useEffect(() => {
+        const update = () => setRevision((revision) => revision + 1);
+        created.listeners.add(update);
+        // Hydration can publish after render but before this passive effect.
+        // Catch up once attached, as the regular compatibility hook does.
+        update();
+        return () => { created.listeners.delete(update); };
+      }, []);
+      return created.render?.(props) ?? null;
+    };
+    registry.set(target, created);
+    state = created;
+  }
+  const current = state;
+  const publish = () => current.listeners.forEach((listener) => listener());
+  const owner = Symbol("decky-metadata-grid-generation");
+  current.unsubscribe?.();
+  current.owner = owner;
+  current.decorate = options.decorate;
+  current.render = options.render;
+  // Decky's chain-aware unpatch can remove a predecessor while our wrapper
+  // stays mounted. Reuse its current chain, never the installation snapshot.
+  current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
+  if (target.type === current.original && current.wrapper) {
+    target.type = current.wrapper;
+  } else if (target.type !== current.wrapper) {
+    current.original = target.type;
+    options.patch(target, (args, output) =>
+      current.decorate?.(args, output, current.indicator) ?? output
+    );
+    current.wrapper = target.type;
+  }
+  current.unsubscribe = options.subscribeRevision(publish);
+  publish();
+  return () => {
+    if (current.owner !== owner) return;
+    current.unsubscribe?.();
+    current.unsubscribe = undefined;
+    current.owner = undefined;
+    current.decorate = undefined;
+    current.render = undefined;
+    // Restore only our exact head. A peer wrapper published later remains.
+    // The captured dispatcher stays inert in Steam's mounted memo cache.
+    current.original = current.wrapper?.__deckyPatch?.original ?? current.original;
+    if (target.type === current.wrapper) target.type = current.original;
+    publish();
+  };
 };

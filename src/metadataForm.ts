@@ -43,18 +43,18 @@ export const textToPersons = (value: string) =>
     .filter(Boolean)
     .map((name) => ({ name, url: "" }));
 
-export const epochToDate = (value?: number | null) => {
-  if (!value) return "";
-  const date = new Date(value * 1000);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
-};
 
-export const dateToEpoch = (value: string) => {
-  if (!value.trim()) return null;
-  const timestamp = Date.parse(`${value.trim()}T00:00:00Z`);
-  if (Number.isNaN(timestamp)) return null;
-  return Math.floor(timestamp / 1000);
+export const normalizeReleaseDate = (value: string): string | null => {
+  const text = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (!match) return null;
+  const [year, month, day] = match.slice(1).map(Number);
+  if (year < 1) return null;
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCHours(0, 0, 0, 0);
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return text;
 };
 
 export const parseRating = (value: string) => {

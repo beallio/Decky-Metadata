@@ -3,6 +3,7 @@ from contextlib import nullcontext
 from threading import Event
 
 import main
+import pytest
 from tests._plugin import make_plugin
 
 
@@ -54,7 +55,7 @@ def test_enrich_steam_app_respects_pinned_appid(monkeypatch) -> None:
     monkeypatch.setattr(plugin, "_steam_deck_compat_for_appid", fake_deck)
     monkeypatch.setattr(plugin, "_steam_appdetails_for_appid", fake_details)
 
-    saved = asyncio.run(plugin.enrich_steam_app(123))
+    saved = asyncio.run(plugin.enrich_steam_app(123, "metadata"))
 
     assert saved is not None
     assert called == {"news": [338930], "deck": [338930], "details": [338930]}
@@ -76,11 +77,12 @@ def test_enrich_steam_app_returns_none_for_unknown_app() -> None:
 
     plugin._save_data = fail_save
 
-    assert asyncio.run(plugin.enrich_steam_app(999)) is None
+    assert asyncio.run(plugin.enrich_steam_app(999, "metadata")) is None
     assert plugin._data == {"metadata": {}}
 
 
-def test_enrich_steam_app_discards_a_late_result_after_a_newer_editor_save() -> None:
+@pytest.mark.parametrize("mode", ["metadata", "steam-name"])
+def test_enrich_steam_app_discards_a_late_result_after_a_newer_editor_save(mode) -> None:
     """A slow appdetails call must never restore the snapshot it started with."""
     plugin = make_plugin()
     plugin._data = {"metadata": {}}
@@ -113,7 +115,8 @@ def test_enrich_steam_app_discards_a_late_result_after_a_newer_editor_save() -> 
             return {**metadata, "steam_store_name": "Old Steam Name"}
 
         plugin._metadata_with_steam_news_sync = delayed_enrichment
-        pending = asyncio.create_task(plugin.enrich_steam_app(123))
+        plugin._steam_appdetails_for_appid = lambda _appid: delayed_enrichment({}, "")
+        pending = asyncio.create_task(plugin.enrich_steam_app(123, mode))
         await asyncio.to_thread(started.wait, 2)
         await plugin.save_metadata(123, newer)
         release.set()
@@ -179,3 +182,24 @@ def test_manual_save_and_scan_preserve_existing_compatibility_override() -> None
         )
     )
     assert plugin._data["metadata"]["123"]["deck_compat_override"] == 0
+
+
+def test_plain_description_survives_repeated_persistence():
+    plugin = make_plugin()
+    record = {"title": "Game", "description": "Fly <pilot>\r\n\r\nLand &amp; rest", "short_description": "Fly <pilot>\r\n\r\nLand &amp; rest"}
+    for _ in range(3):
+        record = plugin._sanitize_metadata(record)
+    assert record["description"] == "Fly <pilot>\n\nLand &amp; rest"
+    assert record["short_description"] == record["description"]
+
+
+def test_steam_name_hydration_preserves_all_saved_metadata(monkeypatch):
+    plugin = make_plugin()
+    record = {"title": "My title", "description": "Long", "short_description": "Summary", "release_date": "2009-04-28", "source": "IGN", "source_url": "https://example.org/game", "steam_appid": 15100, "deck_compat_override": 0}
+    plugin._data = {"metadata": {"123": dict(record)}}
+    plugin._load_data = lambda: None
+    plugin._save_data = lambda: None
+    monkeypatch.setattr(plugin, "_steam_appdetails_for_appid", lambda appid: {"steam_store_name": "Steam Name", "title": "Replacement", "description": "Replacement", "release_date": "2024-03-10"})
+    saved = asyncio.run(plugin.enrich_steam_app(123, "steam-name"))
+    assert {key: saved[key] for key in record} == record
+    assert saved["steam_store_name"] == "Steam Name"

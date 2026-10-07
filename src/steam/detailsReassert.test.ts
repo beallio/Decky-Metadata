@@ -38,8 +38,8 @@ describe("reassertMatchedAppData", () => {
 
     expect(reassertMatchedAppData(appData, metadata as any, screenshots)).toBe(true);
     expect(appData.details).toMatchObject({
-      strFullDescription: "Full matched description",
-      strSnippet: "Full matched description",
+      strFullDescription: "Short description",
+      strSnippet: "Short description",
       rgDevelopers: [{ strName: "Developer", strURL: "https://example.com/developer" }],
       rgPublishers: [{ strName: "Publisher", strURL: "https://example.com/publisher" }],
       rgFranchises: [],
@@ -47,8 +47,8 @@ describe("reassertMatchedAppData", () => {
       vecScreenShots: screenshots,
     });
     expect(appData.descriptionsData).toEqual({
-      strFullDescription: "Full matched description",
-      strSnippet: "Full matched description",
+      strFullDescription: "Short description",
+      strSnippet: "Short description",
     });
     expect(appData.associationData).toEqual({
       rgDevelopers: [{ strName: "Developer", strURL: "https://example.com/developer" }],
@@ -93,6 +93,13 @@ describe("reassertMatchedAppData", () => {
       rgPublishers: [],
       rgFranchises: [],
     });
+  });
+
+  it("uses a long fallback when the saved short field is whitespace only", () => {
+    const appData: any = { details: {} };
+    reassertMatchedAppData(appData, { ...metadata, short_description: " \n " } as any, []);
+    expect(appData.details.strFullDescription).toBe("Full matched description");
+    expect(appData.details.strSnippet).toBe("Full matched description");
   });
 
   it("does nothing until Steam has created a native details object", () => {

@@ -24,6 +24,33 @@ shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
 
 Use the editor's **Search IGN metadata** section to search by the game's name. Select the result that describes your game to fill in its source information. You can also edit the fields in the editor yourself. Select **Save** when you finish editing. Applying a Steam App ID saves that match separately; use **Save** to save your other edits.
 
+## Descriptions and release dates
+
+Description edits, including clearing the field, stay in place while an applied
+Steam match finishes loading. Other fields can still receive the new source data.
+
+The description field and Game Info use the saved short summary when available,
+then the saved longer description. Imports keep the source's wording. If a source
+has no usable summary, its longer text supplies the description. Empty or
+image-only list items do not block this fallback. Paragraphs and list items keep
+their spacing in Game Info.
+
+You can replace the description with your own text, including line breaks and
+literal text such as `<pilot>`, or clear it. Save applies your description edit.
+Saving a different field keeps the existing description and release date.
+An automatic lookup for the Steam name also keeps your saved game details.
+
+Release dates are saved as complete calendar dates, not timestamps. Changing
+timezone does not change the saved day. On the first load after this update,
+older saved timestamps are converted once, keeping their local calendar day
+at conversion. This does not repair a date that was already wrong: correct it
+in this game's editor, or import its metadata again. Other saved game details
+and settings are not changed by the conversion.
+
+Enter a complete date such as `2024-03-10`. Clearing the field saves an empty
+date. Unknown or incomplete source dates can remain empty; a valid announced
+future date can be saved. This does not change which source release is selected.
+
 ## Preview or restore the shortcut name
 
 After a valid Steam match is saved, the **Shortcut name** section may show the current shortcut name and the name Steam uses for the matched game. Decky Metadata never renames a shortcut automatically.

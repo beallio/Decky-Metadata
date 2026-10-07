@@ -73,12 +73,12 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
     assert details == {
         "title": "Assassin's Creed: Director's Cut Edition",
         "steam_store_name": "Assassin's Creed: Director's Cut Edition",
-        "description": "Detailed Steam description.",
+        "description": "Short store description.",
         "short_description": "Short store description.",
         "developers": [{"name": "Ubisoft Montreal", "url": ""}],
         "publishers": [{"name": "Ubisoft", "url": ""}],
         "genres": ["Action"],
-        "release_date": plugin._date_to_epoch("Apr 9, 2008"),
+        "release_date": "2008-04-09",
         "rating": 79,
         "store_categories": [2, 22, 29],
         "steam_dlc_appids": [15101, 15102],
@@ -378,3 +378,31 @@ def test_metadata_with_steam_news_sync_preserves_availability_on_transient_failu
 
     assert enriched["steam_dlc_appids"] == [15101]
     assert enriched["has_points_shop"] is True
+
+
+@pytest.mark.parametrize(("short", "about", "detail", "expected"), [("<p>Beat up the streets.</p>", "<p>Long game text</p>", "<h1>DISCORD</h1><p>", "Beat up the streets."), ("<p></p>", "<div>Readable fallback</div>", "Details", "Readable fallback"), ("<br>", "<div></div>", "<p></p>", "")])
+def test_store_primary_description_chooses_cleaned_summary(monkeypatch, short, about, detail, expected):
+    plugin = make_plugin()
+    monkeypatch.setattr(plugin, "_http_json", lambda *_args, **_kwargs: {"1967260": {"success": True, "data": {"short_description": short, "about_the_game": about, "detailed_description": detail}}})
+    result = plugin._steam_appdetails_for_appid(1967260)
+    assert result.get("description", "") == expected
+    assert result.get("short_description", "") == expected
+
+
+@pytest.mark.parametrize(("short", "about", "detail", "expected"), [
+    ("<ul><li></li></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></li></ul>", "", "Detailed fallback", "Detailed fallback"),
+    ("<ul><li></li></ul>", "<ul><li><img src='cover.png'></li></ul>", "<ul><li>&nbsp;</li></ul>", ""),
+    ("<ul><li></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'></ul>", "Readable fallback", "Details", "Readable fallback"),
+    ("<ul><li><img src='cover.png'><li>&nbsp;</ul>", "", "", ""),
+    ("<ul><li><img src='cover.png'><li>Real<li></ul>", "Long", "Details", "- Real"),
+    ("<ul><li><ul><li>Nested</ul></ul>", "Long", "Details", "- Nested"),
+    ("<ul><li>Parent<ul><li><img src='cover.png'><li>Nested</ul><li>Last</ul>", "Long", "Details", "- Parent\n\n- Nested\n\n- Last"),
+])
+def test_store_empty_list_descriptions_do_not_block_fallback(monkeypatch, short, about, detail, expected):
+    plugin = make_plugin()
+    monkeypatch.setattr(plugin, "_http_json", lambda *_args, **_kwargs: {"1967260": {"success": True, "data": {"short_description": short, "about_the_game": about, "detailed_description": detail}}})
+    result = plugin._steam_appdetails_for_appid(1967260)
+    assert result.get("description", "") == expected
+    assert result.get("short_description", "") == expected

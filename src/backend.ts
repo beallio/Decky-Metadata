@@ -86,7 +86,7 @@ export const autoFetchMetadata = callable<
   [appId: number, title: string],
   MetadataData | null
 >("auto_fetch_metadata");
-export const enrichSteamApp = callable<[appId: number], MetadataData | null>(
+export const enrichSteamApp = callable<[appId: number, mode: "metadata" | "steam-name"], MetadataData | null>(
   "enrich_steam_app"
 );
 export const startScanMissing = callable<
