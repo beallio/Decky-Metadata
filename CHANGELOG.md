@@ -6,32 +6,25 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [0.5.1] - 2026-10-07
 
-Correct metadata summaries, release dates, and Library UI behavior
+Fix game descriptions, release dates, and duplicate Verified badges
 
 ### Fixed
 
-- Metadata imports and Game Info use the source's short summary first, with
-  readable longer text as a fallback. Manual text, literal angle brackets, and
-  paragraph/list spacing are preserved, including after delayed metadata loads
-  and while Game Info pages close. Unrelated saves and automatic Steam-name
-  lookups keep saved descriptions and dates. Clearing a description while a
-  Steam match loads also keeps it cleared.
-- Release dates use calendar-date strings rather than stored timestamps, so
-  timezone changes do not change the saved day. Steam imports accept both
-  English month-first and day-first forms; IGN date-time values keep their
-  supplied day. Older saved timestamps are converted once, keeping their local
-  calendar day, with the conversion recorded in the same atomic write.
-  Correct or re-import an already-wrong date per game. Unrelated saves and
-  delayed Steam lookups preserve active date edits; clearing still clears the
-  Game Info date. Steam's timezone notification refreshes mounted Game Info
-  dates using the current browser timezone, without rewriting saved metadata.
-- Library cards keep one compatibility indicator when Steam's native indicator
-  and Metadata's indicator appear together during navigation. Reloaded cards use
-  the current indicator. An update from an older loaded version can require one
-  Steam restart to refresh cached cards.
-- Turning trailers off stops unused monitoring and restores artwork. Turning
-  them on resumes one player, including when the Steam tab receives settings
-  through the plugin bridge. Other causes of scrolling lag can remain.
+- Game descriptions now use the source's short summary when available instead of page text and advertisements. Paragraphs and lists remain readable, and your custom descriptions are preserved.
+- Steam imports now support both English release-date formats, fixing missing dates. For example, Dave the Diver now imports its full Steam release date of June 28, 2023.
+- Dates saved in the editor no longer display one day early, and changing time zones does not shift the date. Clearing a date removes it from Game Info.
+- Quickly leaving a game page no longer displays a duplicate Verified badge on its Library cover. Cached covers may require one Steam restart after updating to correct the display.
+- Turning off trailers now stops background checks and restores the game artwork. Other causes of slow scrolling on the Home screen are still being investigated.
+
+### Security
+
+- Updated source-map-js to version 1.2.2 to resolve a security vulnerability in a development dependency.
+
+### After updating
+
+After updating, open Decky Metadata, go to Metadata, and select Clear cache under Metadata cache. This deletes all saved metadata, matches, and manual edits, and begins a new scan. Back up any changes you wish to keep before clearing the cache. Wait for the scan to complete. You can select Refresh metadata in the same section to scan again if needed.
+
+Manual IGN imports still use IGN's listed date. For Dave the Diver, IGN lists its early-access date of October 27, 2022; selecting full-release dates from IGN is not included in this update.
 
 ## [0.5.0] - 2026-10-03
 
