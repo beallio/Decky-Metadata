@@ -67,6 +67,46 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Date-only release dates
+
+This change needs a full-plugin ZIP because storage and RPCs use calendar-date
+strings. Before installation, capture a protected settings backup with
+`scripts/decky capture --include-settings`. Compare every existing timestamp's
+browser-local day with the backend-local day. Install only after those days agree.
+The first load must change only release-date fields and the root
+`release_date_format` marker; preserve unknown keys and record timestamps.
+Old dates that already showed the wrong day are preserved, not repaired.
+
+Steam's native date formatter uses the running browser's local timezone. A
+successful `SteamClient.Settings.SetTimeZone` can change Steam and the OS while
+that browser timezone stays unchanged. Read both `GetTimeZone()` and
+`Intl.DateTimeFormat().resolvedOptions().timeZone`. Select supported system IDs
+from `GetAvailableTimeZones()`; arbitrary IANA names need not be accepted by Steam.
+To exercise a running browser timezone change without restarting Steam, use one
+owned SharedJSContext CDP session for `Emulation.setTimezoneOverride`, clear its
+override before changing it, then clear and detach it during cleanup. Do not set
+competing overrides on Main and SharedJSContext targets in the same renderer.
+Report this as browser emulation, not proof of a Steam restart.
+
+Save dates through actual editor keyboard events. Confirm React's committed input
+value before activating Save; a utility-world DOM value alone is not proof that
+React received the edit. Cover both DST transition dates, a valid future date,
+explicit clear, and incomplete/rollover input. Check the stored string, numeric
+getter, both native date fields, and visible Game Info label after each change.
+
+Field writes plus a Metadata revision do not repaint the mounted native date.
+Changed date fields queue an update of the exact native date owner through
+`forceUpdate`, located by native description classes and its confirmed
+`props.overview.appid`. The microtask runs after any current render and ignores
+an expired plugin lifetime. Initial metadata bootstrap also refreshes the mounted
+owner once: after reload, numeric fields can already be current while its label
+still reflects an earlier empty date. Never wrap the owner's lazy MobX render or
+traverse store instances. Prove the same date node stays mounted, then check
+route re-entry and plugin unload/reload.
+Confirm normal Steam games and shortcuts without saved metadata retain their
+native numeric dates. Restore the original timezone, fixture date and timestamp,
+Home focus, and owned probes; leave the approved date-only migration in place.
+
 ### Mini achievements
 
 This feature changes both the frontend and a backend preference. Install a

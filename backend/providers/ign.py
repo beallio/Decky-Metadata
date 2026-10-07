@@ -104,17 +104,19 @@ def attributes_to_names(values: list[Any]) -> list[str]:
     ]
 
 
-def first_release_date(regions: list[Any]) -> int | None:
+def first_release_date(regions: list[Any]) -> str | None:
     dates: list[str] = []
     for region in regions:
         if not isinstance(region, dict):
             continue
         for release in region.get("releases") or []:
-            if isinstance(release, dict) and release.get("date"):
-                dates.append(str(release["date"]))
+            if isinstance(release, dict):
+                date = matching.normalize_release_date(release.get("date"))
+                if date is not None:
+                    dates.append(date)
     if not dates:
         return None
-    return matching.date_to_epoch(sorted(dates)[0])
+    return min(dates)
 
 
 def ign_platforms(game: dict[str, Any]) -> list[str]:

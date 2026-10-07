@@ -397,9 +397,9 @@ def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: Pl
 
         release_date = data.get("release_date") or {}
         if isinstance(release_date, dict):
-            release_epoch = matching.date_to_epoch(release_date.get("date"))
-            if release_epoch > 0:
-                details["release_date"] = release_epoch
+            canonical_date = matching.normalize_release_date(release_date.get("date"))
+            if canonical_date is not None:
+                details["release_date"] = canonical_date
 
         metacritic = data.get("metacritic") or {}
         if isinstance(metacritic, dict):

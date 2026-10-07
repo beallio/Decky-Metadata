@@ -408,6 +408,7 @@ def test_compatibility_default_scope_migrates_legacy_boolean_without_rewriting(
     plugin = make_settings_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
     payload = {
+        "release_date_format": "date-only-v1",
         "settings": {
             "debug_logging": True,
             "deck_compat_default": 3,
@@ -463,6 +464,7 @@ def test_invalid_canonical_scope_without_legacy_normalizes_in_memory_then_persis
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(
         {
+            "release_date_format": "date-only-v1",
             "settings": {
                 "debug_logging": True,
                 "deck_compat_default_scope": "bad",
@@ -491,7 +493,7 @@ def test_invalid_canonical_scope_without_legacy_normalizes_in_memory_then_persis
 def test_compatibility_default_scope_missing_keys_default_to_all_without_adding_a_key(tmp_path, monkeypatch) -> None:
     plugin = make_settings_plugin(tmp_path, monkeypatch)
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
-    serialized = json.dumps({"settings": {"debug_logging": False, "deck_compat_default": 2}})
+    serialized = json.dumps({"release_date_format": "date-only-v1", "settings": {"debug_logging": False, "deck_compat_default": 2}})
     plugin._data_file.write_text(serialized, encoding="utf-8")
 
     assert asyncio.run(plugin.get_compatibility_default_scope()) == "all"
@@ -532,6 +534,7 @@ def test_failed_compatibility_default_scope_save_restores_value_or_key_absence(t
     absent = make_settings_plugin(tmp_path / "absent", monkeypatch)
     absent._settings_dir.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps({
+        "release_date_format": "date-only-v1",
         "settings": {"debug_logging": False},
         "metadata": {"101": {"title": "unchanged", "steam_store_state": "unknown"}},
     })

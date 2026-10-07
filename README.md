@@ -60,9 +60,11 @@ SteamGridDB artwork stays in place, including the game icon, cover, background,
 and logo.
 
 Descriptions use the source's short summary when available, then its longer
-text. Manual descriptions keep your text and paragraph spacing. You can correct
-an old release date in the editor or import the game's metadata again; saved
-dates are not changed in bulk. See [editing games](docs/help/editing-games.md).
+text. Manual descriptions keep your text and paragraph spacing. Release dates
+are saved as calendar dates, so a timezone change does not change the saved day.
+Older saved timestamps are converted once, keeping their local calendar day.
+Correct an already-wrong date in the editor or import that game's metadata again.
+See [editing games](docs/help/editing-games.md).
 
 ![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=202610011846)
 

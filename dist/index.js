@@ -3940,6 +3940,183 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
     return true;
 };
 
+/** Project a calendar date into the running SteamUI JavaScript timezone.
+ * The result belongs only to Steam's numeric overview contract, never storage.
+ */
+const nativeReleaseDate = (value) => {
+    if (value === null)
+        return 0;
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+        return undefined;
+    const year = Number(value.slice(0, 4));
+    const month = Number(value.slice(5, 7));
+    const day = Number(value.slice(8, 10));
+    if (year < 1)
+        return undefined;
+    const date = new Date(0);
+    date.setFullYear(year, month - 1, day);
+    date.setHours(0, 0, 0, 0);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day)
+        return undefined;
+    return Math.floor(date.getTime() / 1000);
+};
+
+const steamUiWindow = () => {
+    const candidates = [globalThis];
+    try {
+        const currentWindow = globalThis;
+        candidates.push(currentWindow.parent, currentWindow.top);
+    }
+    catch {
+        // A cross-origin frame can still use its own Decky module bridge.
+    }
+    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
+};
+const steamUiDocuments = () => {
+    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
+    // host bridge for every consumer so cards and Game Info inspect one ordered,
+    // deduplicated set of real browser documents.
+    const contexts = new Set([globalThis, steamUiWindow()]);
+    try {
+        const currentWindow = globalThis;
+        contexts.add(currentWindow.parent);
+        contexts.add(currentWindow.top);
+    }
+    catch {
+        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
+    }
+    const documents = new Set();
+    try {
+        for (const context of contexts) {
+            const windowStore = context?.SteamUIStore?.m_WindowStore;
+            const browserWindows = [
+                windowStore?.MainWindowInstance?.m_BrowserWindow,
+                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+            ];
+            for (const browserWindow of browserWindows) {
+                const document = browserWindow?.document;
+                if (typeof document?.querySelector === "function")
+                    documents.add(document);
+            }
+        }
+    }
+    catch {
+        // Continue with context documents when a Steam private field changes.
+    }
+    for (const context of contexts) {
+        const document = context?.document;
+        if (typeof document?.querySelector === "function")
+            documents.add(document);
+    }
+    return Array.from(documents);
+};
+/** Find an element in Steam's real browser documents, not only Decky's global. */
+const findSteamUiDocumentMatch = (finder) => {
+    for (const document of steamUiDocuments()) {
+        try {
+            const match = finder(document);
+            if (match !== undefined)
+                return match;
+        }
+        catch {
+            // Private DOM access is optional. Try the next known SteamUI document.
+        }
+    }
+    return undefined;
+};
+
+const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
+    typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
+/** Inspect webpack factories, never observable Steam stores or render-time state. */
+const findSteamModulesBySource = (fragments) => {
+    const host = steamUiWindow();
+    const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
+    if (!Array.isArray(chunks))
+        return [];
+    let webpackRequire;
+    try {
+        chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
+                if (isWebpackRequire(requireFn))
+                    webpackRequire = requireFn;
+            }]);
+        const requireModule = webpackRequire;
+        if (!requireModule)
+            return [];
+        const moduleIds = Object.keys(requireModule.m).filter((id) => {
+            const factory = requireModule.m[id];
+            const source = typeof factory === "function" ? factory.toString() : "";
+            return fragments.every((fragment) => source.includes(fragment));
+        });
+        return moduleIds.flatMap((moduleId) => {
+            try {
+                return [requireModule(moduleId)];
+            }
+            catch {
+                return [];
+            }
+        });
+    }
+    catch {
+        return [];
+    }
+};
+const findSteamModuleBySource = (fragments) => {
+    const candidates = findSteamModulesBySource(fragments);
+    return candidates.length === 1 ? candidates[0] : undefined;
+};
+const findLiveModuleChild = (predicate) => {
+    const host = steamUiWindow();
+    const dfl = "DFL" in host ? host.DFL : undefined;
+    if (dfl && typeof dfl === "object" && "findModuleChild" in dfl &&
+        typeof dfl.findModuleChild === "function") {
+        // DFL's runtime export shares Decky's module-finder callback contract.
+        const liveFinder = dfl.findModuleChild;
+        return liveFinder(predicate);
+    }
+    return DFL.findModuleChild(predicate);
+};
+
+/** Refresh the mounted native date owner, without wrapping its lazy MobX render. */
+const refreshNativeReleaseDateView = (appId) => {
+    if (!isCurrentGameInfoRoute(currentRoutePath(), appId) ||
+        !isNativeNonSteamShortcut(getNativeOverview(appId)) ||
+        metadataCache[String(appId)]?.release_date === undefined)
+        return false;
+    const className = findLiveModuleChild((module) => {
+        if (!module || typeof module !== "object")
+            return undefined;
+        if ("GameDescription" in module && typeof module.GameDescription === "string" &&
+            "DescriptionStatsCtn" in module && typeof module.DescriptionStatsCtn === "string" &&
+            "InnerContainer" in module && typeof module.InnerContainer === "string")
+            return module.InnerContainer;
+        return undefined;
+    });
+    if (typeof className !== "string" || !/^[A-Za-z_-][A-Za-z0-9_-]*$/.test(className))
+        return false;
+    return findSteamUiDocumentMatch(document => {
+        for (const element of document.querySelectorAll(`.${className}`)) {
+            if (!element.isConnected || element.getClientRects().length === 0)
+                continue;
+            const key = Object.keys(element).find(name => name.startsWith("__reactFiber$"));
+            let fiber = key ? Reflect.get(element, key) : undefined;
+            for (let depth = 0; fiber && typeof fiber === "object" && depth < 20; depth++) {
+                const owner = "stateNode" in fiber ? fiber.stateNode : undefined;
+                if (owner && typeof owner === "object" && "forceUpdate" in owner && typeof owner.forceUpdate === "function" &&
+                    "props" in owner && owner.props && typeof owner.props === "object" &&
+                    "overview" in owner.props && owner.props.overview && typeof owner.props.overview === "object" &&
+                    "appid" in owner.props.overview && Number(owner.props.overview.appid) === appId &&
+                    owner.constructor.toString().includes("GetCanonicalReleaseDate")) {
+                    owner.forceUpdate();
+                    return true;
+                }
+                // Read only the confirmed overview prop; never traverse store instances.
+                fiber = "return" in fiber ? fiber.return : undefined;
+            }
+        }
+        return undefined;
+    }) ?? false;
+};
+
 let bypassTraceEnabled = false;
 const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
@@ -4600,6 +4777,7 @@ const ensureMetadataCache = async () => {
 const startMetadataBootstrap = () => {
     let cancelled = false;
     let attempts = 0;
+    let refreshedInitialDateView = false;
     const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     const tick = async () => {
         if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration)
@@ -4622,6 +4800,10 @@ const startMetadataBootstrap = () => {
             const compatibilityChanged = applyCompatibilityDefault();
             if (metadataChanged || compatibilityChanged)
                 notifyCompatibilityRevision();
+            if (!refreshedInitialDateView) {
+                refreshNativeReleaseDateView(gameDetailAppIdFromPath(currentRoutePath()));
+                refreshedInitialDateView = true;
+            }
         }
         catch (error) {
             warn("bridge", "metadata bootstrap failed", error);
@@ -4638,6 +4820,33 @@ const startMetadataBootstrap = () => {
             cancelCompatibilityDefaultLoad();
         }
     };
+};
+const applyReleaseDateToOverview = (appId, overview) => {
+    if (!isNativeNonSteamShortcut(overview))
+        return false;
+    const releaseDate = nativeReleaseDate(metadataCache[String(appId)]?.release_date);
+    if (releaseDate === undefined)
+        return false;
+    const changed = overview.rt_original_release_date !== releaseDate || overview.rt_steam_release_date !== releaseDate;
+    try {
+        overview.rt_original_release_date = releaseDate;
+        overview.rt_steam_release_date = releaseDate;
+        if (changed) {
+            overview.__cachedReleaseYearString = undefined;
+            if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+                const generation = metadataState.compatibilityLifecycleGeneration;
+                // Metadata can apply inside a native render; repaint after that commit.
+                queueMicrotask(() => {
+                    if (isCompatibilityLifecycleCurrent(generation))
+                        refreshNativeReleaseDateView(appId);
+                });
+            }
+        }
+        return changed;
+    }
+    catch {
+        return false;
+    }
 };
 const applyMetadataToOverview = (appId, overview) => {
     if (!isNativeNonSteamShortcut(overview))
@@ -4666,6 +4875,7 @@ const applyMetadataToOverview = (appId, overview) => {
     catch {
         // Steam objects are not always writable during early bootstrap.
     }
+    applyReleaseDateToOverview(appId, overview);
     const appData = appDetailsStore?.GetAppData?.(appId);
     if (!appData) {
         return compatibilityChanged;
@@ -4673,18 +4883,6 @@ const applyMetadataToOverview = (appId, overview) => {
     ensureDetailsOverviewSafeFields(appId);
     const screenshots = steamScreenshotsFromMetadata(appId, metadata);
     reassertMatchedAppData(appData, metadata, screenshots);
-    try {
-        const releaseDate = metadata.release_date;
-        if (releaseDate === null || (typeof releaseDate === "number" && releaseDate > 0)) {
-            // Steam uses zero for an absent calendar date. An explicit saved null
-            // must clear the previous value; an omitted field keeps native data.
-            overview.rt_original_release_date = releaseDate ?? 0;
-            overview.rt_steam_release_date = releaseDate ?? 0;
-        }
-    }
-    catch (_error) {
-        // Steam objects are not always writable during early bootstrap.
-    }
     if (screenshots.length) {
         const screenshotData = {
             rgScreenshots: screenshots,
@@ -4839,6 +5037,22 @@ const installMetadataPatches = (unpatchers) => {
     const infoStore = globalThis.appInfoStore;
     if (!overviewProto || !detailsProto)
         return;
+    const settings = typeof SteamClient === "undefined" ? undefined : SteamClient.Settings;
+    if (settings?.RegisterForTimeZoneChange) {
+        const registration = settings.RegisterForTimeZoneChange(() => {
+            let changed = false;
+            // Enumerate our plain metadata records, never native MobX stores.
+            for (const appId of Object.keys(metadataCache)) {
+                const overview = getNativeOverview(Number(appId));
+                if (overview && applyReleaseDateToOverview(Number(appId), overview)) {
+                    changed = true;
+                }
+            }
+            if (changed)
+                notifyCompatibilityRevision();
+        });
+        unpatchers.push(() => registration.unregister());
+    }
     let incomingCompatibilityChanged = false;
     let updateOverviewPatched = false;
     let fallbackRevisionQueued = false;
@@ -5054,11 +5268,10 @@ const installMetadataPatches = (unpatchers) => {
     });
     if (overviewProto?.GetCanonicalReleaseDate) {
         unpatchers.push(patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
-            const metadata = metadataCache[String(thisValue?.appid)];
-            if (isNativeNonSteamShortcut(thisValue) && metadata?.release_date === null)
-                return 0;
-            if (isNonSteamApp(thisValue) && metadata?.release_date) {
-                return metadata.release_date;
+            if (isNativeNonSteamShortcut(thisValue)) {
+                const releaseDate = nativeReleaseDate(metadataCache[String(thisValue?.appid)]?.release_date);
+                if (releaseDate !== undefined)
+                    return releaseDate;
             }
             return original(...args);
         }));
@@ -5444,121 +5657,6 @@ const installUnmatchedAppLinksHider = (unpatchers) => {
         }
         delete globalState.__deckyAppLinksHider;
     });
-};
-
-const steamUiWindow = () => {
-    const candidates = [globalThis];
-    try {
-        const currentWindow = globalThis;
-        candidates.push(currentWindow.parent, currentWindow.top);
-    }
-    catch {
-        // A cross-origin frame can still use its own Decky module bridge.
-    }
-    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
-};
-const steamUiDocuments = () => {
-    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
-    // host bridge for every consumer so cards and Game Info inspect one ordered,
-    // deduplicated set of real browser documents.
-    const contexts = new Set([globalThis, steamUiWindow()]);
-    try {
-        const currentWindow = globalThis;
-        contexts.add(currentWindow.parent);
-        contexts.add(currentWindow.top);
-    }
-    catch {
-        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
-    }
-    const documents = new Set();
-    try {
-        for (const context of contexts) {
-            const windowStore = context?.SteamUIStore?.m_WindowStore;
-            const browserWindows = [
-                windowStore?.MainWindowInstance?.m_BrowserWindow,
-                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
-            ];
-            for (const browserWindow of browserWindows) {
-                const document = browserWindow?.document;
-                if (typeof document?.querySelector === "function")
-                    documents.add(document);
-            }
-        }
-    }
-    catch {
-        // Continue with context documents when a Steam private field changes.
-    }
-    for (const context of contexts) {
-        const document = context?.document;
-        if (typeof document?.querySelector === "function")
-            documents.add(document);
-    }
-    return Array.from(documents);
-};
-/** Find an element in Steam's real browser documents, not only Decky's global. */
-const findSteamUiDocumentMatch = (finder) => {
-    for (const document of steamUiDocuments()) {
-        try {
-            const match = finder(document);
-            if (match !== undefined)
-                return match;
-        }
-        catch {
-            // Private DOM access is optional. Try the next known SteamUI document.
-        }
-    }
-    return undefined;
-};
-
-const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
-    typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
-/** Inspect webpack factories, never observable Steam stores or render-time state. */
-const findSteamModulesBySource = (fragments) => {
-    const host = steamUiWindow();
-    const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
-    if (!Array.isArray(chunks))
-        return [];
-    let webpackRequire;
-    try {
-        chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
-                if (isWebpackRequire(requireFn))
-                    webpackRequire = requireFn;
-            }]);
-        const requireModule = webpackRequire;
-        if (!requireModule)
-            return [];
-        const moduleIds = Object.keys(requireModule.m).filter((id) => {
-            const factory = requireModule.m[id];
-            const source = typeof factory === "function" ? factory.toString() : "";
-            return fragments.every((fragment) => source.includes(fragment));
-        });
-        return moduleIds.flatMap((moduleId) => {
-            try {
-                return [requireModule(moduleId)];
-            }
-            catch {
-                return [];
-            }
-        });
-    }
-    catch {
-        return [];
-    }
-};
-const findSteamModuleBySource = (fragments) => {
-    const candidates = findSteamModulesBySource(fragments);
-    return candidates.length === 1 ? candidates[0] : undefined;
-};
-const findLiveModuleChild = (predicate) => {
-    const host = steamUiWindow();
-    const dfl = "DFL" in host ? host.DFL : undefined;
-    if (dfl && typeof dfl === "object" && "findModuleChild" in dfl &&
-        typeof dfl.findModuleChild === "function") {
-        // DFL's runtime export shares Decky's module-finder callback contract.
-        const liveFinder = dfl.findModuleChild;
-        return liveFinder(predicate);
-    }
-    return DFL.findModuleChild(predicate);
 };
 
 const MARKER = "data-decky-metadata-description";
@@ -14675,27 +14773,20 @@ const textToPersons = (value) => value
     .map((name) => name.trim())
     .filter(Boolean)
     .map((name) => ({ name, url: "" }));
-const epochToDate = (value) => {
-    if (!value)
-        return "";
-    const date = new Date(value * 1000);
-    if (Number.isNaN(date.getTime()))
-        return "";
-    return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-};
-const dateToEpoch = (value) => {
-    if (!value.trim())
-        return null;
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+const normalizeReleaseDate = (value) => {
+    const text = value.trim();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
     if (!match)
         return null;
     const [year, month, day] = match.slice(1).map(Number);
-    const date = new Date(0);
-    date.setFullYear(year, month - 1, day);
-    date.setHours(0, 0, 0, 0);
-    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day)
+    if (year < 1)
         return null;
-    return Math.floor(date.getTime() / 1000);
+    const date = new Date(0);
+    date.setUTCFullYear(year, month - 1, day);
+    date.setUTCHours(0, 0, 0, 0);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
+        return null;
+    return text;
 };
 const parseRating = (value) => {
     if (!value.trim())
@@ -15040,7 +15131,7 @@ const MetadataPage = () => {
     const publisherTextRef = SP_REACT.useRef(publisherText);
     const releaseTextRef = SP_REACT.useRef(releaseText);
     const ratingTextRef = SP_REACT.useRef(ratingText);
-    const releaseBaselineRef = SP_REACT.useRef({ text: epochToDate(metadata.release_date), epoch: metadata.release_date });
+    const releaseBaselineRef = SP_REACT.useRef({ text: metadata.release_date ?? "", value: metadata.release_date });
     const formRevisionRef = SP_REACT.useRef(0);
     const busyRef = SP_REACT.useRef(false);
     const busyEntryRef = SP_REACT.useRef(null);
@@ -15056,8 +15147,8 @@ const MetadataPage = () => {
         setMetadata(next);
         const nextDeveloperText = personsToText(next.developers);
         const nextPublisherText = personsToText(next.publishers);
-        const nextReleaseText = epochToDate(next.release_date);
-        releaseBaselineRef.current = { text: nextReleaseText, epoch: next.release_date };
+        const nextReleaseText = next.release_date ?? "";
+        releaseBaselineRef.current = { text: nextReleaseText, value: next.release_date };
         const nextRatingText = next.rating == null ? "" : String(next.rating);
         developerTextRef.current = nextDeveloperText;
         publisherTextRef.current = nextPublisherText;
@@ -15102,9 +15193,9 @@ const MetadataPage = () => {
             publisherTextRef.current = value;
             setPublisherText(value);
         }
-        releaseBaselineRef.current = { text: epochToDate(reconciled.release_date), epoch: reconciled.release_date };
+        releaseBaselineRef.current = { text: reconciled.release_date ?? "", value: reconciled.release_date };
         if (releaseTextRef.current === baselineText.releaseText) {
-            const value = epochToDate(reconciled.release_date);
+            const value = reconciled.release_date ?? "";
             releaseTextRef.current = value;
             setReleaseText(value);
         }
@@ -15187,9 +15278,9 @@ const MetadataPage = () => {
                     publisherTextRef.current = nextPublisherText;
                     setPublisherText(nextPublisherText);
                 }
-                releaseBaselineRef.current = { text: epochToDate(hydrated.release_date), epoch: hydrated.release_date };
+                releaseBaselineRef.current = { text: hydrated.release_date ?? "", value: hydrated.release_date };
                 if (releaseTextRef.current === baselineReleaseText) {
-                    const nextReleaseText = epochToDate(hydrated.release_date);
+                    const nextReleaseText = hydrated.release_date ?? "";
                     releaseTextRef.current = nextReleaseText;
                     setReleaseText(nextReleaseText);
                 }
@@ -15328,7 +15419,7 @@ const MetadataPage = () => {
         title: cleanTitle(metadata.title),
         developers: textToPersons(developerText),
         publishers: textToPersons(publisherText),
-        release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.epoch : dateToEpoch(releaseText),
+        release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.value : normalizeReleaseDate(releaseText),
         rating: parseRating(ratingText),
         store_categories: metadata.store_categories || [],
     }), [developerText, metadata, publisherText, ratingText, releaseText]);

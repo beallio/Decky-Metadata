@@ -37,14 +37,19 @@ their spacing in Game Info.
 
 You can replace the description with your own text, including line breaks and
 literal text such as `<pilot>`, or clear it. Save applies your description edit.
-Saving a different field keeps the existing description and release timestamp.
+Saving a different field keeps the existing description and release date.
 An automatic lookup for the Steam name also keeps your saved game details.
 
-Release dates use the Deck's local calendar day. Some older saved dates can show
-the previous day because they were stored at UTC midnight. Correct the date in
-this game's editor, or import its metadata again. Existing saved timestamps are
-left unchanged until you change or import that date. Unknown or upcoming dates
-can remain empty.
+Release dates are saved as complete calendar dates, not timestamps. Changing
+timezone does not change the saved day. On the first load after this update,
+older saved timestamps are converted once, keeping their local calendar day
+at conversion. This does not repair a date that was already wrong: correct it
+in this game's editor, or import its metadata again. Other saved game details
+and settings are not changed by the conversion.
+
+Enter a complete date such as `2024-03-10`. Clearing the field saves an empty
+date. Unknown or incomplete source dates can remain empty; a valid announced
+future date can be saved. This does not change which source release is selected.
 
 ## Preview or restore the shortcut name
 

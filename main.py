@@ -37,7 +37,7 @@ class MetadataRecord(TypedDict, total=False):
     short_description: str
     developers: list[dict[str, str]]
     publishers: list[dict[str, str]]
-    release_date: int | None
+    release_date: str | None
     rating: int | None
     steam_store_state: str
     deck_compat_category: int | None
@@ -1643,11 +1643,12 @@ class Plugin:
         if rating is not None:
             rating = max(0, min(rating, 100))
 
-        release_date = metadata.get("release_date")
-        try:
-            release_date = int(release_date) if release_date else None
-        except Exception:
-            release_date = None
+        release_value = metadata.get("release_date")
+        release_date = matching.normalize_release_date(release_value)
+        if release_value is not None and (
+            not isinstance(release_value, str) or release_value != release_date
+        ):
+            raise ValueError("release_date must be a YYYY-MM-DD calendar date or null")
 
         deck_compat_category = metadata.get("deck_compat_category")
         try:
@@ -1699,7 +1700,7 @@ class Plugin:
             "short_description": short_description or description,
             "developers": clean_people(metadata.get("developers")),
             "publishers": clean_people(metadata.get("publishers")),
-            "release_date": release_date,
+            **({"release_date": release_date} if "release_date" in metadata else {}),
             "rating": rating,
             "deck_compat_category": deck_compat_category,
             "deck_compat_override": deck_compat_override,
@@ -2321,9 +2322,6 @@ class Plugin:
     def _clean_game_title(name: str) -> str:
         return matching.clean_game_title(name)
 
-    @staticmethod
-    def _date_to_epoch(value: Any) -> int:
-        return matching.date_to_epoch(value)
 
     @staticmethod
     def _safe_int(value: Any) -> int | None:

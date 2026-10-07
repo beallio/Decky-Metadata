@@ -12,7 +12,9 @@ import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
-import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData } from "../types";
+import { nativeReleaseDate } from "./releaseDate";
+import { refreshNativeReleaseDateView } from "./releaseDateView";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, SteamOverview } from "../types";
 import * as log from "../log";
 import {
   NON_STEAM_APP_TYPE,
@@ -763,6 +765,7 @@ export const ensureMetadataCache = async () => {
 export const startMetadataBootstrap = (): Unpatch => {
   let cancelled = false;
   let attempts = 0;
+  let refreshedInitialDateView = false;
   const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   const tick = async () => {
     if (cancelled || lifecycleGeneration !== metadataState.compatibilityLifecycleGeneration) return;
@@ -780,6 +783,10 @@ export const startMetadataBootstrap = (): Unpatch => {
       const metadataChanged = applyMetadataBatch(Object.keys(metadataCache));
       const compatibilityChanged = applyCompatibilityDefault();
       if (metadataChanged || compatibilityChanged) notifyCompatibilityRevision();
+      if (!refreshedInitialDateView) {
+        refreshNativeReleaseDateView(gameDetailAppIdFromPath(currentRoutePath()));
+        refreshedInitialDateView = true;
+      }
     } catch (error) {
       log.warn("bridge", "metadata bootstrap failed", error);
     }
@@ -795,6 +802,30 @@ export const startMetadataBootstrap = (): Unpatch => {
       cancelCompatibilityDefaultLoad();
     }
   };
+};
+
+const applyReleaseDateToOverview = (appId: number, overview: SteamOverview): boolean => {
+  if (!isNativeNonSteamShortcut(overview)) return false;
+  const releaseDate = nativeReleaseDate(metadataCache[String(appId)]?.release_date);
+  if (releaseDate === undefined) return false;
+  const changed = overview.rt_original_release_date !== releaseDate || overview.rt_steam_release_date !== releaseDate;
+  try {
+    overview.rt_original_release_date = releaseDate;
+    overview.rt_steam_release_date = releaseDate;
+    if (changed) {
+      overview.__cachedReleaseYearString = undefined;
+      if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+        const generation = metadataState.compatibilityLifecycleGeneration;
+        // Metadata can apply inside a native render; repaint after that commit.
+        queueMicrotask(() => {
+          if (isCompatibilityLifecycleCurrent(generation)) refreshNativeReleaseDateView(appId);
+        });
+      }
+    }
+    return changed;
+  } catch {
+    return false;
+  }
 };
 
 const applyMetadataToOverview = (appId: number, overview: any) => {
@@ -824,6 +855,8 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
     // Steam objects are not always writable during early bootstrap.
   }
 
+  applyReleaseDateToOverview(appId, overview);
+
   const appData = appDetailsStore?.GetAppData?.(appId);
   if (!appData) {
     return compatibilityChanged;
@@ -833,17 +866,6 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
   const screenshots = steamScreenshotsFromMetadata(appId, metadata);
   reassertMatchedAppData(appData, metadata, screenshots);
 
-  try {
-    const releaseDate = metadata.release_date;
-    if (releaseDate === null || (typeof releaseDate === "number" && releaseDate > 0)) {
-      // Steam uses zero for an absent calendar date. An explicit saved null
-      // must clear the previous value; an omitted field keeps native data.
-      overview.rt_original_release_date = releaseDate ?? 0;
-      overview.rt_steam_release_date = releaseDate ?? 0;
-    }
-  } catch (_error) {
-    // Steam objects are not always writable during early bootstrap.
-  }
 
   if (screenshots.length) {
     const screenshotData = {
@@ -1021,6 +1043,22 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   const detailsProto = appDetailsStore?.__proto__;
   const infoStore = (globalThis as any).appInfoStore;
   if (!overviewProto || !detailsProto) return;
+
+  const settings = typeof SteamClient === "undefined" ? undefined : SteamClient.Settings;
+  if (settings?.RegisterForTimeZoneChange) {
+    const registration = settings.RegisterForTimeZoneChange(() => {
+      let changed = false;
+      // Enumerate our plain metadata records, never native MobX stores.
+      for (const appId of Object.keys(metadataCache)) {
+        const overview = getNativeOverview(Number(appId));
+        if (overview && applyReleaseDateToOverview(Number(appId), overview)) {
+          changed = true;
+        }
+      }
+      if (changed) notifyCompatibilityRevision();
+    });
+    unpatchers.push(() => registration.unregister());
+  }
 
   let incomingCompatibilityChanged = false;
   let updateOverviewPatched = false;
@@ -1278,10 +1316,9 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
   if (overviewProto?.GetCanonicalReleaseDate) {
     unpatchers.push(
       patchMethod(overviewProto, "GetCanonicalReleaseDate", (thisValue, original, args) => {
-        const metadata = metadataCache[String(thisValue?.appid)];
-        if (isNativeNonSteamShortcut(thisValue) && metadata?.release_date === null) return 0;
-        if (isNonSteamApp(thisValue) && metadata?.release_date) {
-          return metadata.release_date;
+        if (isNativeNonSteamShortcut(thisValue)) {
+          const releaseDate = nativeReleaseDate(metadataCache[String(thisValue?.appid)]?.release_date);
+          if (releaseDate !== undefined) return releaseDate;
         }
         return original(...args);
       })

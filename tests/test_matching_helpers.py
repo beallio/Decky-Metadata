@@ -79,22 +79,26 @@ def test_provider_description_implicit_list_item_endings(markup, expected):
 
 
 @pytest.mark.parametrize("value", ["Apr 18, 2011", "18 Apr, 2011", "April 18, 2011", "18 April, 2011"])
-def test_english_dates_include_day_first_comma(value):
-    import datetime
-    assert datetime.datetime.fromtimestamp(matching.date_to_epoch(value)).date() == datetime.date(2011, 4, 18)
+def test_english_dates_normalize_to_calendar_strings(value):
+    assert matching.normalize_release_date(value) == "2011-04-18"
 
 
-@pytest.mark.parametrize(("zone", "expected"), [("UTC", [1710028800, 1710115200, 1730592000, 1730678400]), ("America/New_York", [1710046800, 1710129600, 1730606400, 1730696400]), ("America/Los_Angeles", [1710057600, 1710140400, 1730617200, 1730707200]), ("Asia/Tokyo", [1709996400, 1710082800, 1730559600, 1730646000])])
-def test_provider_dates_follow_local_calendar_in_isolated_process(zone, expected):
+@pytest.mark.parametrize("zone", ["UTC", "America/New_York", "America/Los_Angeles", "Asia/Tokyo", "Etc/GMT+12", "Pacific/Kiritimati"])
+def test_provider_dates_are_calendar_strings_in_every_timezone(zone):
     import json
     import os
     import subprocess
     import sys
-    script = "from backend.matching import date_to_epoch; import json; print(json.dumps([date_to_epoch(d) for d in ['Mar 10, 2024', '11 March, 2024', '2024-11-03T17:00:00Z', '2024-11-04']]))"
+    script = "from backend.matching import normalize_release_date; import json; print(json.dumps([normalize_release_date(d) for d in ['Mar 10, 2024', '11 March, 2024', '2024-11-03T17:00:00Z', '2024-11-04']]))"
     result = subprocess.run([sys.executable, "-c", script], env={**os.environ, "TZ": zone}, capture_output=True, text=True, check=True)
-    assert json.loads(result.stdout) == expected
+    assert json.loads(result.stdout) == ["2024-03-10", "2024-03-11", "2024-11-03", "2024-11-04"]
 
 
-@pytest.mark.parametrize("value", ["2024-02-30", "2023-02-29", "Apr 2011", "2011", "Coming soon", "", None])
+@pytest.mark.parametrize("value", ["2024-02-30", "2023-02-29", "Apr 2011", "2011", "Coming soon", "", None, 1710057600, True])
 def test_invalid_or_incomplete_dates_remain_absent(value):
-    assert matching.date_to_epoch(value) == 0
+    assert matching.normalize_release_date(value) is None
+
+
+def test_provider_dates_keep_the_supplied_calendar_day_and_accept_leap_days():
+    assert matching.normalize_release_date("2024-03-10T00:00:00+14:00") == "2024-03-10"
+    assert matching.normalize_release_date("2024-02-29") == "2024-02-29"

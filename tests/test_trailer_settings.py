@@ -27,6 +27,7 @@ def test_legacy_trailer_settings_default_without_rewriting_saved_bytes(tmp_path,
     plugin._settings_dir.mkdir(parents=True, exist_ok=True)
     legacy_value = {"enabled": True, "audioEnabled": True, "quality": 1080}
     payload = {
+        "release_date_format": "date-only-v1",
         "settings": {"debug_logging": True, "game_trailers": legacy_value},
         "metadata": {"123": {"title": "Keep", "steam_store_state": "unknown"}},
         "update_settings": {"preserve": [1, 2, 3]},
