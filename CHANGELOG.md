@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-07
+
 Correct metadata summaries, release dates, and Library UI behavior
 
 ### Fixed
