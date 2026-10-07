@@ -110,7 +110,8 @@ vi.mock("react", () => ({
 }));
 
 import { MetadataPage } from "./MetadataPage";
-import { epochToDate, metadataTemplate } from "./metadataForm";
+import { metadataTemplate } from "./metadataForm";
+import type { MetadataData } from "./types";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
@@ -642,19 +643,22 @@ describe("MetadataPage compatibility status", () => {
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
     effects.enabled = true;
     const oldResponse = deferred<any>();
-    configureShortcutPanel({ metadata: { title: "Original", description: "Saved long", short_description: "Saved summary", source: "IGN", release_date: 1240963200, steam_store_name: "" } });
+    configureShortcutPanel({ metadata: { title: "Original", description: "Saved long", short_description: "Saved summary", source: "IGN", release_date: "2009-04-28", steam_store_name: "" } });
     backend.enrichSteamApp.mockReturnValue(oldResponse.promise);
+    state.values[3] = "2009-04-28";
 
     renderPage();
     effects.callbacks[2]();
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "Unsaved edit" } });
+    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0]
+      .props.onChange({ target: { value: "2024-11-03" } });
     oldResponse.resolve(makeMetadata({
       title: "Original",
       description: "Saved long",
       short_description: "Saved summary",
       source: "IGN",
-      release_date: 1240963200,
+      release_date: "2009-04-28",
       steam_appid: 15100,
       steam_store_name: "Old Steam Name",
     }));
@@ -665,7 +669,7 @@ describe("MetadataPage compatibility status", () => {
       description: "Saved long",
       short_description: "Saved summary",
       source: "IGN",
-      release_date: 1240963200,
+      release_date: "2009-04-28",
       steam_store_name: "Old Steam Name",
     }));
     expect(state.values[1]).toBe("");
@@ -674,7 +678,12 @@ describe("MetadataPage compatibility status", () => {
       description: "Saved long",
       short_description: "Saved summary",
       source: "IGN",
-      release_date: 1240963200,
+      release_date: "2009-04-28",
+    }));
+    expect(state.values[3]).toBe("2024-11-03");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+      release_date: "2024-11-03", source: "IGN", description: "Saved long", short_description: "Saved summary", steam_appid: 15100,
     }));
   });
 
@@ -828,6 +837,30 @@ describe("MetadataPage compatibility status", () => {
     textarea.component = null;
   });
 
+  it.each([["save", "2024-11-03"], ["enrichment", "2024-11-03"], ["save", ""], ["enrichment", ""]])("keeps a newer date edit during pending %s with value %s", async (phase, value) => {
+    const pendingSave = deferred<MetadataData>();
+    const pendingEnrichment = deferred<MetadataData>();
+    configureShortcutPanel({ metadata: { description: "Long", short_description: "Short", release_date: "2009-04-28" } });
+    state.values[3] = "2009-04-28";
+    state.values[8] = "15200";
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, metadata) => metadata);
+    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    if (phase === "save") {
+      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    }
+    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Short", release_date: "2009-04-28", steam_appid: 15200 }));
+    await flushAsyncWork();
+    if (phase === "enrichment") {
+      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    }
+    pendingEnrichment.resolve(makeMetadata({ description: "Provider long", short_description: "Provider short", release_date: "2023-11-14", steam_appid: 15200 }));
+    await applying;
+    expect(state.values[3]).toBe(value);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ release_date: value || null, steam_appid: 15200 }));
+  });
+
   it("reconciles every untouched field from a successful Steam enrichment", async () => {
     const pendingEnrichment = deferred<any>();
     const saved = makeMetadata({
@@ -843,7 +876,7 @@ describe("MetadataPage compatibility status", () => {
       short_description: "Steam summary",
       developers: [{ name: "Steam developer", url: "" }],
       publishers: [{ name: "Steam publisher", url: "" }],
-      release_date: 1700000000,
+      release_date: "2023-11-14",
       rating: 92,
       store_categories: [1, 2],
       steam_appid: 15200,
@@ -869,7 +902,7 @@ describe("MetadataPage compatibility status", () => {
       short_description: "Steam summary",
       developers: [{ name: "Steam developer", url: "" }],
       publishers: [{ name: "Steam publisher", url: "" }],
-      release_date: 1700000000,
+      release_date: "2023-11-14",
       rating: 92,
       store_categories: [1, 2],
       steam_dlc_appids: [10, 20],
@@ -1104,13 +1137,13 @@ describe("MetadataPage compatibility status", () => {
 
 describe("metadata summary and date persistence", () => {
   beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });
-  it("displays saved summary but saves the original untouched description and legacy epoch", async () => {
-    state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: 1240963200 });
-    state.values[3] = epochToDate(1240963200);
+  it("displays saved summary but saves the original untouched description and calendar date", async () => {
+    state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
+    state.values[3] = "2009-04-28";
     const page = renderPage();
     expect(walk(page, node => node.type === "textarea")[0].props.value).toBe("Source summary");
     await saveButton(page).props.onClick();
-    expect(backend.saveMetadata.mock.calls[0][1]).toMatchObject({ description: "Retained long prose", short_description: "Source summary", release_date: 1240963200 });
+    expect(backend.saveMetadata.mock.calls[0][1]).toMatchObject({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
   });
   it("uses a long fallback when the saved summary contains only whitespace", () => {
     state.values[0] = makeMetadata({ description: "Readable fallback", short_description: " \n " });
@@ -1121,16 +1154,14 @@ describe("metadata summary and date persistence", () => {
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[0][1].release_date).toBeNull();
   });
-  it("converts a changed date and supports explicitly clearing it", async () => {
-    state.values[0] = makeMetadata({ release_date: 1240963200 });
-    state.values[3] = epochToDate(1240963200);
+  it("saves a changed calendar date and supports explicitly clearing it", async () => {
+    state.values[0] = makeMetadata({ release_date: "2009-04-28" });
+    state.values[3] = "2009-04-28";
     renderPage();
-    const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === epochToDate(1240963200))[0];
+    const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0];
     field.props.onChange({ target: { value: "2024-03-10" } });
     await saveButton(renderPage()).props.onClick();
-    const saved = backend.saveMetadata.mock.calls[0][1].release_date;
-    const day = new Date(saved * 1000);
-    expect([day.getFullYear(), day.getMonth() + 1, day.getDate(), day.getHours()]).toEqual([2024, 3, 10, 0]);
+    expect(backend.saveMetadata.mock.calls[0][1].release_date).toBe("2024-03-10");
     walk(renderPage(), node => node.type === "TextField" && node.props.value === "2024-03-10")[0].props.onChange({ target: { value: "" } });
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();

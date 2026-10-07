@@ -195,11 +195,11 @@ def test_plain_description_survives_repeated_persistence():
 
 def test_steam_name_hydration_preserves_all_saved_metadata(monkeypatch):
     plugin = make_plugin()
-    record = {"title": "My title", "description": "Long", "short_description": "Summary", "release_date": 1240963200, "source": "IGN", "source_url": "https://example.org/game", "steam_appid": 15100, "deck_compat_override": 0}
+    record = {"title": "My title", "description": "Long", "short_description": "Summary", "release_date": "2009-04-28", "source": "IGN", "source_url": "https://example.org/game", "steam_appid": 15100, "deck_compat_override": 0}
     plugin._data = {"metadata": {"123": dict(record)}}
     plugin._load_data = lambda: None
     plugin._save_data = lambda: None
-    monkeypatch.setattr(plugin, "_steam_appdetails_for_appid", lambda appid: {"steam_store_name": "Steam Name", "title": "Replacement", "description": "Replacement", "release_date": 9})
+    monkeypatch.setattr(plugin, "_steam_appdetails_for_appid", lambda appid: {"steam_store_name": "Steam Name", "title": "Replacement", "description": "Replacement", "release_date": "2024-03-10"})
     saved = asyncio.run(plugin.enrich_steam_app(123, "steam-name"))
     assert {key: saved[key] for key in record} == record
     assert saved["steam_store_name"] == "Steam Name"

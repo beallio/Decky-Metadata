@@ -14,10 +14,15 @@ Correct metadata summaries, release dates, and Library UI behavior
   and while Game Info pages close. Unrelated saves and automatic Steam-name
   lookups keep saved descriptions and dates. Clearing a description while a
   Steam match loads also keeps it cleared.
-- Steam dates accept both English month-first and day-first forms. New and
-  edited dates keep the local calendar day; clearing a date also clears it from
-  Game Info. Correct or re-import an affected
-  old date per game; existing timestamps are not changed in bulk.
+- Release dates use calendar-date strings rather than stored timestamps, so
+  timezone changes do not change the saved day. Steam imports accept both
+  English month-first and day-first forms; IGN date-time values keep their
+  supplied day. Older saved timestamps are converted once, keeping their local
+  calendar day, with the conversion recorded in the same atomic write.
+  Correct or re-import an already-wrong date per game. Unrelated saves and
+  delayed Steam lookups preserve active date edits; clearing still clears the
+  Game Info date. Steam's timezone notification refreshes mounted Game Info
+  dates using the current browser timezone, without rewriting saved metadata.
 - Library cards keep one compatibility indicator when Steam's native indicator
   and Metadata's indicator appear together during navigation. Reloaded cards use
   the current indicator. An update from an older loaded version can require one

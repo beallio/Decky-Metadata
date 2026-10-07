@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import html
 import re
-import time
 from typing import Any
 
 NON_PRIMARY_STEAM_TITLE_PATTERNS = (
@@ -245,10 +244,11 @@ def rating_to_percent(value: Any) -> int | None:
     return max(0, min(int(round(number)), 100))
 
 
-def date_to_epoch(value: Any) -> int:
-    if not value:
-        return 0
-    text = str(value).strip()
+def normalize_release_date(value: Any) -> str | None:
+    """Normalize a provider calendar date without assigning a time or timezone."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}T.*", text):
         text = text[:10]
     iso = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", text)
@@ -268,13 +268,12 @@ def date_to_epoch(value: Any) -> int:
             elif last:
                 day, month_name, year = last.groups()
             else:
-                return 0
+                return None
             month = months[month_name.casefold()]
             year, day = int(year), int(day)
-        date = datetime.datetime(year, month, day)
-        return int(time.mktime(date.timetuple()))
-    except (ValueError, KeyError, OverflowError, OSError):
-        return 0
+        return datetime.date(year, month, day).isoformat()
+    except (ValueError, KeyError, OverflowError):
+        return None
 
 
 def safe_int(value: Any) -> int | None:

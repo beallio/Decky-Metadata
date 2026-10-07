@@ -57,8 +57,7 @@ import {
 } from "./types";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import {
-  dateToEpoch,
-  epochToDate,
+  normalizeReleaseDate,
   metadataTemplate,
   parseRating,
   parseSteamAppId,
@@ -283,7 +282,7 @@ export const MetadataPage = () => {
   const publisherTextRef = useRef(publisherText);
   const releaseTextRef = useRef(releaseText);
   const ratingTextRef = useRef(ratingText);
-  const releaseBaselineRef = useRef({ text: epochToDate(metadata.release_date), epoch: metadata.release_date });
+  const releaseBaselineRef = useRef({ text: metadata.release_date ?? "", value: metadata.release_date });
   const formRevisionRef = useRef(0);
   const busyRef = useRef(false);
   const busyEntryRef = useRef<number | null>(null);
@@ -306,8 +305,8 @@ export const MetadataPage = () => {
     setMetadata(next);
     const nextDeveloperText = personsToText(next.developers);
     const nextPublisherText = personsToText(next.publishers);
-    const nextReleaseText = epochToDate(next.release_date);
-    releaseBaselineRef.current = { text: nextReleaseText, epoch: next.release_date };
+    const nextReleaseText = next.release_date ?? "";
+    releaseBaselineRef.current = { text: nextReleaseText, value: next.release_date };
     const nextRatingText = next.rating == null ? "" : String(next.rating);
     developerTextRef.current = nextDeveloperText;
     publisherTextRef.current = nextPublisherText;
@@ -360,9 +359,9 @@ export const MetadataPage = () => {
       publisherTextRef.current = value;
       setPublisherText(value);
     }
-    releaseBaselineRef.current = { text: epochToDate(reconciled.release_date), epoch: reconciled.release_date };
+    releaseBaselineRef.current = { text: reconciled.release_date ?? "", value: reconciled.release_date };
     if (releaseTextRef.current === baselineText.releaseText) {
-      const value = epochToDate(reconciled.release_date);
+      const value = reconciled.release_date ?? "";
       releaseTextRef.current = value;
       setReleaseText(value);
     }
@@ -441,9 +440,9 @@ export const MetadataPage = () => {
           publisherTextRef.current = nextPublisherText;
           setPublisherText(nextPublisherText);
         }
-        releaseBaselineRef.current = { text: epochToDate(hydrated.release_date), epoch: hydrated.release_date };
+        releaseBaselineRef.current = { text: hydrated.release_date ?? "", value: hydrated.release_date };
         if (releaseTextRef.current === baselineReleaseText) {
-          const nextReleaseText = epochToDate(hydrated.release_date);
+          const nextReleaseText = hydrated.release_date ?? "";
           releaseTextRef.current = nextReleaseText;
           setReleaseText(nextReleaseText);
         }
@@ -593,7 +592,7 @@ export const MetadataPage = () => {
       title: cleanTitle(metadata.title),
       developers: textToPersons(developerText),
       publishers: textToPersons(publisherText),
-      release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.epoch : dateToEpoch(releaseText),
+      release_date: releaseText === releaseBaselineRef.current.text ? releaseBaselineRef.current.value : normalizeReleaseDate(releaseText),
       rating: parseRating(ratingText),
       store_categories: metadata.store_categories || [],
     }),

@@ -78,7 +78,7 @@ def test_steam_appdetails_for_appid_maps_store_payload(monkeypatch) -> None:
         "developers": [{"name": "Ubisoft Montreal", "url": ""}],
         "publishers": [{"name": "Ubisoft", "url": ""}],
         "genres": ["Action"],
-        "release_date": plugin._date_to_epoch("Apr 9, 2008"),
+        "release_date": "2008-04-09",
         "rating": 79,
         "store_categories": [2, 22, 29],
         "steam_dlc_appids": [15101, 15102],

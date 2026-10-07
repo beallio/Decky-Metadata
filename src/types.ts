@@ -132,7 +132,7 @@ export type MetadataData = {
   short_description?: string;
   developers?: Person[];
   publishers?: Person[];
-  release_date?: number | null;
+  release_date?: string | null;
   rating?: number | null;
   store_categories: number[];
   genres?: string[];
@@ -325,6 +325,8 @@ export type SteamOverview = {
   rt_original_release_date?: number;
   /** Unix timestamp of the Steam release date. */
   rt_steam_release_date?: number;
+  /** Native release-year label cache, invalidated when owned date fields change. */
+  __cachedReleaseYearString?: string;
 };
 
 /** Minimal contract for a native Steam PartnerEvent store. */
