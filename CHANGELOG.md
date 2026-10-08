@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Stop broken-image flicker on non-Steam Library covers
+
 ### Fixed
 
 - Non-Steam Library covers keep their normal artwork lookup while Metadata shows Steam-style game information. This prevents the extra image reload that briefly displayed a broken-image icon.
