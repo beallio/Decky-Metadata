@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Non-Steam Library covers keep their normal artwork lookup while Metadata shows Steam-style game information. This prevents the extra image reload that briefly displayed a broken-image icon.
+
 ## [0.5.1] - 2026-10-07
 
 Fix game descriptions, release dates, and duplicate Verified badges

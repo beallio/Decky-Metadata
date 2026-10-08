@@ -9,6 +9,7 @@ import {
   Unpatch,
 } from "./core";
 import { installUnmatchedAppLinksHider } from "./appLinks";
+import { installNativeArtworkIdentity } from "./artworkIdentity";
 import {
   configureActivityMetadataLoader,
   installCommunityFeedPatch,
@@ -99,6 +100,7 @@ export const installSteamPatches = (): Unpatch => {
       });
 
     installNativeNewsHistoryRedirects(unpatchers);
+    safeInstallStep("nativeArtworkIdentity", () => installNativeArtworkIdentity(unpatchers));
     installMetadataPatches(unpatchers);
     safeInstallStep("metadataDescriptions", () => installMetadataDescriptions(unpatchers));
     safeInstallStep("libraryCompatibilityIndicators", () => installLibraryCompatibilityIndicators(unpatchers));
