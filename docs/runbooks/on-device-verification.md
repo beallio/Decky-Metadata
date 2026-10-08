@@ -146,6 +146,34 @@ The supported configuration has one active restoration owner. Metadata's
 plugin-level guard prevents its restoration from running alongside enabled
 Decky UI Restored.
 
+### Library cover artwork lookup
+
+Artwork resolution must keep native shortcut identity even while the matched
+Game Info route uses Metadata's rich-page identity. Preserve Steam's candidate
+order and any explicit `rgSources`; a missing JPG followed by a valid PNG is
+normal fallback behavior, not a reason to replace or hide artwork.
+
+1. With Metadata disabled, load a matched shortcut's custom PNG cover in the
+   Library. Enable Metadata while that same cover remains mounted. Do not clear
+   the cache or reload Steam first: those actions remove the locked native
+   resolver binding that this check must exercise.
+2. Quickly open the game and return to the Library at normal speed. Repeat with
+   bounded CPU/animation slowdown if needed. Confirm the working PNG stays
+   visible and the artwork candidate list does not change just because the
+   route enters Game Info. A 404 alone is insufficient evidence of a regression;
+   inspect whether the failed image is actually visible.
+3. Reload Metadata with covers mounted, then repeat the transition. Check a
+   second shortcut and an ordinary Steam game. Preserve card focus, native image
+   refs, custom artwork, and the description, release date and links in Game Info.
+4. Disable/unload Metadata and confirm native lookup behavior is restored.
+   Re-enable it and repeat the already-mounted check. Native props updates must
+   still reach the current app; neither a retired guard nor stale props may
+   survive teardown.
+
+Use the normal Loader lifecycle for these comparisons. Restore the original
+plugin states, route and debugger speed, and remove any owned probes. No game
+launch or artwork replacement is needed for this check.
+
 ### Game-page artwork and trailer geometry
 
 The trailer backdrop calculates CSS height from the target's `offsetHeight` plus
