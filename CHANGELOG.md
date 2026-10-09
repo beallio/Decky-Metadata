@@ -4,6 +4,14 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-09
+
+Fix non-Steam cover flicker
+
+### Fixed
+
+- Non-Steam game covers no longer briefly show a broken-image icon when returning from a game page. Custom artwork and Game Info keep working. Fixes [#29](https://github.com/beallio/Decky-Metadata/issues/29), reported in [#18](https://github.com/beallio/Decky-Metadata/issues/18).
+
 ## [0.5.1] - 2026-10-07
 
 Fix game descriptions, release dates, and duplicate Verified badges
