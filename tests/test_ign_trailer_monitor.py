@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import os
-import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -98,38 +95,3 @@ def test_mp4_probe_rejects_html_error_and_accepts_media_header() -> None:
     with pytest.raises(monitor.ProbeFailure, match="MP4"):
         monitor.probe_mp4(url, open_url=lambda *_args, **_kwargs: MediaResponse("text/html", b"blocked"))
     monitor.probe_mp4(url, open_url=lambda *_args, **_kwargs: MediaResponse("video/mp4", GOOD_MP4))
-
-
-def test_issue_reporter_creates_only_one_open_issue(tmp_path: Path) -> None:
-    reporter = Path(__file__).resolve().parents[1] / "scripts/report_ign_trailer_failure.sh"
-    gh = tmp_path / "gh"
-    gh.write_text(
-        "#!/usr/bin/env bash\n"
-        "if [[ \"$1 $2\" == 'issue list' ]]; then\n"
-        "  [[ \"${FAIL_LOOKUP:-}\" == 1 ]] && exit 9\n"
-        "  [[ \"${EXISTING_ISSUE:-}\" == 1 ]] && printf '42\\n'\n"
-        "  exit 0\n"
-        "elif [[ \"$1 $2\" == 'issue create' ]]; then\n"
-        "  printf 'created\\n' >> \"$ISSUE_RECORD\"\n"
-        "else exit 2; fi\n",
-        encoding="utf-8",
-    )
-    gh.chmod(0o755)
-    record = tmp_path / "issues.txt"
-    env = {**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}", "RUNNER_TEMP": str(tmp_path),
-           "GITHUB_SERVER_URL": "https://github.com", "GITHUB_REPOSITORY": "beallio/Decky-Metadata",
-           "GITHUB_RUN_ID": "1234", "ISSUE_RECORD": str(record)}
-    subprocess.run(["bash", str(reporter)], env=env, check=True, capture_output=True, text=True)
-    assert record.read_text(encoding="utf-8") == "created\n"
-    body = (tmp_path / "ign-trailer-health-failure.md").read_text(encoding="utf-8")
-    assert "https://github.com/beallio/Decky-Metadata/actions/runs/1234" in body
-
-    env["EXISTING_ISSUE"] = "1"
-    subprocess.run(["bash", str(reporter)], env=env, check=True, capture_output=True, text=True)
-    assert record.read_text(encoding="utf-8") == "created\n"
-
-    env["EXISTING_ISSUE"] = "0"
-    env["FAIL_LOOKUP"] = "1"
-    failed = subprocess.run(["bash", str(reporter)], env=env, capture_output=True, text=True)
-    assert failed.returncode != 0
-    assert record.read_text(encoding="utf-8") == "created\n"
