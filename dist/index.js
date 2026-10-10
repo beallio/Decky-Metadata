@@ -3891,6 +3891,40 @@ const matchedSteamAppId = (metadata) => {
         : null;
 };
 const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
+const associationsMatch = (current, people) => {
+    if (!Array.isArray(current) || current.length !== (people?.length || 0))
+        return false;
+    for (let index = 0; index < current.length; index += 1) {
+        const person = people[index];
+        if (current[index]?.strName !== person.name || current[index]?.strURL !== (person.url || ""))
+            return false;
+    }
+    return true;
+};
+const associationValues = (current, native, people) => {
+    if (associationsMatch(current, people))
+        return current;
+    if (associationsMatch(native, people))
+        return native;
+    return people?.map((person) => ({ strName: person.name, strURL: person.url || "" })) || [];
+};
+const SCREENSHOT_FIELDS = [
+    "appid", "id", "nScreenshotID", "strCaption", "strImageURL", "strThumbnailURL",
+    "strURL", "url", "nWidth", "nHeight", "width", "height", "bSpoiler",
+];
+const screenshotsMatch = (current, expected) => {
+    if (current === expected)
+        return true;
+    if (!Array.isArray(current) || current.length !== expected.length)
+        return false;
+    for (let index = 0; index < expected.length; index += 1) {
+        for (const field of SCREENSHOT_FIELDS) {
+            if (current[index]?.[field] !== expected[index]?.[field])
+                return false;
+        }
+    }
+    return true;
+};
 /**
  * Reapply Decky's matched-game fields to a native app-data replacement.
  *
@@ -3904,38 +3938,59 @@ const reassertMatchedAppData = (appData, metadata, screenshots) => {
     if (!details)
         return false;
     const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
-    const descriptionsData = {
-        strFullDescription: description,
-        strSnippet: description,
-    };
-    const associationData = {
-        rgDevelopers: (metadata.developers || []).map((developer) => ({
-            strName: developer.name,
-            strURL: developer.url || "",
-        })),
-        rgPublishers: (metadata.publishers || []).map((publisher) => ({
-            strName: publisher.name,
-            strURL: publisher.url || "",
-        })),
-        rgFranchises: [],
-    };
-    appData.descriptionsData = descriptionsData;
-    appData.associationData = associationData;
-    details.strFullDescription = description;
-    details.strSnippet = description;
-    details.rgDevelopers = associationData.rgDevelopers;
-    details.rgPublishers = associationData.rgPublishers;
-    details.rgFranchises = associationData.rgFranchises;
+    if (appData.descriptionsData?.strFullDescription !== description ||
+        appData.descriptionsData?.strSnippet !== description) {
+        appData.descriptionsData = { strFullDescription: description, strSnippet: description };
+    }
+    const previousAssociations = appData.associationData;
+    const developers = associationValues(previousAssociations?.rgDevelopers, details.rgDevelopers, metadata.developers);
+    const publishers = associationValues(previousAssociations?.rgPublishers, details.rgPublishers, metadata.publishers);
+    const franchises = Array.isArray(previousAssociations?.rgFranchises) && previousAssociations.rgFranchises.length === 0
+        ? previousAssociations.rgFranchises
+        : Array.isArray(details.rgFranchises) && details.rgFranchises.length === 0
+            ? details.rgFranchises
+            : [];
+    if (previousAssociations?.rgDevelopers !== developers ||
+        previousAssociations?.rgPublishers !== publishers ||
+        previousAssociations?.rgFranchises !== franchises) {
+        appData.associationData = { rgDevelopers: developers, rgPublishers: publishers, rgFranchises: franchises };
+    }
+    // Peer getters can read these observables inside Steam's DLC autorun. New
+    // equivalent arrays would invalidate that autorun and re-render this page.
+    if (details.strFullDescription !== description)
+        details.strFullDescription = description;
+    if (details.strSnippet !== description)
+        details.strSnippet = description;
+    if (!associationsMatch(details.rgDevelopers, metadata.developers))
+        details.rgDevelopers = developers;
+    if (!associationsMatch(details.rgPublishers, metadata.publishers))
+        details.rgPublishers = publishers;
+    if (!Array.isArray(details.rgFranchises) || details.rgFranchises.length !== 0)
+        details.rgFranchises = franchises;
     // A matched shortcut can inherit Steam screenshot metadata without becoming
     // the real Steam application. Never advertise the shortcut appid as a
     // Community Market target; the quick-link policy independently removes any
     // stale native descriptor that SteamUI may already have rendered.
-    if (hasMatchedSteamAppId(metadata)) {
+    if (hasMatchedSteamAppId(metadata) && details.bCommunityMarketPresence !== false) {
         details.bCommunityMarketPresence = false;
     }
     if (screenshots.length) {
-        details.nScreenshots = screenshots.length;
-        details.vecScreenShots = screenshots;
+        if (details.nScreenshots !== screenshots.length)
+            details.nScreenshots = screenshots.length;
+        if (!screenshotsMatch(details.vecScreenShots, screenshots))
+            details.vecScreenShots = screenshots;
+        const previousScreenshots = appData.screenshots;
+        if (!screenshotsMatch(previousScreenshots?.rgScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.screenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenShots, screenshots)) {
+            appData.screenshots = {
+                rgScreenshots: screenshots,
+                screenshots,
+                vecScreenshots: screenshots,
+                vecScreenShots: screenshots,
+            };
+        }
     }
     return true;
 };
@@ -4828,21 +4883,21 @@ const applyReleaseDateToOverview = (appId, overview) => {
     if (releaseDate === undefined)
         return false;
     const changed = overview.rt_original_release_date !== releaseDate || overview.rt_steam_release_date !== releaseDate;
+    if (!changed)
+        return false;
     try {
         overview.rt_original_release_date = releaseDate;
         overview.rt_steam_release_date = releaseDate;
-        if (changed) {
-            overview.__cachedReleaseYearString = undefined;
-            if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
-                const generation = metadataState.compatibilityLifecycleGeneration;
-                // Metadata can apply inside a native render; repaint after that commit.
-                queueMicrotask(() => {
-                    if (isCompatibilityLifecycleCurrent(generation))
-                        refreshNativeReleaseDateView(appId);
-                });
-            }
+        overview.__cachedReleaseYearString = undefined;
+        if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+            const generation = metadataState.compatibilityLifecycleGeneration;
+            // Metadata can apply inside a native render; repaint after that commit.
+            queueMicrotask(() => {
+                if (isCompatibilityLifecycleCurrent(generation))
+                    refreshNativeReleaseDateView(appId);
+            });
         }
-        return changed;
+        return true;
     }
     catch {
         return false;
@@ -4861,7 +4916,7 @@ const applyMetadataToOverview = (appId, overview) => {
     }
     let compatibilityChanged = false;
     try {
-        if (typeof metadata.rating === "number") {
+        if (typeof metadata.rating === "number" && overview.metacritic_score !== metadata.rating) {
             overview.metacritic_score = metadata.rating;
         }
         compatibilityChanged = applyCompatibilityToOverview(appId, overview);
@@ -4881,17 +4936,8 @@ const applyMetadataToOverview = (appId, overview) => {
         return compatibilityChanged;
     }
     ensureDetailsOverviewSafeFields(appId);
-    const screenshots = steamScreenshotsFromMetadata(appId, metadata);
+    const screenshots = steamScreenshotsFromMetadata(appId, metadata, appData.details?.vecScreenShots);
     reassertMatchedAppData(appData, metadata, screenshots);
-    if (screenshots.length) {
-        const screenshotData = {
-            rgScreenshots: screenshots,
-            screenshots,
-            vecScreenshots: screenshots,
-            vecScreenShots: screenshots,
-        };
-        appData.screenshots = screenshotData;
-    }
     const metadataKey = String(appId);
     if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
         try {
@@ -4939,24 +4985,66 @@ const applyMetadata = (appId, options = {}) => {
     }
     return compatibilityChanged;
 };
-const steamScreenshotsFromMetadata = (appId, metadata) => (metadata.screenshots || [])
-    .filter((image) => image?.url)
-    .slice(0, 10)
-    .map((image, index) => ({
-    appid: appId,
-    id: image.id || `${appId}-${index}`,
-    nScreenshotID: index + 1,
-    strCaption: image.caption || metadata.title || "",
-    strImageURL: image.url,
-    strThumbnailURL: image.url,
-    strURL: image.url,
-    url: image.url,
-    nWidth: image.width || 1280,
-    nHeight: image.height || 720,
-    width: image.width || 1280,
-    height: image.height || 720,
-    bSpoiler: false,
-}));
+const EMPTY_SCREENSHOTS = [];
+const steamScreenshotsFromMetadata = (appId, metadata, current) => {
+    const images = metadata.screenshots;
+    if (!images?.length)
+        return EMPTY_SCREENSHOTS;
+    let count = 0;
+    let unchanged = Array.isArray(current);
+    for (const image of images) {
+        if (!image?.url)
+            continue;
+        if (count === 10)
+            break;
+        const screenshot = current?.[count];
+        if (!screenshot ||
+            screenshot.appid !== appId ||
+            screenshot.id !== (image.id || `${appId}-${count}`) ||
+            screenshot.nScreenshotID !== count + 1 ||
+            screenshot.strCaption !== (image.caption || metadata.title || "") ||
+            screenshot.strImageURL !== image.url ||
+            screenshot.strThumbnailURL !== image.url ||
+            screenshot.strURL !== image.url ||
+            screenshot.url !== image.url ||
+            screenshot.nWidth !== (image.width || 1280) ||
+            screenshot.nHeight !== (image.height || 720) ||
+            screenshot.width !== (image.width || 1280) ||
+            screenshot.height !== (image.height || 720) ||
+            screenshot.bSpoiler !== false) {
+            unchanged = false;
+        }
+        count += 1;
+    }
+    if (count === 0)
+        return EMPTY_SCREENSHOTS;
+    if (unchanged && current.length === count)
+        return current;
+    const screenshots = [];
+    for (const image of images) {
+        if (!image?.url)
+            continue;
+        const index = screenshots.length;
+        screenshots.push({
+            appid: appId,
+            id: image.id || `${appId}-${index}`,
+            nScreenshotID: index + 1,
+            strCaption: image.caption || metadata.title || "",
+            strImageURL: image.url,
+            strThumbnailURL: image.url,
+            strURL: image.url,
+            url: image.url,
+            nWidth: image.width || 1280,
+            nHeight: image.height || 720,
+            width: image.width || 1280,
+            height: image.height || 720,
+            bSpoiler: false,
+        });
+        if (screenshots.length === 10)
+            break;
+    }
+    return screenshots;
+};
 const tryFetchMetadataForApp = async (appId) => {
     const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     await ensureMetadataCache();
@@ -5118,7 +5206,7 @@ const installMetadataPatches = (unpatchers) => {
             const metadata = metadataCache[String(appId)];
             const overview = getOverview(appId);
             if (hasMatchedSteamAppId(metadata) && isNonSteamAppWithoutPatchedMethod(overview)) {
-                reassertMatchedAppData(appData, metadata, steamScreenshotsFromMetadata(appId, metadata));
+                reassertMatchedAppData(appData, metadata, steamScreenshotsFromMetadata(appId, metadata, details.vecScreenShots));
             }
             return appData;
         }));

@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoid repeated writes of unchanged metadata that can continuously refresh Steam's game details when used with Unifideck. Addresses [#19](https://github.com/beallio/Decky-Metadata/issues/19).
+
 ## [0.5.2] - 2026-10-09
 
 Fix non-Steam cover flicker

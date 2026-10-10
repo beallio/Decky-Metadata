@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { autorun, observable, runInAction } from "mobx";
 import type { MetadataData } from "../types";
 
 const mocks = vi.hoisted(() => ({
@@ -337,6 +338,55 @@ const installCompatibilityOverview = (appId: number, packed: number, nonSteam = 
   host.appDetailsStore = {};
   return overview;
 };
+
+describe("observable metadata screenshots", () => {
+  it("keeps gallery readers stable across repeated application and still displays changed images", () => {
+    const appId = 9470;
+    installCompatibilityOverview(appId, 0xa0);
+    const appData: any = observable({ details: { vecScreenShots: [], nScreenshots: 0 } });
+    (globalThis as Record<string, unknown>).appDetailsStore = { GetAppData: () => appData };
+    const saved: MetadataData = {
+      title: "Gallery Game",
+      id: "gallery",
+      source: "Manual",
+      description: "Gallery description",
+      store_categories: [],
+      steam_dlc_appids: [],
+      has_points_shop: false,
+      screenshots: [
+        { url: "" },
+        ...Array.from({ length: 12 }, (_, index) => ({ url: `https://example.invalid/${index}.png` })),
+      ],
+    };
+    metadataCache[String(appId)] = saved;
+    runInAction(() => applyMetadata(appId));
+    const galleryFrames: string[][] = [];
+    const stop = autorun(() => {
+      galleryFrames.push(appData.screenshots.rgScreenshots.map((image: any) => image.strImageURL));
+      appData.details.vecScreenShots.map((image: any) => image.strImageURL);
+    });
+    try {
+      runInAction(() => applyMetadata(appId));
+      metadataCache[String(appId)] = { ...saved, screenshots: saved.screenshots!.map((image) => ({ ...image })) };
+      runInAction(() => applyMetadata(appId));
+      expect(galleryFrames).toEqual([
+        Array.from({ length: 10 }, (_, index) => `https://example.invalid/${index}.png`),
+      ]);
+      expect(appData.details.nScreenshots).toBe(10);
+
+      const updated = saved.screenshots!.map((image) => ({ ...image }));
+      updated[1] = { url: "https://example.invalid/new.png" };
+      metadataCache[String(appId)] = { ...saved, screenshots: updated };
+      runInAction(() => applyMetadata(appId));
+      expect(galleryFrames).toEqual([
+        Array.from({ length: 10 }, (_, index) => `https://example.invalid/${index}.png`),
+        ["https://example.invalid/new.png", ...Array.from({ length: 9 }, (_, index) => `https://example.invalid/${index + 1}.png`)],
+      ]);
+    } finally {
+      stop();
+    }
+  });
+});
 
 describe("compatibility metadata application", () => {
   it("uses manual and Follow Valve choices before the global default and preserves explicit Unknown", () => {
