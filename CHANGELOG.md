@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- Added hourly checks for IGN, Steam, ProtonDB, Algolia, Steam Community, Steam Tracker, and plugin update downloads. Two consecutive failed scheduled checks open or update one issue for the affected endpoint, with error details and run links. A successful check resets the count and closes the issue. Manual checks do not change issues or failure counts.
+
 ## [0.5.3] - 2026-10-10
 
 Fix game page freezes with Unifideck
