@@ -54,20 +54,70 @@ scripts/decky package-push --build --push
 
 The package command separately reports local validation, package creation, delivery, and installed state. It never installs the plugin or reloads Steam. An offline Deck is pending for the authorized Git hook but fails an explicit push.
 
-## IGN trailer health
+## External endpoint health
 
-The [IGN Trailer Health workflow](../../.github/workflows/ign-trailer-health.yml)
-checks game search, verified trailer selection, and direct MP4 delivery for
-Deadpool and Bloodborne at minute 17 of every hour (UTC). Run the same probe
-locally with `./run.sh python3 scripts/check_ign_trailers.py`, or start the
-workflow manually from GitHub Actions. The schedule only runs after the
-workflow reaches GitHub's default branch, `main`.
+The [Endpoint Health workflow](../../.github/workflows/endpoint-health.yml) is
+scheduled at minute 17 of every hour (UTC). GitHub can delay scheduled runs.
+The schedule starts only after the workflow reaches the default branch, `main`.
 
-A failed probe makes the workflow fail and opens one issue titled
-**IGN trailer fallback health check failed**. Later failures reuse the open
-issue. Review the failed run for the specific error; close the issue after the
-source works again. This check does not exercise Steam's browser, Decky
-Loader, or on-device playback.
+It runs 15 separate contract checks:
+
+| Source | Checks and fixtures |
+|---|---|
+| IGN | Bloodborne search; Hades descriptions, people, and screenshots; Deadpool and Bloodborne trailer discovery and MP4 headers |
+| Steam | Hades search, game details, trailer lookup and manifest/media response, news, partner events, and Deck compatibility |
+| ProtonDB | Hades rating tier; Algolia exact title lookup for TRANSFORMERS: Devastation |
+| Steam Community | Dota 2 homecontent parsed into usable screenshot cards |
+| Steam Tracker | Delisted-page parsing with at least 100 games, including Metro 2033 |
+| GitHub updater | Latest stable release discovery, manifest validation, and ZIP delivery with a matching SHA-256 |
+
+The checks validate the response fields used by the plugin, not just HTTP
+success. They do not exercise Steam's UI, Decky Loader installation, or on-device
+playback. A failure in one check does not prevent the other checks from running.
+
+Each endpoint has its own failure count. The first failed scheduled check records
+the failure without opening an issue. The second consecutive failure opens an
+issue titled **Endpoint health: SOURCE**. Later failures update that issue.
+A successful scheduled check resets that endpoint's count and closes its issue.
+A later outage reopens the same monitor-owned issue after two failures. Ownership
+requires the Actions bot author and endpoint marker, with the saved issue number
+preferred. Human reports, including copies of monitor reports, are not changed.
+
+Issues contain the fixture, request URLs and HTTP statuses, failed contract
+check or exception class, first/latest failure times, and recent failing run
+links. Request headers, credentials, and response bodies are not published.
+HTTP errors and timeouts can be access or network failures; they do not prove
+that the upstream API changed.
+
+Scheduled runs restore counts from the newest scheduled **Endpoint Health**
+artifact on the default branch. The `endpoint-health-state` artifact contains
+`state.json` and the sanitized `report.json`, retained for 90 days. Runs are
+serialized. Already recorded or older run IDs do not count twice. Samples are
+saved before issue operations, so a GitHub reporting failure cannot turn a
+passing check into an unbroken failure streak. Pending recovery and issue work
+are retained for the next scheduled run or a rerun of the latest sample.
+Malformed state or a reporting error fails the job; valid sampled state is still
+retained after an issue-reporting error. If all retained state artifacts are
+deleted or expire, the next scheduled check starts a new count.
+
+Manual GitHub runs are diagnostic-only: they retain a sanitized report but do
+not change counts or issues. Run the same probes locally:
+
+```bash
+./run.sh python3 scripts/check_endpoint_health.py \
+  --report /tmp/Decky-Metadata/endpoint-health/report.json
+```
+
+Add `--only protondb-summary` (repeatable) for a local check of selected
+endpoints. GitHub probes require authenticated `gh` access. The workflow uses
+its `GITHUB_TOKEN` with read access to contents and Actions, plus issue write
+access; no personal token is required.
+
+`scripts/report_endpoint_health.py` defaults to a local dry run. Its
+`--scheduled` flag advances only the supplied local state file; GitHub issue
+writes additionally require `--apply`. The workflow also supplies `--restore`
+to retrieve the previous scheduled state. Do not use `--apply` for local
+experiments.
 
 ## Optional setup
 

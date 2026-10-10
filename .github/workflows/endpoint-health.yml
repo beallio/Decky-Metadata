@@ -1,0 +1,86 @@
+# Schedules run only from the default branch. Manual runs are diagnostic-only.
+name: Endpoint Health
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: endpoint-health
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  check:
+    name: Check external endpoint contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Probe all external endpoints
+        id: probe
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/check_endpoint_health.py --report "$RUNNER_TEMP/report.json"
+
+      - name: Track consecutive scheduled failures and recovery
+        id: report
+        if: ${{ always() && github.event_name == 'schedule' && (steps.probe.outcome == 'success' || steps.probe.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEALTH_REPOSITORY: ${{ github.repository }}
+          HEALTH_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          HEALTH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set +e
+          python3 scripts/report_endpoint_health.py \
+            --report "$RUNNER_TEMP/report.json" \
+            --state "$RUNNER_TEMP/state.json" \
+            --repository "$HEALTH_REPOSITORY" \
+            --branch "$HEALTH_DEFAULT_BRANCH" \
+            --run-url "$HEALTH_RUN_URL" \
+            --scheduled --restore --apply
+          status=$?
+          if [[ -f "$RUNNER_TEMP/state.json" ]]; then
+            echo "state_ready=true" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$status"
+
+      - name: Retain scheduled failure state
+        if: ${{ always() && github.event_name == 'schedule' && steps.report.outputs.state_ready == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: endpoint-health-state
+          overwrite: true
+          path: |
+            ${{ runner.temp }}/state.json
+            ${{ runner.temp }}/report.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Retain manual diagnostic report
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: endpoint-health-report
+          overwrite: true
+          path: ${{ runner.temp }}/report.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Fail the run when a probe failed
+        if: ${{ always() && steps.probe.outcome == 'failure' }}
+        run: exit 1
