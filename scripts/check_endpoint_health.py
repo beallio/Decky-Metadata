@@ -21,8 +21,10 @@ def main() -> int:
                         help="Run only these endpoints (local/manual diagnostics)")
     args = parser.parse_args()
     selected = [probe for probe in PROBES if args.only is None or probe.id in args.only]
+    # Check a few services at once without sending too many requests.
     with ThreadPoolExecutor(max_workers=4) as executor:
         results = list(executor.map(run_probe, selected))
+    # Save every result, including failures, for the issue reporter.
     report = {"version": 1, "checked_at": utc_now(), "results": results}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

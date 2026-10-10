@@ -111,6 +111,7 @@ class Client:
                 content_type = str(response.headers.get("Content-Type") or "").split(";", 1)[0].lower()
                 self.record(method, url, status, content_type)
                 require(status in ((200, 206) if prefix else (200,)), "Unexpected successful HTTP status")
+                # Video checks need only the opening bytes, not the whole file.
                 if not prefix:
                     length = response.headers.get("Content-Length")
                     require(length is None or (length.isdecimal() and int(length) <= max_bytes),
@@ -156,6 +157,7 @@ class Client:
             status = int(match.group(1)) if match else None
             self.record("GET", url, status)
             raise ContractError(f"GitHub request failed: HTTP {status}" if status else "GitHub CLI request failed")
+        # Separate gh's HTTP headers from the downloaded data.
         header, separator, body = result.stdout.partition(b"\r\n\r\n")
         if not separator:
             header, separator, body = result.stdout.partition(b"\n\n")
@@ -181,6 +183,7 @@ def run_probe(probe: Probe) -> dict[str, Any]:
     client = Client()
     result: dict[str, Any] = {"id": probe.id, "name": probe.name, "fixture": probe.fixture,
                               "ok": False, "requests": client.requests, "error": None}
+    # A broken service must not stop checks of the other services.
     try:
         probe.check(client)
         result["ok"] = True
