@@ -11,6 +11,7 @@ from scripts import endpoint_health_probes as probes
 from scripts.endpoint_health import ContractError, Probe, run_probe, safe_url
 
 
+# Small response fixtures let tests simulate changed upstream data.
 class JsonClient:
     def __init__(self, payload):
         self.payload = payload

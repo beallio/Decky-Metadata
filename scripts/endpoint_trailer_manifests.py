@@ -58,6 +58,7 @@ def hls_tracks(text: str, url: str) -> list[str]:
             height = int(height_match[1]) if height_match else 0
             variants.append((height, attributes, media_url(lines[index + 1], url)))
     require(bool(variants), "Steam HLS master has no AVC stream declaration with a usable URI")
+    # Choose a Deck-sized video, then check its separate audio if present.
     _height, selected, video_url = min(variants, key=lambda item: abs(item[0] - 720) if item[0] else math.inf)
     tracks = [video_url]
     if selected.get("AUDIO"):
@@ -155,6 +156,7 @@ def validate_dash(text: str, url: str) -> None:
                 attributes: dict[str, str] = {}
                 timeline = None
                 base = url
+                # Child entries can inherit download rules from their parents.
                 for node in (root, period, adaptation, representation):
                     bases = children(node, "BaseURL")
                     base = media_url((bases[0].text or "").strip() if bases else "", base)
@@ -183,6 +185,7 @@ def validate_dash(text: str, url: str) -> None:
                             tick = integer(entry.get("t"), minimum=0)
                         boundary = next((integer(item.get("t"), minimum=0) for item in entries[index + 1:] if item.get("t") is not None),
                                         offset + duration * timescale)
+                        # Count repeated segments without downloading the video.
                         repetitions = math.ceil((boundary - tick) / ticks) if repeat == -1 else repeat + 1
                         require(1 <= repetitions <= 100000 and count + repetitions <= 100000, "DASH repeat is invalid")
                         end = tick + repetitions * ticks

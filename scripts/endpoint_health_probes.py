@@ -15,6 +15,7 @@ from scripts import check_ign_trailers
 from scripts.endpoint_health import Client, ContractError, MAX_RESPONSE_BYTES, Probe, require
 from scripts.endpoint_trailer_manifests import hls_tracks, validate_dash, validate_hls_media
 
+# Use known games so missing data is easy to detect.
 HADES_APP_ID = 1145360
 STORE_BASE = "https://store.steampowered.com"
 GITHUB_BASE = "repos/beallio/Decky-Metadata"
@@ -43,6 +44,7 @@ def ign_search(client: Client) -> None:
 
 
 def ign_metadata(client: Client) -> None:
+    # Check what the plugin's parser produces, not just the raw response.
     metadata = ign.fetch_metadata("hades", lambda query, variables: graphql(client, query, variables), ign.game_to_metadata)
     require(isinstance(metadata, dict), "data.objectSelectByTypeAndSlug is not a game object")
     require(metadata.get("title") == "Hades", "IGN Hades metadata has no matching title")
@@ -113,6 +115,7 @@ def steam_trailers(client: Client) -> None:
             candidates.extend((key, url) for url in formats.values() if https_url(url))
     require(bool(candidates), "Selected Steam movie has no supported HTTPS media URL")
     last_error = "none"
+    # One broken video format is acceptable if another format works.
     for kind, url in candidates:
         try:
             if kind == "hls_h264":
@@ -210,6 +213,7 @@ def steam_tracker(client: Client) -> None:
 def latest_stable(client: Client) -> dict[str, Any]:
     releases = client.github_json(f"{GITHUB_BASE}/releases")
     require(isinstance(releases, list), "GitHub releases response is not an array")
+    # Check the newest stable release, not the rolling development build.
     stable = []
     for release in releases:
         if not isinstance(release, dict) or release.get("draft") or release.get("prerelease"):
@@ -246,10 +250,12 @@ def github_release_assets(client: Client) -> None:
         manifest = json.loads(manifest_bytes)
     except (ValueError, UnicodeError) as error:
         raise ContractError("GitHub updater manifest is not valid JSON") from error
+    # Use the updater's own rules to check the downloaded manifest.
     candidate = validate_release_candidate(release, SimpleNamespace(get_manifest=lambda _url: JsonResponse(200, {}, manifest)))
     require(candidate is not None, "GitHub updater manifest identity/version/tag/channel/asset/SHA contract is invalid")
     archive = download_asset(client, dict(pre.zip_asset))
     require(archive.startswith(b"PK\x03\x04"), "GitHub updater asset is not a ZIP file")
+    # A working download must also match the manifest's checksum.
     require(hashlib.sha256(archive).hexdigest() == candidate.sha256.lower(),
             "GitHub updater ZIP SHA-256 does not match the manifest")
 
