@@ -4,6 +4,15 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-10
+
+Fix game page freezes with Unifideck
+
+### Fixed
+
+- Fixed an issue where Steam game pages froze when Decky Metadata and Unifideck were used together. Fixes [#19](https://github.com/beallio/Decky-Metadata/issues/19).
+- Metadata edits and refreshes continue to work, with or without Unifideck.
+
 ## [0.5.2] - 2026-10-09
 
 Fix non-Steam cover flicker

@@ -809,20 +809,19 @@ const applyReleaseDateToOverview = (appId: number, overview: SteamOverview): boo
   const releaseDate = nativeReleaseDate(metadataCache[String(appId)]?.release_date);
   if (releaseDate === undefined) return false;
   const changed = overview.rt_original_release_date !== releaseDate || overview.rt_steam_release_date !== releaseDate;
+  if (!changed) return false;
   try {
     overview.rt_original_release_date = releaseDate;
     overview.rt_steam_release_date = releaseDate;
-    if (changed) {
-      overview.__cachedReleaseYearString = undefined;
-      if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
-        const generation = metadataState.compatibilityLifecycleGeneration;
-        // Metadata can apply inside a native render; repaint after that commit.
-        queueMicrotask(() => {
-          if (isCompatibilityLifecycleCurrent(generation)) refreshNativeReleaseDateView(appId);
-        });
-      }
+    overview.__cachedReleaseYearString = undefined;
+    if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
+      const generation = metadataState.compatibilityLifecycleGeneration;
+      // Metadata can apply inside a native render; repaint after that commit.
+      queueMicrotask(() => {
+        if (isCompatibilityLifecycleCurrent(generation)) refreshNativeReleaseDateView(appId);
+      });
     }
-    return changed;
+    return true;
   } catch {
     return false;
   }
@@ -841,7 +840,7 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
 
   let compatibilityChanged = false;
   try {
-    if (typeof metadata.rating === "number") {
+    if (typeof metadata.rating === "number" && overview.metacritic_score !== metadata.rating) {
       overview.metacritic_score = metadata.rating;
     }
     compatibilityChanged = applyCompatibilityToOverview(appId, overview);
@@ -863,19 +862,9 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
   }
   ensureDetailsOverviewSafeFields(appId);
 
-  const screenshots = steamScreenshotsFromMetadata(appId, metadata);
+  const screenshots = steamScreenshotsFromMetadata(appId, metadata, appData.details?.vecScreenShots);
   reassertMatchedAppData(appData, metadata, screenshots);
 
-
-  if (screenshots.length) {
-    const screenshotData = {
-      rgScreenshots: screenshots,
-      screenshots,
-      vecScreenshots: screenshots,
-      vecScreenShots: screenshots,
-    };
-    appData.screenshots = screenshotData;
-  }
 
   const metadataKey = String(appId);
   if (metadataState.appliedMetadataRef[metadataKey] !== metadata) {
@@ -951,11 +940,45 @@ export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {})
   return compatibilityChanged;
 };
 
-const steamScreenshotsFromMetadata = (appId: number, metadata: MetadataData) =>
-  (metadata.screenshots || [])
-    .filter((image) => image?.url)
-    .slice(0, 10)
-    .map((image, index) => ({
+const EMPTY_SCREENSHOTS: any[] = [];
+
+const steamScreenshotsFromMetadata = (appId: number, metadata: MetadataData, current?: any[]) => {
+  const images = metadata.screenshots;
+  if (!images?.length) return EMPTY_SCREENSHOTS;
+  let count = 0;
+  let unchanged = Array.isArray(current);
+  for (const image of images) {
+    if (!image?.url) continue;
+    if (count === 10) break;
+    const screenshot = current?.[count];
+    if (
+      !screenshot ||
+      screenshot.appid !== appId ||
+      screenshot.id !== (image.id || `${appId}-${count}`) ||
+      screenshot.nScreenshotID !== count + 1 ||
+      screenshot.strCaption !== (image.caption || metadata.title || "") ||
+      screenshot.strImageURL !== image.url ||
+      screenshot.strThumbnailURL !== image.url ||
+      screenshot.strURL !== image.url ||
+      screenshot.url !== image.url ||
+      screenshot.nWidth !== (image.width || 1280) ||
+      screenshot.nHeight !== (image.height || 720) ||
+      screenshot.width !== (image.width || 1280) ||
+      screenshot.height !== (image.height || 720) ||
+      screenshot.bSpoiler !== false
+    ) {
+      unchanged = false;
+    }
+    count += 1;
+  }
+  if (count === 0) return EMPTY_SCREENSHOTS;
+  if (unchanged && current!.length === count) return current!;
+
+  const screenshots: any[] = [];
+  for (const image of images) {
+    if (!image?.url) continue;
+    const index = screenshots.length;
+    screenshots.push({
       appid: appId,
       id: image.id || `${appId}-${index}`,
       nScreenshotID: index + 1,
@@ -969,7 +992,11 @@ const steamScreenshotsFromMetadata = (appId: number, metadata: MetadataData) =>
       width: image.width || 1280,
       height: image.height || 720,
       bSpoiler: false,
-    }));
+    });
+    if (screenshots.length === 10) break;
+  }
+  return screenshots;
+};
 
 export const tryFetchMetadataForApp = async (appId: number) => {
   const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
@@ -1133,7 +1160,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
           reassertMatchedAppData(
             appData,
             metadata,
-            steamScreenshotsFromMetadata(appId, metadata)
+            steamScreenshotsFromMetadata(appId, metadata, details.vecScreenShots)
           );
         }
         return appData;
