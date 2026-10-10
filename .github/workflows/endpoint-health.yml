@@ -31,6 +31,7 @@ jobs:
 
       - name: Probe all external endpoints
         id: probe
+        # Let the reporter run even when an endpoint check fails.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -45,6 +46,7 @@ jobs:
           HEALTH_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           HEALTH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          # Keep saved counts even if GitHub issue updates fail.
           set +e
           python3 scripts/report_endpoint_health.py \
             --report "$RUNNER_TEMP/report.json" \
@@ -71,6 +73,7 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+      # Manual checks save a report but leave counts and issues unchanged.
       - name: Retain manual diagnostic report
         if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@v7

@@ -239,6 +239,7 @@ def test_a_human_issue_copying_the_monitor_marker_is_not_monitor_owned():
     github = MemoryGitHub()
     state = sample(reporter.empty_state(), github, 1, protondb=False)
     state = sample(state, github, 2, protondb=False)
+    # A copied report is still a human issue, not a monitor-owned issue.
     human_copy = {**github.records[0], "number": 999, "user": {"login": "beallio"}}
     github.records.append(human_copy)
     sample(state, github, 3, protondb=True)

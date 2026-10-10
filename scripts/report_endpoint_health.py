@@ -144,6 +144,7 @@ class GitHub:
 
     def restore_state(self, branch: str, destination: Path) -> dict[str, Any]:
         payload = json.loads(self.command(["api", f"repos/{self.repository}/actions/artifacts?name={STATE_ARTIFACT}&per_page=100"]))
+        # Only scheduled runs from the default branch can supply saved counts.
         candidates = [artifact for artifact in payload.get("artifacts", [])
                       if artifact.get("name") == STATE_ARTIFACT and not artifact.get("expired")
                       and artifact.get("workflow_run", {}).get("head_branch") == branch]
@@ -180,6 +181,7 @@ def reconcile(report: dict[str, Any], state: dict[str, Any], run_url: str,
     if not scheduled:
         return updated, ["Manual check: failure counts and issues are unchanged."]
     previous = updated["last_run_url"]
+    # An old rerun must not count as a new failed check.
     if previous and int(run_url.rsplit("/", 1)[1]) < int(previous.rsplit("/", 1)[1]):
         return updated, ["Older scheduled run ignored; failure counts and issues are unchanged."]
     actions: list[str] = []
@@ -191,6 +193,7 @@ def reconcile(report: dict[str, Any], state: dict[str, Any], run_url: str,
             })
             entry["last_result"] = copy.deepcopy(result)
             entry["last_checked_at"] = report["checked_at"]
+            # Remember a pass even if GitHub cannot close its issue yet.
             if result["ok"]:
                 entry.update(failures=0, first_failure_at=None, failure_runs=[],
                              pending_recovery={"checked_at": report["checked_at"], "run_url": run_url})
@@ -205,14 +208,15 @@ def reconcile(report: dict[str, Any], state: dict[str, Any], run_url: str,
         updated["last_run_url"] = run_url
     else:
         actions.append("Scheduled sample already recorded; retrying only pending issue work.")
-    # Sample persistence is independent of GitHub issue availability. In particular,
-    # a passing sample must break the streak even when closing its issue fails.
+    # Save results before changing issues. A failed issue update must not
+    # erase a passing check or keep its failure count.
     if save:
         save(updated)
     issues = github.issues() if github else []
     errors: list[str] = []
     for endpoint, entry in updated["endpoints"].items():
         result = entry["last_result"]
+        # Do not change human reports that copied the monitor's issue text.
         matches = [issue for issue in issues
                    if issue.get("user", {}).get("login") == "github-actions[bot]"
                    and marker(endpoint) in (issue.get("body") or "")]
@@ -221,6 +225,7 @@ def reconcile(report: dict[str, Any], state: dict[str, Any], run_url: str,
             open_matches = [item for item in matches if item["state"].lower() == "open"]
             issue = max(open_matches or matches, key=lambda item: item["number"], default=None)
         try:
+            # Finish any missed recovery before reporting a later outage.
             if entry["pending_recovery"] is not None:
                 if issue and issue["state"].lower() == "open":
                     recovery = entry["pending_recovery"]
@@ -244,6 +249,7 @@ def reconcile(report: dict[str, Any], state: dict[str, Any], run_url: str,
         except (ContractError, OSError, ValueError, subprocess.SubprocessError):
             errors.append(endpoint)
         finally:
+            # Keep this endpoint's progress if another issue update fails.
             if save:
                 save(updated)
     require(not errors, "GitHub issue reporting failed for: " + ", ".join(errors))
