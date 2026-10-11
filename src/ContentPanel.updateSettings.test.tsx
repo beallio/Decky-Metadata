@@ -51,7 +51,7 @@ const ui = vi.hoisted(() => ({
 const trailer = vi.hoisted(() => ({
   subscribe: vi.fn(() => () => undefined),
   getSnapshot: vi.fn<() => TrailerControllerSnapshot>(() => ({
-    settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+    settings: { enabled: false, detailEnabled: true, homeEnabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", detailFadeInDelaySeconds: 3, homeFadeInDelaySeconds: 3 },
     status: "Disabled",
     displayWidth: null,
     displayHeight: null,
@@ -431,7 +431,7 @@ describe("Content update settings", () => {
     harness.hooks = [];
     harness.effects = [];
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+      settings: { enabled: false, detailEnabled: true, homeEnabled: false, audioEnabled: false, hideLogoDuringTrailer: false, quality: "auto", detailFadeInDelaySeconds: 3, homeFadeInDelaySeconds: 3 },
       status: "Disabled", displayWidth: null, displayHeight: null, targetHeight: 720,
       settingsLoaded: true, busy: false, settingsError: "", matchRevision: 0,
       conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
@@ -841,7 +841,7 @@ describe("Content update settings", () => {
     const controls = makeFocusControls();
     controls.delayNativeFocusUntil(24);
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, fadeInDelaySeconds: 3 },
+      settings: { enabled: true, detailEnabled: true, homeEnabled: false, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, detailFadeInDelaySeconds: 3, homeFadeInDelaySeconds: 3 },
       status: "Trailer: Fixture",
       displayWidth: 1280,
       displayHeight: 800,
@@ -866,7 +866,7 @@ describe("Content update settings", () => {
     expect(isCompatibilityDropdownSelectionReturn()).toBe(false);
 
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, fadeInDelaySeconds: 3 },
+      settings: { enabled: true, detailEnabled: true, homeEnabled: false, audioEnabled: true, hideLogoDuringTrailer: false, quality: 1080, detailFadeInDelaySeconds: 3, homeFadeInDelaySeconds: 3 },
       status: "Checking the new display target",
       displayWidth: 1280,
       displayHeight: 800,
@@ -889,7 +889,7 @@ describe("Content update settings", () => {
     await changingQuality;
     expect(isCompatibilityDropdownSelectionReturn()).toBe(true);
     trailer.getSnapshot.mockReturnValue({
-      settings: { enabled: true, audioEnabled: true, hideLogoDuringTrailer: false, quality: "auto", fadeInDelaySeconds: 3 },
+      settings: { enabled: true, detailEnabled: true, homeEnabled: false, audioEnabled: true, hideLogoDuringTrailer: false, quality: "auto", detailFadeInDelaySeconds: 3, homeFadeInDelaySeconds: 3 },
       status: "Trailer: Fixture",
       displayWidth: 1280,
       displayHeight: 800,

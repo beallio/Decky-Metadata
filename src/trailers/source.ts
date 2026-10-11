@@ -16,6 +16,19 @@ export type TrailerSourceContext = {
   hydrated: boolean;
 };
 
+export const isTrailerHomeRoute = (route: string): boolean => {
+  const first = String(route || "").trim().split(/\s+/, 1)[0];
+  if (!first) return false;
+  try {
+    const parsed = new URL(first, "https://steamloopback.host/");
+    return parsed.hostname === "steamloopback.host" &&
+      /^\/(?:routes\/)?library\/home\/?$/i.test(parsed.pathname) &&
+      (!parsed.hash || parsed.hash.toLowerCase() === "#quickaccess");
+  } catch {
+    return false;
+  }
+};
+
 export const parseTrailerRootRoute = (route: string): number | null => {
   const routeText = String(route || "").trim();
   const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
@@ -87,13 +100,13 @@ export const ignGameUrl = (metadata: TrailerSourceContext["metadata"]): string |
     ? url.replace(/\/$/, "") : null;
 };
 
-/** Resolve a trailer source only after Steam's native page and visible hero agree. */
-export const resolveTrailerSource = (context: TrailerSourceContext): TrailerSource | null => {
-  if (!context.hydrated) return null;
-  const pageAppId = parseTrailerRootRoute(context.route);
-  if (!pageAppId || context.heroAppId !== pageAppId) return null;
-  if (nativeOverviewAppId(context.overview) !== pageAppId) return null;
-
+/** Share native AppID validation without weakening the detail route/hero guard. */
+export const resolveTrailerAppSource = (
+  context: Omit<TrailerSourceContext, "route" | "heroAppId"> & { appId: number },
+): TrailerSource | null => {
+  const pageAppId = context.appId;
+  if (!context.hydrated || !Number.isInteger(pageAppId) || pageAppId <= 0 ||
+      pageAppId > 0xffffffff || nativeOverviewAppId(context.overview) !== pageAppId) return null;
   if (pageAppId < SHORTCUT_APP_ID_BOUNDARY) {
     return isNativeShortcut(context.overview)
       ? null
@@ -105,4 +118,13 @@ export const resolveTrailerSource = (context: TrailerSourceContext): TrailerSour
       !(typeof context.metadata?.title === "string" && context.metadata.title.trim()) &&
       !ignGameUrl(context.metadata)) return null;
   return { pageAppId, sourceAppId, kind: "shortcut" };
+};
+
+/** Resolve detail playback only after the route and visible hero agree. */
+export const resolveTrailerSource = (context: TrailerSourceContext): TrailerSource | null => {
+  const pageAppId = parseTrailerRootRoute(context.route);
+  if (!pageAppId || context.heroAppId !== pageAppId) return null;
+  return resolveTrailerAppSource({
+    appId: pageAppId, overview: context.overview, metadata: context.metadata, hydrated: context.hydrated,
+  });
 };

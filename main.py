@@ -668,32 +668,23 @@ class Plugin:
 
     @staticmethod
     def _validated_trailer_settings(value: Any) -> dict[str, Any]:
-        expected = {"enabled", "audioEnabled", "quality", "hideLogoDuringTrailer", "fadeInDelaySeconds"}
-        if not isinstance(value, dict) or set(value) != expected:
+        if not isinstance(value, dict) or set(value) != set(storage.DEFAULT_TRAILER_SETTINGS):
             raise ValueError("invalid trailer settings")
-        if (
-            type(value["enabled"]) is not bool
-            or type(value["audioEnabled"]) is not bool
-            or type(value["hideLogoDuringTrailer"]) is not bool
-        ):
-            raise ValueError("invalid trailer settings")
+        for key in ("enabled", "detailEnabled", "homeEnabled", "audioEnabled", "hideLogoDuringTrailer"):
+            if type(value[key]) is not bool:
+                raise ValueError("invalid trailer settings")
         quality = value["quality"]
-        if type(quality) is str:
-            valid_quality = quality == "auto"
-        else:
-            valid_quality = type(quality) is int and quality in {720, 1080, 1440, 2160}
-        delay = value["fadeInDelaySeconds"]
-        if type(delay) is not int or not 0 <= delay <= 10:
-            raise ValueError("invalid trailer settings")
+        valid_quality = (
+            type(quality) is str and quality == "auto"
+            or type(quality) is int and quality in {720, 1080, 1440, 2160}
+        )
         if not valid_quality:
             raise ValueError("invalid trailer settings")
-        return {
-            "enabled": value["enabled"],
-            "audioEnabled": value["audioEnabled"],
-            "quality": quality,
-            "hideLogoDuringTrailer": value["hideLogoDuringTrailer"],
-            "fadeInDelaySeconds": delay,
-        }
+        for key in ("detailFadeInDelaySeconds", "homeFadeInDelaySeconds"):
+            delay = value[key]
+            if type(delay) is not int or not 0 <= delay <= 10:
+                raise ValueError("invalid trailer settings")
+        return {key: value[key] for key in storage.DEFAULT_TRAILER_SETTINGS}
 
     async def get_trailer_settings(self) -> dict[str, Any]:
         if not self._load_data():

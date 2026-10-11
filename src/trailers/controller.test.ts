@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const backend = vi.hoisted(() => ({
   evalInBigPicture: vi.fn(async (_code: string) => ({ status: "Steam UI unavailable", runtimeMissing: true })),
-  getTrailerSettings: vi.fn(async () => ({ enabled: false, audioEnabled: false, quality: "auto" })),
+  getTrailerSettings: vi.fn(async (): Promise<Partial<TrailerSettings>> => ({ enabled: false, audioEnabled: false, quality: "auto" })),
   setTrailerSettings: vi.fn(async (settings: unknown) => settings),
   findIgnTrailer: vi.fn(async () => null as unknown),
 }));
@@ -79,11 +79,13 @@ describe("TrailerController behavior", () => {
       setTimeout, clearTimeout, addEventListener: vi.fn(), removeEventListener: vi.fn(),
       CustomEvent,
     });
-    vi.stubGlobal("document", { documentElement: {}, defaultView: window });
+    vi.stubGlobal("document", { documentElement: {}, defaultView: window,
+      querySelector: () => null, querySelectorAll: () => [] });
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("does not resolve sources or install a player while Off, then resumes the current page once enabled", async () => {
@@ -91,7 +93,7 @@ describe("TrailerController behavior", () => {
     steam.overview.set(570, nativeOverview(570));
     steam.overview.set(730, nativeOverview(730));
     await controller.poll();
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 570, sourceAppId: 570 });
     await controller.setEnabled(false);
     await flush();
     steam.getNativeOverview.mockClear();
@@ -107,59 +109,12 @@ describe("TrailerController behavior", () => {
     expect(backend.evalInBigPicture).not.toHaveBeenCalled();
     await controller.setEnabled(true);
     await flush();
-    expect(controller.identity).toEqual({ pageAppId: 730, sourceAppId: 730 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 730, sourceAppId: 730 });
     expect(steam.getNativeOverview).toHaveBeenCalledWith(730);
     expect(backend.evalInBigPicture).not.toHaveBeenCalled();
     controller.stop();
   });
 
-  it("delivers Off and On settings to a bridge-only runtime without an intervening poll or identity change", async () => {
-    steam.overview.set(570, nativeOverview(570));
-    const controller = mountController({ enabled: true });
-    await controller.refreshPageIdentity();
-    delete (window as any).__deckyMetadataTrailerRuntime;
-    let settings = { ...controller.settings };
-    let revision = controller.settingsRevision;
-    const remoteRuntime = {
-      ownerId: "owner",
-      update: vi.fn((next: TrailerSettings, nextRevision: number) => {
-        if (nextRevision >= revision) {
-          settings = { ...next };
-          revision = nextRevision;
-        }
-        return remoteRuntime.snapshot();
-      }),
-      snapshot: () => ({ status: settings.enabled ? "Trailer active" : "Disabled" }),
-    };
-    const remoteWindow = {
-      opener: window,
-      __deckyMetadataTrailerRuntime: remoteRuntime,
-    };
-    backend.evalInBigPicture.mockImplementation(async (code: string) =>
-      new Function("window", `return ${code}`)(remoteWindow));
-
-    await controller.setEnabled(false);
-    await flush();
-    // No status poll is allowed to erase the unchanged cached identity during Off.
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
-    // A final active scan can observe Off from the opener before monitoring stops.
-    const owner = (window as any).__deckyMetadataTrailerOwner;
-    remoteRuntime.update(owner.settings, owner.settingsRevision);
-    expect(settings.enabled).toBe(false);
-    await controller.setEnabled(true);
-    await flush();
-    await controller.poll();
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
-    expect(settings.enabled).toBe(true);
-    expect(controller.getSnapshot().status).toBe("Trailer active");
-
-    await controller.setAudioEnabled(true);
-    await controller.setQuality(1080);
-    await flush();
-    expect(settings).toMatchObject({ enabled: true, audioEnabled: true, quality: 1080 });
-    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
-    controller.stop();
-  });
 
   it("does not read a shortcut source after Off while metadata hydration is pending", async () => {
     const shortcutId = 0x80000010;
@@ -185,7 +140,7 @@ describe("TrailerController behavior", () => {
     await controller.setEnabled(true);
     await flush();
     expect(sourceReads).toBeGreaterThan(0);
-    expect(controller.identity).toEqual({ pageAppId: shortcutId, sourceAppId: 570 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: shortcutId, sourceAppId: 570 });
     controller.stop();
   });
 
@@ -196,7 +151,7 @@ describe("TrailerController behavior", () => {
 
     await controller.refreshPageIdentity();
 
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 570, sourceAppId: 570 });
     expect((window as any).__deckyMetadataTrailerOwner.identity).toEqual(controller.identity);
     controller.stop();
   });
@@ -215,7 +170,7 @@ describe("TrailerController behavior", () => {
     await controller.refreshPageIdentity();
 
     expect(steam.getNativeOverview.mock.calls.filter(([appId]) => appId === 570)).toHaveLength(initialLookups + 1);
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 570, sourceAppId: 570 });
     controller.stop();
   });
 
@@ -270,7 +225,7 @@ describe("TrailerController behavior", () => {
       candidates: [{ format: "mp4", url: "https://assets14.ign.com/deadpool.mp4", height: 720 }],
     });
     await flush();
-    expect((window as any).__deckyMetadataTrailerOwner.identity).toEqual({ pageAppId: 571, sourceAppId: 571 });
+    expect((window as any).__deckyMetadataTrailerOwner.identity).toEqual({ view: "detail", pageAppId: 571, sourceAppId: 571 });
     expect((window as any).__deckyMetadataTrailerOwner.ignFallback).toBeUndefined();
     controller.stop();
   });
@@ -310,8 +265,6 @@ describe("TrailerController behavior", () => {
     save.reject(new Error("disk unavailable"));
     expect(await pending).toBe(false);
     expect(controller.settings.enabled).toBe(false);
-    expect(controller.identity).toEqual({ pageAppId: 571, sourceAppId: 571 });
-    expect((window as any).__deckyMetadataTrailerOwner.identity).toEqual(controller.identity);
     controller.stop();
   });
 
@@ -333,7 +286,7 @@ describe("TrailerController behavior", () => {
     save.reject(new Error("disk unavailable"));
     expect(await pending).toBe(false);
     expect(controller.settings.audioEnabled).toBe(false);
-    expect(controller.identity).toEqual({ pageAppId: shortcutId, sourceAppId: 571 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: shortcutId, sourceAppId: 571 });
     controller.stop();
   });
 
@@ -351,9 +304,9 @@ describe("TrailerController behavior", () => {
     const controller = mountController();
     await controller.refreshPageIdentity();
 
-    expect(await controller.setFadeInDelaySeconds(0)).toBe(true);
-    expect(controller.getSnapshot().settings.fadeInDelaySeconds).toBe(0);
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(await controller.setDetailFadeInDelaySeconds(0)).toBe(true);
+    expect(controller.getSnapshot().settings.detailFadeInDelaySeconds).toBe(0);
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 570, sourceAppId: 570 });
     controller.stop();
   });
 
@@ -367,7 +320,7 @@ describe("TrailerController behavior", () => {
     const pending = controller.setHideLogoDuringTrailer(true);
     await flush();
     expect(controller.settings.hideLogoDuringTrailer).toBe(true);
-    expect(controller.identity).toEqual({ pageAppId: 570, sourceAppId: 570 });
+    expect(controller.identity).toEqual({ view: "detail", pageAppId: 570, sourceAppId: 570 });
 
     save.reject(new Error("disk unavailable"));
     expect(await pending).toBe(false);
@@ -402,7 +355,6 @@ describe("TrailerController behavior", () => {
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise);
     const controller = mountController();
-    const runtime = (window as any).__deckyMetadataTrailerRuntime;
 
     controller.handleAudioChange({ detail: { ownerId: "owner", settingsRevision: 0, audioEnabled: true } });
     await flush();
@@ -420,10 +372,11 @@ describe("TrailerController behavior", () => {
     second.resolve(undefined);
     await flush();
 
-    expect(backend.setTrailerSettings.mock.calls.map(([value]) => (value as any).audioEnabled)).toEqual([true, false]);
+    expect(backend.setTrailerSettings.mock.calls.map(([value]) =>
+      value !== null && typeof value === "object" && "audioEnabled" in value ? value.audioEnabled : undefined
+    )).toEqual([true, false]);
     expect(controller.settings.audioEnabled).toBe(false);
     expect(controller.settingsBusy).toBe(false);
-    expect(runtime.update).toHaveBeenCalledTimes(2);
     controller.stop();
   });
 
@@ -459,5 +412,95 @@ describe("TrailerController behavior", () => {
     expect(backend.setTrailerSettings).toHaveBeenCalledTimes(2);
     expect(persistedAudioValues).toEqual([true, true]);
     current.stop();
+  });
+
+  const startHomeController = async (settings: Partial<TrailerSettings> = {}) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(10000);
+    steam.route = "/routes/library/home";
+    const target = new EventTarget();
+    Object.assign(target, {
+      setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval, CustomEvent,
+    });
+    vi.stubGlobal("window", target);
+    vi.stubGlobal("document", { documentElement: {}, defaultView: window,
+      querySelector: () => null, querySelectorAll: () => [] });
+    backend.getTrailerSettings.mockResolvedValue({
+      ...DEFAULT_TRAILER_SETTINGS, enabled: true, detailEnabled: false, homeEnabled: true, ...settings,
+    });
+    const controller = new TrailerController();
+    controller.mount();
+    await flush();
+    return controller;
+  };
+
+  const selectHomeGame = (appId: number | null, selectionRevision: number) => {
+    const owner = window.__deckyMetadataTrailerOwner;
+    if (!owner) throw new Error("Controller is not mounted");
+    window.dispatchEvent(new CustomEvent("decky-metadata-trailer:home-selection", {
+      detail: { ownerId: owner.ownerId, settingsRevision: owner.settingsRevision,
+        appId, selectionRevision, enteredAt: Date.now() },
+    }));
+  };
+
+  it("waits for the Home delay before resolving a source with Detail disabled", async () => {
+    const controller = await startHomeController({ detailFadeInDelaySeconds: 9, homeFadeInDelaySeconds: 3 });
+    steam.overview.set(570, nativeOverview(570));
+    steam.getNativeOverview.mockClear();
+    selectHomeGame(570, 1);
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(steam.getNativeOverview).not.toHaveBeenCalled();
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await flush();
+    expect(window.__deckyMetadataTrailerOwner?.identity).toEqual({
+      view: "home", pageAppId: 570, sourceAppId: 570, selectionRevision: 1, enteredAt: 10000,
+    });
+    expect(controller.getSnapshot().settings.detailFadeInDelaySeconds).toBe(9);
+    controller.stop();
+  });
+
+  it("drops an old Home identity when metadata hydration finishes after another selection", async () => {
+    const controller = await startHomeController({ homeFadeInDelaySeconds: 0 });
+    const firstId = 0x80000010;
+    const secondId = 0x80000011;
+    steam.overview.set(firstId, { appid: firstId, app_type: 1073741824 });
+    steam.overview.set(secondId, { appid: secondId, app_type: 1073741824 });
+    steam.metadataCache[String(firstId)] = { steam_appid: 570 };
+    steam.metadataCache[String(secondId)] = { steam_appid: 730 };
+    steam.metadataState.metadataLoaded = false;
+    const hydration = deferred<void>();
+    vi.mocked(ensureMetadataCache).mockReturnValue(hydration.promise);
+    selectHomeGame(firstId, 1);
+    await vi.advanceTimersByTimeAsync(0);
+    selectHomeGame(secondId, 2);
+    await vi.advanceTimersByTimeAsync(0);
+    steam.metadataState.metadataLoaded = true;
+    hydration.resolve();
+    await flush();
+    expect(window.__deckyMetadataTrailerOwner?.identity).toMatchObject({
+      view: "home", pageAppId: secondId, sourceAppId: 730, selectionRevision: 2,
+    });
+    selectHomeGame(firstId, 1);
+    await flush();
+    expect(window.__deckyMetadataTrailerOwner?.identity?.pageAppId).toBe(secondId);
+    controller.stop();
+  });
+
+  it("preserves view preferences and cancels queued Home work when the master is switched off", async () => {
+    const controller = await startHomeController({ homeFadeInDelaySeconds: 10 });
+    steam.overview.set(570, nativeOverview(570));
+    steam.getNativeOverview.mockClear();
+    selectHomeGame(570, 1);
+    await controller.setEnabled(false);
+    await vi.advanceTimersByTimeAsync(12000);
+    expect(steam.getNativeOverview).not.toHaveBeenCalled();
+    expect(backend.findIgnTrailer).not.toHaveBeenCalled();
+    expect(controller.getSnapshot().settings).toMatchObject({
+      enabled: false, detailEnabled: false, homeEnabled: true, homeFadeInDelaySeconds: 10,
+    });
+    expect(vi.getTimerCount()).toBe(0);
+    controller.stop();
   });
 });

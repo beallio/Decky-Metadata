@@ -74,13 +74,16 @@ export type IgnTrailerResult = {
 };
 
 
-/** Metadata-owned Steam trailer preferences. */
+/** Metadata-owned trailer preferences for Detail and Home views. */
 export type TrailerSettings = {
   enabled: boolean;
+  detailEnabled: boolean;
+  homeEnabled: boolean;
   audioEnabled: boolean;
   hideLogoDuringTrailer: boolean;
   quality: TrailerQuality;
-  fadeInDelaySeconds: number;
+  detailFadeInDelaySeconds: number;
+  homeFadeInDelaySeconds: number;
 };
 
 export type TrailerStatus = {

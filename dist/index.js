@@ -571,14 +571,14 @@ const qualityOptions = [
     { data: 1440, label: "1440p" },
     { data: 2160, label: "2160p" },
 ];
-function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onAudioChange, onHideLogoChange, onFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
+function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const disabled = !state.settingsLoaded || state.busy;
     const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, "game trailers", state.settings.enabled);
     const display = state.displayWidth && state.displayHeight
         ? `${state.displayWidth} × ${state.displayHeight} pixels`
         : "Unavailable";
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enabled", description: "Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match.", checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Trailer audio", description: "New trailers stay muted until the video appears, then audio fades in with it.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during trailers", description: "Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Trailer fade-in delay", description: "Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears.", value: state.settings.fadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable trailers", description: "Main switch for Detail and Home trailers. Turning it off keeps your choices for each view.", checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Detail view trailers", description: "Play a trailer over the artwork on a game's main Library page.", checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Detail fade-in delay", description: "Wait from opening the game page before showing a ready trailer.", value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home view trailers", description: "Play a muted trailer over the Home background for the selected or hovered game.", checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Home fade-in delay", description: "Wait before looking for a trailer. Moving to another game restarts this delay.", value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Detail trailer audio", description: "Fade in audio when a Detail trailer appears. Home trailers always stay muted.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during Detail trailers", description: "Hide the game page logo while a trailer is visible. The logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -9714,6 +9714,20 @@ const useNonSteamGames = () => {
 };
 
 const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
+const isTrailerHomeRoute = (route) => {
+    const first = String(route || "").trim().split(/\s+/, 1)[0];
+    if (!first)
+        return false;
+    try {
+        const parsed = new URL(first, "https://steamloopback.host/");
+        return parsed.hostname === "steamloopback.host" &&
+            /^\/(?:routes\/)?library\/home\/?$/i.test(parsed.pathname) &&
+            (!parsed.hash || parsed.hash.toLowerCase() === "#quickaccess");
+    }
+    catch {
+        return false;
+    }
+};
 const parseTrailerRootRoute = (route) => {
     const routeText = String(route || "").trim();
     const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
@@ -9788,14 +9802,11 @@ const ignGameUrl = (metadata) => {
     return /^https:\/\/www\.ign\.com\/games\/[a-z0-9][a-z0-9-]{0,119}\/?$/i.test(url)
         ? url.replace(/\/$/, "") : null;
 };
-/** Resolve a trailer source only after Steam's native page and visible hero agree. */
-const resolveTrailerSource = (context) => {
-    if (!context.hydrated)
-        return null;
-    const pageAppId = parseTrailerRootRoute(context.route);
-    if (!pageAppId || context.heroAppId !== pageAppId)
-        return null;
-    if (nativeOverviewAppId(context.overview) !== pageAppId)
+/** Share native AppID validation without weakening the detail route/hero guard. */
+const resolveTrailerAppSource = (context) => {
+    const pageAppId = context.appId;
+    if (!context.hydrated || !Number.isInteger(pageAppId) || pageAppId <= 0 ||
+        pageAppId > 0xffffffff || nativeOverviewAppId(context.overview) !== pageAppId)
         return null;
     if (pageAppId < SHORTCUT_APP_ID_BOUNDARY) {
         return isNativeShortcut(context.overview)
@@ -9811,16 +9822,26 @@ const resolveTrailerSource = (context) => {
         return null;
     return { pageAppId, sourceAppId, kind: "shortcut" };
 };
+/** Resolve detail playback only after the route and visible hero agree. */
+const resolveTrailerSource = (context) => {
+    const pageAppId = parseTrailerRootRoute(context.route);
+    if (!pageAppId || context.heroAppId !== pageAppId)
+        return null;
+    return resolveTrailerAppSource({
+        appId: pageAppId, overview: context.overview, metadata: context.metadata, hydrated: context.hydrated,
+    });
+};
 
 // @ts-nocheck
 // This self-contained function is serialized into Steam's default world.
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.8";
+    const runtimeVersion = "0.2.0";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
+    const homeTargetClass = "decky-metadata-home-trailer-target";
     const readyClass = "decky-metadata-trailer-ready";
     const visibleClass = "decky-metadata-trailer-visible";
     const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
@@ -9828,6 +9849,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     const audioHintId = "decky-metadata-trailer-audio-hint";
     const viewHintId = "decky-metadata-trailer-view-hint";
     const audioChangeEvent = "decky-metadata-trailer:audio-change";
+    const homeSelectionEvent = "decky-metadata-trailer:home-selection";
+    const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
@@ -9970,37 +9993,40 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
     const normalizeSettings = (value) => {
         const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
         const qualityOptions = ["auto", 720, 1080, 1440, 2160];
+        const detailEnabled = typeof parsed.detailEnabled === "boolean" ? parsed.detailEnabled : true;
+        const homeEnabled = typeof parsed.homeEnabled === "boolean" ? parsed.homeEnabled : false;
         return {
-            enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
+            enabled: parsed.enabled === true && (detailEnabled || homeEnabled),
+            detailEnabled,
+            homeEnabled,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
             hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
             quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
-            fadeInDelaySeconds: Number.isInteger(parsed.fadeInDelaySeconds) &&
-                parsed.fadeInDelaySeconds >= 0 && parsed.fadeInDelaySeconds <= 10 ? parsed.fadeInDelaySeconds : 3
+            detailFadeInDelaySeconds: Number.isInteger(parsed.detailFadeInDelaySeconds) &&
+                parsed.detailFadeInDelaySeconds >= 0 && parsed.detailFadeInDelaySeconds <= 10 ? parsed.detailFadeInDelaySeconds : 3,
+            homeFadeInDelaySeconds: Number.isInteger(parsed.homeFadeInDelaySeconds) &&
+                parsed.homeFadeInDelaySeconds >= 0 && parsed.homeFadeInDelaySeconds <= 10 ? parsed.homeFadeInDelaySeconds : 3
         };
     };
-    const findOwnerRecord = () => {
-        const candidates = [];
+    const findOwnerWindow = () => {
         try {
-            candidates.push(window.opener);
+            if (window.opener?.__deckyMetadataTrailerOwner &&
+                typeof window.opener.__deckyMetadataTrailerOwner === "object")
+                return window.opener;
         }
         catch { }
-        candidates.push(window);
+        if (window.__deckyMetadataTrailerOwner &&
+            typeof window.__deckyMetadataTrailerOwner === "object")
+            return window;
         try {
-            if (window.parent !== window)
-                candidates.push(window.parent);
+            if (window.parent !== window && window.parent?.__deckyMetadataTrailerOwner &&
+                typeof window.parent.__deckyMetadataTrailerOwner === "object")
+                return window.parent;
         }
         catch { }
-        for (const candidate of candidates) {
-            try {
-                const record = candidate?.__deckyMetadataTrailerOwner;
-                if (record && typeof record === "object")
-                    return record;
-            }
-            catch { }
-        }
         return undefined;
     };
+    const findOwnerRecord = () => findOwnerWindow()?.__deckyMetadataTrailerOwner;
     let activeOwnerId = ownerId || "";
     let activeRevision = Number.isSafeInteger(settingsRevision) && settingsRevision >= 0 ? settingsRevision : 0;
     let settings = normalizeSettings(nextSettings);
@@ -10008,11 +10034,19 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         const pageAppId = Number(value?.pageAppId);
         const sourceAppId = value?.sourceAppId === null ? null : Number(value?.sourceAppId);
         if (!Number.isInteger(pageAppId) || pageAppId <= 0 || pageAppId > 0xffffffff ||
+            (value?.view !== "detail" && value?.view !== "home") ||
             (sourceAppId === null
                 ? pageAppId < 0x80000000
                 : !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000))
             return null;
-        return { pageAppId, sourceAppId };
+        if (value.view === "home") {
+            if (!Number.isSafeInteger(value.selectionRevision) || value.selectionRevision < 0 ||
+                !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0)
+                return null;
+            return { view: "home", pageAppId, sourceAppId,
+                selectionRevision: value.selectionRevision, enteredAt: value.enteredAt };
+        }
+        return { view: "detail", pageAppId, sourceAppId };
     };
     const normalizeIgnFallback = (value) => {
         if (value === undefined)
@@ -10193,7 +10227,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             return false;
         const routeText = activeRouteText();
         const routeAppId = getGameDetailsRouteAppId(routeText);
-        if (!routeAppId || !activeIdentity || activeIdentity.pageAppId !== routeAppId)
+        if (!routeAppId || activeIdentity?.view !== "detail" || activeIdentity.pageAppId !== routeAppId)
             return false;
         const hero = findHeroCandidate(routeAppId);
         return Boolean(hero && hero.appId === routeAppId);
@@ -10240,6 +10274,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
       .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
       .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
+      .${homeTargetClass}>.${videoClass}{transform:none!important;transition:opacity ${audioFadeDurationMs}ms linear!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
       .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
       img.${logoHiddenClass}{opacity:0!important}
@@ -10564,6 +10599,43 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
             this.trailerAudioEnabled = this.settings.audioEnabled;
             this.lastSecondaryPressAt = -Infinity;
+            this.homeInputMode = document.activeElement?.classList?.contains("gpfocus") ? "controller" : "pointer";
+            const homeRevision = findOwnerRecord()?.homeSelectionRevision;
+            this.homeSelectionRevision = Number.isSafeInteger(homeRevision) && homeRevision >= 0 ? homeRevision : 0;
+            this.homeFocusTask = () => {
+                this.refreshHomeSelection();
+            };
+            this.handleHomeFocus = () => queueMicrotask(this.homeFocusTask);
+            this.handleHomePointerMove = (event) => {
+                if (!event.isTrusted || !this.homeMonitoring)
+                    return;
+                if (this.homePointerX === event.clientX && this.homePointerY === event.clientY)
+                    return;
+                this.homePointerX = event.clientX;
+                this.homePointerY = event.clientY;
+                this.homeInputMode = "pointer";
+                this.homePointerCard = event.target?.closest?.("[data-id]");
+                this.refreshHomeSelection();
+            };
+            this.handleHomePointerOut = (event) => {
+                if (this.homeInputMode !== "pointer")
+                    return;
+                const card = event.relatedTarget?.closest?.("[data-id]");
+                if (card === this.homePointerCard)
+                    return;
+                this.homePointerCard = card;
+                this.refreshHomeSelection();
+            };
+            this.handleHomeKeyDown = (event) => {
+                if (homeNavigationKeys[event.key] !== true)
+                    return;
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
+            this.handleHomeGamepadInput = () => {
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
             this.scanQueued = false;
             this.launchHeld = false;
             this.statusBackdrop = undefined;
@@ -10592,6 +10664,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.failedVisit = undefined;
                 if (document.hidden) {
                     this.pageEnteredAt = undefined;
+                    this.setHomeSelection(undefined, undefined);
                     this.cleanupVideo(true);
                 }
                 else {
@@ -10666,6 +10739,132 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 event.stopPropagation?.();
                 event.stopImmediatePropagation?.();
             };
+        }
+        resolveHomeStyles() {
+            if (this.homeStyles)
+                return this.homeStyles;
+            const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
+                typeof module?.RecentGamesBackgroundImages === "string" ? module : undefined;
+            for (const candidate of [window.opener, window, window.parent]) {
+                try {
+                    const styles = candidate?.DFL?.findModuleChild?.(predicate);
+                    if (!styles)
+                        continue;
+                    const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
+                        ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
+                    const container = escape(styles.RecentGamesContainer);
+                    const background = escape(styles.RecentGamesBackgroundImages);
+                    if (!container || !background)
+                        continue;
+                    this.homeStyles = { container: `.${container}`, background: `.${background}` };
+                    return this.homeStyles;
+                }
+                catch { }
+            }
+            return undefined;
+        }
+        isHomeRoute() {
+            return /^\/library\/home$/i.test(readRootRouteKey());
+        }
+        getHomeCardAppId(card) {
+            const styles = this.resolveHomeStyles();
+            if (!styles || !card?.isConnected || !card.closest?.(styles.container) ||
+                !card.querySelector?.("[role='link']"))
+                return undefined;
+            return coerceAppId(card.getAttribute("data-id"));
+        }
+        refreshHomeSelection() {
+            if (!this.homeMonitoring || this.destroyed)
+                return;
+            const owner = findOwnerRecord();
+            if (!this.settings.enabled || !this.settings.homeEnabled || owner?.active !== true ||
+                owner.ownerId !== this.ownerId || owner.settings?.enabled !== true ||
+                owner.settings?.homeEnabled !== true || !this.isHomeRoute() || document.hidden ||
+                document.hasFocus?.() === false || this.steamSideMenuVisible() || this.launchHeld ||
+                document.activeElement?.closest?.("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']")) {
+                this.setHomeSelection(undefined, undefined);
+                return;
+            }
+            let card;
+            if (this.homeInputMode === "pointer") {
+                card = this.homePointerCard;
+            }
+            else if (document.activeElement?.classList?.contains("gpfocus")) {
+                card = document.activeElement.closest?.("[data-id]");
+            }
+            this.setHomeSelection(this.getHomeCardAppId(card), card);
+        }
+        setHomeSelection(appId, card) {
+            card = appId ? card : undefined;
+            if (this.homeAppId === appId && this.homeCard === card)
+                return;
+            this.homeAppId = appId;
+            this.homeCard = card;
+            this.homeSelectionRevision += 1;
+            this.homeEnteredAt = Date.now();
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
+            this.failedVisit = undefined;
+            this.cleanupVideo(true);
+            const target = findOwnerWindow();
+            const owner = target?.__deckyMetadataTrailerOwner;
+            if (owner?.ownerId !== this.ownerId || owner.active !== true)
+                return;
+            const detail = { ownerId: this.ownerId, settingsRevision: owner.settingsRevision,
+                appId: appId ?? null, selectionRevision: this.homeSelectionRevision, enteredAt: this.homeEnteredAt };
+            try {
+                target.dispatchEvent(new target.CustomEvent(homeSelectionEvent, { detail }));
+            }
+            catch { }
+        }
+        startHomeTracking() {
+            if (this.homeMonitoring || !this.monitoring || !this.settings.homeEnabled)
+                return;
+            this.homeMonitoring = true;
+            const styles = this.resolveHomeStyles();
+            this.homePointerCard = styles
+                ? document.querySelector(`${styles.container} [data-id]:hover`) ?? undefined : undefined;
+            this.homeInputMode = this.homePointerCard && !document.activeElement?.classList?.contains("gpfocus")
+                ? "pointer" : "controller";
+            document.addEventListener("pointermove", this.handleHomePointerMove, true);
+            document.addEventListener("pointerout", this.handleHomePointerOut, true);
+            document.addEventListener("focusin", this.handleHomeFocus, true);
+            document.addEventListener("focusout", this.handleHomeFocus, true);
+            document.addEventListener("keydown", this.handleHomeKeyDown, true);
+            document.addEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.addEventListener("blur", this.handleHomeFocus);
+            this.refreshHomeSelection();
+        }
+        stopHomeTracking() {
+            this.homeMonitoring = false;
+            document.removeEventListener("pointermove", this.handleHomePointerMove, true);
+            document.removeEventListener("pointerout", this.handleHomePointerOut, true);
+            document.removeEventListener("focusin", this.handleHomeFocus, true);
+            document.removeEventListener("focusout", this.handleHomeFocus, true);
+            document.removeEventListener("keydown", this.handleHomeKeyDown, true);
+            document.removeEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.removeEventListener("blur", this.handleHomeFocus);
+            this.homePointerCard = undefined;
+            this.homePointerX = undefined;
+            this.homePointerY = undefined;
+            this.setHomeSelection(undefined, undefined);
+        }
+        homeIdentityIsCurrent() {
+            const owner = findOwnerRecord();
+            return this.settings.homeEnabled && owner?.settings?.enabled === true &&
+                owner.settings.homeEnabled === true && this.isHomeRoute() && !document.hidden &&
+                document.hasFocus?.() !== false && !this.steamSideMenuVisible() &&
+                this.identity?.view === "home" && this.homeAppId === this.identity.pageAppId &&
+                this.homeSelectionRevision === this.identity.selectionRevision && this.homeCard?.isConnected;
+        }
+        findHomeBackground() {
+            const styles = this.resolveHomeStyles();
+            const container = styles && this.homeCard?.closest?.(styles.container);
+            const element = container?.querySelector?.(styles.background);
+            if (!element?.isConnected)
+                return undefined;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
         }
         reservedBandHeight(target) {
             const style = getComputedStyle(target);
@@ -10829,6 +11028,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.observer = new MutationObserver((mutations) => {
                     if (!isCurrent())
                         return;
+                    if (this.settings.homeEnabled && mutations.some((mutation) => mutation.type === "childList" || mutation.attributeName === "class"))
+                        this.refreshHomeSelection();
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation)))
                         this.queueScan();
                 });
@@ -10860,6 +11061,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 if (isCurrent() && !document.hidden)
                     void this.scan();
             }, routeScanIntervalMs);
+            this.startHomeTracking();
         }
         update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
             if (Number.isSafeInteger(revision) && revision < this.settingsRevision)
@@ -10872,8 +11074,10 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             activeRevision = this.settingsRevision;
             this.identity = normalizeIdentity(nextIdentity);
             activeIdentity = this.identity;
-            const identityChanged = previousIdentity?.pageAppId !== this.identity?.pageAppId ||
-                previousIdentity?.sourceAppId !== this.identity?.sourceAppId;
+            const identityChanged = previousIdentity?.view !== this.identity?.view ||
+                previousIdentity?.pageAppId !== this.identity?.pageAppId ||
+                previousIdentity?.sourceAppId !== this.identity?.sourceAppId ||
+                previousIdentity?.selectionRevision !== this.identity?.selectionRevision;
             this.ignFallback = normalizeIgnFallback(arguments.length >= 4 ? nextFallback :
                 identityChanged ? undefined : previousFallback);
             const fallbackChanged = (previousFallback === undefined) !== (this.ignFallback === undefined) ||
@@ -10882,7 +11086,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.steamUnavailable = false;
                 this.needsIgnFallback = false;
                 this.failedVisit = undefined;
-                this.pageEnteredAt = Date.now();
+                this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
                 this.cleanupVideo(true);
             }
             if (fallbackChanged && !identityChanged) {
@@ -10913,8 +11117,14 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.needsIgnFallback = false;
                 this.pageEnteredAt = undefined;
             }
-            if (previous.fadeInDelaySeconds !== this.settings.fadeInDelaySeconds &&
-                this.currentVideo && this.currentTarget && this.activeCandidate) {
+            if (this.settings.homeEnabled)
+                this.startHomeTracking();
+            else if (this.homeMonitoring)
+                this.stopHomeTracking();
+            const delayChanged = this.identity?.view === "home"
+                ? previous.homeFadeInDelaySeconds !== this.settings.homeFadeInDelaySeconds
+                : previous.detailFadeInDelaySeconds !== this.settings.detailFadeInDelaySeconds;
+            if (delayChanged && this.currentVideo && this.currentTarget && this.activeCandidate) {
                 this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
             }
             this.refreshDisplayTarget();
@@ -10970,6 +11180,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         stopMonitoring() {
             this.monitoring = false;
+            this.stopHomeTracking();
             this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
             this.observer?.disconnect();
             this.themeObserver?.disconnect();
@@ -11031,8 +11242,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             const video = this.currentVideo;
             if (!video)
                 return;
-            const audible = this.trailerAudioEnabled && this.currentMediaReady === true &&
-                video.classList.contains(visibleClass);
+            const audible = this.identity?.view !== "home" && this.trailerAudioEnabled &&
+                this.currentMediaReady === true && video.classList.contains(visibleClass);
             video.volume = audible && !fadeIn ? 1 : 0;
             video.muted = !audible;
             video.defaultMuted = !audible;
@@ -11221,6 +11432,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.exitCleanViewing();
             this.refreshDisplayTarget();
             this.checkRootRoute();
+            if (this.homeMonitoring)
+                this.refreshHomeSelection();
             if (!this.settings.enabled) {
                 this.cleanupVideo(true);
                 this.releaseThemeBand();
@@ -11245,7 +11458,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.status = rt("stoppedForLaunch");
                 return;
             }
-            if (!document.body || !isProbablyGameDetailsPage()) {
+            const home = this.isHomeRoute() && this.settings.homeEnabled;
+            if (!document.body || (!home && (!this.settings.detailEnabled || !isProbablyGameDetailsPage()))) {
                 this.failedVisit = undefined;
                 this.currentAppId = undefined;
                 this.currentGameTitle = undefined;
@@ -11254,14 +11468,16 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.status = rt("waitingGamePage");
                 return;
             }
-            const appId = detectLocationAppId();
-            const hero = appId ? findHeroCandidate(appId) : undefined;
-            if (!appId || !this.identity || this.identity.pageAppId !== appId || !hero || hero.appId !== appId) {
+            const appId = home ? this.homeAppId : detectLocationAppId();
+            const hero = home ? this.findHomeBackground() : appId ? findHeroCandidate(appId) : undefined;
+            if (!appId || !this.identity || this.identity.pageAppId !== appId ||
+                (home && !this.homeIdentityIsCurrent()) || (!home && this.identity.view !== "detail") ||
+                !hero || hero.appId !== appId) {
                 this.needsIgnFallback = false;
                 this.currentAppId = undefined;
                 this.failedVisit = undefined;
                 this.cleanupVideo(true);
-                this.status = rt("waitingGamePage");
+                this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
                 return;
             }
             if (this.needsIgnFallback && this.ignFallback === undefined &&
@@ -11270,7 +11486,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element)
                 return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
-                this.syncStatusBackdrop(hero.element);
+                if (!home)
+                    this.syncStatusBackdrop(hero.element);
                 this.resumeVisiblePausedVideo(appId, hero.element);
                 this.syncLogoVisibility();
                 if (this.currentVideo?.classList.contains(visibleClass) &&
@@ -11286,7 +11503,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             const token = ++this.requestToken;
             this.currentAppId = appId;
             this.currentGameTitle = detectGameTitle(appId);
-            this.pageEnteredAt = priorAppId === appId ? (this.pageEnteredAt || Date.now()) : Date.now();
+            this.pageEnteredAt = home ? this.identity.enteredAt
+                : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
             this.currentTarget = hero.element;
             this.pendingAppId = appId;
             this.pendingTarget = hero.element;
@@ -11299,7 +11517,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
             else {
                 trailer = await this.getTrailer(sourceAppId);
-                if (token !== this.requestToken || this.destroyed)
+                if (token !== this.requestToken || this.destroyed || (home && !this.homeIdentityIsCurrent()))
                     return;
                 if (!trailer.ok || !trailer.candidates?.length) {
                     this.steamUnavailable = true;
@@ -11373,7 +11591,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 return;
             if (this.fadeTimer)
                 window.clearTimeout(this.fadeTimer);
-            const delay = Math.max(0, this.settings.fadeInDelaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            const delaySeconds = this.identity?.view === "home"
+                ? this.settings.homeFadeInDelaySeconds : this.settings.detailFadeInDelaySeconds;
+            const delay = Math.max(0, delaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
             this.fadeTimer = window.setTimeout(() => {
                 this.fadeTimer = undefined;
                 if (!candidate.isCurrent() || video.paused)
@@ -11387,7 +11607,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }, delay);
         }
         getDesiredMediaSignature() {
-            return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
+            return `${this.identity?.view}:${this.targetHeight}:${this.identity?.sourceAppId || 0}:${this.identity?.selectionRevision ?? 0}`;
         }
         async getTrailer(appId) {
             const cached = this.trailerCache.get(appId);
@@ -11486,8 +11706,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         attachVideo(target, appId, candidates, token, options = {}) {
             let index = 0;
-            target.classList.add(targetClass);
-            this.syncStatusBackdrop(target);
+            target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
+            if (this.identity?.view !== "home")
+                this.syncStatusBackdrop(target);
             this.currentTarget = target;
             this.currentAppId = appId;
             this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
@@ -11569,7 +11790,8 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     controller: new AbortController(),
                     isCurrent: () => !this.destroyed && this.requestToken === token &&
                         this.attemptId === id && this.activeCandidate === candidate &&
-                        this.currentVideo === video && video.isConnected,
+                        this.currentVideo === video && video.isConnected &&
+                        (this.identity?.view !== "home" || this.homeIdentityIsCurrent()),
                     onFailure: (error) => {
                         if (!candidate.isCurrent() || candidate.failed)
                             return;
@@ -12105,11 +12327,11 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             }
             this.currentVideo = undefined;
             this.restoreStatusBackdrop();
-            this.currentTarget?.classList.remove(targetClass, readyClass);
+            this.currentTarget?.classList.remove(targetClass, homeTargetClass, readyClass);
             this.currentTarget = undefined;
             this.currentMediaSignature = undefined;
             document.querySelectorAll(`.${videoClass}`).forEach((element) => element.remove());
-            document.querySelectorAll(`.${targetClass}`).forEach((element) => element.classList.remove(targetClass, readyClass));
+            document.querySelectorAll(`.${targetClass},.${homeTargetClass}`).forEach((element) => element.classList.remove(targetClass, homeTargetClass, readyClass));
         }
     }
     const existing = window[runtimeKey];
@@ -12135,15 +12357,18 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
 
 const DEFAULT_TRAILER_SETTINGS = {
     enabled: false,
+    detailEnabled: true,
+    homeEnabled: false,
     audioEnabled: false,
     hideLogoDuringTrailer: false,
     quality: "auto",
-    fadeInDelaySeconds: 3,
+    detailFadeInDelaySeconds: 3,
+    homeFadeInDelaySeconds: 3,
 };
 const POLL_INTERVAL_MS = 2000;
 const BRIDGE_TIMEOUT_MS = 24000;
-const QUALITY_OPTIONS = ["auto", 720, 1080, 1440, 2160];
 const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
+const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
 const OWNER_KEY = "__deckyMetadataTrailerOwner";
 const RUNTIME_KEY = "__deckyMetadataTrailerRuntime";
 const TRANSLATIONS = {
@@ -12160,80 +12385,43 @@ const TRANSLATIONS = {
         stoppedForLaunch: "Trailer stopped for launch",
         trailerActive: "Trailer active",
         trailerLabel: "Trailer: {name}",
-        waitingGamePage: "Waiting for a Steam game page",
+        waitingGamePage: "Waiting for a game page or Home selection",
+        waitingHomeSelection: "Select or hover over a game on Home",
+        waitingHomeDelay: "Waiting to show the Home trailer",
         muteTrailer: "Mute trailer",
         expandTrailer: "Expand trailer",
         mediaSourceUnavailable: "MediaSource is not available",
     },
 };
 const normalizeSettings = (value) => {
-    const input = value && typeof value === "object" ? value : {};
+    if (value === null || typeof value !== "object" || Array.isArray(value))
+        return { ...DEFAULT_TRAILER_SETTINGS };
+    const enabled = "enabled" in value ? value.enabled : undefined;
+    const detailEnabled = "detailEnabled" in value ? value.detailEnabled : undefined;
+    const homeEnabled = "homeEnabled" in value ? value.homeEnabled : undefined;
+    const audioEnabled = "audioEnabled" in value ? value.audioEnabled : undefined;
+    const hideLogoDuringTrailer = "hideLogoDuringTrailer" in value ? value.hideLogoDuringTrailer : undefined;
+    const detailDelay = "detailFadeInDelaySeconds" in value ? value.detailFadeInDelaySeconds : undefined;
+    const homeDelay = "homeFadeInDelaySeconds" in value ? value.homeFadeInDelaySeconds : undefined;
+    const quality = "quality" in value ? value.quality : undefined;
     return {
-        enabled: typeof input.enabled === "boolean" ? input.enabled : false,
-        audioEnabled: typeof input.audioEnabled === "boolean" ? input.audioEnabled : false,
-        hideLogoDuringTrailer: typeof input.hideLogoDuringTrailer === "boolean" ? input.hideLogoDuringTrailer : false,
-        fadeInDelaySeconds: Number.isInteger(input.fadeInDelaySeconds) &&
-            input.fadeInDelaySeconds >= 0 && input.fadeInDelaySeconds <= 10
-            ? input.fadeInDelaySeconds : 3,
-        quality: QUALITY_OPTIONS.includes(input.quality)
-            ? input.quality
-            : "auto",
+        enabled: typeof enabled === "boolean" ? enabled : false,
+        detailEnabled: typeof detailEnabled === "boolean" ? detailEnabled : true,
+        homeEnabled: typeof homeEnabled === "boolean" ? homeEnabled : false,
+        audioEnabled: typeof audioEnabled === "boolean" ? audioEnabled : false,
+        hideLogoDuringTrailer: typeof hideLogoDuringTrailer === "boolean" ? hideLogoDuringTrailer : false,
+        detailFadeInDelaySeconds: typeof detailDelay === "number" &&
+            Number.isInteger(detailDelay) && detailDelay >= 0 && detailDelay <= 10 ? detailDelay : 3,
+        homeFadeInDelaySeconds: typeof homeDelay === "number" &&
+            Number.isInteger(homeDelay) && homeDelay >= 0 && homeDelay <= 10 ? homeDelay : 3,
+        quality: quality === "auto" || quality === 720 || quality === 1080 || quality === 1440 || quality === 2160
+            ? quality : "auto",
     };
 };
-const sameIdentity = (left, right) => left?.pageAppId === right?.pageAppId && left?.sourceAppId === right?.sourceAppId;
+const sameIdentity = (left, right) => left?.view === right?.view && left?.pageAppId === right?.pageAppId &&
+    left?.sourceAppId === right?.sourceAppId && left?.selectionRevision === right?.selectionRevision;
 const sameIgnLookup = (left, right) => left?.title === right?.title && left?.gameUrl === right?.gameUrl;
-const isRuntimeSnapshot = (value) => Boolean(value && typeof value === "object" && typeof value.status === "string");
-const documents = () => {
-    if (typeof document === "undefined")
-        return [];
-    const found = [];
-    const addDocument = (candidate) => {
-        try {
-            if (candidate?.documentElement && !found.includes(candidate))
-                found.push(candidate);
-        }
-        catch { /* Steam can close a popup between discovery and access. */ }
-    };
-    const addWindow = (candidate) => {
-        if (!candidate)
-            return;
-        for (const getter of [
-            () => candidate.document,
-            () => candidate.window?.document,
-            () => candidate.m_Window?.document,
-            () => candidate.m_popup?.document,
-            () => candidate.BrowserWindow?.document,
-            () => candidate.GetWindow?.()?.document,
-        ]) {
-            try {
-                addDocument(getter());
-            }
-            catch { /* Native Steam handles are transient. */ }
-        }
-    };
-    addDocument(document);
-    try {
-        addDocument(window.top?.document);
-    }
-    catch { }
-    try {
-        addDocument(window.parent?.document);
-    }
-    catch { }
-    try {
-        addDocument(window.opener?.document);
-    }
-    catch { }
-    try {
-        const router = globalThis.DFL?.Router ?? globalThis.Router;
-        const store = router?.WindowStore;
-        addWindow(store?.GamepadUIMainWindowInstance);
-        if (Array.isArray(store?.SteamUIWindows))
-            store.SteamUIWindows.forEach(addWindow);
-    }
-    catch { }
-    return found;
-};
+const isRuntimeSnapshot = (value) => value !== null && typeof value === "object" && "status" in value && typeof value.status === "string";
 const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
@@ -12374,6 +12562,30 @@ class TrailerController {
             writable: true,
             value: null
         });
+        Object.defineProperty(this, "homeSelection", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "homeSelectionRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "homeDelayTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "identityRequestEpoch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
         Object.defineProperty(this, "matchRevision", {
             enumerable: true,
             configurable: true,
@@ -12446,12 +12658,54 @@ class TrailerController {
             writable: true,
             value: (event) => {
                 const detail = event.detail;
+                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+                    !("settingsRevision" in detail) || !("audioEnabled" in detail))
+                    return;
                 const owner = window[OWNER_KEY];
                 if (!this.mounted || owner?.ownerId !== this.ownerId ||
                     detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
                     typeof detail.audioEnabled !== "boolean" || detail.audioEnabled === this.settings.audioEnabled)
                     return;
                 void this.updateSettings({ audioEnabled: detail.audioEnabled });
+            }
+        });
+        Object.defineProperty(this, "handleHomeSelection", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (event) => {
+                const detail = event.detail;
+                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+                    !("settingsRevision" in detail) || !("selectionRevision" in detail) ||
+                    !("appId" in detail) || !("enteredAt" in detail))
+                    return;
+                const owner = window[OWNER_KEY];
+                if (!this.isEffectivelyEnabled() || !this.settings.homeEnabled ||
+                    !isTrailerHomeRoute(currentRoutePath()) || owner?.ownerId !== this.ownerId ||
+                    detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
+                    typeof detail.selectionRevision !== "number" ||
+                    !Number.isSafeInteger(detail.selectionRevision) || detail.selectionRevision < 0)
+                    return;
+                if (detail.appId !== null && (typeof detail.appId !== "number" || !Number.isInteger(detail.appId) ||
+                    detail.appId <= 0 || detail.appId > 0xffffffff || typeof detail.enteredAt !== "number" ||
+                    !Number.isSafeInteger(detail.enteredAt) || detail.enteredAt < 0))
+                    return;
+                if (detail.selectionRevision <= this.homeSelectionRevision)
+                    return;
+                this.homeSelectionRevision = detail.selectionRevision;
+                this.homeSelection = typeof detail.appId === "number" && typeof detail.enteredAt === "number" ? {
+                    appId: detail.appId, selectionRevision: detail.selectionRevision, enteredAt: detail.enteredAt,
+                } : null;
+                this.cancelHomeDelay();
+                this.identityRequestEpoch += 1;
+                this.resetPlaybackIdentity();
+                this.settingsRevision += 1;
+                this.publishOwner();
+                if (!this.updateReachableRuntimes())
+                    void this.runInSteamTab(runtimeMissingScript);
+                if (this.homeSelection)
+                    this.scheduleHomeIdentity();
+                this.emit();
             }
         });
         Object.defineProperty(this, "subscribe", {
@@ -12484,6 +12738,7 @@ class TrailerController {
         this.destroyOlderRuntimes();
         this.publishOwner();
         this.refreshAudioListeners();
+        window.addEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
         this.unsubscribeMatchChanges = subscribeMetadataMatchChanges((appId, revision) => {
             this.matchRevision = revision;
             if (appId === this.pageAppId)
@@ -12492,7 +12747,6 @@ class TrailerController {
                 this.emit();
         });
         void this.loadSettings();
-        this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
         this.emit();
     }
     /** Stop local playback ownership before any best-effort remote cleanup. */
@@ -12501,6 +12755,10 @@ class TrailerController {
             return;
         this.mounted = false;
         this.ignRequestEpoch += 1;
+        this.identityRequestEpoch += 1;
+        this.cancelHomeDelay();
+        this.homeSelection = null;
+        window.removeEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
         this.unsubscribeConflicts?.();
         this.unsubscribeConflicts = undefined;
         this.ignRequested = false;
@@ -12521,14 +12779,14 @@ class TrailerController {
             catch { }
         }
         this.audioWindows.clear();
-        for (const doc of documents()) {
+        for (const doc of steamUiDocuments()) {
             try {
                 const target = doc.defaultView;
                 const runtime = target?.[RUNTIME_KEY];
                 if (runtime?.ownerId !== this.ownerId || typeof runtime.destroy !== "function")
                     continue;
                 runtime.destroy();
-                if (target[RUNTIME_KEY] === runtime)
+                if (target?.[RUNTIME_KEY] === runtime)
                     delete target[RUNTIME_KEY];
             }
             catch { /* Direct teardown is best effort for closing Steam windows. */ }
@@ -12543,6 +12801,12 @@ class TrailerController {
     setEnabled(enabled) {
         return this.updateSettings({ enabled });
     }
+    setDetailEnabled(detailEnabled) {
+        return this.updateSettings({ detailEnabled });
+    }
+    setHomeEnabled(homeEnabled) {
+        return this.updateSettings({ homeEnabled });
+    }
     setAudioEnabled(audioEnabled) {
         return this.updateSettings({ audioEnabled });
     }
@@ -12552,15 +12816,59 @@ class TrailerController {
     setQuality(quality) {
         return this.updateSettings({ quality });
     }
-    setFadeInDelaySeconds(fadeInDelaySeconds) {
-        return this.updateSettings({ fadeInDelaySeconds });
+    setDetailFadeInDelaySeconds(detailFadeInDelaySeconds) {
+        return this.updateSettings({ detailFadeInDelaySeconds });
+    }
+    setHomeFadeInDelaySeconds(homeFadeInDelaySeconds) {
+        return this.updateSettings({ homeFadeInDelaySeconds });
     }
     isEffectivelyEnabled() {
-        return this.mounted && this.settingsLoaded && this.settings.enabled && !this.conflict.pluginName;
+        return this.mounted && this.settingsLoaded && this.settings.enabled &&
+            (this.settings.detailEnabled || this.settings.homeEnabled) && !this.conflict.pluginName;
     }
     effectiveSettings() {
         const enabled = this.isEffectivelyEnabled();
         return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
+    }
+    syncPolling() {
+        if (this.isEffectivelyEnabled()) {
+            if (this.statusTimer === undefined) {
+                this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
+            }
+        }
+        else {
+            if (this.statusTimer !== undefined)
+                window.clearInterval(this.statusTimer);
+            this.statusTimer = undefined;
+            this.cancelHomeDelay();
+        }
+    }
+    cancelHomeDelay() {
+        if (this.homeDelayTimer !== undefined)
+            window.clearTimeout(this.homeDelayTimer);
+        this.homeDelayTimer = undefined;
+    }
+    scheduleHomeIdentity() {
+        this.cancelHomeDelay();
+        const selection = this.homeSelection;
+        if (!selection || !this.isEffectivelyEnabled() || !this.settings.homeEnabled)
+            return;
+        const delay = Math.max(0, this.settings.homeFadeInDelaySeconds * 1000 - (Date.now() - selection.enteredAt));
+        this.status = "Waiting to show the Home trailer";
+        this.homeDelayTimer = window.setTimeout(() => {
+            this.homeDelayTimer = undefined;
+            if (this.homeSelection !== selection || !isTrailerHomeRoute(currentRoutePath()))
+                return;
+            void this.refreshPageIdentity();
+        }, delay);
+    }
+    resetPlaybackIdentity() {
+        this.ignRequestEpoch += 1;
+        this.ignRequested = false;
+        this.ignLookup = null;
+        this.ignFallback = undefined;
+        this.identity = null;
+        this.runtimeSnapshot = undefined;
     }
     syncConflict() {
         const next = this.conflicts.getConflict("trailers");
@@ -12570,6 +12878,9 @@ class TrailerController {
         const wasEnabled = this.isEffectivelyEnabled();
         this.conflict = next;
         if (wasEnabled !== this.isEffectivelyEnabled()) {
+            this.identityRequestEpoch += 1;
+            this.homeSelection = null;
+            this.cancelHomeDelay();
             this.ignRequestEpoch += 1;
             this.ignRequested = false;
             this.ignLookup = null;
@@ -12594,6 +12905,7 @@ class TrailerController {
                 void this.poll();
             }
         }
+        this.syncPolling();
         this.emit();
     }
     buildSnapshot() {
@@ -12637,6 +12949,7 @@ class TrailerController {
             this.settingsError = "";
             this.settingsRevision += 1;
             this.publishOwner();
+            this.syncPolling();
             this.status = loaded.enabled ? "Waiting for a Steam game page" : "Disabled";
             this.emit();
             await this.poll();
@@ -12656,9 +12969,11 @@ class TrailerController {
             return false;
         const previous = { ...this.settings };
         const next = normalizeSettings({ ...this.settings, ...change });
-        if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
+        if (next.enabled === previous.enabled && next.detailEnabled === previous.detailEnabled &&
+            next.homeEnabled === previous.homeEnabled && next.audioEnabled === previous.audioEnabled &&
             next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
-            next.fadeInDelaySeconds === previous.fadeInDelaySeconds) {
+            next.detailFadeInDelaySeconds === previous.detailFadeInDelaySeconds &&
+            next.homeFadeInDelaySeconds === previous.homeFadeInDelaySeconds) {
             return true;
         }
         this.settings = next;
@@ -12667,10 +12982,24 @@ class TrailerController {
         this.pendingSettingsWrites += 1;
         this.settingsBusy = true;
         this.settingsError = "";
+        this.syncPolling();
+        if (!this.isEffectivelyEnabled() || !next.homeEnabled) {
+            this.homeSelection = null;
+            this.cancelHomeDelay();
+        }
+        else if (next.homeFadeInDelaySeconds !== previous.homeFadeInDelaySeconds && this.homeSelection && !this.identity) {
+            this.scheduleHomeIdentity();
+        }
+        if (!this.isEffectivelyEnabled() || (this.identity?.view === "detail" && !next.detailEnabled) ||
+            (this.identity?.view === "home" && !next.homeEnabled)) {
+            this.identityRequestEpoch += 1;
+            this.resetPlaybackIdentity();
+        }
         this.settingsRevision += 1;
         this.publishOwner();
         const direct = this.updateReachableRuntimes();
-        this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
+        this.status = !next.enabled ? "Disabled" : next.detailEnabled || next.homeEnabled
+            ? "Checking the current game" : "Detail and Home trailers are off";
         this.emit();
         if (!direct)
             void this.runInSteamTab(runtimeMissingScript);
@@ -12693,6 +13022,17 @@ class TrailerController {
             succeeded = false;
             if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
                 this.settings = { ...this.confirmedSettings };
+                this.syncPolling();
+                if (!this.settings.homeEnabled || !this.isEffectivelyEnabled()) {
+                    this.homeSelection = null;
+                    this.cancelHomeDelay();
+                }
+                if (!this.isEffectivelyEnabled() ||
+                    (this.identity?.view === "detail" && !this.settings.detailEnabled) ||
+                    (this.identity?.view === "home" && !this.settings.homeEnabled)) {
+                    this.identityRequestEpoch += 1;
+                    this.resetPlaybackIdentity();
+                }
                 this.settingsRevision += 1;
                 this.publishOwner();
                 if (!this.updateReachableRuntimes())
@@ -12722,13 +13062,14 @@ class TrailerController {
             active: this.mounted,
             settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
             settingsRevision: this.settingsRevision,
+            homeSelectionRevision: this.homeSelectionRevision,
             identity: this.identity,
             ignFallback: this.ignFallback,
         };
         window[OWNER_KEY] = record;
     }
     destroyOlderRuntimes() {
-        for (const doc of documents()) {
+        for (const doc of steamUiDocuments()) {
             try {
                 const target = doc.defaultView;
                 const runtime = target?.[RUNTIME_KEY];
@@ -12736,7 +13077,7 @@ class TrailerController {
                     typeof runtime.destroy !== "function")
                     continue;
                 runtime.destroy();
-                if (target[RUNTIME_KEY] === runtime)
+                if (target?.[RUNTIME_KEY] === runtime)
                     delete target[RUNTIME_KEY];
             }
             catch { /* A closing window does not own this mount. */ }
@@ -12744,7 +13085,7 @@ class TrailerController {
     }
     refreshAudioListeners() {
         const current = new Set([window]);
-        for (const doc of documents()) {
+        for (const doc of steamUiDocuments()) {
             try {
                 if (doc.defaultView)
                     current.add(doc.defaultView);
@@ -12772,25 +13113,39 @@ class TrailerController {
     }
     async resolveCurrentIdentity() {
         const route = currentRoutePath();
-        const pageAppId = parseTrailerRootRoute(route);
         if (!this.isEffectivelyEnabled())
             return { identity: null, status: "Disabled" };
+        const home = isTrailerHomeRoute(route);
+        const selection = home ? this.homeSelection : null;
+        if (home && !this.settings.homeEnabled)
+            return { identity: null, status: "Home view trailers are off" };
+        if (home && !selection) {
+            return { identity: null, status: "Select or hover over a game on Home" };
+        }
+        if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
+            if (this.homeDelayTimer === undefined)
+                this.scheduleHomeIdentity();
+            return { identity: null, status: "Waiting to show the Home trailer" };
+        }
+        if (!home && !this.settings.detailEnabled)
+            return { identity: null, status: "Detail view trailers are off" };
+        const pageAppId = home ? selection.appId : parseTrailerRootRoute(route);
         if (!pageAppId)
-            return { identity: null, status: "Open a game's main Steam Library page" };
+            return { identity: null, status: "Open a game's main Steam Library page or select a game on Home" };
         if (pageAppId !== this.pageAppId) {
             this.pageAppId = pageAppId;
             this.pageOverview = null;
         }
-        if (Number(this.pageOverview?.appid) !== pageAppId) {
-            // Steam can hydrate the native overview after the route becomes visible.
-            // This is a direct AppID lookup; do not scan every app on healthy polls.
+        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
             this.pageOverview = getNativeOverview(pageAppId);
         }
-        if (!this.pageOverview || Number(this.pageOverview?.appid) !== pageAppId) {
-            return { identity: null, status: "Steam game page is not available" };
+        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
+            return { identity: null, status: "Steam game is not available" };
         }
         if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-            return { identity: null, status: "This page is not a native non-Steam shortcut" };
+            return { identity: null, status: "This game is not a native non-Steam shortcut" };
         }
         if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
             try {
@@ -12803,35 +13158,39 @@ class TrailerController {
                 return { identity: null, status: "Disabled" };
         }
         const metadata = metadataCache[String(pageAppId)] ?? null;
-        const resolved = resolveTrailerSource({
-            route,
-            heroAppId: pageAppId,
-            overview: this.pageOverview,
-            metadata,
+        const context = {
+            overview: this.pageOverview, metadata,
             hydrated: pageAppId < SHORTCUT_APP_ID_BOUNDARY || metadataState.metadataLoaded,
-        });
-        if (resolved) {
-            const gameUrl = ignGameUrl(metadata);
-            const title = nativeTrailerGameTitle(this.pageOverview) ||
-                (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
-                (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
-            return {
-                identity: { pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId },
-                ignLookup: title ? { title, gameUrl } : null,
-                status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for the matching Steam hero",
-            };
-        }
+        };
+        const resolved = home
+            ? resolveTrailerAppSource({ ...context, appId: pageAppId })
+            : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
+        if (!resolved)
+            return { identity: null, status: "Game trailer is unavailable" };
+        const gameUrl = ignGameUrl(metadata);
+        const title = nativeTrailerGameTitle(this.pageOverview) ||
+            (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
+            (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
         return {
-            identity: null,
-            status: pageAppId >= SHORTCUT_APP_ID_BOUNDARY
-                ? "A game title or saved Steam match is needed for trailers"
-                : "Game trailer is unavailable for this page",
+            identity: {
+                view: home ? "home" : "detail",
+                pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId,
+                ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
+            },
+            ignLookup: title ? { title, gameUrl } : null,
+            status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for a Steam trailer",
         };
     }
     async refreshPageIdentity() {
         if (!this.mounted)
             return;
+        const epoch = ++this.identityRequestEpoch;
+        const route = currentRoutePath();
+        const selection = this.homeSelection;
         const next = await this.resolveCurrentIdentity();
+        if (!this.mounted || epoch !== this.identityRequestEpoch ||
+            route !== currentRoutePath() || (isTrailerHomeRoute(route) && selection !== this.homeSelection))
+            return;
         if (!this.isEffectivelyEnabled()) {
             next.identity = null;
             next.ignLookup = null;
@@ -12856,7 +13215,7 @@ class TrailerController {
     }
     updateReachableRuntimes() {
         let found = false;
-        for (const doc of documents()) {
+        for (const doc of steamUiDocuments()) {
             try {
                 const runtime = doc.defaultView?.[RUNTIME_KEY];
                 if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
@@ -12872,7 +13231,7 @@ class TrailerController {
         return found;
     }
     readReachableRuntime() {
-        for (const doc of documents()) {
+        for (const doc of steamUiDocuments()) {
             try {
                 const runtime = doc.defaultView?.[RUNTIME_KEY];
                 if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
@@ -12920,7 +13279,7 @@ class TrailerController {
         }
     }
     async installOrUpdate() {
-        if (!this.isEffectivelyEnabled() || !this.identity)
+        if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled))
             return;
         if (this.installInFlight) {
             this.pendingInstall = true;
@@ -12931,7 +13290,7 @@ class TrailerController {
         try {
             do {
                 this.pendingInstall = false;
-                if (!this.isEffectivelyEnabled() || !this.identity)
+                if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled))
                     return;
                 const result = await this.runInSteamTab(this.buildInstallScript());
                 if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId)
@@ -12993,8 +13352,13 @@ class TrailerController {
         try {
             this.refreshAudioListeners();
             await this.refreshPageIdentity();
+            this.syncPolling();
             if (!this.isEffectivelyEnabled() || this.installInFlight)
                 return;
+            if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
+                await this.installOrUpdate();
+                return;
+            }
             if (this.readReachableRuntime()) {
                 this.emit();
                 if (this.runtimeSnapshot?.needsIgnFallback)
@@ -14963,7 +15327,7 @@ const Content = () => {
                 }, onCoverPositionMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onFadeInDelayChange: (seconds) => void trailerController.setFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {

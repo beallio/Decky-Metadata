@@ -31,9 +31,16 @@ const factory = source.slice(start, end).replace(/^export\s+/, '').replace(
   'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget }; const existing = window[runtimeKey];'
 );
 
-function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, fetchReply,
-  mediaSourceType, urlType, domParserType, clock, pageAppId = 570, sourceAppId = 570 } = {}) {
-  const location = new URL(`https://steamloopback.host/routes/library/app/${pageAppId}`);
+function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false,
+  enabled = true, detailEnabled = true, homeEnabled = false, detailFadeInDelaySeconds = 3,
+  homeFadeInDelaySeconds = 3, view = 'detail', fetchReply, mediaSourceType, urlType, domParserType,
+  clock, pageAppId = 570, sourceAppId = 570 } = {}) {
+  const settings = { enabled, detailEnabled, homeEnabled, audioEnabled: true, quality,
+    hideLogoDuringTrailer, detailFadeInDelaySeconds, homeFadeInDelaySeconds };
+  const identity = { view, pageAppId, sourceAppId,
+    ...(view === 'home' ? { selectionRevision: 1, enteredAt: Math.max(0, (clock?.now ?? Date.now()) - homeFadeInDelaySeconds * 1000) } : {}) };
+  const location = new URL(view === 'home' ? 'https://steamloopback.host/routes/library/home'
+    : `https://steamloopback.host/routes/library/app/${pageAppId}`);
   const window = {
     screen: { width, height }, innerWidth: width, innerHeight: height, devicePixelRatio: dpr, location,
     setTimeout: clock?.setTimeout.bind(clock) ?? setTimeout,
@@ -42,7 +49,7 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
     clearInterval: clock?.clearInterval.bind(clock) ?? clearInterval,
     addEventListener() {}, removeEventListener() {},
     __deckyMetadataTrailerOwner: { ownerId: 'test-owner', active: true, settingsRevision: 0,
-      settings: { enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds } },
+      settings },
   };
   const document = {
     URL: location.href, body: {}, documentElement: {},
@@ -51,12 +58,12 @@ function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogo
   };
   const context = vm.createContext({ window, document, URL: urlType ?? URL, console, navigator: {}, AbortController,
     Date: clock?.Date ?? Date,
-    TextEncoder, TextDecoder,
+    TextEncoder, TextDecoder, queueMicrotask,
     MediaSource: mediaSourceType ?? { isTypeSupported: () => true }, DOMParser: domParserType, fetch: fetchReply,
   });
-  const api = vm.runInContext(`(${factory})({enabled:true,audioEnabled:true,quality:${JSON.stringify(quality)},hideLogoDuringTrailer:${JSON.stringify(hideLogoDuringTrailer)},fadeInDelaySeconds:${fadeInDelaySeconds}},
-    'test-owner', 0, {en:{}}, ${JSON.stringify({ pageAppId, sourceAppId })})`, context);
-  const runtime = new api.Runtime({ enabled: true, audioEnabled: true, quality, hideLogoDuringTrailer, fadeInDelaySeconds }, 'test-owner', 0);
+  const api = vm.runInContext(`(${factory})(${JSON.stringify(settings)},
+    'test-owner', 0, {en:{}}, ${JSON.stringify(identity)})`, context);
+  const runtime = new api.Runtime(settings, 'test-owner', 0);
   return { runtime, window, document, api, context };
 }
 
@@ -114,8 +121,8 @@ function fakeClock(start = Date.now()) {
 }
 
 async function readyDirectTrailer({ failWake = false, clock, pageEnteredAt,
-  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, fadeInDelaySeconds = 3, customLogo = false } = {}) {
-  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer, fadeInDelaySeconds });
+  pageAppId = 570, sourceAppId = pageAppId, hideLogoDuringTrailer = false, detailFadeInDelaySeconds = 3, customLogo = false } = {}) {
+  const h = setup({ clock, pageAppId, sourceAppId, hideLogoDuringTrailer, detailFadeInDelaySeconds });
   let createdVideos = 0;
   let playCalls = 0;
   const classes = new Set();
@@ -612,7 +619,7 @@ test('A visible paused trailer resumes the same video after wake without allocat
 test('Trailer reveal follows a 0–10 second setting and updates a pending reveal without restarting playback', async () => {
   for (const seconds of [0, 10]) {
     const clock = fakeClock();
-    const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now, fadeInDelaySeconds: seconds });
+    const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now, detailFadeInDelaySeconds: seconds });
     assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, seconds * 1000);
     if (seconds) {
       clock.advance(9999);
@@ -624,11 +631,11 @@ test('Trailer reveal follows a 0–10 second setting and updates a pending revea
   const clock = fakeClock();
   const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
   const video = h.video;
-  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 10 }, 1, h.runtime.identity);
+  h.runtime.update({ ...h.runtime.settings, detailFadeInDelaySeconds: 10 }, 1, h.runtime.identity);
   assert.equal(clock.timers.get(h.runtime.fadeTimer)?.delay, 10000);
   clock.advance(3000);
   assert.equal(video.classList.contains('decky-metadata-trailer-visible'), false);
-  h.runtime.update({ ...h.runtime.settings, fadeInDelaySeconds: 0 }, 2, h.runtime.identity);
+  h.runtime.update({ ...h.runtime.settings, detailFadeInDelaySeconds: 0 }, 2, h.runtime.identity);
   clock.advance(0);
   assert.equal(video.classList.contains('decky-metadata-trailer-visible'), true);
   assert.equal(h.runtime.currentVideo, video);
@@ -1149,7 +1156,7 @@ test('An IGN miss leaves the artwork alone and a later route cannot reuse its re
   await Promise.resolve();
   assert.equal(h.attached.length, 0);
   assert.equal(h.runtime.snapshot().needsIgnFallback, false);
-  h.runtime.update(h.runtime.settings, 2, { pageAppId: 0x80000011, sourceAppId: null });
+  h.runtime.update(h.runtime.settings, 2, { view: 'detail', pageAppId: 0x80000011, sourceAppId: null });
   assert.equal(h.runtime.snapshot().needsIgnFallback, false);
   assert.equal(h.runtime.ignFallback, undefined);
 });
@@ -1959,7 +1966,7 @@ test('Play intent stops immediately and holds the page beyond 22 seconds until a
 
 async function monitoredTrailerFixture() {
   const clock = fakeClock();
-  const h = await readyDirectTrailer({ clock, fadeInDelaySeconds: 0 });
+  const h = await readyDirectTrailer({ clock, detailFadeInDelaySeconds: 0 });
   const observers = [];
   h.context.MutationObserver = class {
     constructor(callback) { this.callback = callback; observers.push(this); }
@@ -2068,7 +2075,7 @@ test('Bridge-only Steam runtime resumes one real player after Off and On between
   Object.assign(controller, {
     mounted: true, settingsLoaded: true, ownerId: 'test-owner',
     settings: { ...h.runtime.settings }, confirmedSettings: { ...h.runtime.settings },
-    identity: { pageAppId: 570, sourceAppId: 570 },
+    identity: { view: 'detail', pageAppId: 570, sourceAppId: 570 },
   });
   controller.publishOwner();
   h.window.opener = sharedWindow;
@@ -2086,7 +2093,6 @@ test('Bridge-only Steam runtime resumes one real player after Off and On between
     assert.equal(h.runtime.settings.enabled, false);
     assert.equal(h.runtime.currentVideo, undefined);
     assert.equal(h.clock.intervals.size, 0);
-    assert.equal(controller.identity.pageAppId, 570);
     await controller.setEnabled(true);
     for (let index = 0; index < 40; index++) await Promise.resolve();
     await controller.poll();
@@ -2102,4 +2108,176 @@ test('Bridge-only Steam runtime resumes one real player after Off and On between
     vi.unstubAllGlobals();
     bridgeControllerBackend.evalInBigPicture.mockReset();
   }
+});
+
+test('Home media remains silent even when Detail trailer audio is enabled', async () => {
+  const h = await readyDirectTrailer();
+  h.runtime.identity = { ...h.runtime.identity, view: 'home', selectionRevision: 1, enteredAt: Date.now() };
+  h.video.classList.add('decky-metadata-trailer-visible');
+  h.runtime.applyCurrentMediaAudioState();
+  assert.equal(h.video.muted, true);
+  assert.equal(h.video.defaultMuted, true);
+  assert.equal(h.video.volume, 0);
+});
+
+async function homePlaybackFixture({ enabled = true, detailEnabled = false, homeEnabled = true,
+  pageAppId = 570, sourceAppId = 570, fetchReply } = {}) {
+  const clock = fakeClock(10000);
+  const h = await readyDirectTrailer({ clock, pageAppId, sourceAppId });
+  h.runtime.cleanupVideo(true);
+  const listeners = new Map();
+  const observers = [];
+  for (const target of [h.window, h.document]) {
+    target.addEventListener = (name, handler) => {
+      let handlers = listeners.get(target);
+      if (!handlers) { handlers = new Map(); listeners.set(target, handlers); }
+      let callbacks = handlers.get(name);
+      if (!callbacks) { callbacks = new Set(); handlers.set(name, callbacks); }
+      callbacks.add(handler);
+    };
+    target.removeEventListener = (name, handler) => listeners.get(target)?.get(name)?.delete(handler);
+  }
+  h.context.MutationObserver = class {
+    constructor(callback) { this.callback = callback; observers.push(this); }
+    observe() { this.connected = true; }
+    disconnect() { this.connected = false; }
+  };
+  const styles = { RecentGamesContainer: 'home-container', RecentGamesBackgroundImages: 'home-background' };
+  h.window.DFL = { findModuleChild: predicate => predicate(styles) };
+  const container = { querySelector: selector => selector === '.home-background' ? h.hero : null };
+  const card = {
+    appId: pageAppId, isConnected: true,
+    closest: selector => selector === '.home-container' ? container : card,
+    querySelector: selector => selector === "[role='link']" ? focus : null,
+    getAttribute: name => name === 'data-id' ? String(card.appId) : null,
+  };
+  const focus = {
+    classList: { contains: name => name === 'gpfocus' },
+    closest: selector => selector === '[data-id]' ? card : null,
+  };
+  h.document.activeElement = focus;
+  h.document.hasFocus = () => true;
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  h.document.head = h.document.body;
+  h.document.getElementById = id => h.document.body.children.find(node => node.id === id) ?? null;
+  const settings = { ...h.runtime.settings, enabled, detailEnabled, homeEnabled,
+    detailFadeInDelaySeconds: 9, homeFadeInDelaySeconds: 0 };
+  h.window.__deckyMetadataTrailerOwner.settings = settings;
+  const fetch = fetchReply ?? vi.fn(async () => responseBody(JSON.stringify({
+    [sourceAppId]: { success: true, data: { movies: [movie] } },
+  })));
+  h.context.fetch = fetch;
+  h.runtime.mounted = true;
+  h.runtime.update(settings, 1, { view: 'home', pageAppId, sourceAppId, selectionRevision: 1, enteredAt: clock.now });
+  h.runtime.startMonitoring();
+  await h.runtime.scan();
+  for (let index = 0; index < 20; index++) await Promise.resolve();
+  clock.advance(0);
+  return { ...h, clock, card, focus, fetch, listeners, observers };
+}
+
+test('All eight master and view toggle combinations gate real Home playback', async () => {
+  for (const enabled of [false, true]) {
+    for (const detailEnabled of [false, true]) {
+      for (const homeEnabled of [false, true]) {
+        const h = await homePlaybackFixture({ enabled, detailEnabled, homeEnabled });
+        const homeActive = enabled && homeEnabled;
+        assert.equal(Boolean(h.runtime.currentVideo?.isConnected), homeActive,
+          JSON.stringify({ enabled, detailEnabled, homeEnabled }));
+        assert.equal(h.runtime.monitoring === true, enabled && (detailEnabled || homeEnabled));
+        if (homeActive) {
+          assert.equal(h.runtime.currentVideo.muted, true);
+          assert.equal(h.runtime.currentVideo.volume, 0);
+          assert.equal(h.runtime.currentTarget, h.hero);
+          assert.equal(h.classes.has('decky-metadata-trailer-target'), false);
+          assert.equal(h.classes.has('decky-metadata-home-trailer-target'), true);
+        } else {
+          assert.equal(h.fetch.mock.calls.length, 0);
+        }
+        h.runtime.destroy();
+        assert.equal(h.runtime.currentVideo, undefined);
+        assert.equal(h.clock.intervals.size, 0);
+        assert.equal(h.clock.timers.size, 0);
+      }
+    }
+  }
+});
+
+test('Home selection rejects a late Steam response and keeps the next card isolated', async () => {
+  const fetch = vi.fn(async () => responseBody(JSON.stringify({
+    570: { success: true, data: { movies: [] } },
+  })));
+  const h = await homePlaybackFixture({ fetchReply: fetch });
+  const { promise, resolve } = Promise.withResolvers();
+  fetch.mockImplementation(() => promise);
+  h.runtime.failedVisit = undefined;
+  h.runtime.steamUnavailable = false;
+  h.runtime.needsIgnFallback = false;
+  h.runtime.ignFallback = undefined;
+  const loading = h.runtime.scan();
+  for (let index = 0; index < 10; index++) await Promise.resolve();
+  h.card.appId = 730;
+  h.runtime.refreshHomeSelection();
+  resolve(responseBody(JSON.stringify({ 570: { success: true, data: { movies: [movie] } } })));
+  await loading;
+  assert.equal(h.runtime.currentVideo, undefined);
+  assert.equal(h.runtime.trailerCache.has(570), false);
+  assert.equal(h.runtime.homeAppId, 730);
+  h.runtime.destroy();
+});
+
+test('Home teardown restores native background ownership and ignores invalid cards', async () => {
+  const h = await homePlaybackFixture();
+  const artwork = h.hero.asset;
+  h.card.appId = 'not-an-app';
+  h.runtime.refreshHomeSelection();
+  const revision = h.runtime.homeSelectionRevision;
+  for (let index = 0; index < 5; index++) h.runtime.refreshHomeSelection();
+  assert.equal(h.runtime.homeSelectionRevision, revision);
+  assert.equal(h.runtime.currentVideo, undefined);
+  assert.equal(h.hero.asset, artwork);
+  assert.equal(h.classes.has('decky-metadata-home-trailer-target'), false);
+  h.runtime.destroy();
+  assert.equal(h.observers.every(observer => observer.connected === false), true);
+  assert.equal(Array.from(h.listeners.values()).every(events =>
+    Array.from(events.values()).every(callbacks => callbacks.size === 0)), true);
+});
+
+test('Programmatic Home focus restoration does not override the last real pointer input', async () => {
+  const h = await homePlaybackFixture();
+  const container = h.card.closest('.home-container');
+  const hovered = {
+    isConnected: true,
+    getAttribute: name => name === 'data-id' ? '730' : null,
+    querySelector: selector => selector === "[role='link']" ? h.focus : null,
+    closest: selector => selector === '.home-container' ? container : hovered,
+  };
+  h.runtime.handleHomePointerMove({ isTrusted: true, clientX: 300, clientY: 400, target: hovered });
+  assert.equal(h.runtime.homeAppId, 730);
+  h.runtime.handleHomeFocus();
+  await Promise.resolve();
+  assert.equal(h.runtime.homeInputMode, 'pointer');
+  assert.equal(h.runtime.homeAppId, 730);
+  h.runtime.handleHomeKeyDown({ key: 'ArrowRight' });
+  await Promise.resolve();
+  assert.equal(h.runtime.homeInputMode, 'controller');
+  assert.equal(h.runtime.homeAppId, 570);
+  h.runtime.handleHomePointerMove({ isTrusted: true, clientX: 300, clientY: 400, target: hovered });
+  assert.equal(h.runtime.homeAppId, 570);
+  h.runtime.handleHomePointerMove({ isTrusted: true, clientX: 301, clientY: 400, target: hovered });
+  assert.equal(h.runtime.homeAppId, 730);
+  h.runtime.destroy();
+});
+
+test('Home tracking can resume a selected controller card when enabled from a popup', async () => {
+  const h = await homePlaybackFixture();
+  h.runtime.stopHomeTracking();
+  h.focus.classList.contains = () => false;
+  h.runtime.startHomeTracking();
+  h.focus.classList.contains = name => name === 'gpfocus';
+  h.runtime.handleHomeFocus();
+  await Promise.resolve();
+  assert.equal(h.runtime.homeAppId, 570);
+  h.runtime.destroy();
 });
