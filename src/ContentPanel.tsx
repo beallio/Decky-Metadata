@@ -927,9 +927,12 @@ export const Content = () => {
         initiallyExpanded={returningDropdown === "quality"}
         state={trailerSnapshot}
         onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
+        onDetailEnabledChange={(enabled) => void trailerController.setDetailEnabled(enabled)}
+        onHomeEnabledChange={(enabled) => void trailerController.setHomeEnabled(enabled)}
         onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
         onHideLogoChange={(hide) => void trailerController.setHideLogoDuringTrailer(hide)}
-        onFadeInDelayChange={(seconds) => void trailerController.setFadeInDelaySeconds(seconds)}
+        onDetailFadeInDelayChange={(seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds)}
+        onHomeFadeInDelayChange={(seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds)}
         onQualityChange={async (quality) => {
           requestCompatibilityDropdownReturn("quality");
           noteCompatibilityDropdownControlUnmounted();

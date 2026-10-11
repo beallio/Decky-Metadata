@@ -7,6 +7,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 ### Added
 
 - Added hourly checks for IGN, Steam, ProtonDB, Algolia, Steam Community, Steam Tracker, and plugin update downloads. Two consecutive failed scheduled checks open or update one issue for the affected endpoint, with error details and run links. A successful check resets the count and closes the issue. Manual checks do not change issues or failure counts.
+- Added muted trailer previews over the Home background for the selected or hovered game. Trailers now have a main switch, separate Detail and Home switches, and independent fade-in delay sliders. Existing Detail preferences are preserved; Home stays off until enabled.
 
 ## [0.5.3] - 2026-10-10
 

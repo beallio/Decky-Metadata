@@ -11,21 +11,25 @@ import {
   subscribeMetadataMatchChanges,
 } from "../steam/core";
 import { ensureMetadataCache } from "../steam/metadataPatch";
-import { ignGameUrl, nativeTrailerGameTitle, parseTrailerRootRoute, resolveTrailerSource, SHORTCUT_APP_ID_BOUNDARY } from "./source";
+import { ignGameUrl, isTrailerHomeRoute, nativeTrailerGameTitle, parseTrailerRootRoute, resolveTrailerAppSource, resolveTrailerSource, SHORTCUT_APP_ID_BOUNDARY } from "./source";
 import { deckyMetadataTrailerRuntimeFactory } from "./runtime";
+import { steamUiDocuments } from "../steam/steamUiHost";
 
 export const DEFAULT_TRAILER_SETTINGS: TrailerSettings = {
   enabled: false,
+  detailEnabled: true,
+  homeEnabled: false,
   audioEnabled: false,
   hideLogoDuringTrailer: false,
   quality: "auto",
-  fadeInDelaySeconds: 3,
+  detailFadeInDelaySeconds: 3,
+  homeFadeInDelaySeconds: 3,
 };
 
 const POLL_INTERVAL_MS = 2000;
 const BRIDGE_TIMEOUT_MS = 24000;
-const QUALITY_OPTIONS: TrailerQuality[] = ["auto", 720, 1080, 1440, 2160];
 const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
+const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
 const OWNER_KEY = "__deckyMetadataTrailerOwner";
 const RUNTIME_KEY = "__deckyMetadataTrailerRuntime";
 
@@ -43,14 +47,24 @@ const TRANSLATIONS = {
     stoppedForLaunch: "Trailer stopped for launch",
     trailerActive: "Trailer active",
     trailerLabel: "Trailer: {name}",
-    waitingGamePage: "Waiting for a Steam game page",
+    waitingGamePage: "Waiting for a game page or Home selection",
+    waitingHomeSelection: "Select or hover over a game on Home",
+    waitingHomeDelay: "Waiting to show the Home trailer",
     muteTrailer: "Mute trailer",
     expandTrailer: "Expand trailer",
     mediaSourceUnavailable: "MediaSource is not available",
   },
 };
 
-type TrailerIdentity = { pageAppId: number; sourceAppId: number | null } | null;
+type TrailerIdentity = {
+  view: "detail" | "home";
+  pageAppId: number;
+  sourceAppId: number | null;
+  selectionRevision?: number;
+  enteredAt?: number;
+} | null;
+
+type HomeSelection = { appId: number; selectionRevision: number; enteredAt: number };
 
 type RuntimeSnapshot = {
   appId?: number;
@@ -79,68 +93,64 @@ type OwnerRecord = {
   active: boolean;
   settings: TrailerSettings;
   settingsRevision: number;
+  homeSelectionRevision: number;
   identity: TrailerIdentity;
   ignFallback?: IgnTrailerResult | null;
 };
 
+type RuntimeHandle = {
+  product?: string;
+  ownerId?: string;
+  update?: (settings: TrailerSettings, revision: number, identity: TrailerIdentity, fallback: IgnTrailerResult | null | undefined) => unknown;
+  snapshot?: () => unknown;
+  destroy?: () => void;
+};
+
+declare global {
+  interface Window {
+    // These globals belong to the controller and its serialized Steam UI player.
+    __deckyMetadataTrailerOwner?: OwnerRecord;
+    __deckyMetadataTrailerRuntime?: RuntimeHandle;
+  }
+}
+
+
 const normalizeSettings = (value: unknown): TrailerSettings => {
-  const input = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return { ...DEFAULT_TRAILER_SETTINGS };
+  const enabled = "enabled" in value ? value.enabled : undefined;
+  const detailEnabled = "detailEnabled" in value ? value.detailEnabled : undefined;
+  const homeEnabled = "homeEnabled" in value ? value.homeEnabled : undefined;
+  const audioEnabled = "audioEnabled" in value ? value.audioEnabled : undefined;
+  const hideLogoDuringTrailer = "hideLogoDuringTrailer" in value ? value.hideLogoDuringTrailer : undefined;
+  const detailDelay = "detailFadeInDelaySeconds" in value ? value.detailFadeInDelaySeconds : undefined;
+  const homeDelay = "homeFadeInDelaySeconds" in value ? value.homeFadeInDelaySeconds : undefined;
+  const quality = "quality" in value ? value.quality : undefined;
   return {
-    enabled: typeof input.enabled === "boolean" ? input.enabled : false,
-    audioEnabled: typeof input.audioEnabled === "boolean" ? input.audioEnabled : false,
-    hideLogoDuringTrailer: typeof input.hideLogoDuringTrailer === "boolean" ? input.hideLogoDuringTrailer : false,
-    fadeInDelaySeconds: Number.isInteger(input.fadeInDelaySeconds) &&
-      (input.fadeInDelaySeconds as number) >= 0 && (input.fadeInDelaySeconds as number) <= 10
-      ? input.fadeInDelaySeconds as number : 3,
-    quality: QUALITY_OPTIONS.includes(input.quality as TrailerQuality)
-      ? input.quality as TrailerQuality
-      : "auto",
+    enabled: typeof enabled === "boolean" ? enabled : false,
+    detailEnabled: typeof detailEnabled === "boolean" ? detailEnabled : true,
+    homeEnabled: typeof homeEnabled === "boolean" ? homeEnabled : false,
+    audioEnabled: typeof audioEnabled === "boolean" ? audioEnabled : false,
+    hideLogoDuringTrailer: typeof hideLogoDuringTrailer === "boolean" ? hideLogoDuringTrailer : false,
+    detailFadeInDelaySeconds: typeof detailDelay === "number" &&
+      Number.isInteger(detailDelay) && detailDelay >= 0 && detailDelay <= 10 ? detailDelay : 3,
+    homeFadeInDelaySeconds: typeof homeDelay === "number" &&
+      Number.isInteger(homeDelay) && homeDelay >= 0 && homeDelay <= 10 ? homeDelay : 3,
+    quality: quality === "auto" || quality === 720 || quality === 1080 || quality === 1440 || quality === 2160
+      ? quality : "auto",
   };
 };
 
 const sameIdentity = (left: TrailerIdentity, right: TrailerIdentity) =>
-  left?.pageAppId === right?.pageAppId && left?.sourceAppId === right?.sourceAppId;
+  left?.view === right?.view && left?.pageAppId === right?.pageAppId &&
+  left?.sourceAppId === right?.sourceAppId && left?.selectionRevision === right?.selectionRevision;
 
 type IgnLookup = { title: string; gameUrl: string | null } | null;
 const sameIgnLookup = (left: IgnLookup, right: IgnLookup) =>
   left?.title === right?.title && left?.gameUrl === right?.gameUrl;
 
 const isRuntimeSnapshot = (value: unknown): value is RuntimeSnapshot =>
-  Boolean(value && typeof value === "object" && typeof (value as RuntimeSnapshot).status === "string");
+  value !== null && typeof value === "object" && "status" in value && typeof value.status === "string";
 
-const documents = (): Document[] => {
-  if (typeof document === "undefined") return [];
-  const found: Document[] = [];
-  const addDocument = (candidate: any) => {
-    try {
-      if (candidate?.documentElement && !found.includes(candidate)) found.push(candidate);
-    } catch { /* Steam can close a popup between discovery and access. */ }
-  };
-  const addWindow = (candidate: any) => {
-    if (!candidate) return;
-    for (const getter of [
-      () => candidate.document,
-      () => candidate.window?.document,
-      () => candidate.m_Window?.document,
-      () => candidate.m_popup?.document,
-      () => candidate.BrowserWindow?.document,
-      () => candidate.GetWindow?.()?.document,
-    ]) {
-      try { addDocument(getter()); } catch { /* Native Steam handles are transient. */ }
-    }
-  };
-  addDocument(document);
-  try { addDocument(window.top?.document); } catch { }
-  try { addDocument(window.parent?.document); } catch { }
-  try { addDocument(window.opener?.document); } catch { }
-  try {
-    const router = (globalThis as any).DFL?.Router ?? (globalThis as any).Router;
-    const store = router?.WindowStore;
-    addWindow(store?.GamepadUIMainWindowInstance);
-    if (Array.isArray(store?.SteamUIWindows)) store.SteamUIWindows.forEach(addWindow);
-  } catch { }
-  return found;
-};
 
 const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
@@ -176,6 +186,10 @@ export class TrailerController {
   private ignRequested = false;
   private pageAppId: number | null = null;
   private pageOverview: unknown = null;
+  private homeSelection: HomeSelection | null = null;
+  private homeSelectionRevision = 0;
+  private homeDelayTimer: number | undefined;
+  private identityRequestEpoch = 0;
   private matchRevision = metadataMatchRevisionSnapshot();
   private statusTimer: number | undefined;
   private pollInFlight = false;
@@ -189,12 +203,43 @@ export class TrailerController {
   private unsubscribeConflicts: (() => void) | undefined;
 
   private handleAudioChange = (event: Event) => {
-    const detail = (event as CustomEvent).detail;
-    const owner = (window as any)[OWNER_KEY] as OwnerRecord | undefined;
+    const detail = (event as CustomEvent<unknown>).detail;
+    if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+        !("settingsRevision" in detail) || !("audioEnabled" in detail)) return;
+    const owner = window[OWNER_KEY];
     if (!this.mounted || owner?.ownerId !== this.ownerId ||
         detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
         typeof detail.audioEnabled !== "boolean" || detail.audioEnabled === this.settings.audioEnabled) return;
     void this.updateSettings({ audioEnabled: detail.audioEnabled });
+  };
+
+  private handleHomeSelection = (event: Event) => {
+    const detail = (event as CustomEvent<unknown>).detail;
+    if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+        !("settingsRevision" in detail) || !("selectionRevision" in detail) ||
+        !("appId" in detail) || !("enteredAt" in detail)) return;
+    const owner = window[OWNER_KEY];
+    if (!this.isEffectivelyEnabled() || !this.settings.homeEnabled ||
+        !isTrailerHomeRoute(currentRoutePath()) || owner?.ownerId !== this.ownerId ||
+        detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
+        typeof detail.selectionRevision !== "number" ||
+        !Number.isSafeInteger(detail.selectionRevision) || detail.selectionRevision < 0) return;
+    if (detail.appId !== null && (typeof detail.appId !== "number" || !Number.isInteger(detail.appId) ||
+        detail.appId <= 0 || detail.appId > 0xffffffff || typeof detail.enteredAt !== "number" ||
+        !Number.isSafeInteger(detail.enteredAt) || detail.enteredAt < 0)) return;
+    if (detail.selectionRevision <= this.homeSelectionRevision) return;
+    this.homeSelectionRevision = detail.selectionRevision;
+    this.homeSelection = typeof detail.appId === "number" && typeof detail.enteredAt === "number" ? {
+      appId: detail.appId, selectionRevision: detail.selectionRevision, enteredAt: detail.enteredAt,
+    } : null;
+    this.cancelHomeDelay();
+    this.identityRequestEpoch += 1;
+    this.resetPlaybackIdentity();
+    this.settingsRevision += 1;
+    this.publishOwner();
+    if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript);
+    if (this.homeSelection) this.scheduleHomeIdentity();
+    this.emit();
   };
 
   constructor(private readonly conflicts: PluginConflictSource = pluginConflicts) {
@@ -220,13 +265,13 @@ export class TrailerController {
     this.destroyOlderRuntimes();
     this.publishOwner();
     this.refreshAudioListeners();
+    window.addEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
     this.unsubscribeMatchChanges = subscribeMetadataMatchChanges((appId, revision) => {
       this.matchRevision = revision;
       if (appId === this.pageAppId) void this.refreshPageIdentity();
       else this.emit();
     });
     void this.loadSettings();
-    this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
     this.emit();
   }
 
@@ -235,6 +280,10 @@ export class TrailerController {
     if (!this.mounted) return;
     this.mounted = false;
     this.ignRequestEpoch += 1;
+    this.identityRequestEpoch += 1;
+    this.cancelHomeDelay();
+    this.homeSelection = null;
+    window.removeEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
     this.unsubscribeConflicts?.();
     this.unsubscribeConflicts = undefined;
     this.ignRequested = false;
@@ -244,22 +293,22 @@ export class TrailerController {
     this.statusTimer = undefined;
     this.unsubscribeMatchChanges?.();
     this.unsubscribeMatchChanges = undefined;
-    const owner = (window as any)[OWNER_KEY] as OwnerRecord | undefined;
+    const owner = window[OWNER_KEY];
     if (owner?.ownerId === this.ownerId) owner.active = false;
     for (const [target, listener] of this.audioWindows) {
       try { target.removeEventListener(AUDIO_CHANGE_EVENT, listener); } catch { }
     }
     this.audioWindows.clear();
-    for (const doc of documents()) {
+    for (const doc of steamUiDocuments()) {
       try {
-        const target = doc.defaultView as any;
+        const target = doc.defaultView;
         const runtime = target?.[RUNTIME_KEY];
         if (runtime?.ownerId !== this.ownerId || typeof runtime.destroy !== "function") continue;
         runtime.destroy();
-        if (target[RUNTIME_KEY] === runtime) delete target[RUNTIME_KEY];
+        if (target?.[RUNTIME_KEY] === runtime) delete target[RUNTIME_KEY];
       } catch { /* Direct teardown is best effort for closing Steam windows. */ }
     }
-    if ((window as any)[OWNER_KEY]?.ownerId === this.ownerId) delete (window as any)[OWNER_KEY];
+    if (window[OWNER_KEY]?.ownerId === this.ownerId) delete window[OWNER_KEY];
     const ownerId = JSON.stringify(this.ownerId);
     const cleanup = `(() => { const runtime=window.${RUNTIME_KEY}; if(runtime?.ownerId!==${ownerId}) return {status:'Steam UI unavailable',runtimeMissing:true}; runtime.destroy?.(); if(window.${RUNTIME_KEY}===runtime) delete window.${RUNTIME_KEY}; return {status:'Trailer runtime removed'}; })()`;
     void evalInBigPicture(cleanup).catch(() => undefined);
@@ -268,6 +317,14 @@ export class TrailerController {
 
   setEnabled(enabled: boolean) {
     return this.updateSettings({ enabled });
+  }
+
+  setDetailEnabled(detailEnabled: boolean) {
+    return this.updateSettings({ detailEnabled });
+  }
+
+  setHomeEnabled(homeEnabled: boolean) {
+    return this.updateSettings({ homeEnabled });
   }
 
   setAudioEnabled(audioEnabled: boolean) {
@@ -281,17 +338,61 @@ export class TrailerController {
   setQuality(quality: TrailerQuality) {
     return this.updateSettings({ quality });
   }
-  setFadeInDelaySeconds(fadeInDelaySeconds: number) {
-    return this.updateSettings({ fadeInDelaySeconds });
+  setDetailFadeInDelaySeconds(detailFadeInDelaySeconds: number) {
+    return this.updateSettings({ detailFadeInDelaySeconds });
+  }
+
+  setHomeFadeInDelaySeconds(homeFadeInDelaySeconds: number) {
+    return this.updateSettings({ homeFadeInDelaySeconds });
   }
 
   private isEffectivelyEnabled(): boolean {
-    return this.mounted && this.settingsLoaded && this.settings.enabled && !this.conflict.pluginName;
+    return this.mounted && this.settingsLoaded && this.settings.enabled &&
+      (this.settings.detailEnabled || this.settings.homeEnabled) && !this.conflict.pluginName;
   }
 
   private effectiveSettings(): TrailerSettings {
     const enabled = this.isEffectivelyEnabled();
     return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
+  }
+
+  private syncPolling() {
+    if (this.isEffectivelyEnabled()) {
+      if (this.statusTimer === undefined) {
+        this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
+      }
+    } else {
+      if (this.statusTimer !== undefined) window.clearInterval(this.statusTimer);
+      this.statusTimer = undefined;
+      this.cancelHomeDelay();
+    }
+  }
+
+  private cancelHomeDelay() {
+    if (this.homeDelayTimer !== undefined) window.clearTimeout(this.homeDelayTimer);
+    this.homeDelayTimer = undefined;
+  }
+
+  private scheduleHomeIdentity() {
+    this.cancelHomeDelay();
+    const selection = this.homeSelection;
+    if (!selection || !this.isEffectivelyEnabled() || !this.settings.homeEnabled) return;
+    const delay = Math.max(0, this.settings.homeFadeInDelaySeconds * 1000 - (Date.now() - selection.enteredAt));
+    this.status = "Waiting to show the Home trailer";
+    this.homeDelayTimer = window.setTimeout(() => {
+      this.homeDelayTimer = undefined;
+      if (this.homeSelection !== selection || !isTrailerHomeRoute(currentRoutePath())) return;
+      void this.refreshPageIdentity();
+    }, delay);
+  }
+
+  private resetPlaybackIdentity() {
+    this.ignRequestEpoch += 1;
+    this.ignRequested = false;
+    this.ignLookup = null;
+    this.ignFallback = undefined;
+    this.identity = null;
+    this.runtimeSnapshot = undefined;
   }
 
   private syncConflict(): void {
@@ -301,6 +402,9 @@ export class TrailerController {
     const wasEnabled = this.isEffectivelyEnabled();
     this.conflict = next;
     if (wasEnabled !== this.isEffectivelyEnabled()) {
+      this.identityRequestEpoch += 1;
+      this.homeSelection = null;
+      this.cancelHomeDelay();
       this.ignRequestEpoch += 1;
       this.ignRequested = false;
       this.ignLookup = null;
@@ -324,6 +428,7 @@ export class TrailerController {
         void this.poll();
       }
     }
+    this.syncPolling();
     this.emit();
   }
 
@@ -366,6 +471,7 @@ export class TrailerController {
       this.settingsError = "";
       this.settingsRevision += 1;
       this.publishOwner();
+      this.syncPolling();
       this.status = loaded.enabled ? "Waiting for a Steam game page" : "Disabled";
       this.emit();
       await this.poll();
@@ -382,9 +488,11 @@ export class TrailerController {
     if (change.enabled === true && !this.settings.enabled && this.conflict.pluginName) return false;
     const previous = { ...this.settings };
     const next = normalizeSettings({ ...this.settings, ...change });
-    if (next.enabled === previous.enabled && next.audioEnabled === previous.audioEnabled &&
+    if (next.enabled === previous.enabled && next.detailEnabled === previous.detailEnabled &&
+        next.homeEnabled === previous.homeEnabled && next.audioEnabled === previous.audioEnabled &&
         next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
-        next.fadeInDelaySeconds === previous.fadeInDelaySeconds) {
+        next.detailFadeInDelaySeconds === previous.detailFadeInDelaySeconds &&
+        next.homeFadeInDelaySeconds === previous.homeFadeInDelaySeconds) {
       return true;
     }
     this.settings = next;
@@ -393,10 +501,23 @@ export class TrailerController {
     this.pendingSettingsWrites += 1;
     this.settingsBusy = true;
     this.settingsError = "";
+    this.syncPolling();
+    if (!this.isEffectivelyEnabled() || !next.homeEnabled) {
+      this.homeSelection = null;
+      this.cancelHomeDelay();
+    } else if (next.homeFadeInDelaySeconds !== previous.homeFadeInDelaySeconds && this.homeSelection && !this.identity) {
+      this.scheduleHomeIdentity();
+    }
+    if (!this.isEffectivelyEnabled() || (this.identity?.view === "detail" && !next.detailEnabled) ||
+        (this.identity?.view === "home" && !next.homeEnabled)) {
+      this.identityRequestEpoch += 1;
+      this.resetPlaybackIdentity();
+    }
     this.settingsRevision += 1;
     this.publishOwner();
     const direct = this.updateReachableRuntimes();
-    this.status = next.enabled ? "Checking the current Steam game page" : "Disabled";
+    this.status = !next.enabled ? "Disabled" : next.detailEnabled || next.homeEnabled
+      ? "Checking the current game" : "Detail and Home trailers are off";
     this.emit();
     if (!direct) void this.runInSteamTab(runtimeMissingScript);
     if (!direct && this.isEffectivelyEnabled()) void this.poll();
@@ -418,6 +539,17 @@ export class TrailerController {
       succeeded = false;
       if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
         this.settings = { ...this.confirmedSettings };
+        this.syncPolling();
+        if (!this.settings.homeEnabled || !this.isEffectivelyEnabled()) {
+          this.homeSelection = null;
+          this.cancelHomeDelay();
+        }
+        if (!this.isEffectivelyEnabled() ||
+            (this.identity?.view === "detail" && !this.settings.detailEnabled) ||
+            (this.identity?.view === "home" && !this.settings.homeEnabled)) {
+          this.identityRequestEpoch += 1;
+          this.resetPlaybackIdentity();
+        }
         this.settingsRevision += 1;
         this.publishOwner();
         if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript);
@@ -436,7 +568,7 @@ export class TrailerController {
   }
 
   private ownsMount(ownerId: string) {
-    const owner = (window as any)[OWNER_KEY] as OwnerRecord | undefined;
+    const owner = window[OWNER_KEY];
     return this.mounted && this.ownerId === ownerId && owner?.ownerId === ownerId && owner.active;
   }
 
@@ -446,28 +578,29 @@ export class TrailerController {
       active: this.mounted,
       settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
       settingsRevision: this.settingsRevision,
+      homeSelectionRevision: this.homeSelectionRevision,
       identity: this.identity,
       ignFallback: this.ignFallback,
     };
-    (window as any)[OWNER_KEY] = record;
+    window[OWNER_KEY] = record;
   }
 
   private destroyOlderRuntimes() {
-    for (const doc of documents()) {
+    for (const doc of steamUiDocuments()) {
       try {
-        const target = doc.defaultView as any;
+        const target = doc.defaultView;
         const runtime = target?.[RUNTIME_KEY];
         if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId === this.ownerId ||
             typeof runtime.destroy !== "function") continue;
         runtime.destroy();
-        if (target[RUNTIME_KEY] === runtime) delete target[RUNTIME_KEY];
+        if (target?.[RUNTIME_KEY] === runtime) delete target[RUNTIME_KEY];
       } catch { /* A closing window does not own this mount. */ }
     }
   }
 
   private refreshAudioListeners() {
     const current = new Set<Window>([window]);
-    for (const doc of documents()) {
+    for (const doc of steamUiDocuments()) {
       try { if (doc.defaultView) current.add(doc.defaultView); } catch { }
     }
     for (const [target, listener] of this.audioWindows) {
@@ -486,23 +619,34 @@ export class TrailerController {
 
   private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string; ignLookup?: IgnLookup }> {
     const route = currentRoutePath();
-    const pageAppId = parseTrailerRootRoute(route);
     if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
-    if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page" };
+    const home = isTrailerHomeRoute(route);
+    const selection = home ? this.homeSelection : null;
+    if (home && !this.settings.homeEnabled) return { identity: null, status: "Home view trailers are off" };
+    if (home && !selection) {
+      return { identity: null, status: "Select or hover over a game on Home" };
+    }
+    if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
+      if (this.homeDelayTimer === undefined) this.scheduleHomeIdentity();
+      return { identity: null, status: "Waiting to show the Home trailer" };
+    }
+    if (!home && !this.settings.detailEnabled) return { identity: null, status: "Detail view trailers are off" };
+    const pageAppId = home ? selection!.appId : parseTrailerRootRoute(route);
+    if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page or select a game on Home" };
     if (pageAppId !== this.pageAppId) {
       this.pageAppId = pageAppId;
       this.pageOverview = null;
     }
-    if (Number((this.pageOverview as any)?.appid) !== pageAppId) {
-      // Steam can hydrate the native overview after the route becomes visible.
-      // This is a direct AppID lookup; do not scan every app on healthy polls.
+    if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+        !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
       this.pageOverview = getNativeOverview(pageAppId);
     }
-    if (!this.pageOverview || Number((this.pageOverview as any)?.appid) !== pageAppId) {
-      return { identity: null, status: "Steam game page is not available" };
+    if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+        !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
+      return { identity: null, status: "Steam game is not available" };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-      return { identity: null, status: "This page is not a native non-Steam shortcut" };
+      return { identity: null, status: "This game is not a native non-Steam shortcut" };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
       try { await ensureMetadataCache(); }
@@ -510,35 +654,37 @@ export class TrailerController {
       if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
     }
     const metadata = metadataCache[String(pageAppId)] ?? null;
-    const resolved = resolveTrailerSource({
-      route,
-      heroAppId: pageAppId,
-      overview: this.pageOverview,
-      metadata,
+    const context = {
+      overview: this.pageOverview, metadata,
       hydrated: pageAppId < SHORTCUT_APP_ID_BOUNDARY || metadataState.metadataLoaded,
-    });
-    if (resolved) {
-      const gameUrl = ignGameUrl(metadata);
-      const title = nativeTrailerGameTitle(this.pageOverview) ||
-        (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
-        (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
-      return {
-        identity: { pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId },
-        ignLookup: title ? { title, gameUrl } : null,
-        status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for the matching Steam hero",
-      };
-    }
+    };
+    const resolved = home
+      ? resolveTrailerAppSource({ ...context, appId: pageAppId })
+      : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
+    if (!resolved) return { identity: null, status: "Game trailer is unavailable" };
+    const gameUrl = ignGameUrl(metadata);
+    const title = nativeTrailerGameTitle(this.pageOverview) ||
+      (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
+      (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
     return {
-      identity: null,
-      status: pageAppId >= SHORTCUT_APP_ID_BOUNDARY
-        ? "A game title or saved Steam match is needed for trailers"
-        : "Game trailer is unavailable for this page",
+      identity: {
+        view: home ? "home" : "detail",
+        pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId,
+        ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
+      },
+      ignLookup: title ? { title, gameUrl } : null,
+      status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for a Steam trailer",
     };
   }
 
   private async refreshPageIdentity() {
     if (!this.mounted) return;
+    const epoch = ++this.identityRequestEpoch;
+    const route = currentRoutePath();
+    const selection = this.homeSelection;
     const next = await this.resolveCurrentIdentity();
+    if (!this.mounted || epoch !== this.identityRequestEpoch ||
+        route !== currentRoutePath() || (isTrailerHomeRoute(route) && selection !== this.homeSelection)) return;
     if (!this.isEffectivelyEnabled()) {
       next.identity = null;
       next.ignLookup = null;
@@ -562,9 +708,9 @@ export class TrailerController {
 
   private updateReachableRuntimes() {
     let found = false;
-    for (const doc of documents()) {
+    for (const doc of steamUiDocuments()) {
       try {
-        const runtime = (doc.defaultView as any)?.[RUNTIME_KEY];
+        const runtime = doc.defaultView?.[RUNTIME_KEY];
         if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
             typeof runtime.update !== "function") continue;
         const result = runtime.update(this.effectiveSettings(), this.settingsRevision, this.identity, this.ignFallback);
@@ -576,9 +722,9 @@ export class TrailerController {
   }
 
   private readReachableRuntime(): boolean {
-    for (const doc of documents()) {
+    for (const doc of steamUiDocuments()) {
       try {
-        const runtime = (doc.defaultView as any)?.[RUNTIME_KEY];
+        const runtime = doc.defaultView?.[RUNTIME_KEY];
         if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
             typeof runtime.snapshot !== "function") continue;
         const result = runtime.snapshot();
@@ -625,7 +771,7 @@ export class TrailerController {
   }
 
   private async installOrUpdate() {
-    if (!this.isEffectivelyEnabled() || !this.identity) return;
+    if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
     if (this.installInFlight) {
       this.pendingInstall = true;
       return;
@@ -635,9 +781,9 @@ export class TrailerController {
     try {
       do {
         this.pendingInstall = false;
-        if (!this.isEffectivelyEnabled() || !this.identity) return;
+        if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
         const result = await this.runInSteamTab(this.buildInstallScript());
-        if (!this.mounted || this.ownerId !== ownerId || (window as any)[OWNER_KEY]?.ownerId !== ownerId) return;
+        if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId) return;
         this.applyRemoteResult(result);
         this.refreshAudioListeners();
       } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
@@ -688,7 +834,12 @@ export class TrailerController {
     try {
       this.refreshAudioListeners();
       await this.refreshPageIdentity();
+      this.syncPolling();
       if (!this.isEffectivelyEnabled() || this.installInFlight) return;
+      if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
+        await this.installOrUpdate();
+        return;
+      }
       if (this.readReachableRuntime()) {
         this.emit();
         if (this.runtimeSnapshot?.needsIgnFallback) void this.loadIgnFallback();

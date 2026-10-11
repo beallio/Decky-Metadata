@@ -100,11 +100,14 @@ Store requirements, and troubleshooting.
 
 ### Game trailers
 
-Turn on **Game trailers** to show a video on a game's main Library page. Steam
-trailers play first when available; Decky Metadata can look for a matching IGN
-trailer if Steam has none. Trailers are off by default and stream while you
-watch. See [watching game trailers](docs/help/game-trailers.md) for sound,
-quality, and controller controls.
+Open **Game trailers** and turn on **Enable trailers**, the main switch. Choose
+**Detail view trailers** for game pages or **Home view trailers** for a muted
+preview behind the Home carousel. Each view has its own delay slider. The main
+switch is off by default; Detail is selected by default and Home is not.
+
+Steam trailers play first when available, with IGN as a fallback. Your saved
+artwork is not changed. See [watching game trailers](docs/help/game-trailers.md)
+for settings and controller controls.
 
 Trailers keep a stable height while Steam opens or closes the game page, including after you turn the status theme off and on. Switching from the artwork to a trailer does not add another size change. Steam's normal page animation still plays.
 
