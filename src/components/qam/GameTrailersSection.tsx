@@ -1,5 +1,5 @@
 import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
-import { FaPlayCircle } from "react-icons/fa";
+import { FaHome, FaPlayCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { inlineStatusStyle } from "../../styles";
@@ -69,70 +69,74 @@ export function GameTrailersSection({
           </Field>
         </PanelSectionRow>
       ) : null}
-      <PanelSectionRow>
-        <ToggleField
-          label="Detail view trailers"
-          description="Play a trailer over the artwork on a game's main Library page."
-          checked={state.settings.detailEnabled}
-          disabled={disabled}
-          onChange={onDetailEnabledChange}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <SliderField
-          label="Detail fade-in delay"
-          description="Wait from opening the game page before showing a ready trailer."
-          value={state.settings.detailFadeInDelaySeconds}
-          min={0}
-          max={10}
-          step={1}
-          showValue
-          valueSuffix="s"
-          disabled={!state.settingsLoaded}
-          onChange={onDetailFadeInDelayChange}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label="Home view trailers"
-          description="Play a muted trailer over the Home background for the selected or hovered game."
-          checked={state.settings.homeEnabled}
-          disabled={disabled}
-          onChange={onHomeEnabledChange}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <SliderField
-          label="Home fade-in delay"
-          description="Wait before looking for a trailer. Moving to another game restarts this delay."
-          value={state.settings.homeFadeInDelaySeconds}
-          min={0}
-          max={10}
-          step={1}
-          showValue
-          valueSuffix="s"
-          disabled={!state.settingsLoaded}
-          onChange={onHomeFadeInDelayChange}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label="Detail trailer audio"
-          description="Fade in audio when a Detail trailer appears. Home trailers always stay muted."
-          checked={state.settings.audioEnabled}
-          disabled={disabled}
-          onChange={onAudioChange}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label="Hide game logo during Detail trailers"
-          description="Hide the game page logo while a trailer is visible. The logo returns when playback stops."
-          checked={state.settings.hideLogoDuringTrailer}
-          disabled={disabled}
-          onChange={onHideLogoChange}
-        />
-      </PanelSectionRow>
+      <CollapsibleSection title="Detail view" icon={<FaPlayCircle size={14} />}>
+        <PanelSectionRow>
+          <ToggleField
+            label="Detail view trailers"
+            description="Play a trailer over the artwork on a game's main Library page."
+            checked={state.settings.detailEnabled}
+            disabled={disabled}
+            onChange={onDetailEnabledChange}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <SliderField
+            label="Detail fade-in delay"
+            description="Wait from opening the game page before showing a ready trailer."
+            value={state.settings.detailFadeInDelaySeconds}
+            min={0}
+            max={10}
+            step={1}
+            showValue
+            valueSuffix="s"
+            disabled={!state.settingsLoaded}
+            onChange={onDetailFadeInDelayChange}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
+            label="Detail trailer audio"
+            description="Fade in audio when a Detail trailer appears. Home trailers always stay muted."
+            checked={state.settings.audioEnabled}
+            disabled={disabled}
+            onChange={onAudioChange}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ToggleField
+            label="Hide game logo during Detail trailers"
+            description="Hide the game page logo while a trailer is visible. The logo returns when playback stops."
+            checked={state.settings.hideLogoDuringTrailer}
+            disabled={disabled}
+            onChange={onHideLogoChange}
+          />
+        </PanelSectionRow>
+      </CollapsibleSection>
+      <CollapsibleSection title="Home view" icon={<FaHome size={14} />}>
+        <PanelSectionRow>
+          <ToggleField
+            label="Home view trailers"
+            description="Play a muted trailer over the Home background for the selected or hovered game."
+            checked={state.settings.homeEnabled}
+            disabled={disabled}
+            onChange={onHomeEnabledChange}
+          />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <SliderField
+            label="Home fade-in delay"
+            description="Wait before looking for a trailer. Moving to another game restarts this delay."
+            value={state.settings.homeFadeInDelaySeconds}
+            min={0}
+            max={10}
+            step={1}
+            showValue
+            valueSuffix="s"
+            disabled={!state.settingsLoaded}
+            onChange={onHomeFadeInDelayChange}
+          />
+        </PanelSectionRow>
+      </CollapsibleSection>
       <PanelSectionRow>
         <div ref={onQualityControlRef}>
           <DropdownItem
