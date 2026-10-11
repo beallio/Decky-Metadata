@@ -26,14 +26,25 @@ Home previews always stay muted and keep Steam's native controls. They do not mo
 
 ## Choose trailer settings
 
-Find these settings in the **Game trailers** section:
+The main **Enable trailers** switch stays at the top. **Detail view** and **Home view** are separate collapsible subsections. Select a heading or press **A** to show or hide its controls. Closing a subsection does not turn its trailers off.
 
-- **Detail trailer audio** controls sound on game pages; it is off by default. Sound fades in when a Detail trailer appears. Home previews always stay muted.
-- **Video quality** applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**.
+### Detail view
+
+- **Detail view trailers** turns trailers on or off for game pages.
 - **Detail fade-in delay** controls the wait from opening a game page until a ready trailer appears.
-- **Home fade-in delay** controls the wait from selecting or hovering over a game before trailer lookup starts. Moving to another game restarts this wait.
-- Both delays default to three seconds and can be set independently from 0 to 10 seconds. At 0, a trailer appears as soon as it is ready. The delay is separate from the fade animation.
+- **Detail trailer audio** controls sound on game pages; it is off by default. Sound fades in when a Detail trailer appears.
 - **Hide game logo during Detail trailers** hides the game-page logo while a trailer is visible. The logo returns when playback stops or fails, or when you leave the page. Logos inside the video are not changed.
+
+### Home view
+
+- **Home view trailers** turns muted Home previews on or off.
+- **Home fade-in delay** controls the wait from selecting or hovering over a game before trailer lookup starts. Moving to another game restarts this wait.
+
+### Shared settings
+
+**Video quality** stays outside both subsections. It applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**.
+
+Both delay sliders default to three seconds and can be set independently from 0 to 10 seconds. At 0, a trailer appears as soon as it is ready. The delay is separate from the fade animation.
 
 If Steam or SDH-Ludusavi shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. It follows the bar's actual height, including when a theme makes the bar taller. A hidden, compact, or moved indicator does not add full-width trailer space. When you leave the game page, the artwork returns to its usual size. This does not change the trailer's fit, position, or playback.
 
