@@ -12,6 +12,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 ### Changed
 
 - Grouped Detail and Home trailer controls under plain subheadings, without separate expand or collapse actions. The main switch and shared video quality stay outside both groups; saved preferences are unchanged.
+- Enlarged the Detail view and Home view trailer subheadings to 16 px semibold. They remain plain labels, and other settings text is unchanged.
 
 ## [0.5.3] - 2026-10-10
 

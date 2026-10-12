@@ -3,9 +3,12 @@ import { FaPlayCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
+import { fontSize } from "../../tokens";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
+
+const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
 
 const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
   { data: "auto", label: "Auto — match display" },
@@ -70,7 +73,7 @@ export function GameTrailersSection({
         </PanelSectionRow>
       ) : null}
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>Detail view</div>
+        <div style={viewHeadingStyle}>Detail view</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
@@ -114,7 +117,7 @@ export function GameTrailersSection({
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>Home view</div>
+        <div style={viewHeadingStyle}>Home view</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
