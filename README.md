@@ -36,10 +36,11 @@ heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
 
-To edit one game, open its menu and select **Decky metadata...**. Find the right
-game in the Steam Store, paste its page link into **Steam App ID**, and select
-**Apply Steam App ID**. Select **Save** for other details you change. If the
-match is wrong, replace it with the right one.
+To edit one game, open its menu and select **Decky metadata...**. Use **Find a
+Steam match** to search by name. Select a result to check its artwork, developer,
+and release date, then select **Use this Steam match**. You can still paste a
+Steam page link or app ID under **Steam App ID**. Select **Save** after you make
+further edits.
 
 The editor can preview a cleaner shortcut name. It changes the name only if you
 confirm; you can restore the original name later. See [matching and editing
