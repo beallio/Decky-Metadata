@@ -4,15 +4,24 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-11
+
+Add Home trailer previews and separate controls for each view
+
 ### Added
 
-- Added hourly checks for IGN, Steam, ProtonDB, Algolia, Steam Community, Steam Tracker, and plugin update downloads. Two consecutive failed scheduled checks open or update one issue for the affected endpoint, with error details and run links. A successful check resets the count and closes the issue. Manual checks do not change issues or failure counts.
-- Added muted trailer previews over the Home background for the selected or hovered game. Trailers now have a main switch, separate Detail and Home switches, and independent fade-in delay sliders. Existing Detail preferences are preserved; Home stays off until enabled.
+- Added muted trailer previews behind the selected game on Home. Home previews
+  stay off until you enable them. Existing game-page trailer choices stay in place.
+- Added hourly checks for game-data and plugin-update services. Repeated failures
+  open one issue with error details; a successful check closes it. Manual checks
+  do not change issues or failure counts.
 
 ### Changed
 
-- Grouped Detail and Home trailer controls under plain subheadings, without separate expand or collapse actions. The main switch and shared video quality stay outside both groups; saved preferences are unchanged.
-- Enlarged the Detail view and Home view trailer subheadings to 16 px semibold. They remain plain labels, and other settings text is unchanged.
+- Added separate Home and Detail switches and fade-in delays under one main
+  trailer switch. Video quality remains shared.
+- Grouped the trailer controls under larger, plain Detail view and Home view
+  headings. The groups do not have separate expand or collapse actions.
 
 ## [0.5.3] - 2026-10-10
 
