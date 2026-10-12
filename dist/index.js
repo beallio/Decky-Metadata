@@ -208,6 +208,7 @@ const space = {
 const fontSize = {
     sm: 13,
     md: 14,
+    lg: 16,
     xl: 20,
 };
 const fontWeight = {
@@ -564,7 +565,7 @@ function startPluginConflicts() {
     return () => pluginConflicts.stop();
 }
 
-const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.xl };
+const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg };
 const qualityOptions = [
     { data: "auto", label: "Auto — match display" },
     { data: 720, label: "720p" },

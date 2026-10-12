@@ -8,7 +8,7 @@ import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
 
-const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.xl } as const;
+const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
 
 const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
   { data: "auto", label: "Auto — match display" },
