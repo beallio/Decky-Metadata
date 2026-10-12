@@ -100,12 +100,13 @@ Store requirements, and troubleshooting.
 
 ### Game trailers
 
-Open **Game trailers** and turn on **Enable trailers**, the main switch. Open
-the **Detail view** subsection for its switch, delay, audio, and logo settings.
-Open **Home view** for its switch and delay; Home previews stay muted behind
-the carousel. Select a subsection heading or press A to open or close it.
+Open **Game trailers** and turn on **Enable trailers**, the main switch.
+Settings are grouped under plain **Detail view** and **Home view** subheadings.
+Detail includes its switch, delay, audio, and logo settings. Home includes its
+switch and delay; Home previews stay muted behind the carousel.
+Both groups are open whenever **Game trailers** is open.
 The main switch is off by default; Detail is selected by default and Home is not.
-**Video quality** stays outside both subsections because it applies to both views.
+**Video quality** stays outside both groups because it applies to both views.
 
 Steam trailers play first when available, with IGN as a fallback. Your saved
 artwork is not changed. See [watching game trailers](docs/help/game-trailers.md)
