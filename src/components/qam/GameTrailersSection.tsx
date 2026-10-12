@@ -2,10 +2,13 @@ import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "
 import { FaPlayCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
-import { inlineStatusStyle } from "../../styles";
+import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
+import { fontSize } from "../../tokens";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
+
+const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
 
 const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
   { data: "auto", label: "Auto — match display" },
@@ -19,9 +22,12 @@ type GameTrailersSectionProps = {
   initiallyExpanded?: boolean;
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
+  onDetailEnabledChange: (enabled: boolean) => void;
+  onHomeEnabledChange: (enabled: boolean) => void;
   onAudioChange: (enabled: boolean) => void;
   onHideLogoChange: (hide: boolean) => void;
-  onFadeInDelayChange: (seconds: number) => void;
+  onDetailFadeInDelayChange: (seconds: number) => void;
+  onHomeFadeInDelayChange: (seconds: number) => void;
   onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
   onQualityMenuWillOpen: () => void;
   onQualityControlRef: (element: HTMLDivElement | null) => void;
@@ -31,9 +37,12 @@ export function GameTrailersSection({
   initiallyExpanded = false,
   state,
   onEnabledChange,
+  onDetailEnabledChange,
+  onHomeEnabledChange,
   onAudioChange,
   onHideLogoChange,
-  onFadeInDelayChange,
+  onDetailFadeInDelayChange,
+  onHomeFadeInDelayChange,
   onQualityChange,
   onQualityMenuWillOpen,
   onQualityControlRef,
@@ -49,8 +58,8 @@ export function GameTrailersSection({
     <CollapsibleSection title="Game trailers" icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <ToggleField
-          label="Enabled"
-          description="Play a Steam trailer when available, or an IGN game trailer when Steam has none. Non-Steam shortcuts do not need a Steam match."
+          label="Enable trailers"
+          description="Main switch for Detail and Home trailers. Turning it off keeps your choices for each view."
           checked={state.settings.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -64,9 +73,35 @@ export function GameTrailersSection({
         </PanelSectionRow>
       ) : null}
       <PanelSectionRow>
+        <div style={viewHeadingStyle}>Detail view</div>
+      </PanelSectionRow>
+      <PanelSectionRow>
         <ToggleField
-          label="Trailer audio"
-          description="New trailers stay muted until the video appears, then audio fades in with it."
+          label="Detail view trailers"
+          description="Play a trailer over the artwork on a game's main Library page."
+          checked={state.settings.detailEnabled}
+          disabled={disabled}
+          onChange={onDetailEnabledChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <SliderField
+          label="Detail fade-in delay"
+          description="Wait from opening the game page before showing a ready trailer."
+          value={state.settings.detailFadeInDelaySeconds}
+          min={0}
+          max={10}
+          step={1}
+          showValue
+          valueSuffix="s"
+          disabled={!state.settingsLoaded}
+          onChange={onDetailFadeInDelayChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ToggleField
+          label="Detail trailer audio"
+          description="Fade in audio when a Detail trailer appears. Home trailers always stay muted."
           checked={state.settings.audioEnabled}
           disabled={disabled}
           onChange={onAudioChange}
@@ -74,25 +109,37 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Hide game logo during trailers"
-          description="Hide Steam's game logo only while a trailer is visible. The original logo returns when playback stops."
+          label="Hide game logo during Detail trailers"
+          description="Hide the game page logo while a trailer is visible. The logo returns when playback stops."
           checked={state.settings.hideLogoDuringTrailer}
           disabled={disabled}
           onChange={onHideLogoChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>
+        <div style={viewHeadingStyle}>Home view</div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ToggleField
+          label="Home view trailers"
+          description="Play a muted trailer over the Home background for the selected or hovered game."
+          checked={state.settings.homeEnabled}
+          disabled={disabled}
+          onChange={onHomeEnabledChange}
+        />
+      </PanelSectionRow>
+      <PanelSectionRow>
         <SliderField
-          label="Trailer fade-in delay"
-          description="Wait before showing the trailer over the game artwork. Audio fades in when the trailer appears."
-          value={state.settings.fadeInDelaySeconds}
+          label="Home fade-in delay"
+          description="Wait before looking for a trailer. Moving to another game restarts this delay."
+          value={state.settings.homeFadeInDelaySeconds}
           min={0}
           max={10}
           step={1}
           showValue
           valueSuffix="s"
           disabled={!state.settingsLoaded}
-          onChange={onFadeInDelayChange}
+          onChange={onHomeFadeInDelayChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>

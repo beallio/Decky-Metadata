@@ -16,10 +16,13 @@ PlogFn = Callable[..., None]
 
 DEFAULT_TRAILER_SETTINGS: dict[str, Any] = {
     "enabled": False,
+    "detailEnabled": True,
+    "homeEnabled": False,
     "audioEnabled": False,
     "quality": "auto",
     "hideLogoDuringTrailer": False,
-    "fadeInDelaySeconds": 3,
+    "detailFadeInDelaySeconds": 3,
+    "homeFadeInDelaySeconds": 3,
 }
 TRAILER_QUALITIES = ("auto", 720, 1080, 1440, 2160)
 
@@ -51,28 +54,28 @@ def normalize_protondb_badge_settings(value: Any) -> dict[str, Any]:
 
 
 def normalize_trailer_settings(value: Any) -> dict[str, Any]:
-    """Normalize saved trailer preferences without coercing incorrect types."""
+    """Read current preferences, migrating only the persisted legacy detail delay."""
     settings = value if isinstance(value, dict) else {}
-    quality = settings.get("quality")
-    if type(quality) is not str and type(quality) is not int:
-        quality = "auto"
-    if quality not in TRAILER_QUALITIES:
-        quality = "auto"
-    return {
-        "enabled": settings.get("enabled") if type(settings.get("enabled")) is bool else False,
-        "audioEnabled": settings.get("audioEnabled") if type(settings.get("audioEnabled")) is bool else False,
-        "quality": quality,
-        "hideLogoDuringTrailer": (
-            settings.get("hideLogoDuringTrailer")
-            if type(settings.get("hideLogoDuringTrailer")) is bool
-            else False
-        ),
-        "fadeInDelaySeconds": (
-            settings["fadeInDelaySeconds"]
-            if type(settings.get("fadeInDelaySeconds")) is int and 0 <= settings["fadeInDelaySeconds"] <= 10
-            else 3
-        ),
+    normalized = {
+        key: settings[key] if type(settings.get(key)) is bool else default
+        for key, default in DEFAULT_TRAILER_SETTINGS.items()
+        if type(default) is bool
     }
+    quality = settings.get("quality")
+    normalized["quality"] = (
+        quality if type(quality) in (str, int) and quality in TRAILER_QUALITIES else "auto"
+    )
+    detail_delay = settings.get(
+        "detailFadeInDelaySeconds", settings.get("fadeInDelaySeconds")
+    )
+    home_delay = settings.get("homeFadeInDelaySeconds")
+    normalized["detailFadeInDelaySeconds"] = (
+        detail_delay if type(detail_delay) is int and 0 <= detail_delay <= 10 else 3
+    )
+    normalized["homeFadeInDelaySeconds"] = (
+        home_delay if type(home_delay) is int and 0 <= home_delay <= 10 else 3
+    )
+    return normalized
 
 
 def compatibility_default(value: Any) -> int | None:

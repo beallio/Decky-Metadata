@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveTrailerSource } from "./source";
+import { isTrailerHomeRoute, resolveTrailerAppSource, resolveTrailerSource } from "./source";
 
 const nativeGame = { appid: 55150, app_type: 1 };
 const shortcut = { appid: 0x80000010, app_type: 1073741824 };
@@ -58,8 +58,6 @@ describe("resolveTrailerSource", () => {
       overview: shortcut, metadata: { steam_appid: 55150 }, hydrated: false }],
     ["a stale hero", { route: root(55150), heroAppId: 55151, overview: nativeGame,
       metadata: null, hydrated: true }],
-    ["another app's hero", { route: root(55150), heroAppId: 55151, overview: nativeGame,
-      metadata: null, hydrated: true }],
     ["a detail subpage", { route: `${root(55150)}/activity`, heroAppId: 55150,
       overview: nativeGame, metadata: null, hydrated: true }],
     ["a non-menu hash route", { route: `${root(55150)}#gameinfo`, heroAppId: 55150,
@@ -83,5 +81,25 @@ describe("resolveTrailerSource", () => {
       route: root(55150), heroAppId: 55150,
       overview: { appid: 55150, app_type: 1073741824 }, metadata: { steam_appid: 55151 }, hydrated: true,
     })).toBeNull();
+  });
+});
+
+describe("Home trailer source boundaries", () => {
+  it("accepts the Home root without treating another Library or external route as Home", () => {
+    expect(isTrailerHomeRoute("https://steamloopback.host/routes/library/home#quickaccess")).toBe(true);
+    expect(isTrailerHomeRoute("/library/home")).toBe(true);
+    expect(isTrailerHomeRoute("/routes/library/home/activity")).toBe(false);
+    expect(isTrailerHomeRoute("/routes/library/app/55150")).toBe(false);
+    expect(isTrailerHomeRoute("https://example.com/routes/library/home")).toBe(false);
+  });
+
+  it("keeps a shortcut's UI identity separate from its saved Steam trailer source", () => {
+    const context = { appId: shortcut.appid, overview: shortcut,
+      metadata: { steam_appid: 55150 }, hydrated: true };
+    expect(resolveTrailerAppSource(context)).toEqual({
+      pageAppId: shortcut.appid, sourceAppId: 55150, kind: "shortcut",
+    });
+    expect(resolveTrailerAppSource({ ...context, overview: { ...shortcut, appid: shortcut.appid + 1 } })).toBeNull();
+    expect(resolveTrailerAppSource({ ...context, hydrated: false })).toBeNull();
   });
 });

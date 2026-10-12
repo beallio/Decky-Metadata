@@ -3,10 +3,11 @@
 // Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
 export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
     const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.1.8";
+    const runtimeVersion = "0.2.0";
     const styleId = "decky-metadata-trailer-style";
     const videoClass = "decky-metadata-trailer-video";
     const targetClass = "decky-metadata-trailer-target";
+    const homeTargetClass = "decky-metadata-home-trailer-target";
     const readyClass = "decky-metadata-trailer-ready";
     const visibleClass = "decky-metadata-trailer-visible";
     const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
@@ -14,6 +15,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const audioHintId = "decky-metadata-trailer-audio-hint";
     const viewHintId = "decky-metadata-trailer-view-hint";
     const audioChangeEvent = "decky-metadata-trailer:audio-change";
+    const homeSelectionEvent = "decky-metadata-trailer:home-selection";
+    const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
     const directPlaybackTimeoutMs = 12000;
@@ -127,29 +130,35 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const normalizeSettings = (value) => {
         const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
         const qualityOptions = ["auto", 720, 1080, 1440, 2160];
+        const detailEnabled = typeof parsed.detailEnabled === "boolean" ? parsed.detailEnabled : true;
+        const homeEnabled = typeof parsed.homeEnabled === "boolean" ? parsed.homeEnabled : false;
         return {
-            enabled: typeof parsed.enabled === "boolean" ? parsed.enabled : false,
+            enabled: parsed.enabled === true && (detailEnabled || homeEnabled),
+            detailEnabled,
+            homeEnabled,
             audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
             hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
             quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
-            fadeInDelaySeconds: Number.isInteger(parsed.fadeInDelaySeconds) &&
-                parsed.fadeInDelaySeconds >= 0 && parsed.fadeInDelaySeconds <= 10 ? parsed.fadeInDelaySeconds : 3
+            detailFadeInDelaySeconds: Number.isInteger(parsed.detailFadeInDelaySeconds) &&
+                parsed.detailFadeInDelaySeconds >= 0 && parsed.detailFadeInDelaySeconds <= 10 ? parsed.detailFadeInDelaySeconds : 3,
+            homeFadeInDelaySeconds: Number.isInteger(parsed.homeFadeInDelaySeconds) &&
+                parsed.homeFadeInDelaySeconds >= 0 && parsed.homeFadeInDelaySeconds <= 10 ? parsed.homeFadeInDelaySeconds : 3
         };
     };
-    const findOwnerRecord = () => {
-        const candidates = [];
-        try { candidates.push(window.opener); } catch { }
-        candidates.push(window);
-        try { if (window.parent !== window) candidates.push(window.parent); } catch { }
-        for (const candidate of candidates) {
-            try {
-            const record = candidate?.__deckyMetadataTrailerOwner;
-                if (record && typeof record === "object") return record;
-            }
-            catch { }
-        }
+    const findOwnerWindow = () => {
+        try {
+            if (window.opener?.__deckyMetadataTrailerOwner &&
+                typeof window.opener.__deckyMetadataTrailerOwner === "object") return window.opener;
+        } catch { }
+        if (window.__deckyMetadataTrailerOwner &&
+            typeof window.__deckyMetadataTrailerOwner === "object") return window;
+        try {
+            if (window.parent !== window && window.parent?.__deckyMetadataTrailerOwner &&
+                typeof window.parent.__deckyMetadataTrailerOwner === "object") return window.parent;
+        } catch { }
         return undefined;
     };
+    const findOwnerRecord = () => findOwnerWindow()?.__deckyMetadataTrailerOwner;
     let activeOwnerId = ownerId || "";
     let activeRevision = Number.isSafeInteger(settingsRevision) && settingsRevision >= 0 ? settingsRevision : 0;
     let settings = normalizeSettings(nextSettings);
@@ -157,10 +166,17 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         const pageAppId = Number(value?.pageAppId);
         const sourceAppId = value?.sourceAppId === null ? null : Number(value?.sourceAppId);
         if (!Number.isInteger(pageAppId) || pageAppId <= 0 || pageAppId > 0xffffffff ||
+            (value?.view !== "detail" && value?.view !== "home") ||
             (sourceAppId === null
                 ? pageAppId < 0x80000000
                 : !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000)) return null;
-        return { pageAppId, sourceAppId };
+        if (value.view === "home") {
+            if (!Number.isSafeInteger(value.selectionRevision) || value.selectionRevision < 0 ||
+                !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0) return null;
+            return { view: "home", pageAppId, sourceAppId,
+                selectionRevision: value.selectionRevision, enteredAt: value.enteredAt };
+        }
+        return { view: "detail", pageAppId, sourceAppId };
     };
     const normalizeIgnFallback = (value) => {
         if (value === undefined) return undefined;
@@ -313,7 +329,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         if (!document.body) return false;
         const routeText = activeRouteText();
         const routeAppId = getGameDetailsRouteAppId(routeText);
-        if (!routeAppId || !activeIdentity || activeIdentity.pageAppId !== routeAppId) return false;
+        if (!routeAppId || activeIdentity?.view !== "detail" || activeIdentity.pageAppId !== routeAppId) return false;
         const hero = findHeroCandidate(routeAppId);
         return Boolean(hero && hero.appId === routeAppId);
     }
@@ -353,6 +369,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
       .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
       .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
       .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
+      .${homeTargetClass}>.${videoClass}{transform:none!important;transition:opacity ${audioFadeDurationMs}ms linear!important}
       .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
       .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
       img.${logoHiddenClass}{opacity:0!important}
@@ -633,6 +650,38 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
             this.trailerAudioEnabled = this.settings.audioEnabled;
             this.lastSecondaryPressAt = -Infinity;
+            this.homeInputMode = document.activeElement?.classList?.contains("gpfocus") ? "controller" : "pointer";
+            const homeRevision = findOwnerRecord()?.homeSelectionRevision;
+            this.homeSelectionRevision = Number.isSafeInteger(homeRevision) && homeRevision >= 0 ? homeRevision : 0;
+            this.homeFocusTask = () => {
+                this.refreshHomeSelection();
+            };
+            this.handleHomeFocus = () => queueMicrotask(this.homeFocusTask);
+            this.handleHomePointerMove = (event) => {
+                if (!event.isTrusted || !this.homeMonitoring) return;
+                if (this.homePointerX === event.clientX && this.homePointerY === event.clientY) return;
+                this.homePointerX = event.clientX;
+                this.homePointerY = event.clientY;
+                this.homeInputMode = "pointer";
+                this.homePointerCard = event.target?.closest?.("[data-id]");
+                this.refreshHomeSelection();
+            };
+            this.handleHomePointerOut = (event) => {
+                if (this.homeInputMode !== "pointer") return;
+                const card = event.relatedTarget?.closest?.("[data-id]");
+                if (card === this.homePointerCard) return;
+                this.homePointerCard = card;
+                this.refreshHomeSelection();
+            };
+            this.handleHomeKeyDown = (event) => {
+                if (homeNavigationKeys[event.key] !== true) return;
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
+            this.handleHomeGamepadInput = () => {
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
             this.scanQueued = false;
             this.launchHeld = false;
             this.statusBackdrop = undefined;
@@ -656,6 +705,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.failedVisit = undefined;
                 if (document.hidden) {
                     this.pageEnteredAt = undefined;
+                    this.setHomeSelection(undefined, undefined);
                     this.cleanupVideo(true);
                 }
                 else {
@@ -720,6 +770,118 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 event.stopPropagation?.();
                 event.stopImmediatePropagation?.();
             };
+        }
+        resolveHomeStyles() {
+            if (this.homeStyles) return this.homeStyles;
+            const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
+                typeof module?.RecentGamesBackgroundImages === "string" ? module : undefined;
+            for (const candidate of [window.opener, window, window.parent]) {
+                try {
+                    const styles = candidate?.DFL?.findModuleChild?.(predicate);
+                    if (!styles) continue;
+                    const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
+                        ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
+                    const container = escape(styles.RecentGamesContainer);
+                    const background = escape(styles.RecentGamesBackgroundImages);
+                    if (!container || !background) continue;
+                    this.homeStyles = { container: `.${container}`, background: `.${background}` };
+                    return this.homeStyles;
+                } catch { }
+            }
+            return undefined;
+        }
+        isHomeRoute() {
+            return /^\/library\/home$/i.test(readRootRouteKey());
+        }
+        getHomeCardAppId(card) {
+            const styles = this.resolveHomeStyles();
+            if (!styles || !card?.isConnected || !card.closest?.(styles.container) ||
+                !card.querySelector?.("[role='link']")) return undefined;
+            return coerceAppId(card.getAttribute("data-id"));
+        }
+        refreshHomeSelection() {
+            if (!this.homeMonitoring || this.destroyed) return;
+            const owner = findOwnerRecord();
+            if (!this.settings.enabled || !this.settings.homeEnabled || owner?.active !== true ||
+                owner.ownerId !== this.ownerId || owner.settings?.enabled !== true ||
+                owner.settings?.homeEnabled !== true || !this.isHomeRoute() || document.hidden ||
+                document.hasFocus?.() === false || this.steamSideMenuVisible() || this.launchHeld ||
+                document.activeElement?.closest?.("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']")) {
+                this.setHomeSelection(undefined, undefined);
+                return;
+            }
+            let card;
+            if (this.homeInputMode === "pointer") {
+                card = this.homePointerCard;
+            } else if (document.activeElement?.classList?.contains("gpfocus")) {
+                card = document.activeElement.closest?.("[data-id]");
+            }
+            this.setHomeSelection(this.getHomeCardAppId(card), card);
+        }
+        setHomeSelection(appId, card) {
+            card = appId ? card : undefined;
+            if (this.homeAppId === appId && this.homeCard === card) return;
+            this.homeAppId = appId;
+            this.homeCard = card;
+            this.homeSelectionRevision += 1;
+            this.homeEnteredAt = Date.now();
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
+            this.failedVisit = undefined;
+            this.cleanupVideo(true);
+            const target = findOwnerWindow();
+            const owner = target?.__deckyMetadataTrailerOwner;
+            if (owner?.ownerId !== this.ownerId || owner.active !== true) return;
+            const detail = { ownerId: this.ownerId, settingsRevision: owner.settingsRevision,
+                appId: appId ?? null, selectionRevision: this.homeSelectionRevision, enteredAt: this.homeEnteredAt };
+            try { target.dispatchEvent(new target.CustomEvent(homeSelectionEvent, { detail })); } catch { }
+        }
+        startHomeTracking() {
+            if (this.homeMonitoring || !this.monitoring || !this.settings.homeEnabled) return;
+            this.homeMonitoring = true;
+            const styles = this.resolveHomeStyles();
+            this.homePointerCard = styles
+                ? document.querySelector(`${styles.container} [data-id]:hover`) ?? undefined : undefined;
+            this.homeInputMode = this.homePointerCard && !document.activeElement?.classList?.contains("gpfocus")
+                ? "pointer" : "controller";
+            document.addEventListener("pointermove", this.handleHomePointerMove, true);
+            document.addEventListener("pointerout", this.handleHomePointerOut, true);
+            document.addEventListener("focusin", this.handleHomeFocus, true);
+            document.addEventListener("focusout", this.handleHomeFocus, true);
+            document.addEventListener("keydown", this.handleHomeKeyDown, true);
+            document.addEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.addEventListener("blur", this.handleHomeFocus);
+            this.refreshHomeSelection();
+        }
+        stopHomeTracking() {
+            this.homeMonitoring = false;
+            document.removeEventListener("pointermove", this.handleHomePointerMove, true);
+            document.removeEventListener("pointerout", this.handleHomePointerOut, true);
+            document.removeEventListener("focusin", this.handleHomeFocus, true);
+            document.removeEventListener("focusout", this.handleHomeFocus, true);
+            document.removeEventListener("keydown", this.handleHomeKeyDown, true);
+            document.removeEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.removeEventListener("blur", this.handleHomeFocus);
+            this.homePointerCard = undefined;
+            this.homePointerX = undefined;
+            this.homePointerY = undefined;
+            this.setHomeSelection(undefined, undefined);
+        }
+        homeIdentityIsCurrent() {
+            const owner = findOwnerRecord();
+            return this.settings.homeEnabled && owner?.settings?.enabled === true &&
+                owner.settings.homeEnabled === true && this.isHomeRoute() && !document.hidden &&
+                document.hasFocus?.() !== false && !this.steamSideMenuVisible() &&
+                this.identity?.view === "home" && this.homeAppId === this.identity.pageAppId &&
+                this.homeSelectionRevision === this.identity.selectionRevision && this.homeCard?.isConnected;
+        }
+        findHomeBackground() {
+            const styles = this.resolveHomeStyles();
+            const container = styles && this.homeCard?.closest?.(styles.container);
+            const element = container?.querySelector?.(styles.background);
+            if (!element?.isConnected) return undefined;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
         }
         reservedBandHeight(target) {
             const style = getComputedStyle(target);
@@ -860,6 +1022,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (document.body) {
                 this.observer = new MutationObserver((mutations) => {
                     if (!isCurrent()) return;
+                    if (this.settings.homeEnabled && mutations.some((mutation) =>
+                        mutation.type === "childList" || mutation.attributeName === "class")) this.refreshHomeSelection();
                     if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
@@ -888,6 +1052,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.scanTimer = window.setInterval(() => {
                 if (isCurrent() && !document.hidden) void this.scan();
             }, routeScanIntervalMs);
+            this.startHomeTracking();
         }
         update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
             if (Number.isSafeInteger(revision) && revision < this.settingsRevision) return this.snapshot();
@@ -899,8 +1064,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             activeRevision = this.settingsRevision;
             this.identity = normalizeIdentity(nextIdentity);
             activeIdentity = this.identity;
-            const identityChanged = previousIdentity?.pageAppId !== this.identity?.pageAppId ||
-                previousIdentity?.sourceAppId !== this.identity?.sourceAppId;
+            const identityChanged = previousIdentity?.view !== this.identity?.view ||
+                previousIdentity?.pageAppId !== this.identity?.pageAppId ||
+                previousIdentity?.sourceAppId !== this.identity?.sourceAppId ||
+                previousIdentity?.selectionRevision !== this.identity?.selectionRevision;
             this.ignFallback = normalizeIgnFallback(arguments.length >= 4 ? nextFallback :
                 identityChanged ? undefined : previousFallback);
             const fallbackChanged = (previousFallback === undefined) !== (this.ignFallback === undefined) ||
@@ -909,7 +1076,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.steamUnavailable = false;
                 this.needsIgnFallback = false;
                 this.failedVisit = undefined;
-                this.pageEnteredAt = Date.now();
+                this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
                 this.cleanupVideo(true);
             }
             if (fallbackChanged && !identityChanged) {
@@ -938,8 +1105,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.needsIgnFallback = false;
                 this.pageEnteredAt = undefined;
             }
-            if (previous.fadeInDelaySeconds !== this.settings.fadeInDelaySeconds &&
-                this.currentVideo && this.currentTarget && this.activeCandidate) {
+            if (this.settings.homeEnabled) this.startHomeTracking();
+            else if (this.homeMonitoring) this.stopHomeTracking();
+            const delayChanged = this.identity?.view === "home"
+                ? previous.homeFadeInDelaySeconds !== this.settings.homeFadeInDelaySeconds
+                : previous.detailFadeInDelaySeconds !== this.settings.detailFadeInDelaySeconds;
+            if (delayChanged && this.currentVideo && this.currentTarget && this.activeCandidate) {
                 this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
             }
             this.refreshDisplayTarget();
@@ -993,6 +1164,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         stopMonitoring() {
             this.monitoring = false;
+            this.stopHomeTracking();
             this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
             this.observer?.disconnect();
             this.themeObserver?.disconnect();
@@ -1048,8 +1220,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.stopAudioFade();
             const video = this.currentVideo;
             if (!video) return;
-            const audible = this.trailerAudioEnabled && this.currentMediaReady === true &&
-                video.classList.contains(visibleClass);
+            const audible = this.identity?.view !== "home" && this.trailerAudioEnabled &&
+                this.currentMediaReady === true && video.classList.contains(visibleClass);
             video.volume = audible && !fadeIn ? 1 : 0;
             video.muted = !audible;
             video.defaultMuted = !audible;
@@ -1213,6 +1385,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 activeRouteText().toLowerCase().includes("#quickaccess"))) this.exitCleanViewing();
             this.refreshDisplayTarget();
             this.checkRootRoute();
+            if (this.homeMonitoring) this.refreshHomeSelection();
             if (!this.settings.enabled) {
                 this.cleanupVideo(true);
                 this.releaseThemeBand();
@@ -1236,7 +1409,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.status = rt("stoppedForLaunch");
                 return;
             }
-            if (!document.body || !isProbablyGameDetailsPage()) {
+            const home = this.isHomeRoute() && this.settings.homeEnabled;
+            if (!document.body || (!home && (!this.settings.detailEnabled || !isProbablyGameDetailsPage()))) {
                 this.failedVisit = undefined;
                 this.currentAppId = undefined;
                 this.currentGameTitle = undefined;
@@ -1245,21 +1419,23 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.status = rt("waitingGamePage");
                 return;
             }
-            const appId = detectLocationAppId();
-            const hero = appId ? findHeroCandidate(appId) : undefined;
-            if (!appId || !this.identity || this.identity.pageAppId !== appId || !hero || hero.appId !== appId) {
+            const appId = home ? this.homeAppId : detectLocationAppId();
+            const hero = home ? this.findHomeBackground() : appId ? findHeroCandidate(appId) : undefined;
+            if (!appId || !this.identity || this.identity.pageAppId !== appId ||
+                (home && !this.homeIdentityIsCurrent()) || (!home && this.identity.view !== "detail") ||
+                !hero || hero.appId !== appId) {
                 this.needsIgnFallback = false;
                 this.currentAppId = undefined;
                 this.failedVisit = undefined;
                 this.cleanupVideo(true);
-                this.status = rt("waitingGamePage");
+                this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
                 return;
             }
             if (this.needsIgnFallback && this.ignFallback === undefined &&
                 this.currentAppId === appId && this.currentTarget === hero.element) return;
             if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element) return;
             if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
-                this.syncStatusBackdrop(hero.element);
+                if (!home) this.syncStatusBackdrop(hero.element);
                 this.resumeVisiblePausedVideo(appId, hero.element);
                 this.syncLogoVisibility();
                 if (this.currentVideo?.classList.contains(visibleClass) &&
@@ -1274,7 +1450,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const token = ++this.requestToken;
             this.currentAppId = appId;
             this.currentGameTitle = detectGameTitle(appId);
-            this.pageEnteredAt = priorAppId === appId ? (this.pageEnteredAt || Date.now()) : Date.now();
+            this.pageEnteredAt = home ? this.identity.enteredAt
+                : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
             this.currentTarget = hero.element;
             this.pendingAppId = appId;
             this.pendingTarget = hero.element;
@@ -1287,7 +1464,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             else {
                 trailer = await this.getTrailer(sourceAppId);
-                if (token !== this.requestToken || this.destroyed) return;
+                if (token !== this.requestToken || this.destroyed || (home && !this.homeIdentityIsCurrent())) return;
                 if (!trailer.ok || !trailer.candidates?.length) {
                     this.steamUnavailable = true;
                     this.trailerCache.delete(sourceAppId);
@@ -1355,7 +1532,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
                 video.classList.contains(visibleClass)) return;
             if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
-            const delay = Math.max(0, this.settings.fadeInDelaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            const delaySeconds = this.identity?.view === "home"
+                ? this.settings.homeFadeInDelaySeconds : this.settings.detailFadeInDelaySeconds;
+            const delay = Math.max(0, delaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
             this.fadeTimer = window.setTimeout(() => {
                 this.fadeTimer = undefined;
                 if (!candidate.isCurrent() || video.paused) return;
@@ -1368,7 +1547,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }, delay);
         }
         getDesiredMediaSignature() {
-            return `${this.targetHeight}:${this.identity?.sourceAppId || 0}`;
+            return `${this.identity?.view}:${this.targetHeight}:${this.identity?.sourceAppId || 0}:${this.identity?.selectionRevision ?? 0}`;
         }
         async getTrailer(appId) {
             const cached = this.trailerCache.get(appId);
@@ -1452,8 +1631,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         attachVideo(target, appId, candidates, token, options = {}) {
             let index = 0;
-            target.classList.add(targetClass);
-            this.syncStatusBackdrop(target);
+            target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
+            if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
             this.currentTarget = target;
             this.currentAppId = appId;
             this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
@@ -1533,7 +1712,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     controller: new AbortController(),
                     isCurrent: () => !this.destroyed && this.requestToken === token &&
                         this.attemptId === id && this.activeCandidate === candidate &&
-                        this.currentVideo === video && video.isConnected,
+                        this.currentVideo === video && video.isConnected &&
+                        (this.identity?.view !== "home" || this.homeIdentityIsCurrent()),
                     onFailure: (error) => {
                         if (!candidate.isCurrent() || candidate.failed) return;
                         candidate.failed = true;
@@ -1991,11 +2171,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             this.currentVideo = undefined;
             this.restoreStatusBackdrop();
-            this.currentTarget?.classList.remove(targetClass, readyClass);
+            this.currentTarget?.classList.remove(targetClass, homeTargetClass, readyClass);
             this.currentTarget = undefined;
             this.currentMediaSignature = undefined;
             document.querySelectorAll(`.${videoClass}`).forEach((element) => element.remove());
-            document.querySelectorAll(`.${targetClass}`).forEach((element) => element.classList.remove(targetClass, readyClass));
+            document.querySelectorAll(`.${targetClass},.${homeTargetClass}`).forEach((element) =>
+                element.classList.remove(targetClass, homeTargetClass, readyClass));
         }
     }
     const existing = window[runtimeKey];
