@@ -26,7 +26,7 @@ Home previews always stay muted and keep Steam's native controls. They do not mo
 
 ## Choose trailer settings
 
-The main **Enable trailers** switch stays at the top. **Detail view** and **Home view** are separate collapsible subsections. Select a heading or press **A** to show or hide its controls. Closing a subsection does not turn its trailers off.
+The main **Enable trailers** switch stays at the top. Plain **Detail view** and **Home view** subheadings separate the controls. These labels are not buttons and do not expand or collapse. All controls are available when the main **Game trailers** section is open.
 
 ### Detail view
 
@@ -42,7 +42,7 @@ The main **Enable trailers** switch stays at the top. **Detail view** and **Home
 
 ### Shared settings
 
-**Video quality** stays outside both subsections. It applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**.
+**Video quality** stays outside both groups. It applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**.
 
 Both delay sliders default to three seconds and can be set independently from 0 to 10 seconds. At 0, a trailer appears as soon as it is ready. The delay is separate from the fade animation.
 

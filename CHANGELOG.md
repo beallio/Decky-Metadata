@@ -11,7 +11,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Changed
 
-- Grouped Detail and Home trailer controls into separate collapsible subsections. The main switch and shared video quality stay outside both groups; saved preferences are unchanged.
+- Grouped Detail and Home trailer controls under plain subheadings, without separate expand or collapse actions. The main switch and shared video quality stay outside both groups; saved preferences are unchanged.
 
 ## [0.5.3] - 2026-10-10
 
