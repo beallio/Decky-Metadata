@@ -334,6 +334,111 @@ def steam_deck_compat_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: P
     return steam_deck_compat_lookup_for_appid(steam_appid, http_json, plog).category
 
 
+def _steam_match_appid(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, str):
+        value = value.strip()
+        if value.isascii() and value.isdigit():
+            appid = int(value)
+            return appid if appid > 0 else None
+    return None
+
+
+def _steam_match_image(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    url = value.strip()
+    try:
+        parsed = urllib.parse.urlsplit(url)
+    except ValueError:
+        return None
+    return url if parsed.scheme == "https" and parsed.netloc else None
+
+
+def search_steam_matches(
+    query: str, limit: int, http_json: HttpJsonFn, plog: PlogFn
+) -> dict[str, Any]:
+    """List deliberate match choices without applying automatic-match scoring."""
+    clean_query = matching.clean_game_title(query) if isinstance(query, str) else ""
+    if not clean_query:
+        return {"items": [], "error": None}
+    result_limit = max(1, min(matching.safe_int(limit) or 8, 12))
+    try:
+        params = urllib.parse.urlencode({"term": clean_query, "cc": "US", "l": "english"})
+        payload = http_json(f"{STEAM_STORE_SEARCH_URL}?{params}", timeout=12)
+        rows = payload.get("items") if isinstance(payload, dict) else None
+        if not isinstance(rows, list):
+            raise ValueError("Invalid Steam search response")
+        items: list[dict[str, Any]] = []
+        seen: set[int] = set()
+        for row in rows:
+            if not isinstance(row, dict) or row.get("type") != "app":
+                continue
+            appid = _steam_match_appid(row.get("id"))
+            name = row.get("name")
+            title = matching.clean_game_title(name) if isinstance(name, str) else ""
+            if appid is None or appid in seen or not title:
+                continue
+            seen.add(appid)
+            items.append({
+                "steam_appid": appid,
+                "title": title,
+                "cover_url": _steam_match_image(row.get("tiny_image")),
+            })
+            if len(items) == result_limit:
+                break
+        return {"items": items, "error": None}
+    except Exception:
+        plog("steam", "match search failed", level=logging.WARNING, exc=True)
+        return {"items": [], "error": "Steam search is unavailable. Try again."}
+
+
+def steam_match_preview(
+    steam_appid: int, http_json: HttpJsonFn, plog: PlogFn
+) -> dict[str, Any]:
+    """Fetch identifying details only for the candidate the user selected."""
+    appid = _steam_match_appid(steam_appid)
+    if appid is None:
+        return {"preview": None, "error": "Select a valid Steam game."}
+    try:
+        params = urllib.parse.urlencode({
+            "appids": appid, "l": "english", "filters": "basic,developers,release_date",
+        })
+        payload = http_json(f"{STEAM_APP_DETAILS_URL}?{params}", timeout=12)
+        row = payload.get(str(appid)) if isinstance(payload, dict) else None
+        data = row.get("data") if isinstance(row, dict) and row.get("success") else None
+        if not isinstance(data, dict) or not isinstance(data.get("name"), str):
+            raise ValueError("Steam game details are unavailable")
+        title = matching.clean_game_title(data["name"])
+        if not title:
+            raise ValueError("Steam game title is unavailable")
+        raw_developers = data.get("developers")
+        developers = [
+            matching.clean_html_text(name).strip()
+            for name in raw_developers
+            if isinstance(name, str) and name.strip()
+        ] if isinstance(raw_developers, list) else []
+        release = data.get("release_date")
+        date_label = release.get("date") if isinstance(release, dict) else None
+        date_label = matching.clean_html_text(date_label).strip() if isinstance(date_label, str) else ""
+        app_type = data.get("type")
+        app_type = app_type.strip() if isinstance(app_type, str) else ""
+        return {"preview": {
+            "steam_appid": appid,
+            "title": title,
+            "cover_url": _steam_match_image(data.get("header_image")) or _steam_match_image(data.get("capsule_image")),
+            "developers": developers,
+            "release_date_label": date_label or None,
+            "app_type": app_type or None,
+        }, "error": None}
+    except Exception:
+        plog("steam", "match preview failed", level=logging.WARNING, exc=True, steam_appid=appid)
+        return {"preview": None, "error": "Steam details are unavailable. You can still use this match."}
+
+
 def steam_appdetails_for_appid(steam_appid: int, http_json: HttpJsonFn, plog: PlogFn) -> dict[str, Any] | None:
     try:
         appid = int(steam_appid)

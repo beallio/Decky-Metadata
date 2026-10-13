@@ -14,6 +14,8 @@ const backend = vi.hoisted(() => ({
   saveMetadata: vi.fn(),
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
+  searchSteamMatches: vi.fn(),
+  getSteamMatchPreview: vi.fn(),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -112,6 +114,7 @@ vi.mock("react", () => ({
 import { MetadataPage } from "./MetadataPage";
 import { metadataTemplate } from "./metadataForm";
 import type { MetadataData } from "./types";
+import { SteamMatchPicker } from "./SteamMatchPicker";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
@@ -1175,5 +1178,64 @@ describe("metadata summary and date persistence", () => {
       expect(backend.saveMetadata.mock.calls[backend.saveMetadata.mock.calls.length - 1]?.[1]).toMatchObject({ description: input, short_description: input });
     }
     textarea.component = null;
+  });
+});
+
+describe("Steam-match picker application", () => {
+  beforeEach(() => {
+    state.values = [];
+    refs.values = [];
+    effects.enabled = false;
+    effects.callbacks = [];
+    route.appid = "100";
+    textarea.component = null;
+    vi.clearAllMocks();
+    Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
+    steam.isNonSteamApp.mockReturnValue(true);
+    steam.nativeShortcutName.mockReturnValue("Shortcut");
+  });
+
+  const picker = (page: any) => walk(page, (node) => node.type === SteamMatchPicker)[0];
+
+  it("uses the chosen match instead of a conflicting manual ID and preserves edits made during saving", async () => {
+    const saving = deferred<MetadataData>();
+    configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
+    state.values[8] = "620";
+    backend.saveMetadata.mockReturnValueOnce(saving.promise);
+    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+      title: "Portal", steam_appid: 400, steam_store_name: "Portal",
+      description: "Steam description", short_description: "Steam description",
+      developers: [{ name: "Valve", url: "" }], deck_compat_override: "valve",
+    }));
+    const applying = picker(renderPage()).props.onApply(400);
+    walk(renderPage(), (node) => node.type === "textarea")[0]
+      .props.onChange({ target: { value: "My edit during the request" } });
+    saving.resolve(makeMetadata({
+      title: "Shortcut", steam_appid: 400, description: "Old description",
+      deck_compat_override: "valve",
+    }));
+    await applying;
+
+    expect(backend.saveMetadata.mock.calls[0][1].steam_appid).toBe(400);
+    expect(steam.metadataCache["100"]).toMatchObject({
+      steam_appid: 400, title: "Portal", description: "My edit during the request",
+      short_description: "My edit during the request", deck_compat_override: "valve",
+    });
+    expect(state.values[8]).toBe("400");
+    expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
+  });
+
+  it("rejects a retired picker callback after visiting another game and returning", async () => {
+    const retired = picker(renderPage()).props.onApply;
+    route.appid = "101";
+    renderPage();
+    route.appid = "100";
+    renderPage();
+
+    await retired(400);
+
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
   });
 });

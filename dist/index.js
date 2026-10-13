@@ -95,6 +95,8 @@ const refreshDelistedIndex = callable("refresh_delisted_index");
 const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
 const searchMetadata = callable("search_metadata");
+const searchSteamMatches = callable("search_steam_matches");
+const getSteamMatchPreview = callable("get_steam_match_preview");
 const fetchMetadata = callable("fetch_metadata");
 const applyFetchedMetadata = callable("apply_fetched_metadata");
 const getCommunityFallbackPage = callable("get_community_fallback_page");
@@ -164,6 +166,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
+    getSteamMatchPreview: getSteamMatchPreview,
     getSystemVersions: getSystemVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
@@ -176,6 +179,7 @@ var backend = /*#__PURE__*/Object.freeze({
     saveMetadata: saveMetadata,
     saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
+    searchSteamMatches: searchSteamMatches,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
@@ -15420,67 +15424,6 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
-const parseSteamAppId = (input) => {
-    const s = String(input || "").trim();
-    if (!s)
-        return 0;
-    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
-        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
-        s.match(/[?&]appid=(\d+)/i) ||
-        s.match(/\bapp\/(\d+)\b/i);
-    const parsed = Number(match?.[1] || 0);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-        ? parsed
-        : 0;
-};
-const metadataTemplate = (title) => ({
-    title,
-    id: title,
-    source: "Manual",
-    source_url: "",
-    description: "",
-    short_description: "",
-    developers: [],
-    publishers: [],
-    release_date: null,
-    rating: null,
-    store_categories: [StoreCategory.SinglePlayer],
-    steam_dlc_appids: [],
-    has_points_shop: false,
-    genres: [],
-    features: [],
-    screenshots: [],
-});
-const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
-const textToPersons = (value) => value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({ name, url: "" }));
-const normalizeReleaseDate = (value) => {
-    const text = value.trim();
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-    if (!match)
-        return null;
-    const [year, month, day] = match.slice(1).map(Number);
-    if (year < 1)
-        return null;
-    const date = new Date(0);
-    date.setUTCFullYear(year, month - 1, day);
-    date.setUTCHours(0, 0, 0, 0);
-    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
-        return null;
-    return text;
-};
-const parseRating = (value) => {
-    if (!value.trim())
-        return null;
-    const number = Number(value);
-    if (!Number.isFinite(number))
-        return null;
-    return Math.max(0, Math.min(100, Math.round(number)));
-};
-
 const editorRootClassName = "decky-metadata-editor";
 const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 const editorToolbarClearance = 104;
@@ -15536,6 +15479,32 @@ const editorSearchButtonStyle = {
     width: "100%",
     minWidth: 112,
     whiteSpace: "nowrap",
+};
+const editorSteamMatchCardStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 12,
+    width: "100%",
+    minWidth: 0,
+    textAlign: "left",
+    whiteSpace: "normal",
+};
+const editorSteamMatchImageStyle = {
+    width: 138,
+    height: 52,
+    flexShrink: 0,
+    objectFit: "cover",
+    borderRadius: 4,
+};
+const editorSteamMatchPreviewStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    minWidth: 0,
+    padding: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 4,
 };
 const editorSourceStackStyle = {
     width: "100%",
@@ -15672,6 +15641,208 @@ const editorScopedCss = `
   box-shadow: 0 0 0 5px #1a9fff !important;
 }
 `;
+
+const EMPTY_MATCHES = [];
+const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }) => {
+    const [query, setQuery] = SP_REACT.useState(initialQuery);
+    const [items, setItems] = SP_REACT.useState(EMPTY_MATCHES);
+    const [status, setStatus] = SP_REACT.useState("idle");
+    const [searchError, setSearchError] = SP_REACT.useState(null);
+    const [selected, setSelected] = SP_REACT.useState(null);
+    const [preview, setPreview] = SP_REACT.useState(null);
+    const [previewLoading, setPreviewLoading] = SP_REACT.useState(false);
+    const [previewError, setPreviewError] = SP_REACT.useState(null);
+    const queryRef = SP_REACT.useRef(initialQuery);
+    const searchRequestRef = SP_REACT.useRef(0);
+    const previewRequestRef = SP_REACT.useRef(0);
+    const lifetimeRef = SP_REACT.useRef(0);
+    const mountedRef = SP_REACT.useRef(true);
+    const itemsRef = SP_REACT.useRef(EMPTY_MATCHES);
+    const selectedRef = SP_REACT.useRef(null);
+    const pendingQueryRef = SP_REACT.useRef(null);
+    const resultsRootRef = SP_REACT.useRef(null);
+    const disabledRef = SP_REACT.useRef(disabled);
+    const onApplyRef = SP_REACT.useRef(onApply);
+    disabledRef.current = disabled;
+    onApplyRef.current = onApply;
+    // A row can be selected again; identity alone does not retire its old button.
+    const confirmationRequest = previewRequestRef.current;
+    SP_REACT.useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            lifetimeRef.current += 1;
+        };
+    }, []);
+    const clearSelection = () => {
+        previewRequestRef.current += 1;
+        selectedRef.current = null;
+        setSelected(null);
+        setPreview(null);
+        setPreviewLoading(false);
+        setPreviewError(null);
+    };
+    const cancelSelection = () => {
+        const appId = selectedRef.current?.steam_appid;
+        clearSelection();
+        const request = previewRequestRef.current;
+        requestAnimationFrame(() => {
+            if (!mountedRef.current || previewRequestRef.current !== request || appId === undefined)
+                return;
+            resultsRootRef.current
+                ?.querySelector(`[data-steam-match-appid="${appId}"] button`)
+                ?.focus();
+        });
+    };
+    const changeQuery = (value) => {
+        queryRef.current = value;
+        searchRequestRef.current += 1;
+        pendingQueryRef.current = null;
+        setQuery(value);
+        itemsRef.current = EMPTY_MATCHES;
+        setItems(EMPTY_MATCHES);
+        setStatus("idle");
+        setSearchError(null);
+        clearSelection();
+    };
+    const search = async () => {
+        const requestedQuery = queryRef.current.trim();
+        if (!mountedRef.current || disabled || !requestedQuery || pendingQueryRef.current === requestedQuery)
+            return;
+        const request = ++searchRequestRef.current;
+        const lifetime = lifetimeRef.current;
+        pendingQueryRef.current = requestedQuery;
+        clearSelection();
+        itemsRef.current = EMPTY_MATCHES;
+        setItems(EMPTY_MATCHES);
+        setStatus("loading");
+        setSearchError(null);
+        const isCurrent = () => lifetimeRef.current === lifetime && searchRequestRef.current === request;
+        try {
+            const response = await searchSteamMatches(requestedQuery, 8);
+            if (!isCurrent())
+                return;
+            if (response.error) {
+                setSearchError(response.error);
+                setStatus("error");
+            }
+            else {
+                itemsRef.current = response.items;
+                setItems(response.items);
+                setStatus(response.items.length ? "results" : "empty");
+            }
+        }
+        catch {
+            if (!isCurrent())
+                return;
+            setSearchError("Steam search is unavailable. Try again.");
+            setStatus("error");
+        }
+        finally {
+            if (isCurrent())
+                pendingQueryRef.current = null;
+        }
+    };
+    const select = async (candidate) => {
+        if (!mountedRef.current || disabled || !itemsRef.current.includes(candidate))
+            return;
+        if (selectedRef.current === candidate && (previewLoading || preview))
+            return;
+        const request = ++previewRequestRef.current;
+        const lifetime = lifetimeRef.current;
+        selectedRef.current = candidate;
+        setSelected(candidate);
+        setPreview(null);
+        setPreviewLoading(true);
+        setPreviewError(null);
+        const isCurrent = () => lifetimeRef.current === lifetime && previewRequestRef.current === request;
+        try {
+            const response = await getSteamMatchPreview(candidate.steam_appid);
+            if (!isCurrent())
+                return;
+            setPreview(response.preview);
+            setPreviewError(response.error);
+        }
+        catch {
+            if (!isCurrent())
+                return;
+            setPreviewError("Steam details are unavailable. You can still use this match.");
+        }
+        finally {
+            if (isCurrent())
+                setPreviewLoading(false);
+        }
+    };
+    const apply = async () => {
+        if (!mountedRef.current || disabledRef.current || previewLoading ||
+            previewRequestRef.current !== confirmationRequest ||
+            !selected || selectedRef.current !== selected)
+            return;
+        await onApplyRef.current(selected.steam_appid);
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Find a Steam match", children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game." }), matchedSteamAppId ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Current Steam App ID: ${matchedSteamAppId}` }) : null, SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": "Steam game search", value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? "Searching Steam..." : "Search Steam" })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? "Enter a game name to find Steam matches." : null, status === "loading" ? "Searching Steam..." : null, status === "empty" ? "No Steam matches found. Try another name or use the Steam App ID field below." : null, status === "error" ? searchError : null] }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, style: rowStackStyle, children: [SP_JSX.jsxs(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, "aria-pressed": selected?.steam_appid === candidate.steam_appid, disabled: disabled, onClick: () => void select(candidate), style: editorSteamMatchCardStyle, children: [candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : null, SP_JSX.jsxs("div", { style: { minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("b", { children: candidate.title }), SP_JSX.jsxs("div", { style: compactTextStyle, children: [`Steam App ID: ${candidate.steam_appid}`, candidate.steam_appid === matchedSteamAppId ? " · Current match" : null, candidate.steam_appid === selected?.steam_appid ? " · Selected" : null] })] })] }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: editorSteamMatchPreviewStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: "Loading Steam details..." }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: previewError }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: `${preview.title} Steam artwork`, style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length ? `Developer: ${preview.developers.join(", ")}` : "Developer unavailable" }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label ? `Release: ${preview.release_date_label}` : "Release date unavailable" }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam type: ${preview.app_type}. Check that this is the game or edition you want.` }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork." }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: "Use this Steam match" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: "Cancel selection" })] })) : null] }, candidate.steam_appid)))] }) })] }));
+};
+
+const parseSteamAppId = (input) => {
+    const s = String(input || "").trim();
+    if (!s)
+        return 0;
+    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
+        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
+        s.match(/[?&]appid=(\d+)/i) ||
+        s.match(/\bapp\/(\d+)\b/i);
+    const parsed = Number(match?.[1] || 0);
+    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
+        ? parsed
+        : 0;
+};
+const metadataTemplate = (title) => ({
+    title,
+    id: title,
+    source: "Manual",
+    source_url: "",
+    description: "",
+    short_description: "",
+    developers: [],
+    publishers: [],
+    release_date: null,
+    rating: null,
+    store_categories: [StoreCategory.SinglePlayer],
+    steam_dlc_appids: [],
+    has_points_shop: false,
+    genres: [],
+    features: [],
+    screenshots: [],
+});
+const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
+const textToPersons = (value) => value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, url: "" }));
+const normalizeReleaseDate = (value) => {
+    const text = value.trim();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+    if (!match)
+        return null;
+    const [year, month, day] = match.slice(1).map(Number);
+    if (year < 1)
+        return null;
+    const date = new Date(0);
+    date.setUTCFullYear(year, month - 1, day);
+    date.setUTCHours(0, 0, 0, 0);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
+        return null;
+    return text;
+};
+const parseRating = (value) => {
+    if (!value.trim())
+        return null;
+    const number = Number(value);
+    if (!Number.isFinite(number))
+        return null;
+    return Math.max(0, Math.min(100, Math.round(number)));
+};
 
 // Shared look for the multiline Description field, applied to both the
 // gamepad-aware textarea and the plain fallback.
@@ -16135,7 +16306,7 @@ const MetadataPage = () => {
             endBusy(requestedEntry);
         }
     };
-    const applySteamAppId = async () => {
+    const applySteamAppId = async (explicitSteamAppId) => {
         if (!nonSteam) {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
@@ -16152,7 +16323,7 @@ const MetadataPage = () => {
             steamAppIdText: steamAppIdTextRef.current,
         };
         try {
-            const parsed = normalizedSteamAppId(parseSteamAppId(steamAppIdText));
+            const parsed = normalizedSteamAppId(explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId);
             const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
             const steamAppIdChanged = parsed !== savedSteamAppId;
             const next = {
@@ -16446,7 +16617,11 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
+                        if (!isCurrentEditorEntry(editorEntryToken))
+                            return;
+                        await applySteamAppId(steamAppId);
+                    } }, editorEntryToken), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...editorSearchRowStyle,
                                     ...editorSearchInputRowSpacingStyle,
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
@@ -16482,7 +16657,7 @@ const MetadataPage = () => {
                                 })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
+                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
 };
 
 const HTML_ENTITIES = {

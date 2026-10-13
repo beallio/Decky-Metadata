@@ -56,6 +56,7 @@ import {
   ShortcutNameManagement,
 } from "./types";
 import { toastError, toastSuccess, toastWarn } from "./toast";
+import { SteamMatchPicker } from "./SteamMatchPicker";
 import {
   normalizeReleaseDate,
   metadataTemplate,
@@ -626,7 +627,7 @@ export const MetadataPage = () => {
     }
   };
 
-  const applySteamAppId = async () => {
+  const applySteamAppId = async (explicitSteamAppId?: number) => {
     if (!nonSteam) {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
@@ -642,7 +643,9 @@ export const MetadataPage = () => {
       steamAppIdText: steamAppIdTextRef.current,
     };
     try {
-      const parsed = normalizedSteamAppId(parseSteamAppId(steamAppIdText));
+      const parsed = normalizedSteamAppId(
+        explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId,
+      );
       const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
       const steamAppIdChanged = parsed !== savedSteamAppId;
       const next = {
@@ -989,6 +992,17 @@ export const MetadataPage = () => {
           </PanelSection>
         ) : null}
 
+        <SteamMatchPicker
+          key={editorEntryToken}
+          initialQuery={appName(appId)}
+          matchedSteamAppId={normalizedSteamAppId(metadata.steam_appid)}
+          disabled={entryBusy || !nonSteam}
+          onApply={async (steamAppId) => {
+            if (!isCurrentEditorEntry(editorEntryToken)) return;
+            await applySteamAppId(steamAppId);
+          }}
+        />
+
         <PanelSection title={"Search IGN metadata"}>
           <PanelSectionRow>
             <div
@@ -1231,7 +1245,7 @@ export const MetadataPage = () => {
                 <FocusableButton
                   className={`DialogButton ${editorFocusTargetClassName}`}
                   disabled={entryBusy}
-                  onClick={applySteamAppId}
+                  onClick={() => applySteamAppId()}
                   style={editorAppIdButtonStyle}
                 >
                   {"Apply Steam App ID"}

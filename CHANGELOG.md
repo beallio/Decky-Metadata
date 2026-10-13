@@ -4,6 +4,18 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Find and confirm Steam matches in the game editor
+
+### Added
+
+- Added Steam search to the per-game editor. Compare results using real artwork,
+  developer names, and release dates where available, then select **Use this
+  Steam match** to save the match. Browsing and cancelling do not change saved
+  metadata, and Cancel returns controller focus to the selected result.
+- Manual Steam App ID and page-link entry remain available beside the separate
+  IGN metadata search. Match confirmation does not rename shortcuts or replace
+  custom artwork.
+
 ## [0.5.4] - 2026-10-11
 
 Add Home trailer previews and separate controls for each view

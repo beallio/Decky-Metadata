@@ -1017,6 +1017,16 @@ class Plugin:
     async def search_metadata(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
         return await asyncio.to_thread(self._search_metadata_sync, query, limit)
 
+    async def search_steam_matches(self, query: str, limit: int = 8) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            steam_provider.search_steam_matches, query, limit, self._http_json, _plog
+        )
+
+    async def get_steam_match_preview(self, steam_appid: int) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            steam_provider.steam_match_preview, steam_appid, self._http_json, _plog
+        )
+
     async def fetch_metadata(self, slug_or_url: str) -> dict[str, Any] | None:
         return await asyncio.to_thread(self._fetch_metadata_sync, slug_or_url)
 
