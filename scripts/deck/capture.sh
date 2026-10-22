@@ -13,12 +13,7 @@ while (($#)); do
   shift
 done
 stamp="${DECKY_CAPTURE_TIMESTAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
-tmp_base="${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}"
-tmp_base="$(realpath -m "$tmp_base")"
-[[ "$tmp_base" == /tmp || "$tmp_base" == /tmp/* ]] || {
-  echo "capture: DECKY_TMP_ROOT must resolve below /tmp" >&2
-  exit 2
-}
+tmp_base="$(python3 "$repo_root/scripts/deck/temp_paths.py" root)"
 root="$tmp_base/diagnostics/$stamp"
 restricted="$root/restricted-raw"
 umask 077
