@@ -9,6 +9,8 @@ pub mod state;
 pub mod cef_bridge;
 pub mod metadata;
 pub mod providers;
+pub mod scan_runner;
+pub mod updater;
 
 use decky_plugin::Plugin;
 use std::sync::Arc;
@@ -25,6 +27,13 @@ pub fn plugin(state: Arc<AppState>) -> Plugin {
             async move {rpc::dispatch(state,method,args).await}
         });
     }
-    plugin.on_migration(move |_| async move {migration.initialize().await})
-        .on_unload(move |_| async move {unload.shutdown().await})
+    plugin.on_migration(move |_| async move {
+        let result=migration.initialize().await;
+        if let Err(error)=&result {logging::event("load","backend startup failed",serde_json::json!({"error":error}),log::Level::Error);}
+        result
+    }).on_unload(move |_| async move {
+        let result=unload.shutdown().await;
+        if let Err(error)=&result {logging::event("load","backend unload failed",serde_json::json!({"error":error}),log::Level::Error);}
+        result
+    })
 }

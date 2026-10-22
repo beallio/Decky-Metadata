@@ -13,10 +13,21 @@ pub const METHODS:&[&str]=&[
     "eval_in_big_picture","save_metadata","search_metadata","search_steam_matches","get_steam_match_preview",
     "fetch_metadata","find_ign_trailer","apply_fetched_metadata","auto_fetch_metadata",
     "get_community_fallback_page","enrich_steam_app","refresh_delisted_index","get_delisted_index_status",
+    "start_scan_missing","get_scan_progress","get_missing_metadata_count",
+    "start_refresh_steam_activities","refresh_steam_activity_for_app","get_activity_refresh_progress",
+    "check_for_plugin_update","revalidate_plugin_update","record_update_install_requested","confirm_update_install_handoff",
+    "clear_pending_update_install","get_update_check_context","get_update_settings","set_update_channel","set_automatic_update_checks",
 ];
 
 fn arity(args:&[Value],minimum:usize,maximum:usize)->Result<(),String> {
     if (minimum..=maximum).contains(&args.len()) {Ok(())} else {Err(format!("expected {minimum}..={maximum} arguments, got {}",args.len()))}
+}
+
+fn update_failure(error:String,check:bool)->Value {
+    logging::event("update","updater RPC failed",json!({"error":error}),log::Level::Error);
+    let mut result=json!({"status":"failed","message":error});
+    if check {result["checked_at"]=chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros,false).into();}
+    result
 }
 
 pub async fn dispatch(state:Arc<AppState>,method:&str,args:Vec<Value>)->MethodResult {
@@ -110,6 +121,28 @@ pub async fn dispatch(state:Arc<AppState>,method:&str,args:Vec<Value>)->MethodRe
                 "fetched_at":index.as_ref().map(|index| index["fetched_at"].clone()).unwrap_or(json!(0))}))
         },
         "get_delisted_index_status"=>{arity(&args,0,0)?;Ok(state.delisted_status().await)},
+        "start_scan_missing"=>{arity(&args,1,1)?;crate::scan_runner::start_scan_missing(Arc::clone(&state),&args[0]).await},
+        "get_scan_progress"=>{arity(&args,0,0)?;Ok(crate::scan_runner::get_scan_progress(&state).await)},
+        "get_missing_metadata_count"=>{arity(&args,1,1)?;Ok(json!(crate::scan_runner::get_missing_metadata_count(&state,&args[0]).await?))},
+        "start_refresh_steam_activities"=>{arity(&args,1,1)?;crate::scan_runner::start_refresh_steam_activities(Arc::clone(&state),&args[0]).await},
+        "refresh_steam_activity_for_app"=>{arity(&args,1,1)?;Ok(json!(crate::scan_runner::refresh_steam_activity_for_app(&state,&args[0]).await?))},
+        "get_activity_refresh_progress"=>{arity(&args,0,0)?;Ok(crate::scan_runner::get_activity_refresh_progress(&state).await)},
+        "check_for_plugin_update"=>{
+            arity(&args,1,2)?;
+            Ok(state.updater_call(method,&args).await.unwrap_or_else(|error| update_failure(error,true)))
+        },
+        "get_update_check_context"|"get_update_settings"=>{
+            arity(&args,0,0)?;
+            Ok(state.updater_call(method,&args).await.unwrap_or_else(|error| update_failure(error,false)))
+        },
+        "clear_pending_update_install"=>{
+            arity(&args,0,1)?;
+            Ok(state.updater_call(method,&args).await.unwrap_or_else(|error| update_failure(error,false)))
+        },
+        "revalidate_plugin_update"|"record_update_install_requested"|"confirm_update_install_handoff"|"set_update_channel"|"set_automatic_update_checks"=>{
+            arity(&args,1,1)?;
+            Ok(state.updater_call(method,&args).await.unwrap_or_else(|error| update_failure(error,false)))
+        },
         _=>Err(format!("Plugin has no method {method}")),
     }
 }

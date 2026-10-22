@@ -7,7 +7,7 @@ pub fn integer(value: &Value) -> Option<i64> {
     match value {
         Value::Bool(value) => Some(i64::from(*value)),
         Value::Number(value) => value.as_i64().or_else(|| value.as_f64().filter(|n| n.is_finite() && *n >= i64::MIN as f64 && *n < i64::MAX as f64).map(|n| n as i64)),
-        Value::String(value) => value.trim().parse().ok(),
+        Value::String(value) => crate::storage::parse_python_integer(value).and_then(|value| i64::try_from(value).ok()),
         _ => None,
     }
 }
@@ -366,6 +366,8 @@ mod tests {
         assert_eq!(legacy["store_categories"],json!([2,9]));
         assert_eq!(legacy["genres"],json!(["Action"]));
         assert_eq!(legacy["features"],json!(["Co-op","None"]));
+        let underscored=sanitize(&json!({"store_categories":["2_9","2.9","__29"]}),&Value::Null).unwrap();
+        assert_eq!(underscored["store_categories"],json!([29]));
     }
 
     struct TestDirectory(std::path::PathBuf);

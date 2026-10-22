@@ -111,7 +111,7 @@ impl Storage {
                 Ok(value)
             }
             Err(error) => {
-                rollback_changes(&mut self.data, &undo);
+                rollback_changes(&mut self.data, undo);
                 Err(error)
             }
         }
@@ -196,17 +196,16 @@ impl<'a> StoreTransaction<'a> {
     }
 
     fn rollback(&mut self) {
-        rollback_changes(self.data, &self.undo);
-        self.undo.clear();
+        rollback_changes(self.data, std::mem::take(&mut self.undo));
     }
 }
 
-fn rollback_changes(data: &mut Value, changes: &[(Vec<String>, Option<Value>)]) {
-    for (path, previous) in changes.iter().rev() {
+fn rollback_changes(data: &mut Value, changes: Vec<(Vec<String>, Option<Value>)>) {
+    for (path, previous) in changes.into_iter().rev() {
         let path: Vec<&str> = path.iter().map(String::as_str).collect();
         match previous {
             Some(value) => {
-                let _ = set_at(data, &path, value.clone());
+                let _ = set_at(data, &path, value);
             }
             None => {
                 let _ = remove_at(data, &path);
@@ -688,26 +687,21 @@ fn python_int(value: Option<&Value>) -> Option<i64> {
     }
 }
 
-fn parse_python_integer(value: &str) -> Option<i128> {
-    let bytes = value.trim().as_bytes();
-    let (negative, start) = match bytes.first() {
-        Some(b'-') => (true, 1),
-        Some(b'+') => (false, 1),
-        _ => (false, 0),
-    };
-    if start == bytes.len() {
-        return None;
-    }
+pub(crate) fn parse_python_integer(value: &str) -> Option<i128> {
+    let value = value.trim();
+    let negative = value.starts_with('-');
+    let digits = value.strip_prefix(['+', '-']).unwrap_or(value);
+    let mut characters = digits.chars().peekable();
+    characters.peek()?;
     let mut magnitude = 0_u128;
-    for (index, byte) in bytes.iter().enumerate().skip(start) {
-        if byte.is_ascii_digit() {
-            magnitude = magnitude.checked_mul(10)?.checked_add((byte - b'0') as u128)?;
-        } else if *byte != b'_'
-            || index == start
-            || index + 1 == bytes.len()
-            || !bytes[index - 1].is_ascii_digit()
-            || !bytes[index + 1].is_ascii_digit()
-        {
+    let mut previous_digit = false;
+    while let Some(character) = characters.next() {
+        if let Some(digit) = crate::matching::decimal_digit(character) {
+            magnitude = magnitude.checked_mul(10)?.checked_add(u128::from(digit))?;
+            previous_digit = true;
+        } else if character == '_' && previous_digit && characters.peek().is_some_and(|next| crate::matching::decimal_digit(*next).is_some()) {
+            previous_digit = false;
+        } else {
             return None;
         }
     }

@@ -205,7 +205,7 @@ fn py_is_whitespace(ch: char) -> bool {
     ch.is_whitespace() || matches!(ch, '\u{1c}'..='\u{1f}')
 }
 
-fn py_strip(value: &str) -> &str {
+pub(crate) fn py_strip(value: &str) -> &str {
     value.trim_matches(py_is_whitespace)
 }
 
@@ -716,6 +716,59 @@ fn english_month(value: &str) -> Option<u32> {
     }
 }
 
+pub(crate) fn decimal_digit(value: char) -> Option<u8> {
+    if value.is_ascii_digit() { return Some(value as u8 - b'0'); }
+    // CPython 3.14 uses Unicode 16.0 decimal-digit families.
+    const ZEROS: &[u32] = &[
+        0x30, 0x660, 0x6F0, 0x7C0, 0x966, 0x9E6, 0xA66, 0xAE6,
+        0xB66, 0xBE6, 0xC66, 0xCE6, 0xD66, 0xDE6, 0xE50, 0xED0,
+        0xF20, 0x1040, 0x1090, 0x17E0, 0x1810, 0x1946, 0x19D0, 0x1A80,
+        0x1A90, 0x1B50, 0x1BB0, 0x1C40, 0x1C50, 0xA620, 0xA8D0, 0xA900,
+        0xA9D0, 0xA9F0, 0xAA50, 0xABF0, 0xFF10, 0x104A0, 0x10D30, 0x10D40,
+        0x11066, 0x110F0, 0x11136, 0x111D0, 0x112F0, 0x11450, 0x114D0, 0x11650,
+        0x116C0, 0x116D0, 0x116DA, 0x11730, 0x118E0, 0x11950, 0x11BF0, 0x11C50,
+        0x11D50, 0x11DA0, 0x11F50, 0x16130, 0x16A60, 0x16AC0, 0x16B50, 0x16D70,
+        0x1CCF0, 0x1D7CE, 0x1D7D8, 0x1D7E2, 0x1D7EC, 0x1D7F6, 0x1E140, 0x1E2F0,
+        0x1E4F0, 0x1E5F1, 0x1E950, 0x1FBF0,
+    ];
+    let code = value as u32;
+    let index = ZEROS.partition_point(|zero| *zero <= code).checked_sub(1)?;
+    let digit = code - ZEROS[index];
+    (digit < 10).then_some(digit as u8)
+}
+
+pub(crate) fn integer_string(value: &str) -> Option<Cow<'_, str>> {
+    let value = value.trim();
+    if value.is_empty() { return None; }
+    if value.bytes().all(|byte| byte.is_ascii_digit()) {
+        let digits = value.trim_start_matches('0');
+        return Some(Cow::Borrowed(if digits.is_empty() { "0" } else { digits }));
+    }
+    let negative = value.starts_with('-');
+    let digits = value.strip_prefix(['+', '-']).unwrap_or(value);
+    if negative && !digits.is_empty() && !digits.starts_with('0') && digits.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Some(Cow::Borrowed(value));
+    }
+    let mut characters = digits.chars().peekable();
+    decimal_digit(*characters.peek()?)?;
+    let mut normalized = String::with_capacity(value.len());
+    if negative { normalized.push('-'); }
+    let prefix = usize::from(negative);
+    let mut previous_digit = false;
+    while let Some(character) = characters.next() {
+        if let Some(digit) = decimal_digit(character) {
+            if digit != 0 || normalized.len() > prefix { normalized.push(char::from(b'0' + digit)); }
+            previous_digit = true;
+        } else if character == '_' && previous_digit && characters.peek().is_some_and(|next| decimal_digit(*next).is_some()) {
+            previous_digit = false;
+        } else {
+            return None;
+        }
+    }
+    if normalized.len() == prefix { normalized.clear(); normalized.push('0'); }
+    Some(Cow::Owned(normalized))
+}
+
 fn python_float(value: &str) -> Option<f64> {
     let value = py_strip(value);
     if value.is_empty() {
@@ -728,34 +781,38 @@ fn python_float(value: &str) -> Option<f64> {
         0
     };
     if start < bytes.len() {
-        let special = value[start..].to_ascii_lowercase();
-        if special == "inf" || special == "infinity" {
+        let special = &value[start..];
+        if special.eq_ignore_ascii_case("inf") || special.eq_ignore_ascii_case("infinity") {
             return Some(if bytes.first() == Some(&b'-') {
                 f64::NEG_INFINITY
             } else {
                 f64::INFINITY
             });
         }
-        if special == "nan" {
+        if special.eq_ignore_ascii_case("nan") {
             return Some(f64::NAN);
         }
     }
 
+    if value.is_ascii() && !value.contains('_') { return value.parse().ok(); }
     let mut normalized = String::with_capacity(value.len());
-    for (index, byte) in bytes.iter().copied().enumerate() {
-        if byte == b'_' {
-            if index == 0
-                || index + 1 == bytes.len()
-                || !bytes[index - 1].is_ascii_digit()
-                || !bytes[index + 1].is_ascii_digit()
-            {
-                return None;
-            }
+    let mut characters = value.chars().peekable();
+    let mut previous_digit = false;
+    while let Some(character) = characters.next() {
+        if character == '_' {
+            if !previous_digit || !characters.peek().is_some_and(|next| decimal_digit(*next).is_some()) { return None; }
+            previous_digit = false;
+        } else if let Some(digit) = decimal_digit(character) {
+            normalized.push(char::from(b'0' + digit));
+            previous_digit = true;
+        } else if character.is_ascii() {
+            normalized.push(character);
+            previous_digit = false;
         } else {
-            normalized.push(char::from(byte));
+            return None;
         }
     }
-    normalized.parse::<f64>().ok()
+    normalized.parse().ok()
 }
 
 /// Parse an integer as Python's `int(float(str(value).replace(",", "")))` helper does.
@@ -1244,6 +1301,8 @@ mod tests {
         assert_eq!(rating_to_percent(&json!(4.25)), Some(42));
         assert_eq!(rating_to_percent(&json!(4.75)), Some(48));
         assert_eq!(rating_to_percent(&json!(true)), Some(10));
+        assert_eq!(safe_int(&json!("٢_٩")), Some(29));
+        assert_eq!(as_number(&json!("٣.٥"), -1.0), 3.5);
         assert_eq!(rating_to_percent(&json!(false)), Some(0));
         assert_eq!(rating_to_percent(&json!(101)), Some(100));
         assert_eq!(rating_to_percent(&json!(-1)), Some(0));

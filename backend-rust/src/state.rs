@@ -12,6 +12,8 @@ pub struct AppState {
     pub cef:crate::cef_bridge::BigPictureEvaluator,
     storage:OnceCell<Mutex<Storage>>,
     pub delisted:Mutex<Option<Arc<Value>>>,
+    pub jobs:crate::scan_runner::Jobs,
+    updater_rate_limit:Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
 
 impl AppState {
@@ -19,7 +21,8 @@ impl AppState {
         let cancel=CancellationToken::new();
         let http=Http::new(cancel.clone(),&env.plugin_version)?;
         let cef=crate::cef_bridge::BigPictureEvaluator::new(cancel.child_token())?;
-        Ok(Arc::new(Self {env,cancel,http,cef,storage:OnceCell::new(),delisted:Mutex::new(None)}))
+        Ok(Arc::new(Self {env,cancel,http,cef,storage:OnceCell::new(),delisted:Mutex::new(None),
+            jobs:crate::scan_runner::Jobs::new(),updater_rate_limit:Mutex::new(None)}))
     }
 
     pub async fn initialize(&self)->Result<(),String> {
@@ -32,6 +35,7 @@ impl AppState {
         logging::set_debug(matching::py_truthy(&storage.data()["settings"]["debug_logging"]));
         *self.delisted.lock().await=cached;
         self.storage.set(Mutex::new(storage)).map_err(|_| "backend initialized twice".to_owned())?;
+        self.reconcile_update_state().await?;
         logging::event("load","backend ready",Value::Null,log::Level::Info);
         Ok(())
     }
@@ -82,9 +86,11 @@ impl AppState {
     }
 
     pub async fn shutdown(&self)->Result<(),String> {
+        logging::event("load","backend unload begin",Value::Null,log::Level::Info);
         self.cancel.cancel();
         // A replacement already in progress must finish its atomic section.
         tokio::time::timeout(Duration::from_secs(4),async {
+            self.jobs.drain().await;
             if let Some(storage)=self.storage.get() {let _write=storage.lock().await;}
         }).await.map_err(|_| "backend shutdown timed out".to_owned())?;
         logging::event("load","backend unloaded",Value::Null,log::Level::Info);
@@ -119,6 +125,114 @@ impl AppState {
             Ok(state)
         }).await
     }
+
+    async fn updater_snapshot(&self)->Result<UpdateSnapshot,String> {
+        let (settings,cache)={
+            let storage=self.store().await?;
+            (storage.data()["update_settings"].clone(),storage.data()["update_check_cache"].clone())
+        };
+        let rate_limit=*self.updater_rate_limit.lock().await;
+        let mut backend=crate::updater::Updater::new(self.http.clone(),self.env.plugin_version.clone(),&settings,&cache);
+        backend.rate_limited_until=rate_limit;
+        Ok(UpdateSnapshot {backend,settings,cache,rate_limit})
+    }
+
+    async fn adopt_rate_limit(&self,before:Option<chrono::DateTime<chrono::Utc>>,after:Option<chrono::DateTime<chrono::Utc>>) {
+        let mut current=self.updater_rate_limit.lock().await;
+        if *current==before || after>*current {*current=after;}
+    }
+
+    async fn reconcile_update_state(&self)->Result<(),String> {
+        let mut snapshot=self.updater_snapshot().await?;
+        if snapshot.backend.reconcile_pending_install()? {
+            let settings=snapshot.backend.settings_payload();
+            let cache=snapshot.backend.cache_payload();
+            self.change(|transaction| {
+                merge_updater_fields(transaction,"update_settings",&snapshot.settings,&settings)?;
+                merge_updater_fields(transaction,"update_check_cache",&snapshot.cache,&cache)
+            }).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn updater_call(&self,method:&str,args:&[Value])->Result<Value,String> {
+        if method=="get_update_settings" {return Ok(self.updater_snapshot().await?.backend.settings_payload());}
+        if method=="get_update_check_context" {
+            let mut snapshot=self.updater_snapshot().await?;
+            let result=snapshot.backend.context();
+            self.adopt_rate_limit(snapshot.rate_limit,snapshot.backend.rate_limited_until).await;
+            return Ok(result);
+        }
+        if method=="check_for_plugin_update" || method=="revalidate_plugin_update" {
+            let mut snapshot=self.updater_snapshot().await?;
+            let previous_cache=snapshot.backend.cache_payload();
+            let result=if method=="check_for_plugin_update" {
+                snapshot.backend.check_for_update(&args[0],args.get(1).is_some_and(matching::py_truthy)).await
+            } else {snapshot.backend.revalidate(&args[0]).await};
+            self.adopt_rate_limit(snapshot.rate_limit,snapshot.backend.rate_limited_until).await;
+            let settings=snapshot.backend.settings_payload();
+            let cache=snapshot.backend.cache_payload();
+            let persist=cache!=previous_cache || (method=="revalidate_plugin_update" && snapshot.rate_limit!=snapshot.backend.rate_limited_until);
+            if persist {
+                self.change(|transaction| {
+                    let current_channel=transaction.get(&["update_settings","update_channel"]).and_then(Value::as_str).filter(|channel| *channel=="stable" || *channel=="development").unwrap_or("stable");
+                    if method=="check_for_plugin_update" && current_channel!=settings["update_channel"].as_str().unwrap_or("stable") {
+                        logging::event("update","Update channel changed during check; stale result was not cached",Value::Null,log::Level::Info);
+                        return Ok(());
+                    }
+                    merge_updater_fields(transaction,"update_settings",&snapshot.settings,&settings)?;
+                    merge_updater_fields(transaction,"update_check_cache",&snapshot.cache,&cache)
+                }).await?;
+            }
+            return result;
+        }
+        let rate_limit=*self.updater_rate_limit.lock().await;
+        self.change(|transaction| {
+            let mut backend=crate::updater::Updater::new(self.http.clone(),self.env.plugin_version.clone(),
+                transaction.get(&["update_settings"]).unwrap_or(&Value::Null),
+                transaction.get(&["update_check_cache"]).unwrap_or(&Value::Null));
+            backend.rate_limited_until=rate_limit;
+            let previous_cache=backend.cache_payload();
+            let result=match method {
+                "set_update_channel"=>{backend.set_channel(&args[0])?;backend.settings_payload()},
+                "set_automatic_update_checks"=>{backend.set_automatic_checks(&args[0])?;backend.settings_payload()},
+                "record_update_install_requested"=>backend.record_install_requested(&args[0])?,
+                "confirm_update_install_handoff"=>backend.confirm_install_handoff(&args[0])?,
+                "clear_pending_update_install"=>backend.clear_pending_install(args.first())?,
+                _=>return Err(format!("unknown updater method {method}")),
+            };
+            let cache=backend.cache_payload();
+            if matches!(method,"set_update_channel"|"set_automatic_update_checks"|"record_update_install_requested") || cache!=previous_cache {
+                transaction.set(&["update_settings"],backend.settings_payload())?;
+                transaction.set(&["update_check_cache"],cache)?;
+            }
+            Ok(result)
+        }).await
+    }
+}
+
+struct UpdateSnapshot {
+    backend:crate::updater::Updater,
+    settings:Value,
+    cache:Value,
+    rate_limit:Option<chrono::DateTime<chrono::Utc>>,
+}
+
+fn merge_updater_fields(transaction:&mut StoreTransaction<'_>,root:&str,before:&Value,after:&Value)->Result<(),String> {
+    let mut merged=transaction.get(&[root]).and_then(Value::as_object).cloned().unwrap_or_default();
+    if let Some(before)=before.as_object() {
+        for (key,value) in before {
+            if after.get(key).is_none() && merged.get(key)==Some(value) {merged.remove(key);}
+        }
+    }
+    if let Some(after)=after.as_object() {
+        for (key,value) in after {
+            if before.get(key)!=Some(value) && merged.get(key)==before.get(key) {merged.insert(key.clone(),value.clone());}
+        }
+    }
+    let next=Value::Object(merged);
+    if transaction.get(&[root])!=Some(&next) {transaction.set(&[root],next)?;}
+    Ok(())
 }
 
 async fn read_cached_index(settings:&std::path::Path)->Option<Arc<Value>> {
@@ -184,4 +298,93 @@ pub fn platform_capabilities()->Value {
         "is_linux":cfg!(target_os="linux"),"is_steamos":steam_paths::is_steamos(),
         "steam_root":roots.first().map(|path| path.to_string_lossy().into_owned()).unwrap_or_default(),"steam_roots":roots,
         "supports_metadata":true,"supports_steam_activity":true})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::http::Fixture;
+    use std::os::unix::fs::PermissionsExt;
+
+    struct TestRoot(std::path::PathBuf);
+
+    impl TestRoot {
+        async fn state(http:Http)->(Self,Arc<AppState>) {
+            static NEXT:std::sync::atomic::AtomicU64=std::sync::atomic::AtomicU64::new(0);
+            let base=std::env::var_os("TMPDIR").map(std::path::PathBuf::from).unwrap_or_else(|| "/var/tmp/omp-1000".into());
+            let root=Self(base.join(format!("metadata-updater-state-{}-{}",std::process::id(),NEXT.fetch_add(1,std::sync::atomic::Ordering::Relaxed))));
+            std::fs::create_dir_all(&root.0).unwrap();
+            std::fs::set_permissions(&root.0,std::fs::Permissions::from_mode(0o700)).unwrap();
+            let mut state=AppState::new(Env {plugin_settings_dir:root.0.join("settings"),plugin_runtime_dir:root.0.join("runtime"),
+                plugin_log_dir:root.0.join("logs"),plugin_version:"0.5.5".into(),..Default::default()}).unwrap();
+            let inner=Arc::get_mut(&mut state).unwrap();
+            inner.cancel=http.cancel.clone();
+            inner.http=http;
+            state.initialize().await.unwrap();
+            (root,state)
+        }
+    }
+
+    impl Drop for TestRoot {fn drop(&mut self) {let _=std::fs::remove_dir_all(&self.0);}}
+
+    fn empty_release_check()->Http {
+        Http::fixtures(vec![Fixture::json("https://api.github.com/repos/beallio/Decky-Metadata/releases",json!([]))])
+    }
+
+    #[tokio::test]
+    async fn channel_change_during_check_does_not_cache_the_old_channel() {
+        let mut http=empty_release_check();
+        let gate=http.gate_next_request();
+        let (_root,state)=TestRoot::state(http).await;
+        let checking=Arc::clone(&state);
+        let task=tokio::spawn(async move {checking.updater_call("check_for_plugin_update",&[json!("0.5.5"),json!(true)]).await});
+        tokio::time::timeout(Duration::from_secs(2),gate.started.notified()).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2),state.updater_call("set_update_channel",&[json!("development")])).await.unwrap().unwrap();
+        gate.resume.notify_one();
+        assert_eq!(task.await.unwrap().unwrap()["status"],"current");
+        let storage=state.store().await.unwrap();
+        assert_eq!(storage.data()["update_settings"]["update_channel"],"development");
+        assert!(storage.data()["update_check_cache"]["last_checked_at"].is_null());
+        drop(storage);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn delayed_check_preserves_concurrent_metadata_and_install_handoff() {
+        let mut http=empty_release_check();
+        let gate=http.gate_next_request();
+        let (_root,state)=TestRoot::state(http).await;
+        let checking=Arc::clone(&state);
+        let task=tokio::spawn(async move {checking.updater_call("check_for_plugin_update",&[json!("0.5.5"),json!(true)]).await});
+        tokio::time::timeout(Duration::from_secs(2),gate.started.notified()).await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2),crate::metadata::save(&state,&json!(42),
+            json!({"title":"Concurrent user edit","source":"Manual","description":"Keep this edit"}),false,None)).await.unwrap().unwrap();
+        state.updater_call("record_update_install_requested",&[json!({"version":"0.5.6","tag":"v0.5.6","channel":"stable"})]).await.unwrap();
+        gate.resume.notify_one();
+        assert_eq!(task.await.unwrap().unwrap()["status"],"current");
+        let storage=state.store().await.unwrap();
+        assert_eq!(storage.data()["metadata"]["42"]["title"],"Concurrent user edit");
+        assert_eq!(storage.data()["update_check_cache"]["pending_update_install"]["version"],"0.5.6");
+        assert_eq!(storage.data()["update_check_cache"]["last_checked_channel"],"stable");
+        assert_eq!(storage.data()["update_check_cache"]["last_checked_version"],"0.5.5");
+        drop(storage);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn failed_updater_save_returns_failure_without_publishing_settings() {
+        let (_root,state)=TestRoot::state(Http::fixtures(vec![])).await;
+        let before=state.updater_call("set_automatic_update_checks",&[json!(false)]).await.unwrap();
+        let file=state.env.plugin_settings_dir.join("decky_metadata.json");
+        let persisted=tokio::fs::read(&file).await.unwrap();
+        tokio::fs::create_dir(state.env.plugin_settings_dir.join("decky_metadata.json.tmp")).await.unwrap();
+        let result=crate::rpc::dispatch(Arc::clone(&state),"set_update_channel",vec![json!("development")]).await.unwrap();
+        assert_eq!(result["status"],"failed");
+        assert_eq!(state.updater_call("get_update_settings",&[]).await.unwrap(),before);
+        assert_eq!(tokio::fs::read(file).await.unwrap(),persisted);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
 }

@@ -84,7 +84,7 @@ impl Http {
         #[cfg(test)]
         if let Some(fixtures) = &self.fixtures {
             let fixture = fixtures.lock().unwrap().pop_front().ok_or_else(|| format!("unexpected HTTP request {method} {url}"))?;
-            assert_eq!(fixture.method,method,"fixture request method");
+            assert_eq!(fixture.method,method,"fixture request method for {url}");
             let mut expected=reqwest::Url::parse(&fixture.url).expect("fixture URL");
             let mut actual=reqwest::Url::parse(url).expect("request URL");
             let mut expected_query:Vec<_>=expected.query_pairs().into_owned().collect();
