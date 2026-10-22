@@ -1,34 +1,27 @@
-use decky_plugin::{Env, Plugin};
-use serde_json::Value;
+pub mod http;
+pub mod logging;
+pub mod matching;
+pub mod shortcuts_vdf;
+pub mod steam_paths;
+pub mod storage;
+pub mod rpc;
+pub mod state;
+
+use decky_plugin::Plugin;
 use std::sync::Arc;
-use tokio_util::sync::CancellationToken;
-
-pub struct AppState {
-    pub env: Env,
-    pub cancel: CancellationToken,
-}
-
-impl AppState {
-    pub fn new(env: Env) -> Arc<Self> {
-        Arc::new(Self { env, cancel: CancellationToken::new() })
-    }
-}
+pub use state::AppState;
 
 pub fn plugin(state: Arc<AppState>) -> Plugin {
     let migration = Arc::clone(&state);
     let unload = Arc::clone(&state);
-    Plugin::new()
-        .method("get_plugin_version", move |_, _| {
-            let state = Arc::clone(&state);
-            async move { Ok(Value::String(state.env.plugin_version.clone())) }
-        })
-        .on_migration(move |_| async move {
-            tokio::fs::create_dir_all(&migration.env.plugin_settings_dir)
-                .await.map_err(|error| error.to_string())?;
-            Ok(())
-        })
-        .on_unload(move |_| async move {
-            unload.cancel.cancel();
-            Ok(())
-        })
+    let mut plugin=Plugin::new();
+    for &method in rpc::METHODS {
+        let state=Arc::clone(&state);
+        plugin=plugin.method(method,move |_,args| {
+            let state=Arc::clone(&state);
+            async move {rpc::dispatch(state,method,args).await}
+        });
+    }
+    plugin.on_migration(move |_| async move {migration.initialize().await})
+        .on_unload(move |_| async move {unload.shutdown().await})
 }
