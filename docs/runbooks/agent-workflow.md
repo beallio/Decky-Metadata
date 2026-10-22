@@ -104,8 +104,9 @@ Manual GitHub runs are diagnostic-only: they retain a sanitized report but do
 not change counts or issues. Run the same probes locally:
 
 ```bash
+./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
 ./run.sh python3 scripts/check_endpoint_health.py \
-  --report /tmp/Decky-Metadata/endpoint-health/report.json
+  --report "${TMPDIR:-/var/tmp/omp-1000}/endpoint-health/report.json"
 ```
 
 Add `--only protondb-summary` (repeatable) for a local check of selected
@@ -113,11 +114,59 @@ endpoints. GitHub probes require authenticated `gh` access. The workflow uses
 its `GITHUB_TOKEN` with read access to contents and Actions, plus issue write
 access; no personal token is required.
 
+Rust `1.99.0` is required for the backend and host diagnostics. ZIP builds also
+need the `x86_64-unknown-linux-musl` target and musl C tools. `npm run build`
+still builds only the frontend; `npm run build:backend` builds the locked static
+backend. `npm run test:backend` runs the Rust behavior tests.
+
+The three Python diagnostic adapters run the existing host
+`backend-diagnostics` executable from `$CARGO_TARGET_DIR/debug`; they never build
+or download it implicitly. `run.sh` defaults that directory to
+`${TMPDIR}/cargo-target/Decky-Metadata`. The native checks reuse the plugin's
+providers and updater validation. Independent Python probes and HLS/DASH checks remain.
+
 `scripts/report_endpoint_health.py` defaults to a local dry run. Its
 `--scheduled` flag advances only the supplied local state file; GitHub issue
 writes additionally require `--apply`. The workflow also supplies `--restore`
 to retrieve the previous scheduled state. Do not use `--apply` for local
 experiments.
+
+## Backend rewrite comparison
+
+`scripts/deck/benchmark_backend.py` compares the pinned Python package on upstream
+Loader, the Rust package on the same upstream Loader, then that exact Rust ZIP on
+the pinned fork. It is a VM-only developer tool, not a normal deployment command.
+It requires exclusive use of the VM, working non-interactive administrator access,
+and an existing CDP tunnel. It does not launch games or replace the normal install.
+
+Resolve the evidence directory with `./run.sh python3 scripts/deck/temp_paths.py root`.
+Pass the original ZIP, candidate ZIP, upstream executable and complete fork bundle
+with `--python-zip`, `--rust-zip`, `--upstream-runtime` and `--fork-runtime`.
+Use `--host steamdeck-vm --cdp-port 18082 --scratch-homebrew scratch-homebrew`
+and a new `--output-dir` below that evidence root.
+
+Run `--dry-run` first. It captures the installed state, exercises a real disposable
+watchdog service, and verifies recovery. Use `--ui-arm A`, then `B`, then `C` to
+hold each scratch Loader open for ZIP installation through QAM and correctness
+checks. Register shortcut-name undo with the printed remote helper before a name
+check. Send `finish` on standard input only after the arm's checks are complete.
+Timed mode requires `--verification-record` with all three arms and their exact
+artifact hashes; see the script's validation contract for the record fields.
+
+Each dataset has five trials per arm. Browser RPC timers exclude response
+validation; throughput includes it. Startup measures authenticated backend
+readiness from a pre-primed Steam document, not a cold filesystem or a full
+webhelper restart. An early document hook tracks every Loader update/catalog
+check before timing. Idle, warmup and workload windows use the VM's monotonic
+clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
+cgroup samples, and memory peaks are sampled peaks.
+
+Recovery drains scratch processes before it restores the original Loader.
+It resets Steam's browser clients before restoring normal RPC access, so queued
+test writes cannot replay against normal settings. Files, names and service
+selection are checked against the undo ledger; a later independent change is a
+conflict, not permission to overwrite it. Keep raw results and recovery evidence
+outside the repository.
 
 ## Optional setup
 

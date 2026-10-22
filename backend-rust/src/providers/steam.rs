@@ -7,17 +7,15 @@ use log::Level;
 use regex::Regex;
 use reqwest::Url;
 use serde_json::{Map, Value, json};
-use std::{
-    collections::HashSet,
-    sync::LazyLock,
-    time::Duration,
-};
+use std::{collections::HashSet, sync::LazyLock, time::Duration};
 
 pub const STEAM_STORE_SEARCH_URL: &str = "https://store.steampowered.com/api/storesearch/";
 pub const STEAM_APP_DETAILS_URL: &str = "https://store.steampowered.com/api/appdetails";
 pub const STEAM_NEWS_URL: &str = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/";
-pub const STEAM_EVENTS_URL: &str = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/";
-pub const STEAM_DECK_COMPAT_URL: &str = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport";
+pub const STEAM_EVENTS_URL: &str =
+    "https://store.steampowered.com/events/ajaxgetpartnereventspageable/";
+pub const STEAM_DECK_COMPAT_URL: &str =
+    "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport";
 pub const STEAM_STORE_APP_URL: &str = "https://store.steampowered.com/app/{appid}/";
 
 const STEAM_NEWS_FEEDS: &str = "steam_community_announcements,steam_community_announcements_koreana,steam_community_announcements_japanese,steam_community_announcements_schinese,steam_community_announcements_tchinese,steam_community_announcements_french,steam_community_announcements_german,steam_community_announcements_spanish,steam_community_announcements_italian,steam_community_announcements_polish,steam_community_announcements_portuguese,steam_community_announcements_russian";
@@ -27,12 +25,10 @@ static RX_CLAN_IMAGE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\A\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)")
         .expect("fixed Steam clan-image regex")
 });
-static RX_IMAGE_TAG_END: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\[/img\].*$").expect("fixed Steam image-tag regex")
-});
-static RX_IMAGE_PUNCTUATION_END: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[\]\)>.,;]+$").expect("fixed Steam image punctuation regex")
-});
+static RX_IMAGE_TAG_END: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\[/img\].*$").expect("fixed Steam image-tag regex"));
+static RX_IMAGE_PUNCTUATION_END: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"[\]\)>.,;]+$").expect("fixed Steam image punctuation regex"));
 static RX_IMAGE_EXTENSION: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\.(?:jpg|jpeg|png|webp|gif|avif)(?:[?#].*)?$")
         .expect("fixed Steam image extension regex")
@@ -80,15 +76,12 @@ static RX_BBCODE_TAG: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[/?(?:p|br|hr|quote|spoiler|table|tr|td|th|img|url|h1|h2|h3|h4|b|i|u|s|strike|list|\*|code|noparse|previewyoutube|video|youtube|size|color|font|center|left|right)[^\]]*\]")
         .expect("fixed Steam BBCode tag regex")
 });
-static RX_HTML_BREAK: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)<br\s*/?>").expect("fixed Steam line-break regex")
-});
-static RX_WHITESPACE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\s+").expect("fixed Steam whitespace regex")
-});
+static RX_HTML_BREAK: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)<br\s*/?>").expect("fixed Steam line-break regex"));
+static RX_WHITESPACE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\s+").expect("fixed Steam whitespace regex"));
 static RX_STEAM_APP_URL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)store\.steampowered\.com/app/(\d+)")
-        .expect("fixed Steam app URL regex")
+    Regex::new(r"(?i)store\.steampowered\.com/app/(\d+)").expect("fixed Steam app URL regex")
 });
 static RX_DIGITS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\d+").expect("fixed Steam number regex"));
@@ -166,7 +159,10 @@ fn unescape_steam_text(value: &str) -> String {
 
 fn strip_image_tail(value: &str) -> String {
     let value = RX_IMAGE_TAG_END.replace(value, "");
-    RX_IMAGE_PUNCTUATION_END.replace(&value, "").trim().to_owned()
+    RX_IMAGE_PUNCTUATION_END
+        .replace(&value, "")
+        .trim()
+        .to_owned()
 }
 
 pub fn steam_event_json(value: &Value) -> Value {
@@ -227,7 +223,10 @@ pub fn steam_event_clan_id(event: &Value) -> String {
 }
 
 pub fn steam_partner_asset_url(raw: &str, clan_id: &str) -> String {
-    let mut value = unescape_steam_text(raw).trim().trim_matches(['"', '\'']).to_owned();
+    let mut value = unescape_steam_text(raw)
+        .trim()
+        .trim_matches(['"', '\''])
+        .to_owned();
     if value.is_empty() {
         return String::new();
     }
@@ -240,8 +239,12 @@ pub fn steam_partner_asset_url(raw: &str, clan_id: &str) -> String {
         );
     }
     if value.starts_with("//")
-        || value.get(..7).is_some_and(|prefix| prefix.eq_ignore_ascii_case("http://"))
-        || value.get(..8).is_some_and(|prefix| prefix.eq_ignore_ascii_case("https://"))
+        || value
+            .get(..7)
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case("http://"))
+        || value
+            .get(..8)
+            .is_some_and(|prefix| prefix.eq_ignore_ascii_case("https://"))
     {
         return matching::https_url(&value);
     }
@@ -327,9 +330,11 @@ fn add_news_image_candidate(
             score -= 120;
         }
     }
-    if ["1920", "1600", "1280", "1200", "1080", "800", "720", "roadmap", "calendar", "wide"]
-        .iter()
-        .any(|token| haystack.contains(token))
+    if [
+        "1920", "1600", "1280", "1200", "1080", "800", "720", "roadmap", "calendar", "wide",
+    ]
+    .iter()
+    .any(|token| haystack.contains(token))
     {
         score += 20;
     }
@@ -366,13 +371,7 @@ pub fn steam_news_image_candidates(contents: &str, _steam_appid: i64) -> Vec<Str
             let start = char_byte_index(&text, start_character.saturating_sub(260));
             let end = char_byte_index(&text, (end_character + 260).min(text.chars().count()));
             let context = &text[start..end];
-            add_news_image_candidate(
-                &mut candidates,
-                raw,
-                start_character,
-                context,
-                50,
-            );
+            add_news_image_candidate(&mut candidates, raw, start_character, context, 50);
         }
     }
     candidates.sort_by(|left, right| right.0.cmp(&left.0).then_with(|| left.1.cmp(&right.1)));
@@ -449,13 +448,13 @@ pub fn steam_partner_event_images(event: &Value, steam_appid: i64) -> Vec<String
 
 pub fn clean_steam_news_text(value: &str) -> String {
     let mut text = unescape_steam_text(value);
-    text = RX_PREVIEW_YOUTUBE_BLOCK.replace_all(&text, " ").into_owned();
+    text = RX_PREVIEW_YOUTUBE_BLOCK
+        .replace_all(&text, " ")
+        .into_owned();
     text = RX_PREVIEW_YOUTUBE_TAG.replace_all(&text, " ").into_owned();
     text = RX_STEAM_IMAGE_TEXT.replace_all(&text, " ").into_owned();
     text = RX_BBCODE_IMAGE.replace_all(&text, " ").into_owned();
-    text = RX_BBCODE_URL
-        .replace_all(&text, "$2")
-        .into_owned();
+    text = RX_BBCODE_URL.replace_all(&text, "$2").into_owned();
     text = RX_BBCODE_LIST
         .replace_all(&text, |captures: &regex::Captures<'_>| {
             RX_BBCODE_LIST_MARKER
@@ -474,7 +473,11 @@ pub fn steam_news_raw_body(value: &str) -> String {
     if text.chars().count() < 4000 {
         text = RX_WHITESPACE.replace_all(&text, " ").into_owned();
     }
-    text.chars().take(16000).collect::<String>().trim().to_owned()
+    text.chars()
+        .take(16000)
+        .collect::<String>()
+        .trim()
+        .to_owned()
 }
 
 pub fn steam_news_summary(contents: &str) -> String {
@@ -532,7 +535,10 @@ fn python_int(value: &Value) -> Option<i64> {
             }
             let number = value.as_f64()?;
             let truncated = number.trunc();
-            if number.is_finite() && truncated >= i64::MIN as f64 && truncated < 9_223_372_036_854_775_808.0 {
+            if number.is_finite()
+                && truncated >= i64::MIN as f64
+                && truncated < 9_223_372_036_854_775_808.0
+            {
                 Some(truncated as i64)
             } else {
                 None
@@ -554,7 +560,10 @@ fn log_provider_error(message: &str, appid: Option<i64>, error: Option<&str>, le
     logging::event("steam", message, Value::Object(fields), level);
 }
 
-pub async fn steam_deck_compat_lookup_for_appid(http: &Http, appid: i64) -> DeckCompatibilityLookup {
+pub async fn steam_deck_compat_lookup_for_appid(
+    http: &Http,
+    appid: i64,
+) -> DeckCompatibilityLookup {
     if appid <= 0 {
         return DeckCompatibilityLookup {
             status: DeckCompatibilityStatus::Failed,
@@ -568,7 +577,12 @@ pub async fn steam_deck_compat_lookup_for_appid(http: &Http, appid: i64) -> Deck
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
         Ok(payload) => payload,
         Err(error) => {
-            log_provider_error("deck compat fetch failed", Some(appid), Some(&error), Level::Warn);
+            log_provider_error(
+                "deck compat fetch failed",
+                Some(appid),
+                Some(&error),
+                Level::Warn,
+            );
             return DeckCompatibilityLookup {
                 status: DeckCompatibilityStatus::Failed,
                 category: None,
@@ -576,14 +590,24 @@ pub async fn steam_deck_compat_lookup_for_appid(http: &Http, appid: i64) -> Deck
         }
     };
     let Some(results) = payload.get("results").and_then(Value::as_object) else {
-        log_provider_error("deck compat fetch failed", Some(appid), Some("missing deck compatibility results"), Level::Warn);
+        log_provider_error(
+            "deck compat fetch failed",
+            Some(appid),
+            Some("missing deck compatibility results"),
+            Level::Warn,
+        );
         return DeckCompatibilityLookup {
             status: DeckCompatibilityStatus::Failed,
             category: None,
         };
     };
     let Some(raw_category) = results.get("resolved_category") else {
-        log_provider_error("deck compat fetch failed", Some(appid), Some("missing deck compatibility category"), Level::Warn);
+        log_provider_error(
+            "deck compat fetch failed",
+            Some(appid),
+            Some("missing deck compatibility category"),
+            Level::Warn,
+        );
         return DeckCompatibilityLookup {
             status: DeckCompatibilityStatus::Failed,
             category: None,
@@ -596,7 +620,12 @@ pub async fn steam_deck_compat_lookup_for_appid(http: &Http, appid: i64) -> Deck
         };
     }
     let Some(category) = python_int(raw_category) else {
-        log_provider_error("deck compat fetch failed", Some(appid), Some("invalid deck compatibility category"), Level::Warn);
+        log_provider_error(
+            "deck compat fetch failed",
+            Some(appid),
+            Some("invalid deck compatibility category"),
+            Level::Warn,
+        );
         return DeckCompatibilityLookup {
             status: DeckCompatibilityStatus::Failed,
             category: None,
@@ -626,7 +655,10 @@ fn steam_match_appid(value: &Value) -> Option<i64> {
         Value::Number(value) => value.as_i64().filter(|value| *value > 0),
         Value::String(value) => {
             let value = value.trim();
-            if value.is_ascii() && !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()) {
+            if value.is_ascii()
+                && !value.is_empty()
+                && value.bytes().all(|byte| byte.is_ascii_digit())
+            {
                 value.parse::<i64>().ok().filter(|value| *value > 0)
             } else {
                 None
@@ -670,7 +702,12 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
         }
     };
     let Some(rows) = payload.get("items").and_then(Value::as_array) else {
-        log_provider_error("match search failed", None, Some("Invalid Steam search response"), Level::Warn);
+        log_provider_error(
+            "match search failed",
+            None,
+            Some("Invalid Steam search response"),
+            Level::Warn,
+        );
         return json!({"items": [], "error": "Steam search is unavailable. Try again."});
     };
     let mut items = Vec::new();
@@ -765,7 +802,12 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
     match result {
         Ok(preview) => json!({"preview": preview, "error": null}),
         Err(error) => {
-            log_provider_error("match preview failed", Some(appid), Some(&error), Level::Warn);
+            log_provider_error(
+                "match preview failed",
+                Some(appid),
+                Some(&error),
+                Level::Warn,
+            );
             json!({"preview": null, "error": "Steam details are unavailable. You can still use this match."})
         }
     }
@@ -782,11 +824,19 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
         Ok(payload) => payload,
         Err(error) => {
-            log_provider_error("appdetails fetch failed", Some(appid), Some(&error), Level::Warn);
+            log_provider_error(
+                "appdetails fetch failed",
+                Some(appid),
+                Some(&error),
+                Level::Warn,
+            );
             return None;
         }
     };
-    let Some(app_payload) = payload.get(appid.to_string()).filter(|value| value.is_object()) else {
+    let Some(app_payload) = payload
+        .get(appid.to_string())
+        .filter(|value| value.is_object())
+    else {
         return None;
     };
     if !app_payload.get("success").is_some_and(py_truthy) {
@@ -806,8 +856,12 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
         }
     }
 
-    let descriptions = ["short_description", "about_the_game", "detailed_description"]
-        .map(|key| matching::description_html_to_text(&python_or_string(&data[key])));
+    let descriptions = [
+        "short_description",
+        "about_the_game",
+        "detailed_description",
+    ]
+    .map(|key| matching::description_html_to_text(&python_or_string(&data[key])));
     let short_description = descriptions[0].clone();
     let description = descriptions
         .iter()
@@ -818,7 +872,11 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
         details.insert("description".into(), json!(description));
         details.insert(
             "short_description".into(),
-            json!(if short_description.is_empty() { &description } else { &short_description }),
+            json!(if short_description.is_empty() {
+                &description
+            } else {
+                &short_description
+            }),
         );
     }
 
@@ -925,7 +983,12 @@ pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64)
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
         Ok(payload) => payload,
         Err(error) => {
-            log_provider_error("partner events fetch failed", Some(appid), Some(&error), Level::Error);
+            log_provider_error(
+                "partner events fetch failed",
+                Some(appid),
+                Some(&error),
+                Level::Error,
+            );
             return Vec::new();
         }
     };
@@ -978,11 +1041,17 @@ pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64)
         let raw_date = announcement
             .and_then(|value| value.get("posttime"))
             .filter(|value| py_truthy(value))
-            .or_else(|| event.get("rtime32_start_time").filter(|value| py_truthy(value)))
+            .or_else(|| {
+                event
+                    .get("rtime32_start_time")
+                    .filter(|value| py_truthy(value))
+            })
             .or_else(|| event.get("rtime_created"));
         let date = raw_date.map_or(0, |value| matching::as_number(value, 0.0) as i64);
         let event_url = if !announcement_gid.is_empty() {
-            format!("https://steamcommunity.com/games/{appid}/announcements/detail/{announcement_gid}")
+            format!(
+                "https://steamcommunity.com/games/{appid}/announcements/detail/{announcement_gid}"
+            )
         } else {
             format!("https://store.steampowered.com/news/app/{appid}/view/{event_gid}")
         };
@@ -1019,7 +1088,12 @@ pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64)
     match crate::metadata::sanitize_news(&Value::Array(rows)) {
         Ok(rows) => rows,
         Err(error) => {
-            log_provider_error("partner events sanitization failed", Some(appid), Some(&error), Level::Warn);
+            log_provider_error(
+                "partner events sanitization failed",
+                Some(appid),
+                Some(&error),
+                Level::Warn,
+            );
             Vec::new()
         }
     }
@@ -1126,7 +1200,10 @@ pub async fn resolve_steam_appid_for_title(
                     .and_then(|value| matching::safe_int(&Value::String(value.as_str().into())))
                     .filter(|appid| *appid > 0)
                 {
-                    return (Some(appid), STEAM_STORE_APP_URL.replace("{appid}", &appid.to_string()));
+                    return (
+                        Some(appid),
+                        STEAM_STORE_APP_URL.replace("{appid}", &appid.to_string()),
+                    );
                 }
             }
         }
@@ -1181,7 +1258,11 @@ pub async fn resolve_steam_appid_for_title(
         if !item.is_object() {
             continue;
         }
-        let raw_id = if py_truthy(&item["id"]) { &item["id"] } else { &item["appid"] };
+        let raw_id = if py_truthy(&item["id"]) {
+            &item["id"]
+        } else {
+            &item["appid"]
+        };
         let Some(appid) = matching::safe_int(raw_id).filter(|appid| *appid > 0) else {
             continue;
         };
@@ -1211,7 +1292,11 @@ pub async fn resolve_steam_appid_for_title(
             .find_iter(&normalised_name)
             .map(|value| value.as_str())
             .collect::<HashSet<_>>();
-        if candidate_numbers.difference(&query_numbers).next().is_some() {
+        if candidate_numbers
+            .difference(&query_numbers)
+            .next()
+            .is_some()
+        {
             score -= 120;
         }
         score -= index as i64 * 5;
@@ -1223,7 +1308,10 @@ pub async fn resolve_steam_appid_for_title(
         return (None, String::new());
     };
     let _ = score;
-    (Some(appid), STEAM_STORE_APP_URL.replace("{appid}", &appid.to_string()))
+    (
+        Some(appid),
+        STEAM_STORE_APP_URL.replace("{appid}", &appid.to_string()),
+    )
 }
 
 #[cfg(test)]
@@ -1231,8 +1319,10 @@ mod tests {
     use super::*;
     use crate::http::{Fixture, Http};
 
-    const SEARCH_URL: &str = "https://store.steampowered.com/api/storesearch/?term=Portal&cc=US&l=english";
-    const APP_DETAILS_URL: &str = "https://store.steampowered.com/api/appdetails?appids=15100&l=english";
+    const SEARCH_URL: &str =
+        "https://store.steampowered.com/api/storesearch/?term=Portal&cc=US&l=english";
+    const APP_DETAILS_URL: &str =
+        "https://store.steampowered.com/api/appdetails?appids=15100&l=english";
     const EVENTS_URL: &str = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/?appid=400&offset=0&count=30&l=english&origin=https%3A%2F%2Fstore.steampowered.com";
     const NEWS_URL: &str = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=400&count=6&maxlength=600&format=json&feeds=steam_community_announcements%2Csteam_community_announcements_koreana%2Csteam_community_announcements_japanese%2Csteam_community_announcements_schinese%2Csteam_community_announcements_tchinese%2Csteam_community_announcements_french%2Csteam_community_announcements_german%2Csteam_community_announcements_spanish%2Csteam_community_announcements_italian%2Csteam_community_announcements_polish%2Csteam_community_announcements_portuguese%2Csteam_community_announcements_russian";
 
@@ -1284,25 +1374,40 @@ mod tests {
         let http = Http::fixtures(vec![json_fixture(APP_DETAILS_URL, payload)]);
         let details = steam_appdetails_for_appid(&http, 15100).await.unwrap();
         assert_eq!(details["title"], "Assassin's Creed: Director's Cut Edition");
-        assert_eq!(details["steam_store_name"], "Assassin's Creed: Director's Cut Edition");
+        assert_eq!(
+            details["steam_store_name"],
+            "Assassin's Creed: Director's Cut Edition"
+        );
         assert_eq!(details["description"], "Short store description.");
         assert_eq!(details["short_description"], "Short store description.");
-        assert_eq!(details["developers"], json!([{"name":"Ubisoft Montreal","url":""}]));
+        assert_eq!(
+            details["developers"],
+            json!([{"name":"Ubisoft Montreal","url":""}])
+        );
         assert_eq!(details["publishers"], json!([{"name":"Ubisoft","url":""}]));
         assert_eq!(details["genres"], json!(["Action"]));
         assert_eq!(details["release_date"], "2008-04-09");
         assert_eq!(details["rating"], 79);
-        assert_eq!(details["store_categories"], json!([2,22,29]));
-        assert_eq!(details["steam_dlc_appids"], json!([15101,15102]));
+        assert_eq!(details["store_categories"], json!([2, 22, 29]));
+        assert_eq!(details["steam_dlc_appids"], json!([15101, 15102]));
         assert_eq!(details["has_points_shop"], true);
-        assert_eq!(details["screenshots"], json!([
-            {"id":1,"url":"https://cdn.example/full.jpg","thumbnail":"https://cdn.example/thumb.jpg"}
-        ]));
+        assert_eq!(
+            details["screenshots"],
+            json!([
+                {"id":1,"url":"https://cdn.example/full.jpg","thumbnail":"https://cdn.example/thumb.jpg"}
+            ])
+        );
         http.assert_drained();
 
         let unusable = Http::fixtures(vec![
-            json_fixture(APP_DETAILS_URL, json!({"15100":{"success":false,"data":{"name":"Nope"}}})),
-            json_fixture(APP_DETAILS_URL, json!({"15100":{"success":true,"data":null}})),
+            json_fixture(
+                APP_DETAILS_URL,
+                json!({"15100":{"success":false,"data":{"name":"Nope"}}}),
+            ),
+            json_fixture(
+                APP_DETAILS_URL,
+                json!({"15100":{"success":true,"data":null}}),
+            ),
             Fixture::failure(APP_DETAILS_URL),
         ]);
         assert!(steam_appdetails_for_appid(&unusable, 15100).await.is_none());
@@ -1343,14 +1448,23 @@ mod tests {
             .collect::<Vec<_>>();
         let limits = Http::fixtures(vec![
             json_fixture(SEARCH_URL, json!({"items":ten_rows})),
-            json_fixture(SEARCH_URL, json!({"items":[{"type":"app","id":1,"name":"Portal"}]})),
+            json_fixture(
+                SEARCH_URL,
+                json!({"items":[{"type":"app","id":1,"name":"Portal"}]}),
+            ),
         ]);
         assert_eq!(
-            search_steam_matches(&limits, &json!("Portal"), &json!(0)).await["items"].as_array().unwrap().len(),
+            search_steam_matches(&limits, &json!("Portal"), &json!(0)).await["items"]
+                .as_array()
+                .unwrap()
+                .len(),
             8
         );
         assert_eq!(
-            search_steam_matches(&limits, &json!("Portal"), &json!(-1)).await["items"].as_array().unwrap().len(),
+            search_steam_matches(&limits, &json!("Portal"), &json!(-1)).await["items"]
+                .as_array()
+                .unwrap()
+                .len(),
             1
         );
         limits.assert_drained();
@@ -1376,7 +1490,8 @@ mod tests {
 
     #[tokio::test]
     async fn steam_manual_search_filters_rows_and_preview_uses_partial_release_date() {
-        let capsule = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/400/header.jpg";
+        let capsule =
+            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/400/header.jpg";
         let search = Http::fixtures(vec![json_fixture(
             SEARCH_URL,
             json!({"items":[
@@ -1434,7 +1549,10 @@ mod tests {
         )]);
         assert_eq!(
             resolve_steam_appid_for_title(&http, "Warhammer 40,000: Space Marine", None).await,
-            (Some(55150), "https://store.steampowered.com/app/55150/".to_owned())
+            (
+                Some(55150),
+                "https://store.steampowered.com/app/55150/".to_owned()
+            )
         );
         http.assert_drained();
 
@@ -1455,7 +1573,10 @@ mod tests {
                 Some(&json!({"id":"http://store.steampowered.com/app/123/news"})),
             )
             .await,
-            (Some(123), "https://store.steampowered.com/app/123/".to_owned())
+            (
+                Some(123),
+                "https://store.steampowered.com/app/123/".to_owned()
+            )
         );
         pinned.assert_drained();
 
@@ -1472,14 +1593,18 @@ mod tests {
 
     #[tokio::test]
     async fn steam_automatic_matching_retries_and_ignores_candidates_after_twelve() {
-        let url="https://store.steampowered.com/api/storesearch/?term=Wobbly+Life&l=english&cc=US";
+        let url =
+            "https://store.steampowered.com/api/storesearch/?term=Wobbly+Life&l=english&cc=US";
         let retry = Http::fixtures(vec![
             Fixture::failure(url),
             json_fixture(url, json!({"items":[{"id":1211020,"name":"Wobbly Life"}]})),
         ]);
         assert_eq!(
             resolve_steam_appid_for_title(&retry, "Wobbly Life", None).await,
-            (Some(1211020), "https://store.steampowered.com/app/1211020/".to_owned())
+            (
+                Some(1211020),
+                "https://store.steampowered.com/app/1211020/".to_owned()
+            )
         );
         retry.assert_drained();
         let exhausted = Http::fixtures(vec![
@@ -1510,34 +1635,55 @@ mod tests {
         let url = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=123&l=english";
         let http = Http::fixtures(vec![
             json_fixture(url, json!({"success":1,"results":{"resolved_category":3}})),
-            json_fixture(url, json!({"success":1,"results":{"resolved_category":null}})),
+            json_fixture(
+                url,
+                json!({"success":1,"results":{"resolved_category":null}}),
+            ),
             json_fixture(url, json!({"success":1,"results":{"resolved_category":7}})),
             json_fixture(url, json!({"success":1,"results":{}})),
             Fixture::failure(url),
         ]);
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Available, category: Some(3) }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Available,
+                category: Some(3)
+            }
         );
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Unavailable, category: None }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Unavailable,
+                category: None
+            }
         );
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Unavailable, category: None }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Unavailable,
+                category: None
+            }
         );
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Failed, category: None }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Failed,
+                category: None
+            }
         );
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Failed, category: None }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Failed,
+                category: None
+            }
         );
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 0).await,
-            DeckCompatibilityLookup { status: DeckCompatibilityStatus::Failed, category: None }
+            DeckCompatibilityLookup {
+                status: DeckCompatibilityStatus::Failed,
+                category: None
+            }
         );
         http.assert_drained();
     }
@@ -1568,10 +1714,18 @@ mod tests {
         let rows = steam_partner_events_for_appid(&events, 400, 10).await;
         assert_eq!(rows.len(), 10);
         assert_eq!(rows[0]["title"], "Localized title");
-        assert_eq!(rows[0]["image"], "https://clan.cloudflare.steamstatic.com/images/12345/roadmap.jpg");
+        assert_eq!(
+            rows[0]["image"],
+            "https://clan.cloudflare.steamstatic.com/images/12345/roadmap.jpg"
+        );
         assert_eq!(rows[1]["event_type"], 12);
         assert_eq!(rows.last().unwrap()["event_type"], 35);
-        assert!(rows.iter().all(|row| row["url"].as_str().unwrap().contains("steamcommunity.com/games/400/announcements/detail/")));
+        assert!(rows.iter().all(|row| {
+            row["url"]
+                .as_str()
+                .unwrap()
+                .contains("steamcommunity.com/games/400/announcements/detail/")
+        }));
         events.assert_drained();
     }
 
@@ -1581,10 +1735,13 @@ mod tests {
         let page = "<html><head><meta property=\"og:image\" content=\"https://cdn.example.com/page-image.jpg\"></head></html>";
         let http = Http::fixtures(vec![
             json_fixture(EVENTS_URL, json!({"events":[]})),
-            json_fixture(NEWS_URL, json!({"appnews":{"appid":400,"newsitems":[
-                {"gid":"1","title":"<b>Update one</b>","url":"https://store.steampowered.com/news/app/400/view/1","contents":"[img]https://cdn.example.com/body-image.jpg[/img]Patch details","author":"Studio","feedlabel":"Announcements","date":1700000000},
-                {"gid":"2","title":"Update two","url":page_url,"contents":"Article contents","author":"Studio","feedname":"Steam feed","date":1700000100}
-            ]}})),
+            json_fixture(
+                NEWS_URL,
+                json!({"appnews":{"appid":400,"newsitems":[
+                    {"gid":"1","title":"<b>Update one</b>","url":"https://store.steampowered.com/news/app/400/view/1","contents":"[img]https://cdn.example.com/body-image.jpg[/img]Patch details","author":"Studio","feedlabel":"Announcements","date":1700000000},
+                    {"gid":"2","title":"Update two","url":page_url,"contents":"Article contents","author":"Studio","feedname":"Steam feed","date":1700000100}
+                ]}}),
+            ),
             Fixture::text(page_url, page),
         ]);
         let rows = steam_news_for_appid(&http, 400, "Portal", 6).await.unwrap();
@@ -1602,7 +1759,9 @@ mod tests {
     #[tokio::test]
     async fn steam_news_prefers_partner_activity_and_swallows_news_failures() {
         let partner = Http::fixtures(vec![json_fixture(EVENTS_URL, event_fixture())]);
-        let rows = steam_news_for_appid(&partner, 400, "Example", 6).await.unwrap();
+        let rows = steam_news_for_appid(&partner, 400, "Example", 6)
+            .await
+            .unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["event_type"], 28);
         assert_eq!(rows[0]["announcement_gid"], "announcement-1");
@@ -1612,7 +1771,12 @@ mod tests {
             json_fixture(EVENTS_URL, json!({"events":[]})),
             Fixture::failure(NEWS_URL),
         ]);
-        assert_eq!(steam_news_for_appid(&failure, 400, "Example", 6).await.unwrap(), Vec::<Value>::new());
+        assert_eq!(
+            steam_news_for_appid(&failure, 400, "Example", 6)
+                .await
+                .unwrap(),
+            Vec::<Value>::new()
+        );
         failure.assert_drained();
     }
 
@@ -1620,16 +1784,29 @@ mod tests {
     fn steam_image_text_helpers_decode_entities_and_choose_article_art() {
         let body = "intro [img]https://cdn.example.com/divider.jpg[/img] Roadmap [img]https://cdn.example.com/roadmap.jpg[/img]";
         assert_eq!(
-            steam_news_image_candidates(body, 1).first().map(String::as_str),
+            steam_news_image_candidates(body, 1)
+                .first()
+                .map(String::as_str),
             Some("https://cdn.example.com/divider.jpg")
         );
-        let separated=format!("intro [img]https://cdn.example.com/divider.jpg[/img] {} Roadmap [img]https://cdn.example.com/roadmap.jpg[/img]","middle ".repeat(100));
-        assert_eq!(steam_news_image_candidates(&separated,1).first().map(String::as_str),Some("https://cdn.example.com/roadmap.jpg"));
+        let separated = format!(
+            "intro [img]https://cdn.example.com/divider.jpg[/img] {} Roadmap [img]https://cdn.example.com/roadmap.jpg[/img]",
+            "middle ".repeat(100)
+        );
+        assert_eq!(
+            steam_news_image_candidates(&separated, 1)
+                .first()
+                .map(String::as_str),
+            Some("https://cdn.example.com/roadmap.jpg")
+        );
         assert_eq!(
             steam_partner_asset_url("{STEAM_CLAN_IMAGE}/12345/update.jpg[/img]", ""),
             "https://clan.cloudflare.steamstatic.com/images/12345/update.jpg"
         );
-        assert_eq!(clean_steam_news_text("<p>New &amp; improved</p>"), "New & improved");
+        assert_eq!(
+            clean_steam_news_text("<p>New &amp; improved</p>"),
+            "New & improved"
+        );
         assert!(steam_news_raw_body("[img]https://cdn.example.com/x.jpg[/img]").contains("[img]"));
         let localized = json!({
             "clanid":"12345",

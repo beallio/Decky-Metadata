@@ -1,4 +1,7 @@
-use crate::{http::{Http, Redirects}, updater::models::JsonResponse};
+use crate::{
+    http::{Http, Redirects},
+    updater::models::JsonResponse,
+};
 use reqwest::Method;
 use serde_json::json;
 use std::{collections::HashMap, time::Duration};
@@ -65,7 +68,11 @@ impl GitHubReleaseClient {
                     })
                     .collect();
                 match response.json() {
-                    Ok(body) => JsonResponse { status, headers, body },
+                    Ok(body) => JsonResponse {
+                        status,
+                        headers,
+                        body,
+                    },
                     Err(error) if (200..300).contains(&status) => JsonResponse {
                         status: 500,
                         headers: HashMap::new(),

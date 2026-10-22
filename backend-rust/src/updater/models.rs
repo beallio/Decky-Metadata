@@ -2,7 +2,6 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde_json::{Map, Value};
 use std::cmp::Ordering;
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct JsonResponse {
     pub status: u16,
@@ -80,13 +79,19 @@ fn compare_digits(left: &str, right: &str) -> Ordering {
 }
 
 fn normalize_digits(value: &str) -> Option<String> {
-    if value.is_empty() { return None; }
+    if value.is_empty() {
+        return None;
+    }
     let mut normalized = String::with_capacity(value.len());
     for character in value.chars() {
         let digit = crate::matching::decimal_digit(character)?;
-        if digit != 0 || !normalized.is_empty() { normalized.push(char::from(b'0' + digit)); }
+        if digit != 0 || !normalized.is_empty() {
+            normalized.push(char::from(b'0' + digit));
+        }
     }
-    if normalized.is_empty() { normalized.push('0'); }
+    if normalized.is_empty() {
+        normalized.push('0');
+    }
     Some(normalized)
 }
 
@@ -218,19 +223,38 @@ mod tests {
         let huge = parse_plugin_version("000999999999999999999999999999.2.3-dev.g1+local").unwrap();
         let larger = parse_plugin_version("1000000000000000000000000000000.0.0").unwrap();
         assert!(huge < larger);
-        assert_eq!(parse_plugin_version("0001.02.003+one").unwrap(), parse_plugin_version("1.2.3+two").unwrap());
-        assert!(parse_plugin_version("1.2.3-dev.a").unwrap() < parse_plugin_version("1.2.3").unwrap());
-        for invalid in ["", "1.2", "v1.2.3", "1.2.3-rc.1", "1.2.3+", "1.2.3-dev.", "1.2.3+build+other"] {
+        assert_eq!(
+            parse_plugin_version("0001.02.003+one").unwrap(),
+            parse_plugin_version("1.2.3+two").unwrap()
+        );
+        assert!(
+            parse_plugin_version("1.2.3-dev.a").unwrap() < parse_plugin_version("1.2.3").unwrap()
+        );
+        for invalid in [
+            "",
+            "1.2",
+            "v1.2.3",
+            "1.2.3-rc.1",
+            "1.2.3+",
+            "1.2.3-dev.",
+            "1.2.3+build+other",
+        ] {
             assert!(parse_plugin_version(invalid).is_none(), "{invalid}");
         }
     }
 
     #[test]
     fn version_decimal_components_follow_python_unicode_digits() {
-        assert_eq!(parse_plugin_version("١.٠٢.３").unwrap(),parse_plugin_version("1.2.3").unwrap());
-        assert_eq!(parse_plugin_version("1.2.3\n").unwrap(),parse_plugin_version("1.2.3").unwrap());
-        for invalid in ["¹.2.3","1_0.2.3","١.٢.٣-dev.g١","1.2.3\n\n"] {
-            assert!(parse_plugin_version(invalid).is_none(),"{invalid}");
+        assert_eq!(
+            parse_plugin_version("١.٠٢.３").unwrap(),
+            parse_plugin_version("1.2.3").unwrap()
+        );
+        assert_eq!(
+            parse_plugin_version("1.2.3\n").unwrap(),
+            parse_plugin_version("1.2.3").unwrap()
+        );
+        for invalid in ["¹.2.3", "1_0.2.3", "١.٢.٣-dev.g١", "1.2.3\n\n"] {
+            assert!(parse_plugin_version(invalid).is_none(), "{invalid}");
         }
     }
 
@@ -248,7 +272,10 @@ mod tests {
             "sha256": "a".repeat(64),
             "generatedAt": "raw"
         });
-        assert_eq!(parse_release_manifest(&manifest).unwrap().plugin_name, "Other");
+        assert_eq!(
+            parse_release_manifest(&manifest).unwrap().plugin_name,
+            "Other"
+        );
         for change in [
             json!({"schemaVersion": 2}),
             json!({"channel": "nightly"}),

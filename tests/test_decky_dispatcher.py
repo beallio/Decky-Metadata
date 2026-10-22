@@ -46,17 +46,11 @@ def test_merge_base_errors_are_reported_without_device_actions():
     assert "cannot resolve merge base" in result.stderr
 
 
-def test_unknown_frontend_changes_choose_broad_device_classification():
-    body = (ROOT / "scripts/decky").read_text()
-    assert 'src/*)' in body
-    assert 'class=device; add_checks quick-links re-render' in body
-
-
 def _fake_change_repo(tmp_path: Path, changed_paths: list[str]) -> tuple[dict[str, str], Path]:
     fake_root = tmp_path / "repo"
     fake_bin = tmp_path / "bin"
     log = tmp_path / "actions.log"
-    (fake_root / "scripts/orchestration").mkdir(parents=True)
+    (fake_root / "scripts/orchestration-hooks").mkdir(parents=True)
     (fake_root / "scripts/deck/verify").mkdir(parents=True)
     fake_bin.mkdir()
     git = fake_bin / "git"
@@ -66,12 +60,13 @@ def _fake_change_repo(tmp_path: Path, changed_paths: list[str]) -> tuple[dict[st
         f"  *--show-toplevel*) echo '{fake_root}' ;;\n"
         "  *merge-base*) echo deadbeef ;;\n"
         "  *diff*--name-only*) printf '%s\\n' \"${CHANGED_PATHS}\" ;;\n"
+        "  *ls-files*) printf '%s' \"${UNTRACKED_PATHS:-}\" ;;\n"
         "  *) exit 1 ;;\n"
         "esac\n"
     )
     git.chmod(0o755)
     for relative, label in (
-        ("scripts/orchestration/run-quality-gates", "quality"),
+        ("scripts/orchestration-hooks/quality-gates", "quality"),
         ("scripts/deck/deploy.sh", "deploy"),
         ("scripts/deck/verify/run_all.sh", "run-all $*"),
         ("scripts/deck/capture.sh", "capture"),
@@ -127,4 +122,21 @@ def test_launch_consent_requires_an_explicit_approved_appid(tmp_path):
     )
     assert result.returncode == 2
     assert "requires an explicit MATCHED_APPID" in result.stderr
+    assert log.read_text().splitlines() == ["quality"]
+
+
+def test_untracked_native_change_requires_a_full_gui_install_before_device_smokes(tmp_path: Path):
+    env, log = _fake_change_repo(tmp_path, [])
+    env["UNTRACKED_PATHS"] = "backend-rust/src/plugin.rs"
+    fake_root = tmp_path / "repo"
+    package = fake_root / "scripts/deck/package_push.sh"
+    package.write_text("#!/usr/bin/env bash\nprintf '%s\\n' '{\"INSTALLED_STATE\":\"REINSTALL_REQUIRED\"}'\n")
+    package.chmod(0o755)
+    result = subprocess.run(
+        [str(ROOT / "scripts/decky"), "verify-change", "dev", "--device"],
+        cwd=ROOT, text=True, capture_output=True, env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "STATUS DEFERRED" in result.stdout and "STATUS PASS" not in result.stdout
+    assert "install the delivered ZIP" in result.stdout
     assert log.read_text().splitlines() == ["quality"]

@@ -11,7 +11,10 @@
 #
 # NOTE: the launch smoke really starts MATCHED_APPID for a few seconds.
 set -euo pipefail
+umask 077
+
 here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+tmp_root="$(python3 "$here/../temp_paths.py" root)"
 host="${DECKY_DECK_HOST:-steamdeck}"
 launch_appid_explicit=0
 [[ -n "${MATCHED_APPID:-}" ]] && launch_appid_explicit=1
@@ -28,11 +31,32 @@ while (($#)); do
 done
 
 run_id="${DECKY_VERIFY_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-run_dir="/tmp/Decky-Metadata/verification/$run_id"
-mkdir -p "$run_dir"
+[[ "$run_id" =~ ^[A-Za-z0-9._-]+$ && "$run_id" != . && "$run_id" != .. ]] || {
+  echo "run_all: invalid DECKY_VERIFY_RUN_ID" >&2
+  exit 2
+}
+run_dir="$(python3 "$here/../temp_paths.py" validate "$tmp_root/verification/$run_id")"
+mkdir -p -m 700 -- "$(dirname -- "$run_dir")"
+mkdir -m 700 -- "$run_dir"
 
+homebrew="${DECKY_TEST_HOMEBREW:-/home/deck/homebrew}"
+[[ "$homebrew" == /* && "$homebrew" != *$'\n'* && "$homebrew" != *$'\r'* ]] || {
+  echo "run_all: DECKY_TEST_HOMEBREW must be an absolute remote path" >&2
+  exit 2
+}
+[[ ! "$homebrew" =~ (^|/)\.\.(/|$) ]] || {
+  echo "run_all: DECKY_TEST_HOMEBREW must not traverse parent directories" >&2
+  exit 2
+}
+printf -v remote_homebrew '%q' "$homebrew"
+remote_homebrew="$(ssh "$host" "realpath -e -- $remote_homebrew")"
+[[ "$remote_homebrew" == /* && "$remote_homebrew" != / ]] || {
+  echo "run_all: remote homebrew did not resolve to an absolute non-root path" >&2
+  exit 1
+}
 metadata="$run_dir/metadata.json"
-ssh "$host" 'cat /home/deck/homebrew/settings/Decky-Metadata/decky_metadata.json' >"$metadata"
+printf -v remote_metadata '%q' "$remote_homebrew/settings/Decky-Metadata/decky_metadata.json"
+ssh "$host" "cat -- $remote_metadata" >"$metadata"
 fixture_args=()
 [[ -z "${MATCHED_APPID:-}" ]] || fixture_args+=(--listed-match "$MATCHED_APPID")
 [[ -z "${DELISTED_APPID:-}" ]] || fixture_args+=(--delisted-match "$DELISTED_APPID")

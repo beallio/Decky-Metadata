@@ -10,8 +10,8 @@ use crate::{
     updater::{
         client::GitHubReleaseClient,
         discovery::{
-            PrevalidatedRelease, manifest_url, prevalidate_release_candidate,
-            select_candidate, validate_manifest_candidate,
+            PrevalidatedRelease, manifest_url, prevalidate_release_candidate, select_candidate,
+            validate_manifest_candidate,
         },
         models::{UpdateCandidate, isoformat_utc, parse_iso_datetime},
         pending::{
@@ -52,21 +52,37 @@ impl Updater {
             .unwrap_or(true);
         let mut normalized_settings = Map::new();
         normalized_settings.insert("update_channel".to_owned(), json!(channel));
-        normalized_settings.insert("automatic_update_checks".to_owned(), json!(automatic_checks));
+        normalized_settings.insert(
+            "automatic_update_checks".to_owned(),
+            json!(automatic_checks),
+        );
 
-        let mut cache = cache.as_object().cloned().map(Value::Object).unwrap_or_else(|| json!({}));
-        if cache
-            .get("pending_update_install")
-            .is_some_and(|pending| !pending.is_null() && (pending.as_object().is_none() || pending.get("version").is_none()))
-        {
-            cache.as_object_mut().unwrap().remove("pending_update_install");
+        let mut cache = cache
+            .as_object()
+            .cloned()
+            .map(Value::Object)
+            .unwrap_or_else(|| json!({}));
+        if cache.get("pending_update_install").is_some_and(|pending| {
+            !pending.is_null()
+                && (pending.as_object().is_none() || pending.get("version").is_none())
+        }) {
+            cache
+                .as_object_mut()
+                .unwrap()
+                .remove("pending_update_install");
         }
         for key in ["last_checked_at", "installed_release_published_at"] {
-            if cache.get(key).is_some_and(|value| !value.is_null() && !value.is_string()) {
+            if cache
+                .get(key)
+                .is_some_and(|value| !value.is_null() && !value.is_string())
+            {
                 cache.as_object_mut().unwrap().remove(key);
             }
         }
-        if cache.get("last_result").is_some_and(|value| !value.is_object()) {
+        if cache
+            .get("last_result")
+            .is_some_and(|value| !value.is_object())
+        {
             cache.as_object_mut().unwrap().remove("last_result");
         }
 
@@ -110,7 +126,12 @@ impl Updater {
             .filter(|channel| matches!(*channel, "stable" | "development"))
             .unwrap_or("stable");
         self.settings["update_channel"] = json!(channel);
-        crate::logging::event("update", "Update channel changed", json!({"channel": channel}), Level::Info);
+        crate::logging::event(
+            "update",
+            "Update channel changed",
+            json!({"channel": channel}),
+            Level::Info,
+        );
         Ok(())
     }
 
@@ -160,18 +181,34 @@ impl Updater {
     }
 
     fn clear_stale_cache(&mut self) {
-        let cache = self.cache.as_object_mut().expect("cache is normalized to an object");
+        let cache = self
+            .cache
+            .as_object_mut()
+            .expect("cache is normalized to an object");
         cache.remove("last_result");
         cache.remove("last_available_tag");
         cache.remove("last_checked_version");
     }
 
-    fn cached_result(&self, current_version: &str, channel: &str, now: DateTime<Utc>) -> Option<Value> {
+    fn cached_result(
+        &self,
+        current_version: &str,
+        channel: &str,
+        now: DateTime<Utc>,
+    ) -> Option<Value> {
         let last_checked_at = self.cache.get("last_checked_at")?.as_str()?;
         let last_checked_at = parse_iso_datetime(last_checked_at)?;
         if now - last_checked_at >= CACHE_VALIDITY
-            || self.cache.get("last_checked_channel").and_then(Value::as_str) != Some(channel)
-            || self.cache.get("last_checked_version").and_then(Value::as_str) != Some(current_version)
+            || self
+                .cache
+                .get("last_checked_channel")
+                .and_then(Value::as_str)
+                != Some(channel)
+            || self
+                .cache
+                .get("last_checked_version")
+                .and_then(Value::as_str)
+                != Some(current_version)
         {
             return None;
         }
@@ -180,7 +217,11 @@ impl Updater {
         Some(Value::Object(result))
     }
 
-    pub async fn check_for_update(&mut self, current_version: &Value, force: bool) -> Result<Value, String> {
+    pub async fn check_for_update(
+        &mut self,
+        current_version: &Value,
+        force: bool,
+    ) -> Result<Value, String> {
         let current_version = current_version
             .as_str()
             .ok_or_else(|| "current version must be a string".to_owned())?;
@@ -193,7 +234,8 @@ impl Updater {
                 .get("pending_update_install")
                 .cloned()
                 .unwrap_or(Value::Null);
-            if effective_pending_install_version(&pending, now).as_deref() == Some(current_version) {
+            if effective_pending_install_version(&pending, now).as_deref() == Some(current_version)
+            {
                 return Ok(json!({
                     "status": "current",
                     "checked_at": isoformat_utc(now),
@@ -202,7 +244,11 @@ impl Updater {
             }
         }
 
-        if let Some(until) = self.rate_limited_until.as_ref().filter(|until| now < **until) {
+        if let Some(until) = self
+            .rate_limited_until
+            .as_ref()
+            .filter(|until| now < **until)
+        {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(now),
@@ -253,7 +299,8 @@ impl Updater {
                 message = raw_message;
             }
             if response.status == 404 {
-                message = "Releases are not accessible — the repository may be private or missing.".to_owned();
+                message = "Releases are not accessible — the repository may be private or missing."
+                    .to_owned();
             }
             crate::logging::event(
                 "update",
@@ -287,7 +334,9 @@ impl Updater {
             if manifest_response.status != 200 {
                 continue;
             }
-            if let Some(candidate) = validate_manifest_candidate(prevalidated, &manifest_response.body) {
+            if let Some(candidate) =
+                validate_manifest_candidate(prevalidated, &manifest_response.body)
+            {
                 selected = Some(candidate);
                 break;
             }
@@ -312,7 +361,10 @@ impl Updater {
             })
         };
         if self.channel() == channel_snapshot {
-            let cache = self.cache.as_object_mut().expect("cache is normalized to an object");
+            let cache = self
+                .cache
+                .as_object_mut()
+                .expect("cache is normalized to an object");
             cache.insert("last_checked_at".to_owned(), json!(checked_at));
             cache.insert("last_checked_channel".to_owned(), json!(channel_snapshot));
             cache.insert("last_checked_version".to_owned(), json!(current_version));
@@ -346,7 +398,9 @@ impl Updater {
             .and_then(Value::as_str)
             .filter(|tag| !tag.is_empty());
         let Some(tag) = tag else {
-            return Ok(json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "Candidate missing tag"}));
+            return Ok(
+                json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "Candidate missing tag"}),
+            );
         };
         let response = self.client.get_release(tag).await;
         if matches!(response.status, 403 | 429) {
@@ -393,22 +447,32 @@ impl Updater {
             }));
         };
 
-        if candidate_record.get("sha256").and_then(Value::as_str) != Some(validated.sha256.as_str()) {
-            crate::logging::event("update", "Revalidation SHA-256 mismatch", json!({}), Level::Error);
+        if candidate_record.get("sha256").and_then(Value::as_str) != Some(validated.sha256.as_str())
+        {
+            crate::logging::event(
+                "update",
+                "Revalidation SHA-256 mismatch",
+                json!({}),
+                Level::Error,
+            );
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
                 "message": "SHA-256 mismatch during revalidation"
             }));
         }
-        if candidate_record.get("artifact_url").and_then(Value::as_str) != Some(validated.artifact_url.as_str()) {
+        if candidate_record.get("artifact_url").and_then(Value::as_str)
+            != Some(validated.artifact_url.as_str())
+        {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
                 "message": "Artifact URL mismatch during revalidation"
             }));
         }
-        if candidate_record.get("version").and_then(Value::as_str) != Some(validated.version.as_str()) {
+        if candidate_record.get("version").and_then(Value::as_str)
+            != Some(validated.version.as_str())
+        {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
@@ -437,12 +501,18 @@ impl Updater {
             .ok_or_else(|| "candidate must be an object".to_owned())?;
         let mut pending = Map::new();
         for key in ["version", "tag", "channel", "published_at"] {
-            pending.insert(key.to_owned(), candidate.get(key).cloned().unwrap_or(Value::Null));
+            pending.insert(
+                key.to_owned(),
+                candidate.get(key).cloned().unwrap_or(Value::Null),
+            );
         }
         pending.insert("requested_at".to_owned(), json!(isoformat_utc(self.now())));
         pending.insert(
             "update_trace_id".to_owned(),
-            candidate.get("updateTraceId").cloned().unwrap_or(Value::Null),
+            candidate
+                .get("updateTraceId")
+                .cloned()
+                .unwrap_or(Value::Null),
         );
         self.cache["pending_update_install"] = Value::Object(pending);
         self.clear_stale_cache();
@@ -469,7 +539,8 @@ impl Updater {
             .and_then(|pending| pending.get("version"))
             == Some(version);
         if matches {
-            self.cache["pending_update_install"]["handoff_confirmed_at"] = json!(isoformat_utc(self.now()));
+            self.cache["pending_update_install"]["handoff_confirmed_at"] =
+                json!(isoformat_utc(self.now()));
             self.clear_stale_cache();
         }
         Ok(self.context())
@@ -478,9 +549,15 @@ impl Updater {
     pub fn clear_pending_install(&mut self, version: Option<&Value>) -> Result<Value, String> {
         let pending = self.cache.get("pending_update_install");
         let should_clear = pending.is_some_and(py_truthy)
-            && version.is_none_or(|version| version.is_null() || pending.and_then(|pending| pending.get("version")) == Some(version));
+            && version.is_none_or(|version| {
+                version.is_null()
+                    || pending.and_then(|pending| pending.get("version")) == Some(version)
+            });
         if should_clear {
-            self.cache.as_object_mut().unwrap().remove("pending_update_install");
+            self.cache
+                .as_object_mut()
+                .unwrap()
+                .remove("pending_update_install");
             self.clear_stale_cache();
         }
         Ok(self.context())
@@ -501,7 +578,10 @@ impl Updater {
                 && pending_install_matches_loaded_version(version, &self.installed_version)
         }) {
             let cache = self.cache.as_object_mut().unwrap();
-            cache.insert("installed_release_tag".to_owned(), pending.get("tag").cloned().unwrap_or(Value::Null));
+            cache.insert(
+                "installed_release_tag".to_owned(),
+                pending.get("tag").cloned().unwrap_or(Value::Null),
+            );
             cache.insert(
                 "installed_release_published_at".to_owned(),
                 pending.get("published_at").cloned().unwrap_or(Value::Null),
@@ -513,7 +593,10 @@ impl Updater {
         if is_fresh_pending_install(&pending, self.now()) {
             return Ok(false);
         }
-        self.cache.as_object_mut().unwrap().remove("pending_update_install");
+        self.cache
+            .as_object_mut()
+            .unwrap()
+            .remove("pending_update_install");
         self.clear_stale_cache();
         Ok(true)
     }
@@ -537,12 +620,16 @@ mod tests {
     use super::*;
     use crate::http::{Fixture, Response};
     use chrono::TimeZone;
-    use reqwest::{Method, header::{HeaderMap, HeaderName, HeaderValue}};
+    use reqwest::{
+        Method,
+        header::{HeaderMap, HeaderName, HeaderValue},
+    };
     use serde_json::json;
 
     const RELEASES_URL: &str = "https://api.github.com/repos/beallio/Decky-Metadata/releases";
     const MANIFEST_URL: &str = "https://example.test/manifest";
-    const RELEASE_TAG_URL: &str = "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/v0.4.0";
+    const RELEASE_TAG_URL: &str =
+        "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/v0.4.0";
 
     fn now() -> DateTime<Utc> {
         Utc.with_ymd_and_hms(2026, 7, 17, 12, 0, 0).unwrap()
@@ -551,7 +638,10 @@ mod tests {
     fn fixture(url: &str, status: u16, body: Value, headers: &[(&str, &str)]) -> Fixture {
         let mut header_map = HeaderMap::new();
         for (name, value) in headers {
-            header_map.insert(HeaderName::from_bytes(name.as_bytes()).unwrap(), HeaderValue::from_bytes(value.as_bytes()).unwrap());
+            header_map.insert(
+                HeaderName::from_bytes(name.as_bytes()).unwrap(),
+                HeaderValue::from_bytes(value.as_bytes()).unwrap(),
+            );
         }
         Fixture {
             method: Method::GET,
@@ -598,7 +688,11 @@ mod tests {
 
     fn response_pair(releases: Value, manifests: &[Value], fixtures: &mut Vec<Fixture>) {
         fixtures.push(fixture(RELEASES_URL, 200, releases, &[]));
-        fixtures.extend(manifests.iter().map(|manifest| fixture(MANIFEST_URL, 200, manifest.clone(), &[])));
+        fixtures.extend(
+            manifests
+                .iter()
+                .map(|manifest| fixture(MANIFEST_URL, 200, manifest.clone(), &[])),
+        );
     }
 
     fn make_updater(http: Http, installed_version: &str, cache: &Value) -> Updater {
@@ -608,18 +702,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn recorded_release_and_manifest_flow_returns_valid_candidate_and_persists_cache_snapshot() {
+    async fn recorded_release_and_manifest_flow_returns_valid_candidate_and_persists_cache_snapshot()
+     {
         let mut fixtures = Vec::new();
-        response_pair(json!([release("0.4.0", "stable")]), &[manifest("0.4.0", "stable")], &mut fixtures);
+        response_pair(
+            json!([release("0.4.0", "stable")]),
+            &[manifest("0.4.0", "stable")],
+            &mut fixtures,
+        );
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({"wrong": true}));
-        let result = updater.check_for_update(&json!("0.3.1"), false).await.unwrap();
+        let result = updater
+            .check_for_update(&json!("0.3.1"), false)
+            .await
+            .unwrap();
         assert_eq!(result["status"], "available");
         assert_eq!(result["channel"], "stable");
         assert_eq!(result["candidate"]["version"], "0.4.0");
         assert_eq!(result["candidate"]["published_at"], "2026-07-17T12:00:00Z");
-        assert_eq!(updater.cache_payload()["last_result"]["checked_version"], "0.3.1");
+        assert_eq!(
+            updater.cache_payload()["last_result"]["checked_version"],
+            "0.3.1"
+        );
         assert_eq!(updater.cache_payload()["wrong"], true);
         fixture_http.assert_drained();
     }
@@ -628,23 +733,42 @@ mod tests {
     async fn duplicate_assets_and_invalid_manifest_identity_do_not_produce_candidates() {
         let mut duplicate = release("0.4.0", "stable");
         let repeated_zip = duplicate["assets"][1].clone();
-        duplicate["assets"].as_array_mut().unwrap().push(repeated_zip);
+        duplicate["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(repeated_zip);
         let mut fixtures = Vec::new();
         response_pair(json!([duplicate]), &[], &mut fixtures);
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["status"], "current");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["status"],
+            "current"
+        );
         fixture_http.assert_drained();
 
         let mut wrong_identity = manifest("0.4.0", "stable");
         wrong_identity["packageName"] = json!("other");
         let mut fixtures = Vec::new();
-        response_pair(json!([release("0.4.0", "stable")]), &[wrong_identity], &mut fixtures);
+        response_pair(
+            json!([release("0.4.0", "stable")]),
+            &[wrong_identity],
+            &mut fixtures,
+        );
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["status"], "current");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["status"],
+            "current"
+        );
         fixture_http.assert_drained();
     }
 
@@ -652,20 +776,45 @@ mod tests {
     async fn cache_requires_matching_version_channel_and_age_but_force_bypasses_it() {
         let mut fixtures = Vec::new();
         for _ in 0..5 {
-            response_pair(json!([release("0.4.0", "stable")]), &[manifest("0.4.0", "stable")], &mut fixtures);
+            response_pair(
+                json!([release("0.4.0", "stable")]),
+                &[manifest("0.4.0", "stable")],
+                &mut fixtures,
+            );
         }
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        let first = updater.check_for_update(&json!("0.3.1"), false).await.unwrap();
-        let cached = updater.check_for_update(&json!("0.3.1"), false).await.unwrap();
+        let first = updater
+            .check_for_update(&json!("0.3.1"), false)
+            .await
+            .unwrap();
+        let cached = updater
+            .check_for_update(&json!("0.3.1"), false)
+            .await
+            .unwrap();
         assert_eq!(cached, first);
-        updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
-        updater.check_for_update(&json!("0.3.0"), false).await.unwrap();
+        updater
+            .check_for_update(&json!("0.3.1"), true)
+            .await
+            .unwrap();
+        updater
+            .check_for_update(&json!("0.3.0"), false)
+            .await
+            .unwrap();
         updater.test_now = Some(now() + Duration::hours(24));
-        updater.check_for_update(&json!("0.3.1"), false).await.unwrap();
+        updater
+            .check_for_update(&json!("0.3.1"), false)
+            .await
+            .unwrap();
         updater.set_channel(&json!("development")).unwrap();
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), false).await.unwrap()["status"], "available");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), false)
+                .await
+                .unwrap()["status"],
+            "available"
+        );
         fixture_http.assert_drained();
     }
 
@@ -677,11 +826,27 @@ mod tests {
             .collect();
         let invalid = json!({"pluginName": "wrong"});
         let mut fixtures = Vec::new();
-        response_pair(json!(releases), &[invalid.clone(), invalid.clone(), invalid.clone(), invalid.clone(), invalid], &mut fixtures);
+        response_pair(
+            json!(releases),
+            &[
+                invalid.clone(),
+                invalid.clone(),
+                invalid.clone(),
+                invalid.clone(),
+                invalid,
+            ],
+            &mut fixtures,
+        );
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["status"], "current");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["status"],
+            "current"
+        );
         fixture_http.assert_drained();
     }
 
@@ -692,15 +857,30 @@ mod tests {
         let candidate = json!({"version": "0.4.0+local", "tag": "v0.4.0+local", "channel": "stable", "published_at": "raw", "updateTraceId": "trace-1"});
         let context = updater.record_install_requested(&candidate).unwrap();
         assert_eq!(context["effective_installed_version"], "0.4.0+local");
-        assert_eq!(context["pending_update_install"]["update_trace_id"], "trace-1");
-        updater.confirm_install_handoff(&json!("0.4.0+local")).unwrap();
-        assert!(updater.cache_payload()["pending_update_install"]["handoff_confirmed_at"].is_string());
+        assert_eq!(
+            context["pending_update_install"]["update_trace_id"],
+            "trace-1"
+        );
+        updater
+            .confirm_install_handoff(&json!("0.4.0+local"))
+            .unwrap();
+        assert!(
+            updater.cache_payload()["pending_update_install"]["handoff_confirmed_at"].is_string()
+        );
         assert!(updater.reconcile_pending_install().unwrap());
-        assert_eq!(updater.cache_payload()["installed_release_tag"], "v0.4.0+local");
+        assert_eq!(
+            updater.cache_payload()["installed_release_tag"],
+            "v0.4.0+local"
+        );
         assert!(updater.cache_payload()["pending_update_install"].is_null());
         updater.record_install_requested(&candidate).unwrap();
-        updater.clear_pending_install(Some(&json!("different"))).unwrap();
-        assert_eq!(updater.cache_payload()["pending_update_install"]["version"],"0.4.0+local");
+        updater
+            .clear_pending_install(Some(&json!("different")))
+            .unwrap();
+        assert_eq!(
+            updater.cache_payload()["pending_update_install"]["version"],
+            "0.4.0+local"
+        );
         updater.clear_pending_install(Some(&Value::Null)).unwrap();
         assert!(updater.cache_payload()["pending_update_install"].is_null());
 
@@ -721,25 +901,56 @@ mod tests {
             json!({"message": "API rate limit exceeded"}),
             &[("retry-after", "60")],
         )];
-        response_pair(json!([release("0.4.0", "stable")]), &[manifest("0.4.0", "stable")], &mut fixtures);
+        response_pair(
+            json!([release("0.4.0", "stable")]),
+            &[manifest("0.4.0", "stable")],
+            &mut fixtures,
+        );
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        let first = updater.check_for_update(&json!("0.3.1"), false).await.unwrap();
+        let first = updater
+            .check_for_update(&json!("0.3.1"), false)
+            .await
+            .unwrap();
         assert_eq!(first["status"], "failed");
         assert_eq!(first["retry_after"], "2026-07-17T12:01:00+00:00");
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["message"], "Update check skipped due to rate-limit cooldown");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["message"],
+            "Update check skipped due to rate-limit cooldown"
+        );
         updater.test_now = Some(now() + Duration::seconds(61));
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["status"], "available");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["status"],
+            "available"
+        );
         fixture_http.assert_drained();
     }
 
     #[tokio::test]
     async fn revalidation_rejects_tampered_sha_url_and_version() {
         for change in [
-            ("sha256", json!("b".repeat(64)), "SHA-256 mismatch during revalidation"),
-            ("artifact_url", json!("https://example.test/other.zip"), "Artifact URL mismatch during revalidation"),
-            ("version", json!("0.4.1"), "Version mismatch during revalidation"),
+            (
+                "sha256",
+                json!("b".repeat(64)),
+                "SHA-256 mismatch during revalidation",
+            ),
+            (
+                "artifact_url",
+                json!("https://example.test/other.zip"),
+                "Artifact URL mismatch during revalidation",
+            ),
+            (
+                "version",
+                json!("0.4.1"),
+                "Version mismatch during revalidation",
+            ),
         ] {
             let mut candidate = json!({
                 "version": "0.4.0",
@@ -785,10 +996,16 @@ mod tests {
         )]);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(updater.revalidate(&json!({})).await.unwrap()["message"], "Candidate missing tag");
+        assert_eq!(
+            updater.revalidate(&json!({})).await.unwrap()["message"],
+            "Candidate missing tag"
+        );
         let result = updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap();
         assert_eq!(result["status"], "failed");
-        assert_eq!(updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap()["message"], "Rate limit cooldown active");
+        assert_eq!(
+            updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap()["message"],
+            "Rate limit cooldown active"
+        );
         fixture_http.assert_drained();
     }
 
@@ -800,7 +1017,13 @@ mod tests {
         ]);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["status"], "current");
+        assert_eq!(
+            updater
+                .check_for_update(&json!("0.3.1"), true)
+                .await
+                .unwrap()["status"],
+            "current"
+        );
         fixture_http.assert_drained();
 
         let http = Http::fixtures(vec![fixture(
@@ -811,7 +1034,10 @@ mod tests {
         )]);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
+        let result = updater
+            .check_for_update(&json!("0.3.1"), true)
+            .await
+            .unwrap();
         assert_eq!(result["status"], "failed");
         assert!(result["message"].as_str().unwrap().contains("private"));
         fixture_http.assert_drained();
@@ -883,8 +1109,14 @@ mod tests {
         let fixture_http = http.clone();
         let mut fresh = Updater::new(http, "0.3.1".to_owned(), &settings, &cache);
         fresh.test_now = Some(now());
-        assert_eq!(fresh.context()["pending_update_install"]["update_trace_id"], "trace-2");
-        let result = fresh.check_for_update(&json!("0.4.0"), false).await.unwrap();
+        assert_eq!(
+            fresh.context()["pending_update_install"]["update_trace_id"],
+            "trace-2"
+        );
+        let result = fresh
+            .check_for_update(&json!("0.4.0"), false)
+            .await
+            .unwrap();
         assert_eq!(result["status"], "current");
         assert_eq!(result["channel"], "stable");
         fixture_http.assert_drained();

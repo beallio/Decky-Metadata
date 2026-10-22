@@ -43,11 +43,19 @@ pub fn clamp_page(value: &Value) -> i64 {
             } else if value.as_u64().is_some_and(|value| value > MAX_PAGE as u64) {
                 Some(MAX_PAGE)
             } else {
-                value.as_f64().filter(|value| value.is_finite()).map(f64::trunc).map(|value| {
-                    if value > MAX_PAGE as f64 { MAX_PAGE }
-                    else if value < 1.0 { 1 }
-                    else { value as i64 }
-                })
+                value
+                    .as_f64()
+                    .filter(|value| value.is_finite())
+                    .map(f64::trunc)
+                    .map(|value| {
+                        if value > MAX_PAGE as f64 {
+                            MAX_PAGE
+                        } else if value < 1.0 {
+                            1
+                        } else {
+                            value as i64
+                        }
+                    })
             }
         }
         Value::String(value) => parse_integer_string(value),
@@ -67,13 +75,19 @@ fn parse_integer_string(value: &str) -> Option<i64> {
     if bytes.is_empty()
         || !bytes.iter().enumerate().all(|(index, byte)| {
             byte.is_ascii_digit()
-                || (*byte == b'_' && index > 0 && index + 1 < bytes.len()
-                    && bytes[index - 1].is_ascii_digit() && bytes[index + 1].is_ascii_digit())
+                || (*byte == b'_'
+                    && index > 0
+                    && index + 1 < bytes.len()
+                    && bytes[index - 1].is_ascii_digit()
+                    && bytes[index + 1].is_ascii_digit())
         })
     {
         return None;
     }
-    let digits: String = digits.chars().filter(|character| *character != '_').collect();
+    let digits: String = digits
+        .chars()
+        .filter(|character| *character != '_')
+        .collect();
     let significant = digits.trim_start_matches('0');
     if significant.is_empty() {
         return Some(0);
@@ -81,7 +95,11 @@ fn parse_integer_string(value: &str) -> Option<i64> {
     if negative {
         return Some(0);
     }
-    if significant.len() > 3 || significant.parse::<u16>().is_ok_and(|number| number > MAX_PAGE as u16) {
+    if significant.len() > 3
+        || significant
+            .parse::<u16>()
+            .is_ok_and(|number| number > MAX_PAGE as u16)
+    {
         return Some(MAX_PAGE);
     }
     significant.parse::<i64>().ok()
@@ -92,8 +110,10 @@ pub fn community_url(appid: i64, page: i64) -> String {
         return String::new();
     }
     let page = page.clamp(1, MAX_PAGE).to_string();
-    let mut url = Url::parse(&format!("https://steamcommunity.com/app/{appid}/homecontent/"))
-        .expect("fixed Steam Community URL");
+    let mut url = Url::parse(&format!(
+        "https://steamcommunity.com/app/{appid}/homecontent/"
+    ))
+    .expect("fixed Steam Community URL");
     {
         let mut query = url.query_pairs_mut();
         query
@@ -127,10 +147,14 @@ fn raw_url_prefix_path(value: &str) -> Option<(&str, &str)> {
     let authority_end = remainder
         .find(|character| matches!(character, '/' | '?' | '#'))
         .unwrap_or(remainder.len());
-    if authority_end == 0 { return None; }
+    if authority_end == 0 {
+        return None;
+    }
     let suffix = &remainder[authority_end..];
     let path = if suffix.starts_with('/') {
-        &suffix[..suffix.find(|character| matches!(character, '?' | '#')).unwrap_or(suffix.len())]
+        &suffix[..suffix
+            .find(|character| matches!(character, '?' | '#'))
+            .unwrap_or(suffix.len())]
     } else {
         ""
     };
@@ -143,7 +167,9 @@ pub fn steam_image_url(value: &str) -> String {
         return String::new();
     }
     let normalized = matching::https_url(&decoded);
-    let Ok(mut parsed) = Url::parse(&normalized) else { return String::new() };
+    let Ok(mut parsed) = Url::parse(&normalized) else {
+        return String::new();
+    };
     if parsed.scheme() != "https"
         || parsed.host_str() != Some("images.steamusercontent.com")
         || !raw_url_prefix_path(&normalized).is_some_and(|(_, path)| path.starts_with("/ugc/"))
@@ -172,17 +198,22 @@ pub fn steam_image_url(value: &str) -> String {
         }
     }
     let serialized = parsed.to_string();
-    let suffix = serialized.find(|character| matches!(character, '?' | '#')).unwrap_or(serialized.len());
+    let suffix = serialized
+        .find(|character| matches!(character, '?' | '#'))
+        .unwrap_or(serialized.len());
     let (prefix, path) = raw_url_prefix_path(&normalized).expect("parsed URL has an authority");
     let authority = prefix.split_once("://").expect("parsed URL has a scheme").1;
     format!("https://{authority}{path}{}", &serialized[suffix..])
 }
 
 pub fn sharedfile_id(value: &str) -> String {
-    let Ok(parsed) = Url::parse(value) else { return String::new() };
+    let Ok(parsed) = Url::parse(value) else {
+        return String::new();
+    };
     if parsed.scheme() != "https"
         || parsed.host_str() != Some("steamcommunity.com")
-        || !raw_url_prefix_path(value).is_some_and(|(_, path)| path.trim_end_matches('/') == "/sharedfiles/filedetails")
+        || !raw_url_prefix_path(value)
+            .is_some_and(|(_, path)| path.trim_end_matches('/') == "/sharedfiles/filedetails")
     {
         return String::new();
     }
@@ -190,7 +221,9 @@ pub fn sharedfile_id(value: &str) -> String {
         .query_pairs()
         .find(|(key, value)| key == "id" && !value.is_empty())
         .map(|(_, value)| value.into_owned())
-        .filter(|value| !value.is_empty() && value.chars().all(|character| character.is_ascii_digit()))
+        .filter(|value| {
+            !value.is_empty() && value.chars().all(|character| character.is_ascii_digit())
+        })
         .unwrap_or_default()
 }
 
@@ -199,8 +232,12 @@ pub fn sharedfile_url(value: &str) -> String {
     if decoded.is_empty() {
         return String::new();
     }
-    let Ok(base) = Url::parse("https://steamcommunity.com/") else { return String::new() };
-    let Ok(joined) = base.join(decoded.as_ref()) else { return String::new() };
+    let Ok(base) = Url::parse("https://steamcommunity.com/") else {
+        return String::new();
+    };
+    let Ok(joined) = base.join(decoded.as_ref()) else {
+        return String::new();
+    };
     let normalized = matching::https_url(joined.as_str());
     if sharedfile_id(&normalized).is_empty() {
         String::new()
@@ -210,11 +247,18 @@ pub fn sharedfile_url(value: &str) -> String {
 }
 
 fn truncate_chars(value: &str, limit: usize) -> &str {
-    value.char_indices().nth(limit).map_or(value, |(index, _)| &value[..index])
+    value
+        .char_indices()
+        .nth(limit)
+        .map_or(value, |(index, _)| &value[..index])
 }
 
 pub fn parse_cards(html_text: &str, limit: usize) -> Vec<Value> {
-    let cap = if limit == 0 { PAGE_SIZE } else { limit.clamp(1, PAGE_SIZE) };
+    let cap = if limit == 0 {
+        PAGE_SIZE
+    } else {
+        limit.clamp(1, PAGE_SIZE)
+    };
     let mut cards = RX_CARD.find_iter(html_text).peekable();
     let mut seen = HashSet::new();
     let mut rows = Vec::new();
@@ -223,11 +267,17 @@ pub fn parse_cards(html_text: &str, limit: usize) -> Vec<Value> {
         let block = truncate_chars(&html_text[card.start()..end], MAX_CARD_CHARS);
         let image_url = RX_IMAGE
             .find_iter(block)
-            .map(|image| image.as_str().trim_end_matches(|character| matches!(character, ')' | ',' | '.' | ';')))
+            .map(|image| {
+                image
+                    .as_str()
+                    .trim_end_matches(|character| matches!(character, ')' | ',' | '.' | ';'))
+            })
             .map(steam_image_url)
             .find(|image| !image.is_empty());
         let Some(image_url) = image_url else { continue };
-        if seen.contains(&image_url) { continue; }
+        if seen.contains(&image_url) {
+            continue;
+        }
         let link = RX_DATA_MODAL_URL
             .captures_iter(block)
             .filter_map(|capture| capture.get(1))
@@ -264,18 +314,27 @@ pub fn parse_cards(html_text: &str, limit: usize) -> Vec<Value> {
             "author": author,
             "link": link,
         }));
-        if rows.len() >= cap { break; }
+        if rows.len() >= cap {
+            break;
+        }
     }
     rows
 }
 
 pub fn steam_cards_to_fallback_items(cards: &Value) -> Vec<Value> {
     let mut items = Vec::new();
-    for card in cards.as_array().into_iter().flatten().filter(|card| card.is_object()) {
+    for card in cards
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|card| card.is_object())
+    {
         let image_url = steam_image_url(&metadata::text(&card["url"]));
         let link = sharedfile_url(&metadata::text(&card["link"]));
         let id = sharedfile_id(&link);
-        if image_url.is_empty() || id.is_empty() { continue; }
+        if image_url.is_empty() || id.is_empty() {
+            continue;
+        }
         let caption = matching::clean_html_text(&metadata::text(&card["caption"]));
         items.push(json!({
             "id": id,
@@ -287,7 +346,9 @@ pub fn steam_cards_to_fallback_items(cards: &Value) -> Vec<Value> {
             "height": 0,
             "author": matching::clean_html_text(&metadata::text(&card["author"])),
         }));
-        if items.len() >= PAGE_SIZE { break; }
+        if items.len() >= PAGE_SIZE {
+            break;
+        }
     }
     items
 }
@@ -300,7 +361,9 @@ fn valid_https_url(value: &str) -> Option<String> {
 
 fn dimension(value: &Value) -> Value {
     let value = matching::as_number(value, 0.0);
-    if !value.is_finite() { return json!(0); }
+    if !value.is_finite() {
+        return json!(0);
+    }
     let value = value.trunc().max(0.0);
     if value < i64::MAX as f64 {
         json!(value as i64)
@@ -321,12 +384,20 @@ pub fn metadata_screenshots_to_fallback_items(
     let mut items = Vec::new();
     let mut accepted = 0;
     for (offset, screenshot) in screenshots.as_array().into_iter().flatten().enumerate() {
-        if !screenshot.is_object() { continue; }
-        let Some(image_url) = valid_https_url(&metadata::text(&screenshot["url"])) else { continue };
+        if !screenshot.is_object() {
+            continue;
+        }
+        let Some(image_url) = valid_https_url(&metadata::text(&screenshot["url"])) else {
+            continue;
+        };
         let current = accepted;
         accepted += 1;
-        if current < start { continue; }
-        if current >= stop { break; }
+        if current < start {
+            continue;
+        }
+        if current >= stop {
+            break;
+        }
         let caption = matching::clean_html_text(&metadata::text(&screenshot["caption"]));
         let id = if matching::py_truthy(&screenshot["id"]) {
             metadata::text(&screenshot["id"])
@@ -354,7 +425,9 @@ pub async fn fetch_steam_fallback_items(
 ) -> Result<Vec<Value>, String> {
     let page = page.clamp(1, MAX_PAGE);
     let url = community_url(appid, page);
-    if url.is_empty() { return Ok(Vec::new()); }
+    if url.is_empty() {
+        return Ok(Vec::new());
+    }
     let text = http
         .text(&url, Duration::from_secs(15), MAX_RESPONSE_BYTES)
         .await?;
@@ -396,18 +469,21 @@ pub async fn fallback_page(http: &Http, record: Option<&Value>, page: &Value) ->
             ),
         }
     }
-    let mut items = metadata_screenshots_to_fallback_items(
-        &record["screenshots"],
-        page,
-        &record["source_url"],
-    );
+    let mut items =
+        metadata_screenshots_to_fallback_items(&record["screenshots"], page, &record["source_url"]);
     let source = if items.is_empty() { "none" } else { "metadata" };
     if !items.is_empty() {
         let author = {
             let author = metadata::text(&record["source"]);
-            if author.trim().is_empty() { "Metadata".to_owned() } else { author.trim().to_owned() }
+            if author.trim().is_empty() {
+                "Metadata".to_owned()
+            } else {
+                author.trim().to_owned()
+            }
         };
-        for item in &mut items { item["author"] = Value::String(author.clone()); }
+        for item in &mut items {
+            item["author"] = Value::String(author.clone());
+        }
     }
     log_selection(source, steam_appid.unwrap_or(0), page, items.len());
     json!({"source": source, "page": page, "items": items})
@@ -429,29 +505,36 @@ mod tests {
     #[test]
     fn community_parser_keeps_safe_unique_cards_and_decodes_entities() {
         let rows = parse_cards(
-            &format!("{COMMUNITY_CARD_FIXTURE}{COMMUNITY_CARD_FIXTURE}<div class=\"apphub_Card\"><img src=\"https://evil.example/ugc/no.jpg\"></div>"),
+            &format!(
+                "{COMMUNITY_CARD_FIXTURE}{COMMUNITY_CARD_FIXTURE}<div class=\"apphub_Card\"><img src=\"https://evil.example/ugc/no.jpg\"></div>"
+            ),
             PAGE_SIZE,
         );
-        assert_eq!(rows, vec![json!({
-            "id":"111",
-            "url":"https://images.steamusercontent.com/ugc/abc123?imw=512&imh=72",
-            "caption":"A & B",
-            "width":0,
-            "height":0,
-            "author":"Player & One",
-            "link":"https://steamcommunity.com/sharedfiles/filedetails/?id=111",
-        })]);
+        assert_eq!(
+            rows,
+            vec![json!({
+                "id":"111",
+                "url":"https://images.steamusercontent.com/ugc/abc123?imw=512&imh=72",
+                "caption":"A & B",
+                "width":0,
+                "height":0,
+                "author":"Player & One",
+                "link":"https://steamcommunity.com/sharedfiles/filedetails/?id=111",
+            })]
+        );
     }
 
     #[test]
     fn community_parser_rejects_malformed_links_and_caps_results() {
-        let unsafe_card = COMMUNITY_CARD_FIXTURE.replace(
-            "steamcommunity.com/sharedfiles",
-            "evil.example/sharedfiles",
-        );
+        let unsafe_card = COMMUNITY_CARD_FIXTURE
+            .replace("steamcommunity.com/sharedfiles", "evil.example/sharedfiles");
         assert!(parse_cards(&unsafe_card, PAGE_SIZE).is_empty());
         let many = (0..30)
-            .map(|index| COMMUNITY_CARD_FIXTURE.replace("111", &index.to_string()).replace("abc123", &format!("abc{index}")))
+            .map(|index| {
+                COMMUNITY_CARD_FIXTURE
+                    .replace("111", &index.to_string())
+                    .replace("abc123", &format!("abc{index}"))
+            })
             .collect::<String>();
         assert_eq!(parse_cards(&many, 99).len(), PAGE_SIZE);
     }
@@ -471,8 +554,14 @@ mod tests {
         let url = community_url(55150, 100);
         let http = Http::fixtures(vec![Fixture::text(url.clone(), COMMUNITY_CARD_FIXTURE)]);
         let items = fetch_steam_fallback_items(&http, 55150, 999).await.unwrap();
-        assert_eq!(items[0]["image_url"], "https://images.steamusercontent.com/ugc/abc123?imw=512&imh=72");
-        assert_eq!(items[0]["link"], "https://steamcommunity.com/sharedfiles/filedetails/?id=111");
+        assert_eq!(
+            items[0]["image_url"],
+            "https://images.steamusercontent.com/ugc/abc123?imw=512&imh=72"
+        );
+        assert_eq!(
+            items[0]["link"],
+            "https://steamcommunity.com/sharedfiles/filedetails/?id=111"
+        );
         assert!(url.contains("p=100"));
         assert!(community_url(0, 1).is_empty());
         assert_eq!(clamp_page(&json!(0)), 1);
@@ -486,7 +575,12 @@ mod tests {
         let url = community_url(55150, 1);
         let body = "x".repeat(MAX_RESPONSE_BYTES + 1);
         let http = Http::fixtures(vec![Fixture::text(url, &body)]);
-        assert!(fetch_steam_fallback_items(&http, 55150, 1).await.unwrap_err().contains("bounded"));
+        assert!(
+            fetch_steam_fallback_items(&http, 55150, 1)
+                .await
+                .unwrap_err()
+                .contains("bounded")
+        );
         http.assert_drained();
     }
 
@@ -495,14 +589,20 @@ mod tests {
         let image = "https://assets2.ignimgs.com/2009/05/04/x-men-origins-wolverine-shot.jpg";
         let source = json!("https://www.ign.com/games/x-men-origins-wolverine");
         let screenshots = json!([{"id":"ign-1","url":image,"caption":"","width":640,"height":340}]);
-        assert_eq!(metadata_screenshots_to_fallback_items(&screenshots, 1, &source), vec![json!({
-            "id":"ign-1","title":"","description":"","image_url":image,
-            "width":640,"height":340,"author":"","link":source,
-        })]);
+        assert_eq!(
+            metadata_screenshots_to_fallback_items(&screenshots, 1, &source),
+            vec![json!({
+                "id":"ign-1","title":"","description":"","image_url":image,
+                "width":640,"height":340,"author":"","link":source,
+            })]
+        );
         let steam_card = json!([{"url":image,"link":"https://steamcommunity.com/sharedfiles/filedetails/?id=1"}]);
         assert!(steam_cards_to_fallback_items(&steam_card).is_empty());
         let unsafe_source = json!("javascript:alert(1)");
-        assert_eq!(metadata_screenshots_to_fallback_items(&screenshots, 1, &unsafe_source)[0]["link"], image);
+        assert_eq!(
+            metadata_screenshots_to_fallback_items(&screenshots, 1, &unsafe_source)[0]["link"],
+            image
+        );
     }
 
     #[test]
@@ -513,9 +613,17 @@ mod tests {
         screenshots.insert(20, json!({"id":"bad","url":"javascript:alert(1)"}));
         screenshots.insert(20, json!({"id":"no-host","url":"https://"}));
         let screenshots = Value::Array(screenshots);
-        assert_eq!(metadata_screenshots_to_fallback_items(&screenshots, 1, &Value::Null).len(), PAGE_SIZE);
-        assert_eq!(metadata_screenshots_to_fallback_items(&screenshots, 2, &Value::Null)
-            .iter().map(|item| item["id"].as_str().unwrap()).collect::<Vec<_>>(), vec!["20","21","22","23","24"]);
+        assert_eq!(
+            metadata_screenshots_to_fallback_items(&screenshots, 1, &Value::Null).len(),
+            PAGE_SIZE
+        );
+        assert_eq!(
+            metadata_screenshots_to_fallback_items(&screenshots, 2, &Value::Null)
+                .iter()
+                .map(|item| item["id"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["20", "21", "22", "23", "24"]
+        );
         let default_id = metadata_screenshots_to_fallback_items(
             &json!([null, {"url":"https://cdn.example/default-id.jpg"}]),
             1,
@@ -526,8 +634,16 @@ mod tests {
 
     #[tokio::test]
     async fn community_fallback_prefers_scrape_then_metadata_and_none() {
-        let scraped_http = Http::fixtures(vec![Fixture::text(community_url(55150, 1), COMMUNITY_CARD_FIXTURE)]);
-        let scraped = fallback_page(&scraped_http, Some(&json!({"steam_appid":55150})), &json!(1)).await;
+        let scraped_http = Http::fixtures(vec![Fixture::text(
+            community_url(55150, 1),
+            COMMUNITY_CARD_FIXTURE,
+        )]);
+        let scraped = fallback_page(
+            &scraped_http,
+            Some(&json!({"steam_appid":55150})),
+            &json!(1),
+        )
+        .await;
         assert_eq!(scraped["source"], "steam-scrape");
         assert_eq!(scraped["items"][0]["author"], "Player & One");
         scraped_http.assert_drained();
@@ -544,7 +660,10 @@ mod tests {
         assert_eq!(metadata_page["page"], 1);
         assert_eq!(metadata_page["items"][0]["id"], "persisted-shot");
         assert_eq!(metadata_page["items"][0]["author"], "IGN");
-        assert_eq!(metadata_page["items"][0]["link"], "https://www.ign.com/games/example");
+        assert_eq!(
+            metadata_page["items"][0]["link"],
+            "https://www.ign.com/games/example"
+        );
         assert!(metadata_page["items"][0].get("youtube_id").is_none());
         failed_http.assert_drained();
         let empty_http = Http::fixtures(vec![Fixture::text(community_url(55150, 1), "")]);
@@ -552,18 +671,25 @@ mod tests {
         assert_eq!(empty_page["source"], "metadata");
         empty_http.assert_drained();
 
-
         let none_page = fallback_page(&Http::fixtures(vec![]), None, &json!(1)).await;
         assert_eq!(none_page, json!({"source":"none","page":1,"items":[]}));
     }
 
     #[tokio::test]
     async fn community_fallback_prioritizes_nonempty_steam_scrape() {
-        let http = Http::fixtures(vec![Fixture::text(community_url(55150, 1), COMMUNITY_CARD_FIXTURE)]);
-        let page = fallback_page(&http, Some(&json!({
-            "steam_appid":55150,
-            "screenshots":[{"id":"persisted","url":"https://cdn.example/a.jpg"}],
-        })), &json!(1)).await;
+        let http = Http::fixtures(vec![Fixture::text(
+            community_url(55150, 1),
+            COMMUNITY_CARD_FIXTURE,
+        )]);
+        let page = fallback_page(
+            &http,
+            Some(&json!({
+                "steam_appid":55150,
+                "screenshots":[{"id":"persisted","url":"https://cdn.example/a.jpg"}],
+            })),
+            &json!(1),
+        )
+        .await;
         assert_eq!(page["source"], "steam-scrape");
         assert_eq!(page["items"].as_array().unwrap().len(), 1);
         http.assert_drained();
@@ -578,7 +704,15 @@ mod tests {
             steam_image_url("https://images.steamusercontent.com/ugc/../shot.jpg"),
             "https://images.steamusercontent.com/ugc/../shot.jpg?imw=512",
         );
-        assert!(sharedfile_id("https://steamcommunity.com/sharedfiles/filedetails/../filedetails/?id=1").is_empty());
-        assert_eq!(sharedfile_url("/sharedfiles/filedetails/?id=123"), "https://steamcommunity.com/sharedfiles/filedetails/?id=123");
+        assert!(
+            sharedfile_id(
+                "https://steamcommunity.com/sharedfiles/filedetails/../filedetails/?id=1"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            sharedfile_url("/sharedfiles/filedetails/?id=123"),
+            "https://steamcommunity.com/sharedfiles/filedetails/?id=123"
+        );
     }
 }

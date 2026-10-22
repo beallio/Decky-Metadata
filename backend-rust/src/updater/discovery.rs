@@ -1,4 +1,9 @@
-use crate::{matching::{py_string, py_truthy}, updater::models::{parse_plugin_version, parse_release_manifest, ParsedPluginVersion, UpdateCandidate}};
+use crate::{
+    matching::{py_string, py_truthy},
+    updater::models::{
+        ParsedPluginVersion, UpdateCandidate, parse_plugin_version, parse_release_manifest,
+    },
+};
 use serde_json::Value;
 
 #[derive(Clone, Debug)]
@@ -21,10 +26,7 @@ fn string_field(record: &Value, field: &str, default: &str) -> String {
 
 pub fn prevalidate_release_candidate(release: &Value) -> Option<PrevalidatedRelease<'_>> {
     let release_record = release.as_object()?;
-    if release_record
-        .get("draft")
-        .is_some_and(py_truthy)
-    {
+    if release_record.get("draft").is_some_and(py_truthy) {
         return None;
     }
     let tag_name = string_field(release, "tag_name", "");
@@ -70,7 +72,6 @@ pub fn manifest_url(prevalidated: &PrevalidatedRelease<'_>) -> String {
         .map(py_string)
         .unwrap_or_default()
 }
-
 
 pub fn validate_manifest_candidate(
     prevalidated: &PrevalidatedRelease<'_>,
@@ -250,11 +251,17 @@ mod tests {
 
         let mut duplicate_zip = release.clone();
         let repeated_zip = duplicate_zip["assets"][1].clone();
-        duplicate_zip["assets"].as_array_mut().unwrap().push(repeated_zip);
+        duplicate_zip["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(repeated_zip);
         assert!(prevalidate_release_candidate(&duplicate_zip).is_none());
         let mut duplicate_manifest = release.clone();
         let repeated_manifest = duplicate_manifest["assets"][0].clone();
-        duplicate_manifest["assets"].as_array_mut().unwrap().push(repeated_manifest);
+        duplicate_manifest["assets"]
+            .as_array_mut()
+            .unwrap()
+            .push(repeated_manifest);
         assert!(prevalidate_release_candidate(&duplicate_manifest).is_none());
 
         let mut wrong_identity = manifest("0.4.0", "stable");
@@ -288,17 +295,46 @@ mod tests {
             candidate("0.3.2", "stable", "2026-07-17"),
             candidate("0.3.3-dev.g1", "development", "2026-07-18"),
         ];
-        assert_eq!(select_candidate(&candidates, "0.3.1", "stable").unwrap().action, "update");
-        assert_eq!(select_candidate(&candidates, "0.3.2-dev.g1", "stable").unwrap().action, "move_to_stable");
-        assert_eq!(select_candidate(&candidates, "0.3.3-dev.g1", "stable").unwrap().action, "downgrade_to_stable");
+        assert_eq!(
+            select_candidate(&candidates, "0.3.1", "stable")
+                .unwrap()
+                .action,
+            "update"
+        );
+        assert_eq!(
+            select_candidate(&candidates, "0.3.2-dev.g1", "stable")
+                .unwrap()
+                .action,
+            "move_to_stable"
+        );
+        assert_eq!(
+            select_candidate(&candidates, "0.3.3-dev.g1", "stable")
+                .unwrap()
+                .action,
+            "downgrade_to_stable"
+        );
         assert!(select_candidate(&candidates, "0.3.2", "stable").is_none());
         assert!(select_candidate(&candidates, "0.3.3-dev.g1", "development").is_none());
 
         let local = [candidate("0.3.2", "stable", "2026-07-17")];
-        assert_eq!(select_candidate(&local, "0.3.2+local", "stable").unwrap().action, "move_to_stable");
+        assert_eq!(
+            select_candidate(&local, "0.3.2+local", "stable")
+                .unwrap()
+                .action,
+            "move_to_stable"
+        );
         assert_eq!(select_candidate(&local, "0.3.3+local", "stable"), None);
-        let huge = [candidate("1000000000000000000000000000000.0.0", "stable", "raw")];
-        assert_eq!(select_candidate(&huge, "999999999999999999999999999999.0.0", "stable").unwrap().version, huge[0].version);
+        let huge = [candidate(
+            "1000000000000000000000000000000.0.0",
+            "stable",
+            "raw",
+        )];
+        assert_eq!(
+            select_candidate(&huge, "999999999999999999999999999999.0.0", "stable")
+                .unwrap()
+                .version,
+            huge[0].version
+        );
     }
 
     #[test]

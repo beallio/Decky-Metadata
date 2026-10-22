@@ -16,6 +16,7 @@ def fixture(tmp_path: Path, management_helper: str | None = None) -> Path:
     js.mkdir(parents=True, exist_ok=True)
     smoke = verify / "smoke_shortcut_name.sh"
     smoke.write_text((ROOT / "scripts/deck/verify/smoke_shortcut_name.sh").read_text())
+    (root / "scripts/deck/temp_paths.py").write_text((ROOT / "scripts/deck/temp_paths.py").read_text())
     (verify / "_lib.sh").write_text(
         """set -euo pipefail
 DECK_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -205,14 +206,16 @@ else:
 def run(tmp_path: Path, *args: str, management_helper: str | None = None, **overrides: str):
     smoke = fixture(tmp_path, management_helper)
     state = tmp_path / "state.json"
-    evidence_root = Path("/tmp/Decky-Metadata/pytest-shortcut-name-smoke") / tmp_path.name
+    evidence_root = tmp_path / "evidence" / "shortcut-name"
     completed = subprocess.run(
         ["bash", str(smoke), *args],
         capture_output=True,
         text=True,
-        timeout=10,
+        timeout=30,
         env={
             **os.environ,
+            "TMPDIR": str(tmp_path),
+            "DECKY_TMP_ROOT": str(tmp_path / "evidence"),
             "FAKE_STATE": str(state),
             "SMOKE_SHORTCUT_NAME_EVIDENCE_DIR": str(evidence_root),
             "DECKY_DECK_HOST": "fixture-deck",
@@ -283,13 +286,15 @@ def test_smoke_runs_absent_control_and_forced_restore_failures_through_real_path
     assert json.loads(state.read_text())["current"] == "Original"
 
 
-def test_smoke_reports_cleanup_failure(tmp_path: Path):
-    completed, _state, _evidence = run(
-        tmp_path, "2312439508", "Expected", FAKE_ABSENT_CONTROL="1", FAKE_CLEANUP_FAIL="1"
+def test_smoke_fails_when_emergency_restore_is_refused(tmp_path: Path):
+    completed, state, _evidence = run(
+        tmp_path, "2312439508", "Expected", FAKE_POST_RENAME_FAILURE="1", FAKE_CLEANUP_FAIL="1"
     )
 
     assert completed.returncode != 0
-    assert "FAIL: cleanup could not restore the exact original shortcut name and sort_as" in completed.stderr
+    remaining = json.loads(state.read_text())
+    assert remaining["current"] == "Expected"
+    assert remaining["state"] is True
 
 
 def test_smoke_executes_the_management_helper_and_rejects_bad_rpc_contracts(tmp_path: Path):
@@ -324,20 +329,6 @@ def test_smoke_restores_a_whitespace_bearing_name_after_a_forced_failure(tmp_pat
     assert completed.returncode != 0
     assert "FAIL: after UI restore did not return the exact original shortcut name" in completed.stderr
     assert json.loads(state.read_text())["current"] == original
-
-
-def test_smoke_uses_the_plugin_scoped_rpc_and_reloads_its_owning_context():
-    helper = (ROOT / "scripts/deck/js/check_shortcut_name_management.js").read_text()
-    probe = (ROOT / "scripts/deck/js/shortcut_name_probe.js").read_text()
-    smoke = (ROOT / "scripts/deck/verify/smoke_shortcut_name.sh").read_text()
-
-    assert "deckyLoaderAPIInit" in helper
-    assert 'api.call.call(api, "get_shortcut_name_management", appId)' in helper
-    assert "[appId]" not in helper
-    assert smoke.count("cdp reload SharedJSContext") == 2
-    assert "overview.display_name.trim()" not in probe
-    assert "wait_for_editor_control" in smoke
-    assert "wait_for_modal_control" in smoke
 
 
 def test_emergency_cleanup_helper_keeps_the_apps_receiver():

@@ -55,6 +55,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install pinned Rust and musl target
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup toolchain install 1.99.0 --profile minimal --target x86_64-unknown-linux-musl
+
       - name: Resolve dev version
         shell: bash
         run: |
@@ -82,16 +88,19 @@ jobs:
           echo "DEV_VERSION=$dev_version" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: npm ci
+        run: ./run.sh npm ci
+
+      - name: Test Rust backend
+        run: ./run.sh npm run test:backend
 
       - name: Build plugin
-        run: npm run build
+        run: ./run.sh npm run build
 
       - name: Package dev prerelease
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/package.mjs --release \
+          ./run.sh node scripts/package.mjs --release \
             --release-version "$DEV_VERSION" \
             --release-tag "v$DEV_VERSION" \
             --channel dev \

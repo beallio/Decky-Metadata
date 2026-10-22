@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable
 
 USER_AGENT = "DeckyMetadata/0.1 (+Decky Loader)"
@@ -137,46 +138,122 @@ class Client:
     def text(self, url: str, **kwargs: Any) -> str:
         return self.fetch(url, **kwargs).body.decode("utf-8", errors="replace")
 
-    def mp4(self, url: str) -> None:
-        from backend.providers import ign
-        require(bool(ign._canonical_mp4_url(url)), "Trailer URL is not an allowed IGN MP4")
-        response = self.fetch(url, headers={"Range": "bytes=0-31", "Origin": "https://steamloopback.host"},
-                              max_bytes=32, prefix=True, allowed_url=lambda target: bool(ign._canonical_mp4_url(target)))
-        require(response.content_type == "video/mp4", "Trailer response Content-Type is not video/mp4")
-        require(len(response.body) >= 12 and response.body[4:8] == b"ftyp", "Trailer response lacks an MP4 ftyp header")
 
-    def github_bytes(self, path: str, *, accept: str = "application/vnd.github+json") -> bytes:
-        """Use gh for GitHub service access, including live asset contract probes."""
-        require(path.startswith("repos/beallio/Decky-Metadata/"), "Unexpected GitHub repository")
-        url = "https://api.github.com/" + path
-        result = subprocess.run(["gh", "api", "--include", "--header", f"Accept: {accept}",
-                                 "--header", "X-GitHub-Api-Version: 2026-03-10", path],
-                                capture_output=True, timeout=max(self.timeout, 60))
-        if result.returncode:
-            match = re.search(rb"HTTP (\d{3})", result.stderr)
-            status = int(match.group(1)) if match else None
-            self.record("GET", url, status)
-            raise ContractError(f"GitHub request failed: HTTP {status}" if status else "GitHub CLI request failed")
-        # Separate gh's HTTP headers from the downloaded data.
-        header, separator, body = result.stdout.partition(b"\r\n\r\n")
-        if not separator:
-            header, separator, body = result.stdout.partition(b"\n\n")
-        require(bool(separator), "GitHub CLI returned no HTTP headers")
-        status_match = re.match(rb"HTTP/\S+ (\d{3})", header)
-        require(status_match is not None, "GitHub CLI returned an invalid HTTP status line")
-        status = int(status_match.group(1))
-        content_match = re.search(rb"(?im)^content-type:\s*([^\r\n;]+)", header)
-        content_type = content_match.group(1).decode("ascii", errors="replace") if content_match else ""
-        self.record("GET", url, status, content_type)
-        require(status == 200, "GitHub API did not return HTTP 200")
-        require(len(body) <= MAX_RESPONSE_BYTES, "GitHub response exceeds the size bound")
-        return body
 
-    def github_json(self, path: str) -> Any:
-        try:
-            return json.loads(self.github_bytes(path))
-        except (ValueError, UnicodeError) as error:
-            raise ContractError("GitHub response is not valid JSON") from error
+class DiagnosticsError(ContractError):
+    def __init__(self, error_type: str, message: str):
+        super().__init__(message)
+        self.error_type = error_type
+
+
+def diagnostics_binary() -> Path:
+    target = os.environ.get("CARGO_TARGET_DIR")
+    if target:
+        root = Path(target).expanduser()
+    else:
+        temporary = Path(os.environ.get("TMPDIR") or "/var/tmp/omp-1000")
+        root = temporary / "cargo-target" / "Decky-Metadata"
+    return (root / "debug" / "backend-diagnostics").resolve()
+
+
+def run_diagnostics(command: str, *arguments: str, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+    binary = diagnostics_binary()
+    try:
+        if not binary.is_file() or not os.access(binary, os.X_OK):
+            raise DiagnosticsError("MissingDiagnosticsBinary", "backend-diagnostics is not available; build it explicitly first")
+        result = subprocess.run(
+            [str(binary), command, *arguments],
+            input=input_text,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=900,
+            check=False,
+        )
+    except DiagnosticsError:
+        raise
+    except subprocess.TimeoutExpired as error:
+        raise DiagnosticsError("TimeoutExpired", "backend-diagnostics timed out") from error
+    except OSError as error:
+        raise DiagnosticsError(type(error).__name__, "backend-diagnostics could not be started") from error
+    if len(result.stdout.encode("utf-8")) > 4 * 1024 * 1024:
+        raise DiagnosticsError("OutputLimitError", "backend-diagnostics output exceeded its limit")
+    return result
+
+
+def native_probe_results(probes: list[tuple[str, str, str]]) -> list[dict[str, Any]]:
+    if not probes:
+        return []
+    expected = [probe[0] for probe in probes]
+    arguments = [argument for probe_id in expected for argument in ("--only", probe_id)]
+
+    def failed(error_type: str, message: str) -> list[dict[str, Any]]:
+        return [
+            {"id": probe_id, "name": name, "fixture": fixture, "ok": False, "requests": [],
+             "error": {"type": error_type, "message": redact(message)}}
+            for probe_id, name, fixture in probes
+        ]
+
+    try:
+        process = run_diagnostics("endpoint-health", *arguments)
+    except DiagnosticsError as error:
+        return failed(error.error_type, str(error))
+    try:
+        output = json.loads(process.stdout)
+    except (ValueError, UnicodeError):
+        return failed("MalformedOutput", "backend-diagnostics returned malformed JSON")
+    if not isinstance(output, list) or [row.get("id") if isinstance(row, dict) else None for row in output] != expected:
+        return failed("MalformedOutput", "backend-diagnostics returned an invalid endpoint result list")
+
+    results: list[dict[str, Any]] = []
+    for row, (probe_id, name, fixture) in zip(output, probes):
+        if (not isinstance(row.get("name"), str) or not isinstance(row.get("fixture"), str)
+                or row["name"] != name or row["fixture"] != fixture
+                or type(row.get("ok")) is not bool or not isinstance(row.get("requests"), list)):
+            return failed("MalformedOutput", "backend-diagnostics returned an invalid endpoint result")
+        error = row.get("error")
+        if (row["ok"] and error is not None) or (
+            not row["ok"] and (not isinstance(error, dict)
+                               or not isinstance(error.get("type"), str)
+                               or not isinstance(error.get("message"), str))
+        ):
+            return failed("MalformedOutput", "backend-diagnostics returned an invalid endpoint error")
+        requests: list[dict[str, Any]] = []
+        for request in row["requests"]:
+            if (not isinstance(request, dict) or not isinstance(request.get("method"), str)
+                    or not isinstance(request.get("url"), str)
+                    or (request.get("status") is not None and type(request["status"]) is not int)
+                    or not isinstance(request.get("content_type"), str)):
+                return failed("MalformedOutput", "backend-diagnostics returned invalid request evidence")
+            try:
+                url = safe_url(request["url"])
+            except (ValueError, UnicodeError):
+                return failed("MalformedOutput", "backend-diagnostics returned invalid request evidence")
+            requests.append({
+                "method": redact(request["method"]),
+                "url": url,
+                "status": request["status"],
+                "content_type": redact(request["content_type"]),
+            })
+        results.append({
+            "id": probe_id,
+            "name": redact(row["name"]),
+            "fixture": redact(row["fixture"]),
+            "ok": row["ok"],
+            "requests": requests,
+            "error": None if error is None else {
+                "type": redact(error["type"]),
+                "message": redact(error["message"]),
+            },
+        })
+
+    failed_probes = any(not result["ok"] for result in results)
+    if process.returncode not in (0, 1) or (process.returncode == 0 and failed_probes) or (
+        process.returncode == 1 and not failed_probes
+    ):
+        return failed("DiagnosticsExitError", "backend-diagnostics returned an inconsistent exit status")
+    return results
 
 
 def run_probe(probe: Probe) -> dict[str, Any]:

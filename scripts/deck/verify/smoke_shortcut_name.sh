@@ -16,14 +16,15 @@ expected_name="${2:-}"
 
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
-evidence_root="${SMOKE_SHORTCUT_NAME_EVIDENCE_DIR:-/tmp/Decky-Metadata/per-game-steam-shortcut-names}"
-[[ "$evidence_root" == /tmp/Decky-Metadata/* ]] || fail "evidence path must be below /tmp/Decky-Metadata"
+evidence_root="${SMOKE_SHORTCUT_NAME_EVIDENCE_DIR:-$(python3 "$DECK_DIR/temp_paths.py" root)/per-game-steam-shortcut-names}"
+evidence_root="$(python3 "$DECK_DIR/temp_paths.py" validate "$evidence_root")" || fail "evidence path must stay below the private temporary root"
 device_label="${DECKY_DECK_HOST:-local}"
 device_label="$(printf %s "$device_label" | tr -cd '[:alnum:]._-')"
 [[ -n "$device_label" ]] || device_label="local"
 evidence_dir="$evidence_root/$device_label"
-mkdir -p "$evidence_dir"
-evidence="$evidence_dir/shortcut-name-${shortcut_appid}.json"
+evidence="$(python3 "$DECK_DIR/temp_paths.py" validate "$evidence_dir/shortcut-name-${shortcut_appid}.json")" || fail "shortcut-name evidence path is unsafe"
+umask 077
+mkdir -p -m 700 -- "$evidence_dir"
 expected_b64="$(printf %s "$expected_name" | base64 | tr -d '\n')"
 original_b64=""
 original_sort_b64=""
@@ -212,26 +213,36 @@ cleanup() {
   status=$?
   cleanup_failed=0
   if [[ "$restore_armed" == 1 && -n "$original_b64" ]]; then
-    cleanup_request="$(cdp eval SharedJSContext "@$JS_DIR/restore_shortcut_name.js" \
-      --var "APPID=$shortcut_appid" --var "NAME_B64=$original_b64" 2>&1)" || cleanup_failed=1
-    if [[ "$cleanup_request" == FAIL:* ]]; then
-      cleanup_failed=1
-    fi
-    restored=0
-    for _ in {1..30}; do
-      current="$(probe || true)"
-      if is_exact_original "$current"; then
-        restored=1
-        break
+    current="$(probe || true)"
+    if is_exact_original "$current"; then
+      restored=1
+    else
+      result=0
+      probe_matches_target "$current" true || result=$?
+      if [[ "$result" == 0 ]]; then
+        cleanup_request="$(cdp eval SharedJSContext "@$JS_DIR/restore_shortcut_name.js" \
+          --var "APPID=$shortcut_appid" --var "NAME_B64=$original_b64" 2>&1)" || cleanup_failed=1
+        if [[ "$cleanup_request" == FAIL:* ]]; then
+          cleanup_failed=1
+        fi
+        restored=0
+        for _ in {1..30}; do
+          current="$(probe || true)"
+          if is_exact_original "$current"; then
+            restored=1
+            break
+          fi
+          sleep 0.1
+        done
+        [[ "$restored" == 1 ]] || cleanup_failed=1
+      else
+        cleanup_failed=1
+        printf 'FAIL: shortcut-name cleanup found a conflicting native name; preserving it\n' >&2
       fi
-      sleep 0.1
-    done
-    if [[ "$restored" != 1 ]]; then
-      cleanup_failed=1
     fi
   fi
   if [[ "$cleanup_failed" == 1 ]]; then
-    printf 'FAIL: cleanup could not restore the exact original shortcut name and sort_as\n' >&2
+    printf 'FAIL: cleanup could not safely restore the exact original shortcut name and sort_as\n' >&2
     exit 1
   fi
   exit "$status"

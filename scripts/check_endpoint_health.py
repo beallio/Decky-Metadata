@@ -10,21 +10,36 @@ from pathlib import Path
 
 if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.endpoint_health import run_probe, utc_now
-from scripts.endpoint_health_probes import PROBES
+from scripts.endpoint_health import native_probe_results, run_probe, utc_now
+from scripts.endpoint_health_probes import NATIVE_PROBES, PROBES
+
+RESULT_ORDER = (
+    "ign-search", "ign-metadata", "ign-trailers", "steam-search", "steam-appdetails",
+    "steam-trailers", "steam-news", "steam-events", "steam-deck-compatibility",
+    "protondb-summary", "protondb-algolia", "steam-community", "steam-tracker",
+    "github-releases", "github-release-assets",
+)
+
+
+def collect_results(only: list[str] | None = None) -> list[dict]:
+    selected = set(only) if only is not None else None
+    python_probes = [probe for probe in PROBES if selected is None or probe.id in selected]
+    native_probes = [probe for probe in NATIVE_PROBES if selected is None or probe[0] in selected]
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(run_probe, probe) for probe in python_probes]
+        results = native_probe_results(native_probes)
+        results.extend(future.result() for future in futures)
+    by_id = {result["id"]: result for result in results}
+    return [by_id[probe_id] for probe_id in RESULT_ORDER if probe_id in by_id]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, required=True, help="Sanitized JSON output path")
-    parser.add_argument("--only", action="append", choices=[probe.id for probe in PROBES],
+    parser.add_argument("--only", action="append", choices=RESULT_ORDER,
                         help="Run only these endpoints (local/manual diagnostics)")
     args = parser.parse_args()
-    selected = [probe for probe in PROBES if args.only is None or probe.id in args.only]
-    # Check a few services at once without sending too many requests.
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        results = list(executor.map(run_probe, selected))
-    # Save every result, including failures, for the issue reporter.
+    results = collect_results(args.only)
     report = {"version": 1, "checked_at": utc_now(), "results": results}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

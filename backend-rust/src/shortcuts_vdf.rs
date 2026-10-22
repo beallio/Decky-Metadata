@@ -1,7 +1,7 @@
 use crc32fast::Hasher as Crc32Hasher;
-use std::fs::File;
 #[cfg(test)]
 use std::fs;
+use std::fs::File;
 use std::io::{Read, Take};
 use std::path::{Path, PathBuf};
 
@@ -67,10 +67,13 @@ impl VdfValue {
             Self::Object(_) => None,
         }
     }
-
 }
 fn python_string_repr(value: &str) -> String {
-    let quote = if value.contains('\'') && !value.contains('"') { '"' } else { '\'' };
+    let quote = if value.contains('\'') && !value.contains('"') {
+        '"'
+    } else {
+        '\''
+    };
     let mut output = String::with_capacity(value.len() + 2);
     output.push(quote);
     for character in value.chars() {
@@ -220,7 +223,8 @@ pub fn name_eligibility(app_id: u32, shortcuts: &[Shortcut]) -> &'static str {
     }
     for shortcut in shortcuts {
         let raw = shortcut.appid_raw.as_ref();
-        let raw_is_missing = raw.is_none() || matches!(raw, Some(VdfValue::String(value)) if value.is_empty());
+        let raw_is_missing =
+            raw.is_none() || matches!(raw, Some(VdfValue::String(value)) if value.is_empty());
         if raw_is_missing {
             if shortcut.app_id == app_id {
                 return "derived_shortcut_id";
@@ -235,7 +239,9 @@ pub fn name_eligibility(app_id: u32, shortcuts: &[Shortcut]) -> &'static str {
 }
 
 pub fn steam_user_id_from_shortcut_path(path: &Path) -> String {
-    let parts = path.components().map(|part| part.as_os_str().to_string_lossy());
+    let parts = path
+        .components()
+        .map(|part| part.as_os_str().to_string_lossy());
     let mut userdata = false;
     for part in parts {
         if userdata {
@@ -286,7 +292,6 @@ fn vdf_get<'a>(fields: &'a [(String, VdfValue)], names: &[&str]) -> Option<&'a V
     }
     None
 }
-
 
 fn parse_wrapped_shortcut_id(value: &str) -> Option<u32> {
     let bytes = value.trim().as_bytes();
@@ -398,10 +403,22 @@ fn parse_text_fallback(data: &[u8], path: &Path) -> Vec<Shortcut> {
             if name.is_empty() {
                 return None;
             }
-            let exe_raw = exes.get(index).map(|value| value.trim()).unwrap_or_default().to_owned();
+            let exe_raw = exes
+                .get(index)
+                .map(|value| value.trim())
+                .unwrap_or_default()
+                .to_owned();
             let exe = strip_surrounding_quotes(&exe_raw);
-            let launch_options = options.get(index).map(|value| value.trim()).unwrap_or_default().to_owned();
-            let icon = icons.get(index).map(|value| value.trim()).unwrap_or_default().to_owned();
+            let launch_options = options
+                .get(index)
+                .map(|value| value.trim())
+                .unwrap_or_default()
+                .to_owned();
+            let icon = icons
+                .get(index)
+                .map(|value| value.trim())
+                .unwrap_or_default()
+                .to_owned();
             let app_id = shortcut_app_id(&exe, &name);
             Some(Shortcut {
                 name,
@@ -499,7 +516,10 @@ mod tests {
             ("name".to_owned(), VdfValue::String("D'Artagnan".to_owned())),
             ("zero".to_owned(), VdfValue::Signed(0)),
         ]);
-        assert_eq!(value.python_string(), r#"{'name': "D'Artagnan", 'zero': 0}"#);
+        assert_eq!(
+            value.python_string(),
+            r#"{'name': "D'Artagnan", 'zero': 0}"#
+        );
     }
 
     #[test]
@@ -509,7 +529,10 @@ mod tests {
         assert_eq!(parsed.len(), 1);
         assert_eq!(parsed[0].name, "Fixture Game");
         assert_eq!(parsed[0].exe, "/games/fixture.sh");
-        assert_eq!(parsed[0].appid_raw.as_ref().and_then(VdfValue::explicit_id), Some(2_312_439_508));
+        assert_eq!(
+            parsed[0].appid_raw.as_ref().and_then(VdfValue::explicit_id),
+            Some(2_312_439_508)
+        );
         assert_eq!(parsed[0].steam_user_id, "765");
         assert_eq!(name_eligibility(2_312_439_508, &parsed), "ready");
     }
@@ -553,7 +576,13 @@ mod tests {
         let expected = shortcut_app_id("/games/derive.sh", "Dérivé");
         assert_eq!(parsed[0].app_id, expected);
         assert_eq!(name_eligibility(expected, &parsed), "derived_shortcut_id");
-        assert_eq!(shortcut_app_id("/home/deck/Emulation/tools/launchers/game.sh", "SteamOS SRM Shortcut"), 4_023_471_294);
+        assert_eq!(
+            shortcut_app_id(
+                "/home/deck/Emulation/tools/launchers/game.sh",
+                "SteamOS SRM Shortcut"
+            ),
+            4_023_471_294
+        );
     }
 
     #[test]

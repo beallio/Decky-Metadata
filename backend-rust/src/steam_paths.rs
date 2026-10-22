@@ -30,7 +30,9 @@ pub fn is_steamos() -> bool {
         let Some((key, value)) = line.split_once('=') else {
             continue;
         };
-        let value = value.trim().trim_matches(|character| character == '\'' || character == '"');
+        let value = value
+            .trim()
+            .trim_matches(|character| character == '\'' || character == '"');
         match key.trim() {
             "ID" => id = value.to_owned(),
             "ID_LIKE" => id_like = value.to_owned(),
@@ -184,7 +186,8 @@ mod tests {
     impl TempDir {
         fn new() -> Self {
             let id = NEXT_DIR.fetch_add(1, Ordering::Relaxed);
-            let path = std::env::temp_dir().join(format!("metadata-steam-paths-{}-{id}", std::process::id()));
+            let path = std::env::temp_dir()
+                .join(format!("metadata-steam-paths-{}-{id}", std::process::id()));
             fs::create_dir_all(&path).unwrap();
             Self(path)
         }
@@ -207,7 +210,15 @@ mod tests {
         let root_target = temp.0.join("root-target");
         let flatpak = home.join(".var/app/com.valvesoftware.Steam/.local/share/Steam");
         let removable = temp.0.join("media/card/SteamLibrary");
-        for path in [&compat, &local, &steam_link_target, &dot_steam, &root_target, &flatpak, &removable] {
+        for path in [
+            &compat,
+            &local,
+            &steam_link_target,
+            &dot_steam,
+            &root_target,
+            &flatpak,
+            &removable,
+        ] {
             fs::create_dir_all(path).unwrap();
         }
         #[cfg(unix)]
@@ -218,7 +229,11 @@ mod tests {
         let mut removable_candidates = vec![removable.clone()];
         removable_candidates.push(temp.0.join("compat-alias"));
         let roots = discover_steam_roots_with(&home, Some(&compat), &removable_candidates);
-        let mut expected = vec![compat.canonicalize().unwrap(), local.canonicalize().unwrap(), dot_steam.canonicalize().unwrap()];
+        let mut expected = vec![
+            compat.canonicalize().unwrap(),
+            local.canonicalize().unwrap(),
+            dot_steam.canonicalize().unwrap(),
+        ];
         #[cfg(unix)]
         expected.push(steam_link_target.canonicalize().unwrap());
         #[cfg(not(unix))]
@@ -244,10 +259,28 @@ mod tests {
         let installs = detect_steam_installs(&[root.clone()]);
         assert_eq!(installs.len(), 1);
         assert_eq!(installs[0].root, root.canonicalize().unwrap());
-        assert_eq!(installs[0].userdata_dirs, vec![user.canonicalize().unwrap()]);
-        assert_eq!(installs[0].shortcut_files, vec![shortcut.canonicalize().unwrap()]);
-        assert_eq!(installs[0].libraryfolders_files, vec![config_library.canonicalize().unwrap(), apps_library.canonicalize().unwrap()]);
-        assert_eq!(installs[0].appmanifest_dirs, vec![root.join("steamapps").canonicalize().unwrap()]);
-        assert_eq!(userdata_roots_from_candidates(&[root.clone()]), vec![root.join("userdata").canonicalize().unwrap()]);
+        assert_eq!(
+            installs[0].userdata_dirs,
+            vec![user.canonicalize().unwrap()]
+        );
+        assert_eq!(
+            installs[0].shortcut_files,
+            vec![shortcut.canonicalize().unwrap()]
+        );
+        assert_eq!(
+            installs[0].libraryfolders_files,
+            vec![
+                config_library.canonicalize().unwrap(),
+                apps_library.canonicalize().unwrap()
+            ]
+        );
+        assert_eq!(
+            installs[0].appmanifest_dirs,
+            vec![root.join("steamapps").canonicalize().unwrap()]
+        );
+        assert_eq!(
+            userdata_roots_from_candidates(&[root.clone()]),
+            vec![root.join("userdata").canonicalize().unwrap()]
+        );
     }
 }

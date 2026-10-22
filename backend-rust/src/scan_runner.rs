@@ -17,10 +17,8 @@ impl Jobs {
     }
 
     pub async fn drain(&self) {
-        let (metadata, activity) = tokio::join!(
-            take_job(&self.metadata),
-            take_job(&self.activity),
-        );
+        let (metadata, activity) =
+            tokio::join!(take_job(&self.metadata), take_job(&self.activity),);
         let _ = tokio::join!(wait_job(metadata), wait_job(activity));
     }
 }
@@ -76,11 +74,7 @@ fn new_progress(status: &str) -> Value {
     })
 }
 
-async fn start(
-    state: Arc<AppState>,
-    games: &Value,
-    pipeline: Pipeline,
-) -> Result<Value, String> {
+async fn start(state: Arc<AppState>, games: &Value, pipeline: Pipeline) -> Result<Value, String> {
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
     }
@@ -104,10 +98,7 @@ async fn start(
     Ok(progress)
 }
 
-pub async fn start_scan_missing(
-    state: Arc<AppState>,
-    games: &Value,
-) -> Result<Value, String> {
+pub async fn start_scan_missing(state: Arc<AppState>, games: &Value) -> Result<Value, String> {
     start(state, games, Pipeline::Metadata).await
 }
 
@@ -119,10 +110,7 @@ pub async fn get_scan_progress(state: &AppState) -> Value {
         .clone()
 }
 
-pub async fn get_missing_metadata_count(
-    state: &AppState,
-    games: &Value,
-) -> Result<i64, String> {
+pub async fn get_missing_metadata_count(state: &AppState, games: &Value) -> Result<i64, String> {
     let games = game_array(games)?;
     let storage = state.store().await?;
     let records = storage.data()["metadata"].as_object();
@@ -195,7 +183,11 @@ pub async fn refresh_steam_activity_for_app(
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
     }
-    if let Some(value) = result.metadata.as_ref().filter(|value| matching::py_truthy(value)) {
+    if let Some(value) = result
+        .metadata
+        .as_ref()
+        .filter(|value| matching::py_truthy(value))
+    {
         save_activity(state, &target.app_id, value.clone()).await?;
     }
     if state.cancel.is_cancelled() {
@@ -232,28 +224,40 @@ fn game_array(games: &Value) -> Result<&[Value], String> {
 
 fn parse_game_id(value: Option<&Value>) -> Option<Number> {
     let raw = matching::py_string(value?);
-    matching::integer_string(matching::py_strip(&raw))?.parse().ok()
+    matching::integer_string(matching::py_strip(&raw))?
+        .parse()
+        .ok()
 }
-
 
 fn python_int_argument(value: &Value) -> Result<Number, String> {
     match value {
         Value::Bool(value) => Ok(Number::from(u8::from(*value))),
         Value::Number(value) if !value.is_f64() => Ok(value.clone()),
         Value::Number(value) => {
-            let number = value.as_f64().filter(|number| number.is_finite()).ok_or("invalid app_id")?.trunc();
+            let number = value
+                .as_f64()
+                .filter(|number| number.is_finite())
+                .ok_or("invalid app_id")?
+                .trunc();
             let integer = format!("{number:.0}");
-            matching::integer_string(&integer).and_then(|value| value.parse().ok()).ok_or_else(|| "invalid app_id".into())
-        },
-        Value::String(value) => matching::integer_string(value).and_then(|value| value.parse().ok())
+            matching::integer_string(&integer)
+                .and_then(|value| value.parse().ok())
+                .ok_or_else(|| "invalid app_id".into())
+        }
+        Value::String(value) => matching::integer_string(value)
+            .and_then(|value| value.parse().ok())
             .ok_or_else(|| format!("invalid literal for int() with base 10: '{value}'")),
         _ => Err("invalid app_id".into()),
     }
 }
 
 fn game_input_id(value: Option<&Value>) -> Result<Option<Number>, String> {
-    let Some(value) = value else { return Ok(None); };
-    if matching::py_strip(&matching::py_string(value)).is_empty() { return Ok(None); }
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    if matching::py_strip(&matching::py_string(value)).is_empty() {
+        return Ok(None);
+    }
     python_int_argument(value).map(Some)
 }
 
@@ -579,7 +583,9 @@ async fn metadata_match(
 
     let delisted_app_id = delisted::resolve_delisted_appid_for_title(
         title,
-        delisted_index.and_then(|index| index.get("apps")).unwrap_or(&Value::Null),
+        delisted_index
+            .and_then(|index| index.get("apps"))
+            .unwrap_or(&Value::Null),
     );
     if delisted_app_id != 0 {
         let pinned = json!({
@@ -594,7 +600,9 @@ async fn metadata_match(
             return Ok(ScanResult::matched(delisted, "delisted"));
         }
         if matching::py_truthy(&delisted)
-            && (best_partial.as_ref().is_none_or(|best| !matching::py_truthy(best))
+            && (best_partial
+                .as_ref()
+                .is_none_or(|best| !matching::py_truthy(best))
                 || matching::safe_int(&delisted["steam_appid"]).is_some_and(|id| id != 0))
         {
             best_partial = Some(delisted);
@@ -602,13 +610,19 @@ async fn metadata_match(
     }
 
     if let Some(mut partial) = best_partial.filter(matching::py_truthy) {
-        if let Some(fetched) = metadata::auto_fetch(state, title).await?.filter(matching::py_truthy) {
-            if let (Some(existing), Some(fetched)) = (partial.as_object_mut(), fetched.as_object()) {
+        if let Some(fetched) = metadata::auto_fetch(state, title)
+            .await?
+            .filter(matching::py_truthy)
+        {
+            if let (Some(existing), Some(fetched)) = (partial.as_object_mut(), fetched.as_object())
+            {
                 for (key, value) in fetched {
                     let current = existing.get(key);
                     let manual_source = key == "source"
                         && current.is_some_and(matching::py_truthy)
-                        && matching::py_string(current.unwrap()).trim().eq_ignore_ascii_case("manual");
+                        && matching::py_string(current.unwrap())
+                            .trim()
+                            .eq_ignore_ascii_case("manual");
                     if current.is_none()
                         || !current.is_some_and(matching::py_truthy)
                         || manual_source
@@ -626,7 +640,10 @@ async fn metadata_match(
         return Ok(ScanResult::miss(Some(partial), "metadata"));
     }
 
-    let Some(fetched) = metadata::auto_fetch(state, title).await?.filter(matching::py_truthy) else {
+    let Some(fetched) = metadata::auto_fetch(state, title)
+        .await?
+        .filter(matching::py_truthy)
+    else {
         return Ok(ScanResult::miss(None, "ign"));
     };
     let enriched = metadata::with_steam_news(state, fetched, title, 10, true).await?;
@@ -668,7 +685,10 @@ mod tests {
     use serde_json::json;
     use std::{
         path::PathBuf,
-        sync::{Arc, atomic::{AtomicU64, Ordering}},
+        sync::{
+            Arc,
+            atomic::{AtomicU64, Ordering},
+        },
         time::Duration,
     };
 
@@ -823,8 +843,14 @@ mod tests {
         vec![
             store_search(title, json!([{"id": app_id, "name": title}])),
             steam_events(app_id, json!([event(app_id)])),
-            steam_compatibility(app_id, Ok(json!({"success": 1, "results": {"resolved_category": 3}}))),
-            steam_details(app_id, Ok(json!({"name": title, "short_description": "Steam description"}))),
+            steam_compatibility(
+                app_id,
+                Ok(json!({"success": 1, "results": {"resolved_category": 3}})),
+            ),
+            steam_details(
+                app_id,
+                Ok(json!({"name": title, "short_description": "Steam description"})),
+            ),
         ]
     }
 
@@ -877,9 +903,11 @@ mod tests {
                 steam_details(app_id, Err(())),
             ]);
         } else {
-            fixtures.extend(slugs.iter().map(|_| {
-                post_json(json!({"data": {"objectSelectByTypeAndSlug": null}}))
-            }));
+            fixtures.extend(
+                slugs
+                    .iter()
+                    .map(|_| post_json(json!({"data": {"objectSelectByTypeAndSlug": null}}))),
+            );
             fixtures.push(empty_ign_search());
         }
         fixtures
@@ -944,15 +972,24 @@ mod tests {
         assert_eq!(progress["completed"], 3);
         assert_eq!(progress["assigned"], 2);
         assert_eq!(progress["failed"], 1);
-        assert_eq!(progress["completed"], progress["assigned"].as_i64().unwrap() + progress["failed"].as_i64().unwrap());
+        assert_eq!(
+            progress["completed"],
+            progress["assigned"].as_i64().unwrap() + progress["failed"].as_i64().unwrap()
+        );
         assert_eq!(progress["message"], "No metadata match for Partial Save");
         let storage = state.store().await.unwrap();
         assert_eq!(storage.data()["metadata"]["1"]["steam_appid"], 100);
-        assert_eq!(storage.data()["metadata"]["1"]["deck_compat_override"], "valve");
+        assert_eq!(
+            storage.data()["metadata"]["1"]["deck_compat_override"],
+            "valve"
+        );
         assert_eq!(storage.data()["metadata"]["1"]["deck_compat_category"], 3);
         assert_eq!(storage.data()["metadata"]["2"]["steam_appid"], 600);
         assert_eq!(storage.data()["metadata"]["2"]["source"], "IGN");
-        assert_eq!(storage.data()["metadata"]["2"]["description"], "IGN description");
+        assert_eq!(
+            storage.data()["metadata"]["2"]["description"],
+            "IGN description"
+        );
         assert_eq!(storage.data()["metadata"]["3"]["steam_appid"], 601);
         assert_eq!(storage.data()["metadata"]["3"]["source"], "Manual");
         drop(storage);
@@ -1018,7 +1055,9 @@ mod tests {
         let (_directory, mut state) = test_state(fixtures).await;
         let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
         let games = json!([{"appid": 1, "name": "Single Flight"}]);
-        start_scan_missing(Arc::clone(&state), &games).await.unwrap();
+        start_scan_missing(Arc::clone(&state), &games)
+            .await
+            .unwrap();
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
             .await
             .unwrap();
@@ -1066,7 +1105,11 @@ mod tests {
         state.shutdown().await.unwrap();
         gate.resume.notify_one();
         state.jobs.drain().await;
-        assert!(state.store().await.unwrap().data()["metadata"].get("7").is_none());
+        assert!(
+            state.store().await.unwrap().data()["metadata"]
+                .get("7")
+                .is_none()
+        );
         state.http.assert_drained();
     }
 
@@ -1101,7 +1144,10 @@ mod tests {
         let scan_progress = wait_for_scan_completion(&state).await;
         assert_eq!(scan_progress["assigned"], 1);
         assert_eq!(get_activity_refresh_progress(&state).await["running"], true);
-        assert_eq!(state.store().await.unwrap().data()["metadata"]["8"]["steam_appid"], 500);
+        assert_eq!(
+            state.store().await.unwrap().data()["metadata"]["8"]["steam_appid"],
+            500
+        );
 
         gate.resume.notify_one();
         state.jobs.drain().await;
@@ -1131,7 +1177,12 @@ mod tests {
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
             .await
             .unwrap();
-        assert_eq!(refresh_steam_activity_for_app(&state, &json!(1)).await.unwrap(), None);
+        assert_eq!(
+            refresh_steam_activity_for_app(&state, &json!(1))
+                .await
+                .unwrap(),
+            None
+        );
         assert_eq!(get_activity_refresh_progress(&state).await["running"], true);
 
         gate.resume.notify_one();
@@ -1179,9 +1230,15 @@ mod tests {
         assert_eq!(progress["failed"], 1);
         assert_eq!(progress["status"], "completed");
         let storage = state.store().await.unwrap();
-        assert_eq!(storage.data()["metadata"]["1"]["steam_news"][0]["title"], "Update 400");
+        assert_eq!(
+            storage.data()["metadata"]["1"]["steam_news"][0]["title"],
+            "Update 400"
+        );
         assert_eq!(storage.data()["metadata"]["2"]["steam_news"], json!([]));
-        assert_eq!(storage.data()["metadata"]["2"]["steam_store_url"], "https://store.steampowered.com/app/401/");
+        assert_eq!(
+            storage.data()["metadata"]["2"]["steam_store_url"],
+            "https://store.steampowered.com/app/401/"
+        );
         drop(storage);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
@@ -1208,17 +1265,33 @@ mod tests {
         )
         .await;
 
-        assert_eq!(refresh_steam_activity_for_app(&state, &json!(999)).await.unwrap(), None);
+        assert_eq!(
+            refresh_steam_activity_for_app(&state, &json!(999))
+                .await
+                .unwrap(),
+            None
+        );
         let refreshed = refresh_steam_activity_for_app(&state, &json!(101))
             .await
             .unwrap()
             .unwrap();
         assert_eq!(refreshed["steam_news"][0]["title"], "Update 400");
-        assert_eq!(refresh_steam_activity_for_app(&state, &json!(202)).await.unwrap(), None);
+        assert_eq!(
+            refresh_steam_activity_for_app(&state, &json!(202))
+                .await
+                .unwrap(),
+            None
+        );
         let storage = state.store().await.unwrap();
-        assert_eq!(storage.data()["metadata"]["101"]["steam_news"][0]["title"], "Update 400");
+        assert_eq!(
+            storage.data()["metadata"]["101"]["steam_news"][0]["title"],
+            "Update 400"
+        );
         assert_eq!(storage.data()["metadata"]["202"]["steam_news"], json!([]));
-        assert_eq!(storage.data()["metadata"]["202"]["steam_store_url"], "https://store.steampowered.com/app/456/");
+        assert_eq!(
+            storage.data()["metadata"]["202"]["steam_store_url"],
+            "https://store.steampowered.com/app/456/"
+        );
         drop(storage);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
@@ -1245,12 +1318,17 @@ mod tests {
             "not a game",
         ]);
         assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 2);
-        start_scan_missing(Arc::clone(&state), &json!([
-            {"appid":"1","name":""},
-            {"appid":2,"name":null},
-            {"appid":false,"name":null},
-            {"appid":"3","name":"Already Complete"},
-        ])).await.unwrap();
+        start_scan_missing(
+            Arc::clone(&state),
+            &json!([
+                {"appid":"1","name":""},
+                {"appid":2,"name":null},
+                {"appid":false,"name":null},
+                {"appid":"3","name":"Already Complete"},
+            ]),
+        )
+        .await
+        .unwrap();
         state.jobs.drain().await;
         let progress = get_scan_progress(&state).await;
         assert_eq!(progress["total"], 3);
@@ -1266,20 +1344,33 @@ mod tests {
 
     #[tokio::test]
     async fn unicode_and_unbounded_game_ids_keep_their_canonical_record_keys() {
-        let (_directory,state)=test_state(Vec::new()).await;
-        let present="99999999999999999999999999999999999999999999";
-        let absent="99999999999999999999999999999999999999999998";
-        set_record(&state,42,json!({"title":"Present","source":"Steam"})).await;
-        state.change(|tx| tx.set(&["metadata",present],json!({"title":"Wide ID","source":"Steam"}))).await.unwrap();
-        let wide_number:Value=serde_json::from_str(present).unwrap();
-        let games=json!([{"appid":"٤٢"},{"appid":present},{"appid":wide_number},{"appid":"٤٣"},{"appid":absent}]);
-        assert_eq!(get_missing_metadata_count(&state,&games).await.unwrap(),2);
-        start_scan_missing(Arc::clone(&state),&json!([{"appid":"٤٣","name":""},{"appid":absent,"name":""}])).await.unwrap();
+        let (_directory, state) = test_state(Vec::new()).await;
+        let present = "99999999999999999999999999999999999999999999";
+        let absent = "99999999999999999999999999999999999999999998";
+        set_record(&state, 42, json!({"title":"Present","source":"Steam"})).await;
+        state
+            .change(|tx| {
+                tx.set(
+                    &["metadata", present],
+                    json!({"title":"Wide ID","source":"Steam"}),
+                )
+            })
+            .await
+            .unwrap();
+        let wide_number: Value = serde_json::from_str(present).unwrap();
+        let games = json!([{"appid":"٤٢"},{"appid":present},{"appid":wide_number},{"appid":"٤٣"},{"appid":absent}]);
+        assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 2);
+        start_scan_missing(
+            Arc::clone(&state),
+            &json!([{"appid":"٤٣","name":""},{"appid":absent,"name":""}]),
+        )
+        .await
+        .unwrap();
         state.jobs.drain().await;
-        let progress=get_scan_progress(&state).await;
-        assert_eq!(progress["total"],2);
-        assert_eq!(progress["completed"],2);
-        assert_eq!(progress["failed"],2);
+        let progress = get_scan_progress(&state).await;
+        assert_eq!(progress["total"], 2);
+        assert_eq!(progress["completed"], 2);
+        assert_eq!(progress["failed"], 2);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }
@@ -1287,23 +1378,40 @@ mod tests {
     #[tokio::test]
     async fn null_games_start_empty_completed_jobs_with_baseline_progress_fields() {
         let (_directory, state) = test_state(Vec::new()).await;
-        assert_eq!(get_missing_metadata_count(&state, &Value::Null).await.unwrap(), 0);
-        assert!(start_scan_missing(Arc::clone(&state), &json!(7)).await.is_err());
-        assert!(start_scan_missing(
-            Arc::clone(&state),
-            &json!([{"appid": "bad", "name": "Bad ID"}]),
-        ).await.is_err());
+        assert_eq!(
+            get_missing_metadata_count(&state, &Value::Null)
+                .await
+                .unwrap(),
+            0
+        );
+        assert!(
+            start_scan_missing(Arc::clone(&state), &json!(7))
+                .await
+                .is_err()
+        );
+        assert!(
+            start_scan_missing(
+                Arc::clone(&state),
+                &json!([{"appid": "bad", "name": "Bad ID"}]),
+            )
+            .await
+            .is_err()
+        );
         assert_eq!(get_scan_progress(&state).await["status"], "idle");
-        assert!(start_scan_missing(Arc::clone(&state), &Value::Null)
-            .await
-            .unwrap()["running"]
-            .as_bool()
-            .unwrap());
-        assert!(start_refresh_steam_activities(Arc::clone(&state), &Value::Null)
-            .await
-            .unwrap()["running"]
-            .as_bool()
-            .unwrap());
+        assert!(
+            start_scan_missing(Arc::clone(&state), &Value::Null)
+                .await
+                .unwrap()["running"]
+                .as_bool()
+                .unwrap()
+        );
+        assert!(
+            start_refresh_steam_activities(Arc::clone(&state), &Value::Null)
+                .await
+                .unwrap()["running"]
+                .as_bool()
+                .unwrap()
+        );
         state.jobs.drain().await;
         for progress in [
             get_scan_progress(&state).await,

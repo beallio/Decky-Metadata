@@ -12,7 +12,10 @@ use std::{
     task::{Context, Poll},
     time::{Duration, Instant},
 };
-use tokio::{io::{AsyncRead, AsyncWrite, ReadBuf}, net::TcpStream};
+use tokio::{
+    io::{AsyncRead, AsyncWrite, ReadBuf},
+    net::TcpStream,
+};
 use tokio_tungstenite::{
     client_async_with_config,
     tungstenite::{Error as WebSocketError, Message, protocol::WebSocketConfig},
@@ -41,7 +44,6 @@ enum BridgeError {
     Retryable(String),
     Failure(String),
 }
-
 
 impl BigPictureEvaluator {
     pub fn new(cancel: CancellationToken) -> Result<Self, String> {
@@ -88,7 +90,9 @@ impl BigPictureEvaluator {
                         if self.claim_debugger_warning(Instant::now()) {
                             logging::event(
                                 "cef",
-                                &format!("Steam Big Picture evaluator temporarily unavailable: {error}"),
+                                &format!(
+                                    "Steam Big Picture evaluator temporarily unavailable: {error}"
+                                ),
                                 json!({"error":error}),
                                 log::Level::Warn,
                             );
@@ -125,7 +129,6 @@ impl BigPictureEvaluator {
         }
     }
 
-
     fn claim_debugger_warning(&self, now: Instant) -> bool {
         let mut last = self.last_debugger_warning.lock().unwrap();
         if last.is_some_and(|last| now.saturating_duration_since(last) < WARNING_INTERVAL) {
@@ -136,7 +139,8 @@ impl BigPictureEvaluator {
     }
 
     async fn find_big_picture_target(&self) -> Result<Option<Value>, BridgeError> {
-        self.find_big_picture_target_at(DISCOVERY_URL, DISCOVERY_TIMEOUT).await
+        self.find_big_picture_target_at(DISCOVERY_URL, DISCOVERY_TIMEOUT)
+            .await
     }
 
     async fn find_big_picture_target_at(
@@ -192,10 +196,13 @@ impl BigPictureEvaluator {
     ) -> Result<Value, BridgeError> {
         let operation = async {
             let (url, host, port) = local_websocket_url(websocket_url)?;
-            let stream = tokio::time::timeout(handshake_timeout, TcpStream::connect((host.as_str(), port)))
-                .await
-                .map_err(|_| BridgeError::Retryable("DevTools WebSocket connect timed out".into()))?
-                .map_err(|error| BridgeError::Retryable(error.to_string()))?;
+            let stream =
+                tokio::time::timeout(handshake_timeout, TcpStream::connect((host.as_str(), port)))
+                    .await
+                    .map_err(|_| {
+                        BridgeError::Retryable("DevTools WebSocket connect timed out".into())
+                    })?
+                    .map_err(|error| BridgeError::Retryable(error.to_string()))?;
             let handshake_budget = Arc::new(AtomicUsize::new(MAX_UPGRADE_HEADER_BYTES));
             let handshake_active = Arc::new(AtomicBool::new(true));
             let transport = HandshakeBudgetIo {
@@ -203,15 +210,17 @@ impl BigPictureEvaluator {
                 remaining: Arc::clone(&handshake_budget),
                 active: Arc::clone(&handshake_active),
             };
-            let mut config=WebSocketConfig::default();
-            config.max_frame_size=Some(MAX_RESPONSE_BYTES);
-            config.max_message_size=Some(MAX_RESPONSE_BYTES);
+            let mut config = WebSocketConfig::default();
+            config.max_frame_size = Some(MAX_RESPONSE_BYTES);
+            config.max_message_size = Some(MAX_RESPONSE_BYTES);
             let (mut websocket, _) = tokio::time::timeout(
                 handshake_timeout,
                 client_async_with_config(url.as_str(), transport, Some(config)),
             )
             .await
-            .map_err(|_| BridgeError::Retryable("DevTools WebSocket upgrade header timed out".into()))?
+            .map_err(|_| {
+                BridgeError::Retryable("DevTools WebSocket upgrade header timed out".into())
+            })?
             .map_err(websocket_error)?;
             handshake_active.store(false, Ordering::Relaxed);
 
@@ -223,9 +232,11 @@ impl BigPictureEvaluator {
 
             tokio::time::timeout(response_timeout, async {
                 loop {
-                    let message = websocket.next().await.ok_or_else(|| {
-                        BridgeError::Retryable("Unexpected socket close".into())
-                    })?.map_err(websocket_error)?;
+                    let message = websocket
+                        .next()
+                        .await
+                        .ok_or_else(|| BridgeError::Retryable("Unexpected socket close".into()))?
+                        .map_err(websocket_error)?;
                     let text = match message {
                         Message::Text(text) => text,
                         Message::Close(_) => {
@@ -236,7 +247,9 @@ impl BigPictureEvaluator {
                     let response: Value = serde_json::from_str(text.as_str())
                         .map_err(|error| BridgeError::Failure(error.to_string()))?;
                     if !response.is_object() {
-                        return Err(BridgeError::Failure("Invalid DevTools WebSocket response".into()));
+                        return Err(BridgeError::Failure(
+                            "Invalid DevTools WebSocket response".into(),
+                        ));
                     }
                     if response.get("id").is_some_and(python_id_matches) {
                         return Ok(response);
@@ -279,8 +292,8 @@ fn websocket_error(error: WebSocketError) -> BridgeError {
     }
 }
 fn local_websocket_url(raw: &str) -> Result<(reqwest::Url, String, u16), BridgeError> {
-    let mut url = reqwest::Url::parse(raw)
-        .map_err(|error| BridgeError::Failure(error.to_string()))?;
+    let mut url =
+        reqwest::Url::parse(raw).map_err(|error| BridgeError::Failure(error.to_string()))?;
     let raw_host = url
         .host_str()
         .ok_or_else(|| BridgeError::Retryable("DevTools WebSocket target is not local".into()))?;
@@ -288,10 +301,10 @@ fn local_websocket_url(raw: &str) -> Result<(reqwest::Url, String, u16), BridgeE
         .strip_prefix('[')
         .and_then(|host| host.strip_suffix(']'))
         .unwrap_or(raw_host);
-    if !matches!(url.scheme(), "ws" | "wss")
-        || !matches!(host, "127.0.0.1" | "localhost" | "::1")
-    {
-        return Err(BridgeError::Retryable("DevTools WebSocket target is not local".into()));
+    if !matches!(url.scheme(), "ws" | "wss") || !matches!(host, "127.0.0.1" | "localhost" | "::1") {
+        return Err(BridgeError::Retryable(
+            "DevTools WebSocket target is not local".into(),
+        ));
     }
     let host = host.to_owned();
     let port = url.port().unwrap_or(80);
@@ -323,17 +336,24 @@ async fn discover_targets(
                 .and_then(|length| length.parse::<u64>().ok())
                 .ok_or_else(|| BridgeError::Failure("Invalid DevTools discovery length".into()))?;
             if length > MAX_DISCOVERY_BYTES as u64 {
-                return Err(BridgeError::Failure("DevTools discovery response is too large".into()));
+                return Err(BridgeError::Failure(
+                    "DevTools discovery response is too large".into(),
+                ));
             }
         }
         let mut body = Vec::with_capacity(
-            response.content_length().unwrap_or(0).min(MAX_DISCOVERY_BYTES as u64) as usize,
+            response
+                .content_length()
+                .unwrap_or(0)
+                .min(MAX_DISCOVERY_BYTES as u64) as usize,
         );
         let mut chunks = response.bytes_stream();
         while let Some(chunk) = chunks.next().await {
             let chunk = chunk.map_err(|error| BridgeError::Retryable(error.to_string()))?;
             if chunk.len() > MAX_DISCOVERY_BYTES.saturating_sub(body.len()) {
-                return Err(BridgeError::Failure("DevTools discovery response is too large".into()));
+                return Err(BridgeError::Failure(
+                    "DevTools discovery response is too large".into(),
+                ));
             }
             body.extend_from_slice(&chunk);
         }
@@ -345,9 +365,9 @@ async fn discover_targets(
 }
 
 fn select_big_picture_target(targets: &Value) -> Result<Option<Value>, BridgeError> {
-    let targets = targets
-        .as_array()
-        .ok_or_else(|| BridgeError::Failure("DevTools discovery response is not an array".into()))?;
+    let targets = targets.as_array().ok_or_else(|| {
+        BridgeError::Failure("DevTools discovery response is not an array".into())
+    })?;
     let mut best: Option<(i32, &Value)> = None;
     for target in targets {
         let object = target
@@ -360,13 +380,21 @@ fn select_big_picture_target(targets: &Value) -> Result<Option<Value>, BridgeErr
         }
         let title = object.get("title").filter(|value| py_truthy(value));
         let title = title
-            .map(|value| value.as_str().ok_or_else(|| BridgeError::Failure("Invalid DevTools target title".into())))
+            .map(|value| {
+                value
+                    .as_str()
+                    .ok_or_else(|| BridgeError::Failure("Invalid DevTools target title".into()))
+            })
             .transpose()?
             .unwrap_or("")
             .to_lowercase();
         let target_url = object.get("url").filter(|value| py_truthy(value));
         let target_url = target_url
-            .map(|value| value.as_str().ok_or_else(|| BridgeError::Failure("Invalid DevTools target URL".into())))
+            .map(|value| {
+                value
+                    .as_str()
+                    .ok_or_else(|| BridgeError::Failure("Invalid DevTools target URL".into()))
+            })
             .transpose()?
             .unwrap_or("")
             .to_lowercase();
@@ -378,9 +406,7 @@ fn select_big_picture_target(targets: &Value) -> Result<Option<Value>, BridgeErr
             -100
         } else if title.contains("big picture") || title.contains("modalit") {
             100
-        } else if target_url.contains("browsertype=3")
-            && !target_url.contains("browserviewpopup")
-        {
+        } else if target_url.contains("browsertype=3") && !target_url.contains("browserviewpopup") {
             60
         } else {
             0
@@ -389,7 +415,9 @@ fn select_big_picture_target(targets: &Value) -> Result<Option<Value>, BridgeErr
             best = Some((score, target));
         }
     }
-    Ok(best.filter(|(score, _)| *score > 0).map(|(_, target)| target.clone()))
+    Ok(best
+        .filter(|(score, _)| *score > 0)
+        .map(|(_, target)| target.clone()))
 }
 
 fn evaluation_result(target: &Value, mut response: Value) -> Result<Value, BridgeError> {
@@ -405,9 +433,7 @@ fn evaluation_result(target: &Value, mut response: Value) -> Result<Value, Bridg
         let details = details
             .as_object()
             .ok_or_else(|| BridgeError::Failure("Invalid Runtime.evaluate exception".into()))?;
-        let exception = details
-            .get("exception")
-            .filter(|value| py_truthy(value));
+        let exception = details.get("exception").filter(|value| py_truthy(value));
         let error = exception
             .and_then(|exception| exception.get("description"))
             .filter(|value| py_truthy(value))
@@ -455,7 +481,9 @@ impl AsyncRead for HandshakeBudgetIo {
         if !this.active.load(Ordering::Relaxed) {
             return Pin::new(&mut this.stream).poll_read(context, buffer);
         }
-        let allowed = buffer.remaining().min(this.remaining.load(Ordering::Relaxed));
+        let allowed = buffer
+            .remaining()
+            .min(this.remaining.load(Ordering::Relaxed));
         if allowed == 0 {
             return Poll::Ready(Err(io::Error::new(
                 ErrorKind::InvalidData,
@@ -574,7 +602,10 @@ mod tests {
 
     #[tokio::test]
     async fn discovery_selects_big_picture_and_excludes_non_default_world_targets() {
-        let LocalHttp { url, response_started } = local_http(
+        let LocalHttp {
+            url,
+            response_started,
+        } = local_http(
             CEF_DISCOVERY_TARGET_SELECTION_FIXTURE.as_bytes().to_vec(),
             CEF_DISCOVERY_TARGET_SELECTION_FIXTURE.len(),
             false,
@@ -615,15 +646,22 @@ mod tests {
     #[tokio::test]
     async fn discovery_rejects_malformed_and_oversized_bodies() {
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
-        let LocalHttp { url, response_started } = local_http(b"not-json".to_vec(), 8, false).await;
+        let LocalHttp {
+            url,
+            response_started,
+        } = local_http(b"not-json".to_vec(), 8, false).await;
         assert!(matches!(
-            evaluator.find_big_picture_target_at(&url, DISCOVERY_TIMEOUT).await,
+            evaluator
+                .find_big_picture_target_at(&url, DISCOVERY_TIMEOUT)
+                .await,
             Err(BridgeError::Failure(_))
         ));
         response_started.await.unwrap();
 
-        let LocalHttp { url, response_started } =
-            local_http(Vec::new(), MAX_DISCOVERY_BYTES + 1, false).await;
+        let LocalHttp {
+            url,
+            response_started,
+        } = local_http(Vec::new(), MAX_DISCOVERY_BYTES + 1, false).await;
         assert!(matches!(
             evaluator.find_big_picture_target_at(&url, DISCOVERY_TIMEOUT).await,
             Err(BridgeError::Failure(message)) if message.contains("too large")
@@ -634,16 +672,24 @@ mod tests {
     #[tokio::test]
     async fn discovery_deadline_and_cancellation_interrupt_local_http_reads() {
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
-        let LocalHttp { url, response_started } = local_http(b"[".to_vec(), 2, true).await;
+        let LocalHttp {
+            url,
+            response_started,
+        } = local_http(b"[".to_vec(), 2, true).await;
         let result = evaluator
             .find_big_picture_target_at(&url, Duration::from_millis(40))
             .await;
         response_started.await.unwrap();
-        assert!(matches!(result, Err(BridgeError::Retryable(message)) if message.contains("discovery timed out")));
+        assert!(
+            matches!(result, Err(BridgeError::Retryable(message)) if message.contains("discovery timed out"))
+        );
 
         let cancel = CancellationToken::new();
         let evaluator = BigPictureEvaluator::new(cancel.clone()).unwrap();
-        let LocalHttp { url, response_started } = local_http(b"[".to_vec(), 2, true).await;
+        let LocalHttp {
+            url,
+            response_started,
+        } = local_http(b"[".to_vec(), 2, true).await;
         let request = tokio::spawn(async move {
             evaluator
                 .find_big_picture_target_at(&url, DISCOVERY_TIMEOUT)
@@ -651,11 +697,15 @@ mod tests {
         });
         response_started.await.unwrap();
         cancel.cancel();
-        assert!(matches!(request.await.unwrap(), Err(BridgeError::Cancelled)));
+        assert!(matches!(
+            request.await.unwrap(),
+            Err(BridgeError::Cancelled)
+        ));
     }
 
     #[tokio::test]
-    async fn websocket_runs_runtime_evaluate_merges_tab_and_exceeds_handshake_budget_after_upgrade() {
+    async fn websocket_runs_runtime_evaluate_merges_tab_and_exceeds_handshake_budget_after_upgrade()
+    {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let (command_tx, command_rx) = oneshot::channel();
@@ -672,21 +722,35 @@ mod tests {
                 "id":command["id"],
                 "result":{"result":{"value":{"status":"playing","appId":570,"tab":"object tab","description":large}}}
             });
-            websocket.send(Message::text(reply.to_string())).await.unwrap();
+            websocket
+                .send(Message::text(reply.to_string()))
+                .await
+                .unwrap();
         });
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
         let target = target_for(&format!("ws://{address}/devtools/page/fixture"));
         let result = evaluator
-            .evaluate_target(&target, "({status:'playing',appId:570})", UPGRADE_TIMEOUT, RESPONSE_TIMEOUT)
+            .evaluate_target(
+                &target,
+                "({status:'playing',appId:570})",
+                UPGRADE_TIMEOUT,
+                RESPONSE_TIMEOUT,
+            )
             .await
             .unwrap();
         let command = command_rx.await.unwrap();
         assert_eq!(command["method"], "Runtime.evaluate");
-        assert_eq!(command["params"]["expression"], "({status:'playing',appId:570})");
+        assert_eq!(
+            command["params"]["expression"],
+            "({status:'playing',appId:570})"
+        );
         assert_eq!(command["params"]["returnByValue"], true);
         assert_eq!(command["params"]["awaitPromise"], false);
         assert_eq!(result["tab"], "Steam Big Picture Mode");
-        assert_eq!(result["description"].as_str().unwrap().len(), MAX_UPGRADE_HEADER_BYTES + 1024);
+        assert_eq!(
+            result["description"].as_str().unwrap().len(),
+            MAX_UPGRADE_HEADER_BYTES + 1024
+        );
     }
 
     #[tokio::test]
@@ -702,7 +766,10 @@ mod tests {
         tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let _ = read_http_headers(&mut socket).await;
-            socket.write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n").await.unwrap();
+            socket
+                .write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n")
+                .await
+                .unwrap();
         });
         let error = evaluator
             .websocket_json_request(
@@ -757,7 +824,9 @@ mod tests {
             )
             .await
             .unwrap_err();
-        assert!(matches!(timeout, BridgeError::Retryable(message) if message.contains("upgrade header timed out")));
+        assert!(
+            matches!(timeout, BridgeError::Retryable(message) if message.contains("upgrade header timed out"))
+        );
     }
 
     #[tokio::test]
@@ -780,7 +849,9 @@ mod tests {
             )
             .await
             .unwrap_err();
-        assert!(matches!(timeout, BridgeError::Retryable(message) if message.contains("read timed out")));
+        assert!(
+            matches!(timeout, BridgeError::Retryable(message) if message.contains("read timed out"))
+        );
 
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
@@ -789,9 +860,9 @@ mod tests {
             let mut websocket = tokio_tungstenite::accept_async_with_config(
                 stream,
                 Some({
-                    let mut config=WebSocketConfig::default();
-                    config.max_message_size=Some(MAX_RESPONSE_BYTES+1024);
-                    config.max_frame_size=Some(MAX_RESPONSE_BYTES+1024);
+                    let mut config = WebSocketConfig::default();
+                    config.max_message_size = Some(MAX_RESPONSE_BYTES + 1024);
+                    config.max_frame_size = Some(MAX_RESPONSE_BYTES + 1024);
                     config
                 }),
             )
@@ -824,7 +895,10 @@ mod tests {
             let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
             let _ = websocket.next().await.unwrap().unwrap();
             let _ = connected_tx.send(());
-            let disconnected = websocket.next().await.map_or(true, |message| message.is_err());
+            let disconnected = websocket
+                .next()
+                .await
+                .map_or(true, |message| message.is_err());
             let _ = closed_tx.send(disconnected);
         });
         let evaluator_task = tokio::spawn(async move {
@@ -839,7 +913,10 @@ mod tests {
         });
         connected_rx.await.unwrap();
         cancel.cancel();
-        assert!(matches!(evaluator_task.await.unwrap(), Err(BridgeError::Cancelled)));
+        assert!(matches!(
+            evaluator_task.await.unwrap(),
+            Err(BridgeError::Cancelled)
+        ));
         assert!(closed_rx.await.unwrap());
     }
 
@@ -894,7 +971,6 @@ mod tests {
             BigPictureEvaluator::error_envelope(&BridgeError::Cancelled),
             json!({"status":"Steam UI unavailable","error":"Plugin is unloading","runtimeMissing":true})
         );
-
 
         let cancel = CancellationToken::new();
         cancel.cancel();

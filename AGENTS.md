@@ -12,11 +12,12 @@ Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gami
 
 - **Frontend:** TypeScript / React in `src/*.ts(x)`, bundled by **rollup** into
   `dist/index.js` (the committed plugin artifact). Tooling is **npm / pnpm**.
-- **Backend:** the Decky entry point `main.py` plus the `backend/` package,
-  using only the Python standard library and the Decky runtime.
+- **Backend:** Rust in `backend-rust/`, built as a static x86-64 Linux executable.
+  The fork runs `bin/backend` directly. Upstream Loader uses the unchanged Python
+  transport shim in `main.py`; no Python business backend is shipped.
 
-There is **no uv project layout** here, but Python backend tests run through
-`uv run --with pytest` in an ephemeral environment (`.protocol: TDD_REQUIRED=true`).
+Python development tools and their pytest tests remain. Rust behavior tests run
+through locked Cargo commands (`.protocol: TDD_REQUIRED=true`).
 The quality gate covers type checking, build, frontend tests, and backend checks.
 It is defined in `scripts/orchestration-hooks/quality-gates`.
 
@@ -31,16 +32,16 @@ inspection, then output this handshake:
 AGENT_PROTOCOL_HANDSHAKE
 
 Project Root:
-Detected Language(s): TypeScript/React, Python
+Detected Language(s): TypeScript/React, Rust, Python tooling
 Execution Mode: Project
 Git Repository Present: (Yes/No)
-Cache Root: /tmp/Decky-Metadata
+Cache Root: (resolved TMPDIR, fallback /var/tmp/omp-1000)
 Protocol Version: 2
 Command Wrapper: ./run.sh
 
 Confirmed Policies:
 [ ] Top-down planning
-[ ] Cache isolation (/tmp, never inside Dropbox)
+[ ] Cache isolation (temporary directory, never inside Dropbox)
 [ ] Verified filesystem state
 [ ] Verified dependency state (package.json / node_modules)
 [ ] Verified run wrapper
@@ -62,8 +63,8 @@ package.json / tsconfig.json      # frontend build config (rollup, tsc)
 rollup.config.js                  # bundles src/ -> dist/index.js
 src/*.ts(x)                       # TypeScript/React frontend
 dist/index.js                     # committed build artifact
-main.py                           # Decky backend entry point
-backend/                          # storage, matching, providers, and other backend modules
+main.py                           # pinned upstream-Loader Python transport shim
+backend-rust/                     # Cargo manifest/lock, Rust backend and diagnostics
 plugin.json                       # Decky plugin manifest
 scripts/check_tdd.sh              # pre-commit sanity check
 scripts/orchestration            # symlink -> agent-orchestration engine
@@ -78,11 +79,8 @@ Never reference files that have not been confirmed through filesystem inspection
 
 # 3. Command and Cache Policy
 
-All temp files, tool caches, and installs must live under:
-
-```
-/tmp/Decky-Metadata/
-```
+Honor the existing `TMPDIR`. If unset, use `/var/tmp/omp-1000` and create it with
+mode `0700`. Keep generated caches and build output outside the checkout.
 
 Run project commands through the wrapper so the redirections apply:
 
@@ -91,12 +89,14 @@ Run project commands through the wrapper so the redirections apply:
 ./run.sh npm run build
 ./run.sh npx tsc --noEmit
 ./run.sh python3 -m py_compile main.py
+./run.sh npm run test:backend
+./run.sh npm run build:backend
 ```
 
-`run.sh` exports `TMPDIR`, `XDG_CACHE_HOME`, `npm_config_cache`, and
-`PYTHONPYCACHEPREFIX` under the cache root. **No generated caches, `node_modules`,
-or build temp may be committed inside the repo.** (`dist/index.js` is the one
-intentionally committed build output.)
+`run.sh` exports tool caches under the resolved temporary root. It preserves
+explicit `CARGO_HOME` and `CARGO_TARGET_DIR`; the default Cargo target directory is
+`${TMPDIR}/cargo-target/Decky-Metadata`. Never commit caches, `node_modules`, or
+native build output. `dist/index.js` is the intentionally committed build artifact.
 
 ---
 
@@ -105,9 +105,11 @@ intentionally committed build output.)
 - Frontend deps come from `package.json` / `package-lock.json`. Install with
   `npm ci` (or `pnpm install --frozen-lockfile`). Never assume a package exists —
   verify it in `package.json` or `node_modules`.
-- The backend (`main.py`) targets the Python standard library and the Decky
-  runtime. Do not add third-party Python dependencies without an explicit plan
-  entry — Decky plugins ship without a package manager on-device.
+- The backend uses `backend-rust/Cargo.toml` and its committed lockfile. Use Rust
+  `1.99.0`, the `x86_64-unknown-linux-musl` target, and musl C tools. Preserve the
+  pinned Decky SDK revision and copy its upstream shim unchanged. Python tooling
+  is allowed; do not reintroduce Python plugin business logic or runtime packages.
+- Keep `NOTICE` current when Rust dependencies or the toolchain licenses change.
 - If API behavior is uncertain: read the project source, then `@decky/*` or
   official docs, then web search. Speculative code is forbidden.
 
@@ -161,8 +163,13 @@ which runs:
 ```
 npx tsc --noEmit          # frontend type-check
 npm run build             # rollup bundle -> dist/index.js
-python3 -m py_compile main.py   # backend syntax check
-uv run --with pytest -- pytest -q   # backend tests
+npm run test              # frontend behavior
+npm run test:backend      # locked Rust behavior tests
+npm run build:backend     # locked static musl backend
+node --test tests/package_mjs_test.mjs
+cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
+python3 -m py_compile main.py   # supplied shim syntax
+uv run --with pytest -- pytest -q   # independent Python tooling tests
 ```
 
 A modifying task is complete only when:
@@ -171,10 +178,12 @@ A modifying task is complete only when:
 [ ] tsc --noEmit passes
 [ ] npm run build succeeds (dist/index.js regenerated when frontend changed)
 [ ] vitest passes (frontend unit tests: src/**/*.test.ts)
+[ ] locked Cargo tests and static backend build pass
+[ ] Node packaging tests pass; host diagnostics executable builds
 [ ] main.py byte-compiles
 [ ] pytest passes when tests/ exists
 [ ] README updated when behavior or usage changed
-[ ] caches/installs stayed under /tmp/Decky-Metadata
+[ ] caches and installs stayed under the resolved temporary root or explicit Cargo overrides
 [ ] progress and verification reported in chat
 [ ] on-device checks run for src/steam/ changes (see below)
 ```

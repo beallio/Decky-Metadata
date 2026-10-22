@@ -1,9 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
+import { buildBackend, resolvedTmpDir } from "./build_backend.mjs";
 
 const PLUGIN_FOLDER_NAME = "Decky-Metadata";
 const CRC_TABLE = makeCrcTable();
@@ -15,11 +16,12 @@ const VERSION_RE =
 
 function main() {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const packageJsonPath = path.join(repoRoot, "package.json");
-  const pluginJsonPath = path.join(repoRoot, "plugin.json");
-  const packageJson = readJson(packageJsonPath);
-  const pluginJson = readJson(pluginJsonPath);
+  const packageJson = readJson(path.join(repoRoot, "package.json"));
+  const pluginJson = readJson(path.join(repoRoot, "plugin.json"));
   validatePackageVersions(packageJson, pluginJson);
+  if (pluginJson.backend !== "bin/backend") {
+    throw new Error('plugin.json backend must be "bin/backend"');
+  }
   const baseVersion = packageJson.version;
 
   // Explicit version stamp for CI-published releases (stable X.Y.Z or a
@@ -38,69 +40,100 @@ function main() {
     const gitHash = releaseBuild ? "" : getGitShortHash(repoRoot);
     version = gitHash ? `${baseVersion}+${gitHash}` : baseVersion;
   }
+  const releaseOptions = process.argv.includes("--emit-release-metadata")
+    ? resolveReleaseMetadataOptions(version)
+    : null;
   const bundlePath = path.join(repoRoot, "dist", "index.js");
-
   if (!fs.existsSync(bundlePath)) {
     throw new Error("Missing dist/index.js. Run npm run build before packaging.");
   }
 
-  const stagingBase = "/tmp/Decky-Metadata";
-  const stagingRoot = path.join(stagingBase, "build-package");
+  // Cargo's named artifact is validated before staging or replacing any ZIP.
+  const backendPath = buildBackend(repoRoot);
+  const stagingBase = resolvedTmpDir();
+  const stagingRoot = fs.mkdtempSync(
+    path.join(stagingBase, "decky-metadata-package-"),
+  );
   const stagingPlugin = path.join(stagingRoot, PLUGIN_FOLDER_NAME);
-  assertPathInside(stagingBase, stagingRoot);
+  const zipPath = path.join(repoRoot, "Decky-Metadata.zip");
+  const zipTempPath = path.join(
+    repoRoot,
+    `.Decky-Metadata.zip.${process.pid}.${randomUUID()}.tmp`,
+  );
 
-  fs.rmSync(stagingRoot, { recursive: true, force: true });
-  fs.mkdirSync(path.join(stagingPlugin, "dist"), { recursive: true });
+  try {
+    fs.mkdirSync(stagingPlugin, { recursive: true });
+    assertPathInside(stagingBase, stagingRoot);
+    const files = [
+      ["main.py", "main.py"],
+      ["package.json", "package.json"],
+      ["plugin.json", "plugin.json"],
+      ["LICENSE", "LICENSE"],
+      ["dist/index.js", "dist/index.js"],
+    ];
+    const optionalFiles = [
+      ["NOTICE", "NOTICE"],
+      ["dist/index.js.map", "dist/index.js.map"],
+    ];
 
-  const files = [
-    ["main.py", "main.py"],
-    ["package.json", "package.json"],
-    ["plugin.json", "plugin.json"],
-    ["LICENSE", "LICENSE"],
-    ["dist/index.js", "dist/index.js"],
-    ...findPythonModules(repoRoot, "backend").map((relative) => [relative, relative]),
-  ];
-  const optionalFiles = [
-    ["NOTICE", "NOTICE"],
-    ["dist/index.js.map", "dist/index.js.map"],
-  ];
-
-  for (const [sourceRelative, targetRelative] of files) {
-    stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version);
-  }
-
-  for (const [sourceRelative, targetRelative] of optionalFiles) {
-    if (fs.existsSync(path.join(repoRoot, sourceRelative))) {
+    for (const [sourceRelative, targetRelative] of files) {
       stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version);
     }
-  }
 
-  const entries = [...files, ...optionalFiles]
-    .filter(([sourceRelative]) => fs.existsSync(path.join(repoRoot, sourceRelative)))
-    .map(([, targetRelative]) => ({
-      archiveName: `${PLUGIN_FOLDER_NAME}/${targetRelative}`.replaceAll(path.sep, "/"),
-      filePath: path.join(stagingPlugin, targetRelative),
-    }));
+    const stagedFiles = [...files];
+    for (const [sourceRelative, targetRelative] of optionalFiles) {
+      if (fs.existsSync(path.join(repoRoot, sourceRelative))) {
+        stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, version);
+        stagedFiles.push([sourceRelative, targetRelative]);
+      }
+    }
 
-  // Fixed output filename; the version+hash lives inside plugin.json/package.json.
-  const zipPath = path.join(repoRoot, "Decky-Metadata.zip");
-  fs.rmSync(zipPath, { force: true });
-  writeZip(zipPath, entries);
-  fs.rmSync(stagingRoot, { recursive: true, force: true });
+    const nativePath = path.join(stagingPlugin, "bin", "backend");
+    fs.mkdirSync(path.dirname(nativePath), { recursive: true });
+    fs.copyFileSync(backendPath, nativePath);
+    fs.chmodSync(nativePath, 0o755);
 
-  console.log(`Packaged version: ${version}`);
-  console.log(zipPath);
+    const entries = [
+      ...stagedFiles.map(([, targetRelative]) => ({
+        archiveName: `${PLUGIN_FOLDER_NAME}/${targetRelative}`.replaceAll(
+          path.sep,
+          "/",
+        ),
+        filePath: path.join(stagingPlugin, targetRelative),
+        mode: 0o100644,
+      })),
+      {
+        archiveName: `${PLUGIN_FOLDER_NAME}/bin/backend`,
+        filePath: nativePath,
+        mode: 0o100755,
+      },
+    ];
 
-  if (process.argv.includes("--emit-release-metadata")) {
-    emitReleaseMetadata({ repoRoot, zipPath, version, packageJson, pluginJson });
+    // Build beside the destination, then atomically replace it only when the
+    // complete ZIP is ready. A failed prerequisite never removes the old ZIP.
+    writeZip(zipTempPath, entries);
+    fs.renameSync(zipTempPath, zipPath);
+
+    console.log(`Packaged version: ${version}`);
+    console.log(zipPath);
+    if (releaseOptions) {
+      emitReleaseMetadata({
+        repoRoot,
+        zipPath,
+        version,
+        packageJson,
+        pluginJson,
+        releaseOptions,
+      });
+    }
+  } finally {
+    fs.rmSync(zipTempPath, { force: true });
+    fs.rmSync(stagingRoot, { recursive: true, force: true });
   }
 }
 
-// Writes the release manifest + checksum sidecar the self-updater trusts. The
-// manifest's sha256 is the digest of the whole zip (exactly what Decky Loader
-// re-verifies before installing), and its fields are what backend discovery
-// validates: pluginName/packageName identity, tag==v+version, and channel.
-function emitReleaseMetadata({ repoRoot, zipPath, version, packageJson, pluginJson }) {
+// Validate release identity before the build and ZIP replacement.
+function resolveReleaseMetadataOptions(version) {
   const tag = getFlagValue("--release-tag") ?? `v${version}`;
   if (`v${version}` !== tag) {
     throw new Error(
@@ -109,13 +142,23 @@ function emitReleaseMetadata({ repoRoot, zipPath, version, packageJson, pluginJs
   }
 
   let channel = getFlagValue("--channel");
-  if (channel === null) {
-    channel = version.includes("-dev.") ? "dev" : "stable";
-  }
+  if (channel === null) channel = version.includes("-dev.") ? "dev" : "stable";
   if (channel !== "stable" && channel !== "dev") {
     throw new Error(`--channel must be "stable" or "dev", got: ${channel}`);
   }
+  return { tag, channel };
+}
 
+// The checksum is for the complete archive, as required by Decky update discovery.
+function emitReleaseMetadata({
+  repoRoot,
+  zipPath,
+  version,
+  packageJson,
+  pluginJson,
+  releaseOptions,
+}) {
+  const { tag, channel } = releaseOptions;
   const assetName = path.basename(zipPath);
   const sha256 = createHash("sha256").update(fs.readFileSync(zipPath)).digest("hex");
 
@@ -173,22 +216,6 @@ function resolveReleaseVersion(releaseVersion, baseVersion) {
   return releaseVersion;
 }
 
-function findPythonModules(repoRoot, dirRelative) {
-  const results = [];
-  const walk = (currentRelative) => {
-    const currentAbsolute = path.join(repoRoot, currentRelative);
-    for (const entry of fs.readdirSync(currentAbsolute, { withFileTypes: true })) {
-      const entryRelative = path.join(currentRelative, entry.name);
-      if (entry.isDirectory()) {
-        walk(entryRelative);
-      } else if (entry.isFile() && entry.name.endsWith(".py")) {
-        results.push(entryRelative);
-      }
-    }
-  };
-  walk(dirRelative);
-  return results.sort();
-}
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -222,24 +249,23 @@ function stageFile(repoRoot, stagingPlugin, sourceRelative, targetRelative, vers
     const data = readJson(sourcePath);
     data.version = version;
     fs.writeFileSync(targetPath, `${JSON.stringify(data, null, 2)}\n`);
-    return;
+  } else {
+    fs.copyFileSync(sourcePath, targetPath);
   }
-  fs.copyFileSync(sourcePath, targetPath);
+  fs.chmodSync(targetPath, 0o644);
 }
 
 function assertPathInside(parent, child) {
-  const resolvedParent = path.resolve(parent);
-  const resolvedChild = path.resolve(child);
-  const parentForCompare =
-    process.platform === "win32" ? resolvedParent.toLowerCase() : resolvedParent;
-  const childForCompare =
-    process.platform === "win32" ? resolvedChild.toLowerCase() : resolvedChild;
-
+  const resolvedParent = fs.realpathSync(parent);
+  const resolvedChild = fs.realpathSync(child);
+  const relativePath = path.relative(resolvedParent, resolvedChild);
   if (
-    childForCompare !== parentForCompare &&
-    !childForCompare.startsWith(`${parentForCompare}${path.sep}`)
+    !relativePath ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relativePath)
   ) {
-    throw new Error(`Refusing to remove staging outside project: ${resolvedChild}`);
+    throw new Error(`Refusing to stage outside TMPDIR: ${resolvedChild}`);
   }
 }
 
@@ -272,7 +298,7 @@ function writeZip(zipPath, entries) {
 
     const centralHeader = Buffer.alloc(46);
     centralHeader.writeUInt32LE(0x02014b50, 0);
-    centralHeader.writeUInt16LE(20, 4);
+    centralHeader.writeUInt16LE((3 << 8) | 20, 4);
     centralHeader.writeUInt16LE(20, 6);
     centralHeader.writeUInt16LE(0, 8);
     centralHeader.writeUInt16LE(8, 10);
@@ -286,7 +312,7 @@ function writeZip(zipPath, entries) {
     centralHeader.writeUInt16LE(0, 32);
     centralHeader.writeUInt16LE(0, 34);
     centralHeader.writeUInt16LE(0, 36);
-    centralHeader.writeUInt32LE(0, 38);
+    centralHeader.writeUInt32LE(entry.mode * 0x10000, 38);
     centralHeader.writeUInt32LE(offset, 42);
     centralParts.push(centralHeader, nameBuffer);
 

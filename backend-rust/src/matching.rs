@@ -11,12 +11,10 @@ static RX_WHITESPACE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[\s\x{1c}-\x{1f}]+").expect("fixed whitespace regex"));
 static RX_TITLE_MARKS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"[™®©]").expect("fixed title-mark regex"));
-static RX_TITLE_BRACKETS: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\[[^\]]+\]|\([^\)]*\)").expect("fixed title-bracket regex")
-});
-static RX_TITLE_ARTICLES: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b(the|a|an)\b").expect("fixed title-article regex")
-});
+static RX_TITLE_BRACKETS: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[[^\]]+\]|\([^\)]*\)").expect("fixed title-bracket regex"));
+static RX_TITLE_ARTICLES: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b(the|a|an)\b").expect("fixed title-article regex"));
 static RX_TITLE_EDITIONS: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\b(remaster(ed)?|hd|definitive|ultimate|complete|goty|edition)\b")
         .expect("fixed title-edition regex")
@@ -45,8 +43,9 @@ static RX_BR_SIMPLE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)<br\s*/?>").expect("fixed line-break regex"));
 static RX_STRIP_TAGS: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"<[^>]+>").expect("fixed tag regex"));
-static RX_SCRIPT_STYLE_OPEN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)<(script|style)\b[^>]*>").expect("fixed script/style opener regex"));
+static RX_SCRIPT_STYLE_OPEN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)<(script|style)\b[^>]*>").expect("fixed script/style opener regex")
+});
 static RX_SCRIPT_CLOSE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)</script\s*>").expect("fixed script closer regex"));
 static RX_STYLE_CLOSE: LazyLock<Regex> =
@@ -76,19 +75,16 @@ static RX_LINE_SPACES: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r" *\n *").expect("fixed line-space regex"));
 static RX_MANY_NEWLINES: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\n{3,}").expect("fixed newline-collapse regex"));
-static RX_ISO_DATE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\A(\d{4})-(\d{2})-(\d{2})\z").expect("fixed ISO-date regex")
-});
+static RX_ISO_DATE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\A(\d{4})-(\d{2})-(\d{2})\z").expect("fixed ISO-date regex"));
 static RX_ISO_DATETIME: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\A(\d{4}-\d{2}-\d{2})T.*\z").expect("fixed ISO-datetime-prefix regex")
 });
 static RX_MONTH_FIRST_DATE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\A([A-Za-z]+) (\d{1,2}),? (\d{4})\z")
-        .expect("fixed month-first date regex")
+    Regex::new(r"\A([A-Za-z]+) (\d{1,2}),? (\d{4})\z").expect("fixed month-first date regex")
 });
 static RX_DAY_FIRST_DATE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\A(\d{1,2}) ([A-Za-z]+),? (\d{4})\z")
-        .expect("fixed day-first date regex")
+    Regex::new(r"\A(\d{1,2}) ([A-Za-z]+),? (\d{4})\z").expect("fixed day-first date regex")
 });
 
 static RX_NON_PRIMARY_DEMO: LazyLock<Regex> =
@@ -103,8 +99,9 @@ static RX_NON_PRIMARY_SOUNDTRACK: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\bsoundtrack\b").expect("fixed non-primary soundtrack regex"));
 static RX_NON_PRIMARY_OST: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\bost\b").expect("fixed non-primary OST regex"));
-static RX_NON_PRIMARY_SEASON_PASS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\bseason\s+pass\b").expect("fixed non-primary season-pass regex"));
+static RX_NON_PRIMARY_SEASON_PASS: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\bseason\s+pass\b").expect("fixed non-primary season-pass regex")
+});
 static RX_NON_PRIMARY_DLC: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\bdlc\b").expect("fixed non-primary DLC regex"));
 static RX_NON_PRIMARY_PACK: LazyLock<Regex> =
@@ -117,8 +114,9 @@ static RX_NON_PRIMARY_ART_BOOK: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\bart\s+book\b").expect("fixed non-primary art-book regex"));
 static RX_NON_PRIMARY_TRAILER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\btrailer\b").expect("fixed non-primary trailer regex"));
-static RX_NON_PRIMARY_DEDICATED_SERVER: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\bdedicated\s+server\b").expect("fixed non-primary dedicated-server regex"));
+static RX_NON_PRIMARY_DEDICATED_SERVER: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\bdedicated\s+server\b").expect("fixed non-primary dedicated-server regex")
+});
 static RX_NON_PRIMARY_SERVER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\bserver\b").expect("fixed non-primary server regex"));
 static RX_NON_PRIMARY_TEST: LazyLock<Regex> =
@@ -209,8 +207,32 @@ pub(crate) fn py_strip(value: &str) -> &str {
     value.trim_matches(py_is_whitespace)
 }
 
-fn py_casefold(value: &str) -> String {
-    value.case_fold().collect()
+pub(crate) fn casefold(value: &str) -> String {
+    // Extend the dependency's Unicode 9 tables to the Python baseline's Unicode 16.
+    value
+        .chars()
+        .map(|ch| match ch {
+            '\u{1c89}' | '\u{a7b8}' | '\u{a7ba}' | '\u{a7bc}' | '\u{a7be}' | '\u{a7c0}'
+            | '\u{a7c2}' | '\u{a7c7}' | '\u{a7c9}' | '\u{a7cc}' | '\u{a7d0}' | '\u{a7d6}'
+            | '\u{a7d8}' | '\u{a7da}' | '\u{a7f5}' => char::from_u32(ch as u32 + 1).unwrap(),
+            '\u{1c90}'..='\u{1cba}' => char::from_u32(ch as u32 - 3008).unwrap(),
+            '\u{1cbd}'..='\u{1cbf}' => char::from_u32(ch as u32 - 3008).unwrap(),
+            '\u{2c2f}' => '\u{2c5f}',
+            '\u{a7c4}' => '\u{a794}',
+            '\u{a7c5}' => '\u{282}',
+            '\u{a7c6}' => '\u{1d8e}',
+            '\u{a7cb}' => '\u{264}',
+            '\u{a7dc}' => '\u{19b}',
+            '\u{10570}'..='\u{1057a}' => char::from_u32(ch as u32 + 39).unwrap(),
+            '\u{1057c}'..='\u{1058a}' => char::from_u32(ch as u32 + 39).unwrap(),
+            '\u{1058c}'..='\u{10592}' => char::from_u32(ch as u32 + 39).unwrap(),
+            '\u{10594}'..='\u{10595}' => char::from_u32(ch as u32 + 39).unwrap(),
+            '\u{10d50}'..='\u{10d65}' => char::from_u32(ch as u32 + 32).unwrap(),
+            '\u{16e40}'..='\u{16e5f}' => char::from_u32(ch as u32 + 32).unwrap(),
+            _ => ch,
+        })
+        .case_fold()
+        .collect()
 }
 
 fn append_entity(output: &mut String, replacement: EntityReplacement) {
@@ -293,9 +315,7 @@ fn named_entity(value: &str, amp: usize) -> Option<(usize, EntityReplacement)> {
     let mut end = start;
     let mut count = 0;
     for (offset, ch) in value[start..].char_indices() {
-        if count == 32
-            || matches!(ch, '\t' | '\n' | '\u{0c}' | ' ' | '<' | '&' | '#' | ';')
-        {
+        if count == 32 || matches!(ch, '\t' | '\n' | '\u{0c}' | ' ' | '<' | '&' | '#' | ';') {
             break;
         }
         end = start + offset + ch.len_utf8();
@@ -390,7 +410,7 @@ fn remove_words_unless_last_letter_erased(pattern: &Regex, text: String) -> Stri
 
 /// Normalize titles using the source's Unicode casefold and marker-removal rules.
 pub fn normalise_match_title(title: &str) -> String {
-    let mut text = py_casefold(decode_html_entities(title).as_ref());
+    let mut text = casefold(decode_html_entities(title).as_ref());
     text = RX_TITLE_MARKS.replace_all(&text, "").into_owned();
     text = RX_TITLE_BRACKETS.replace_all(&text, " ").into_owned();
     text = remove_words_unless_last_letter_erased(&RX_TITLE_ARTICLES, text);
@@ -402,11 +422,11 @@ pub fn normalise_match_title(title: &str) -> String {
 
 /// Detect Steam search results that are variants rather than the requested game.
 pub fn is_non_primary_steam_title(name: &str, query: &str) -> bool {
-    let name = py_casefold(decode_html_entities(name).as_ref());
-    let query = py_casefold(decode_html_entities(query).as_ref());
-    NON_PRIMARY_PATTERNS.iter().any(|pattern| {
-        pattern.is_match(&name) && (query.is_empty() || !pattern.is_match(&query))
-    })
+    let name = casefold(decode_html_entities(name).as_ref());
+    let query = casefold(decode_html_entities(query).as_ref());
+    NON_PRIMARY_PATTERNS
+        .iter()
+        .any(|pattern| pattern.is_match(&name) && (query.is_empty() || !pattern.is_match(&query)))
 }
 
 /// Require every distinctive query token to be present in the candidate title.
@@ -424,8 +444,8 @@ pub fn distinctive_tokens_present(query_norm: &str, candidate_norm: &str) -> boo
 
 /// Apply the token-subset and overlap constraints used for IGN title matches.
 pub fn reasonable_match(query: &str, title: &str) -> bool {
-    let query = py_casefold(query);
-    let title = py_casefold(title);
+    let query = casefold(query);
+    let title = casefold(title);
     let query_tokens: HashSet<&str> = RX_ASCII_WORDS
         .find_iter(&query)
         .map(|matched| matched.as_str())
@@ -440,8 +460,8 @@ pub fn reasonable_match(query: &str, title: &str) -> bool {
     if query_tokens.is_subset(&title_tokens) || title_tokens.is_subset(&query_tokens) {
         return true;
     }
-    let overlap = query_tokens.intersection(&title_tokens).count() as f64
-        / query_tokens.len().max(1) as f64;
+    let overlap =
+        query_tokens.intersection(&title_tokens).count() as f64 / query_tokens.len().max(1) as f64;
     overlap >= 0.55
 }
 
@@ -459,7 +479,7 @@ pub fn ign_title_acceptable(query: &str, candidate_title: &str) -> bool {
 /// Return whether any provider platform string names a PC platform.
 pub fn has_pc_platform(platforms: &[String]) -> bool {
     platforms.iter().any(|platform| {
-        let folded = py_casefold(py_strip(platform));
+        let folded = casefold(py_strip(platform));
         let normalized = RX_WHITESPACE.replace_all(&folded, " ");
         PC_PLATFORM_KEYWORDS
             .iter()
@@ -476,7 +496,7 @@ pub fn console_title_suffix(title: &str) -> Option<String> {
             .or_else(|| captures.get(2))
             .map_or("", |matched| matched.as_str()),
     );
-    let folded = py_casefold(token);
+    let folded = casefold(token);
     let normalized = RX_WHITESPACE.replace_all(&folded, " ");
     CONSOLE_TITLE_SUFFIXES
         .contains(&normalized.as_ref())
@@ -547,7 +567,9 @@ fn close_implicit_list_items(text: &str) -> String {
             continue;
         };
         let tag = captures.get(2).map_or("", |group| group.as_str());
-        let closing = captures.get(1).is_some_and(|group| !group.as_str().is_empty());
+        let closing = captures
+            .get(1)
+            .is_some_and(|group| !group.as_str().is_empty());
         output.push_str(&text[copied_through..matched.start()]);
         if tag.eq_ignore_ascii_case("li") {
             if !closing && open_items.last().copied().unwrap_or(false) {
@@ -572,7 +594,11 @@ fn close_implicit_list_items(text: &str) -> String {
         copied_through = matched.end();
     }
     output.push_str(&text[copied_through..]);
-    output.push_str("</li>".repeat(open_items.iter().filter(|open| **open).count()).as_str());
+    output.push_str(
+        "</li>"
+            .repeat(open_items.iter().filter(|open| **open).count())
+            .as_str(),
+    );
     output
 }
 
@@ -652,7 +678,11 @@ pub fn rating_to_percent(value: &Value) -> Option<i64> {
     if !number.is_finite() {
         return None;
     }
-    let percent = if number <= 10.0 { number * 10.0 } else { number };
+    let percent = if number <= 10.0 {
+        number * 10.0
+    } else {
+        number
+    };
     Some(percent.round_ties_even().clamp(0.0, 100.0) as i64)
 }
 
@@ -717,19 +747,18 @@ fn english_month(value: &str) -> Option<u32> {
 }
 
 pub(crate) fn decimal_digit(value: char) -> Option<u8> {
-    if value.is_ascii_digit() { return Some(value as u8 - b'0'); }
+    if value.is_ascii_digit() {
+        return Some(value as u8 - b'0');
+    }
     // CPython 3.14 uses Unicode 16.0 decimal-digit families.
     const ZEROS: &[u32] = &[
-        0x30, 0x660, 0x6F0, 0x7C0, 0x966, 0x9E6, 0xA66, 0xAE6,
-        0xB66, 0xBE6, 0xC66, 0xCE6, 0xD66, 0xDE6, 0xE50, 0xED0,
-        0xF20, 0x1040, 0x1090, 0x17E0, 0x1810, 0x1946, 0x19D0, 0x1A80,
-        0x1A90, 0x1B50, 0x1BB0, 0x1C40, 0x1C50, 0xA620, 0xA8D0, 0xA900,
-        0xA9D0, 0xA9F0, 0xAA50, 0xABF0, 0xFF10, 0x104A0, 0x10D30, 0x10D40,
-        0x11066, 0x110F0, 0x11136, 0x111D0, 0x112F0, 0x11450, 0x114D0, 0x11650,
-        0x116C0, 0x116D0, 0x116DA, 0x11730, 0x118E0, 0x11950, 0x11BF0, 0x11C50,
-        0x11D50, 0x11DA0, 0x11F50, 0x16130, 0x16A60, 0x16AC0, 0x16B50, 0x16D70,
-        0x1CCF0, 0x1D7CE, 0x1D7D8, 0x1D7E2, 0x1D7EC, 0x1D7F6, 0x1E140, 0x1E2F0,
-        0x1E4F0, 0x1E5F1, 0x1E950, 0x1FBF0,
+        0x30, 0x660, 0x6F0, 0x7C0, 0x966, 0x9E6, 0xA66, 0xAE6, 0xB66, 0xBE6, 0xC66, 0xCE6, 0xD66,
+        0xDE6, 0xE50, 0xED0, 0xF20, 0x1040, 0x1090, 0x17E0, 0x1810, 0x1946, 0x19D0, 0x1A80, 0x1A90,
+        0x1B50, 0x1BB0, 0x1C40, 0x1C50, 0xA620, 0xA8D0, 0xA900, 0xA9D0, 0xA9F0, 0xAA50, 0xABF0,
+        0xFF10, 0x104A0, 0x10D30, 0x10D40, 0x11066, 0x110F0, 0x11136, 0x111D0, 0x112F0, 0x11450,
+        0x114D0, 0x11650, 0x116C0, 0x116D0, 0x116DA, 0x11730, 0x118E0, 0x11950, 0x11BF0, 0x11C50,
+        0x11D50, 0x11DA0, 0x11F50, 0x16130, 0x16A60, 0x16AC0, 0x16B50, 0x16D70, 0x1CCF0, 0x1D7CE,
+        0x1D7D8, 0x1D7E2, 0x1D7EC, 0x1D7F6, 0x1E140, 0x1E2F0, 0x1E4F0, 0x1E5F1, 0x1E950, 0x1FBF0,
     ];
     let code = value as u32;
     let index = ZEROS.partition_point(|zero| *zero <= code).checked_sub(1)?;
@@ -739,33 +768,51 @@ pub(crate) fn decimal_digit(value: char) -> Option<u8> {
 
 pub(crate) fn integer_string(value: &str) -> Option<Cow<'_, str>> {
     let value = value.trim();
-    if value.is_empty() { return None; }
+    if value.is_empty() {
+        return None;
+    }
     if value.bytes().all(|byte| byte.is_ascii_digit()) {
         let digits = value.trim_start_matches('0');
         return Some(Cow::Borrowed(if digits.is_empty() { "0" } else { digits }));
     }
     let negative = value.starts_with('-');
     let digits = value.strip_prefix(['+', '-']).unwrap_or(value);
-    if negative && !digits.is_empty() && !digits.starts_with('0') && digits.bytes().all(|byte| byte.is_ascii_digit()) {
+    if negative
+        && !digits.is_empty()
+        && !digits.starts_with('0')
+        && digits.bytes().all(|byte| byte.is_ascii_digit())
+    {
         return Some(Cow::Borrowed(value));
     }
     let mut characters = digits.chars().peekable();
     decimal_digit(*characters.peek()?)?;
     let mut normalized = String::with_capacity(value.len());
-    if negative { normalized.push('-'); }
+    if negative {
+        normalized.push('-');
+    }
     let prefix = usize::from(negative);
     let mut previous_digit = false;
     while let Some(character) = characters.next() {
         if let Some(digit) = decimal_digit(character) {
-            if digit != 0 || normalized.len() > prefix { normalized.push(char::from(b'0' + digit)); }
+            if digit != 0 || normalized.len() > prefix {
+                normalized.push(char::from(b'0' + digit));
+            }
             previous_digit = true;
-        } else if character == '_' && previous_digit && characters.peek().is_some_and(|next| decimal_digit(*next).is_some()) {
+        } else if character == '_'
+            && previous_digit
+            && characters
+                .peek()
+                .is_some_and(|next| decimal_digit(*next).is_some())
+        {
             previous_digit = false;
         } else {
             return None;
         }
     }
-    if normalized.len() == prefix { normalized.clear(); normalized.push('0'); }
+    if normalized.len() == prefix {
+        normalized.clear();
+        normalized.push('0');
+    }
     Some(Cow::Owned(normalized))
 }
 
@@ -775,7 +822,10 @@ fn python_float(value: &str) -> Option<f64> {
         return None;
     }
     let bytes = value.as_bytes();
-    let start = if bytes.first().is_some_and(|byte| matches!(*byte, b'+' | b'-')) {
+    let start = if bytes
+        .first()
+        .is_some_and(|byte| matches!(*byte, b'+' | b'-'))
+    {
         1
     } else {
         0
@@ -794,13 +844,21 @@ fn python_float(value: &str) -> Option<f64> {
         }
     }
 
-    if value.is_ascii() && !value.contains('_') { return value.parse().ok(); }
+    if value.is_ascii() && !value.contains('_') {
+        return value.parse().ok();
+    }
     let mut normalized = String::with_capacity(value.len());
     let mut characters = value.chars().peekable();
     let mut previous_digit = false;
     while let Some(character) = characters.next() {
         if character == '_' {
-            if !previous_digit || !characters.peek().is_some_and(|next| decimal_digit(*next).is_some()) { return None; }
+            if !previous_digit
+                || !characters
+                    .peek()
+                    .is_some_and(|next| decimal_digit(*next).is_some())
+            {
+                return None;
+            }
             previous_digit = false;
         } else if let Some(digit) = decimal_digit(character) {
             normalized.push(char::from(b'0' + digit));
@@ -837,7 +895,13 @@ pub fn safe_int(value: &Value) -> Option<i64> {
 /// Convert a JSON value using Python's `float(value)` boolean and string behavior.
 pub fn as_number(value: &Value, fallback: f64) -> f64 {
     match value {
-        Value::Bool(value) => if *value { 1.0 } else { 0.0 },
+        Value::Bool(value) => {
+            if *value {
+                1.0
+            } else {
+                0.0
+            }
+        }
         Value::Number(value) => value.as_f64().unwrap_or(fallback),
         Value::String(value) => python_float(value).unwrap_or(fallback),
         _ => fallback,
@@ -914,7 +978,9 @@ pub fn sequence_ratio(a: &str, b: &str) -> f64 {
             &mut previous_positions,
             &mut current_positions,
         );
-        if match_len == 0 { continue; }
+        if match_len == 0 {
+            continue;
+        }
         matching += match_len;
         if a_low < match_a && b_low < match_b {
             pending.push((a_low, match_a, b_low, match_b));
@@ -1100,12 +1166,25 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn unicode_keys_keep_full_folding_and_modern_case_pairs() {
+        assert_eq!(casefold("Straße Σς ᲐᲑ ꭰ"), "strasse σσ აბ Ꭰ");
+        assert_eq!(
+            casefold("\u{10570}\u{10d50}\u{16e40}"),
+            "\u{10597}\u{10d70}\u{16e60}"
+        );
+        assert_eq!(casefold("\u{a7ce}\u{16ea0}"), "\u{a7ce}\u{16ea0}");
+    }
+
+    #[test]
     fn entity_decoding_matches_oracle_and_is_single_pass() {
         for (source, expected) in [
             ("&notit;", "¬it;"),
             ("&amp;amp;", "&amp;"),
             ("&#x80; &#128; &#0; &#xD800; &#x110000;", "€ € � � �"),
-            ("&CounterClockwiseContourIntegral; &notin &notin;", "∳ ¬in ∉"),
+            (
+                "&CounterClockwiseContourIntegral; &notin &notin;",
+                "∳ ¬in ∉",
+            ),
             ("&copy text &copycat &acE;", "© text ©cat ∾̳"),
             ("&#13; &#11; &#x81;", "\r  \u{81}"),
         ] {
@@ -1128,10 +1207,7 @@ mod tests {
             ("Prototype 2", "prototype 2"),
             ("Prototype Demo", "prototype demo"),
             ("1942 [USA]", "1942"),
-            (
-                "The Last of Us Part I Remastered",
-                "last of us part i",
-            ),
+            ("The Last of Us Part I Remastered", "last of us part i"),
             (
                 "Warhammer 40,000: Space Marine Demo",
                 "warhammer 40 000 space marine",
@@ -1155,7 +1231,10 @@ mod tests {
         }
         for (candidate, query) in [
             ("Prototype Demo", "Prototype"),
-            ("Warhammer 40,000: Space Marine Demo", "Warhammer 40,000: Space Marine"),
+            (
+                "Warhammer 40,000: Space Marine Demo",
+                "Warhammer 40,000: Space Marine",
+            ),
             ("Sonic Mega Pack", "Sonic"),
             ("Rust Dedicated Server", "Rust"),
             ("Test Drive Unlimited", "Drive Unlimited"),
@@ -1190,10 +1269,7 @@ mod tests {
     #[test]
     fn reasonable_match_uses_query_token_overlap_threshold() {
         assert!(reasonable_match("a b c d e f g h i j", "a b c d e f z"));
-        assert!(!reasonable_match(
-            "a b c d e f g h i j k",
-            "a b c d e f z"
-        ));
+        assert!(!reasonable_match("a b c d e f g h i j k", "a b c d e f z"));
         assert!(reasonable_match("Wobbly Life", "Wobbly Life Deluxe"));
         assert!(!reasonable_match("!!!", "???"));
     }
@@ -1213,7 +1289,10 @@ mod tests {
         ] {
             assert!(has_pc_platform(&[platform.to_owned()]));
         }
-        assert!(!has_pc_platform(&["nintendo-ds".into(), "playstation-5".into()]));
+        assert!(!has_pc_platform(&[
+            "nintendo-ds".into(),
+            "playstation-5".into()
+        ]));
         assert!(!has_pc_platform(&[]));
         for (title, expected) in [
             ("Game [DS]", Some("DS")),
@@ -1229,14 +1308,24 @@ mod tests {
 
     #[test]
     fn html_cleanup_separates_plain_text_and_provider_markup() {
-        assert_eq!(clean_html_text("<p>One</p><br/>Two &amp;lt;").as_str(), "One\n\nTwo &lt;");
-        assert_eq!(normalize_description_text("literal &amp; <tag>\r\nline\r"), "literal &amp; <tag>\nline\n");
         assert_eq!(
-            description_html_to_text("<h2>Flight</h2><div>Fly &lt;pilot&gt;</div><ul><li>First</li><li>Second</li></ul>"),
+            clean_html_text("<p>One</p><br/>Two &amp;lt;").as_str(),
+            "One\n\nTwo &lt;"
+        );
+        assert_eq!(
+            normalize_description_text("literal &amp; <tag>\r\nline\r"),
+            "literal &amp; <tag>\nline\n"
+        );
+        assert_eq!(
+            description_html_to_text(
+                "<h2>Flight</h2><div>Fly &lt;pilot&gt;</div><ul><li>First</li><li>Second</li></ul>"
+            ),
             "Flight\n\nFly <pilot>\n\n- First\n- Second"
         );
         assert_eq!(
-            description_html_to_text("<ul><li></li><li><img src='cover.png'></li><li>&nbsp;</li></ul>"),
+            description_html_to_text(
+                "<ul><li></li><li><img src='cover.png'></li><li>&nbsp;</li></ul>"
+            ),
             ""
         );
         assert_eq!(
@@ -1244,7 +1333,9 @@ mod tests {
             ""
         );
         assert_eq!(
-            description_html_to_text("<ul><li><p>First</p><ul><li></li><li>Nested</li></ul></li><li>Last</li></ul>"),
+            description_html_to_text(
+                "<ul><li><p>First</p><ul><li></li><li>Nested</li></ul></li><li>Last</li></ul>"
+            ),
             "- First\n\n- Nested\n\n- Last"
         );
         assert_eq!(
@@ -1280,15 +1371,33 @@ mod tests {
 
     #[test]
     fn date_normalization_is_strict_and_calendar_preserving() {
-        for source in ["Apr 18, 2011", "18 Apr, 2011", "April 18, 2011", "18 April, 2011"] {
-            assert_eq!(normalize_release_date(&json!(source)).as_deref(), Some("2011-04-18"));
+        for source in [
+            "Apr 18, 2011",
+            "18 Apr, 2011",
+            "April 18, 2011",
+            "18 April, 2011",
+        ] {
+            assert_eq!(
+                normalize_release_date(&json!(source)).as_deref(),
+                Some("2011-04-18")
+            );
         }
         assert_eq!(
             normalize_release_date(&json!("2024-03-10T00:00:00+14:00")).as_deref(),
             Some("2024-03-10")
         );
-        assert_eq!(normalize_release_date(&json!("2024-02-29")).as_deref(), Some("2024-02-29"));
-        for invalid in ["2024-02-30", "2023-02-29", "Apr 2011", "2011", "Coming soon", ""] {
+        assert_eq!(
+            normalize_release_date(&json!("2024-02-29")).as_deref(),
+            Some("2024-02-29")
+        );
+        for invalid in [
+            "2024-02-30",
+            "2023-02-29",
+            "Apr 2011",
+            "2011",
+            "Coming soon",
+            "",
+        ] {
             assert_eq!(normalize_release_date(&json!(invalid)), None, "{invalid}");
         }
         assert_eq!(normalize_release_date(&json!(1710057600)), None);
@@ -1320,7 +1429,10 @@ mod tests {
 
     #[test]
     fn title_and_url_cleanup_keep_expected_literal_boundaries() {
-        assert_eq!(clean_game_title("  The Witcher™ &amp; World  "), "The Witcher & World");
+        assert_eq!(
+            clean_game_title("  The Witcher™ &amp; World  "),
+            "The Witcher & World"
+        );
         assert_eq!(https_url(" //example.test/a "), "https://example.test/a");
         assert_eq!(https_url("http://example.test/a"), "https://example.test/a");
         assert_eq!(https_url("HTTP://example.test/a"), "HTTP://example.test/a");
@@ -1334,7 +1446,10 @@ mod tests {
             ("abc", "bca", 0.6666666666666666),
             ("one two three", "one three two", 0.6923076923076923),
         ] {
-            assert!((sequence_ratio(a, b) - expected).abs() < 1e-15, "{a:?} vs {b:?}");
+            assert!(
+                (sequence_ratio(a, b) - expected).abs() < 1e-15,
+                "{a:?} vs {b:?}"
+            );
         }
         let below = format!("x{}", "a".repeat(198));
         let below_candidate = format!("y{}", "a".repeat(198));

@@ -27,7 +27,10 @@ pub fn is_fresh_pending_install(pending: &Value, now: DateTime<Utc>) -> bool {
     now - requested_at <= PENDING_INSTALL_MISMATCH_GRACE
 }
 
-pub fn pending_install_matches_loaded_version(pending_version: &str, current_version: &str) -> bool {
+pub fn pending_install_matches_loaded_version(
+    pending_version: &str,
+    current_version: &str,
+) -> bool {
     if pending_version == current_version {
         return true;
     }
@@ -73,20 +76,41 @@ mod tests {
         let now = fixture_now();
         assert!(is_fresh_pending_install(&pending(15), now));
         assert!(!is_fresh_pending_install(&pending(16), now));
-        assert_eq!(effective_pending_install_version(&pending(0), now).as_deref(), Some("0.4.0"));
+        assert_eq!(
+            effective_pending_install_version(&pending(0), now).as_deref(),
+            Some("0.4.0")
+        );
 
         let mut confirmed = pending(30);
         confirmed["handoff_confirmed_at"] = json!(crate::updater::models::isoformat_utc(now));
         assert!(is_confirmed_pending_install(&confirmed));
-        assert_eq!(effective_pending_install_version(&confirmed, now).as_deref(), Some("0.4.0"));
-        assert!(!is_fresh_pending_install(&json!({"requested_at": "not-a-date"}), now));
+        assert_eq!(
+            effective_pending_install_version(&confirmed, now).as_deref(),
+            Some("0.4.0")
+        );
+        assert!(!is_fresh_pending_install(
+            &json!({"requested_at": "not-a-date"}),
+            now
+        ));
     }
 
     #[test]
     fn version_promotion_matches_only_installed_stable_versions() {
-        assert!(pending_install_matches_loaded_version("0.4.0+build", "0.4.0"));
-        assert!(pending_install_matches_loaded_version("0.4.0-dev.g1", "0.4.0-dev.g1"));
-        assert!(!pending_install_matches_loaded_version("0.4.0-dev.g1", "0.4.0-dev.g2"));
-        assert!(!pending_install_matches_loaded_version("0.4.0", "0.4.0-dev.g1"));
+        assert!(pending_install_matches_loaded_version(
+            "0.4.0+build",
+            "0.4.0"
+        ));
+        assert!(pending_install_matches_loaded_version(
+            "0.4.0-dev.g1",
+            "0.4.0-dev.g1"
+        ));
+        assert!(!pending_install_matches_loaded_version(
+            "0.4.0-dev.g1",
+            "0.4.0-dev.g2"
+        ));
+        assert!(!pending_install_matches_loaded_version(
+            "0.4.0",
+            "0.4.0-dev.g1"
+        ));
     }
 }
