@@ -19,11 +19,14 @@ pub struct Response {
 
 impl Response {
     pub fn json(&self) -> Result<Value, String> {
-        serde_json::from_str(&self.text()).map_err(|error| error.to_string())
+        match std::str::from_utf8(&self.body) {
+            Ok(text)=>serde_json::from_str(text),
+            Err(_)=>serde_json::from_str(&self.text()),
+        }.map_err(|error| error.to_string())
     }
     pub fn text(&self) -> String {
         let mut remaining = self.body.as_slice();
-        let mut result = String::new();
+        let mut result = String::with_capacity(self.body.len());
         loop {
             match std::str::from_utf8(remaining) {
                 Ok(text) => { result.push_str(text); break; }
@@ -46,6 +49,8 @@ pub struct Http {
     pub cancel: CancellationToken,
     #[cfg(test)]
     fixtures: Option<Arc<std::sync::Mutex<std::collections::VecDeque<Fixture>>>>,
+    #[cfg(test)]
+    gate:Option<Arc<TestGate>>,
 }
 
 pub fn is_ign_origin(url: &reqwest::Url) -> bool {
@@ -63,7 +68,8 @@ impl Http {
             else { attempt.follow() }
         })).build().map_err(|e| e.to_string())?;
         Ok(Self { clients:Arc::new([default,none,ign]),cancel,
-            #[cfg(test)] fixtures:None })
+            #[cfg(test)] fixtures:None,
+            #[cfg(test)] gate:None })
     }
 
     pub async fn request(&self, method:Method,url:&str,headers:&[(&str,&str)],body:Option<Value>,timeout:Duration,limit:usize,redirects:Redirects) -> Result<Response,String> {
@@ -79,8 +85,26 @@ impl Http {
         if let Some(fixtures) = &self.fixtures {
             let fixture = fixtures.lock().unwrap().pop_front().ok_or_else(|| format!("unexpected HTTP request {method} {url}"))?;
             assert_eq!(fixture.method,method,"fixture request method");
-            assert_eq!(fixture.url,url,"fixture request URL");
-            return fixture.result;
+            let mut expected=reqwest::Url::parse(&fixture.url).expect("fixture URL");
+            let mut actual=reqwest::Url::parse(url).expect("request URL");
+            let mut expected_query:Vec<_>=expected.query_pairs().into_owned().collect();
+            let mut actual_query:Vec<_>=actual.query_pairs().into_owned().collect();
+            expected_query.sort();actual_query.sort();expected.set_query(None);actual.set_query(None);
+            assert_eq!(expected,actual,"fixture request origin/path");
+            assert_eq!(expected_query,actual_query,"fixture request query");
+            if let Some(gate)=&self.gate {
+                if !gate.used.swap(true,std::sync::atomic::Ordering::SeqCst) {
+                    gate.started.notify_one();
+                    tokio::select! {
+                        _=self.cancel.cancelled()=>return Err("backend stopping".into()),
+                        _=gate.resume.notified()=>{},
+                    }
+                }
+            }
+            let response=fixture.result?;
+            let bound=response_limit(response.status,&response.headers,limit,error_limit)?;
+            if response.body.len()>bound {return Err("HTTP response exceeds bounded read limit".into());}
+            return Ok(response);
         }
         let client = &self.clients[match redirects {Redirects::Default=>0,Redirects::None=>1,Redirects::Ign=>2}];
         let mut request = client.request(method.clone(),parsed)
@@ -92,7 +116,7 @@ impl Http {
                 let mut cause=Some(&error as &(dyn std::error::Error+'static));
                 while let Some(current)=cause {
                     if current.to_string().to_lowercase().contains("certificate") {
-                        log::error!("[decky:http] TLS certificate verification failed");
+                        crate::logging::event("http","TLS certificate verification failed",serde_json::json!({"target":url.split(['?','#']).next().unwrap_or("<unknown>"),"error":current.to_string()}),log::Level::Error);
                         break;
                     }
                     cause=current.source();
@@ -102,11 +126,7 @@ impl Http {
             let status=response.status().as_u16();
             let final_url=response.url().to_string();
             let headers=response.headers().clone();
-            let bound=if (200..300).contains(&status) {limit} else {error_limit};
-            if let Some(length)=headers.get("Content-Length") {
-                let length=length.to_str().map_err(|_| "invalid HTTP response length")?.parse::<u64>().map_err(|_| "invalid HTTP response length")?;
-                if length > bound as u64 { return Err("HTTP response exceeds bounded read limit".into()); }
-            }
+            let bound=response_limit(status,&headers,limit,error_limit)?;
             let mut body=Vec::new();
             let mut stream=response.bytes_stream();
             while let Some(chunk)=stream.next().await {
@@ -144,14 +164,37 @@ impl Http {
 
     #[cfg(test)]
     pub fn assert_drained(&self) { assert!(self.fixtures.as_ref().unwrap().lock().unwrap().is_empty(),"unused HTTP fixture"); }
+
+    #[cfg(test)]
+    pub fn gate_next_request(&mut self)->Arc<TestGate> {
+        let gate=Arc::new(TestGate {started:tokio::sync::Notify::new(),resume:tokio::sync::Notify::new(),used:std::sync::atomic::AtomicBool::new(false)});
+        self.gate=Some(Arc::clone(&gate));
+        gate
+    }
+}
+
+fn response_limit(status:u16,headers:&HeaderMap,limit:usize,error_limit:usize)->Result<usize,String> {
+    let bound=if (200..300).contains(&status) {limit} else {error_limit};
+    if let Some(length)=headers.get("Content-Length") {
+        let length=length.to_str().map_err(|_| "invalid HTTP response length")?.parse::<u64>().map_err(|_| "invalid HTTP response length")?;
+        if length>bound as u64 {return Err("HTTP response exceeds bounded read limit".into());}
+    }
+    Ok(bound)
+}
+
+#[cfg(test)]
+pub struct TestGate {
+    pub started:tokio::sync::Notify,
+    pub resume:tokio::sync::Notify,
+    used:std::sync::atomic::AtomicBool,
 }
 
 #[cfg(test)]
 pub struct Fixture { pub method:Method,pub url:String,pub result:Result<Response,String> }
 #[cfg(test)]
 impl Fixture {
-    pub fn json(url:impl Into<String>,body:Value) -> Self { Self {method:Method::GET,url:url.into(),result:Ok(Response {status:200,headers:HeaderMap::new(),body:serde_json::to_vec(&body).unwrap(),url:String::new()})} }
-    pub fn text(url:impl Into<String>,body:&str) -> Self { Self {method:Method::GET,url:url.into(),result:Ok(Response {status:200,headers:HeaderMap::new(),body:body.as_bytes().to_vec(),url:String::new()})} }
+    pub fn json(url:impl Into<String>,body:Value) -> Self {let url=url.into(); Self {method:Method::GET,url:url.clone(),result:Ok(Response {status:200,headers:HeaderMap::new(),body:serde_json::to_vec(&body).unwrap(),url})} }
+    pub fn text(url:impl Into<String>,body:&str) -> Self {let url=url.into(); Self {method:Method::GET,url:url.clone(),result:Ok(Response {status:200,headers:HeaderMap::new(),body:body.as_bytes().to_vec(),url})} }
     pub fn failure(url:impl Into<String>) -> Self { Self {method:Method::GET,url:url.into(),result:Err("connection failed".into())} }
 }
 

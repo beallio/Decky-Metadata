@@ -86,11 +86,11 @@ impl Storage {
         Ok(())
     }
 
+    /// The owner refreshes and normalizes once under its mutex before staging a mutation.
     pub async fn transaction<R>(
         &mut self,
         mutation: impl FnOnce(&mut StoreTransaction<'_>) -> Result<R, String>,
     ) -> Result<R, String> {
-        self.refresh().await?;
         let mut transaction = StoreTransaction::new(&mut self.data);
         let value = match mutation(&mut transaction) {
             Ok(value) => value,

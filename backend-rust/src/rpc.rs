@@ -1,4 +1,4 @@
-use crate::{logging,matching::{py_string,py_truthy},state::{self,AppState},storage};
+use crate::{logging,matching::{py_string,py_truthy},metadata,providers::{community,ign,steam},state::{self,AppState},storage};
 use decky_plugin::MethodResult;
 use serde_json::{Value,json};
 use std::sync::Arc;
@@ -10,6 +10,9 @@ pub const METHODS:&[&str]=&[
     "get_mini_achievements_enabled","set_mini_achievements_enabled","get_protondb_badge_settings","set_protondb_badge_settings",
     "get_metadata","get_all_metadata","remove_metadata","clear_metadata_cache","get_shortcut_name_management",
     "save_shortcut_name_state","clear_shortcut_name_state","frontend_log","get_local_shortcuts",
+    "eval_in_big_picture","save_metadata","search_metadata","search_steam_matches","get_steam_match_preview",
+    "fetch_metadata","find_ign_trailer","apply_fetched_metadata","auto_fetch_metadata",
+    "get_community_fallback_page","enrich_steam_app","refresh_delisted_index","get_delisted_index_status",
 ];
 
 fn arity(args:&[Value],minimum:usize,maximum:usize)->Result<(),String> {
@@ -76,6 +79,37 @@ pub async fn dispatch(state:Arc<AppState>,method:&str,args:Vec<Value>)->MethodRe
             logging::event(&area,&message,fields,level);Ok(true.into())
         },
         "get_local_shortcuts"=>{arity(&args,0,0)?;Ok(Value::Array(state.local_shortcuts().await?.iter().map(state::shortcut_json).collect()))},
+        "eval_in_big_picture"=>{arity(&args,1,1)?;Ok(state.cef.eval_in_big_picture(&args[0]).await)},
+        "save_metadata"=>{arity(&args,2,2)?;metadata::save(&state,&args[0],args[1].clone(),false,None).await},
+        "search_metadata"=>{arity(&args,1,2)?;Ok(json!(ign::search_metadata(&state.http,&args[0],args.get(1).unwrap_or(&json!(8))).await?))},
+        "search_steam_matches"=>{arity(&args,1,2)?;Ok(steam::search_steam_matches(&state.http,&args[0],args.get(1).unwrap_or(&json!(8))).await)},
+        "get_steam_match_preview"=>{arity(&args,1,1)?;Ok(steam::steam_match_preview(&state.http,&args[0]).await)},
+        "fetch_metadata"=>{arity(&args,1,1)?;Ok(json!(metadata::fetch(&state,&metadata::text(&args[0])).await?))},
+        "find_ign_trailer"=>{
+            arity(&args,1,2)?;let game_url=args.get(1).filter(|value| !value.is_null()).map(metadata::text);
+            Ok(ign::find_trailer(&state.http,&metadata::text(&args[0]),game_url.as_deref()).await.unwrap_or(Value::Null))
+        },
+        "apply_fetched_metadata"=>{arity(&args,2,2)?;Ok(json!(metadata::apply_fetched(&state,&args[0],&metadata::text(&args[1])).await?))},
+        "auto_fetch_metadata"=>{arity(&args,2,2)?;Ok(json!(metadata::apply_auto_fetched(&state,&args[0],&metadata::text(&args[1])).await?))},
+        "get_community_fallback_page"=>{
+            arity(&args,1,2)?;
+            let record=state.store().await?.data()["metadata"][py_string(&args[0])].clone();
+            let result=community::fallback_page(&state.http,record.is_object().then_some(&record),args.get(1).unwrap_or(&json!(1))).await;
+            logging::event("community","fallback selected",json!({"source":result["source"],"app_id":args[0],
+                "steam_appid":crate::matching::safe_int(&record["steam_appid"]).filter(|id| *id>0).unwrap_or(0),
+                "page":result["page"],"count":result["items"].as_array().map_or(0,Vec::len)}),log::Level::Debug);
+            Ok(result)
+        },
+        "enrich_steam_app"=>{
+            arity(&args,2,2)?;let mode=args[1].as_str().ok_or("Invalid Steam enrichment mode")?;
+            Ok(json!(metadata::enrich_steam(&state,&args[0],mode).await?))
+        },
+        "refresh_delisted_index"=>{
+            arity(&args,0,0)?;let index=state.ensure_delisted_index(true).await;
+            Ok(json!({"ok":index.is_some(),"count":index.as_ref().and_then(|index| index["apps"].as_array()).map_or(0,Vec::len),
+                "fetched_at":index.as_ref().map(|index| index["fetched_at"].clone()).unwrap_or(json!(0))}))
+        },
+        "get_delisted_index_status"=>{arity(&args,0,0)?;Ok(state.delisted_status().await)},
         _=>Err(format!("Plugin has no method {method}")),
     }
 }

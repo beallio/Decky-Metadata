@@ -1,0 +1,164 @@
+[
+  {
+    "input": {
+      "title": "The Witcher™ [USA] &amp; World",
+      "description": "literal &amp; <tag>\r\nline"
+    },
+    "output": {
+      "title": "The Witcher [USA] & World",
+      "id": "The Witcher [USA] & World",
+      "source": "Manual",
+      "source_url": "",
+      "description": "literal &amp; <tag>\nline",
+      "short_description": "literal &amp; <tag>\nline",
+      "developers": [],
+      "publishers": [],
+      "rating": null,
+      "deck_compat_category": null,
+      "deck_compat_override": null,
+      "store_categories": [],
+      "genres": [],
+      "features": [],
+      "screenshots": [],
+      "steam_appid": null,
+      "steam_store_name": "",
+      "steam_dlc_appids": [],
+      "has_points_shop": false,
+      "steam_store_state": "unknown",
+      "steam_store_url": "",
+      "steam_news": [],
+      "steam_news_enriched_at": 0
+    }
+  },
+  {
+    "input": {
+      "title": "Manual",
+      "deck_compat_override": 0,
+      "steam_appid": "12",
+      "store_categories": [
+        true,
+        "29",
+        29
+      ],
+      "rating": 52.5,
+      "release_date": "2024-02-29"
+    },
+    "output": {
+      "title": "Manual",
+      "id": "Manual",
+      "source": "Manual",
+      "source_url": "",
+      "description": "",
+      "short_description": "",
+      "developers": [],
+      "publishers": [],
+      "release_date": "2024-02-29",
+      "rating": 52,
+      "deck_compat_category": null,
+      "deck_compat_override": 0,
+      "store_categories": [
+        1,
+        29
+      ],
+      "genres": [],
+      "features": [],
+      "screenshots": [],
+      "steam_appid": 12,
+      "steam_store_name": "",
+      "steam_dlc_appids": [],
+      "has_points_shop": true,
+      "steam_store_state": "unknown",
+      "steam_store_url": "",
+      "steam_news": [],
+      "steam_news_enriched_at": 0
+    }
+  },
+  {
+    "input": {
+      "title": "Straße",
+      "id": 3,
+      "deck_compat_category": true,
+      "deck_compat_override": "valve",
+      "genres": [
+        " A ",
+        4
+      ],
+      "steam_appid": true
+    },
+    "output": {
+      "title": "Straße",
+      "id": 3,
+      "source": "Manual",
+      "source_url": "",
+      "description": "",
+      "short_description": "",
+      "developers": [],
+      "publishers": [],
+      "rating": null,
+      "deck_compat_category": 1,
+      "deck_compat_override": "valve",
+      "store_categories": [],
+      "genres": [
+        "A",
+        "4"
+      ],
+      "features": [],
+      "screenshots": [],
+      "steam_appid": null,
+      "steam_store_name": "",
+      "steam_dlc_appids": [],
+      "has_points_shop": false,
+      "steam_store_state": "unknown",
+      "steam_store_url": "",
+      "steam_news": [],
+      "steam_news_enriched_at": 0
+    }
+  },
+  {
+    "input": {
+      "title": "Empty",
+      "release_date": null,
+      "screenshots": [
+        {
+          "url": "//example.com/a",
+          "width": "8.9",
+          "caption": "<b>A</b> &copy;"
+        }
+      ]
+    },
+    "output": {
+      "title": "Empty",
+      "id": "Empty",
+      "source": "Manual",
+      "source_url": "",
+      "description": "",
+      "short_description": "",
+      "developers": [],
+      "publishers": [],
+      "release_date": null,
+      "rating": null,
+      "deck_compat_category": null,
+      "deck_compat_override": null,
+      "store_categories": [],
+      "genres": [],
+      "features": [],
+      "screenshots": [
+        {
+          "id": "https://example.com/a",
+          "url": "https://example.com/a",
+          "caption": "A ©",
+          "width": 8,
+          "height": 0
+        }
+      ],
+      "steam_appid": null,
+      "steam_store_name": "",
+      "steam_dlc_appids": [],
+      "has_points_shop": false,
+      "steam_store_state": "unknown",
+      "steam_store_url": "",
+      "steam_news": [],
+      "steam_news_enriched_at": 0
+    }
+  }
+]

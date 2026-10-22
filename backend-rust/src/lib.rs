@@ -6,6 +6,9 @@ pub mod steam_paths;
 pub mod storage;
 pub mod rpc;
 pub mod state;
+pub mod cef_bridge;
+pub mod metadata;
+pub mod providers;
 
 use decky_plugin::Plugin;
 use std::sync::Arc;

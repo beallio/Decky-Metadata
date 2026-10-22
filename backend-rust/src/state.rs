@@ -9,15 +9,17 @@ pub struct AppState {
     pub env:Env,
     pub cancel:CancellationToken,
     pub http:Http,
+    pub cef:crate::cef_bridge::BigPictureEvaluator,
     storage:OnceCell<Mutex<Storage>>,
-    pub delisted:Mutex<Option<Value>>,
+    pub delisted:Mutex<Option<Arc<Value>>>,
 }
 
 impl AppState {
     pub fn new(env:Env)->Result<Arc<Self>,String> {
         let cancel=CancellationToken::new();
         let http=Http::new(cancel.clone(),&env.plugin_version)?;
-        Ok(Arc::new(Self {env,cancel,http,storage:OnceCell::new(),delisted:Mutex::new(None)}))
+        let cef=crate::cef_bridge::BigPictureEvaluator::new(cancel.child_token())?;
+        Ok(Arc::new(Self {env,cancel,http,cef,storage:OnceCell::new(),delisted:Mutex::new(None)}))
     }
 
     pub async fn initialize(&self)->Result<(),String> {
@@ -26,7 +28,7 @@ impl AppState {
         if self.env.plugin_settings_dir.as_os_str().is_empty() {return Err("DECKY_PLUGIN_SETTINGS_DIR is not set".into());}
         let cached=read_cached_index(&self.env.plugin_settings_dir).await;
         let mut storage=Storage::open(self.env.plugin_settings_dir.clone()).await?;
-        storage.normalize_loaded_store_states(cached.as_ref()).await;
+        storage.normalize_loaded_store_states(cached.as_deref()).await;
         logging::set_debug(matching::py_truthy(&storage.data()["settings"]["debug_logging"]));
         *self.delisted.lock().await=cached;
         self.storage.set(Mutex::new(storage)).map_err(|_| "backend initialized twice".to_owned())?;
@@ -38,7 +40,7 @@ impl AppState {
         let mut storage=self.storage.get().ok_or("backend is not initialized")?.lock().await;
         if storage.refresh().await? {
             let index=read_cached_index(&self.env.plugin_settings_dir).await;
-            storage.normalize_loaded_store_states(index.as_ref()).await;
+            storage.normalize_loaded_store_states(index.as_deref()).await;
             *self.delisted.lock().await=index;
         }
         Ok(storage)
@@ -55,6 +57,28 @@ impl AppState {
             transaction.set(&["settings",key],value.clone())?;
             Ok(value)
         }).await
+    }
+
+    pub async fn ensure_delisted_index(&self,force:bool)->Option<Arc<Value>> {
+        let current=self.delisted.lock().await.clone();
+        if self.cancel.is_cancelled() {return None;}
+        if !force && current.as_ref().is_some_and(|index| {
+            let fetched=matching::safe_int(&index["fetched_at"]).unwrap_or(0);
+            fetched!=0 && chrono::Utc::now().timestamp()-fetched < crate::providers::delisted::DELISTED_INDEX_TTL_SECONDS
+        }) {return current;}
+        let value=crate::providers::delisted::ensure_delisted_index(&self.http,current.as_deref(),&self.env.plugin_settings_dir.join("delisted_index.json"),force).await;
+        if self.cancel.is_cancelled() {return None;}
+        let value=value.map(Arc::new);
+        if value.is_some() {*self.delisted.lock().await=value.clone();}
+        value
+    }
+
+    pub async fn delisted_status(&self)->Value {
+        let current=self.delisted.lock().await.clone();
+        let current=match current {Some(index)=>Some(index),None=>read_cached_index(&self.env.plugin_settings_dir).await};
+        if let Some(index)=&current {*self.delisted.lock().await=Some(Arc::clone(index));}
+        json!({"count":current.as_ref().and_then(|index| index["apps"].as_array()).map_or(0,Vec::len),
+            "fetched_at":current.as_ref().map(|index| index["fetched_at"].clone()).unwrap_or(json!(0))})
     }
 
     pub async fn shutdown(&self)->Result<(),String> {
@@ -97,8 +121,8 @@ impl AppState {
     }
 }
 
-pub async fn read_cached_index(settings:&std::path::Path)->Option<Value> {
-    serde_json::from_slice(&tokio::fs::read(settings.join("delisted_index.json")).await.ok()?).ok()
+async fn read_cached_index(settings:&std::path::Path)->Option<Arc<Value>> {
+    crate::providers::delisted::load_delisted_index(&settings.join("delisted_index.json")).await.map(Arc::new)
 }
 
 fn read_local_shortcuts()->Vec<Shortcut> {
