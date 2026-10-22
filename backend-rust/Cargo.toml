@@ -1,0 +1,33 @@
+[package]
+name = "decky-metadata-backend"
+version = "0.5.5"
+edition = "2024"
+rust-version = "1.99"
+license = "GPL-3.0-or-later"
+publish = false
+
+[dependencies]
+decky-plugin = { git = "https://github.com/beallio/decky-loader", rev = "fa0b26aeb2fd85e92688b8c72396b10176e2cde0" }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-native-roots", "json", "stream"] }
+tokio-tungstenite = "0.29"
+futures-util = "0.3"
+regex = "1"
+unicode-casefold = "0.2"
+web_atoms = "0.3"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+crc32fast = "1"
+log = "0.4"
+
+[profile.release]
+strip = true
+lto = "thin"
+
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0
