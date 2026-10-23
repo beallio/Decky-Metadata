@@ -64,7 +64,14 @@ pub fn discover_steam_roots() -> Vec<PathBuf> {
             .into_iter()
             .filter(|mount| mount.join("steamapps").exists()),
     );
-    discover_steam_roots_with(&home, compat.as_deref(), &removable)
+    let roots = discover_steam_roots_with(&home, compat.as_deref(), &removable);
+    crate::logging::event(
+        "discovery",
+        "steam roots detected",
+        serde_json::json!({"roots": roots.iter().map(|root| root.to_string_lossy()).collect::<Vec<_>>()}),
+        log::Level::Info,
+    );
+    roots
 }
 
 /// Deterministic root-discovery seam used by tests and alternate Steam layouts.
