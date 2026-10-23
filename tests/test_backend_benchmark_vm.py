@@ -891,3 +891,45 @@ def test_prepared_only_recovery_resets_native_context_before_restarting_loader(m
     result = vm._recover_ledger_serialized(path)
     assert result["ok"] is True and result["conflicts"] == []
     assert native == {"fresh": True, "loader_active": True, "route": "/library/home"}
+
+
+def test_timed_prepare_preserves_old_data_when_native_context_cannot_be_drained(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    root = tmp_path / "run"
+    scratch = root / "scratch"
+    plugin = scratch / "plugins" / vm.PLUGIN_DIR_NAME
+    plugin.mkdir(mode=0o700, parents=True)
+    previous = plugin / "previous.txt"
+    previous.write_bytes(b"previous trial")
+    normal = tmp_path / "normal"
+    normal.mkdir(mode=0o700)
+    ledger = {
+        "run_root": str(root), "scratch_homebrew": str(scratch), "normal_homebrew": str(normal),
+        "arm": None, "user_name": "deck", "user_uid": os.geteuid(),
+        "recovery": {"state": "pending"}, "watchdog": {"state": "armed"},
+        "inputs": {"python_zip": str(root / "original.zip")},
+        "expected": {"python_zip_sha256": "0" * 64},
+    }
+    native = {"normal_active": True}
+    blocked = vm.SafetyError("previous native clients cannot be drained")
+    monkeypatch.setattr(vm, "_load_ledger", lambda *_args: ledger)
+    monkeypatch.setattr(vm, "_fixture_path", lambda *_args: root / "fixture.json")
+    monkeypatch.setattr(vm, "_validate_fixture", lambda *_args: None)
+    monkeypatch.setattr(vm, "_archive_index", lambda *_args: (SimpleNamespace(close=lambda: None), {}))
+    monkeypatch.setattr(vm, "_zip_metadata", lambda *_args: {})
+    monkeypatch.setattr(vm, "_stop_temp_service", lambda *_args: None)
+    monkeypatch.setattr(vm, "_pause_original_services", lambda *_args: native.update(normal_active=False))
+    monkeypatch.setattr(vm, "_ensure_port_free", lambda: None)
+    monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_uid=os.geteuid()))
+
+    def reset(_account):
+        assert not native["normal_active"]
+        raise blocked
+
+    def forbidden_write(*_args):
+        raise AssertionError("fixture mutation preceded native process isolation")
+
+    monkeypatch.setattr(vm, "_reset_steam_ui_context", reset)
+    monkeypatch.setattr(vm, "_write_capture_settings", forbidden_write)
+    with pytest.raises(vm.SafetyError) as caught:
+        vm._prepare(root / "ledger.json", {"arm": "A", "dataset": 100, "install_zip": True})
+    assert caught.value is blocked and previous.read_bytes() == b"previous trial"

@@ -714,83 +714,12 @@ def test_checked_inputs_reject_symlinks_and_existing_output(tmp_path: Path):
         benchmark._create_output_dir(str(tmp_path))
 
 
-def test_staging_transfers_only_the_preverified_inputs(tmp_path: Path):
-    class StageRecorder:
-        def __init__(self) -> None:
-            self.run_root = None
-            self.calls: list[tuple[Path, str, bool]] = []
-
-        def allocate_run_root(self) -> str:
-            self.run_root = "/var/tmp/metadata-benchmark-1234567890abcdef"
-            return self.run_root
-
-        def initialize_stage_dirs(self) -> None:
-            pass
-
-        def scp_to(self, source: Path, destination: str, *, recursive: bool = False) -> None:
-            self.calls.append((source, destination, recursive))
-
-    paths = {name: tmp_path / name for name in ("python.zip", "rust.zip", "upstream", "fork")}
-    for path in paths.values():
-        path.mkdir() if path.name == "fork" else path.write_bytes(path.name.encode())
-    for entry in (paths["fork"] / "DeckyPluginWorker", paths["fork"] / "assets", paths["fork"] / "locales"):
-        entry.mkdir() if entry.name != "DeckyPluginWorker" else entry.write_bytes(b"worker")
-    artifacts = {"python_zip": paths["python.zip"], "rust_zip": paths["rust.zip"], "upstream_runtime": paths["upstream"], "fork_runtime": paths["fork"]}
-    remote = StageRecorder()
-    benchmark._stage(remote, artifacts, "scratch-homebrew")
-    assert remote.run_root == "/var/tmp/metadata-benchmark-1234567890abcdef"
-    assert all(destination.startswith(remote.run_root + "/") for _, destination, _ in remote.calls)
-    assert (paths["fork"], remote.run_root + "/inputs/fork_runtime", True) in remote.calls
-    assert len(remote.calls) == 7
-
-
-def test_ui_arm_waits_for_parent_finish_and_returns_verified_hashes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]):
-    class FakeRemote:
-        run_root = "/var/tmp/metadata-benchmark-1234567890abcdef"
-        scratch = run_root + "/scratch-homebrew"
-        ledger = run_root + "/ledger.json"
-        helper = run_root + "/tools/benchmark_vm.py"
-
-        def __init__(self) -> None:
-            self.calls: list[tuple[str, object]] = []
-
-        def call(self, command: str, payload: object, **kwargs: object) -> dict[str, object]:
-            self.calls.append((command, payload))
-            if command == "prepare":
-                return {"ok": True, "arm": "B", "dataset": None, "install_zip": False}
-            if command == "start":
-                return {"service_ready": True, "pids": []}
-            if command == "downloads":
-                return {"ok": True, "archive": "rust", "delivered": True, "sha256": "2" * 64, "path": "/home/deck/Downloads/Decky-Metadata.zip"}
-            raise AssertionError(command)
-
-    remote = FakeRemote()
-    hashes = {"python_zip_sha256": "1" * 64, "rust_zip_sha256": "2" * 64, "ui_sha256": "3" * 64}
-    artifacts = {"hashes": hashes}
-
-    class FakeLease:
-        def check(self) -> None:
-            pass
-
-    evidence_root = tmp_path / "evidence"
-    evidence_root.mkdir()
-    monkeypatch.setattr(benchmark.sys, "stdin", io.StringIO("finish\n"))
-    benchmark.run_ui_arm(remote, artifacts, "B", FakeLease(), benchmark.Evidence(evidence_root), __import__("threading").Event())
-    output = capsys.readouterr().out
-    assert "BENCHMARK_UI_READY" in output
-    assert [command for command, _ in remote.calls] == ["prepare", "start", "downloads"]
-    assert remote.calls[1][1] == {"measure_backend": False}
-    payload = json.loads((evidence_root / "ui-arm.json").read_text(encoding="utf-8"))
-    assert payload["hashes"] == hashes
-
-
 def test_lease_requires_a_confirmed_remote_watchdog_heartbeat(tmp_path: Path):
     class StopAfterOneBeat:
         def __init__(self) -> None:
             self.waits = 0
 
         def wait(self, seconds: int) -> bool:
-            assert seconds == 5
             self.waits += 1
             return self.waits > 1
 

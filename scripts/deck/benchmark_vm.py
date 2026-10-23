@@ -2291,6 +2291,10 @@ def _prepare(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         _chown_verified_scratch(_load_ledger(ledger_path, ledger_path))
     _pause_original_services(ledger_path, ledger)
     _ensure_port_free()
+    context_reset = None
+    if dataset is not None:
+        # A document reload can retain old CEF heaps across benchmark trials.
+        context_reset = _reset_steam_ui_context(_account(ledger["user_name"]))
     ledger = _load_ledger(ledger_path, ledger_path)
     plugin_root = scratch / "plugins" / PLUGIN_DIR_NAME
     require_contained(plugin_root, run_root, label="scratch reset target")
@@ -2316,7 +2320,7 @@ def _prepare(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     require_contained(target_settings, run_root, label="scratch Loader settings")
     _atomic_write(target_settings, (json.dumps(loader_settings, ensure_ascii=False, indent=2) + "\n").encode(), mode=0o600, owner=(int(ledger["user_uid"]), pwd.getpwuid(int(ledger["user_uid"])).pw_gid), guard_root=run_root)
     _mutate_ledger(ledger_path, lambda state: state.update({"arm": arm, "dataset": dataset, "install_zip": install_zip, "phase_events": []}))
-    return {"ok": True, "arm": arm, "dataset": dataset, "install_zip": install_zip, "temp_unit": ledger["unit_prefix"] + "-" + arm.lower() + ".service", "mode": "upstream" if arm in {"A", "B"} else "fork", "scratch_homebrew": str(scratch), "fixture": fixture_evidence, "archive": archive_info}
+    return {"ok": True, "arm": arm, "dataset": dataset, "install_zip": install_zip, "temp_unit": ledger["unit_prefix"] + "-" + arm.lower() + ".service", "mode": "upstream" if arm in {"A", "B"} else "fork", "scratch_homebrew": str(scratch), "fixture": fixture_evidence, "archive": archive_info, "steam_ui_context_reset": context_reset}
 
 
 def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:

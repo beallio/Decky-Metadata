@@ -183,6 +183,12 @@ check before timing. Idle, warmup and workload windows use the VM's monotonic
 clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
 cgroup samples, and memory peaks are sampled peaks.
 
+Each timed preparation first destroys the previous native browser clients,
+before writing the next fixture or arming its observer. This prevents retained
+CEF heaps from accumulating across long trials. The reset is outside every
+measurement window; backend startup still begins with a ready Steam document.
+Long workload commands allow up to 30 minutes without changing RPC sample counts.
+
 Priming enables the CDP Page domain before registering the early hook. It waits
 for the owned marker across the reload; observer cleanup checks the run identity.
 The hook does not change child frames. Recovery also resets the native context

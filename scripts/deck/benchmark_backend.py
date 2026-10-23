@@ -1061,7 +1061,7 @@ def cdp_command(command: str, params: Mapping[str, Any] | None = None) -> Any:
         raise BenchmarkError("benchmark JavaScript command placeholders are not unique")
     expression = source.replace("__BENCHMARK_COMMAND__", json.dumps(command))
     expression = expression.replace("__BENCHMARK_PARAMS__", json.dumps(params or {}, ensure_ascii=False, separators=(",", ":")))
-    timeout = 900 if command in {"run_workload", "warmup"} else 200 if command == "wait_startup_quiescence" else 45
+    timeout = 1800 if command in {"run_workload", "warmup"} else 200 if command == "wait_startup_quiescence" else 45
     try:
         response = cdp.evaluate("SharedJSContext", expression, timeout=timeout)
     except (Exception, SystemExit) as exc:
@@ -1069,7 +1069,7 @@ def cdp_command(command: str, params: Mapping[str, Any] | None = None) -> Any:
     if isinstance(response, Mapping) and response.get("type") == "string":
         response = response.get("value")
     if not isinstance(response, str):
-        raise BenchmarkError(f"CDP command {command} returned no JSON string")
+        raise BenchmarkError(f"CDP command {command} returned no JSON string: {repr(response)[:2000]}")
     try:
         return json.loads(response)
     except json.JSONDecodeError as exc:
@@ -1408,6 +1408,9 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
         prepared = True
         trial["prepare"] = remote.call("prepare", {"arm": arm, "dataset": size, "install_zip": True})
         _ensure_tool_success("prepare", trial["prepare"])
+        context_reset = trial["prepare"].get("steam_ui_context_reset")
+        if not isinstance(context_reset, Mapping) or context_reset.get("old_processes_gone") is not True or context_reset.get("shared_js_context_ready") is not True:
+            raise BenchmarkError("timed preparation did not confirm a fresh native context")
 
         run_id = f"{Path(remote.run_root).name}:{label}"
         preload_socket, preload_identifier, trial["observer_preload"] = prime_observers(lease, run_id)
