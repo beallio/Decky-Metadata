@@ -2608,7 +2608,13 @@ def _reload(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     connection = _loader_connect(timeout=10)
     started = time.monotonic_ns()
     try:
-        _loader_request("loader/reload_plugin", [PLUGIN_NAME], timeout=10, connection=connection)
+        try:
+            _loader_request("loader/reload_plugin", [PLUGIN_NAME], timeout=10, connection=connection)
+        except SafetyError as error:
+            # The Loader can drop its socket while it reloads; the identity/version poll
+            # below still proves the reload, and times out if it never happened.
+            if "disconnected" not in str(error):
+                raise
         deadline = time.monotonic() + RELOAD_TIMEOUT_SECONDS
         while time.monotonic() < deadline:
             current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
