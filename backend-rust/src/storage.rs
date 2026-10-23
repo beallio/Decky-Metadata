@@ -1,4 +1,7 @@
-use crate::matching::{py_truthy as json_truthy, safe_int};
+use crate::{
+    logging,
+    matching::{py_truthy as json_truthy, safe_int},
+};
 use chrono::{Datelike, Local, TimeZone};
 use serde_json::{Map, Number, Value, json};
 use std::path::{Path, PathBuf};
@@ -14,6 +17,7 @@ pub struct Storage {
     data: Value,
     path: PathBuf,
     mtime_ns: Option<i128>,
+    loaded: bool,
 }
 
 impl Storage {
@@ -31,6 +35,7 @@ impl Storage {
                     data: normalize_loaded_data(data)?,
                     path,
                     mtime_ns,
+                    loaded: true,
                 })
             }
             Err(LoadError::Missing) => {
@@ -40,10 +45,25 @@ impl Storage {
                     data,
                     path,
                     mtime_ns,
+                    loaded: true,
                 })
             }
-            Err(LoadError::Failure(error)) => Err(error),
+            Err(error) => {
+                if let LoadError::Failure(message) = &error {
+                    log_load_failure(&path, message);
+                }
+                Ok(Self {
+                    data: default_data(),
+                    mtime_ns: file_mtime_ns(&path).await.unwrap_or(None),
+                    path,
+                    loaded: false,
+                })
+            }
         }
+    }
+
+    pub fn loaded_successfully(&self) -> bool {
+        self.loaded
     }
 
     pub async fn refresh(&mut self) -> Result<bool, String> {
@@ -51,10 +71,7 @@ impl Storage {
             Ok(Some(mtime_ns)) if self.mtime_ns == Some(mtime_ns) => return Ok(false),
             Ok(Some(_)) => {}
             Ok(None) => {
-                let data = default_data();
-                let mtime_ns = write_atomic(&self.path, &data).await?;
-                self.data = data;
-                self.mtime_ns = mtime_ns;
+                self.mtime_ns = write_atomic(&self.path, &self.data).await?;
                 return Ok(true);
             }
             Err(error) => return Err(error),
@@ -63,13 +80,14 @@ impl Storage {
         let (mut data, mut mtime_ns) = match load_file(&self.path).await {
             Ok(loaded) => loaded,
             Err(LoadError::Missing) => {
-                let data = default_data();
-                let mtime_ns = write_atomic(&self.path, &data).await?;
-                self.data = data;
-                self.mtime_ns = mtime_ns;
+                self.mtime_ns = write_atomic(&self.path, &self.data).await?;
                 return Ok(true);
             }
-            Err(LoadError::Failure(error)) => return Err(error),
+            Err(LoadError::Invalid) => return Ok(false),
+            Err(LoadError::Failure(error)) => {
+                log_load_failure(&self.path, &error);
+                return Ok(false);
+            }
         };
         if migrate_release_dates(&mut data)? {
             mtime_ns = write_atomic(&self.path, &data).await?;
@@ -131,14 +149,18 @@ impl Storage {
         if changed {
             match write_atomic(&self.path, &self.data).await {
                 Ok(mtime_ns) => self.mtime_ns = mtime_ns,
-                Err(error) => {
-                    log::error!("failed persisting normalized Steam store states: {error}")
-                }
+                Err(error) => logging::event(
+                    "load",
+                    "failed normalizing loaded Steam store states",
+                    json!({"error":error}),
+                    log::Level::Error,
+                ),
             }
         }
         changed
     }
 }
+
 
 pub struct StoreTransaction<'a> {
     data: &'a mut Value,
@@ -900,15 +922,21 @@ async fn load_file(path: &Path) -> Result<(Value, Option<i128>), LoadError> {
     file.read_to_end(&mut bytes).await.map_err(|error| {
         LoadError::Failure(format!("failed reading metadata settings: {error}"))
     })?;
-    let value = serde_json::from_slice::<Value>(&bytes).map_err(|error| {
-        LoadError::Failure(format!("failed reading metadata settings: {error}"))
-    })?;
+    let value = serde_json::from_slice::<Value>(&bytes)
+        .map_err(|error| LoadError::Failure(format!("failed reading metadata settings: {error}")))?;
     if !value.is_object() {
-        return Err(LoadError::Failure(
-            "metadata settings must be a JSON object".to_owned(),
-        ));
+        return Err(LoadError::Invalid);
     }
     Ok((value, mtime_ns))
+}
+
+fn log_load_failure(path: &Path, error: &str) {
+    logging::event(
+        "load",
+        "failed reading metadata settings",
+        json!({"path":path.to_string_lossy(),"error":error}),
+        log::Level::Error,
+    );
 }
 
 async fn file_mtime_ns(path: &Path) -> Result<Option<i128>, String> {
@@ -937,25 +965,34 @@ async fn write_atomic(path: &Path, data: &Value) -> Result<Option<i128>, String>
         return Err("metadata settings must be a JSON object".to_owned());
     }
     let encoded = serde_json::to_vec_pretty(data).map_err(|error| error.to_string())?;
-    let name = path
-        .file_name()
-        .ok_or_else(|| "metadata settings path has no file name".to_owned())?;
-    let temp_path = path.with_file_name(format!("{}.tmp", name.to_string_lossy()));
-    if let Err(error) = tokio::fs::write(&temp_path, encoded).await {
-        let _ = tokio::fs::remove_file(&temp_path).await;
-        return Err(format!("failed writing metadata settings: {error}"));
-    }
-    if let Err(error) = tokio::fs::rename(&temp_path, path).await {
-        let _ = tokio::fs::remove_file(&temp_path).await;
-        return Err(format!("failed replacing metadata settings: {error}"));
-    }
-    Ok(file_mtime_ns(path).await.ok().flatten())
+    let path = path.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        let name = path
+            .file_name()
+            .ok_or_else(|| "metadata settings path has no file name".to_owned())?;
+        let temp_path = path.with_file_name(format!("{}.tmp", name.to_string_lossy()));
+        if let Err(error) = std::fs::write(&temp_path, encoded) {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(format!("failed writing metadata settings: {error}"));
+        }
+        if let Err(error) = std::fs::rename(&temp_path, &path) {
+            let _ = std::fs::remove_file(&temp_path);
+            return Err(format!("failed replacing metadata settings: {error}"));
+        }
+        Ok(std::fs::metadata(path)
+            .ok()
+            .and_then(|metadata| modified_ns(metadata.modified().ok())))
+    })
+    .await
+    .map_err(|error| format!("failed replacing metadata settings: {error}"))?
 }
 
 enum LoadError {
     Missing,
+    Invalid,
     Failure(String),
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -1175,15 +1212,49 @@ mod tests {
         assert!(store.refresh().await.unwrap());
         assert_eq!(store.data()["metadata"]["1"]["title"], "external");
     }
+    #[tokio::test]
+    async fn missing_settings_refresh_resaves_current_memory() {
+        let dir = TempDir::new();
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        let path = dir.0.join(SETTINGS_FILE_NAME);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&tokio::fs::read(&path).await.unwrap()).unwrap(),
+            default_data()
+        );
+        store
+            .transaction(|tx| tx.set(&["metadata", "42"], json!({"title":"Keep me"})))
+            .await
+            .unwrap();
+        tokio::fs::remove_file(&path).await.unwrap();
+
+        assert!(store.refresh().await.unwrap());
+        assert_eq!(store.data()["metadata"]["42"]["title"], "Keep me");
+        assert_eq!(
+            serde_json::from_slice::<Value>(&tokio::fs::read(path).await.unwrap()).unwrap(),
+            *store.data()
+        );
+    }
 
     #[tokio::test]
-    async fn invalid_json_and_non_object_files_are_never_overwritten() {
+    async fn unusable_settings_start_with_defaults_without_load_overwrite() {
         for bytes in [b"{broken".as_slice(), b"[]".as_slice()] {
             let dir = TempDir::new();
             let path = dir.0.join(SETTINGS_FILE_NAME);
             tokio::fs::write(&path, bytes).await.unwrap();
-            assert!(Storage::open(dir.0.clone()).await.is_err());
-            assert_eq!(tokio::fs::read(path).await.unwrap(), bytes);
+            let mut store = Storage::open(dir.0.clone()).await.unwrap();
+            assert!(!store.loaded_successfully());
+            assert_eq!(store.data(), &default_data());
+            assert_eq!(tokio::fs::read(&path).await.unwrap(), bytes);
+
+            if bytes.starts_with(b"{") {
+                store
+                    .transaction(|tx| tx.set(&["metadata", "9"], json!({"title":"Explicit save"})))
+                    .await
+                    .unwrap();
+                let saved =
+                    serde_json::from_slice::<Value>(&tokio::fs::read(path).await.unwrap()).unwrap();
+                assert_eq!(saved["metadata"]["9"]["title"], "Explicit save");
+            }
         }
     }
 
@@ -1202,9 +1273,26 @@ mod tests {
             .unwrap()
             .set_times(std::fs::FileTimes::new().set_modified(modified))
             .unwrap();
-        assert!(store.refresh().await.is_err());
+        assert!(!store.refresh().await.unwrap());
         assert_eq!(store.data(), &before);
         assert_eq!(tokio::fs::read(path).await.unwrap(), invalid);
+    }
+    #[tokio::test]
+    async fn failed_store_state_normalization_is_logged_to_plugin_events() {
+        let dir = TempDir::new();
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        store
+            .transaction(|tx| tx.set(&["metadata", "1"], json!({"steam_appid":1})))
+            .await
+            .unwrap();
+        std::fs::create_dir(dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"))).unwrap();
+        let before = logging::test_events().len();
+
+        assert!(store.normalize_loaded_store_states(None).await);
+        assert_eq!(store.data()["metadata"]["1"]["steam_store_state"], "unknown");
+        assert!(logging::test_events()[before..].iter().any(|event| {
+            event.contains("ERROR [decky:load] failed normalizing loaded Steam store states")
+        }));
     }
 
     #[tokio::test]
@@ -1216,6 +1304,43 @@ mod tests {
         std::fs::create_dir(dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"))).unwrap();
         assert!(Storage::open(dir.0.clone()).await.is_err());
         assert_eq!(tokio::fs::read(path).await.unwrap(), original);
+    }
+    #[tokio::test]
+    async fn cancelled_atomic_settings_write_still_renames_the_complete_file() {
+        let dir = TempDir::new();
+        let path = dir.0.join(SETTINGS_FILE_NAME);
+        let expected = json!({"payload":"x".repeat(16 * 1024 * 1024)});
+        let write_path = path.clone();
+        let write = tokio::spawn(async move { write_atomic(&write_path, &expected).await });
+        let temporary = dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"));
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                if tokio::fs::try_exists(&temporary).await.unwrap_or(false) || write.is_finished()
+                {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        write.abort();
+        let _ = write.await;
+
+        let persisted = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                if let Ok(bytes) = tokio::fs::read(&path).await {
+                    if let Ok(value) = serde_json::from_slice::<Value>(&bytes) {
+                        break value;
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(persisted["payload"].as_str().unwrap().len(), 16 * 1024 * 1024);
+        assert!(!tokio::fs::try_exists(temporary).await.unwrap());
     }
 
     #[tokio::test]
