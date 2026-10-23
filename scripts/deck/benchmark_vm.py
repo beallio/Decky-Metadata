@@ -2296,9 +2296,9 @@ def _prepare(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     require_contained(plugin_root, run_root, label="scratch reset target")
     if plugin_root.exists():
         _remove_scratch_tree(plugin_root, run_root)
-    _validate_private_dir(plugin_root, int(ledger["user_uid"]))
     fixture_evidence = _write_capture_settings(ledger, dataset)
     if install_zip:
+        _validate_private_dir(plugin_root, int(ledger["user_uid"]))
         archive, index = _archive_index(archive_path, ledger["expected"]["python_zip_sha256"] if arm == "A" else ledger["expected"]["rust_zip_sha256"])
         try:
             _extract_verified(archive, index, plugin_root, run_root, (int(ledger["user_uid"]), pwd.getpwuid(int(ledger["user_uid"])).pw_gid))

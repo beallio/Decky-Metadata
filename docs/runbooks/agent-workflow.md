@@ -150,6 +150,8 @@ watchdog service, and verifies recovery. Use `--ui-arm A`, then `B`, then `C` to
 hold each scratch Loader open for ZIP installation through QAM and correctness
 checks. Register shortcut-name undo with the printed remote helper before a name
 check. Send `finish` on standard input only after the arm's checks are complete.
+GUI mode leaves the plugin destination absent. Do not pre-create it: the fork
+refuses an occupied directory that has no installed plugin manifest.
 Timed mode requires `--verification-record` with all three arms and their exact
 artifact hashes; see the script's validation contract for the record fields.
 
