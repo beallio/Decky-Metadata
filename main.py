@@ -142,7 +142,7 @@ class Plugin:
         self._pending[key] = reply
         message = {"type": 0, "method": method, "id": key, "args": args}
         try:
-            self._writer.write(json.dumps(message).encode() + b"\n")
+            self._writer.write(json.dumps(message, ensure_ascii=False).encode("utf-8") + b"\n")
             await self._writer.drain()
             return await reply
         finally:
@@ -158,8 +158,9 @@ class Plugin:
                 if self._process.poll() is not None:
                     raise RuntimeError(f"backend exited with {self._process.returncode}")
                 try:
+                    # Local divergence from fa0b26ae: fail bad replies and reject unencodable RPC text instead of hanging calls.
                     reader, self._writer = await asyncio.open_unix_connection(
-                        socket, limit=64 * 1024 * 1024
+                        socket, limit=sys.maxsize
                     )
                     break
                 except (FileNotFoundError, ConnectionRefusedError):
@@ -172,20 +173,25 @@ class Plugin:
         await self._relay(reader)
 
     async def _relay(self, reader):
-        while line := await reader.readline():
-            message = json.loads(line)
-            if message.get("type") == 1:
-                reply = self._pending.get(message.get("id"))
-                if reply is None or reply.done():
-                    continue
-                if message.get("success"):
-                    reply.set_result(message.get("res"))
-                else:
-                    reply.set_exception(RuntimeError(message.get("res")))
-            elif message.get("type") == 2:
-                await decky.emit(message["event"], *message.get("args", []))
-        self._writer.close()
-        self._fail("native backend stopped")
+        try:
+            while line := await reader.readline():
+                message = json.loads(line)
+                if message.get("type") == 1:
+                    reply = self._pending.get(message.get("id"))
+                    if reply is None or reply.done():
+                        continue
+                    if message.get("success"):
+                        reply.set_result(message.get("res"))
+                    else:
+                        reply.set_exception(RuntimeError(message.get("res")))
+                elif message.get("type") == 2:
+                    await decky.emit(message["event"], *message.get("args", []))
+        except Exception as error:
+            self._fail(f"native backend relay failed: {error}")
+        finally:
+            self._writer.close()
+            if self._error is None:
+                self._fail("native backend stopped")
 
     def _fail(self, error):
         self._error = error

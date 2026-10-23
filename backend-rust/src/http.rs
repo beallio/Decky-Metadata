@@ -279,6 +279,105 @@ impl Http {
             result = tokio::time::timeout(timeout,operation) => result.map_err(|_| "HTTP request timed out".to_owned())?,
         }
     }
+    pub async fn get_prefix_following_ign_mp4(
+        &self,
+        url: &str,
+        headers: &[(&str, &str)],
+        timeout: Duration,
+        prefix_limit: usize,
+    ) -> Result<Response, String> {
+        if self.cancel.is_cancelled() {
+            return Err("backend stopping".into());
+        }
+        if prefix_limit == 0 || crate::providers::ign::canonical_mp4_url(url).is_none() {
+            return Err("invalid IGN MP4 request".into());
+        }
+        #[cfg(test)]
+        if let Some(fixtures) = &self.fixtures {
+            let fixture = fixtures.lock().unwrap().pop_front()
+                .ok_or_else(|| format!("unexpected HTTP request GET {url}"))?;
+            assert_eq!(fixture.method, Method::GET, "fixture request method for {url}");
+            let mut expected = reqwest::Url::parse(&fixture.url).expect("fixture URL");
+            let mut actual = reqwest::Url::parse(url).expect("request URL");
+            let mut expected_query: Vec<_> = expected.query_pairs().into_owned().collect();
+            let mut actual_query: Vec<_> = actual.query_pairs().into_owned().collect();
+            expected_query.sort();
+            actual_query.sort();
+            expected.set_query(None);
+            actual.set_query(None);
+            assert_eq!(expected, actual, "fixture request origin/path");
+            assert_eq!(expected_query, actual_query, "fixture request query");
+            let mut response = fixture.result?;
+            response.body.truncate(prefix_limit);
+            return Ok(response);
+        }
+        let record = if let Some(requests) = &self.requests {
+            let mut requests = requests.lock()
+                .map_err(|_| "HTTP request evidence is unavailable")?;
+            let index = requests.len();
+            requests.push(RequestRecord {
+                method: Method::GET.to_string(),
+                url: url.to_owned(),
+                status: None,
+                content_type: String::new(),
+            });
+            Some(index)
+        } else {
+            None
+        };
+        let client = Client::builder()
+            .user_agent(BROWSER_USER_AGENT)
+            .redirect(Policy::custom(|attempt| {
+                if crate::providers::ign::canonical_mp4_url(attempt.url().as_str()).is_none() {
+                    attempt.error("Blocked redirect outside IGN's canonical MP4 hosts")
+                } else if attempt.previous().len() >= 10 {
+                    attempt.error("Too many redirects")
+                } else {
+                    attempt.follow()
+                }
+            }))
+            .build()
+            .map_err(|error| error.to_string())?;
+        let mut request = client.get(url);
+        for (key, value) in headers {
+            request = request.header(*key, *value);
+        }
+        let operation = async {
+            let response = request.send().await.map_err(|error| error.to_string())?;
+            let status = response.status().as_u16();
+            let final_url = response.url().to_string();
+            let response_headers = response.headers().clone();
+            if let (Some(requests), Some(index)) = (&self.requests, record) {
+                let mut requests = requests.lock()
+                    .map_err(|_| "HTTP request evidence is unavailable")?;
+                let entry = requests.get_mut(index).ok_or("HTTP request evidence was removed")?;
+                entry.status = Some(status);
+                entry.url = final_url.clone();
+                entry.content_type = response_headers
+                    .get(reqwest::header::CONTENT_TYPE)
+                    .and_then(|value| value.to_str().ok())
+                    .unwrap_or("")
+                    .to_owned();
+            }
+            let mut body = Vec::with_capacity(prefix_limit);
+            let mut stream = response.bytes_stream();
+            while body.len() < prefix_limit {
+                let Some(chunk) = stream.next().await else { break };
+                let chunk = chunk.map_err(|error| error.to_string())?;
+                let count = (prefix_limit - body.len()).min(chunk.len());
+                body.extend_from_slice(&chunk[..count]);
+            }
+            Ok(Response { status, headers: response_headers, body, url: final_url })
+        };
+        tokio::select! {
+            biased;
+            _ = self.cancel.cancelled() => Err("backend stopping".into()),
+            result = tokio::time::timeout(timeout, operation) => {
+                result.map_err(|_| "HTTP request timed out".to_owned())?
+            }
+        }
+    }
+
 
     pub async fn json(&self, url: &str, timeout: Duration, limit: usize) -> Result<Value, String> {
         let response = self
@@ -592,5 +691,40 @@ mod tests {
                 .contains("canonical")
             );
         }
+    }
+    #[tokio::test]
+    async fn mp4_prefix_request_returns_only_the_requested_bytes() {
+        let url = "https://assets14.ign.com/video/trailer.mp4";
+        let mut headers = HeaderMap::new();
+        headers.insert(reqwest::header::CONTENT_TYPE, "video/mp4".parse().unwrap());
+        let http = Http::fixtures(vec![Fixture {
+            method: Method::GET,
+            url: url.to_owned(),
+            result: Ok(Response {
+                status: 200,
+                headers,
+                body: (0..4096).map(|n| n as u8).collect(),
+                url: url.to_owned(),
+            }),
+        }]);
+
+        let response = http
+            .get_prefix_following_ign_mp4(url, &[], Duration::from_secs(1), 32)
+            .await
+            .unwrap();
+
+        assert_eq!(response.body, (0..32).map(|n| n as u8).collect::<Vec<_>>());
+        http.assert_drained();
+    }
+    #[test]
+    fn ign_mp4_redirect_targets_must_be_canonical_assets() {
+        assert!(crate::providers::ign::canonical_mp4_url(
+            "https://assets14.ign.com/video/trailer.mp4"
+        )
+        .is_some());
+        assert!(crate::providers::ign::canonical_mp4_url(
+            "https://evil.example/video/trailer.mp4"
+        )
+        .is_none());
     }
 }

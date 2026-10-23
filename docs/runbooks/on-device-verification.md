@@ -38,6 +38,10 @@ If they do not match, it returns `DEFERRED` with the QAM ZIP-install step instea
 of running smokes against an old backend. Install the delivered ZIP through
 Decky Loader, then rerun the command. A manual package delivery is still available
 through `scripts/decky package-push --build --push`.
+The shim preserves the pinned upstream lifecycle and forwarding behavior, with
+local safeguards that reject unencodable RPC arguments and fail pending calls
+when backend reply lines are invalid.
+
 
 Typical loop, after authorization for the current device:
 

@@ -15,7 +15,10 @@ const NAVIGATION_TRACE_CLICK_PATTERN = /store|community|hub|discuss|guide|market
 
 const truncateTraceValue = (value: string, limit = 80): string => {
   const normalized = String(value || "").replace(/\s+/g, " ").trim();
-  return normalized.length > limit ? `${normalized.slice(0, Math.max(0, limit - 3))}...` : normalized;
+  if (normalized.length <= limit) return normalized;
+  const end = Math.max(0, limit - 3);
+  const truncated = normalized.slice(0, end);
+  return `${/[\uD800-\uDBFF]$/.test(truncated) ? truncated.slice(0, -1) : truncated}...`;
 };
 
 const safeStringifyTrace = (value: any, max = 500): string => {

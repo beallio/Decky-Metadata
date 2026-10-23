@@ -1,5 +1,5 @@
 use decky_metadata_backend::{
-    http::{Http, Redirects, RequestLog, RequestRecord},
+    http::{Http, RequestLog, RequestRecord},
     providers::{community, delisted, ign},
     updater::{
         discovery::{prevalidate_release_candidate, validate_release_candidate},
@@ -458,18 +458,14 @@ async fn check_ign_trailer(
 
 async fn inspect_mp4(http: &Http, url: &str) -> Result<(), &'static str> {
     let response = http
-        .request_with_error_limit(
-            Method::GET,
+        .get_prefix_following_ign_mp4(
             url,
             &[
                 ("Range", "bytes=0-31"),
                 ("Origin", "https://steamloopback.host"),
             ],
-            None,
             MEDIA_TIMEOUT,
             32,
-            32,
-            Redirects::None,
         )
         .await
         .map_err(|_| "request failed")?;
