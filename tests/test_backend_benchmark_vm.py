@@ -697,6 +697,47 @@ def test_collector_tolerates_wakeup_latency_and_keeps_its_final_boundary(monkeyp
     assert ledger["collector"]["exit_status"] == 0 and ledger["collector"]["exit_error"] is None
 
 
+@pytest.mark.parametrize(("sample_duration_ns", "succeeds"), [(220_000_000, True), (420_000_000, False)])
+def test_collector_catches_up_without_drifting_or_accepting_a_whole_missed_interval(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_duration_ns: int, succeeds: bool,
+):
+    evidence = tmp_path / "evidence"
+    evidence.mkdir()
+    samples_path = evidence / "samples.jsonl"
+    ledger = {"run_root": str(tmp_path), "collector": {"unit": "owned-collector.service", "path": str(samples_path), "state": "running"}}
+    clock = [1_000_000_000]
+    observed: list[int] = []
+
+    def load(*_args):
+        if len(observed) == 3:
+            ledger["collector"]["state"] = "stopping"
+        return ledger
+
+    def sample(_ledger, previous):
+        timestamp = clock[0]
+        clock[0] += sample_duration_ns if len(observed) == 1 else 1_000_000
+        observed.append(timestamp)
+        cpu = len(observed) * 100
+        return {"monotonic_ns": timestamp, "cpu_delta": None if previous is None else cpu - previous}, cpu
+
+    def sleep(seconds: float):
+        clock[0] += round(seconds * 1_000_000_000)
+
+    monkeypatch.setattr(vm, "_load_ledger", load)
+    monkeypatch.setattr(vm, "_collector_sample", sample)
+    monkeypatch.setattr(vm, "_mutate_ledger", lambda _path, change: change(ledger) or ledger)
+    monkeypatch.setattr(vm, "time", SimpleNamespace(monotonic_ns=lambda: clock[0], sleep=sleep))
+    status = vm._collector_loop(tmp_path / "ledger.json")
+    records = [json.loads(line) for line in samples_path.read_text().splitlines()]
+    assert status == (0 if succeeds else 1)
+    assert ledger["collector"]["exit_status"] == status
+    assert [record["monotonic_ns"] for record in records] == (
+        [1_000_000_000, 1_201_000_000, 1_421_000_000, 1_601_000_000]
+        if succeeds else [1_000_000_000, 1_201_000_000]
+    )
+    assert (ledger["collector"]["exit_error"] is None) == succeeds
+
+
 def test_service_fingerprint_preserves_symlink_selection_and_masks(tmp_path: Path):
     first = tmp_path / "first.service"
     second = tmp_path / "second.service"

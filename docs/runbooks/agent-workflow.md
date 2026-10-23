@@ -182,6 +182,9 @@ webhelper restart. An early document hook tracks every Loader update/catalog
 check before timing. Idle, warmup and workload windows use the VM's monotonic
 clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
 cgroup samples, and memory peaks are sampled peaks.
+The collector keeps a fixed 5 Hz schedule. It catches up when less than one
+period late and rejects a full-period delay. Actual timestamps remain in the
+raw samples.
 
 Each timed preparation first destroys the previous native browser clients,
 before writing the next fixture or arming its observer. This prevents retained

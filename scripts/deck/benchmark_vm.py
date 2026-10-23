@@ -3067,9 +3067,9 @@ def _collector_loop(ledger_path: Path) -> int:
                     break
                 deadline_ns = time.monotonic_ns() + interval_ns if deadline_ns is None else deadline_ns + interval_ns
                 delay_ns = deadline_ns - time.monotonic_ns()
-                if delay_ns <= 0:
-                    _fail("collector missed its 5Hz sample deadline")
-                time.sleep(delay_ns / 1_000_000_000)
+                # The next iteration rejects a full-period delay; smaller overruns can catch up.
+                if delay_ns > 0:
+                    time.sleep(delay_ns / 1_000_000_000)
     except Exception as exc:
         status = 1
         error = f"{type(exc).__name__}: {exc}"
