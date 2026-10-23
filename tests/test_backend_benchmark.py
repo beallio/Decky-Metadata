@@ -555,6 +555,7 @@ def test_summaries_reject_trials_from_different_run_directories():
         benchmark._validate_trial_run_ids([{"run_id": "run-one"}, {"run_id": "run-two"}])
     with pytest.raises(ValueError, match="different run directories"):
         benchmark._validate_trial_run_ids([{"run_id": "run-one"}, {}])
+    assert benchmark._validate_trial_run_ids([{"run_id": "run-one"}] * 30, required=True) == "run-one"
 
 
 def test_result_validation_rejects_dropped_invalid_and_timed_out_calls():

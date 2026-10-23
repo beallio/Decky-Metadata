@@ -786,7 +786,7 @@ def _validate_trial_run_ids(trials: Sequence[Mapping[str, Any]], *, required: bo
     if required and any(not isinstance(run_id, str) or not run_id for run_id in run_ids):
         raise ValueError("trial is missing its benchmark run-directory identity")
     present = {run_id for run_id in run_ids if run_id is not None}
-    if len(present) > 1 or present and len(present) != len(run_ids):
+    if len(present) > 1 or present and any(run_id is None for run_id in run_ids):
         raise ValueError("summary cannot mix trial files from different run directories")
     return next(iter(present), None)
 
