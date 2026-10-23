@@ -112,6 +112,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "get_plugin_logs" => {
             arity(&args, 0, 0)?;
+            logging::install(&state.env);
             Ok(logging::read_tail(&logging::log_path(&state.env))
                 .await
                 .into())

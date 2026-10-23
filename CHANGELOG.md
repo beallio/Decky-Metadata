@@ -21,6 +21,8 @@ Find Steam matches and run the plugin backend in Rust
 - Replaced the plugin's Python backend with Rust. The same ZIP runs directly on
   the beallio Loader fork and uses a small compatibility shim on standard Decky
   Loader. Saved metadata, preferences, and shortcut-name restore history stay in place.
+- Preserved provider-specific request headers. Log viewing retries file setup
+  if it failed at startup.
 
 ## [0.5.4] - 2026-10-11
 

@@ -85,12 +85,17 @@ pub fn is_ign_origin(url: &reqwest::Url) -> bool {
 
 impl Http {
     pub fn new(cancel: CancellationToken, _version: &str) -> Result<Self, String> {
-        let default = Client::builder().build().map_err(|e| e.to_string())?;
+        let default = Client::builder()
+            .user_agent(BROWSER_USER_AGENT)
+            .build()
+            .map_err(|e| e.to_string())?;
         let none = Client::builder()
+            .user_agent(BROWSER_USER_AGENT)
             .redirect(Policy::none())
             .build()
             .map_err(|e| e.to_string())?;
         let ign = Client::builder()
+            .user_agent(BROWSER_USER_AGENT)
             .redirect(Policy::custom(|attempt| {
                 if !is_ign_origin(attempt.url()) {
                     attempt.error("Blocked redirect outside IGN's canonical host")
@@ -214,7 +219,6 @@ impl Http {
         }];
         let mut request = client
             .request(method.clone(), parsed)
-            .header("User-Agent", BROWSER_USER_AGENT)
             .header("Accept-Language", "en-US,en;q=0.9");
         for (key, value) in headers {
             request = request.header(*key, *value);
@@ -434,6 +438,50 @@ mod tests {
             let _ = socket.write_all(reply).await;
         });
         format!("http://{address}/")
+    }
+
+    #[tokio::test]
+    async fn explicit_user_agent_overrides_browser_default_on_the_wire() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = Vec::new();
+            let mut buffer = [0u8; 1024];
+            while !request.ends_with(b"\r\n\r\n") {
+                let count = socket.read(&mut buffer).await.unwrap();
+                assert!(count > 0 && request.len() + count <= 8192);
+                request.extend_from_slice(&buffer[..count]);
+            }
+            let request = String::from_utf8(request).unwrap();
+            let agents = request
+                .lines()
+                .filter_map(|line| line.split_once(':'))
+                .filter(|(name, _)| name.eq_ignore_ascii_case("User-Agent"))
+                .map(|(_, value)| value.trim())
+                .collect::<Vec<_>>();
+            let reply = if agents == ["Metadata-Updater-Test/1"] {
+                b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".as_slice()
+            } else {
+                b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".as_slice()
+            };
+            socket.write_all(reply).await.unwrap();
+        });
+        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let response = http
+            .request(
+                Method::GET,
+                &format!("http://{address}/"),
+                &[("user-agent", "Metadata-Updater-Test/1")],
+                None,
+                Duration::from_secs(2),
+                1024,
+                Redirects::Default,
+            )
+            .await
+            .unwrap();
+        server.await.unwrap();
+        assert_eq!(response.status, 200);
     }
     #[tokio::test]
     async fn real_transport_enforces_declared_and_streamed_bounds() {
