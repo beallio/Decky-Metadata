@@ -139,7 +139,11 @@ impl Storage {
                 return Err(error);
             }
         };
-        let changed = !transaction.undo.is_empty();
+        // A mutation that leaves every touched path equal (e.g. re-saving the same record) skips the file write.
+        let changed = transaction.undo.iter().any(|(path, previous)| {
+            let path: Vec<&str> = path.iter().map(String::as_str).collect();
+            value_at(transaction.data, &path) != previous.as_ref()
+        });
         let undo = std::mem::take(&mut transaction.undo);
         drop(transaction);
         if !changed {
@@ -1247,6 +1251,25 @@ mod tests {
             serde_json::from_slice::<Value>(&tokio::fs::read(path).await.unwrap()).unwrap(),
             *store.data()
         );
+    }
+
+    #[tokio::test]
+    async fn unchanged_saves_skip_the_file_write_and_changed_saves_do_not() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = TempDir::new();
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        let record = json!({"title":"Same","screenshots":[{"url":"https://a"}]});
+        store.transaction(|tx| tx.set(&["metadata", "1"], record.clone())).await.unwrap();
+        // With the directory read-only, any real write (temp file + rename) fails.
+        std::fs::set_permissions(&dir.0, std::fs::Permissions::from_mode(0o500)).unwrap();
+        let same = store.transaction(|tx| tx.set(&["metadata", "1"], record.clone())).await;
+        let changed = store
+            .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("Different")))
+            .await;
+        std::fs::set_permissions(&dir.0, std::fs::Permissions::from_mode(0o700)).unwrap();
+        same.unwrap();
+        assert!(changed.is_err());
+        assert_eq!(store.data()["metadata"]["1"], record);
     }
 
     #[tokio::test]

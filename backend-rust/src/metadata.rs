@@ -272,9 +272,20 @@ pub fn prepare_save(
     if previous.is_some_and(|id| id != 0) && previous != next && !trusted {
         value["deck_compat_category"] = Value::Null;
     }
-    let mut result = sanitize(&value, index)?;
+    Ok(stamp_updated(existing, sanitize(&value, index)?))
+}
+
+/// Sets `updated_at`, but returns the existing record unchanged when nothing else
+/// differs, so re-saving the same data skips the settings-file write.
+fn stamp_updated(existing: &Value, mut result: Value) -> Value {
+    if let Some(previous) = existing.get("updated_at") {
+        result["updated_at"] = previous.clone();
+        if &result == existing {
+            return result;
+        }
+    }
     result["updated_at"] = now().into();
-    Ok(result)
+    result
 }
 
 pub fn sanitize_news(value: &Value) -> Result<Vec<Value>, String> {
@@ -611,7 +622,7 @@ pub async fn enrich_steam(
     if !snapshot.is_object() {
         return Ok(None);
     }
-    let mut enriched = if mode == "steam-name" {
+    let enriched = if mode == "steam-name" {
         let Some(appid) = safe_int(&snapshot["steam_appid"]).filter(|id| *id > 0) else {
             return Ok(None);
         };
@@ -630,7 +641,7 @@ pub async fn enrich_steam(
             with_steam_news(state, snapshot.clone(), &text(&snapshot["title"]), 6, true).await?;
         sanitize_for(state, &enriched).await?
     };
-    enriched["updated_at"] = now().into();
+    let enriched = stamp_updated(&snapshot, enriched);
     state
         .change(|transaction| {
             if transaction.get(&["metadata", &key]) != Some(&snapshot) {
@@ -666,6 +677,16 @@ mod tests {
             vec!["first"]
         );
     }
+    #[test]
+    fn resaving_identical_data_keeps_the_stored_record_and_timestamp() {
+        let input = json!({"title":"Same","source":"Manual","description":"Text"});
+        let mut stored = prepare_save(&json!({}), input.clone(), false, None, &Value::Null).unwrap();
+        stored["updated_at"] = json!(1);
+        assert_eq!(prepare_save(&stored, input, false, None, &Value::Null).unwrap(), stored);
+        let changed = json!({"title":"Different","source":"Manual","description":"Text"});
+        assert_ne!(prepare_save(&stored, changed, false, None, &Value::Null).unwrap()["updated_at"], json!(1));
+    }
+
     #[test]
     fn saves_keep_explicit_choice_and_clear_changed_match_rating() {
         let old = json!({"deck_compat_override":0,"steam_appid":10,"deck_compat_category":3});
