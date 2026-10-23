@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import fcntl
 import hashlib
 import json
 import os
+import socket
 import stat
+import struct
 import subprocess
 import threading
 import time
@@ -17,6 +20,7 @@ from typing import Any
 import pytest
 
 from scripts.deck import benchmark_vm as vm
+from scripts.deck import cdp
 
 
 def test_scratch_containment_rejects_both_ancestry_directions_and_aliases(tmp_path: Path):
@@ -342,6 +346,7 @@ def test_collector_summary_uses_pss_deduplicates_pids_and_computes_cpu_rates(mon
     result = vm.summarize_samples(samples, "A", phases)
 
     assert result["service_cpu_seconds"] == pytest.approx(0.3)
+    assert result["unattributed"]["cpu_seconds"] == pytest.approx(0)
     assert result["errors"] == []
     assert result["metadata"]["cpu_seconds"] == pytest.approx(0.1)
     assert result["host_service"]["cpu_seconds"] == pytest.approx(0.2)
@@ -354,6 +359,161 @@ def test_collector_summary_uses_pss_deduplicates_pids_and_computes_cpu_rates(mon
     assert result["memory"]["loader_overhead"]["current"]["pss_kib"] == 35
     assert result["memory"]["service_total"]["current"]["pss_kib"] == 155
     assert result["memory"]["service_total"]["sampled_peak"]["pss_kib"] == 155
+
+
+def test_collector_accounts_new_process_ticks_and_unattributed_exit_tail_cpu(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(vm.os, "sysconf", lambda _name: 100)
+    samples = [
+        {
+            "monotonic_ns": 1_000_000_000,
+            "collector_starttime_ticks": 100,
+            "service_cpu_delta_usec": None,
+            "errors": [],
+            "processes": [
+                {"pid": 10, "starttime": 50, "role": "metadata_python", "cpu_ticks": 10, "pss_kib": 40, "rss_kib": 60, "private_dirty_kib": 4},
+                {"pid": 12, "starttime": 40, "role": "loader_overhead", "cpu_ticks": 5, "pss_kib": 20, "rss_kib": 30, "private_dirty_kib": 2},
+            ],
+        },
+        {
+            "monotonic_ns": 2_000_000_000,
+            "service_cpu_delta_usec": 700_000,
+            "errors": [],
+            "processes": [
+                {"pid": 10, "starttime": 50, "role": "metadata_python", "cpu_ticks": 20, "pss_kib": 50, "rss_kib": 70, "private_dirty_kib": 5},
+                {"pid": 11, "starttime": 150, "role": "metadata_python", "cpu_ticks": 20, "pss_kib": 15, "rss_kib": 25, "private_dirty_kib": 1},
+                {"pid": 12, "starttime": 40, "role": "loader_overhead", "cpu_ticks": 35, "pss_kib": 25, "rss_kib": 35, "private_dirty_kib": 3},
+            ],
+        },
+    ]
+    phases = [
+        {"name": name, "monotonic_ns": 1_000_000_000 + index * 250_000_000}
+        for index, name in enumerate(("idle", "warmup", "workload", "reload"))
+    ]
+
+    result = vm.summarize_samples(samples, "A", phases)
+
+    assert result["errors"] == []
+    assert result["metadata"]["cpu_seconds"] == pytest.approx(0.3)
+    assert result["host_service"]["cpu_seconds"] == pytest.approx(0.3)
+    assert result["service_cpu_seconds"] == pytest.approx(0.7)
+    assert result["unattributed"]["cpu_seconds"] == pytest.approx(0.1)
+
+
+@pytest.mark.parametrize("loader_variant", ["upstream-v3.2.10", "fork-fa0b26ae"])
+def test_authenticated_loader_websocket_protocol(
+    monkeypatch: pytest.MonkeyPatch, loader_variant: str,
+):
+    listener = socket.socket()
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(2)
+    listener.settimeout(3)
+    port = listener.getsockname()[1]
+    monkeypatch.setattr(vm, "PORT", port)
+    monkeypatch.setattr(cdp, "HOST", "127.0.0.1")
+    monkeypatch.setattr(cdp, "PORT", port)
+    monkeypatch.setattr(vm, "_cdp_module", lambda: cdp)
+    received: list[dict[str, Any]] = []
+    failures: list[BaseException] = []
+
+    def read_exact(connection: socket.socket, length: int) -> bytes:
+        chunks = bytearray()
+        while len(chunks) < length:
+            chunk = connection.recv(length - len(chunks))
+            if not chunk:
+                raise AssertionError("client closed WebSocket early")
+            chunks.extend(chunk)
+        return bytes(chunks)
+
+    def read_frame(connection: socket.socket) -> dict[str, Any]:
+        first, second = read_exact(connection, 2)
+        assert second & 0x80, "WebSocket clients must mask transmitted frames"
+        length = second & 0x7F
+        if length == 126:
+            length = struct.unpack(">H", read_exact(connection, 2))[0]
+        elif length == 127:
+            length = struct.unpack(">Q", read_exact(connection, 8))[0]
+        mask = read_exact(connection, 4) if second & 0x80 else b""
+        payload = read_exact(connection, length)
+        if mask:
+            payload = bytes(value ^ mask[index % 4] for index, value in enumerate(payload))
+        assert first & 0x0F == 1
+        return json.loads(payload)
+
+    def send_frame(connection: socket.socket, message: dict[str, Any]) -> None:
+        payload = json.dumps(message, separators=(",", ":")).encode()
+        if len(payload) < 126:
+            header = bytes((0x81, len(payload)))
+        elif len(payload) < 65536:
+            header = b"\x81\x7e" + struct.pack(">H", len(payload))
+        else:
+            header = b"\x81\x7f" + struct.pack(">Q", len(payload))
+        connection.sendall(header + payload)
+
+    def serve():
+        try:
+            token_socket, _address = listener.accept()
+            token_socket.settimeout(3)
+            with token_socket:
+                request = bytearray()
+                while b"\r\n\r\n" not in request:
+                    request.extend(token_socket.recv(4096))
+                assert request.startswith(b"GET /auth/token HTTP/")
+                body = b"secret-token"
+                token_socket.sendall(
+                    b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
+                    + f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n".encode()
+                    + body
+                )
+
+            ws_socket, _address = listener.accept()
+            ws_socket.settimeout(3)
+            with ws_socket:
+                request = bytearray()
+                while b"\r\n\r\n" not in request:
+                    request.extend(ws_socket.recv(4096))
+                headers = request.decode("ascii").split("\r\n")
+                assert headers[0] == "GET /ws?auth=secret-token HTTP/1.1"
+                key = next(line.split(":", 1)[1].strip() for line in headers if line.lower().startswith("sec-websocket-key:"))
+                accept = base64.b64encode(
+                    hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()
+                )
+                ws_socket.sendall(
+                    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n"
+                    b"Connection: Upgrade\r\nSec-WebSocket-Accept: " + accept + b"\r\n\r\n"
+                )
+                handshake = read_frame(ws_socket)
+                received.append(handshake)
+                assert handshake == {"type": 4, "messages": []}
+                for route, args, result in (
+                    ("loader/call_plugin_method", ["Decky Metadata", "get_plugin_version"], "1.2.3"),
+                    ("loader/reload_plugin", ["Decky Metadata"], True),
+                ):
+                    call = read_frame(ws_socket)
+                    received.append(call)
+                    assert call["type"] == 0 and call["route"] == route and call["args"] == args
+                    send_frame(ws_socket, {"type": 1, "id": call["id"], "result": result})
+                    assert read_frame(ws_socket) == {"type": 3, "id": call["id"]}
+        except BaseException as error:
+            failures.append(error)
+        finally:
+            listener.close()
+
+    server = threading.Thread(target=serve, name=f"fake-loader-{loader_variant}", daemon=True)
+    server.start()
+    connection = vm._loader_connect(timeout=2)
+    try:
+        assert vm._loader_version(connection) == "1.2.3"
+        assert vm._loader_request(
+            "loader/reload_plugin", ["Decky Metadata"], timeout=2, connection=connection,
+        ) is True
+    finally:
+        connection.close()
+    server.join(timeout=3)
+
+    assert not server.is_alive()
+    assert failures == []
+    assert [message["type"] for message in received] == [4, 0, 0]
 
 
 def test_active_unreadable_process_memory_fails_instead_of_becoming_zero(monkeypatch: pytest.MonkeyPatch):
@@ -677,7 +837,7 @@ def test_collector_tolerates_wakeup_latency_and_keeps_its_final_boundary(monkeyp
             ledger["collector"]["state"] = "stopping"
         return ledger
 
-    def sample(_ledger, previous):
+    def sample(_ledger, previous, _collector_start_ticks=None):
         clock[0] += 1_000_000
         cpu = (len(observed_cpu) + 1) * 100
         observed_cpu.append(cpu)
@@ -713,7 +873,7 @@ def test_collector_catches_up_without_drifting_or_accepting_a_whole_missed_inter
             ledger["collector"]["state"] = "stopping"
         return ledger
 
-    def sample(_ledger, previous):
+    def sample(_ledger, previous, _collector_start_ticks=None):
         timestamp = clock[0]
         clock[0] += sample_duration_ns if len(observed) == 1 else 1_000_000
         observed.append(timestamp)

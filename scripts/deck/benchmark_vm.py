@@ -131,15 +131,6 @@ def resolved(path: Path, *, strict: bool = True) -> Path:
         _fail("path cannot be resolved safely")
 
 
-def is_beneath(path: Path, root: Path, *, strict: bool = True, allow_equal: bool = False) -> bool:
-    try:
-        candidate = resolved(path, strict=strict)
-        parent = resolved(root, strict=True)
-    except SafetyError:
-        return False
-    return (allow_equal and candidate == parent) or parent in candidate.parents
-
-
 def require_contained(path: Path, root: Path, *, label: str, allow_equal: bool = False) -> Path:
     if not path.is_absolute() or ".." in path.parts:
         _fail(f"{label} must be an absolute path without traversal")
@@ -238,13 +229,6 @@ def assert_scratch_isolated(run_root: Path, scratch: Path, normal: Path) -> tupl
     if scratch_real == normal_real or scratch_real in normal_real.parents or normal_real in scratch_real.parents:
         _fail("scratch and normal homebrew must not be equal or ancestors in either direction")
     return root, scratch_real, normal_real
-
-
-
-
-def _check_safe_filename(name: str, *, label: str) -> None:
-    if not isinstance(name, str) or not name or name in {".", ".."} or "/" in name or "\\" in name or "\x00" in name:
-        _fail(f"invalid {label}")
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -495,6 +479,17 @@ def pid_starttime(pid: int) -> int | None:
     return None if current is None else current[0]
 
 
+def _proc_uptime_ticks() -> int:
+    try:
+        fields = Path("/proc/uptime").read_text(encoding="ascii").split()
+        clock_ticks = os.sysconf("SC_CLK_TCK")
+        if not fields or not re.fullmatch(r"\d+(?:\.\d+)?", fields[0]) or not is_plain_int(clock_ticks) or clock_ticks <= 0:
+            _fail("collector start process-clock boundary is unreadable")
+        return int(float(fields[0]) * clock_ticks)
+    except OSError:
+        _fail("collector start process-clock boundary is unreadable")
+
+
 def _proc_cgroup(pid: int) -> str | None:
     try:
         lines = Path(f"/proc/{pid}/cgroup").read_text(encoding="ascii").splitlines()
@@ -538,8 +533,6 @@ def _pids_in_cgroup(group: str) -> list[int]:
                 _fail("service cgroup contains an invalid PID")
             pids.add(int(value))
     return sorted(pids)
-
-
 
 
 def _process_identity(pid: int, group: str = "") -> dict[str, Any] | None:
@@ -1528,36 +1521,115 @@ def _cdp_eval(expression: str, *, timeout: float = 15.0) -> Any:
     return result["value"]
 
 
+class _LoaderWebSocket:
+    def __init__(self, cdp: Any, sock: socket.socket):
+        self.cdp = cdp
+        self.sock = sock
+        self.next_id = 0
+        self.closed = False
+
+    def close(self) -> None:
+        if not self.closed:
+            self.closed = True
+            try:
+                self.sock.close()
+            except OSError:
+                pass
+
+    def request(self, route: str, args: Sequence[Any], timeout: float) -> Any:
+        if self.closed:
+            _fail("authenticated Loader WebSocket is disconnected")
+        self.next_id += 1
+        call_id = self.next_id
+        deadline = time.monotonic() + timeout
+        try:
+            self.cdp.ws_send(self.sock, json.dumps({
+                "type": 0, "id": call_id, "route": route, "args": list(args),
+            }, separators=(",", ":")))
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self.close()
+                    _fail("authenticated Loader request timed out")
+                self.sock.settimeout(remaining)
+                message = json.loads(self.cdp.ws_recv(self.sock))
+                if not isinstance(message, dict) or message.get("id") != call_id:
+                    continue
+                kind = message.get("type")
+                if kind not in {-1, 1, 2}:
+                    continue
+                self.cdp.ws_send(self.sock, json.dumps({"type": 3, "id": call_id}, separators=(",", ":")))
+                if kind == 1:
+                    if "result" not in message:
+                        _fail("authenticated Loader reply omitted its result")
+                    return message["result"]
+                _fail("authenticated Loader route returned an error")
+        except SafetyError:
+            raise
+        except Exception:
+            self.close()
+            _fail("authenticated Loader WebSocket disconnected")
 
 
+def _loader_connect(timeout: float = 3.0) -> _LoaderWebSocket:
+    cdp = _cdp_module()
+    cdp.HOST = "127.0.0.1"
+    cdp.PORT = PORT
+    sock: socket.socket | None = None
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(f"http://127.0.0.1:{PORT}/auth/token", timeout=timeout) as response:
+            if response.status != 200:
+                _fail("Loader authentication token request failed")
+            token = response.read(4097).decode("utf-8").strip()
+        if not token or len(token) > 4096 or any(character in token for character in "\r\n"):
+            _fail("Loader authentication token is invalid")
+        sock = cdp.ws_connect("/ws?" + urllib.parse.urlencode({"auth": token}))
+        sock.settimeout(timeout)
+        connection = _LoaderWebSocket(cdp, sock)
+        cdp.ws_send(sock, json.dumps({"type": 4, "messages": []}, separators=(",", ":")))
+        return connection
+    except SafetyError:
+        if sock is not None:
+            sock.close()
+        raise
+    except Exception:
+        if sock is not None:
+            sock.close()
+        _fail("authenticated Loader WebSocket connection failed")
 
 
-
-
-def _loader_request(route: str, args: Sequence[Any], timeout: float = 3.0) -> Any:
+def _loader_request(
+    route: str, args: Sequence[Any], timeout: float = 3.0,
+    connection: _LoaderWebSocket | None = None,
+) -> Any:
     if route not in {"loader/get_plugins", "loader/call_plugin_method", "loader/reload_plugin"}:
         _fail("unapproved Loader route")
-    if route == "loader/call_plugin_method" and (len(args) != 2 or args != [PLUGIN_NAME, "get_plugin_version"]):
+    if route == "loader/get_plugins" and args:
+        _fail("unapproved Loader inventory request")
+    if route == "loader/call_plugin_method" and (len(args) != 2 or list(args) != [PLUGIN_NAME, "get_plugin_version"]):
         _fail("unapproved Metadata readiness method")
-    if route == "loader/reload_plugin" and args != [PLUGIN_NAME]:
+    if route == "loader/reload_plugin" and list(args) != [PLUGIN_NAME]:
         _fail("unapproved Metadata reload request")
-    parameters = json.dumps([route, list(args)], ensure_ascii=False, separators=(",", ":"))
-    expression = "(async()=>{const [route,args]=" + parameters + ";const backend=window.DeckyBackend;if(typeof backend?.call!==\"function\")throw new Error(\"Loader frontend transport is unavailable\");return await backend.call(route,...args)})()"
-    return _cdp_eval(expression, timeout=timeout)
-
-
-
-
-def _loader_version() -> str | None:
+    owned = connection is None
+    if owned:
+        connection = _loader_connect(min(timeout, 3.0))
     try:
-        result = _loader_request("loader/call_plugin_method", [PLUGIN_NAME, "get_plugin_version"], timeout=1)
+        return connection.request(route, args, timeout)
+    finally:
+        if owned:
+            connection.close()
+
+
+def _loader_version(connection: _LoaderWebSocket | None = None) -> str | None:
+    try:
+        result = _loader_request(
+            "loader/call_plugin_method", [PLUGIN_NAME, "get_plugin_version"],
+            timeout=1, connection=connection,
+        )
     except SafetyError:
         return None
     return result if isinstance(result, str) else None
-
-
-
-
 
 
 def _validate_ledger(ledger: Any, requested: Path | None = None) -> dict[str, Any]:
@@ -2167,8 +2239,6 @@ def _write_capture_settings(ledger: Mapping[str, Any], dataset: int | None) -> d
     return {"path": str(target), "sha256": _sha256_bytes(canonical), "records": dataset}
 
 
-
-
 def _remove_scratch_tree(path: Path, run_root: Path) -> None:
     target = require_contained(path, run_root, label="scratch reset target")
     if target == Path(run_root) or target == Path(ledger_dummy := "/"):
@@ -2387,31 +2457,55 @@ def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     ledger = _mutate_ledger(ledger_path, lambda state: state.update({"temp_service": service_identity}))
     _replace_temp_entry(ledger_path, unit, {"identities": identities, "state": "pending"})
     deadline = time.monotonic() + START_TIMEOUT_SECONDS
-    last_error = "frontend transport is not ready"
-    while time.monotonic() < deadline:
-        try:
-            plugins = _loader_request("loader/get_plugins", [], timeout=3)
-            if not isinstance(plugins, list):
-                _fail("Loader did not return its authenticated plugin inventory")
-            if not payload["measure_backend"]:
-                return {"ok": True, "elapsed_ms": (time.monotonic_ns() - started_at) / 1_000_000, "pids": [], "service_ready": True, "backend_ready": False, "arm": arm, "unit": unit, "identities": _safe_identities(identities)}
-            version = _loader_version()
-            pids = _metadata_identities(ledger, arm)
-            if version == expected_arm_version and pids:
-                ready_at = time.monotonic_ns()
-                _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": _identities_for_group(group)}))
-                return {"ok": True, "elapsed_ms": (ready_at - started_at) / 1_000_000, "pids": _safe_identities(pids), "service_ready": True, "backend_ready": True, "arm": arm, "unit": unit, "version": version, "identities": _safe_identities(_identities_for_group(group))}
-            last_error = "Metadata version or process identity is not ready"
-        except SafetyError as error:
-            last_error = str(error)
-        time.sleep(READY_POLL_SECONDS)
+    last_error = "authenticated Loader transport is not ready"
+    connection: _LoaderWebSocket | None = None
+    first_correct_reply_ns: int | None = None
+    try:
+        while time.monotonic() < deadline:
+            try:
+                if connection is None or connection.closed:
+                    if connection is not None:
+                        connection.close()
+                    connection = _loader_connect()
+                if not payload["measure_backend"]:
+                    plugins = _loader_request("loader/get_plugins", [], timeout=3, connection=connection)
+                    if not isinstance(plugins, list):
+                        _fail("Loader did not return its authenticated plugin inventory")
+                    return {
+                        "ok": True, "elapsed_ms": (time.monotonic_ns() - started_at) / 1_000_000,
+                        "pids": [], "service_ready": True, "backend_ready": False,
+                        "readiness_kind": "authenticated_loader_inventory", "arm": arm,
+                        "unit": unit, "identities": _safe_identities(identities),
+                    }
+                version = _loader_version(connection)
+                if version == expected_arm_version and first_correct_reply_ns is None:
+                    first_correct_reply_ns = time.monotonic_ns()
+                pids = _metadata_identities(ledger, arm)
+                if first_correct_reply_ns is not None and pids:
+                    ready_at = first_correct_reply_ns
+                    _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": _identities_for_group(group)}))
+                    return {
+                        "ok": True, "elapsed_ms": (ready_at - started_at) / 1_000_000,
+                        "pids": _safe_identities(pids), "service_ready": True,
+                        "backend_ready": True, "readiness_kind": "authenticated_backend_version_rpc",
+                        "arm": arm, "unit": unit, "version": version,
+                        "identities": _safe_identities(_identities_for_group(group)),
+                    }
+                last_error = "Metadata version or process identity is not ready"
+            except SafetyError:
+                last_error = "authenticated Loader route is not ready"
+                if connection is not None and connection.closed:
+                    connection.close()
+                    connection = None
+            time.sleep(READY_POLL_SECONDS)
+    finally:
+        if connection is not None:
+            connection.close()
     _fail("authenticated backend readiness timed out: " + last_error)
 
 
 def _safe_identities(identities: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return [{"pid": item["pid"], "starttime": item["starttime"], "exe": Path(item["exe"]).name if isinstance(item.get("exe"), str) else "unknown"} for item in identities]
-
-
 
 
 def _metadata_identities(ledger: Mapping[str, Any], arm: str) -> list[dict[str, Any]]:
@@ -2422,8 +2516,6 @@ def _metadata_identities(ledger: Mapping[str, Any], arm: str) -> list[dict[str, 
         identity for identity in _identities_for_group(temp["cgroup"])
         if _role_for_process(ledger, arm, identity) in _ARM_METADATA_ROLES[arm]
     ]
-
-
 
 
 def _verify_plugin(ledger: Mapping[str, Any]) -> dict[str, Any]:
@@ -2513,24 +2605,29 @@ def _reload(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     if not old:
         _fail("reload could not capture the old Metadata process identity")
     old_keys = {(item["pid"], item["starttime"]) for item in old}
+    connection = _loader_connect(timeout=10)
     started = time.monotonic_ns()
-    _loader_request("loader/reload_plugin", [PLUGIN_NAME], timeout=10)
-    deadline = time.monotonic() + RELOAD_TIMEOUT_SECONDS
-    while time.monotonic() < deadline:
-        current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
-        gone = all(pid_starttime(pid) != start for pid, start in old_keys)
-        version = _loader_version()
-        new = [item for item in current if (item["pid"], item["starttime"]) not in old_keys]
-        if gone and version == expected and new:
-            ready_at = time.monotonic_ns()
-            identities = _identities_for_group(temp["cgroup"])
-            _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": identities}))
-            _replace_temp_entry(ledger_path, temp["unit"], {"identities": identities})
-            return {"ok": True, "elapsed_ms": (ready_at - started) / 1_000_000, "start_ns": started, "end_ns": ready_at, "pids": _safe_identities(new), "newpids": _safe_identities(new), "version": version, "old_pids_gone": True, "poll_ms": 10}
-        time.sleep(READY_POLL_SECONDS)
-    _fail("authenticated backend reload readiness timed out")
-
-
+    try:
+        _loader_request("loader/reload_plugin", [PLUGIN_NAME], timeout=10, connection=connection)
+        deadline = time.monotonic() + RELOAD_TIMEOUT_SECONDS
+        while time.monotonic() < deadline:
+            current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
+            gone = all(pid_starttime(pid) != start for pid, start in old_keys)
+            if connection.closed:
+                connection.close()
+                connection = _loader_connect()
+            version = _loader_version(connection)
+            new = [item for item in current if (item["pid"], item["starttime"]) not in old_keys]
+            if gone and version == expected and new:
+                ready_at = time.monotonic_ns()
+                identities = _identities_for_group(temp["cgroup"])
+                _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": identities}))
+                _replace_temp_entry(ledger_path, temp["unit"], {"identities": identities})
+                return {"ok": True, "elapsed_ms": (ready_at - started) / 1_000_000, "start_ns": started, "end_ns": ready_at, "pids": _safe_identities(new), "newpids": _safe_identities(new), "version": version, "old_pids_gone": True, "poll_ms": 10, "readiness_kind": "authenticated_backend_version_rpc"}
+            time.sleep(READY_POLL_SECONDS)
+        _fail("authenticated backend reload readiness timed out")
+    finally:
+        connection.close()
 
 
 def _heartbeat(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -2714,6 +2811,33 @@ def _phase_at(events: Sequence[Mapping[str, Any]], monotonic_ns: int) -> str | N
             break
     return active
 
+def interpolate_service_cpu_window(
+    samples: Sequence[Mapping[str, Any]], start_ns: int, end_ns: int,
+) -> dict[str, int | float | None]:
+    if not is_plain_int(start_ns) or not is_plain_int(end_ns) or not 0 < start_ns < end_ns:
+        return {"service_cpu_usec": None, "covered_wall_ns": 0}
+    times = [sample.get("monotonic_ns") for sample in samples]
+    if not all(is_plain_int(value) for value in times) or any(right <= left for left, right in zip(times, times[1:])):
+        return {"service_cpu_usec": None, "covered_wall_ns": 0}
+    covered_wall_ns = 0
+    service_cpu_usec = 0.0
+    valid = True
+    for index in range(1, len(samples)):
+        left = max(start_ns, times[index - 1])
+        right = min(end_ns, times[index])
+        if right <= left:
+            continue
+        covered_wall_ns += right - left
+        delta = samples[index].get("service_cpu_delta_usec")
+        if is_plain_int(delta) and delta >= 0:
+            service_cpu_usec += delta * (right - left) / (times[index] - times[index - 1])
+        else:
+            valid = False
+    return {
+        "service_cpu_usec": service_cpu_usec if valid and covered_wall_ns else None,
+        "covered_wall_ns": covered_wall_ns,
+    }
+
 
 def _role_for_process(ledger: Mapping[str, Any], arm: str, identity: Mapping[str, Any]) -> str:
     plugin = resolved(Path(ledger["scratch_homebrew"]) / "plugins" / PLUGIN_DIR_NAME, strict=False)
@@ -2739,9 +2863,9 @@ def _role_for_process(ledger: Mapping[str, Any], arm: str, identity: Mapping[str
     return "loader_overhead"
 
 
-
-
-def _collector_sample(ledger: Mapping[str, Any], previous_cpu: int | None) -> tuple[dict[str, Any], int]:
+def _collector_sample(
+    ledger: Mapping[str, Any], previous_cpu: int | None, collector_start_ticks: int | None = None,
+) -> tuple[dict[str, Any], int]:
     collector = ledger["collector"]
     temp = ledger.get("temp_service")
     if not isinstance(temp, dict) or collector["service_group"] != temp["cgroup"]:
@@ -2788,6 +2912,8 @@ def _collector_sample(ledger: Mapping[str, Any], previous_cpu: int | None) -> tu
         "processes": processes,
         "errors": [],
     }
+    if collector_start_ticks is not None:
+        sample["collector_starttime_ticks"] = collector_start_ticks
     return sample, cpu
 
 
@@ -2855,6 +2981,13 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
     if not all(is_plain_int(value) and value >= 0 for value in times) or any(right <= left for left, right in zip(times, times[1:])):
         errors.append("invalid monotonic sample boundaries")
         return {"sample_count": len(samples), "wall_seconds": None, "service_cpu_seconds": None, "idle_one_core_percent": None, "metadata": None, "host_service": None, "phase_totals": {}, "errors": errors}
+    collector_start_ticks = samples[0].get("collector_starttime_ticks")
+    collector_start_valid = collector_start_ticks is None or (
+        is_plain_int(collector_start_ticks) and collector_start_ticks >= 0
+    )
+    if not collector_start_valid or any("collector_starttime_ticks" in sample for sample in samples[1:]):
+        errors.append("collector start process-clock boundary is invalid or repeated")
+        collector_start_valid = False
 
     role_names = _ARM_METADATA_ROLES.get(arm, set())
     service_cpu_usec = 0
@@ -2871,7 +3004,7 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
 
     observed_roles: set[str] = set()
     role_cpu_ticks = dict.fromkeys((*_METADATA_ROLES, "loader_overhead"), 0)
-    role_cpu_valid = True
+    role_cpu_valid = collector_start_valid
     previous: dict[tuple[int, int], tuple[str, int]] = {}
     for sample in samples:
         current: dict[tuple[int, int], tuple[str, int]] = {}
@@ -2907,6 +3040,8 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
         for key, (role, ticks) in current.items():
             prior = previous.get(key)
             if prior is None:
+                if collector_start_valid and collector_start_ticks is not None and key[1] > collector_start_ticks:
+                    role_cpu_ticks[role] += ticks
                 continue
             if prior[0] != role or ticks < prior[1]:
                 errors.append("process CPU accounting changed identity or moved backwards")
@@ -2923,23 +3058,25 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
     metadata_ticks = sum(role_cpu_ticks[role] for role in role_names)
     metadata_cpu_seconds = metadata_ticks / clock_ticks if role_cpu_valid else None
     service_cpu_seconds = service_cpu_usec / 1_000_000 if service_cpu_valid else None
-    if metadata_cpu_seconds is not None and service_cpu_seconds is not None:
-        host_cpu = service_cpu_seconds - metadata_cpu_seconds
-        metadata_identities = {
+    host_cpu = role_cpu_ticks["loader_overhead"] / clock_ticks if role_cpu_valid else None
+    if role_cpu_valid and service_cpu_seconds is not None:
+        attributed_cpu = sum(role_cpu_ticks.values()) / clock_ticks
+        role_identities = {
             (process["pid"], process["starttime"])
             for sample in samples
             for process in sample.get("processes", [])
-            if isinstance(process, Mapping) and process.get("role") in role_names
+            if isinstance(process, Mapping) and process.get("role") in role_cpu_ticks
             and is_plain_int(process.get("pid")) and is_plain_int(process.get("starttime"))
         }
-        rounding = len(metadata_identities) / clock_ticks
-        if host_cpu < -rounding:
-            errors.append("Metadata process CPU exceeds service cgroup CPU accounting")
-            host_cpu = None
+        rounding = len(role_identities) / clock_ticks
+        remaining = service_cpu_seconds - attributed_cpu
+        if remaining < -rounding:
+            errors.append("attributed process CPU exceeds service cgroup CPU accounting")
+            unattributed_cpu = None
         else:
-            host_cpu = max(0.0, host_cpu)
+            unattributed_cpu = max(0.0, remaining)
     else:
-        host_cpu = None
+        unattributed_cpu = None
 
     by_role = {
         role: _memory_attribution(samples, {role}, allow_zero=role == "loader_overhead")
@@ -2975,22 +3112,19 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
         prior_time = event["monotonic_ns"]
         phase_ranges.append((event["monotonic_ns"], event["name"]))
     phase_acc = {name: {"wall_ns": 0, "cpu_usec": 0.0, "cpu_valid": True} for name in _PHASES}
-    normalized_phase_events = [{"monotonic_ns": at, "name": name} for at, name in phase_ranges]
-    for index in range(1, len(samples)):
-        start, end = times[index - 1], times[index]
-        delta = samples[index].get("service_cpu_delta_usec")
-        cuts = [start, *(at for at, _ in phase_ranges if start < at < end), end]
-        for left, right in zip(cuts, cuts[1:]):
-            active = _phase_at(normalized_phase_events, left)
-            if active not in phase_acc:
-                continue
-            bucket = phase_acc[active]
-            duration = right - left
-            bucket["wall_ns"] += duration
-            if is_plain_int(delta) and delta >= 0:
-                bucket["cpu_usec"] += delta * duration / (end - start)
-            else:
-                bucket["cpu_valid"] = False
+    for index in range(len(phase_ranges) - 1):
+        start, active = phase_ranges[index]
+        end, _ = phase_ranges[index + 1]
+        if active not in phase_acc or end <= start:
+            continue
+        bucket = phase_acc[active]
+        interval = interpolate_service_cpu_window(samples, start, end)
+        bucket["wall_ns"] += int(interval["covered_wall_ns"])
+        cpu_usec = interval["service_cpu_usec"]
+        if isinstance(cpu_usec, (int, float)) and not isinstance(cpu_usec, bool):
+            bucket["cpu_usec"] += cpu_usec
+        else:
+            bucket["cpu_valid"] = False
     phase_totals = {}
     for name, bucket in phase_acc.items():
         wall = bucket["wall_ns"] / 1_000_000_000 if bucket["wall_ns"] else None
@@ -3009,11 +3143,13 @@ def summarize_samples(samples: Sequence[Mapping[str, Any]], arm: str, phase_even
         errors.append("collector has no complete service CPU/wall interval")
     return {
         "sample_count": len(samples),
+        "collector_starttime_ticks": collector_start_ticks,
         "wall_seconds": wall_seconds,
         "service_cpu_seconds": service_cpu_seconds,
         "idle_one_core_percent": idle_percent,
         "metadata": metadata,
         "host_service": host_service,
+        "unattributed": {"cpu_seconds": unattributed_cpu},
         "phase_totals": phase_totals,
         "phase_cpu_attribution": "linear interpolation between 5 Hz cgroup samples",
         "memory": memory,
@@ -3044,9 +3180,11 @@ def _collector_loop(ledger_path: Path) -> int:
     collector = ledger["collector"]
     path = Path(collector["path"])
     require_contained(path, Path(ledger["run_root"]) / "evidence", label="collector output")
+    collector_start_ticks = _proc_uptime_ticks()
     interval_ns = int(COLLECTOR_INTERVAL_SECONDS * 1_000_000_000)
     deadline_ns: int | None = None
     previous_cpu = None
+    start_ticks_pending: int | None = collector_start_ticks
     status = 0
     error = None
     try:
@@ -3059,7 +3197,8 @@ def _collector_loop(ledger_path: Path) -> int:
                 now_ns = time.monotonic_ns()
                 if deadline_ns is not None and now_ns >= deadline_ns + interval_ns:
                     _fail("collector missed its 5Hz sample deadline")
-                sample, previous_cpu = _collector_sample(ledger, previous_cpu)
+                sample, previous_cpu = _collector_sample(ledger, previous_cpu, start_ticks_pending)
+                start_ticks_pending = None
                 stream.write(json.dumps(sample, separators=(",", ":"), ensure_ascii=False) + "\n")
                 stream.flush()
                 os.fsync(stream.fileno())
@@ -3927,10 +4066,6 @@ def _status(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _deliver_downloads_undo(entry: Mapping[str, Any]) -> str:
-    return _guarded_restore_file(entry, backup_root=Path(entry["backup_path"]).parent if entry.get("backup_path") else None)
-
-
 def _stop_watchdog_test_setup(prefix: str, account: pwd.struct_passwd) -> None:
     _system_command(["stop", prefix + "-watchdog-test-watchdog.service"], timeout=5, check=False)
     _user_command(account, ["stop", prefix + "-watchdog-test.service"], timeout=5, check=False)
@@ -4092,8 +4227,6 @@ PUBLIC_COMMANDS = (
     "capture", "watchdog-test", "arm", "heartbeat", "prepare", "start", "verify-plugin", "reload",
     "collect-start", "collect-stop", "phase", "stop", "downloads", "name-undo", "shortcuts", "recover", "status",
 )
-
-
 
 
 def main(argv: Sequence[str] | None = None) -> int:

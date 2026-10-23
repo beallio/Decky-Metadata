@@ -22,9 +22,10 @@ import zipfile
 from typing import Any, Mapping, Sequence
 
 try:
-    from . import cdp
+    from . import benchmark_vm, cdp
     from .temp_paths import output_path
 except ImportError:
+    import benchmark_vm  # type: ignore[no-redef]
     import cdp  # type: ignore[no-redef]
     from temp_paths import output_path  # type: ignore[no-redef]
 
@@ -748,7 +749,6 @@ def validate_fixture_data(fixture: Mapping[str, Any], size: int) -> None:
         raise ValueError("fixture contains unrelated Metadata state")
 
 
-
 def build_fixture(size: int) -> dict[str, Any]:
     if size not in (100, 1000):
         raise ValueError("fixture size must be 100 or 1000")
@@ -771,10 +771,24 @@ def fixture_bytes(size: int) -> bytes:
 def trial_order() -> list[tuple[str, int, int]]:
     return [
         (arm, size, trial)
-        for arm in ("A", "B", "C")
         for size in (100, 1000)
         for trial in range(1, TRIALS_PER_DATASET_ARM + 1)
+        for arm in ("A", "B", "C")
     ]
+
+
+def reload_order() -> list[tuple[str, int]]:
+    return [(arm, number) for number in range(1, 11) for arm in ("A", "B", "C")]
+
+
+def _validate_trial_run_ids(trials: Sequence[Mapping[str, Any]], *, required: bool = False) -> str | None:
+    run_ids = [trial.get("run_id") for trial in trials]
+    if required and any(not isinstance(run_id, str) or not run_id for run_id in run_ids):
+        raise ValueError("trial is missing its benchmark run-directory identity")
+    present = {run_id for run_id in run_ids if run_id is not None}
+    if len(present) > 1 or present and len(present) != len(run_ids):
+        raise ValueError("summary cannot mix trial files from different run directories")
+    return next(iter(present), None)
 
 
 def _arm_verification(arm: str, hashes: Mapping[str, str]) -> dict[str, Any]:
@@ -838,6 +852,13 @@ def validate_workload_result(result: Mapping[str, Any], size: int) -> dict[str, 
         entry = measurements[name]
         if not isinstance(entry, Mapping) or entry.get("count") != count or entry.get("completedCalls") != count:
             raise ValueError(f"{name} did not complete exactly {count} measured calls")
+        start_ms, end_ms = entry.get("startMs"), entry.get("endMs")
+        if any(not isinstance(value, (int, float)) or isinstance(value, bool) or
+               not math.isfinite(value) for value in (start_ms, end_ms)) or start_ms < 0 or end_ms <= start_ms:
+            raise ValueError(f"{name} has no valid browser-clock workload window")
+        description = entry.get("description")
+        if name.endswith("_concurrency_8") and description != "batches of 8, barrier per batch":
+            raise ValueError(f"{name} does not identify its batch-of-8 barrier mode")
         samples = entry.get("samplesMs")
         wall_ms = entry.get("wallMs")
         if not isinstance(samples, list) or len(samples) != count:
@@ -862,6 +883,9 @@ def validate_workload_result(result: Mapping[str, Any], size: int) -> dict[str, 
             "p95_ms": percentile(values, 0.95),
             "p99_ms": percentile(values, 0.99),
             "wall_ms_including_validation": float(wall_ms),
+            "start_ms": float(start_ms),
+            "end_ms": float(end_ms),
+            "description": description,
             "throughput_calls_per_second_including_validation": float(throughput),
         }
     if result.get("sampleCalls") != MEASURED_CALLS_PER_TRIAL or result.get("completedCalls") != MEASURED_CALLS_PER_TRIAL:
@@ -892,6 +916,7 @@ def aggregate_trials(trials: Sequence[Mapping[str, Any]], arm: str, size: int) -
     selected = [trial for trial in trials if trial.get("arm") == arm and trial.get("dataset_size") == size]
     if len(selected) != TRIALS_PER_DATASET_ARM:
         raise ValueError(f"{arm}-{size} requires exactly five complete trials")
+    run_id = _validate_trial_run_ids(selected)
     per_trial = [validate_workload_result(trial["workload"], size) for trial in selected]
     method_names = set(per_trial[0]["methods"])
     methods: dict[str, Any] = {}
@@ -911,6 +936,7 @@ def aggregate_trials(trials: Sequence[Mapping[str, Any]], arm: str, size: int) -
             "p99_ms": percentile(samples, 0.99),
             "wall_ms_including_validation": wall_ms,
             "throughput_calls_per_second_including_validation": count * 1000.0 / wall_ms,
+            "description": per_trial[0]["methods"][name]["description"],
         }
     startups = [float(trial["startup"]["elapsed_ms"]) for trial in selected]
     first_plugin_rpcs = [float(trial["first_plugin_rpc"]["elapsedMs"]) for trial in selected]
@@ -919,12 +945,14 @@ def aggregate_trials(trials: Sequence[Mapping[str, Any]], arm: str, size: int) -
     return {
         "arm": arm,
         "dataset_size": size,
+        "run_id": run_id,
         "trials": len(selected),
         "measured_calls": sum(item["completed_calls"] for item in per_trial),
         "methods": methods,
         "authenticated_backend_readiness_ms": {
             **readiness,
             "poll_resolution_ms": 10,
+            "method": "VM-local authenticated Decky Loader WebSocket get_plugin_version reply",
         },
         "first_plugin_scoped_ui_rpc_ms": first_rpc,
     }
@@ -968,7 +996,6 @@ def combine_cleanup_failure(primary: BaseException | None, cleanup: BaseExceptio
     if cleanup is None:
         return primary
     return BenchmarkError(f"benchmark failed: {primary}; verified recovery failed: {cleanup}")
-
 
 
 def _write_fixture_files(output: Path, fixture_payloads: Mapping[int, bytes]) -> tuple[dict[int, str], dict[int, Path]]:
@@ -1076,7 +1103,6 @@ def cdp_command(command: str, params: Mapping[str, Any] | None = None) -> Any:
         raise BenchmarkError(f"CDP command {command} returned malformed JSON") from exc
 
 
-
 def browser_clock() -> dict[str, Any]:
     sock = cdp.target_socket("SharedJSContext")
     try:
@@ -1146,6 +1172,30 @@ def record_browser_window(remote: RemoteClient, name: str, result: Mapping[str, 
         "start_ns": clock["navigation_start_ns"] + round(start * 1_000_000),
         "end_ns": clock["navigation_start_ns"] + round(end * 1_000_000),
     })
+
+
+def record_browser_workload_windows(
+    result: Mapping[str, Any], clock: Mapping[str, Any],
+) -> dict[str, dict[str, int]]:
+    if result.get("timeOrigin") != clock["time_origin_ms"]:
+        raise BenchmarkError("Steam context changed during a workload window")
+    measurements = result.get("measurements")
+    if not isinstance(measurements, Mapping):
+        raise BenchmarkError("browser workload omitted measured windows")
+    windows: dict[str, dict[str, int]] = {}
+    for name, entry in measurements.items():
+        if not isinstance(name, str) or not isinstance(entry, Mapping):
+            raise BenchmarkError("browser workload returned an invalid measurement window")
+        start, end = entry.get("startMs"), entry.get("endMs")
+        _check_host_elapsed(start, f"{name} window start")
+        _check_host_elapsed(end, f"{name} window end")
+        if end <= start:
+            raise BenchmarkError(f"{name} workload window is empty or reversed")
+        windows[name] = {
+            "start_ns": clock["navigation_start_ns"] + round(start * 1_000_000),
+            "end_ns": clock["navigation_start_ns"] + round(end * 1_000_000),
+        }
+    return windows
 
 
 def _check_host_elapsed(value: Any, description: str) -> None:
@@ -1310,6 +1360,11 @@ def validate_collector_result(result: Mapping[str, Any], label: str, arm: str) -
     if not isinstance(sample_count, int) or isinstance(sample_count, bool) or \
             sample_count < 1 or sample_count != len(samples):
         raise BenchmarkError("collector sample count does not match its raw samples")
+    collector_start_ticks = summary.get("collector_starttime_ticks")
+    if not isinstance(collector_start_ticks, int) or isinstance(collector_start_ticks, bool) or collector_start_ticks < 0 or \
+            not isinstance(samples[0], Mapping) or samples[0].get("collector_starttime_ticks") != collector_start_ticks or \
+            any("collector_starttime_ticks" in sample for sample in samples[1:] if isinstance(sample, Mapping)):
+        raise BenchmarkError("collector omitted its single process-start clock boundary")
     wall_seconds = _finite_nonnegative(summary.get("wall_seconds"), "wall_seconds", positive=True)
     service_cpu = _finite_nonnegative(summary.get("service_cpu_seconds"), "service_cpu_seconds")
     idle_percent = _finite_nonnegative(summary.get("idle_one_core_percent"), "idle_one_core_percent")
@@ -1348,6 +1403,12 @@ def validate_collector_result(result: Mapping[str, Any], label: str, arm: str) -
             "cpu_seconds": cpu_seconds,
             "memory": {"current": dict(current), "sampled_peak": dict(peak)},
         }
+    unattributed = summary.get("unattributed")
+    if not isinstance(unattributed, Mapping):
+        raise BenchmarkError("collector omitted unattributed Loader-service CPU")
+    resources["unattributed"] = {
+        "cpu_seconds": _finite_nonnegative(unattributed.get("cpu_seconds"), "unattributed.cpu_seconds"),
+    }
     phase_totals = summary.get("phase_totals")
     if not isinstance(phase_totals, Mapping):
         raise BenchmarkError("collector omitted workload phase totals")
@@ -1365,6 +1426,7 @@ def validate_collector_result(result: Mapping[str, Any], label: str, arm: str) -
         checked_phases[phase] = values
     return {
         "sample_count": sample_count,
+        "collector_starttime_ticks": collector_start_ticks,
         "wall_seconds": wall_seconds,
         "service_cpu_seconds": service_cpu,
         "idle_one_core_percent": idle_percent,
@@ -1374,17 +1436,71 @@ def validate_collector_result(result: Mapping[str, Any], label: str, arm: str) -
     }
 
 
+def summarize_workload_resource_windows(
+    windows: Mapping[str, Mapping[str, int]], workload: Mapping[str, Any],
+    samples: Sequence[Mapping[str, Any]], arm: str,
+) -> dict[str, dict[str, Any]]:
+    roles = benchmark_vm._ARM_METADATA_ROLES.get(arm)
+    measurements = workload.get("measurements")
+    if roles is None or not isinstance(measurements, Mapping) or set(windows) != set(measurements):
+        raise BenchmarkError("workload resource windows do not match the measured methods")
+    memory_totals, _observed = benchmark_vm._memory_totals(samples, roles)
+    if len(memory_totals) != len(samples):
+        raise BenchmarkError("collector Metadata PSS samples are invalid")
+    sample_times = [sample.get("monotonic_ns") for sample in samples]
+    if not all(isinstance(value, int) and not isinstance(value, bool) for value in sample_times):
+        raise BenchmarkError("collector omitted monotonic sample times")
+    result: dict[str, dict[str, Any]] = {}
+    for name, window in windows.items():
+        start_ns, end_ns = window.get("start_ns"), window.get("end_ns")
+        if not isinstance(start_ns, int) or isinstance(start_ns, bool) or not isinstance(end_ns, int) or \
+                isinstance(end_ns, bool) or not 0 < start_ns < end_ns:
+            raise BenchmarkError(f"{name} has an invalid VM-monotonic workload window")
+        interval = benchmark_vm.interpolate_service_cpu_window(samples, start_ns, end_ns)
+        cpu_usec = interval["service_cpu_usec"]
+        if interval["covered_wall_ns"] != end_ns - start_ns or not isinstance(cpu_usec, (int, float)) or isinstance(cpu_usec, bool):
+            raise BenchmarkError(f"{name} workload window is not fully bracketed by collector CPU samples")
+        measurement = measurements[name]
+        calls = measurement.get("completedCalls") if isinstance(measurement, Mapping) else None
+        if not isinstance(calls, int) or isinstance(calls, bool) or calls <= 0:
+            raise BenchmarkError(f"{name} workload has no valid completed-call count")
+        pss_samples = [
+            memory_totals[index]["pss_kib"]
+            for index, sample in enumerate(samples)
+            if start_ns <= sample_times[index] <= end_ns and any(
+                isinstance(process, Mapping) and process.get("role") in roles
+                for process in sample.get("processes", [])
+            )
+        ]
+        if not pss_samples:
+            raise BenchmarkError(f"{name} workload window contains no sampled Metadata PSS")
+        cpu_seconds = float(cpu_usec) / 1_000_000
+        result[name] = {
+            "start_ns": start_ns,
+            "end_ns": end_ns,
+            "completed_calls": calls,
+            "service_cpu_seconds": cpu_seconds,
+            "service_cpu_ms_per_call": cpu_seconds * 1000 / calls,
+            "metadata_pss_sampled_peak_kib": max(pss_samples),
+            "metadata_pss_sample_count": len(pss_samples),
+        }
+    return result
+
+
 def _verify_started(started: Mapping[str, Any], arm: str, size: int) -> None:
-    if started.get("service_ready") is not True:
-        raise BenchmarkError(f"arm {arm} Loader did not become ready")
-    _check_host_elapsed(started.get("elapsed_ms"), "remote startup timer")
+    if started.get("service_ready") is not True or started.get("backend_ready") is not True or \
+            started.get("readiness_kind") != "authenticated_backend_version_rpc":
+        raise BenchmarkError(f"arm {arm} Loader did not confirm authenticated backend readiness")
+    if started.get("version") is None:
+        raise BenchmarkError("authenticated backend readiness omitted the Metadata version")
+    _check_host_elapsed(started.get("elapsed_ms"), "remote authenticated backend readiness timer")
     if not isinstance(started.get("pids"), list) or not started["pids"]:
-        raise BenchmarkError("remote startup readiness did not identify the Metadata process")
+        raise BenchmarkError("remote authenticated backend readiness did not identify the Metadata process")
 
 
 def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
               evidence: Evidence, arm: str, size: int, number: int, fixture_hash: str,
-              lease: Lease, *, reload_count: int = 0) -> dict[str, Any]:
+              lease: Lease) -> dict[str, Any]:
     label = f"{arm}-{size}-{number}"
     version = artifacts["python_package"]["version"] if arm == "A" else artifacts["rust_package"]["version"]
     trial: dict[str, Any] = {
@@ -1392,6 +1508,7 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
         "dataset_size": size,
         "trial": number,
         "label": label,
+        "run_id": Path(remote.run_root).name,
         "fixture_sha256": fixture_hash,
         "reloads": [],
         "phases": [],
@@ -1490,25 +1607,12 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
         workload = cdp_command("run_workload", params)
         trial["workload"] = workload
         trial["workload_summary"] = validate_workload_result(workload, size)
+        trial["workload_windows"] = record_browser_workload_windows(workload, trial["browser_clock"])
         trial["phases"].append(record_browser_window(remote, "workload", workload, trial["browser_clock"]))
         observer_after_workload = cdp_command("observer_state")
         check_observer_stable(workload["activityStart"], observer_after_workload)
         trial["observer_after_workload"] = observer_after_workload
 
-        for reload_index in range(reload_count):
-            lease.check()
-            observer_before_reload = cdp_command("observer_state")
-            _check_observer_state(observer_before_reload)
-            reload_result = remote.call("reload", {})
-            _check_host_elapsed(reload_result.get("elapsed_ms"), "remote reload timer")
-            if not isinstance(reload_result.get("newpids"), list) or not reload_result["newpids"] or \
-                    reload_result.get("old_pids_gone") is not True:
-                raise BenchmarkError("remote reload did not observe disappearance of the old process and a new Metadata process")
-            trial["reloads"].append(reload_result)
-            observer_after_reload = cdp_command("observer_state")
-            check_observer_stable(observer_before_reload, observer_after_reload)
-            trial["phases"].append(remote.call("phase", {"name": "reload", "start_ns": reload_result["start_ns"], "end_ns": reload_result["end_ns"]}))
-            trial["reloads"][-1]["observer"] = observer_after_reload
         trial["ok"] = True
     except BaseException as exc:
         failures.append(exc)
@@ -1587,10 +1691,17 @@ def aggregate_collector_trials(trials: Sequence[Mapping[str, Any]], arm: str, si
     selected = [trial for trial in trials if trial.get("arm") == arm and trial.get("dataset_size") == size]
     if len(selected) != TRIALS_PER_DATASET_ARM:
         raise ValueError(f"{arm}-{size} requires exactly five collector intervals")
+    run_id = _validate_trial_run_ids(selected)
     calls = sum(int(trial["workload"]["completedCalls"]) for trial in selected)
     if calls != MEASURED_CALLS_PER_TRIAL * TRIALS_PER_DATASET_ARM:
         raise ValueError(f"{arm}-{size} resource denominator is not all successful measured RPCs")
     summaries = [trial["collector_summary"] for trial in selected]
+    workload_resources = [
+        summarize_workload_resource_windows(
+            trial["workload_windows"], trial["workload"], trial["collector_stop"]["samples"], arm,
+        )
+        for trial in selected
+    ]
     phase_totals: dict[str, Any] = {}
     for phase in ("idle", "warmup", "workload", "reload"):
         intervals = [summary["phase_totals"][phase] for summary in summaries]
@@ -1625,38 +1736,121 @@ def aggregate_collector_trials(trials: Sequence[Mapping[str, Any]], arm: str, si
                 "per_trial_current_kib": current,
                 "per_trial_sampled_peak_kib": peaks,
             }
-        resource_totals[name] = {
-            "cpu_seconds": sum(cpu_values),
-            "collector_window_cpu_seconds_per_successful_measured_rpc": sum(cpu_values) / calls,
-            "memory_kib": memory_fields,
+        resource_totals[name] = {"cpu_seconds": sum(cpu_values), "memory_kib": memory_fields}
+    resource_totals["unattributed"] = {
+        "cpu_seconds": sum(summary["resources"]["unattributed"]["cpu_seconds"] for summary in summaries),
+    }
+    per_workload: dict[str, Any] = {}
+    for name, expected_calls in expected_workload_counts().items():
+        method_trials = [resources[name] for resources in workload_resources]
+        method_calls = sum(item["completed_calls"] for item in method_trials)
+        if method_calls != expected_calls * TRIALS_PER_DATASET_ARM:
+            raise BenchmarkError(f"{name} workload CPU denominator does not match completed calls")
+        peaks = [item["metadata_pss_sampled_peak_kib"] for item in method_trials]
+        per_workload[name] = {
+            "completed_calls": method_calls,
+            "service_cpu_ms_per_call": sum(item["service_cpu_seconds"] for item in method_trials) * 1000 / method_calls,
+            "per_trial_service_cpu_ms_per_call": [item["service_cpu_ms_per_call"] for item in method_trials],
+            "metadata_pss_sampled_peak_kib_median": statistics.median(peaks),
+            "metadata_pss_sampled_peak_kib_max": max(peaks),
+            "per_trial_metadata_pss_sampled_peak_kib": peaks,
+            "per_trial": method_trials,
         }
     service_cpu = sum(summary["service_cpu_seconds"] for summary in summaries)
-    workload_cpu = phase_totals["workload"]["service_cpu_seconds"]
     return {
         "arm": arm,
         "dataset_size": size,
+        "run_id": run_id,
         "collector_intervals": len(summaries),
         "raw_samples": sum(summary["sample_count"] for summary in summaries),
         "collector_wall_seconds": sum(summary["wall_seconds"] for summary in summaries),
         "service_cpu_seconds": service_cpu,
-        "successful_measured_rpc_denominator": calls,
-        "collector_window_service_cpu_seconds_per_successful_measured_rpc": service_cpu / calls,
-        "workload_phase_service_cpu_seconds_per_measured_rpc": workload_cpu / calls if workload_cpu is not None else None,
         "idle_one_core_percent_median": statistics.median(
             float(summary["phase_totals"]["idle"]["idle_one_core_percent"]) for summary in summaries
         ),
         "phase_totals": phase_totals,
         "attribution": resource_totals,
+        "per_workload": per_workload,
         "metadata_roles": summaries[0]["metadata_roles"],
         "per_trial": [
             {
                 "label": trial["label"],
                 "collector": summary,
                 "summary": trial["collector_stop"]["summary"],
+                "workload_resources": workload,
             }
-            for trial, summary in zip(selected, summaries)
+            for trial, summary, workload in zip(selected, summaries, workload_resources)
         ],
     }
+
+
+def run_reload_measurement(
+    remote: RemoteClient, artifacts: Mapping[str, Any], evidence: Evidence,
+    arm: str, number: int, lease: Lease,
+) -> dict[str, Any]:
+    label = f"reload-{arm}-1000-{number}"
+    run_id = Path(remote.run_root).name
+    expected_version = artifacts["python_package"]["version"] if arm == "A" else artifacts["rust_package"]["version"]
+    result: dict[str, Any] = {
+        "arm": arm,
+        "dataset_size": 1000,
+        "reload_index": number,
+        "run_id": run_id,
+        "reloads": [],
+    }
+    prepared = False
+    start_attempted = False
+    failures: list[BaseException] = []
+    try:
+        lease.check()
+        prepared = True
+        preparation = remote.call("prepare", {"arm": arm, "dataset": 1000, "install_zip": True})
+        _ensure_tool_success("prepare", preparation)
+        context_reset = preparation.get("steam_ui_context_reset")
+        if not isinstance(context_reset, Mapping) or context_reset.get("old_processes_gone") is not True or \
+                context_reset.get("shared_js_context_ready") is not True:
+            raise BenchmarkError("reload preparation did not confirm a fresh native context")
+        result["prepare"] = preparation
+        lease.check()
+        start_attempted = True
+        startup = remote.call("start", {"measure_backend": True})
+        _verify_started(startup, arm, 1000)
+        result["startup"] = startup
+        lease.check()
+        reload_result = remote.call("reload", {})
+        _check_host_elapsed(reload_result.get("elapsed_ms"), "remote authenticated reload readiness timer")
+        if not isinstance(reload_result.get("newpids"), list) or not reload_result["newpids"] or \
+                reload_result.get("old_pids_gone") is not True or reload_result.get("version") != expected_version or \
+                reload_result.get("readiness_kind") != "authenticated_backend_version_rpc" or reload_result.get("poll_ms") != 10:
+            raise BenchmarkError("authenticated reload did not confirm the new Metadata process and version")
+        result["reloads"] = [reload_result]
+        result["ok"] = True
+    except BaseException as exc:
+        failures.append(exc)
+        result["ok"] = False
+        result["error"] = f"{type(exc).__name__}: {exc}"
+    finally:
+        if prepared or start_attempted:
+            try:
+                stopped = remote.call("stop", {})
+                _ensure_tool_success("stop", stopped)
+                result["stop"] = stopped
+            except BaseException as exc:
+                failures.append(exc)
+                result.setdefault("cleanup_errors", []).append(f"stop: {type(exc).__name__}: {exc}")
+        try:
+            result["remote_status"] = remote.call("status", {})
+            remote.retrieve_ledger(f"ledger-{label}.json")
+        except BaseException as exc:
+            failures.append(exc)
+            result.setdefault("cleanup_errors", []).append(f"evidence retrieval: {type(exc).__name__}: {exc}")
+        if failures:
+            result["ok"] = False
+            result.setdefault("error", f"{type(failures[0]).__name__}: {failures[0]}")
+        evidence.write_json(f"{label}.json", result)
+    if failures:
+        raise BenchmarkError(f"{label} failed: " + " | ".join(str(error) for error in failures)) from failures[0]
+    return result
 
 
 def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
@@ -1664,25 +1858,38 @@ def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: 
     trials: list[dict[str, Any]] = []
     for arm, size, number in trial_order():
         lease.check()
-        reload_count = 10 if size == 1000 and number == TRIALS_PER_DATASET_ARM else 0
-        trial = run_trial(remote, artifacts, hashes, evidence, arm, size, number,
-                          fixture_hashes[size], lease, reload_count=reload_count)
+        trial = run_trial(remote, artifacts, hashes, evidence, arm, size, number, fixture_hashes[size], lease)
         trials.append(trial)
     expected_order = trial_order()
     actual_order = [(trial["arm"], trial["dataset_size"], trial["trial"]) for trial in trials]
     if actual_order != expected_order:
-        raise BenchmarkError("completed trials do not match the prescribed A/B/C dataset order")
+        raise BenchmarkError("completed trials do not match the prescribed round-robin A/B/C dataset order")
     if len(trials) != 30:
         raise BenchmarkError("benchmark did not complete all 30 prescribed trials")
+    run_id = _validate_trial_run_ids(trials, required=True)
+    if run_id != Path(remote.run_root).name:
+        raise BenchmarkError("trial evidence does not belong to this benchmark run directory")
+    reload_trials = [
+        run_reload_measurement(remote, artifacts, evidence, arm, number, lease)
+        for arm, number in reload_order()
+    ]
+    expected_reload_order = reload_order()
+    actual_reload_order = [(trial["arm"], trial["reload_index"]) for trial in reload_trials]
+    if actual_reload_order != expected_reload_order:
+        raise BenchmarkError("reload measurements do not follow the prescribed A/B/C round-robin order")
+    if _validate_trial_run_ids(reload_trials, required=True) != run_id:
+        raise BenchmarkError("summary cannot mix reload measurements from different run directories")
     comparisons = [aggregate_trials(trials, arm, size) for arm in ("A", "B", "C") for size in (100, 1000)]
     resource_comparisons = [
         aggregate_collector_trials(trials, arm, size)
         for arm in ("A", "B", "C") for size in (100, 1000)
     ]
-    reloads = {arm: summarize_reload_results(trials, arm) for arm in ("A", "B", "C")}
+    reloads = {arm: summarize_reload_results(reload_trials, arm) for arm in ("A", "B", "C")}
     result = {
         "schema": 1,
+        "run_id": run_id,
         "trial_order": [f"{arm}-{size}-{number}" for arm, size, number in expected_order],
+        "reload_order": [f"{arm}-{number}" for arm, number in expected_reload_order],
         "expected_trial_count": 30,
         "expected_measured_calls_per_trial": MEASURED_CALLS_PER_TRIAL,
         "expected_total_measured_calls": MEASURED_CALLS_PER_TRIAL * 30,
