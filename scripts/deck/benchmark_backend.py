@@ -1873,12 +1873,24 @@ def run_reload_measurement(
     return result
 
 
+QUIESCENCE_ATTEMPTS = 3
+
+
 def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
                     evidence: Evidence, fixture_hashes: Mapping[int, str], lease: Lease) -> dict[str, Any]:
     trials: list[dict[str, Any]] = []
     for arm, size, number in trial_order():
-        lease.check()
-        trial = run_trial(remote, artifacts, hashes, evidence, arm, size, number, fixture_hashes[size], lease)
+        for attempt in range(1, QUIESCENCE_ATTEMPTS + 1):
+            lease.check()
+            try:
+                trial = run_trial(remote, artifacts, hashes, evidence, arm, size, number, fixture_hashes[size], lease)
+                break
+            except BenchmarkError as error:
+                # Upstream drops loader/notify_updates when the frontend socket is not yet
+                # connected; that start never becomes measurable, so start the trial again.
+                if "quiescence not observed" not in str(error) or attempt == QUIESCENCE_ATTEMPTS:
+                    raise
+                evidence.append({"kind": "trial-retry", "label": f"{arm}-{size}-{number}", "attempt": attempt, "error": str(error)})
         trials.append(trial)
     expected_order = trial_order()
     actual_order = [(trial["arm"], trial["dataset_size"], trial["trial"]) for trial in trials]
