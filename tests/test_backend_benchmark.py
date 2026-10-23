@@ -938,3 +938,37 @@ def test_failed_preload_keeps_primary_error_when_owned_cleanup_also_fails(monkey
     assert caught.value is primary and state["closed"] is True
     assert any(str(detach_error) in note for note in primary.__notes__)
     assert any(str(removal_error) in note for note in primary.__notes__)
+
+def test_startup_benchmark_requires_plugin_log_readiness():
+    ready = {
+        "service_ready": True,
+        "backend_ready": True,
+        "readiness_kind": "plugin_log_backend_ready",
+        "readiness_resolution_ms": 1,
+        "backend_ready_log_ms": 12.5,
+        "version": "1.2.3",
+        "pids": [{"pid": 1, "starttime": 2}],
+    }
+    benchmark._verify_started(ready, "A", 100)
+
+    stale_contract = {**ready, "readiness_kind": "authenticated_backend_version_rpc"}
+    with pytest.raises(benchmark.BenchmarkError, match="plugin-log"):
+        benchmark._verify_started(stale_contract, "A", 100)
+
+
+def test_reload_summary_labels_log_readiness_and_resolution():
+    reloads = [
+        {
+            "backend_ready_log_ms": float(index),
+            "readiness_kind": "plugin_log_backend_ready",
+            "readiness_resolution_ms": 1,
+            "poll_ms": 10,
+        }
+        for index in range(10)
+    ]
+    summary = benchmark.summarize_reload_results([{"arm": "A", "reloads": reloads}], "A")
+
+    assert summary["backend_ready_log_ms"]["median"] == 4.5
+    assert summary["readiness_kind"] == "plugin_log_backend_ready"
+    assert summary["readiness_resolution_ms"] == 1
+    assert summary["poll_interval_ms"] == 10

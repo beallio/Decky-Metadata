@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import base64
 import contextlib
 import fcntl
 import hashlib
 import json
 import os
-import socket
 import stat
-import struct
 import subprocess
 import threading
 import time
 import zipfile
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -20,7 +18,6 @@ from typing import Any
 import pytest
 
 from scripts.deck import benchmark_vm as vm
-from scripts.deck import cdp
 
 
 def test_scratch_containment_rejects_both_ancestry_directions_and_aliases(tmp_path: Path):
@@ -399,122 +396,109 @@ def test_collector_accounts_new_process_ticks_and_unattributed_exit_tail_cpu(mon
     assert result["unattributed"]["cpu_seconds"] == pytest.approx(0.1)
 
 
-@pytest.mark.parametrize("loader_variant", ["upstream-v3.2.10", "fork-fa0b26ae"])
-def test_authenticated_loader_websocket_protocol(
-    monkeypatch: pytest.MonkeyPatch, loader_variant: str,
-):
-    listener = socket.socket()
-    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    listener.bind(("127.0.0.1", 0))
-    listener.listen(2)
-    listener.settimeout(3)
-    port = listener.getsockname()[1]
-    monkeypatch.setattr(vm, "PORT", port)
-    monkeypatch.setattr(cdp, "HOST", "127.0.0.1")
-    monkeypatch.setattr(cdp, "PORT", port)
-    monkeypatch.setattr(vm, "_cdp_module", lambda: cdp)
-    received: list[dict[str, Any]] = []
-    failures: list[BaseException] = []
+def _ready_log_line(stamp: str = "2026-01-02 03:04:05,123") -> bytes:
+    return f"{stamp} INFO [decky:load] backend ready\n".encode()
 
-    def read_exact(connection: socket.socket, length: int) -> bytes:
-        chunks = bytearray()
-        while len(chunks) < length:
-            chunk = connection.recv(length - len(chunks))
-            if not chunk:
-                raise AssertionError("client closed WebSocket early")
-            chunks.extend(chunk)
-        return bytes(chunks)
 
-    def read_frame(connection: socket.socket) -> dict[str, Any]:
-        first, second = read_exact(connection, 2)
-        assert second & 0x80, "WebSocket clients must mask transmitted frames"
-        length = second & 0x7F
-        if length == 126:
-            length = struct.unpack(">H", read_exact(connection, 2))[0]
-        elif length == 127:
-            length = struct.unpack(">Q", read_exact(connection, 8))[0]
-        mask = read_exact(connection, 4) if second & 0x80 else b""
-        payload = read_exact(connection, length)
-        if mask:
-            payload = bytes(value ^ mask[index % 4] for index, value in enumerate(payload))
-        assert first & 0x0F == 1
-        return json.loads(payload)
+def test_backend_ready_cursor_rejects_stale_lines_and_parses_milliseconds(tmp_path: Path):
+    path = tmp_path / "logs" / "Decky-Metadata" / "decky-metadata.log"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(_ready_log_line("2026-01-01 00:00:00,001"))
+    cursor = vm._backend_log_cursor(path)
 
-    def send_frame(connection: socket.socket, message: dict[str, Any]) -> None:
-        payload = json.dumps(message, separators=(",", ":")).encode()
-        if len(payload) < 126:
-            header = bytes((0x81, len(payload)))
-        elif len(payload) < 65536:
-            header = b"\x81\x7e" + struct.pack(">H", len(payload))
-        else:
-            header = b"\x81\x7f" + struct.pack(">Q", len(payload))
-        connection.sendall(header + payload)
+    assert vm._backend_ready_after(cursor, path) is None
+    with path.open("ab") as log:
+        log.write(_ready_log_line())
+    timestamp_ns = vm._backend_ready_after(cursor, path)
+    stamp = datetime.strptime("2026-01-02 03:04:05,123", "%Y-%m-%d %H:%M:%S,%f")
+    expected_ns = int(stamp.timestamp()) * 1_000_000_000 + stamp.microsecond * 1_000
+    assert timestamp_ns == expected_ns
+    assert timestamp_ns % 1_000_000 == 0
+    assert vm._backend_ready_after(cursor, path) is None
 
-    def serve():
-        try:
-            token_socket, _address = listener.accept()
-            token_socket.settimeout(3)
-            with token_socket:
-                request = bytearray()
-                while b"\r\n\r\n" not in request:
-                    request.extend(token_socket.recv(4096))
-                assert request.startswith(b"GET /auth/token HTTP/")
-                body = b"secret-token"
-                token_socket.sendall(
-                    b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n"
-                    + f"Content-Length: {len(body)}\r\nConnection: close\r\n\r\n".encode()
-                    + body
-                )
 
-            ws_socket, _address = listener.accept()
-            ws_socket.settimeout(3)
-            with ws_socket:
-                request = bytearray()
-                while b"\r\n\r\n" not in request:
-                    request.extend(ws_socket.recv(4096))
-                headers = request.decode("ascii").split("\r\n")
-                assert headers[0] == "GET /ws?auth=secret-token HTTP/1.1"
-                key = next(line.split(":", 1)[1].strip() for line in headers if line.lower().startswith("sec-websocket-key:"))
-                accept = base64.b64encode(
-                    hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()
-                )
-                ws_socket.sendall(
-                    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n"
-                    b"Connection: Upgrade\r\nSec-WebSocket-Accept: " + accept + b"\r\n\r\n"
-                )
-                handshake = read_frame(ws_socket)
-                received.append(handshake)
-                assert handshake == {"type": 4, "messages": []}
-                for route, args, result in (
-                    ("loader/call_plugin_method", ["Decky Metadata", "get_plugin_version"], "1.2.3"),
-                    ("loader/reload_plugin", ["Decky Metadata"], True),
-                ):
-                    call = read_frame(ws_socket)
-                    received.append(call)
-                    assert call["type"] == 0 and call["route"] == route and call["args"] == args
-                    send_frame(ws_socket, {"type": 1, "id": call["id"], "result": result})
-                    assert read_frame(ws_socket) == {"type": 3, "id": call["id"]}
-        except BaseException as error:
-            failures.append(error)
-        finally:
-            listener.close()
+@pytest.mark.parametrize("change", ["truncate", "rotate"])
+def test_backend_ready_cursor_handles_log_truncation_and_rotation(tmp_path: Path, change: str):
+    path = tmp_path / "decky-metadata.log"
+    path.write_bytes(b"old")
+    cursor = vm._backend_log_cursor(path)
+    if change == "truncate":
+        path.write_bytes(_ready_log_line())
+    else:
+        path.rename(path.with_name(path.name + ".1"))
+        path.write_bytes(_ready_log_line())
 
-    server = threading.Thread(target=serve, name=f"fake-loader-{loader_variant}", daemon=True)
-    server.start()
-    connection = vm._loader_connect(timeout=2)
-    try:
-        assert vm._loader_version(connection) == "1.2.3"
-        assert vm._loader_request(
-            "loader/reload_plugin", ["Decky Metadata"], timeout=2, connection=connection,
-        ) is True
-    finally:
-        connection.close()
-    server.join(timeout=3)
+    assert vm._backend_ready_after(cursor, path) == vm._backend_ready_timestamp_ns(_ready_log_line())
 
-    assert not server.is_alive()
-    assert failures == []
-    assert [message["type"] for message in received] == [4, 0, 0]
 
+def test_loader_readiness_uses_http_and_frontend_calls_without_loader_websocket(monkeypatch: pytest.MonkeyPatch):
+    requests: list[tuple[str, float]] = []
+    expressions: list[str] = []
+    socket_paths: list[str] = []
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+    class Opener:
+        def open(self, url: str, *, timeout: float):
+            requests.append((url, timeout))
+            return Response()
+
+    class FakeCdp:
+        def evaluate(self, _target: str, expression: str, *, timeout: float):
+            expressions.append(expression)
+            if "Date.now()" in expression:
+                return {"value": 1_798_000_000_000}
+            return {"value": "1.2.3"}
+
+        def ws_connect(self, path: str):
+            socket_paths.append(path)
+            raise AssertionError(f"unexpected Loader WebSocket connection: {path}")
+
+    monkeypatch.setattr(vm, "PORT", 1337)
+    monkeypatch.setattr(
+        vm.urllib.request, "build_opener",
+        lambda *_args: Opener(),
+    )
+    monkeypatch.setattr(vm, "_cdp_module", lambda: FakeCdp())
+
+    assert vm._loader_http_ready()
+    assert vm._loader_frontend_reload() == 1_798_000_000_000
+    assert vm._loader_frontend_version() == "1.2.3"
+    assert requests == [("http://127.0.0.1:1337/auth/token", 3.0)]
+    assert "const started=Date.now()" in expressions[0]
+    assert 'await window.DeckyBackend.call("loader/reload_plugin", "Decky Metadata")' in expressions[0]
+    assert 'window.DeckyBackend.call("loader/call_plugin_method", "Decky Metadata", "get_plugin_version")' in expressions[1]
+    assert socket_paths == []
+    source = Path(vm.__file__).read_text(encoding="utf-8")
+    assert "/ws" not in source and "ws_connect" not in source
+
+    with pytest.raises(vm.SafetyError, match="unapproved"):
+        vm._loader_frontend_request("loader/get_plugins", [])
+
+
+def test_loader_http_readiness_requires_status_200(monkeypatch: pytest.MonkeyPatch):
+    class Response:
+        status = 503
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+    class Opener:
+        def open(self, _url: str, *, timeout: float):
+            return Response()
+
+    monkeypatch.setattr(vm.urllib.request, "build_opener", lambda *_args: Opener())
+    assert not vm._loader_http_ready()
 
 def test_active_unreadable_process_memory_fails_instead_of_becoming_zero(monkeypatch: pytest.MonkeyPatch):
     group = "/system.slice/bench.service"

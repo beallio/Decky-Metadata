@@ -18,7 +18,6 @@ import pwd
 import re
 import shutil
 import signal
-import socket
 import stat
 import subprocess
 import sys
@@ -26,9 +25,9 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
-import urllib.parse
 import uuid
 import zipfile
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
@@ -63,6 +62,9 @@ _SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 _RUN_ID_RE = re.compile(r"^[0-9a-f]{16,32}$")
 _SAFE_LABEL_RE = re.compile(r"^[ABC]-(?:100|1000)-[1-5]$")
 _SAFE_PLUGIN_PATH_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+_BACKEND_READY_RE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})\s+\S+\s+\[decky:load\]\s+backend ready(?:\s|$)"
+)
 
 
 class SafetyError(RuntimeError):
@@ -1521,115 +1523,158 @@ def _cdp_eval(expression: str, *, timeout: float = 15.0) -> Any:
     return result["value"]
 
 
-class _LoaderWebSocket:
-    def __init__(self, cdp: Any, sock: socket.socket):
-        self.cdp = cdp
-        self.sock = sock
-        self.next_id = 0
-        self.closed = False
+def _plugin_log_path(scratch: Path) -> Path:
+    return scratch / "logs" / PLUGIN_DIR_NAME / "decky-metadata.log"
 
-    def close(self) -> None:
-        if not self.closed:
-            self.closed = True
-            try:
-                self.sock.close()
-            except OSError:
-                pass
 
-    def request(self, route: str, args: Sequence[Any], timeout: float) -> Any:
-        if self.closed:
-            _fail("authenticated Loader WebSocket is disconnected")
-        self.next_id += 1
-        call_id = self.next_id
-        deadline = time.monotonic() + timeout
+def _backend_log_candidates(path: Path) -> tuple[Path, ...]:
+    return (path, *(path.with_name(f"{path.name}.{number}") for number in range(1, 4)))
+
+
+def _backend_log_cursor(path: Path) -> dict[str, Any]:
+    offsets: dict[tuple[int, int], int] = {}
+    anchors: dict[tuple[int, int], tuple[int, bytes]] = {}
+    for candidate in _backend_log_candidates(path):
         try:
-            self.cdp.ws_send(self.sock, json.dumps({
-                "type": 0, "id": call_id, "route": route, "args": list(args),
-            }, separators=(",", ":")))
-            while True:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    self.close()
-                    _fail("authenticated Loader request timed out")
-                self.sock.settimeout(remaining)
-                message = json.loads(self.cdp.ws_recv(self.sock))
-                if not isinstance(message, dict) or message.get("id") != call_id:
-                    continue
-                kind = message.get("type")
-                if kind not in {-1, 1, 2}:
-                    continue
-                self.cdp.ws_send(self.sock, json.dumps({"type": 3, "id": call_id}, separators=(",", ":")))
-                if kind == 1:
-                    if "result" not in message:
-                        _fail("authenticated Loader reply omitted its result")
-                    return message["result"]
-                _fail("authenticated Loader route returned an error")
-        except SafetyError:
-            raise
-        except Exception:
-            self.close()
-            _fail("authenticated Loader WebSocket disconnected")
+            info = candidate.lstat()
+        except FileNotFoundError:
+            continue
+        except OSError:
+            _fail("scratch plugin log cannot be inspected")
+        if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+            _fail("scratch plugin log is not a regular file")
+        try:
+            fd = os.open(candidate, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+        except OSError:
+            _fail("scratch plugin log cannot be inspected")
+        with os.fdopen(fd, "rb") as stream:
+            current = os.fstat(stream.fileno())
+            if not stat.S_ISREG(current.st_mode):
+                _fail("scratch plugin log is not a regular file")
+            key = (current.st_dev, current.st_ino)
+            offsets[key] = current.st_size
+            start = max(0, current.st_size - 64)
+            stream.seek(start)
+            anchors[key] = (start, stream.read(current.st_size - start))
+    return {"offsets": offsets, "anchors": anchors, "pending": {}}
 
 
-def _loader_connect(timeout: float = 3.0) -> _LoaderWebSocket:
-    cdp = _cdp_module()
-    cdp.HOST = "127.0.0.1"
-    cdp.PORT = PORT
-    sock: socket.socket | None = None
-    try:
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(f"http://127.0.0.1:{PORT}/auth/token", timeout=timeout) as response:
-            if response.status != 200:
-                _fail("Loader authentication token request failed")
-            token = response.read(4097).decode("utf-8").strip()
-        if not token or len(token) > 4096 or any(character in token for character in "\r\n"):
-            _fail("Loader authentication token is invalid")
-        sock = cdp.ws_connect("/ws?" + urllib.parse.urlencode({"auth": token}))
-        sock.settimeout(timeout)
-        connection = _LoaderWebSocket(cdp, sock)
-        cdp.ws_send(sock, json.dumps({"type": 4, "messages": []}, separators=(",", ":")))
-        return connection
-    except SafetyError:
-        if sock is not None:
-            sock.close()
-        raise
-    except Exception:
-        if sock is not None:
-            sock.close()
-        _fail("authenticated Loader WebSocket connection failed")
-
-
-def _loader_request(
-    route: str, args: Sequence[Any], timeout: float = 3.0,
-    connection: _LoaderWebSocket | None = None,
-) -> Any:
-    if route not in {"loader/get_plugins", "loader/call_plugin_method", "loader/reload_plugin"}:
-        _fail("unapproved Loader route")
-    if route == "loader/get_plugins" and args:
-        _fail("unapproved Loader inventory request")
-    if route == "loader/call_plugin_method" and (len(args) != 2 or list(args) != [PLUGIN_NAME, "get_plugin_version"]):
-        _fail("unapproved Metadata readiness method")
-    if route == "loader/reload_plugin" and list(args) != [PLUGIN_NAME]:
-        _fail("unapproved Metadata reload request")
-    owned = connection is None
-    if owned:
-        connection = _loader_connect(min(timeout, 3.0))
-    try:
-        return connection.request(route, args, timeout)
-    finally:
-        if owned:
-            connection.close()
-
-
-def _loader_version(connection: _LoaderWebSocket | None = None) -> str | None:
-    try:
-        result = _loader_request(
-            "loader/call_plugin_method", [PLUGIN_NAME, "get_plugin_version"],
-            timeout=1, connection=connection,
-        )
-    except SafetyError:
+def _backend_ready_timestamp_ns(line: bytes) -> int | None:
+    match = _BACKEND_READY_RE.match(line.decode("utf-8", "replace").rstrip("\r\n"))
+    if not match:
         return None
+    try:
+        stamp = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S,%f")
+    except ValueError:
+        return None
+    return int(stamp.timestamp()) * 1_000_000_000 + stamp.microsecond * 1_000
+
+
+def _backend_ready_after(cursor: dict[str, Any], path: Path) -> int | None:
+    offsets = cursor["offsets"]
+    anchors = cursor["anchors"]
+    pending = cursor["pending"]
+    ready_times: list[int] = []
+    for candidate in _backend_log_candidates(path):
+        try:
+            fd = os.open(candidate, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+        except FileNotFoundError:
+            continue
+        except OSError:
+            _fail("scratch plugin log cannot be read")
+        try:
+            with os.fdopen(fd, "rb") as stream:
+                fd = -1
+                info = os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode):
+                    _fail("scratch plugin log is not a regular file")
+                key = (info.st_dev, info.st_ino)
+                offset = offsets.get(key, 0)
+                if info.st_size < offset:
+                    offset = 0
+                    pending.pop(key, None)
+                else:
+                    anchor = anchors.get(key)
+                    if anchor is not None:
+                        anchor_start, expected = anchor
+                        stream.seek(anchor_start)
+                        if stream.read(len(expected)) != expected:
+                            offset = 0
+                            pending.pop(key, None)
+                stream.seek(offset)
+                data = stream.read()
+                offset = stream.tell()
+                offsets[key] = offset
+                anchor_start = max(0, offset - 64)
+                stream.seek(anchor_start)
+                anchors[key] = (anchor_start, stream.read(offset - anchor_start))
+                buffered = pending.pop(key, b"") + data
+                lines = buffered.splitlines(keepends=True)
+                if lines and not lines[-1].endswith(b"\n"):
+                    pending[key] = lines.pop()
+                for line in lines:
+                    timestamp_ns = _backend_ready_timestamp_ns(line)
+                    if timestamp_ns is not None:
+                        ready_times.append(timestamp_ns)
+        finally:
+            if fd >= 0:
+                os.close(fd)
+    return min(ready_times) if ready_times else None
+
+
+def _loader_http_ready(timeout: float = 3.0) -> bool:
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        with opener.open(f"http://127.0.0.1:{PORT}/auth/token", timeout=timeout) as response:
+            return response.status == 200
+    except urllib.error.HTTPError:
+        return False
+    except OSError:
+        return False
+
+
+def _loader_frontend_request(
+    route: str, args: Sequence[str], *, timeout: float = 15.0, record_start: bool = False,
+) -> Any:
+    if route == "loader/reload_plugin" and list(args) == [PLUGIN_NAME] and record_start:
+        pass
+    elif route == "loader/call_plugin_method" and list(args) == [PLUGIN_NAME, "get_plugin_version"] and not record_start:
+        pass
+    else:
+        _fail("unapproved frontend Loader route or arguments")
+    call = "window.DeckyBackend.call(" + ", ".join(
+        [json.dumps(route), *(json.dumps(argument) for argument in args)]
+    ) + ")"
+    if record_start:
+        expression = f"(async()=>{{const started=Date.now();await {call};return started;}})()"
+    else:
+        expression = f"(async()=>await {call})()"
+    return _cdp_eval(expression, timeout=timeout)
+
+
+def _loader_process_identities(group: str, executable: Path) -> list[dict[str, Any]]:
+    expected = resolved(executable, strict=True)
+    return [
+        identity for identity in _identities_for_group(group)
+        if identity.get("exe") != "unreadable"
+        and resolved(Path(str(identity["exe"]).removesuffix(" (deleted)")), strict=False) == expected
+    ]
+
+
+def _loader_frontend_version(timeout: float = 3.0) -> str | None:
+    result = _loader_frontend_request(
+        "loader/call_plugin_method", [PLUGIN_NAME, "get_plugin_version"], timeout=timeout,
+    )
     return result if isinstance(result, str) else None
+
+
+def _loader_frontend_reload(timeout: float = 10.0) -> int:
+    result = _loader_frontend_request(
+        "loader/reload_plugin", [PLUGIN_NAME], timeout=timeout, record_start=True,
+    )
+    if not is_plain_int(result) or result <= 0:
+        _fail("Steam frontend reload did not return its page start time")
+    return result
 
 
 def _validate_ledger(ledger: Any, requested: Path | None = None) -> dict[str, Any]:
@@ -2417,6 +2462,9 @@ def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     _ensure_port_free()
     account = _account(ledger["user_name"])
     scratch_services = scratch / "services"
+    backend_log = _plugin_log_path(scratch)
+    if payload["measure_backend"]:
+        require_contained(backend_log, run_root, label="scratch plugin readiness log")
     if arm in {"A", "B"}:
         runtime = Path(ledger["inputs"]["upstream_runtime"])
         if sha256_file(runtime) != UPSTREAM_RUNTIME_SHA256 or not _elf_x86_64(runtime) or not (runtime.stat().st_mode & 0o111):
@@ -2430,7 +2478,10 @@ def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
             "SERVER_HOST": "127.0.0.1", "SERVER_PORT": str(PORT), "LOG_LEVEL": "INFO",
         }
         props.extend("--setenv=" + key + "=" + value for key, value in envs.items())
+        if payload["measure_backend"]:
+            log_cursor = _backend_log_cursor(backend_log)
         started_at = time.monotonic_ns()
+        request_time_ns = time.time_ns()
         _systemd_run("system", account, props + ["--", str(runtime)], timeout=20)
     else:
         bundle = _runtime_bundle(Path(ledger["inputs"]["fork_runtime"]))
@@ -2444,7 +2495,10 @@ def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         ]
         props = ["--unit=" + unit, "--collect", "--property=Type=simple", "--property=Restart=no", "--property=KillMode=mixed", "--property=TimeoutStopSec=15s", "--working-directory=" + str(Path(ledger["inputs"]["fork_runtime"]))]
         props.append("--setenv=TMPDIR=" + str(_temp_base()))
+        if payload["measure_backend"]:
+            log_cursor = _backend_log_cursor(backend_log)
         started_at = time.monotonic_ns()
+        request_time_ns = time.time_ns()
         _systemd_run("user", account, props + ["--", str(runtime)] + args, timeout=20)
     group = _systemd_control_group(scope, unit, account)
     if not group:
@@ -2457,51 +2511,41 @@ def _start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     ledger = _mutate_ledger(ledger_path, lambda state: state.update({"temp_service": service_identity}))
     _replace_temp_entry(ledger_path, unit, {"identities": identities, "state": "pending"})
     deadline = time.monotonic() + START_TIMEOUT_SECONDS
-    last_error = "authenticated Loader transport is not ready"
-    connection: _LoaderWebSocket | None = None
-    first_correct_reply_ns: int | None = None
-    try:
-        while time.monotonic() < deadline:
-            try:
-                if connection is None or connection.closed:
-                    if connection is not None:
-                        connection.close()
-                    connection = _loader_connect()
-                if not payload["measure_backend"]:
-                    plugins = _loader_request("loader/get_plugins", [], timeout=3, connection=connection)
-                    if not isinstance(plugins, list):
-                        _fail("Loader did not return its authenticated plugin inventory")
+    last_error = "scratch plugin log or Loader identity is not ready"
+    backend_ready_ns: int | None = None
+    while time.monotonic() < deadline:
+        if not payload["measure_backend"]:
+            if _loader_http_ready():
+                pids = _loader_process_identities(group, runtime)
+                if pids:
+                    current_identities = _identities_for_group(group)
+                    _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": current_identities}))
                     return {
                         "ok": True, "elapsed_ms": (time.monotonic_ns() - started_at) / 1_000_000,
-                        "pids": [], "service_ready": True, "backend_ready": False,
-                        "readiness_kind": "authenticated_loader_inventory", "arm": arm,
-                        "unit": unit, "identities": _safe_identities(identities),
+                        "pids": _safe_identities(pids), "service_ready": True, "backend_ready": False,
+                        "readiness_kind": "loader_auth_token_http", "arm": arm,
+                        "unit": unit, "identities": _safe_identities(current_identities),
                     }
-                version = _loader_version(connection)
-                if version == expected_arm_version and first_correct_reply_ns is None:
-                    first_correct_reply_ns = time.monotonic_ns()
-                pids = _metadata_identities(ledger, arm)
-                if first_correct_reply_ns is not None and pids:
-                    ready_at = first_correct_reply_ns
-                    _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": _identities_for_group(group)}))
-                    return {
-                        "ok": True, "elapsed_ms": (ready_at - started_at) / 1_000_000,
-                        "pids": _safe_identities(pids), "service_ready": True,
-                        "backend_ready": True, "readiness_kind": "authenticated_backend_version_rpc",
-                        "arm": arm, "unit": unit, "version": version,
-                        "identities": _safe_identities(_identities_for_group(group)),
-                    }
-                last_error = "Metadata version or process identity is not ready"
-            except SafetyError:
-                last_error = "authenticated Loader route is not ready"
-                if connection is not None and connection.closed:
-                    connection.close()
-                    connection = None
-            time.sleep(READY_POLL_SECONDS)
-    finally:
-        if connection is not None:
-            connection.close()
-    _fail("authenticated backend readiness timed out: " + last_error)
+            last_error = "Loader auth-token HTTP endpoint or process identity is not ready"
+        else:
+            if backend_ready_ns is None:
+                backend_ready_ns = _backend_ready_after(log_cursor, backend_log)
+            pids = _metadata_identities(ledger, arm)
+            if backend_ready_ns is not None and pids:
+                current_identities = _identities_for_group(group)
+                _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": current_identities}))
+                return {
+                    "ok": True, "backend_ready_log_ms": (backend_ready_ns - request_time_ns) / 1_000_000,
+                    "request_time_ns": request_time_ns, "backend_ready_log_time_ns": backend_ready_ns,
+                    "readiness_resolution_ms": 1, "pids": _safe_identities(pids),
+                    "service_ready": True, "backend_ready": True,
+                    "readiness_kind": "plugin_log_backend_ready", "arm": arm,
+                    "unit": unit, "version": expected_arm_version,
+                    "identities": _safe_identities(current_identities),
+                }
+            last_error = "backend-ready log line or Metadata process identity is not ready"
+        time.sleep(READY_POLL_SECONDS)
+    _fail("backend readiness timed out: " + last_error)
 
 
 def _safe_identities(identities: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -2539,9 +2583,9 @@ def _verify_plugin(ledger: Mapping[str, Any]) -> dict[str, Any]:
     if not pids:
         _fail("Metadata process identity is not visible in the temporary Loader cgroup")
     expected_version = ledger["expected"]["python_version"] if arm == "A" else ledger["expected"]["rust_version"]
-    version = _loader_version()
+    version = installed["manifest_version"]
     if version != expected_version:
-        _fail("authenticated Metadata version does not match the verified ZIP")
+        _fail("installed Metadata version does not match the verified ZIP")
     identities = _identities_for_group(temp["cgroup"])
     if any(item["exe"] == "unreadable" for item in pids):
         _fail("Metadata executable identity is unreadable")
@@ -2601,43 +2645,40 @@ def _reload(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         _fail("reload requires an active prepared Metadata backend")
     arm = ledger["arm"]
     expected = ledger["expected"]["python_version"] if arm == "A" else ledger["expected"]["rust_version"]
+    log_path = _plugin_log_path(Path(ledger["scratch_homebrew"]))
+    require_contained(log_path, Path(ledger["run_root"]), label="scratch plugin readiness log")
     old = _metadata_identities(ledger, arm)
     if not old:
         _fail("reload could not capture the old Metadata process identity")
     old_keys = {(item["pid"], item["starttime"]) for item in old}
-    connection = _loader_connect(timeout=10)
-    started = time.monotonic_ns()
-    try:
-        try:
-            _loader_request("loader/reload_plugin", [PLUGIN_NAME], timeout=10, connection=connection)
-        except SafetyError as error:
-            # The Loader can drop its socket while it reloads; the identity/version poll
-            # below still proves the reload, and times out if it never happened.
-            if "disconnected" not in str(error):
-                raise
-        deadline = time.monotonic() + RELOAD_TIMEOUT_SECONDS
-        while time.monotonic() < deadline:
-            current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
-            gone = all(pid_starttime(pid) != start for pid, start in old_keys)
-            if connection.closed:
-                try:
-                    connection = _loader_connect()
-                except SafetyError:
-                    time.sleep(READY_POLL_SECONDS)
-                    continue
-            version = _loader_version(connection)
-            new = [item for item in current if (item["pid"], item["starttime"]) not in old_keys]
-            if gone and version == expected and new:
-                ready_at = time.monotonic_ns()
+    deadline = time.monotonic() + RELOAD_TIMEOUT_SECONDS
+    log_cursor = _backend_log_cursor(log_path)
+    started_ms = _loader_frontend_reload()
+    ready_ns: int | None = None
+    while time.monotonic() < deadline:
+        if ready_ns is None:
+            ready_ns = _backend_ready_after(log_cursor, log_path)
+        current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
+        gone = all(pid_starttime(pid) != start for pid, start in old_keys)
+        new = [item for item in current if (item["pid"], item["starttime"]) not in old_keys]
+        if gone and new and ready_ns is not None:
+            try:
+                version = _loader_frontend_version()
+            except SafetyError:
+                version = None
+            if version == expected:
                 identities = _identities_for_group(temp["cgroup"])
                 _mutate_ledger(ledger_path, lambda state: state["temp_service"].update({"identities": identities}))
                 _replace_temp_entry(ledger_path, temp["unit"], {"identities": identities})
-                return {"ok": True, "elapsed_ms": (ready_at - started) / 1_000_000, "start_ns": started, "end_ns": ready_at, "pids": _safe_identities(new), "newpids": _safe_identities(new), "version": version, "old_pids_gone": True, "poll_ms": 10, "readiness_kind": "authenticated_backend_version_rpc"}
-            time.sleep(READY_POLL_SECONDS)
-        _fail("authenticated backend reload readiness timed out")
-    finally:
-        connection.close()
-
+                return {
+                    "ok": True, "backend_ready_log_ms": ready_ns / 1_000_000 - started_ms,
+                    "reload_start_page_time_ms": started_ms, "backend_ready_log_time_ns": ready_ns,
+                    "readiness_resolution_ms": 1, "newpids": _safe_identities(new),
+                    "version": version, "old_pids_gone": True, "poll_ms": 10,
+                    "readiness_kind": "plugin_log_backend_ready",
+                }
+        time.sleep(READY_POLL_SECONDS)
+    _fail("plugin-log backend reload readiness timed out")
 
 def _heartbeat(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     exact_keys(payload, set(), context="heartbeat payload")

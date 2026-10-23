@@ -938,7 +938,7 @@ def aggregate_trials(trials: Sequence[Mapping[str, Any]], arm: str, size: int) -
             "throughput_calls_per_second_including_validation": count * 1000.0 / wall_ms,
             "description": per_trial[0]["methods"][name]["description"],
         }
-    startups = [float(trial["startup"]["elapsed_ms"]) for trial in selected]
+    startups = [float(trial["startup"]["backend_ready_log_ms"]) for trial in selected]
     first_plugin_rpcs = [float(trial["first_plugin_rpc"]["elapsedMs"]) for trial in selected]
     readiness = _statistics_for(startups)
     first_rpc = _statistics_for(first_plugin_rpcs)
@@ -949,10 +949,10 @@ def aggregate_trials(trials: Sequence[Mapping[str, Any]], arm: str, size: int) -
         "trials": len(selected),
         "measured_calls": sum(item["completed_calls"] for item in per_trial),
         "methods": methods,
-        "authenticated_backend_readiness_ms": {
+        "backend_ready_log_ms": {
             **readiness,
-            "poll_resolution_ms": 10,
-            "method": "VM-local authenticated Decky Loader WebSocket get_plugin_version reply",
+            "readiness_kind": "plugin_log_backend_ready",
+            "readiness_resolution_ms": 1,
         },
         "first_plugin_scoped_ui_rpc_ms": first_rpc,
     }
@@ -1489,13 +1489,15 @@ def summarize_workload_resource_windows(
 
 def _verify_started(started: Mapping[str, Any], arm: str, size: int) -> None:
     if started.get("service_ready") is not True or started.get("backend_ready") is not True or \
-            started.get("readiness_kind") != "authenticated_backend_version_rpc":
-        raise BenchmarkError(f"arm {arm} Loader did not confirm authenticated backend readiness")
+            started.get("readiness_kind") != "plugin_log_backend_ready":
+        raise BenchmarkError(f"arm {arm} Loader did not confirm plugin-log backend readiness")
     if started.get("version") is None:
-        raise BenchmarkError("authenticated backend readiness omitted the Metadata version")
-    _check_host_elapsed(started.get("elapsed_ms"), "remote authenticated backend readiness timer")
+        raise BenchmarkError("plugin-log backend readiness omitted the Metadata version")
+    _check_host_elapsed(started.get("backend_ready_log_ms"), "remote backend-ready log interval")
+    if started.get("readiness_resolution_ms") != 1:
+        raise BenchmarkError("backend-ready log timestamp resolution was not reported as 1 ms")
     if not isinstance(started.get("pids"), list) or not started["pids"]:
-        raise BenchmarkError("remote authenticated backend readiness did not identify the Metadata process")
+        raise BenchmarkError("plugin-log backend readiness did not identify the Metadata process")
 
 
 def wait_for_observer_attach(run_id: str, timeout: float = 120.0) -> dict[str, Any]:
@@ -1554,7 +1556,7 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
         service_started = True
         trial["startup"] = remote.call("start", {"measure_backend": True})
         _verify_started(trial["startup"], arm, size)
-        # Backend readiness is measured on the VM socket; the Loader frontend injects later.
+        # The new backend-ready log line and process identity precede frontend injection.
         trial["observer_attach"] = wait_for_observer_attach(run_id)
         trial["observer_after_start"] = cdp_command("observer_state")
         if trial["observer_after_start"].get("preloadRunId") != run_id:
@@ -1702,8 +1704,10 @@ def summarize_reload_results(trials: Sequence[Mapping[str, Any]], arm: str) -> d
         raise ValueError(f"arm {arm} must include exactly ten 1,000-record reloads")
     return {
         "count": len(results),
-        "reload_to_authenticated_backend_ready_ms": _statistics_for([float(result["elapsed_ms"]) for result in results]),
-        "poll_resolution_ms": 10,
+        "backend_ready_log_ms": _statistics_for([float(result["backend_ready_log_ms"]) for result in results]),
+        "readiness_kind": "plugin_log_backend_ready",
+        "readiness_resolution_ms": 1,
+        "poll_interval_ms": 10,
         "results": results,
     }
 
@@ -1838,11 +1842,12 @@ def run_reload_measurement(
         result["startup"] = startup
         lease.check()
         reload_result = remote.call("reload", {})
-        _check_host_elapsed(reload_result.get("elapsed_ms"), "remote authenticated reload readiness timer")
+        _check_host_elapsed(reload_result.get("backend_ready_log_ms"), "remote reload backend-ready log interval")
         if not isinstance(reload_result.get("newpids"), list) or not reload_result["newpids"] or \
                 reload_result.get("old_pids_gone") is not True or reload_result.get("version") != expected_version or \
-                reload_result.get("readiness_kind") != "authenticated_backend_version_rpc" or reload_result.get("poll_ms") != 10:
-            raise BenchmarkError("authenticated reload did not confirm the new Metadata process and version")
+                reload_result.get("readiness_kind") != "plugin_log_backend_ready" or \
+                reload_result.get("readiness_resolution_ms") != 1 or reload_result.get("poll_ms") != 10:
+            raise BenchmarkError("plugin-log reload readiness did not confirm the new Metadata process and version")
         result["reloads"] = [reload_result]
         result["ok"] = True
     except BaseException as exc:
