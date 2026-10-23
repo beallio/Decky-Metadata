@@ -3186,6 +3186,7 @@ def _collector_loop(ledger_path: Path) -> int:
     previous_cpu = None
     start_ticks_pending: int | None = collector_start_ticks
     status = 0
+    missed_deadlines = 0
     error = None
     try:
         with path.open("a", encoding="utf-8", buffering=1) as stream:
@@ -3196,8 +3197,13 @@ def _collector_loop(ledger_path: Path) -> int:
                     break
                 now_ns = time.monotonic_ns()
                 if deadline_ns is not None and now_ns >= deadline_ns + interval_ns:
-                    _fail("collector missed its 5Hz sample deadline")
+                    # A busy VM can stall one poll (e.g. during Steam's webhelper restart).
+                    # CPU comes from cumulative counters, so count the gap and resync
+                    # instead of discarding the trial; memory peaks in the gap are unsampled.
+                    missed_deadlines += (now_ns - deadline_ns) // interval_ns
+                    deadline_ns = now_ns - interval_ns
                 sample, previous_cpu = _collector_sample(ledger, previous_cpu, start_ticks_pending)
+                sample["missed_deadlines"] = missed_deadlines
                 start_ticks_pending = None
                 stream.write(json.dumps(sample, separators=(",", ":"), ensure_ascii=False) + "\n")
                 stream.flush()

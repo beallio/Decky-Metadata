@@ -857,9 +857,9 @@ def test_collector_tolerates_wakeup_latency_and_keeps_its_final_boundary(monkeyp
     assert ledger["collector"]["exit_status"] == 0 and ledger["collector"]["exit_error"] is None
 
 
-@pytest.mark.parametrize(("sample_duration_ns", "succeeds"), [(220_000_000, True), (420_000_000, False)])
-def test_collector_catches_up_without_drifting_or_accepting_a_whole_missed_interval(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_duration_ns: int, succeeds: bool,
+@pytest.mark.parametrize(("sample_duration_ns", "missed"), [(220_000_000, 0), (420_000_000, 1)])
+def test_collector_catches_up_and_counts_a_whole_missed_interval_without_failing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, sample_duration_ns: int, missed: int,
 ):
     evidence = tmp_path / "evidence"
     evidence.mkdir()
@@ -889,13 +889,13 @@ def test_collector_catches_up_without_drifting_or_accepting_a_whole_missed_inter
     monkeypatch.setattr(vm, "time", SimpleNamespace(monotonic_ns=lambda: clock[0], sleep=sleep))
     status = vm._collector_loop(tmp_path / "ledger.json")
     records = [json.loads(line) for line in samples_path.read_text().splitlines()]
-    assert status == (0 if succeeds else 1)
-    assert ledger["collector"]["exit_status"] == status
+    assert status == 0
+    assert ledger["collector"]["exit_status"] == 0 and ledger["collector"]["exit_error"] is None
     assert [record["monotonic_ns"] for record in records] == (
         [1_000_000_000, 1_201_000_000, 1_421_000_000, 1_601_000_000]
-        if succeeds else [1_000_000_000, 1_201_000_000]
+        if not missed else [1_000_000_000, 1_201_000_000, 1_621_000_000, 1_622_000_000]
     )
-    assert (ledger["collector"]["exit_error"] is None) == succeeds
+    assert records[-1]["missed_deadlines"] == missed
 
 
 def test_service_fingerprint_preserves_symlink_selection_and_masks(tmp_path: Path):
