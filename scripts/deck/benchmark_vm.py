@@ -3241,8 +3241,15 @@ def _collect_start(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, A
     temp = ledger["temp_service"]
     sample_path = Path(ledger["run_root"]) / "evidence" / f"{label}.jsonl"
     require_contained(sample_path, Path(ledger["run_root"]) / "evidence", label="collector output")
-    if sample_path.exists() or sample_path.is_symlink():
-        _fail("collector output path already exists")
+    if sample_path.is_symlink():
+        _fail("collector output path is a symlink")
+    if sample_path.exists():
+        # A retried trial keeps its earlier attempt's samples beside the new file.
+        attempt = 1
+        while (archived := sample_path.with_name(f"{label}.attempt-{attempt}.jsonl")).exists():
+            attempt += 1
+        require_contained(archived, Path(ledger["run_root"]) / "evidence", label="collector output")
+        os.rename(sample_path, archived)
     _atomic_write(sample_path, b"", mode=0o600, owner=(int(ledger["user_uid"]), pwd.getpwuid(int(ledger["user_uid"])).pw_gid), guard_root=Path(ledger["run_root"]))
     unit = ledger["unit_prefix"] + "-collector-" + label.lower() + ".service"
     _mutate_ledger(ledger_path, lambda state: state.update({"collector": {"unit": unit, "scope": "system", "label": label, "path": str(sample_path), "state": "running", "start_ns": time.monotonic_ns(), "service_group": temp["cgroup"], "arm": temp["arm"], "exit_status": None, "exit_error": None}}))
