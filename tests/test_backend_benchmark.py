@@ -52,8 +52,9 @@ async function workloadContract() {
         activeWrites += 1;
         maximumActiveWrites = Math.max(maximumActiveWrites, activeWrites);
       }
+      const callStart = now;
       await Promise.resolve();
-      now += 3;
+      now = Math.max(now, callStart + 3);
       let result;
       if (method === 'get_metadata') {
         result = stored.get(String(args[0])) ?? null;
@@ -129,15 +130,26 @@ async function workloadContract() {
   assert.deepEqual(writes.map((write) => write.appid), expectedTargets.map((record) => record.appid));
   assert.deepEqual(writes.map((write) => write.description), writes.map((_, index) => (index % 2 === 0 ? payload.writeDescriptionA : payload.writeDescriptionB)));
   for (const [name, entry] of Object.entries(result.measurements)) {
+    assert(entry.startMs >= 0);
+    assert(entry.endMs > entry.startMs);
     assert.equal(entry.samplesMs.length, entry.count);
     assert(entry.samplesMs.every((sample) => sample >= 3));
     if (name.endsWith('_serial')) {
-      assert(entry.samplesMs.every((sample) => sample === 3), 'serial latency includes its own validation time');
+      assert(entry.samplesMs.every((sample) => sample === 3), 'serial latency excludes its own validation time');
       const elapsed = entry.samplesMs.reduce((sum, sample) => sum + sample, 0);
       if (name === 'get_metadata_hit_serial' || name === 'get_all_metadata_serial' || name === 'save_metadata_serial') {
-        assert(entry.wallMs > elapsed, 'serial wall time excludes result validation');
+        assert(entry.wallMs > elapsed, 'serial wall time includes result validation');
       } else {
         assert.equal(entry.wallMs, elapsed);
+      }
+    } else if (name.endsWith('_concurrency_8')) {
+      assert.equal(entry.description, 'batches of 8, barrier per batch');
+      assert(entry.samplesMs.every((sample) => sample === 3), 'concurrent latency excludes batch validation');
+      const batchBarrierLatencyMs = entry.count / 8 * 3;
+      if (name.startsWith('get_metadata_hit_') || name.startsWith('get_all_metadata_')) {
+        assert(entry.wallMs > batchBarrierLatencyMs, 'concurrent wall time includes batch validation');
+      } else {
+        assert.equal(entry.wallMs, batchBarrierLatencyMs);
       }
     }
   }
@@ -442,9 +454,10 @@ def test_fixture_validation_rejects_sanitizer_lost_or_changed_rows():
         benchmark.validate_fixture_data(fixture, 100)
 
 
-def test_workload_schedule_has_exact_arm_order_and_call_total():
-    expected = [(arm, size, trial) for arm in "ABC" for size in (100, 1000) for trial in range(1, 6)]
+def test_workload_schedule_interleaves_arms_and_reports_batch_barriers():
+    expected = [(arm, size, trial) for size in (100, 1000) for trial in range(1, 6) for arm in "ABC"]
     assert benchmark.trial_order() == expected
+    assert benchmark.reload_order() == [(arm, reload) for reload in range(1, 11) for arm in "ABC"]
     assert len(expected) == 30
     assert benchmark.MEASURED_CALLS_PER_TRIAL == 6450
     assert benchmark.MEASURED_CALLS_PER_TRIAL * len(expected) == 193500
@@ -492,8 +505,11 @@ def valid_workload_result(size: int = 100) -> dict[str, object]:
             "samplesMs": [2.0] * count,
             "wallMs": float(count * 4),
             "throughputCallsPerSecond": 250.0,
+            "startMs": float(index * 2),
+            "endMs": float(index * 2 + 1),
+            **({"description": "batches of 8, barrier per batch"} if name.endswith("_concurrency_8") else {}),
         }
-        for name, count in counts.items()
+        for index, (name, count) in enumerate(counts.items())
     }
     return {
         "ok": True,
@@ -507,6 +523,38 @@ def valid_workload_result(size: int = 100) -> dict[str, object]:
         "measurements": measurements,
         "errors": [],
     }
+
+
+def test_workload_resource_windows_interpolate_cpu_and_scope_metadata_pss():
+    samples = [
+        {
+            "monotonic_ns": timestamp,
+            "service_cpu_delta_usec": delta,
+            "processes": [
+                {
+                    "pid": 10, "starttime": 20, "role": "metadata_python",
+                    "pss_kib": pss, "rss_kib": pss + 10, "private_dirty_kib": pss // 10,
+                },
+            ],
+        }
+        for timestamp, delta, pss in ((100, None, 40), (200, 100_000, 120), (300, 200_000, 80))
+    ]
+    workload = {"measurements": {"read": {"completedCalls": 3}}}
+    resources = benchmark.summarize_workload_resource_windows(
+        {"read": {"start_ns": 125, "end_ns": 275}}, workload, samples, "A",
+    )["read"]
+
+    assert resources["service_cpu_seconds"] == pytest.approx(0.225)
+    assert resources["service_cpu_ms_per_call"] == pytest.approx(75)
+    assert resources["metadata_pss_sampled_peak_kib"] == 120
+    assert resources["metadata_pss_sample_count"] == 1
+
+
+def test_summaries_reject_trials_from_different_run_directories():
+    with pytest.raises(ValueError, match="different run directories"):
+        benchmark._validate_trial_run_ids([{"run_id": "run-one"}, {"run_id": "run-two"}])
+    with pytest.raises(ValueError, match="different run directories"):
+        benchmark._validate_trial_run_ids([{"run_id": "run-one"}, {}])
 
 
 def test_result_validation_rejects_dropped_invalid_and_timed_out_calls():

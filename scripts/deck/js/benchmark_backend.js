@@ -555,10 +555,11 @@
     let completedCalls = 0;
     const startMs = performance.now();
 
-    async function issue(name, method, args, validator) {
+    async function issue(name, method, args, validator, deferValidation = false) {
       const start = performance.now();
       let timeout;
       let result;
+      const target = measurements[name] || (measurements[name] = { samplesMs: [], count: 0, completedCalls: 0 });
       try {
         const rpc = api.call.call(api, method, ...args);
         result = await Promise.race([
@@ -571,7 +572,6 @@
         const elapsedMs = performance.now() - start;
         const failure = { workload: name, method, elapsedMs, error: errorText(error) };
         errors.push(failure);
-        const target = measurements[name] || (measurements[name] = { samplesMs: [], count: 0, completedCalls: 0 });
         target.samplesMs.push(elapsedMs);
         target.count += 1;
         throw error;
@@ -579,24 +579,30 @@
         clearTimeout(timeout);
       }
       const elapsedMs = performance.now() - start;
-      const target = measurements[name] || (measurements[name] = { samplesMs: [], count: 0, completedCalls: 0 });
       target.samplesMs.push(elapsedMs);
       target.count += 1;
-      try {
-        validator(result);
-      } catch (error) {
-        errors.push({ workload: name, method, elapsedMs, error: errorText(error) });
-        throw error;
-      }
-      target.completedCalls += 1;
-      completedCalls += 1;
+      const validate = () => {
+        try {
+          validator(result);
+        } catch (error) {
+          errors.push({ workload: name, method, elapsedMs, error: errorText(error) });
+          throw error;
+        }
+        target.completedCalls += 1;
+        completedCalls += 1;
+      };
+      if (deferValidation) return { validate };
+      validate();
       return result;
     }
 
     async function measureRead(label, method, count, argsForCall, validator, concurrency) {
-      const workloadName = `${label}_${concurrency === 1 ? "serial" : "concurrency_8"}`;
+      const mode = concurrency === 1 ? "serial" : "concurrency_8";
+      const workloadName = `${label}_${mode}`;
       const target = measurements[workloadName] || (measurements[workloadName] = { samplesMs: [], count: 0, completedCalls: 0 });
+      if (concurrency === 8) target.description = "batches of 8, barrier per batch";
       const wallStart = performance.now();
+      target.startMs = wallStart;
       try {
         if (concurrency === 1) {
           for (let index = 0; index < count; index += 1) {
@@ -607,18 +613,30 @@
             const batch = [];
             const end = Math.min(count, offset + concurrency);
             for (let index = offset; index < end; index += 1) {
-              batch.push(issue(workloadName, method, argsForCall(index), validator(index)));
+              batch.push(issue(workloadName, method, argsForCall(index), validator(index), true));
             }
             const settled = await Promise.allSettled(batch);
-            const failed = settled.find((result) => result.status === "rejected");
-            if (failed) throw failed.reason;
+            let validationFailure;
+            for (const result of settled) {
+              if (result.status !== "fulfilled") continue;
+              try {
+                result.value.validate();
+              } catch (error) {
+                validationFailure ||= error;
+              }
+            }
+            const requestFailure = settled.find((result) => result.status === "rejected");
+            if (validationFailure) throw validationFailure;
+            if (requestFailure) throw requestFailure.reason;
           }
         }
       } finally {
-        target.wallMs = performance.now() - wallStart;
+        target.endMs = performance.now();
+        target.wallMs = target.endMs - wallStart;
         target.throughputCallsPerSecond = target.completedCalls * 1000 / target.wallMs;
       }
     }
+
 
     try {
       await measureRead("get_metadata_hit", "get_metadata", 1000,
@@ -648,6 +666,7 @@
       const writes = measurements.save_metadata_serial ||
         (measurements.save_metadata_serial = { samplesMs: [], count: 0, completedCalls: 0 });
       const writesWallStart = performance.now();
+      writes.startMs = writesWallStart;
       try {
         for (let index = 0; index < 50; index += 1) {
           const record = writeRecords[index];
@@ -659,7 +678,8 @@
             (value) => validateResult("save_metadata", value, { record: sanitizedExpected }));
         }
       } finally {
-        writes.wallMs = performance.now() - writesWallStart;
+        writes.endMs = performance.now();
+        writes.wallMs = writes.endMs - writesWallStart;
         writes.throughputCallsPerSecond = writes.completedCalls * 1000 / writes.wallMs;
       }
       const activityEnd = publicObserverState();
