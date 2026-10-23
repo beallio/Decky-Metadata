@@ -1429,17 +1429,17 @@ mod tests {
     #[tokio::test]
     async fn target_load_errors_leave_both_jobs_terminal() {
         let (_directory, state) = test_state(Vec::new()).await;
-        let path = state
-            .env
-            .plugin_settings_dir
-            .join(crate::storage::SETTINGS_FILE_NAME);
-        tokio::fs::write(&path, b"{").await.unwrap();
-        let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
-        file.set_times(
-            std::fs::FileTimes::new()
-                .set_modified(std::time::SystemTime::now() + Duration::from_secs(2)),
-        )
-        .unwrap();
+        // A missing file that cannot be re-saved is a real target-load error;
+        // invalid JSON now keeps the retained data, like the baseline.
+        let settings = state.env.plugin_settings_dir.clone();
+        tokio::fs::remove_file(settings.join(crate::storage::SETTINGS_FILE_NAME))
+            .await
+            .unwrap();
+        let read_only = |mode| {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&settings, std::fs::Permissions::from_mode(mode)).unwrap();
+        };
+        read_only(0o500);
 
         let games = json!([{"appid":1,"name":"No cached metadata"}]);
         start_scan_missing(Arc::clone(&state), &games)
@@ -1449,6 +1449,7 @@ mod tests {
             .await
             .unwrap();
         state.jobs.drain().await;
+        read_only(0o700);
 
         for progress in [
             get_scan_progress(&state).await,
