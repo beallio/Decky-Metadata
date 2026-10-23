@@ -257,13 +257,6 @@ pub fn steam_partner_asset_url(raw: &str, clan_id: &str) -> String {
     String::new()
 }
 
-fn char_byte_index(value: &str, character: usize) -> usize {
-    value
-        .char_indices()
-        .nth(character)
-        .map_or(value.len(), |(index, _)| index)
-}
-
 fn add_news_image_candidate(
     candidates: &mut Vec<(i64, usize, String)>,
     raw: &str,
@@ -363,13 +356,28 @@ pub fn steam_news_image_candidates(contents: &str, _steam_appid: i64) -> Vec<Str
         }
     }
     for pattern in RX_NEWS_IMAGE_PATTERNS.iter() {
+        let mut previous_end_byte = 0;
+        let mut previous_end_character = 0;
         for found in pattern.captures_iter(&text) {
             let full_match = found.get(0).expect("image pattern always matches");
             let raw = found.get(1).unwrap_or(full_match).as_str();
-            let start_character = text[..full_match.start()].chars().count();
-            let end_character = text[..full_match.end()].chars().count();
-            let start = char_byte_index(&text, start_character.saturating_sub(260));
-            let end = char_byte_index(&text, (end_character + 260).min(text.chars().count()));
+            let start_character = previous_end_character
+                + text[previous_end_byte..full_match.start()].chars().count();
+            let end_character =
+                start_character + text[full_match.start()..full_match.end()].chars().count();
+            previous_end_byte = full_match.end();
+            previous_end_character = end_character;
+            let start = text[..full_match.start()]
+                .char_indices()
+                .rev()
+                .nth(259)
+                .map_or(0, |(index, _)| index);
+            let end = text[full_match.end()..]
+                .char_indices()
+                .nth(259)
+                .map_or(text.len(), |(index, character)| {
+                    full_match.end() + index + character.len_utf8()
+                });
             let context = &text[start..end];
             add_news_image_candidate(&mut candidates, raw, start_character, context, 50);
         }
@@ -544,7 +552,16 @@ fn python_int(value: &Value) -> Option<i64> {
                 None
             }
         }
-        Value::String(value) => value.trim().parse::<i64>().ok(),
+        Value::String(value) => {
+            let value = matching::integer_string(value)?;
+            Some(value.parse::<i64>().unwrap_or_else(|_| {
+                if value.starts_with('-') {
+                    i64::MIN
+                } else {
+                    i64::MAX
+                }
+            }))
+        }
         _ => None,
     }
 }
@@ -1637,6 +1654,14 @@ mod tests {
             json_fixture(url, json!({"success":1,"results":{"resolved_category":3}})),
             json_fixture(
                 url,
+                json!({"success":1,"results":{"resolved_category":"0_3"}}),
+            ),
+            json_fixture(
+                url,
+                json!({"success":1,"results":{"resolved_category":"３"}}),
+            ),
+            json_fixture(
+                url,
                 json!({"success":1,"results":{"resolved_category":null}}),
             ),
             json_fixture(url, json!({"success":1,"results":{"resolved_category":7}})),
@@ -1650,6 +1675,15 @@ mod tests {
                 category: Some(3)
             }
         );
+        for _ in 0..2 {
+            assert_eq!(
+                steam_deck_compat_lookup_for_appid(&http, 123).await,
+                DeckCompatibilityLookup {
+                    status: DeckCompatibilityStatus::Available,
+                    category: Some(3)
+                }
+            );
+        }
         assert_eq!(
             steam_deck_compat_lookup_for_appid(&http, 123).await,
             DeckCompatibilityLookup {
@@ -1798,6 +1832,18 @@ mod tests {
                 .first()
                 .map(String::as_str),
             Some("https://cdn.example.com/roadmap.jpg")
+        );
+        let unicode = format!(
+            "{} [img]https://cdn.example.com/divider.jpg[/img] {} Roadmap [img]https://cdn.example.com/roadmap.jpg[/img]",
+            "é".repeat(300),
+            "界".repeat(300)
+        );
+        assert_eq!(
+            steam_news_image_candidates(&unicode, 1),
+            vec![
+                "https://cdn.example.com/roadmap.jpg".to_owned(),
+                "https://cdn.example.com/divider.jpg".to_owned()
+            ]
         );
         assert_eq!(
             steam_partner_asset_url("{STEAM_CLAN_IMAGE}/12345/update.jpg[/img]", ""),

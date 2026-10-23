@@ -1,4 +1,5 @@
 use crc32fast::Hasher as Crc32Hasher;
+use std::collections::HashMap;
 #[cfg(test)]
 use std::fs;
 use std::fs::File;
@@ -341,6 +342,7 @@ fn parse_object(data: &[u8], mut pos: usize, depth: usize) -> Result<(VdfValue, 
         return Err(());
     }
     let mut result: Vec<(String, VdfValue)> = Vec::new();
+    let mut key_indices: HashMap<String, usize> = HashMap::new();
     while pos < data.len() {
         let value_type = data[pos];
         pos += 1;
@@ -378,9 +380,10 @@ fn parse_object(data: &[u8], mut pos: usize, depth: usize) -> Result<(VdfValue, 
             }
             _ => break,
         };
-        if let Some(index) = result.iter().position(|(existing, _)| existing == &key) {
+        if let Some(index) = key_indices.get(&key).copied() {
             result[index].1 = value;
         } else {
+            key_indices.insert(key.clone(), result.len());
             result.push((key, value));
         }
     }
@@ -623,6 +626,22 @@ mod tests {
         entries.push(0x08);
         let parsed = parse_shortcuts_vdf(&object("shortcuts", entries), Path::new("shortcuts.vdf"));
         assert_eq!(parsed.len(), MAX_SHORTCUTS_VDF_ENTRIES);
+    }
+    #[test]
+    fn duplicate_vdf_keys_keep_first_position_and_last_value() {
+        let mut contents = field("duplicate", "first");
+        contents.extend(field("other", "middle"));
+        contents.extend(field("duplicate", "last"));
+        contents.push(0x08);
+        let (parsed, end) = parse_object(&contents, 0, 0).unwrap();
+        assert_eq!(end, contents.len());
+        assert_eq!(
+            parsed,
+            VdfValue::Object(vec![
+                ("duplicate".to_owned(), VdfValue::String("last".to_owned())),
+                ("other".to_owned(), VdfValue::String("middle".to_owned()))
+            ])
+        );
     }
 
     #[test]
