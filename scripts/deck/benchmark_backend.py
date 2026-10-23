@@ -1498,6 +1498,24 @@ def _verify_started(started: Mapping[str, Any], arm: str, size: int) -> None:
         raise BenchmarkError("remote authenticated backend readiness did not identify the Metadata process")
 
 
+def wait_for_observer_attach(run_id: str, timeout: float = 120.0) -> dict[str, Any]:
+    started = time.monotonic()
+    last_error: BaseException | None = None
+    while time.monotonic() - started <= timeout:
+        try:
+            marker = cdp_command("preload_state")
+        except BenchmarkError as error:  # the Steam document can be mid-injection
+            last_error = error
+            time.sleep(0.1)
+            continue
+        if marker.get("runId") != run_id or marker.get("error") is not None:
+            raise BenchmarkError(f"Loader observer preload changed before attach: {marker}")
+        if marker.get("attached") is True:
+            return {**marker, "waitedMs": (time.monotonic() - started) * 1000}
+        time.sleep(0.1)
+    raise BenchmarkError(f"Loader frontend did not attach its observers within {timeout:.0f} seconds: {last_error}")
+
+
 def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
               evidence: Evidence, arm: str, size: int, number: int, fixture_hash: str,
               lease: Lease) -> dict[str, Any]:
@@ -1536,6 +1554,8 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
         service_started = True
         trial["startup"] = remote.call("start", {"measure_backend": True})
         _verify_started(trial["startup"], arm, size)
+        # Backend readiness is measured on the VM socket; the Loader frontend injects later.
+        trial["observer_attach"] = wait_for_observer_attach(run_id)
         trial["observer_after_start"] = cdp_command("observer_state")
         if trial["observer_after_start"].get("preloadRunId") != run_id:
             raise BenchmarkError("Loader startup escaped its early observer")
