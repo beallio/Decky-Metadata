@@ -72,6 +72,7 @@ impl Storage {
             Ok(Some(_)) => {}
             Ok(None) => {
                 self.mtime_ns = write_atomic(&self.path, &self.data).await?;
+                self.loaded = true;
                 return Ok(true);
             }
             Err(error) => return Err(error),
@@ -81,6 +82,7 @@ impl Storage {
             Ok(loaded) => loaded,
             Err(LoadError::Missing) => {
                 self.mtime_ns = write_atomic(&self.path, &self.data).await?;
+                self.loaded = true;
                 return Ok(true);
             }
             Err(LoadError::Invalid) => return Ok(false),
@@ -94,7 +96,17 @@ impl Storage {
         }
         self.data = normalize_loaded_data(data)?;
         self.mtime_ns = mtime_ns;
+        self.loaded = true;
         Ok(true)
+    }
+
+    /// Startup fell back to defaults because the file is unusable; saving now would replace it.
+    fn ensure_writable(&self) -> Result<(), String> {
+        if self.loaded {
+            Ok(())
+        } else {
+            Err("metadata settings file is unreadable; fix or remove it before saving changes".to_owned())
+        }
     }
 
     pub fn data(&self) -> &Value {
@@ -106,6 +118,7 @@ impl Storage {
             return Err("metadata settings must be a JSON object".to_owned());
         }
         self.refresh().await?;
+        self.ensure_writable()?;
         let mtime_ns = write_atomic(&self.path, &next).await?;
         self.data = next;
         self.mtime_ns = mtime_ns;
@@ -117,6 +130,7 @@ impl Storage {
         &mut self,
         mutation: impl FnOnce(&mut StoreTransaction<'_>) -> Result<R, String>,
     ) -> Result<R, String> {
+        self.ensure_writable()?;
         let mut transaction = StoreTransaction::new(&mut self.data);
         let value = match mutation(&mut transaction) {
             Ok(value) => value,
@@ -1236,7 +1250,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn unusable_settings_start_with_defaults_without_load_overwrite() {
+    async fn unusable_settings_refuse_writes_until_a_valid_file_loads() {
         for bytes in [b"{broken".as_slice(), b"[]".as_slice()] {
             let dir = TempDir::new();
             let path = dir.0.join(SETTINGS_FILE_NAME);
@@ -1244,17 +1258,24 @@ mod tests {
             let mut store = Storage::open(dir.0.clone()).await.unwrap();
             assert!(!store.loaded_successfully());
             assert_eq!(store.data(), &default_data());
+
+            let save = |tx: &mut StoreTransaction<'_>| tx.set(&["metadata", "9"], json!({"title":"Explicit save"}));
+            assert!(store.transaction(save).await.is_err());
+            assert!(store.replace(default_data()).await.is_err());
+            assert_eq!(store.data(), &default_data());
             assert_eq!(tokio::fs::read(&path).await.unwrap(), bytes);
 
-            if bytes.starts_with(b"{") {
-                store
-                    .transaction(|tx| tx.set(&["metadata", "9"], json!({"title":"Explicit save"})))
-                    .await
-                    .unwrap();
-                let saved =
-                    serde_json::from_slice::<Value>(&tokio::fs::read(path).await.unwrap()).unwrap();
-                assert_eq!(saved["metadata"]["9"]["title"], "Explicit save");
-            }
+            // Once the user repairs the file, it loads and saves work again.
+            tokio::fs::write(&path, br#"{"metadata":{"1":{"title":"Kept"}}}"#).await.unwrap();
+            std::fs::File::open(&path)
+                .unwrap()
+                .set_times(std::fs::FileTimes::new().set_modified(std::time::SystemTime::now() + std::time::Duration::from_secs(2)))
+                .unwrap();
+            assert!(store.refresh().await.unwrap());
+            store.transaction(save).await.unwrap();
+            let saved = serde_json::from_slice::<Value>(&tokio::fs::read(&path).await.unwrap()).unwrap();
+            assert_eq!(saved["metadata"]["1"]["title"], "Kept");
+            assert_eq!(saved["metadata"]["9"]["title"], "Explicit save");
         }
     }
 
