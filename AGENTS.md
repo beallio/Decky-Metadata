@@ -107,8 +107,7 @@ native build output. `dist/index.js` is the intentionally committed build artifa
   verify it in `package.json` or `node_modules`.
 - The backend uses `backend-rust/Cargo.toml` and its committed lockfile. Use Rust
   `1.99.0`, the `x86_64-unknown-linux-musl` target, and musl C tools. Preserve the
-  pinned Decky SDK revision. Keep `main.py` equal to its upstream shim except the
-  documented relay safeguards. Python tooling
+  pinned Decky SDK revision and copy its upstream shim unchanged. Python tooling
   is allowed; do not reintroduce Python plugin business logic or runtime packages.
 - Keep `NOTICE` current when Rust dependencies or the toolchain licenses change.
 - If API behavior is uncertain: read the project source, then `@decky/*` or

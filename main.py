@@ -158,7 +158,7 @@ class Plugin:
                 if self._process.poll() is not None:
                     raise RuntimeError(f"backend exited with {self._process.returncode}")
                 try:
-                    # Local divergence from fa0b26ae: fail bad replies and reject unencodable RPC text instead of hanging calls.
+                    # No line cap: a whole reply is one line, and plugin data can be large.
                     reader, self._writer = await asyncio.open_unix_connection(
                         socket, limit=sys.maxsize
                     )

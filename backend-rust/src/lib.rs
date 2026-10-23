@@ -22,10 +22,17 @@ pub fn plugin(state: Arc<AppState>) -> Plugin {
     let mut plugin = Plugin::new();
     for &method in rpc::METHODS {
         let state = Arc::clone(&state);
-        plugin = plugin.method(method, move |_, args| {
-            let state = Arc::clone(&state);
-            async move { rpc::dispatch(state, method, args).await }
-        });
+        plugin = if rpc::RAW_METHODS.contains(&method) {
+            plugin.method_raw(method, move |_, args| {
+                let state = Arc::clone(&state);
+                async move { rpc::dispatch_raw(&state, method, &args).await }
+            })
+        } else {
+            plugin.method(method, move |_, args| {
+                let state = Arc::clone(&state);
+                async move { rpc::dispatch(state, method, args).await }
+            })
+        };
     }
     plugin
         .on_migration(move |_| async move {

@@ -6,7 +6,7 @@ use crate::{
     state::{self, AppState},
     storage,
 };
-use decky_plugin::MethodResult;
+use decky_plugin::{MethodResult, RawMethodResult};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -94,6 +94,31 @@ fn update_failure(error: String, check: bool) -> Value {
     result
 }
 
+/// Store reads that return large parts of the settings file. They serialize straight
+/// from the locked store, so a reply never needs a full in-memory copy of it.
+pub const RAW_METHODS: &[&str] = &["get_state", "get_metadata", "get_all_metadata"];
+
+pub async fn dispatch_raw(state: &AppState, method: &str, args: &[Value]) -> RawMethodResult {
+    let store = state.store().await?;
+    let data = store.data();
+    let value = match method {
+        "get_state" => {
+            arity(args, 0, 0)?;
+            data
+        }
+        "get_metadata" => {
+            arity(args, 1, 1)?;
+            &data["metadata"][py_string(&args[0])]
+        }
+        "get_all_metadata" => {
+            arity(args, 0, 0)?;
+            &data["metadata"]
+        }
+        _ => return Err(format!("Plugin has no method {method}")),
+    };
+    serde_json::value::to_raw_value(value).map_err(|error| error.to_string())
+}
+
 pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> MethodResult {
     match method {
         "get_platform_capabilities" => {
@@ -116,10 +141,6 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 return Ok(String::new().into());
             };
             Ok(logging::read_tail(&path).await.into())
-        }
-        "get_state" => {
-            arity(&args, 0, 0)?;
-            Ok(state.store().await?.data().clone())
         }
         "get_debug_logging" => {
             arity(&args, 0, 0)?;
@@ -219,14 +240,6 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                     storage::validate_protondb_badge_settings(&args[0])?,
                 )
                 .await
-        }
-        "get_metadata" => {
-            arity(&args, 1, 1)?;
-            Ok(state.store().await?.data()["metadata"][py_string(&args[0])].clone())
-        }
-        "get_all_metadata" => {
-            arity(&args, 0, 0)?;
-            Ok(state.store().await?.data()["metadata"].clone())
         }
         "remove_metadata" => {
             arity(&args, 1, 1)?;
