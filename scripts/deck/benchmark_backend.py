@@ -1878,6 +1878,11 @@ QUIESCENCE_ATTEMPTS = 3
 
 def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
                     evidence: Evidence, fixture_hashes: Mapping[int, str], lease: Lease) -> dict[str, Any]:
+    # Reloads are standalone and shorter, so a reload-path failure surfaces before the 30 trials.
+    reload_trials = [
+        run_reload_measurement(remote, artifacts, evidence, arm, number, lease)
+        for arm, number in reload_order()
+    ]
     trials: list[dict[str, Any]] = []
     for arm, size, number in trial_order():
         for attempt in range(1, QUIESCENCE_ATTEMPTS + 1):
@@ -1901,10 +1906,6 @@ def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: 
     run_id = _validate_trial_run_ids(trials, required=True)
     if run_id != Path(remote.run_root).name:
         raise BenchmarkError("trial evidence does not belong to this benchmark run directory")
-    reload_trials = [
-        run_reload_measurement(remote, artifacts, evidence, arm, number, lease)
-        for arm, number in reload_order()
-    ]
     expected_reload_order = reload_order()
     actual_reload_order = [(trial["arm"], trial["reload_index"]) for trial in reload_trials]
     if actual_reload_order != expected_reload_order:
