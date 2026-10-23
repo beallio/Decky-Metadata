@@ -165,7 +165,7 @@ fn valid_index(index: &Value) -> bool {
     index.is_object()
 }
 
-fn index_is_fresh(index: &Value) -> bool {
+pub(crate) fn index_is_fresh(index: &Value) -> bool {
     if !valid_index(index) {
         return false;
     }

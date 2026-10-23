@@ -17,6 +17,8 @@ const MAX_BYTES: u64 = 2 * 1024 * 1024;
 const TAIL_BYTES: u64 = 128 * 1024;
 static SINK: OnceLock<Mutex<LogFile>> = OnceLock::new();
 static DEBUG: AtomicBool = AtomicBool::new(false);
+#[cfg(test)]
+static TEST_EVENTS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 static REDACTIONS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     [
         r"(?i)([?&]y=)[^&#\s]+",
@@ -117,9 +119,9 @@ impl LogFile {
     }
 }
 
-pub fn install(env: &Env) {
-    if SINK.get().is_some() {
-        return;
+pub fn install(env: &Env) -> Option<PathBuf> {
+    if let Some(sink) = SINK.get() {
+        return sink.lock().ok().map(|sink| sink.path.clone());
     }
     let directory = [
         &env.plugin_log_dir,
@@ -127,13 +129,18 @@ pub fn install(env: &Env) {
         &env.plugin_settings_dir,
     ]
     .into_iter()
-    .find(|path| !path.as_os_str().is_empty());
-    if let Some(directory) = directory {
-        match LogFile::open(directory.join("decky-metadata.log")) {
-            Ok(sink) => {
-                let _ = SINK.set(Mutex::new(sink));
-            }
-            Err(error) => log::error!("[decky:load] file logging unavailable: {error}"),
+    .find(|path| !path.as_os_str().is_empty())?;
+    let path = directory.join("decky-metadata.log");
+    match LogFile::open(path.clone()) {
+        Ok(sink) => {
+            let _ = SINK.set(Mutex::new(sink));
+            SINK.get()
+                .and_then(|sink| sink.lock().ok().map(|sink| sink.path.clone()))
+                .or(Some(path))
+        }
+        Err(error) => {
+            log::error!("[decky:load] file logging unavailable: {error}");
+            None
         }
     }
 }
@@ -155,20 +162,20 @@ pub fn event(area: &str, message: &str, fields: Value, level: Level) {
     if let Some(fields) = fields.as_object() {
         use std::fmt::Write;
         for (key, value) in fields {
-            let value = if crate::matching::py_truthy(value) {
-                crate::matching::py_string(value)
-            } else {
-                String::new()
-            };
+            let value = crate::matching::py_string(value);
             let _ = write!(text, " {key}={}", repr(&redact(&value)));
         }
     }
     let text = redact(&text);
+    #[cfg(test)]
+    if let Ok(mut events) = TEST_EVENTS.lock() {
+        events.push(format!("{} {text}", level_name(level)));
+    }
     if let Some(sink) = SINK.get() {
         let formatted = format!(
             "{} {} {}\n",
             chrono::Local::now().format("%Y-%m-%d %H:%M:%S,%3f"),
-            level,
+            level_name(level),
             text
         );
         if let Ok(mut sink) = sink.lock() {
@@ -178,6 +185,24 @@ pub fn event(area: &str, message: &str, fields: Value, level: Level) {
         }
     }
     log::log!(level, "{text}");
+}
+
+fn level_name(level: Level) -> &'static str {
+    match level {
+        Level::Error => "ERROR",
+        Level::Warn => "WARNING",
+        Level::Info => "INFO",
+        Level::Debug => "DEBUG",
+        Level::Trace => "TRACE",
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn test_events() -> Vec<String> {
+    TEST_EVENTS
+        .lock()
+        .map(|events| events.clone())
+        .unwrap_or_default()
 }
 
 pub async fn read_tail(path: &Path) -> String {
@@ -203,21 +228,13 @@ pub async fn read_tail(path: &Path) -> String {
     result.unwrap_or_default()
 }
 
-pub fn log_path(env: &Env) -> PathBuf {
-    [
-        &env.plugin_log_dir,
-        &env.plugin_runtime_dir,
-        &env.plugin_settings_dir,
-    ]
-    .into_iter()
-    .find(|path| !path.as_os_str().is_empty())
-    .map(|path| path.join("decky-metadata.log"))
-    .unwrap_or_default()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn warning_level_uses_python_name() {
+        assert_eq!(level_name(Level::Warn), "WARNING");
+    }
     static ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     fn directory() -> PathBuf {
         let root = std::env::var_os("TMPDIR")

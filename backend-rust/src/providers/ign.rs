@@ -354,8 +354,19 @@ pub fn infer_store_categories(text: &str) -> Vec<i64> {
     categories
 }
 
+fn ign_integer(value: &Value) -> Result<i64, String> {
+    let number = matching::as_number(value, 0.0);
+    if number.is_nan() {
+        return Err("cannot convert float NaN to integer".into());
+    }
+    if number.is_infinite() {
+        return Err("cannot convert float infinity to integer".into());
+    }
+    Ok(number.trunc() as i64)
+}
+
 /// Convert published, landscape IGN images to screenshot records.
-pub fn ign_images_to_screenshots(game: &Value) -> Vec<Value> {
+pub fn ign_images_to_screenshots(game: &Value) -> Result<Vec<Value>, String> {
     let primary_id = truthy_string(&game["primaryImage"]["id"]);
     let mut images = Vec::new();
     for edge in array(&game["images"]["edges"]).iter().take(30) {
@@ -368,8 +379,8 @@ pub fn ign_images_to_screenshots(game: &Value) -> Vec<Value> {
         if url.is_empty() {
             continue;
         }
-        let width = matching::as_number(&node["width"], 0.0).trunc() as i64;
-        let height = matching::as_number(&node["height"], 0.0).trunc() as i64;
+        let width = ign_integer(&node["width"])?;
+        let height = ign_integer(&node["height"])?;
         if matching::py_truthy(&node["state"])
             && casefold(&matching::py_string(&node["state"])) != "published"
         {
@@ -400,11 +411,11 @@ pub fn ign_images_to_screenshots(game: &Value) -> Vec<Value> {
             break;
         }
     }
-    images
+    Ok(images)
 }
 
 /// Map one IGN GraphQL game object into the provider's metadata shape.
-pub fn game_to_metadata(game: &Value) -> Value {
+pub fn game_to_metadata(game: &Value) -> Result<Value, String> {
     let metadata = &game["metadata"];
     let names = &metadata["names"];
     let descriptions = &metadata["descriptions"];
@@ -442,7 +453,8 @@ pub fn game_to_metadata(game: &Value) -> Value {
         features.join(" "),
     ]
     .join(" ");
-    json!({
+    let screenshots = ign_images_to_screenshots(game)?;
+    Ok(json!({
         "title": title,
         "id": truthy(game.get("id").unwrap_or(&Value::Null), truthy(game.get("slug").unwrap_or(&Value::Null), &Value::String(matching::py_string(title)))),
         "source": "IGN",
@@ -456,48 +468,9 @@ pub fn game_to_metadata(game: &Value) -> Value {
         "store_categories": infer_store_categories(&category_text),
         "genres": genres,
         "features": features,
-        "screenshots": ign_images_to_screenshots(game),
+        "screenshots": screenshots,
         "platforms": ign_platforms(game),
-    })
-}
-
-fn parse_python_integer(value: &str) -> Option<i128> {
-    let bytes = value.trim().as_bytes();
-    let mut index = 0;
-    let negative = match bytes.first() {
-        Some(b'+') => {
-            index = 1;
-            false
-        }
-        Some(b'-') => {
-            index = 1;
-            true
-        }
-        _ => false,
-    };
-    let mut number = 0_i128;
-    let mut digits = false;
-    let mut previous_digit = false;
-    while index < bytes.len() {
-        match bytes[index] {
-            digit @ b'0'..=b'9' => {
-                number = number
-                    .saturating_mul(10)
-                    .saturating_add(i128::from(digit - b'0'));
-                digits = true;
-                previous_digit = true;
-            }
-            b'_' if previous_digit && bytes.get(index + 1).is_some_and(u8::is_ascii_digit) => {
-                previous_digit = false;
-            }
-            _ => return None,
-        }
-        index += 1;
-    }
-    if !digits || !previous_digit {
-        return None;
-    }
-    Some(if negative { -number } else { number })
+    }))
 }
 
 fn search_count(value: &Value) -> Result<i64, String> {
@@ -525,8 +498,16 @@ fn search_count(value: &Value) -> Result<i64, String> {
                 return Err("invalid IGN search limit".into());
             }
         }
-        Value::String(value) => parse_python_integer(value)
-            .map(|number| number.clamp(i64::MIN as i128, i64::MAX as i128) as i64)
+        Value::String(value) => matching::integer_string(value)
+            .map(|number| {
+                number.parse::<i64>().unwrap_or_else(|_| {
+                    if number.starts_with('-') {
+                        i64::MIN
+                    } else {
+                        i64::MAX
+                    }
+                })
+            })
             .ok_or_else(|| "invalid IGN search limit".to_owned())?,
         _ => return Err("invalid IGN search limit".into()),
     };
@@ -608,8 +589,25 @@ pub async fn search_metadata(
         json!({"name": cleaned, "count": count, "type": "Game"}),
     )
     .await?;
+    let data = match payload.get("data") {
+        None => return Ok(Vec::new()),
+        Some(data) => data
+            .as_object()
+            .ok_or_else(|| "IGN GraphQL data is not an object".to_owned())?,
+    };
+    let search = match data.get("searchObjectsByName") {
+        None => return Ok(Vec::new()),
+        Some(search) => search
+            .as_object()
+            .ok_or_else(|| "IGN searchObjectsByName is not an object".to_owned())?,
+    };
+    let edges = match search.get("edges") {
+        None => return Ok(Vec::new()),
+        Some(Value::Array(edges)) => edges,
+        Some(_) => return Err("IGN search edges is not an array".into()),
+    };
     let mut results = Vec::new();
-    for edge in array(&payload["data"]["searchObjectsByName"]["edges"]) {
+    for edge in edges {
         let node = &edge["node"];
         let names = &node["metadata"]["names"];
         let title = truthy(
@@ -675,7 +673,10 @@ pub async fn fetch_metadata(http: &Http, slug_or_url: &str) -> Result<Option<Val
     "#;
     let payload = graphql(http, gql, variables).await?;
     let game = &payload["data"]["objectSelectByTypeAndSlug"];
-    Ok(game.as_object().map(|_| game_to_metadata(game)))
+    match game.as_object() {
+        Some(_) => Ok(Some(game_to_metadata(game)?)),
+        None => Ok(None),
+    }
 }
 
 /// Fetch a game's page and validate its identity before using any trailer listings.
@@ -729,8 +730,8 @@ fn consider_metadata(
     fallback: &mut Option<Value>,
 ) -> Option<Value> {
     let metadata = metadata?;
-    let candidate_title = metadata["title"].as_str().unwrap_or("");
-    if !matching::ign_title_acceptable(query, candidate_title) {
+    let candidate_title = matching::clean_game_title(metadata["title"].as_str().unwrap_or(""));
+    if !matching::ign_title_acceptable(query, &candidate_title) {
         return None;
     }
     let platforms = metadata["platforms"].as_array();
@@ -1702,10 +1703,39 @@ mod tests {
         );
         assert_eq!(search_count(&json!("1_0")).unwrap(), 10);
         assert_eq!(search_count(&json!("900719925474099312345")).unwrap(), 12);
+        assert_eq!(search_count(&json!("0_3")).unwrap(), 3);
+        assert_eq!(search_count(&json!("１２")).unwrap(), 12);
         assert_eq!(
             search_count(&json!("not a number")).unwrap_err(),
             "invalid IGN search limit"
         );
+    }
+    #[tokio::test]
+    async fn ign_search_rejects_present_non_object_response_containers() {
+        let http = Http::fixtures(vec![
+            graphql_json(json!({"data": null})),
+            graphql_json(json!({"data": {"searchObjectsByName": null}})),
+            graphql_json(json!({"data": {"searchObjectsByName": {"edges": null}}})),
+        ]);
+        for _ in 0..3 {
+            assert!(
+                search_metadata(&http, &json!("Game"), &json!(8))
+                    .await
+                    .is_err()
+            );
+        }
+        http.assert_drained();
+    }
+
+    #[test]
+    fn ign_auto_fetch_validates_the_cleaned_candidate_title() {
+        let candidate = json!({"title": "Portal &#50;", "platforms": ["windows-pc"]});
+        let mut fallback = None;
+        assert_eq!(
+            consider_metadata("Portal 2", Some(candidate.clone()), &mut fallback),
+            Some(candidate)
+        );
+        assert!(fallback.is_none());
     }
 
     #[tokio::test]
@@ -1809,7 +1839,7 @@ mod tests {
             result["developers"],
             json!([{"name": "Studio", "url": "https://www.ign.com/games/producer/studio"}])
         );
-        let empty = game_to_metadata(&json!({}));
+        let empty = game_to_metadata(&json!({})).unwrap();
         assert_eq!(empty["title"], "");
         assert_eq!(empty["id"], "");
         assert!(
@@ -1824,22 +1854,37 @@ mod tests {
     fn ign_metadata_mapping_uses_cleaned_description_fallbacks_and_short_text_categories() {
         let fallback = game_to_metadata(&json!({
             "metadata": {"names": {"name": "Game"}, "descriptions": {"short": "<br>", "long": "<div>Fallback</div>"}}
-        }));
+        }))
+        .unwrap();
         assert_eq!(fallback["description"], "Fallback");
         let empty = game_to_metadata(&json!({
             "metadata": {"names": {"name": "Game"}, "descriptions": {"short": "<p></p>", "long": "<div></div>"}}
-        }));
+        }))
+        .unwrap();
         assert_eq!(empty["description"], "");
         let short_only = game_to_metadata(&json!({
             "metadata": {"names": {"name": "Game"}, "descriptions": {"short": "A multiplayer co-op game"}},
             "producers": [{"name": " Studio ", "slug": " studio "}]
-        }));
+        }))
+        .unwrap();
         assert_eq!(short_only["description"], "A multiplayer co-op game");
         assert_eq!(short_only["store_categories"], json!([1, 36, 9, 38]));
         assert_eq!(
             short_only["developers"],
             json!([{"name": "Studio", "url": "https://www.ign.com/games/producer/studio"}])
         );
+        for (width, error) in [
+            ("NaN", "cannot convert float NaN to integer"),
+            ("inf", "cannot convert float infinity to integer"),
+        ] {
+            assert_eq!(
+                game_to_metadata(&json!({
+                    "images": {"edges": [{"node": {"url": "https://example.com/a.jpg", "width": width}}]}
+                }))
+                .unwrap_err(),
+                error
+            );
+        }
     }
 
     #[tokio::test]

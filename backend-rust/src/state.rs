@@ -40,7 +40,15 @@ impl AppState {
     }
 
     pub async fn initialize(&self) -> Result<(), String> {
-        logging::install(&self.env);
+        let log_path = logging::install(&self.env)
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "unavailable".to_owned());
+        logging::event(
+            "load",
+            "file logging enabled",
+            json!({"path":log_path}),
+            log::Level::Info,
+        );
         logging::event(
             "load",
             "backend startup begin",
@@ -52,6 +60,7 @@ impl AppState {
         }
         let cached = read_cached_index(&self.env.plugin_settings_dir).await;
         let mut storage = Storage::open(self.env.plugin_settings_dir.clone()).await?;
+        let loaded = storage.loaded_successfully();
         storage
             .normalize_loaded_store_states(cached.as_deref())
             .await;
@@ -62,8 +71,88 @@ impl AppState {
         self.storage
             .set(Mutex::new(storage))
             .map_err(|_| "backend initialized twice".to_owned())?;
-        self.reconcile_update_state().await?;
+        if loaded {
+            self.reconcile_update_state().await?;
+        }
+        let capabilities = tokio::task::spawn_blocking(platform_capabilities)
+            .await
+            .map_err(|error| error.to_string())?;
+        logging::event(
+            "platform",
+            "capabilities loaded",
+            capabilities,
+            log::Level::Info,
+        );
         logging::event("load", "backend ready", Value::Null, log::Level::Info);
+        Ok(())
+    }
+    async fn reconcile_update_state(&self) -> Result<(), String> {
+        let mut snapshot = self.updater_snapshot().await?;
+        let pending = snapshot
+            .cache
+            .get("pending_update_install")
+            .filter(|pending| matching::py_truthy(pending))
+            .cloned();
+        let (message, level) = match pending {
+            None => (
+                "Startup reconciliation: No pending update found".to_owned(),
+                log::Level::Info,
+            ),
+            Some(pending) => {
+                let version = pending.get("version").cloned().unwrap_or(Value::Null);
+                let version_text = matching::py_string(&version);
+                if version.as_str().is_some_and(|version| {
+                    !version.is_empty()
+                        && crate::updater::pending::pending_install_matches_loaded_version(
+                            version,
+                            &self.env.plugin_version,
+                        )
+                }) {
+                    let tag = pending.get("tag").cloned().unwrap_or(Value::Null);
+                    (
+                        format!(
+                            "Startup reconciliation: Pending update promoted (version={version_text}, tag={})",
+                            matching::py_string(&tag)
+                        ),
+                        log::Level::Info,
+                    )
+                } else if crate::updater::pending::is_fresh_pending_install(
+                    &pending,
+                    chrono::Utc::now(),
+                ) {
+                    (
+                        format!(
+                            "Startup reconciliation: Pending update retained during reload grace window (pending={version_text}, loaded={})",
+                            self.env.plugin_version
+                        ),
+                        log::Level::Info,
+                    )
+                } else {
+                    (
+                        format!(
+                            "Startup reconciliation: Pending update cleared due to version mismatch (pending={version_text}, loaded={})",
+                            self.env.plugin_version
+                        ),
+                        log::Level::Warn,
+                    )
+                }
+            }
+        };
+        logging::event("update", &message, Value::Null, level);
+        if snapshot.backend.reconcile_pending_install()? {
+            let settings = snapshot.backend.settings_payload();
+            let cache = snapshot.backend.cache_payload();
+            self.change(|transaction| {
+                merge_updater_fields(
+                    transaction,
+                    "update_settings",
+                    &snapshot.settings,
+                    &settings,
+                )?;
+                merge_updater_fields(transaction, "update_check_cache", &snapshot.cache, &cache)
+            })
+            .await?;
+        }
         Ok(())
     }
 
@@ -109,12 +198,9 @@ impl AppState {
             return None;
         }
         if !force
-            && current.as_ref().is_some_and(|index| {
-                let fetched = matching::safe_int(&index["fetched_at"]).unwrap_or(0);
-                fetched != 0
-                    && chrono::Utc::now().timestamp() - fetched
-                        < crate::providers::delisted::DELISTED_INDEX_TTL_SECONDS
-            })
+            && current
+                .as_ref()
+                .is_some_and(|index| crate::providers::delisted::index_is_fresh(index))
         {
             return current;
         }
@@ -259,24 +345,6 @@ impl AppState {
         }
     }
 
-    async fn reconcile_update_state(&self) -> Result<(), String> {
-        let mut snapshot = self.updater_snapshot().await?;
-        if snapshot.backend.reconcile_pending_install()? {
-            let settings = snapshot.backend.settings_payload();
-            let cache = snapshot.backend.cache_payload();
-            self.change(|transaction| {
-                merge_updater_fields(
-                    transaction,
-                    "update_settings",
-                    &snapshot.settings,
-                    &settings,
-                )?;
-                merge_updater_fields(transaction, "update_check_cache", &snapshot.cache, &cache)
-            })
-            .await?;
-        }
-        Ok(())
-    }
 
     pub async fn updater_call(&self, method: &str, args: &[Value]) -> Result<Value, String> {
         if method == "get_update_settings" {
@@ -474,7 +542,7 @@ pub fn shortcut_json(shortcut: &Shortcut) -> Value {
     json!({"name":shortcut.name,"exe":shortcut.exe,"exe_raw":shortcut.exe_raw,"start_dir":shortcut.start_dir,
         "launch_options":shortcut.launch_options,"shortcut_path":shortcut.shortcut_path,"icon":shortcut.icon,
         "appid":shortcut.app_id,"appid_raw":shortcut.appid_raw.as_ref().map(vdf_json),"app_id":shortcut.app_id,
-        "source":"steam_shortcuts_vdf","steam_user_id":shortcut.steam_user_id,"shortcut_file":shortcut.shortcut_file,
+        "source":"steam_shortcuts_vdf","steam_user_id":shortcut.steam_user_id,"shortcut_file":shortcut.shortcut_file.to_string_lossy(),
         "isNonSteam":true})
 }
 
@@ -682,6 +750,61 @@ mod tests {
             before
         );
         assert_eq!(tokio::fs::read(file).await.unwrap(), persisted);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+    #[test]
+    fn shortcut_json_lossily_serializes_non_utf8_file_paths() {
+        use std::os::unix::ffi::OsStringExt;
+
+        let shortcut = Shortcut {
+            name: "Game".into(),
+            exe: "game.exe".into(),
+            exe_raw: "game.exe".into(),
+            start_dir: String::new(),
+            launch_options: String::new(),
+            shortcut_path: String::new(),
+            icon: String::new(),
+            appid_raw: None,
+            app_id: 42,
+            source: "steam_shortcuts_vdf",
+            steam_user_id: "1".into(),
+            shortcut_file: std::path::PathBuf::from(std::ffi::OsString::from_vec(vec![0xff])),
+        };
+        assert_eq!(shortcut_json(&shortcut)["shortcut_file"], "�");
+    }
+
+    #[tokio::test]
+    async fn startup_logs_match_baseline_events_and_levels() {
+        let (_root, state) = TestRoot::state(Http::fixtures(vec![])).await;
+        let events = crate::logging::test_events();
+        let expected = [
+            "INFO [decky:load] file logging enabled path=",
+            "INFO [decky:load] backend startup begin",
+            "INFO [decky:update] Startup reconciliation: No pending update found",
+            "INFO [decky:platform] capabilities loaded",
+            "INFO [decky:load] backend ready",
+        ];
+        let mut previous = 0;
+        for expected in expected {
+            let position = events
+                .iter()
+                .position(|event| event.contains(expected))
+                .unwrap_or_else(|| panic!("missing startup event: {expected}"));
+            assert!(position >= previous);
+            previous = position;
+        }
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn minimum_delisted_timestamp_is_stale_without_overflow() {
+        let (_root, state) = TestRoot::state(Http::fixtures(vec![])).await;
+        let index = json!({"fetched_at":i64::MIN,"apps":[]});
+        *state.delisted.lock().await = Some(Arc::new(index.clone()));
+
+        assert_eq!(*state.ensure_delisted_index(false).await.unwrap(), index);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }
