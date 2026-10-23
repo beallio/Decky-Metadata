@@ -453,7 +453,7 @@ def test_loader_readiness_uses_http_and_frontend_calls_without_loader_websocket(
     class FakeCdp:
         def evaluate(self, _target: str, expression: str, *, timeout: float):
             expressions.append(expression)
-            if "Date.now()" in expression:
+            if "const started=" in expression:
                 return {"value": 1_798_000_000_000}
             return {"value": "1.2.3"}
 

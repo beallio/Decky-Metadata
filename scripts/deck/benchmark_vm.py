@@ -1645,11 +1645,18 @@ def _loader_frontend_request(
     call = "window.DeckyBackend.call(" + ", ".join(
         [json.dumps(route), *(json.dumps(argument) for argument in args)]
     ) + ")"
+    # The Loader frontend can still be injecting right after a service start.
+    ready = (
+        "const until=Date.now()+120000;"
+        "while(typeof window.DeckyBackend?.call!=='function'){"
+        "if(Date.now()>until)throw new Error('Loader frontend transport is unavailable');"
+        "await new Promise(resolve=>setTimeout(resolve,50));}"
+    )
     if record_start:
-        expression = f"(async()=>{{const started=Date.now();await {call};return started;}})()"
+        expression = f"(async()=>{{{ready}const started=Date.now();await {call};return started;}})()"
     else:
-        expression = f"(async()=>await {call})()"
-    return _cdp_eval(expression, timeout=timeout)
+        expression = f"(async()=>{{{ready}return await {call};}})()"
+    return _cdp_eval(expression, timeout=timeout + 120)
 
 
 def _loader_process_identities(group: str, executable: Path) -> list[dict[str, Any]]:
