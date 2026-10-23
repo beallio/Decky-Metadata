@@ -7236,11 +7236,7 @@ const NAVIGATION_TRACE_METHOD_PATTERN = /store|community|hub|forum|discuss|guide
 const NAVIGATION_TRACE_CLICK_PATTERN = /store|community|hub|discuss|guide|market|support/i;
 const truncateTraceValue = (value, limit = 80) => {
     const normalized = String(value || "").replace(/\s+/g, " ").trim();
-    if (normalized.length <= limit)
-        return normalized;
-    const end = Math.max(0, limit - 3);
-    const truncated = normalized.slice(0, end);
-    return `${/[\uD800-\uDBFF]$/.test(truncated) ? truncated.slice(0, -1) : truncated}...`;
+    return normalized.length > limit ? `${normalized.slice(0, Math.max(0, limit - 3))}...` : normalized;
 };
 const safeStringifyTrace = (value, max = 500) => {
     try {
