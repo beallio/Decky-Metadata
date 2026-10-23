@@ -153,7 +153,7 @@ def test_conditional_file_undo_preserves_independent_change(tmp_path: Path):
 
 
 def _service_snapshot(scope: str, unit: str, active: bool) -> dict[str, Any]:
-    return {"scope": scope, "unit": unit, "active": active}
+    return {"scope": scope, "unit": unit, "active": active, "active_state": "active" if active else "inactive"}
 
 
 @pytest.mark.parametrize("original_scope", ["system", "user"])
@@ -193,13 +193,17 @@ def test_original_loader_and_cef_activation_are_restored_without_touching_other_
             "user": _service_snapshot("user", vm.USER_LOADER_UNIT, original_scope == "user"),
         },
         "cef_forwarder": _service_snapshot("system", vm.CEF_FORWARDER_UNIT, cef_active),
+        "cef_forwarder_socket": _service_snapshot("system", vm.CEF_FORWARDER_SOCKET, False),
     }
     unit = vm.UPSTREAM_SYSTEM_UNIT if original_scope == "system" else vm.USER_LOADER_UNIT
     ledger = {
         "user_name": "deck", "snapshot": snapshot, "ledger_path": str(tmp_path / "ledger.json"),
         "undo_entries": [{"kind": "normal_unit", "scope": original_scope, "unit": unit, "was_active": True, "state": "pending"}],
     }
-    monkeypatch.setattr(vm, "_known_unit_snapshot", lambda scope, _unit, _account: snapshot["units"][scope])
+    service_snapshots = {(scope, item["unit"]): item for scope, item in snapshot["units"].items()}
+    service_snapshots[("system", vm.CEF_FORWARDER_UNIT)] = snapshot["cef_forwarder"]
+    service_snapshots[("system", vm.CEF_FORWARDER_SOCKET)] = snapshot["cef_forwarder_socket"]
+    monkeypatch.setattr(vm, "_known_unit_snapshot", lambda scope, unit, _account: service_snapshots[(scope, unit)])
     monkeypatch.setattr(vm, "_mutate_ledger", lambda _path, change: change(ledger) or ledger)
     conflicts: list[str] = []
 
@@ -233,16 +237,18 @@ def test_service_recovery_preserves_unrelated_activation_changes(monkeypatch: py
             "user": _service_snapshot("user", vm.USER_LOADER_UNIT, False),
         },
         "cef_forwarder": _service_snapshot("system", vm.CEF_FORWARDER_UNIT, True),
+        "cef_forwarder_socket": _service_snapshot("system", vm.CEF_FORWARDER_SOCKET, False),
     }
     conflicts: list[str] = []
 
+    monkeypatch.setattr(vm, "_known_unit_snapshot", lambda _scope, unit, _account: {**snapshot["cef_forwarder" if unit == vm.CEF_FORWARDER_UNIT else "cef_forwarder_socket"], "active": False, "active_state": "inactive"})
     vm._restart_original_services({"user_name": "deck", "snapshot": snapshot}, conflicts)
 
     assert states[("user", vm.USER_LOADER_UNIT)] is True
     assert states[("system", vm.CEF_FORWARDER_UNIT)] is False
     assert calls == []
     assert "normal_loader:user:unexpectedly_active" in conflicts
-    assert "cef_forwarder:activation_changed" in conflicts
+    assert "cef_forwarder:activation_or_selection_changed" in conflicts
 
 
 def test_pid_starttime_reuse_is_not_treated_as_the_captured_process(monkeypatch: pytest.MonkeyPatch):
@@ -456,7 +462,7 @@ def test_recovery_does_not_hold_ledger_lock_during_slow_undo(monkeypatch: pytest
     monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_uid=1000, pw_name="deck"))
     monkeypatch.setattr(vm, "_verified_user_bus", lambda _account: {"XDG_RUNTIME_DIR": "/run/user/1000"})
 
-    def slow_undo(_ledger, _path, _conflicts):
+    def slow_undo(_ledger, _path, _conflicts, *, only_kind=None):
         entered_slow_undo.set()
         assert release_slow_undo.wait(2)
 
@@ -524,6 +530,7 @@ def test_recovery_does_not_restart_a_service_stopped_by_the_user(monkeypatch: py
             "user": _service_snapshot("user", vm.USER_LOADER_UNIT, True),
         },
         "cef_forwarder": _service_snapshot("system", vm.CEF_FORWARDER_UNIT, False),
+        "cef_forwarder_socket": _service_snapshot("system", vm.CEF_FORWARDER_SOCKET, False),
     }
     monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_name="deck"))
     monkeypatch.setattr(vm, "_systemd_unit_active", lambda scope, _unit, _account: states[scope])
@@ -535,6 +542,7 @@ def test_recovery_does_not_restart_a_service_stopped_by_the_user(monkeypatch: py
 
     monkeypatch.setattr(vm, "_system_command", lambda args, **_kwargs: change_activation("system", args))
     monkeypatch.setattr(vm, "_user_command", lambda _account, args, **_kwargs: change_activation("user", args))
+    monkeypatch.setattr(vm, "_known_unit_snapshot", lambda _scope, unit, _account: snapshot["cef_forwarder" if unit == vm.CEF_FORWARDER_UNIT else "cef_forwarder_socket"])
     conflicts: list[str] = []
     result = vm._restart_original_services({"user_name": "deck", "snapshot": snapshot, "undo_entries": []}, conflicts)
     assert states == {"system": False, "user": False}
@@ -758,3 +766,78 @@ def test_old_collector_exit_cannot_overwrite_the_next_trial(monkeypatch: pytest.
     assert vm._collector_loop(tmp_path / "ledger.json") == 0
     assert current["collector"]["state"] == "running"
     assert current["collector"]["exit_status"] is None and current["collector"]["exit_error"] is None
+
+
+def _shortcut_fixture_entry(app_id: int | None = 3000000000) -> dict[str, Any]:
+    return {
+        "app_id": app_id, "original_ids": [2500000000],
+        "name": "Metadata-Rust-listed-0123456789abcdef",
+        "exe": "/var/tmp/run/native-fixtures/Metadata-Rust-listed-0123456789abcdef",
+    }
+
+
+def _shortcut_fixture_row(**changes: Any) -> dict[str, Any]:
+    entry = _shortcut_fixture_entry()
+    return {
+        "app_id": entry["app_id"], "name": entry["name"], "launch_options": "",
+        "exe": '"' + entry["exe"] + '"', "start_dir": "/var/tmp/run/native-fixtures/", "running": False,
+        **changes,
+    }
+
+
+@pytest.mark.parametrize("app_id", [None, 3000000000])
+def test_temporary_shortcut_cleanup_waits_for_creation_publication(app_id):
+    entry = _shortcut_fixture_entry(app_id)
+    row = _shortcut_fixture_row()
+    assert vm._fixture_removal_target(entry, []) == ("pending", None)
+    assert vm._fixture_removal_target(entry, [row]) == ("remove", row)
+
+
+@pytest.mark.parametrize("change", [
+    {"name": "User kept this shortcut"}, {"exe": "/usr/bin/other"},
+    {"start_dir": "/home/deck"}, {"launch_options": "--user-options"},
+    {"running": True},
+])
+def test_temporary_shortcut_cleanup_preserves_independent_changes(change):
+    assert vm._fixture_removal_target(_shortcut_fixture_entry(), [_shortcut_fixture_row(**change)]) == ("conflict", None)
+
+
+def test_temporary_shortcut_cleanup_never_selects_preexisting_or_ambiguous_entries():
+    entry = _shortcut_fixture_entry(None)
+    original = _shortcut_fixture_row(app_id=2500000000)
+    unrelated = _shortcut_fixture_row(app_id=3100000000, name="User shortcut", exe="/usr/bin/other")
+    assert vm._fixture_removal_target(entry, [original]) == ("pending", None)
+    assert vm._fixture_removal_target(entry, [unrelated]) == ("conflict", None)
+    assert vm._fixture_removal_target(entry, [_shortcut_fixture_row(), _shortcut_fixture_row(app_id=3100000000)]) == ("conflict", None)
+
+
+@pytest.mark.parametrize("app_id", [None, 3000000000])
+def test_unpublished_shortcut_never_counts_as_successful_recovery(monkeypatch, app_id):
+    monkeypatch.setattr(vm, "_native_fixture_rows", lambda: [])
+    monkeypatch.setattr(vm, "_wait_until", lambda predicate, *_: predicate())
+    assert vm._remove_shortcut_fixture(_shortcut_fixture_entry(app_id)) == "failed"
+
+
+@pytest.mark.parametrize("before,after", [(False, True), (True, False)])
+def test_cef_proxy_activity_can_change_under_unchanged_active_socket(before, after):
+    saved = _service_snapshot("system", vm.CEF_FORWARDER_UNIT, before)
+    current = _service_snapshot("system", vm.CEF_FORWARDER_UNIT, after)
+    socket = _service_snapshot("system", vm.CEF_FORWARDER_SOCKET, True)
+    assert vm._cef_recovery_matches(saved, current, socket, socket) == (True, True)
+
+
+@pytest.mark.parametrize("change", ["activation", "definition", "proxy_failure", "proxy_definition"])
+def test_cef_policy_recovery_rejects_independent_changes(change):
+    saved = _service_snapshot("system", vm.CEF_FORWARDER_UNIT, False)
+    current = _service_snapshot("system", vm.CEF_FORWARDER_UNIT, True)
+    socket = _service_snapshot("system", vm.CEF_FORWARDER_SOCKET, True)
+    current_socket = dict(socket)
+    if change == "activation":
+        current_socket.update(active=False, active_state="inactive")
+    elif change == "definition":
+        current_socket["fragment_sha256"] = "a" * 64
+    elif change == "proxy_failure":
+        current.update(active=False, active_state="failed")
+    else:
+        current["fragment_sha256"] = "a" * 64
+    assert vm._cef_recovery_matches(saved, current, socket, current_socket)[1] is False

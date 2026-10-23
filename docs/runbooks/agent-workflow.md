@@ -153,6 +153,26 @@ check. Send `finish` on standard input only after the arm's checks are complete.
 Timed mode requires `--verification-record` with all three arms and their exact
 artifact hashes; see the script's validation contract for the record fields.
 
+Native Library shortcuts may come from another computer and have no local VDF
+entry. Check `get_local_shortcuts` and name-management eligibility before a name
+test. With explicit approval, the printed remote helper's `shortcuts` command
+(with `{}` on stdin and the run's `--ledger`) creates three marked local test
+shortcuts. It copies `/usr/bin/true` into the private run directory, uses Steam's
+own shortcut preview, and records undo before each creation. Never launch them.
+The helper backs up local shortcut files but never restores a whole live VDF.
+Recovery removes only unchanged task entries; an unpublished or ambiguous
+creation remains unresolved instead of being reported as removed.
+
+Take another VDF backup before the name test, then register `name-undo` before
+using its visible controls. After closing QAM, focus the main Steam target with
+CDP `Page.bringToFront` before an editor screenshot. A background target can
+have a populated DOM while its screenshot is black.
+
+CEF forwarding checks preserve the socket's activation and unit definition.
+Its proxy process can start on a connection or exit when idle; that alone is
+not a restoration conflict. Scratch Loader settings follow the saved socket
+policy, and recovery does not start or stop the proxy to mimic a transient PID.
+
 Each dataset has five trials per arm. Browser RPC timers exclude response
 validation; throughput includes it. Startup measures authenticated backend
 readiness from a pre-primed Steam document, not a cold filesystem or a full
@@ -161,10 +181,11 @@ check before timing. Idle, warmup and workload windows use the VM's monotonic
 clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
 cgroup samples, and memory peaks are sampled peaks.
 
-Recovery drains scratch processes before it restores the original Loader.
-It resets Steam's browser clients before restoring normal RPC access, so queued
-test writes cannot replay against normal settings. Files, names and service
-selection are checked against the undo ledger; a later independent change is a
+Recovery first drains scratch processes and resets Steam's browser clients.
+It then undoes marked shortcut and name changes with a fresh native context,
+before restoring the original Loader and normal RPC access. Queued test writes
+cannot replay against normal settings.
+Files, names and service selection are checked against the undo ledger; a later independent change is a
 conflict, not permission to overwrite it. Keep raw results and recovery evidence
 outside the repository.
 

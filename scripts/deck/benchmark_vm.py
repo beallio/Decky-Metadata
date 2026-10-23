@@ -45,6 +45,8 @@ FORK_SOURCE_BASELINE = {
 UPSTREAM_SYSTEM_UNIT = "plugin_loader.service"
 USER_LOADER_UNIT = "plugin_loader.service"
 CEF_FORWARDER_UNIT = "steam-web-debug-portforward.service"
+CEF_FORWARDER_SOCKET = "steam-web-debug-portforward.socket"
+LEDGER_SCHEMA_VERSION = 2
 PLUGIN_NAME = "Decky Metadata"
 PLUGIN_DIR_NAME = "Decky-Metadata"
 DOWNLOAD_NAME = "Decky-Metadata.zip"
@@ -702,6 +704,23 @@ def _unit_definition_matches(current: Mapping[str, Any], saved: Mapping[str, Any
     current_command = re.split(r";\s*start_time=", current.get("exec_start", ""), maxsplit=1)[0].strip()
     saved_command = re.split(r";\s*start_time=", saved.get("exec_start", ""), maxsplit=1)[0].strip()
     return current_command == saved_command
+
+
+def _cef_recovery_matches(
+    saved_service: Mapping[str, Any], current_service: Mapping[str, Any],
+    saved_socket: Mapping[str, Any], current_socket: Mapping[str, Any],
+) -> tuple[bool, bool]:
+    socket_matches = (
+        _unit_definition_matches(current_socket, saved_socket)
+        and current_socket["active"] == saved_socket["active"]
+    )
+    service_matches = _unit_definition_matches(current_service, saved_service)
+    same_state = current_service["active_state"] == saved_service["active_state"]
+    # The socket proxy exits when idle and starts on connections; its policy lives in the socket.
+    transient = saved_socket["active"] and {
+        saved_service["active_state"], current_service["active_state"]
+    }.issubset({"active", "inactive"})
+    return socket_matches, socket_matches and service_matches and (same_state or transient)
 
 
 def _pause_original_services(ledger_path: Path, ledger: Mapping[str, Any]) -> None:
@@ -1387,8 +1406,10 @@ def _capture_ui() -> dict[str, Any]:
           if(!match)throw new Error("native Quick Access tab is ambiguous");
           const tab=Number(match[1]);
           if(!Number.isSafeInteger(tab))throw new Error("invalid native Quick Access tab");
-          const apps=Array.isArray(appStore.allApps)?appStore.allApps:Object.values(appStore.allApps);
-          const running=apps.filter(app=>app?.BIsRunning?.()===true).map(app=>Number(app.appid)).filter(Number.isSafeInteger).sort((a,b)=>a-b);
+          const live=globalThis.SteamUIStore?.RunningApps;
+          if(!Array.isArray(live))throw new Error("native running-app state is unavailable");
+          const running=live.map(app=>Number(app.appid)).sort((a,b)=>a-b);
+          if(running.some(id=>!Number.isSafeInteger(id)||id<=0||id>4294967295))throw new Error("native running-app identity is invalid");
           const route=location.pathname.replace(/^\/routes(?=\/)/,"")+location.search+location.hash;
           return {route,quickAccess:{available:true,open:!menu.hidden,tab},running_apps:running};
         })()"""
@@ -1463,7 +1484,16 @@ def _reset_steam_ui_context(account: pwd.struct_passwd) -> dict[str, Any]:
         _fail("old Steam browser clients did not stop")
     def ready() -> bool:
         try:
-            return _cdp_eval("document.readyState === 'complete'") is True
+            return _cdp_eval("""(()=>{
+                const apps=globalThis.appStore?.allApps;
+                const running=globalThis.SteamUIStore?.RunningApps;
+                const steamApps=globalThis.SteamClient?.Apps;
+                return document.readyState==="complete" && Array.isArray(apps) && apps.length>0
+                    && Array.isArray(running)
+                    && typeof steamApps?.RegisterForAppDetails==="function"
+                    && typeof steamApps?.RemoveShortcut==="function"
+                    && typeof steamApps?.SetShortcutName==="function";
+            })()""") is True
         except SafetyError:
             return False
     if not _wait_until(ready, 40, 0.2):
@@ -1531,7 +1561,7 @@ def _loader_version() -> str | None:
 
 
 def _validate_ledger(ledger: Any, requested: Path | None = None) -> dict[str, Any]:
-    if not isinstance(ledger, dict) or set(ledger) != LEDGER_KEYS or ledger.get("schema_version") != 1:
+    if not isinstance(ledger, dict) or set(ledger) != LEDGER_KEYS or ledger.get("schema_version") != LEDGER_SCHEMA_VERSION:
         _fail("undo ledger schema is invalid")
     if not is_plain_int(ledger.get("user_uid")) or ledger.get("user_uid") <= 0 or ledger.get("user_name") != "deck":
         _fail("undo ledger user identity is invalid")
@@ -1705,7 +1735,7 @@ def _validate_cgroup_identity(value: Any, scope: str, unit: str, uid: int, *, al
 
 
 def _validate_snapshot(snapshot: Mapping[str, Any], account: pwd.struct_passwd, normal: Path) -> None:
-    keys = {"units", "cef_forwarder", "normal_tree", "normal_service_files", "metadata_settings_relative", "ui", "running_apps", "metadata_identities"}
+    keys = {"units", "cef_forwarder", "cef_forwarder_socket", "normal_tree", "normal_service_files", "metadata_settings_relative", "ui", "running_apps", "metadata_identities"}
     exact_keys(snapshot, keys, context="normal-state snapshot")
     units = snapshot["units"]
     if not isinstance(units, dict) or set(units) != {"system", "user"}:
@@ -1723,9 +1753,9 @@ def _validate_snapshot(snapshot: Mapping[str, Any], account: pwd.struct_passwd, 
                 _fail(f"{label} service snapshot contains invalid text")
         if item["active"] != (item["active_state"] == "active"):
             _fail(f"{label} service activation snapshot is inconsistent")
-        if item["active"] and not item["exec_start"]:
+        if item["active"] and not item["exec_start"] and unit != CEF_FORWARDER_SOCKET:
             _fail(f"{label} active service has no captured runtime selection")
-        _validate_cgroup_identity(item["cgroup"], scope, unit, account.pw_uid, allow_empty=not item["active"])
+        _validate_cgroup_identity(item["cgroup"], scope, unit, account.pw_uid, allow_empty=not item["active"] or unit == CEF_FORWARDER_SOCKET)
         _validate_identity_list(item["identities"], item["cgroup"] or None)
         expected_pids = [{"pid": identity["pid"], "starttime": identity["starttime"]} for identity in item["identities"]]
         if item["pids"] != expected_pids:
@@ -1740,12 +1770,14 @@ def _validate_snapshot(snapshot: Mapping[str, Any], account: pwd.struct_passwd, 
         validate_service(units[scope], scope, unit, "Loader")
     cef = snapshot["cef_forwarder"]
     validate_service(cef, "system", CEF_FORWARDER_UNIT, "CEF")
+    validate_service(snapshot["cef_forwarder_socket"], "system", CEF_FORWARDER_SOCKET, "CEF socket")
     _validate_tree_snapshot(snapshot["normal_tree"])
     services = snapshot["normal_service_files"]
     allowed_services = {
         f"system:{UPSTREAM_SYSTEM_UNIT}": ("system", UPSTREAM_SYSTEM_UNIT),
         f"user:{USER_LOADER_UNIT}": ("user", USER_LOADER_UNIT),
         f"system:{CEF_FORWARDER_UNIT}": ("system", CEF_FORWARDER_UNIT),
+        f"system:{CEF_FORWARDER_SOCKET}": ("system", CEF_FORWARDER_SOCKET),
     }
     if not isinstance(services, dict) or not set(services).issubset(allowed_services):
         _fail("normal service file inventory is invalid")
@@ -1859,6 +1891,22 @@ def _validate_undo_entry(entry: Any, ledger: Mapping[str, Any], prefix: str) -> 
                 _fail("shortcut undo name state is invalid")
         if not entry["original_name"] or not entry["applied_name"] or entry["original_name"] == entry["applied_name"] or not is_plain_int(entry["intent_ns"]) or entry["intent_ns"] <= 0:
             _fail("shortcut undo intent is invalid")
+    elif entry["kind"] == "shortcut_fixture":
+        exact_keys(entry, {"kind", "state", "role", "name", "exe", "app_id", "original_ids", "intent_ns"}, context="temporary shortcut undo")
+        role = entry["role"]
+        if ledger.get("test_scope") or role not in {"listed", "delisted", "never"}:
+            _fail("temporary shortcut role is invalid")
+        name = f"Metadata-Rust-{role}-{prefix.rsplit('-', 1)[-1]}"
+        if entry["name"] != name or entry["exe"] != str(Path(ledger["run_root"]) / "native-fixtures" / name):
+            _fail("temporary shortcut ownership marker is invalid")
+        ids = entry["original_ids"]
+        if not isinstance(ids, list) or len(ids) > 4096 or any(not is_plain_int(value) or not 0 < value <= 0xFFFFFFFF for value in ids) or len(set(ids)) != len(ids):
+            _fail("temporary shortcut original identities are invalid")
+        app_id = entry["app_id"]
+        if app_id is not None and (not is_plain_int(app_id) or not 0 < app_id <= 0xFFFFFFFF or app_id in ids):
+            _fail("temporary shortcut identity is invalid")
+        if not is_plain_int(entry["intent_ns"]) or entry["intent_ns"] <= 0:
+            _fail("temporary shortcut intent is invalid")
     elif entry["kind"] == "temp_unit":
         exact_keys(entry, {"kind", "state", "unit", "scope", "arm", "cgroup", "identities", "intent_ns"}, context="temporary service undo")
         arm = entry["arm"]
@@ -2004,6 +2052,7 @@ def _new_ledger(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     system = _known_unit_snapshot("system", UPSTREAM_SYSTEM_UNIT, account)
     user = _known_unit_snapshot("user", USER_LOADER_UNIT, account)
     cef = _known_unit_snapshot("system", CEF_FORWARDER_UNIT, account)
+    cef_socket = _known_unit_snapshot("system", CEF_FORWARDER_SOCKET, account)
     active_loader = [item for item in (system, user) if item["active"]]
     if len(active_loader) != 1:
         _fail("capture requires exactly one active original Loader service")
@@ -2019,7 +2068,7 @@ def _new_ledger(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         _fail("Metadata settings source is outside normal homebrew")
     normal_tree = _sha_tree(normal_real)
     service_files = {}
-    for scope, service in (("system", system), ("user", user), ("system", cef)):
+    for scope, service in (("system", system), ("user", user), ("system", cef), ("system", cef_socket)):
         if service["fragment_path"] and service["fragment_sha256"]:
             service_files[f"{scope}:{service['unit']}"] = {"scope": scope, "unit": service["unit"], "path": service["fragment_path"], "sha256": service["fragment_sha256"]}
     _validate_private_dir(run_root / "undo", account.pw_uid)
@@ -2031,12 +2080,13 @@ def _new_ledger(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         loader_settings = _load_json_file(loader_settings_src)
     else:
         loader_settings = {}
-    loader_settings["cef_forward"] = bool(cef["active"])
+    loader_settings["cef_forward"] = bool(cef_socket["active"])
     loader_settings["pluginOrder"] = [PLUGIN_NAME]
     _atomic_write(scratch_real / "settings" / "loader.json", (json.dumps(loader_settings, ensure_ascii=False, indent=2) + "\n").encode(), mode=0o600, owner=(account.pw_uid, account.pw_gid), guard_root=run_root)
     snapshot = {
         "units": {"system": system, "user": user},
         "cef_forwarder": cef,
+        "cef_forwarder_socket": cef_socket,
         "normal_tree": normal_tree,
         "normal_service_files": service_files,
         "metadata_settings_relative": settings_dir.relative_to(normal_real).as_posix(),
@@ -2045,7 +2095,7 @@ def _new_ledger(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         "metadata_identities": active_loader[0]["identities"],
     }
     ledger: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": LEDGER_SCHEMA_VERSION,
         "run_id": run_id,
         "ledger_path": str(ledger_path),
         "run_root": str(run_root),
@@ -2260,7 +2310,7 @@ def _prepare(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         loader_settings = _load_json_file(normal_settings)
     else:
         loader_settings = {}
-    loader_settings["cef_forward"] = bool(ledger["snapshot"]["cef_forwarder"]["active"])
+    loader_settings["cef_forward"] = bool(ledger["snapshot"]["cef_forwarder_socket"]["active"])
     loader_settings["pluginOrder"] = [PLUGIN_NAME]
     target_settings = scratch / "settings" / "loader.json"
     require_contained(target_settings, run_root, label="scratch Loader settings")
@@ -3174,6 +3224,197 @@ def _downloads(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     return {"ok": True, "archive": choice, "path": str(target), "sha256": digest, "delivered": True}
 
 
+_SHORTCUT_FIXTURE_JS = r"""
+const fixtureApps = () => {
+  const all = globalThis.appStore?.allApps;
+  if (!Array.isArray(all) || !all.length) throw new Error("native library is not ready");
+  if (!Array.isArray(globalThis.SteamUIStore?.RunningApps)) throw new Error("native running-app state is unavailable");
+  return all.filter(a => Number(a.app_type) === 1073741824);
+};
+const fixtureDetails = async (id) => {
+  let subscription, timer;
+  try {
+    return await new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error("native shortcut details timed out")), 5000);
+      subscription = SteamClient.Apps.RegisterForAppDetails(id, data => {
+        const app = fixtureApps().find(a => Number(a.appid) === id);
+        if (!app) { resolve(null); return; }
+        if (Number(data?.unAppID) !== id ||
+            !["strShortcutExe", "strShortcutStartDir", "strShortcutLaunchOptions"].every(k => typeof data[k] === "string")) return;
+        resolve({
+          app_id: id, name: app.display_name, exe: data.strShortcutExe,
+          start_dir: data.strShortcutStartDir, launch_options: data.strShortcutLaunchOptions,
+          running: SteamUIStore.RunningApps.some(value => Number(value.appid) === id)
+        });
+      });
+    });
+  } finally {
+    clearTimeout(timer);
+    subscription?.unregister();
+  }
+};
+"""
+
+
+def _native_fixture_rows() -> list[dict[str, Any]]:
+    value = _cdp_eval("(async()=>{" + _SHORTCUT_FIXTURE_JS + """
+      const apps = fixtureApps();
+      if (apps.length > 4096) throw new Error("too many native shortcuts");
+      const result = [];
+      for (const app of apps) {
+        const row = await fixtureDetails(Number(app.appid));
+        if (row) result.push(row);
+      }
+      return result;
+    })()""", timeout=30)
+    if not isinstance(value, list):
+        _fail("native shortcut inventory is invalid")
+    seen: set[int] = set()
+    for row in value:
+        if not isinstance(row, dict) or set(row) != {"app_id", "name", "exe", "start_dir", "launch_options", "running"}:
+            _fail("native shortcut details are invalid")
+        app_id = row["app_id"]
+        if not is_plain_int(app_id) or not 0 < app_id <= 0xFFFFFFFF or app_id in seen or not isinstance(row["running"], bool):
+            _fail("native shortcut identity is invalid")
+        if any(not isinstance(row[key], str) for key in ("name", "exe", "start_dir", "launch_options")):
+            _fail("native shortcut fields are invalid")
+        seen.add(app_id)
+    return value
+
+
+def _fixture_removal_target(entry: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]) -> tuple[str, Mapping[str, Any] | None]:
+    app_id = entry["app_id"]
+    new_rows = [row for row in rows if row["app_id"] not in entry["original_ids"]]
+    if app_id is not None:
+        candidates = [row for row in new_rows if row["app_id"] == app_id]
+        if not candidates:
+            return "pending", None
+    else:
+        candidates = [row for row in new_rows if row["name"] == entry["name"] or row["exe"].strip('"') == entry["exe"]]
+        if not candidates:
+            return ("conflict" if new_rows else "pending"), None
+    if len(candidates) != 1:
+        return "conflict", None
+    row = candidates[0]
+    if (
+        row["name"] != entry["name"]
+        or row["launch_options"] != ""
+        or row["exe"].strip('"') != entry["exe"]
+        or row["start_dir"].strip('"').rstrip("/") != str(Path(entry["exe"]).parent)
+        or row["running"]
+    ):
+        return "conflict", None
+    return "remove", row
+
+
+def _backup_shortcut_files(ledger: Mapping[str, Any]) -> None:
+    account = _account(ledger["user_name"])
+    root = Path(account.pw_dir) / ".local/share/Steam/userdata"
+    require_contained(root, Path(account.pw_dir), label="Steam userdata")
+    destination = Path(ledger["run_root"]) / "undo" / "native-shortcuts"
+    if destination.exists():
+        _fail("native shortcut backup already exists; do not repeat provisioning")
+    _validate_private_dir(destination, account.pw_uid)
+    manifest = []
+    for profile in sorted(root.iterdir()):
+        if not profile.name.isdecimal() or not profile.is_dir():
+            continue
+        source = profile / "config" / "shortcuts.vdf"
+        require_contained(source, root, label="Steam shortcut file")
+        if not source.exists():
+            manifest.append({"path": str(source), "exists": False})
+            continue
+        fd = os.open(source, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(fd, "rb") as stream:
+            before = os.fstat(stream.fileno())
+            if not stat.S_ISREG(before.st_mode) or before.st_uid != account.pw_uid or before.st_size > MAX_SAMPLE_BYTES:
+                _fail("native shortcut backup source is unsafe")
+            data = stream.read(MAX_SAMPLE_BYTES + 1)
+            after = os.fstat(stream.fileno())
+        if len(data) > MAX_SAMPLE_BYTES or (before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+            _fail("native shortcuts changed during backup")
+        _atomic_write(destination / f"{profile.name}.vdf", data, owner=(account.pw_uid, account.pw_gid), guard_root=destination)
+        manifest.append({"path": str(source), "exists": True, "sha256": _sha256_bytes(data), "mode": stat.S_IMODE(before.st_mode)})
+    _atomic_write(destination / "manifest.json", json.dumps(manifest, sort_keys=True).encode(), owner=(account.pw_uid, account.pw_gid), guard_root=destination)
+
+
+def _provision_shortcuts(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
+    exact_keys(payload, set(), context="shortcuts payload")
+    ledger = _load_ledger(ledger_path, ledger_path)
+    if ledger["watchdog"]["state"] != "armed" or ledger["test_scope"] or not ledger["temp_service"]:
+        _fail("temporary shortcuts require an armed real UI arm")
+    if any(entry["kind"] == "shortcut_fixture" for entry in ledger["undo_entries"]):
+        _fail("temporary shortcut provisioning already started; do not repeat")
+    _backup_shortcut_files(ledger)
+    account = _account(ledger["user_name"])
+    directory = Path(ledger["run_root"]) / "native-fixtures"
+    _validate_private_dir(directory, account.pw_uid)
+    result = {}
+    for role in ("listed", "delisted", "never"):
+        name = f"Metadata-Rust-{role}-{ledger['unit_prefix'].rsplit('-', 1)[-1]}"
+        executable = directory / name
+        if executable.exists():
+            _fail("temporary executable already exists")
+        _atomic_write(executable, Path("/usr/bin/true").read_bytes(), mode=0o755, owner=(account.pw_uid, account.pw_gid), guard_root=directory)
+        preview = _cdp_eval("SteamClient.Apps.GetShortcutDataForPath(" + json.dumps(str(executable)) + ")")
+        if not isinstance(preview, dict) or any(not isinstance(preview.get(key), str) for key in ("strAppName", "strExePath", "strArguments", "strCmdline")):
+            _fail("native shortcut preview is invalid")
+        if preview["strAppName"] != name or preview["strExePath"].strip('"') != str(executable) or preview["strArguments"] or preview["strCmdline"].strip('"') != str(executable):
+            _fail("native shortcut preview does not identify the task executable")
+        rows = _native_fixture_rows()
+        if any(row["exe"].strip('"') == str(executable) for row in rows):
+            _fail("temporary shortcut executable already exists in the library")
+        entry = {"kind": "shortcut_fixture", "state": "pending", "role": role, "name": name, "exe": str(executable), "app_id": None, "original_ids": [row["app_id"] for row in rows], "intent_ns": time.monotonic_ns()}
+        _append_undo(ledger_path, entry)
+        args = [preview[key] for key in ("strAppName", "strExePath", "strArguments", "strCmdline")]
+        app_id = _cdp_eval("SteamClient.Apps.AddShortcut(..." + json.dumps(args) + ")")
+        if not is_plain_int(app_id) or not 0 < app_id <= 0xFFFFFFFF or app_id in entry["original_ids"]:
+            _fail("native shortcut creation returned an invalid identity")
+        def record(state: dict[str, Any]) -> None:
+            target = next(item for item in state["undo_entries"] if item["kind"] == "shortcut_fixture" and item["role"] == role)
+            target["app_id"] = app_id
+        _mutate_ledger(ledger_path, record)
+        entry["app_id"] = app_id
+        def published() -> bool:
+            status, row = _fixture_removal_target(entry, _native_fixture_rows())
+            if status == "remove" and row is not None:
+                result[role] = dict(row)
+                return True
+            return False
+        if not _wait_until(published, 10.0, 0.05):
+            _fail("native shortcut creation did not publish its exact owned fixture")
+    return {"ok": True, "fixtures": result, "backup": str(Path(ledger["run_root"]) / "undo/native-shortcuts/manifest.json")}
+
+
+def _remove_shortcut_fixture(entry: Mapping[str, Any]) -> str:
+    status, row = _fixture_removal_target(entry, _native_fixture_rows())
+    if status == "pending":
+        def published() -> bool:
+            nonlocal status, row
+            status, row = _fixture_removal_target(entry, _native_fixture_rows())
+            return status != "pending"
+        if not _wait_until(published, 10.0, 0.05):
+            return "failed"
+    if status != "remove":
+        return status
+    expression = "(async()=>{" + _SHORTCUT_FIXTURE_JS + "const expected=" + json.dumps(dict(row)) + """
+      const current = await fixtureDetails(expected.app_id);
+      const app = fixtureApps().find(a => Number(a.appid) === expected.app_id);
+      if (!current || !app) return "failed";
+      if (app.display_name !== expected.name || SteamUIStore.RunningApps.some(value => Number(value.appid) === expected.app_id) ||
+          !Object.keys(expected).every(key => current[key] === expected[key])) return "conflict";
+      SteamClient.Apps.RemoveShortcut(expected.app_id);
+      const deadline = performance.now() + 5000;
+      while (performance.now() < deadline) {
+        if (!fixtureApps().some(a => Number(a.appid) === expected.app_id)) return "restored";
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      return "failed";
+    })()"""
+    result = _cdp_eval(expression)
+    return result if result in {"restored", "conflict", "failed"} else "failed"
+
+
 def _native_shortcut_probe(app_id: int) -> dict[str, Any]:
     expression = "(() => { const id=" + str(app_id) + "; const apps=Array.isArray(appStore?.allApps)?appStore.allApps:Object.values(appStore?.allApps||{}); const entry=apps.find(v=>Number(v?.appid)===id)||null; const native=Boolean(entry&&(Number(entry.app_type)===1073741824||entry.BIsShortcut?.()===true)); const current=typeof entry?.display_name===\"string\"?entry.display_name:\"\"; return {native,current,sortAs:typeof entry?.sort_as===\"string\"?entry.sort_as:(typeof entry?.sortAs===\"string\"?entry.sortAs:\"\")}; })()"
     value = _cdp_eval(expression)
@@ -3305,12 +3546,14 @@ def _guarded_restore_file(entry: Mapping[str, Any], *, path_override: Path | Non
     return "restored"
 
 
-def _undo_actions(ledger: dict[str, Any], ledger_path: Path, conflicts: list[str]) -> None:
+def _undo_actions(ledger: dict[str, Any], ledger_path: Path, conflicts: list[str], *, only_kind: str | None = None) -> None:
     for index in reversed(range(len(ledger["undo_entries"]))):
         current = _load_ledger(ledger_path, ledger_path)
         if index >= len(current["undo_entries"]):
             continue
         entry = current["undo_entries"][index]
+        if only_kind is not None and entry["kind"] != only_kind:
+            continue
         if entry["state"] == "restored" or entry["kind"] == "normal_unit":
             continue
         result = "failed"
@@ -3320,6 +3563,8 @@ def _undo_actions(ledger: dict[str, Any], ledger_path: Path, conflicts: list[str
                 result = _guarded_restore_file(entry, backup_root=Path(current["run_root"]) / "undo")
             elif entry["kind"] == "shortcut_name":
                 result = _restore_shortcut(entry)
+            elif entry["kind"] == "shortcut_fixture":
+                result = _remove_shortcut_fixture(entry)
             elif entry["kind"] == "test_file":
                 result = _guarded_restore_file(entry, path_override=Path(entry["path"]), backup_root=Path(current["run_root"]) / "watchdog-test")
             elif entry["kind"] == "temp_unit":
@@ -3385,10 +3630,17 @@ def _restart_original_services(ledger: Mapping[str, Any], conflicts: list[str]) 
             if any(entry["kind"] == "normal_unit" and entry["scope"] == scope and entry["unit"] == unit and entry["state"] == "pending" for entry in ledger.get("undo_entries", [])):
                 _mutate_ledger(Path(ledger["ledger_path"]), mark_restored)
     cef_saved = ledger["snapshot"]["cef_forwarder"]
-    cef_now = _systemd_unit_active("system", CEF_FORWARDER_UNIT, account)
-    result["cef_forwarder"] = cef_now == cef_saved["active"]
-    if cef_now != cef_saved["active"]:
-        conflicts.append("cef_forwarder:activation_changed")
+    socket_saved = ledger["snapshot"]["cef_forwarder_socket"]
+    cef_now = _known_unit_snapshot("system", CEF_FORWARDER_UNIT, account)
+    socket_now = _known_unit_snapshot("system", CEF_FORWARDER_SOCKET, account)
+    socket_matches, cef_matches = _cef_recovery_matches(cef_saved, cef_now, socket_saved, socket_now)
+    result["cef_forwarder_socket"] = socket_matches
+    result["cef_forwarder"] = cef_matches
+    result["cef_proxy_active"] = cef_now["active"]
+    if not socket_matches:
+        conflicts.append("cef_forwarder_socket:activation_or_selection_changed")
+    if not cef_matches:
+        conflicts.append("cef_forwarder:activation_or_selection_changed")
     return result
 
 
@@ -3550,7 +3802,7 @@ def _recover_ledger_serialized(ledger_path: Path, from_watchdog: bool = False) -
                 conflicts.append("collector:drain_failed:" + str(error))
 
         ledger = _load_ledger(ledger_path, ledger_path)
-        _undo_actions(ledger, ledger_path, conflicts)
+        _undo_actions(ledger, ledger_path, conflicts, only_kind="temp_unit")
         ledger = _load_ledger(ledger_path, ledger_path)
         temp_entries = [entry for entry in ledger["undo_entries"] if entry["kind"] == "temp_unit"]
         temp_drained = ledger["temp_service"] is None and all(entry["state"] == "restored" for entry in temp_entries)
@@ -3566,24 +3818,28 @@ def _recover_ledger_serialized(ledger_path: Path, from_watchdog: bool = False) -
         if not temp_drained:
             conflicts.append("temporary_loader:cgroup_drain_failed")
 
+        restore_ready = collector_drained and temp_drained
+        pending_stop = any(entry["kind"] == "normal_unit" and entry["state"] == "pending" for entry in ledger["undo_entries"])
+        if not ledger["test_scope"] and restore_ready and temp_entries and pending_stop:
+            try:
+                if any(_systemd_unit_active(scope, saved["unit"], account) for scope, saved in ledger["snapshot"]["units"].items()):
+                    _fail("normal Loader activation changed before browser cleanup")
+                _ensure_port_free()
+                verification["steam_ui_context_reset"] = _reset_steam_ui_context(account)
+            except SafetyError as error:
+                restore_ready = False
+                verification["steam_ui_context_reset"] = False
+                conflicts.append("steam_ui:context_reset_failed:" + str(error))
+        _undo_actions(ledger, ledger_path, conflicts)
+        ledger = _load_ledger(ledger_path, ledger_path)
+        verification["shortcut_fixtures_removed"] = all(entry["state"] == "restored" for entry in ledger["undo_entries"] if entry["kind"] == "shortcut_fixture")
+
         if not ledger["test_scope"]:
-            restore_ready = collector_drained and temp_drained
-            pending_stop = any(entry["kind"] == "normal_unit" and entry["state"] == "pending" for entry in ledger["undo_entries"])
-            if restore_ready and temp_entries and pending_stop:
-                try:
-                    if any(_systemd_unit_active(scope, saved["unit"], account) for scope, saved in ledger["snapshot"]["units"].items()):
-                        _fail("normal Loader activation changed before browser cleanup")
-                    _ensure_port_free()
-                    verification["steam_ui_context_reset"] = _reset_steam_ui_context(account)
-                except SafetyError as error:
-                    restore_ready = False
-                    verification["steam_ui_context_reset"] = False
-                    conflicts.append("steam_ui:context_reset_failed:" + str(error))
             if restore_ready:
                 verification["original_activation"] = _restart_original_services(ledger, conflicts)
             else:
                 verification["original_activation"] = {"restoration_skipped": True}
-            if any(entry["kind"] in {"normal_unit", "temp_unit", "shortcut_name"} for entry in ledger["undo_entries"]):
+            if any(entry["kind"] in {"normal_unit", "temp_unit", "shortcut_name", "shortcut_fixture"} for entry in ledger["undo_entries"]):
                 try:
                     _restore_ui(ledger["snapshot"]["ui"])
                     verification["ui_restore_requested"] = True
@@ -3818,6 +4074,8 @@ def _dispatch_command(command: str, ledger_path: Path, payload: Mapping[str, Any
         return _downloads(ledger_path, payload)
     if command == "name-undo":
         return _name_undo(ledger_path, payload)
+    if command == "shortcuts":
+        return _provision_shortcuts(ledger_path, payload)
     if command == "recover":
         exact_keys(payload, set(), context="recover payload")
         return _recover_ledger(ledger_path, False)
@@ -3828,7 +4086,7 @@ def _dispatch_command(command: str, ledger_path: Path, payload: Mapping[str, Any
 
 PUBLIC_COMMANDS = (
     "capture", "watchdog-test", "arm", "heartbeat", "prepare", "start", "verify-plugin", "reload",
-    "collect-start", "collect-stop", "phase", "stop", "downloads", "name-undo", "recover", "status",
+    "collect-start", "collect-stop", "phase", "stop", "downloads", "name-undo", "shortcuts", "recover", "status",
 )
 
 
