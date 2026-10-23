@@ -2620,8 +2620,11 @@ def _reload(ledger_path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
             current = _metadata_identities(_load_ledger(ledger_path, ledger_path), arm)
             gone = all(pid_starttime(pid) != start for pid, start in old_keys)
             if connection.closed:
-                connection.close()
-                connection = _loader_connect()
+                try:
+                    connection = _loader_connect()
+                except SafetyError:
+                    time.sleep(READY_POLL_SECONDS)
+                    continue
             version = _loader_version(connection)
             new = [item for item in current if (item["pid"], item["starttime"]) not in old_keys]
             if gone and version == expected and new:
