@@ -13,8 +13,8 @@ Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gami
 - **Frontend:** TypeScript / React in `src/*.ts(x)`, bundled by **rollup** into
   `dist/index.js` (the committed plugin artifact). Tooling is **npm / pnpm**.
 - **Backend:** Rust in `backend-rust/`, built as a static x86-64 Linux executable.
-  The fork runs `bin/backend` directly. Upstream Loader uses the unchanged Python
-  transport shim in `main.py`; no Python business backend is shipped.
+  The fork runs `bin/backend` directly. Upstream Loader uses the Python transport
+  shim in `main.py`; no Python business backend is shipped.
 
 Python development tools and their pytest tests remain. Rust behavior tests run
 through locked Cargo commands (`.protocol: TDD_REQUIRED=true`).
@@ -107,7 +107,8 @@ native build output. `dist/index.js` is the intentionally committed build artifa
   verify it in `package.json` or `node_modules`.
 - The backend uses `backend-rust/Cargo.toml` and its committed lockfile. Use Rust
   `1.99.0`, the `x86_64-unknown-linux-musl` target, and musl C tools. Preserve the
-  pinned Decky SDK revision and copy its upstream shim unchanged. Python tooling
+  pinned Decky SDK revision. Keep `main.py` equal to its upstream shim except the
+  documented relay safeguards. Python tooling
   is allowed; do not reintroduce Python plugin business logic or runtime packages.
 - Keep `NOTICE` current when Rust dependencies or the toolchain licenses change.
 - If API behavior is uncertain: read the project source, then `@decky/*` or
