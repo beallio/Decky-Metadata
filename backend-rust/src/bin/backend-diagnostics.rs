@@ -6,7 +6,7 @@ use decky_metadata_backend::{
         models::{UpdateCandidate, parse_plugin_version},
     },
 };
-use reqwest::{Method, Url, header::CONTENT_TYPE};
+use reqwest::{Url, header::CONTENT_TYPE};
 use serde::Serialize;
 use serde_json::{Value, json};
 use std::{
