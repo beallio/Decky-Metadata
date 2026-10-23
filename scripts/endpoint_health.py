@@ -223,7 +223,8 @@ def native_probe_results(probes: list[tuple[str, str, str]]) -> list[dict[str, A
         for request in row["requests"]:
             if (not isinstance(request, dict) or not isinstance(request.get("method"), str)
                     or not isinstance(request.get("url"), str)
-                    or (request.get("status") is not None and type(request["status"]) is not int)
+                    or "status" not in request
+                    or (request["status"] is not None and type(request["status"]) is not int)
                     or not isinstance(request.get("content_type"), str)):
                 return failed("MalformedOutput", "backend-diagnostics returned invalid request evidence")
             try:

@@ -169,20 +169,25 @@ def test_malformed_or_invalid_subprocess_results_fail_explicitly(tmp_path, monke
     assert result["error"] is not None
 
 
-@pytest.mark.parametrize("malformation", ["catalog", "url"])
-def test_native_output_with_mismatched_catalog_or_invalid_request_url_fails_explicitly(
+@pytest.mark.parametrize("malformation", ["catalog", "url", "missing-status"])
+def test_native_output_with_mismatched_catalog_or_invalid_request_evidence_fails_explicitly(
     tmp_path, monkeypatch, malformation,
 ):
     row = _native_result(NATIVE_PROBES[0])
     if malformation == "catalog":
         row["fixture"] = "different fixture"
     else:
-        row["requests"] = [{
+        request = {
             "method": "GET",
-            "url": "https://[malformed",
+            "url": "https://example.test/",
             "status": 200,
             "content_type": "application/json",
-        }]
+        }
+        if malformation == "url":
+            request["url"] = "https://[malformed"
+        else:
+            request.pop("status")
+        row["requests"] = [request]
     _install_diagnostics(tmp_path, monkeypatch, json.dumps([row]))
 
     result = health.native_probe_results([NATIVE_PROBES[0]])[0]
@@ -265,3 +270,83 @@ def test_repro_backend_unreadable_store_is_a_nonzero_error(tmp_path, monkeypatch
     monkeypatch.setattr(sys, "argv", ["repro_backend.py", "77", "--store", str(tmp_path / "missing.json")])
     assert repro_backend.main() == 1
     assert "could not read metadata store" in capsys.readouterr().err
+
+
+def _load_native_shim(monkeypatch):
+    import importlib.util
+    import types
+    from pathlib import Path
+
+    fake_decky = types.ModuleType("decky")
+    fake_decky.DECKY_PLUGIN_DIR = "/tmp"
+    fake_decky.DECKY_PLUGIN_RUNTIME_DIR = "/tmp"
+    fake_decky.logger = types.SimpleNamespace(error=lambda *_args: None)
+    fake_decky.emit = lambda *_args: None
+    monkeypatch.setitem(sys.modules, "decky", fake_decky)
+    path = Path(__file__).parents[1] / "main.py"
+    spec = importlib.util.spec_from_file_location("_native_shim_contract_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.Plugin
+
+
+class _FakeWriter:
+    def __init__(self):
+        self.data = bytearray()
+        self.closed = False
+
+    def write(self, data):
+        self.data.extend(data)
+
+    async def drain(self):
+        return None
+
+    def close(self):
+        self.closed = True
+
+
+@pytest.mark.parametrize("kind", ["oversized", "invalid-json"])
+def test_native_shim_relay_fails_pending_calls_on_bad_reply_lines(monkeypatch, kind):
+    import asyncio
+
+    async def exercise():
+        from asyncio import StreamReader, get_running_loop
+
+        plugin = _load_native_shim(monkeypatch)()
+        pending = get_running_loop().create_future()
+        plugin._pending["0"] = pending
+        plugin._writer = _FakeWriter()
+        if kind == "oversized":
+            reader = StreamReader(limit=2)
+            reader.feed_data(b"oversized\n")
+            reader.feed_eof()
+        else:
+            class InvalidReader:
+                async def readline(self):
+                    return b"{not-json}\n"
+            reader = InvalidReader()
+
+        await plugin._relay(reader)
+
+        with pytest.raises(RuntimeError, match="relay failed"):
+            await pending
+        assert plugin._writer.closed
+
+    asyncio.run(exercise())
+
+
+def test_native_shim_call_rejects_lone_surrogates_without_waiting(monkeypatch):
+    import asyncio
+
+    async def exercise():
+        plugin = _load_native_shim(monkeypatch)()
+        plugin._ready.set()
+        plugin._writer = _FakeWriter()
+
+        with pytest.raises(UnicodeEncodeError):
+            await plugin._call("frontend_log", ["\ud800"])
+
+        assert plugin._writer.data == b""
+        assert plugin._pending == {}
+
+    asyncio.run(exercise())
