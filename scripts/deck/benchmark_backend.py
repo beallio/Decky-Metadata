@@ -1064,7 +1064,7 @@ def cdp_command(command: str, params: Mapping[str, Any] | None = None) -> Any:
     timeout = 900 if command in {"run_workload", "warmup"} else 200 if command == "wait_startup_quiescence" else 45
     try:
         response = cdp.evaluate("SharedJSContext", expression, timeout=timeout)
-    except Exception as exc:
+    except (Exception, SystemExit) as exc:
         raise BenchmarkError(f"CDP command {command} failed: {exc}") from exc
     if isinstance(response, Mapping) and response.get("type") == "string":
         response = response.get("value")
@@ -1097,6 +1097,9 @@ def prime_observers(lease: Lease, run_id: str) -> tuple[Any, str, dict[str, Any]
     sock = cdp.target_socket("SharedJSContext")
     identifier = None
     try:
+        enabled = cdp.rpc(sock, 0, "Page.enable", {})
+        if "error" in enabled:
+            raise BenchmarkError(f"observer Page domain enable failed: {enabled}")
         registered = cdp.rpc(sock, 1, "Page.addScriptToEvaluateOnNewDocument", {"source": source})
         identifier = registered["result"]["identifier"]
         reloaded = cdp.rpc(sock, 2, "Page.reload", {})
@@ -1114,10 +1117,19 @@ def prime_observers(lease: Lease, run_id: str) -> tuple[Any, str, dict[str, Any]
                 raise BenchmarkError(f"observer preload did not precede Loader startup: {marker}")
             return sock, identifier, marker
         raise BenchmarkError("early Loader observer preload did not appear in the new document")
-    except BaseException:
+    except BaseException as error:
         try:
             if identifier is not None:
-                cdp.rpc(sock, 3, "Page.removeScriptToEvaluateOnNewDocument", {"identifier": identifier})
+                try:
+                    cdp_command("detach", {"runId": run_id})
+                except BaseException as cleanup_error:
+                    error.add_note(f"owned observer detach failed: {cleanup_error}")
+                try:
+                    removed = cdp.rpc(sock, 3, "Page.removeScriptToEvaluateOnNewDocument", {"identifier": identifier})
+                    if "error" in removed:
+                        raise BenchmarkError(f"observer preload cleanup failed: {removed}")
+                except BaseException as cleanup_error:
+                    error.add_note(f"observer registration removal failed: {cleanup_error}")
         finally:
             sock.close()
         raise
@@ -1511,7 +1523,7 @@ def run_trial(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mappin
                 trial.setdefault("cleanup_errors", []).append(f"collect-stop: {type(exc).__name__}: {exc}")
         if preload_socket is not None:
             try:
-                trial["observer_detach"] = cdp_command("detach")
+                trial["observer_detach"] = cdp_command("detach", {"runId": run_id})
                 if observers_attached:
                     _check_observer_state(trial["observer_detach"])
             except BaseException as exc:

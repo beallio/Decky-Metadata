@@ -841,3 +841,53 @@ def test_cef_policy_recovery_rejects_independent_changes(change):
     else:
         current["fragment_sha256"] = "a" * 64
     assert vm._cef_recovery_matches(saved, current, socket, current_socket)[1] is False
+
+
+def test_prepared_only_recovery_resets_native_context_before_restarting_loader(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    path = tmp_path / "ledger.json"
+    store = {
+        "watchdog": {"unit": None, "state": "armed", "helper_path": None},
+        "recovery": {"state": "pending", "conflicts": [], "verification": {}},
+        "collector": {"unit": None, "state": "stopped"},
+        "temp_service": None,
+        "undo_entries": [{"kind": "normal_unit", "state": "pending"}],
+        "test_scope": False,
+        "user_name": "deck",
+        "snapshot": {"units": {"user": {"unit": "plugin_loader.service"}}, "ui": {"route": "/library/home"}},
+    }
+    native = {"fresh": False, "loader_active": False, "route": None}
+    monkeypatch.setattr(vm, "_ledger_lock", lambda _path: contextlib.nullcontext())
+    monkeypatch.setattr(vm, "_load_ledger", lambda *_args: json.loads(json.dumps(store)))
+    monkeypatch.setattr(vm, "_write_ledger", lambda ledger: store.update(json.loads(json.dumps(ledger))))
+    monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_uid=1000))
+    monkeypatch.setattr(vm, "_systemd_unit_active", lambda *_args: native["loader_active"])
+    monkeypatch.setattr(vm, "_ensure_port_free", lambda: None)
+
+    def reset(_account):
+        assert not native["loader_active"], "old clients must be destroyed before normal RPCs return"
+        native["fresh"] = True
+        return {"shared_js_context_ready": True}
+
+    def undo(_ledger, _path, _conflicts, *, only_kind=None):
+        if only_kind is None:
+            for entry in store["undo_entries"]:
+                entry["state"] = "restored"
+
+    def restart(_ledger, _conflicts):
+        native["loader_active"] = True
+        return {"user": True}
+
+    def restore(saved):
+        if not native["fresh"]:
+            raise vm.SafetyError("old native popup unavailable")
+        assert native["loader_active"]
+        native["route"] = saved["route"]
+
+    monkeypatch.setattr(vm, "_reset_steam_ui_context", reset)
+    monkeypatch.setattr(vm, "_undo_actions", undo)
+    monkeypatch.setattr(vm, "_restart_original_services", restart)
+    monkeypatch.setattr(vm, "_restore_ui", restore)
+    monkeypatch.setattr(vm, "_verify_restored_state", lambda *_args: {"ui_restored": native["route"] == "/library/home"})
+    result = vm._recover_ledger_serialized(path)
+    assert result["ok"] is True and result["conflicts"] == []
+    assert native == {"fresh": True, "loader_active": True, "route": "/library/home"}

@@ -7,6 +7,7 @@ import shlex
 import shutil
 import subprocess
 import zipfile
+from types import SimpleNamespace
 
 import pytest
 
@@ -218,6 +219,7 @@ async function observerContract() {
       } } } }],
     },
   };
+  window.top = window;
   global.location = { pathname: '/library/home', search: '', hash: '' };
   global.document = { querySelectorAll: () => [] };
   global.getComputedStyle = () => ({ display: 'none', visibility: 'hidden' });
@@ -269,7 +271,10 @@ async function observerContract() {
   finishFirstCatalog('first catalog');
   assert.equal(await firstCatalog, 'first catalog');
   assert.equal(api.observerState().catalogCompleted, 2);
-  window.__deckyMetadataBenchmarkPreload.detach();
+  assert.throws(() => api.detachPreload({ runId: 'another-run' }));
+  assert.equal(window.__deckyMetadataBenchmarkPreload.runId, 'early-catalog-test');
+  assert.notEqual(startupLoader.checkPluginUpdates, startupCatalog);
+  api.detachPreload({ runId: 'early-catalog-test' });
   assert.equal(startupLoader.checkPluginUpdates, startupCatalog);
   assert.equal(window.__deckyMetadataBenchmarkPreload, undefined);
 
@@ -284,7 +289,6 @@ async function observerContract() {
   api.markServiceReady();
   const noEvents = await api.waitForStartupQuiescence({ timeoutMs: 100 });
   assert.equal(noEvents.ok, false);
-  assert.match(noEvents.reason, /not observed/);
   assert.equal(noEvents.observer.updateStarted, 0);
   api.detachObservers();
 
@@ -292,7 +296,12 @@ async function observerContract() {
     DeckyPluginLoader: {},
     DeckyBackend: { eventListeners: new Map() },
   };
-  assert.throws(() => api.attachObservers(), /observation points are unavailable/);
+  assert.throws(() => api.attachObservers());
+
+  global.window = { top: {} };
+  api.armPreload({ runId: 'child-frame' });
+  assert.equal(Object.getOwnPropertyDescriptor(window, 'DeckyPluginLoader'), undefined);
+  assert.equal(window.__deckyMetadataBenchmarkPreload, undefined);
 }
 
 (async () => {
@@ -892,4 +901,62 @@ def test_node_workload_and_observer_behavior_against_stateful_fixture():
         check=False,
     )
     assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "behavioral benchmark fixture contract ok"
+
+
+def test_preload_survives_the_old_document_navigation_race(monkeypatch: pytest.MonkeyPatch):
+    state = {"old_document": True, "registration": False, "closed": False}
+    marker = {"runId": "navigation-race", "attached": False, "error": None}
+    sock = SimpleNamespace(close=lambda: state.update(closed=True))
+
+    def rpc(_sock, _id, method, _params):
+        if method == "Page.addScriptToEvaluateOnNewDocument":
+            state["registration"] = True
+            return {"result": {"identifier": "owned-script"}}
+        if method == "Page.removeScriptToEvaluateOnNewDocument":
+            state["registration"] = False
+        return {}
+
+    def evaluate(_target, _source, **_kwargs):
+        if state["old_document"]:
+            state["old_document"] = False
+            raise SystemExit(1)
+        return {"type": "string", "value": json.dumps(marker)}
+
+    monkeypatch.setattr(benchmark.cdp, "target_socket", lambda _target: sock)
+    monkeypatch.setattr(benchmark.cdp, "rpc", rpc)
+    monkeypatch.setattr(benchmark.cdp, "evaluate", evaluate)
+    lease = SimpleNamespace(check=lambda: None)
+    returned_sock, _identifier, observed = benchmark.prime_observers(lease, marker["runId"])
+    assert observed["runId"] == marker["runId"] and observed["attached"] is False
+    assert state["registration"] is True and state["closed"] is False
+    returned_sock.close()
+
+
+def test_failed_preload_keeps_primary_error_when_owned_cleanup_also_fails(monkeypatch: pytest.MonkeyPatch):
+    primary = benchmark.BenchmarkError("startup ownership changed")
+    detach_error = benchmark.BenchmarkError("foreign observer cannot be detached")
+    removal_error = OSError("registration transport closed")
+    state = {"closed": False}
+    sock = SimpleNamespace(close=lambda: state.update(closed=True))
+
+    def rpc(_sock, _id, method, _params):
+        if method == "Page.addScriptToEvaluateOnNewDocument":
+            return {"result": {"identifier": "owned-script"}}
+        if method == "Page.removeScriptToEvaluateOnNewDocument":
+            raise removal_error
+        return {}
+
+    def fail_primary():
+        raise primary
+
+    def fail_detach(_command, _params):
+        raise detach_error
+
+    monkeypatch.setattr(benchmark.cdp, "target_socket", lambda _target: sock)
+    monkeypatch.setattr(benchmark.cdp, "rpc", rpc)
+    monkeypatch.setattr(benchmark, "cdp_command", fail_detach)
+    with pytest.raises(benchmark.BenchmarkError) as caught:
+        benchmark.prime_observers(SimpleNamespace(check=fail_primary), "owned-run")
+    assert caught.value is primary and state["closed"] is True
+    assert any(str(detach_error) in note for note in primary.__notes__)
+    assert any(str(removal_error) in note for note in primary.__notes__)

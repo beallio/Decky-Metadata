@@ -183,6 +183,11 @@ check before timing. Idle, warmup and workload windows use the VM's monotonic
 clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
 cgroup samples, and memory peaks are sampled peaks.
 
+Priming enables the CDP Page domain before registering the early hook. It waits
+for the owned marker across the reload; observer cleanup checks the run identity.
+The hook does not change child frames. Recovery also resets the native context
+when preparation stopped the original Loader but the test Loader never started.
+
 Recovery first drains scratch processes and resets Steam's browser clients.
 It then undoes marked shortcut and name changes with a fresh native context,
 before restoring the original Loader and normal RPC access. Queued test writes

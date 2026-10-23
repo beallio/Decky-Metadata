@@ -101,6 +101,7 @@
       waitForStartupQuiescence,
       detachObservers,
       armPreload,
+      detachPreload,
     };
     return;
   }
@@ -114,7 +115,7 @@
       return { runId: marker.runId, attached: marker.attached, error: marker.error, timeOrigin: performance.timeOrigin };
     },
     observer_state: observerState,
-    detach: () => window.__deckyMetadataBenchmarkPreload?.detach() ?? detachObservers(),
+    detach: detachPreload,
     capture_ui: captureUi,
     home: navigateHome,
     mark_service_ready: markServiceReady,
@@ -131,6 +132,7 @@
   return Promise.resolve(operation(params)).then((result) => JSON.stringify(result));
 
   function armPreload(params) {
+    if (window.top !== window) return { skipped: true };
     if (typeof params.runId !== "string" || !params.runId || params.runId.length > 128) {
       throw new Error("invalid observer run identity");
     }
@@ -162,6 +164,16 @@
     };
     window.__deckyMetadataBenchmarkPreload = marker;
     return { runId: marker.runId, attached: false, timeOrigin: performance.timeOrigin };
+  }
+
+  function detachPreload(params) {
+    if (typeof params.runId !== "string" || !params.runId) throw new Error("invalid observer run identity");
+    const marker = window.__deckyMetadataBenchmarkPreload;
+    const active = window.__deckyMetadataBenchmarkObserver;
+    if ((marker && marker.runId !== params.runId) || (active && active.preloadRunId !== params.runId)) {
+      throw new Error("observer ownership changed");
+    }
+    return marker ? marker.detach() : active ? detachObservers() : { runId: params.runId, attached: false };
   }
 
   function connectApi() {

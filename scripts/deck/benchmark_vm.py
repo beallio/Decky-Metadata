@@ -3820,7 +3820,7 @@ def _recover_ledger_serialized(ledger_path: Path, from_watchdog: bool = False) -
 
         restore_ready = collector_drained and temp_drained
         pending_stop = any(entry["kind"] == "normal_unit" and entry["state"] == "pending" for entry in ledger["undo_entries"])
-        if not ledger["test_scope"] and restore_ready and temp_entries and pending_stop:
+        if not ledger["test_scope"] and restore_ready and pending_stop:
             try:
                 if any(_systemd_unit_active(scope, saved["unit"], account) for scope, saved in ledger["snapshot"]["units"].items()):
                     _fail("normal Loader activation changed before browser cleanup")
