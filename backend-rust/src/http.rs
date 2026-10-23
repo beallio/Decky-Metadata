@@ -282,7 +282,7 @@ impl Http {
 
     pub async fn json(&self, url: &str, timeout: Duration, limit: usize) -> Result<Value, String> {
         let response = self
-            .request(
+            .request_with_error_limit(
                 Method::GET,
                 url,
                 &[
@@ -292,6 +292,7 @@ impl Http {
                 None,
                 timeout,
                 limit,
+                8 * 1024,
                 Redirects::Default,
             )
             .await?;
@@ -303,13 +304,14 @@ impl Http {
 
     pub async fn text(&self, url: &str, timeout: Duration, limit: usize) -> Result<String, String> {
         let response = self
-            .request(
+            .request_with_error_limit(
                 Method::GET,
                 url,
                 &[],
                 None,
                 timeout,
                 limit,
+                8 * 1024,
                 Redirects::Default,
             )
             .await?;
@@ -427,17 +429,41 @@ mod tests {
         io::{AsyncReadExt, AsyncWriteExt},
         net::TcpListener,
     };
-    async fn server(reply: &'static [u8], delay: Duration) -> String {
+    async fn server(reply: &[u8], delay: Duration) -> String {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
+        let reply = reply.to_vec();
         tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut request = [0u8; 2048];
             let _ = socket.read(&mut request).await;
             tokio::time::sleep(delay).await;
-            let _ = socket.write_all(reply).await;
+            let _ = socket.write_all(&reply).await;
         });
         format!("http://{address}/")
+    }
+    #[tokio::test]
+    async fn json_and_text_bound_non_success_bodies_even_for_unbounded_callers() {
+        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        for json in [false, true] {
+            let body = "x".repeat(8 * 1024 + 1);
+            let reply = format!(
+                "HTTP/1.1 503 Service Unavailable\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let url = server(reply.as_bytes(), Duration::ZERO).await;
+            let error = if json {
+                http.json(&url, Duration::from_secs(1), usize::MAX)
+                    .await
+                    .unwrap_err()
+            } else {
+                http.text(&url, Duration::from_secs(1), usize::MAX)
+                    .await
+                    .unwrap_err()
+            };
+            assert!(error.contains("bounded"), "{error}");
+        }
     }
 
     #[tokio::test]
@@ -463,7 +489,8 @@ mod tests {
             let reply = if agents == ["Metadata-Updater-Test/1"] {
                 b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".as_slice()
             } else {
-                b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".as_slice()
+                b"HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    .as_slice()
             };
             socket.write_all(reply).await.unwrap();
         });

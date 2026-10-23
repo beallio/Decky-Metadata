@@ -65,44 +65,14 @@ pub fn clamp_page(value: &Value) -> i64 {
 }
 
 fn parse_integer_string(value: &str) -> Option<i64> {
-    let value = value.trim();
-    let (negative, digits) = match value.as_bytes().first() {
-        Some(b'-') => (true, &value[1..]),
-        Some(b'+') => (false, &value[1..]),
-        _ => (false, value),
-    };
-    let bytes = digits.as_bytes();
-    if bytes.is_empty()
-        || !bytes.iter().enumerate().all(|(index, byte)| {
-            byte.is_ascii_digit()
-                || (*byte == b'_'
-                    && index > 0
-                    && index + 1 < bytes.len()
-                    && bytes[index - 1].is_ascii_digit()
-                    && bytes[index + 1].is_ascii_digit())
-        })
-    {
-        return None;
-    }
-    let digits: String = digits
-        .chars()
-        .filter(|character| *character != '_')
-        .collect();
-    let significant = digits.trim_start_matches('0');
-    if significant.is_empty() {
-        return Some(0);
-    }
-    if negative {
-        return Some(0);
-    }
-    if significant.len() > 3
-        || significant
-            .parse::<u16>()
-            .is_ok_and(|number| number > MAX_PAGE as u16)
-    {
-        return Some(MAX_PAGE);
-    }
-    significant.parse::<i64>().ok()
+    let value = matching::integer_string(value)?;
+    Some(value.parse::<i64>().unwrap_or_else(|_| {
+        if value.starts_with('-') {
+            i64::MIN
+        } else {
+            i64::MAX
+        }
+    }))
 }
 
 pub fn community_url(appid: i64, page: i64) -> String {
@@ -567,6 +537,8 @@ mod tests {
         assert_eq!(clamp_page(&json!(0)), 1);
         assert_eq!(clamp_page(&json!(999)), 100);
         assert_eq!(clamp_page(&json!("not a page")), 1);
+        assert_eq!(clamp_page(&json!("0_3")), 3);
+        assert_eq!(clamp_page(&json!("１２")), 12);
         http.assert_drained();
     }
 
