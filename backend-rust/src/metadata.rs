@@ -2,7 +2,7 @@ use crate::matching::{
     self, as_number, casefold, clean_game_title, clean_html_text, https_url,
     normalize_description_text, py_string, py_truthy, safe_int,
 };
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 pub fn now() -> i64 {
     chrono::Utc::now().timestamp()
@@ -162,7 +162,10 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         .filter(|n| n.is_finite())
         .map(|n| n.round_ties_even().clamp(0.0, 100.0) as i64);
     let release = matching::normalize_release_date(&value["release_date"]);
-    if !value["release_date"].is_null() && value["release_date"].as_str() != release.as_deref() {
+    if !value["release_date"].is_null()
+        && (!value["release_date"].is_string()
+            || value["release_date"].as_str() != release.as_deref())
+    {
         return Err("release_date must be a YYYY-MM-DD calendar date or null".into());
     }
     let category = integer(&value["deck_compat_category"]).filter(|n| (0..=3).contains(n));
@@ -387,6 +390,35 @@ pub async fn sanitize_for(state: &crate::state::AppState, value: &Value) -> Resu
     sanitize(value, index.as_deref().unwrap_or(&Value::Null))
 }
 
+fn metadata_mapping(value: Value) -> Result<Value, String> {
+    let entries = match value {
+        Value::Array(entries) => entries,
+        Value::Object(object) => return Ok(Value::Object(object)),
+        _ => return Err("metadata must be an object".into()),
+    };
+    let mut result = Map::new();
+    for entry in entries {
+        let Some(pair) = entry.as_array().filter(|pair| pair.len() == 2) else {
+            return Err("metadata must be an object".into());
+        };
+        let key = match &pair[0] {
+            Value::Null => "None".to_owned(),
+            Value::Bool(value) => {
+                if *value {
+                    "True".to_owned()
+                } else {
+                    "False".to_owned()
+                }
+            }
+            Value::Number(value) => value.to_string(),
+            Value::String(value) => value.clone(),
+            _ => return Err("metadata must be an object".into()),
+        };
+        result.insert(key, pair[1].clone());
+    }
+    Ok(Value::Object(result))
+}
+
 pub async fn save(
     state: &crate::state::AppState,
     app_id: &Value,
@@ -394,6 +426,7 @@ pub async fn save(
     preserve_override: bool,
     trusted_appid: Option<i64>,
 ) -> Result<Value, String> {
+    let value = metadata_mapping(value)?;
     let key = py_string(app_id);
     let mut storage = state.store().await?;
     if state.cancel.is_cancelled() {
@@ -433,6 +466,33 @@ pub async fn auto_fetch(
     }
 }
 
+async fn save_fetched(
+    state: &crate::state::AppState,
+    app_id: &Value,
+    fetched: Value,
+) -> Result<Value, String> {
+    let key = py_string(app_id);
+    let index = state.delisted.lock().await.clone();
+    state
+        .change(move |transaction| {
+            let existing = transaction
+                .get(&["metadata", &key])
+                .cloned()
+                .unwrap_or(Value::Null);
+            let merged = merge_fetched(&existing, fetched);
+            let cleaned = prepare_save(
+                &existing,
+                merged,
+                false,
+                None,
+                index.as_deref().unwrap_or(&Value::Null),
+            )?;
+            transaction.set(&["metadata", &key], cleaned.clone())?;
+            Ok(cleaned)
+        })
+        .await
+}
+
 pub async fn apply_fetched(
     state: &crate::state::AppState,
     app_id: &Value,
@@ -441,17 +501,7 @@ pub async fn apply_fetched(
     let Some(fetched) = fetch(state, slug).await? else {
         return Ok(None);
     };
-    let existing = state.store().await?.data()["metadata"][py_string(app_id)].clone();
-    Ok(Some(
-        save(
-            state,
-            app_id,
-            merge_fetched(&existing, fetched),
-            false,
-            None,
-        )
-        .await?,
-    ))
+    Ok(Some(save_fetched(state, app_id, fetched).await?))
 }
 
 pub async fn apply_auto_fetched(
@@ -462,17 +512,7 @@ pub async fn apply_auto_fetched(
     let Some(fetched) = auto_fetch(state, title).await? else {
         return Ok(None);
     };
-    let existing = state.store().await?.data()["metadata"][py_string(app_id)].clone();
-    Ok(Some(
-        save(
-            state,
-            app_id,
-            merge_fetched(&existing, fetched),
-            false,
-            None,
-        )
-        .await?,
-    ))
+    Ok(Some(save_fetched(state, app_id, fetched).await?))
 }
 
 pub async fn with_steam_news(
@@ -661,7 +701,9 @@ mod tests {
             )
             .is_err()
         );
+        assert!(sanitize(&json!({"release_date": 123}), &Value::Null).is_err());
     }
+
     #[test]
     fn shell_completeness_and_provider_pinning() {
         assert!(!complete(&json!({"title":"A","source":"Manual"})));
@@ -748,6 +790,108 @@ mod tests {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
         }
+    }
+
+    #[tokio::test]
+    async fn save_accepts_dict_style_empty_and_pair_arrays() {
+        let directory = TestDirectory::new();
+        let state = crate::state::AppState::new(directory.env()).unwrap();
+        state.initialize().await.unwrap();
+
+        let empty = save(&state, &json!(31), json!([]), false, None)
+            .await
+            .unwrap();
+        assert_eq!(empty["title"], "");
+        let pairs = save(
+            &state,
+            &json!(32),
+            json!([["title", "Pair Game"], ["description", "Pair description"]]),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(pairs["title"], "Pair Game");
+        assert_eq!(pairs["description"], "Pair description");
+        assert!(
+            save(&state, &json!(33), json!([["title"]]), false, None)
+                .await
+                .is_err()
+        );
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn apply_fetched_merges_under_the_storage_transaction() {
+        use crate::{
+            http::{Fixture, Http},
+            providers::ign::IGN_GRAPHQL_URL,
+            state::AppState,
+        };
+        use reqwest::{Method, header::HeaderMap};
+        use std::sync::Arc;
+
+        let payload = json!({"data":{"objectSelectByTypeAndSlug":{
+            "id":"fetched","slug":"fetched","url":"https://www.ign.com/games/fetched",
+            "type":"Game","metadata":{"names":{"name":"Fetched Game","short":"Fetched Game"},
+                "descriptions":{"short":"Description","long":""}},"objectRegions":[]
+        }}});
+        let mut http = Http::fixtures(vec![Fixture {
+            method: Method::POST,
+            url: IGN_GRAPHQL_URL.to_owned(),
+            result: Ok(crate::http::Response {
+                status: 200,
+                headers: HeaderMap::new(),
+                body: serde_json::to_vec(&payload).unwrap(),
+                url: IGN_GRAPHQL_URL.to_owned(),
+            }),
+        }]);
+        let gate = http.gate_next_request();
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        save(
+            &state,
+            &json!(42),
+            json!({"title":"Original","deck_compat_override":0}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+
+        let applying = Arc::clone(&state);
+        let task =
+            tokio::spawn(async move { apply_fetched(&applying, &json!(42), "fetched").await });
+        tokio::time::timeout(std::time::Duration::from_secs(2), gate.started.notified())
+            .await
+            .unwrap();
+        let blocker = state.store().await.unwrap();
+        gate.resume.notify_one();
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        let editing = Arc::clone(&state);
+        let edit = tokio::spawn(async move {
+            editing
+                .change(|transaction| {
+                    transaction.set(&["metadata", "42", "deck_compat_override"], json!("valve"))?;
+                    Ok(())
+                })
+                .await
+        });
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        drop(blocker);
+
+        assert!(task.await.unwrap().unwrap().is_some());
+        edit.await.unwrap().unwrap();
+        assert_eq!(
+            state.store().await.unwrap().data()["metadata"]["42"]["deck_compat_override"],
+            "valve"
+        );
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
     }
 
     fn enrichment_responses(mode: &str) -> Vec<crate::http::Fixture> {

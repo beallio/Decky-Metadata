@@ -90,12 +90,23 @@ async fn start(state: Arc<AppState>, games: &Value, pipeline: Pipeline) -> Resul
     let progress = job.progress.clone();
     let state = Arc::clone(&state);
     job.task = Some(tokio::spawn(async move {
+        let finished_state = Arc::clone(&state);
         match pipeline {
             Pipeline::Metadata => run_metadata_job(state, games).await,
             Pipeline::Activity => run_activity_job(state, games).await,
         }
+        finish_if_running(&finished_state, pipeline).await;
     }));
     Ok(progress)
+}
+
+async fn finish_if_running(state: &AppState, pipeline: Pipeline) {
+    let mut job = pipeline_job(state, pipeline).lock().await;
+    if job.progress["running"].as_bool() == Some(true) {
+        job.progress["running"] = Value::Bool(false);
+        job.progress["status"] = json!("completed");
+        job.progress["current"] = json!("");
+    }
 }
 
 pub async fn start_scan_missing(state: Arc<AppState>, games: &Value) -> Result<Value, String> {
@@ -212,13 +223,13 @@ struct Target {
 }
 
 fn game_array(games: &Value) -> Result<&[Value], String> {
-    if games.is_null() {
-        Ok(&[])
-    } else {
-        games
-            .as_array()
-            .map(Vec::as_slice)
-            .ok_or_else(|| "games must be an array".to_owned())
+    if !matching::py_truthy(games) {
+        return Ok(&[]);
+    }
+    match games {
+        Value::Array(games) => Ok(games),
+        Value::Object(_) | Value::String(_) => Ok(&[]),
+        _ => Err("games must be an array".to_owned()),
     }
 }
 
@@ -287,19 +298,7 @@ async fn run_metadata_job(state: Arc<AppState>, games: Vec<GameInput>) {
             return;
         }
     };
-    let index = if targets.is_empty() {
-        None
-    } else {
-        if state.cancel.is_cancelled() {
-            return;
-        }
-        let index = state.ensure_delisted_index(false).await;
-        if state.cancel.is_cancelled() {
-            return;
-        }
-        index
-    };
-    run_targets(state, Pipeline::Metadata, targets, index).await;
+    run_targets(state, Pipeline::Metadata, targets).await;
 }
 
 async fn run_activity_job(state: Arc<AppState>, games: Vec<GameInput>) {
@@ -310,7 +309,7 @@ async fn run_activity_job(state: Arc<AppState>, games: Vec<GameInput>) {
             return;
         }
     };
-    run_targets(state, Pipeline::Activity, targets, None).await;
+    run_targets(state, Pipeline::Activity, targets).await;
 }
 
 fn log_job_error(pipeline: Pipeline, error: &str) {
@@ -364,12 +363,7 @@ async fn activity_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<T
         .collect())
 }
 
-async fn run_targets(
-    state: Arc<AppState>,
-    pipeline: Pipeline,
-    targets: Vec<Target>,
-    delisted_index: Option<Arc<Value>>,
-) {
+async fn run_targets(state: Arc<AppState>, pipeline: Pipeline, targets: Vec<Target>) {
     if state.cancel.is_cancelled() {
         return;
     }
@@ -406,7 +400,7 @@ async fn run_targets(
         }
 
         let result = match pipeline {
-            Pipeline::Metadata => metadata_match(&state, &target, delisted_index.as_deref()).await,
+            Pipeline::Metadata => metadata_match(&state, &target).await,
             Pipeline::Activity => {
                 let value = target.metadata.take().unwrap_or_else(|| json!({}));
                 activity_match(&state, value, &target.title).await
@@ -562,11 +556,7 @@ impl ScanResult {
     }
 }
 
-async fn metadata_match(
-    state: &AppState,
-    target: &Target,
-    delisted_index: Option<&Value>,
-) -> Result<ScanResult, String> {
+async fn metadata_match(state: &AppState, target: &Target) -> Result<ScanResult, String> {
     let title = &target.title;
     let steam_shell = json!({"title": title, "source": "Manual", "id": title});
     let steam = metadata::with_steam_news(state, steam_shell, title, 10, true).await?;
@@ -581,9 +571,14 @@ async fn metadata_match(
         None
     };
 
+    let index = state.ensure_delisted_index(false).await;
+    if state.cancel.is_cancelled() {
+        return Err("backend stopping".into());
+    }
     let delisted_app_id = delisted::resolve_delisted_appid_for_title(
         title,
-        delisted_index
+        index
+            .as_deref()
             .and_then(|index| index.get("apps"))
             .unwrap_or(&Value::Null),
     );
@@ -1427,6 +1422,134 @@ mod tests {
             assert_eq!(progress["message"], "");
             assert_eq!(progress["error"], "");
         }
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn target_load_errors_leave_both_jobs_terminal() {
+        let (_directory, state) = test_state(Vec::new()).await;
+        let path = state
+            .env
+            .plugin_settings_dir
+            .join(crate::storage::SETTINGS_FILE_NAME);
+        tokio::fs::write(&path, b"{").await.unwrap();
+        let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+        file.set_times(
+            std::fs::FileTimes::new()
+                .set_modified(std::time::SystemTime::now() + Duration::from_secs(2)),
+        )
+        .unwrap();
+
+        let games = json!([{"appid":1,"name":"No cached metadata"}]);
+        start_scan_missing(Arc::clone(&state), &games)
+            .await
+            .unwrap();
+        start_refresh_steam_activities(Arc::clone(&state), &games)
+            .await
+            .unwrap();
+        state.jobs.drain().await;
+
+        for progress in [
+            get_scan_progress(&state).await,
+            get_activity_refresh_progress(&state).await,
+        ] {
+            assert_eq!(progress["running"], false);
+            assert_eq!(progress["status"], "completed");
+            assert_eq!(progress["total"], 0);
+            assert_eq!(progress["completed"], 0);
+            assert_eq!(progress["assigned"], 0);
+            assert_eq!(progress["failed"], 0);
+            assert_eq!(progress["current"], "");
+            assert_eq!(progress["message"], "");
+            assert_eq!(progress["error"], "");
+        }
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn game_list_rpcs_match_python_truthy_iterable_inputs() {
+        let (_directory, state) = test_state(Vec::new()).await;
+        let inputs = [
+            json!("bad"),
+            json!(false),
+            json!(0),
+            json!(""),
+            json!({}),
+            Value::Null,
+            json!([1, "x", {}]),
+        ];
+        for games in inputs {
+            assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 0);
+            assert!(
+                start_scan_missing(Arc::clone(&state), &games)
+                    .await
+                    .unwrap()["running"]
+                    .as_bool()
+                    .unwrap()
+            );
+            assert!(
+                start_refresh_steam_activities(Arc::clone(&state), &games)
+                    .await
+                    .unwrap()["running"]
+                    .as_bool()
+                    .unwrap()
+            );
+            state.jobs.drain().await;
+            for progress in [
+                get_scan_progress(&state).await,
+                get_activity_refresh_progress(&state).await,
+            ] {
+                assert_eq!(progress["running"], false);
+                assert_eq!(progress["status"], "completed");
+                assert_eq!(progress["total"], 0);
+                assert_eq!(progress["completed"], 0);
+                assert_eq!(progress["assigned"], 0);
+                assert_eq!(progress["failed"], 0);
+                assert_eq!(progress["current"], "");
+                assert_eq!(progress["message"], "");
+                assert_eq!(progress["error"], "");
+            }
+        }
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn scan_uses_the_current_delisted_index_at_each_fallback() {
+        let title = "Fresh Delisted";
+        let app_id = 321;
+        let mut fixtures = vec![
+            store_search(title, json!([])),
+            steam_events(app_id, json!([])),
+            Fixture::failure(steam_news_url(app_id)),
+            steam_compatibility(app_id, Err(())),
+            steam_details(app_id, Err(())),
+        ];
+        fixtures.extend(
+            crate::providers::ign::slug_candidates(title)
+                .iter()
+                .map(|_| post_json(json!({"data":{"objectSelectByTypeAndSlug":null}}))),
+        );
+        fixtures.push(empty_ign_search());
+        let (_directory, mut state) = test_state(fixtures).await;
+        let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
+        let target = Target {
+            app_id: Number::from(1),
+            title: title.into(),
+            metadata: None,
+        };
+        let scanning = Arc::clone(&state);
+        let task = tokio::spawn(async move { metadata_match(&scanning, &target).await });
+        tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
+            .await
+            .unwrap();
+        set_delisted(&state, vec![json!([app_id, title])]).await;
+        gate.resume.notify_one();
+
+        let result = task.await.unwrap().unwrap();
+        assert_eq!(result.metadata.unwrap()["steam_appid"], app_id);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

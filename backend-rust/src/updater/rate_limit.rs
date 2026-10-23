@@ -5,7 +5,9 @@ use std::collections::HashMap;
 pub fn retry_after_until(headers: &HashMap<String, String>, now: DateTime<Utc>) -> DateTime<Utc> {
     if let Some(value) = headers.get("retry-after") {
         if let Some(seconds) = parse_integer(value) {
-            if let Some(until) = now.checked_add_signed(Duration::seconds(seconds)) {
+            if let Some(until) =
+                Duration::try_seconds(seconds).and_then(|duration| now.checked_add_signed(duration))
+            {
                 return until;
             }
         }
@@ -58,6 +60,15 @@ mod tests {
         assert_eq!(
             parse_rate_limit_retry_after(&headers, now()),
             "2026-07-17T12:01:00+00:00"
+        );
+    }
+
+    #[test]
+    fn overflowing_retry_after_falls_back_without_panicking() {
+        let headers = HashMap::from([("retry-after".to_owned(), i64::MAX.to_string())]);
+        assert_eq!(
+            retry_after_until(&headers, now()),
+            now().checked_add_signed(Duration::minutes(1)).unwrap()
         );
     }
 }
