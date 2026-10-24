@@ -24,6 +24,7 @@ import {
   IgnTrailerResult,
 } from "./types";
 
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
   "get_all_metadata"
 );

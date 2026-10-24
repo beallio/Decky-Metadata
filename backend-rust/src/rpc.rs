@@ -7,6 +7,7 @@ use crate::{
     storage,
 };
 use decky_plugin::{MethodResult, RawMethodResult};
+use serde::{Serialize, Serializer};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
@@ -112,11 +113,40 @@ pub async fn dispatch_raw(state: &AppState, method: &str, args: &[Value]) -> Raw
         }
         "get_all_metadata" => {
             arity(args, 0, 0)?;
-            &data["metadata"]
+            return serde_json::value::to_raw_value(&WithoutNews(&data["metadata"]))
+                .map_err(|error| error.to_string());
         }
         _ => return Err(format!("Plugin has no method {method}")),
     };
     serde_json::value::to_raw_value(value).map_err(|error| error.to_string())
+}
+
+/// The all-records reply leaves out non-empty `steam_news`, most of its bytes; the frontend
+/// loads a record's news with `get_metadata` when needed. An absent key means "not loaded",
+/// so empty news stays as `[]`.
+struct WithoutNews<'a>(&'a Value);
+
+impl Serialize for WithoutNews<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0.as_object() {
+            Some(records) => serializer
+                .collect_map(records.iter().map(|(key, record)| (key, Summary(record)))),
+            None => self.0.serialize(serializer),
+        }
+    }
+}
+
+struct Summary<'a>(&'a Value);
+
+impl Serialize for Summary<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0.as_object() {
+            Some(record) => serializer.collect_map(record.iter().filter(|(key, value)| {
+                key.as_str() != "steam_news" || value.as_array().is_some_and(Vec::is_empty)
+            })),
+            None => self.0.serialize(serializer),
+        }
+    }
 }
 
 /// Preference getters reject when the settings file could not be read, like the original backend.
@@ -577,6 +607,36 @@ mod tests {
         assert_eq!(created["screenshots"][0]["url"], "https://a.example/1.png");
         let updated = save(vec![json!(7), stale, newer]).await.unwrap();
         assert_eq!(updated["screenshots"][0]["url"], "https://a.example/1.png");
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn all_records_reply_leaves_out_only_non_empty_news() {
+        let (root, state) = test_state(None).await;
+        let news = json!([{"id":"n1","title":"Patch","url":"https://store.steampowered.com/news/1","date":1}]);
+        for (id, record) in [
+            (1, json!({"title":"With news","source":"Steam","steam_news":news})),
+            (2, json!({"title":"No news","source":"Steam","steam_news":[]})),
+        ] {
+            dispatch(Arc::clone(&state), "save_metadata", vec![json!(id), record]).await.unwrap();
+        }
+        let read = |method: &'static str, args: Vec<Value>| {
+            let state = Arc::clone(&state);
+            async move {
+                let raw = dispatch_raw(&state, method, &args).await.unwrap();
+                serde_json::from_str::<Value>(raw.get()).unwrap()
+            }
+        };
+        let all = read("get_all_metadata", Vec::new()).await;
+        assert!(all["1"].get("steam_news").is_none());
+        assert_eq!(all["1"]["title"], "With news");
+        assert!(all["1"]["steam_news_enriched_at"].is_number());
+        assert_eq!(all["2"]["steam_news"], json!([]));
+        // The single-record read stays complete, and the stored record keeps its news.
+        let full = read("get_metadata", vec![json!(1)]).await;
+        assert_eq!(full["steam_news"][0]["id"], "n1");
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["1"], full);
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

@@ -8,7 +8,7 @@ import {
   getCompatibilityDefaultScope,
   saveMetadataIfUnchanged,
 } from "../backend";
-import { clearDeckyNativeActivityForApp } from "./activity";
+import { clearDeckyNativeActivityForApp, fullMetadataForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
@@ -854,7 +854,8 @@ const syncStoreCategories = (overview: any, categories: number[] | undefined) =>
 const applyMetadataToOverview = (appId: number, overview: any) => {
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
-  if (!metadata || !metadata.steam_news?.length) {
+  // An unloaded news list (no `steam_news` key) is not "no news"; only a loaded empty one is.
+  if (!metadata || (Array.isArray(metadata.steam_news) && !metadata.steam_news.length)) {
     clearDeckyNativeActivityForApp(appId);
   }
   if (!metadata) {
@@ -1072,15 +1073,18 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
     // A save, re-match or removal during the request wins over this background fill-in.
     if (metadataCache[String(appId)] !== metadata) return;
     if (refreshed?.screenshots?.length) {
-      // The backend commits only if the stored record still equals this snapshot, which also
-      // covers scan and refresh writes this cache has not seen yet.
+      // Save over the full record: the all-records load leaves out news, and a save of that
+      // summary would drop it. The backend commits only if the stored record still equals
+      // this snapshot, which also covers scan and refresh writes this cache has not seen yet.
+      const full = await fullMetadataForApp(appId);
+      if (!full || full.screenshots?.length || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       const saved = await saveMetadataIfUnchanged(
         appId,
-        { ...metadata, screenshots: refreshed.screenshots },
-        metadata,
+        { ...full, screenshots: refreshed.screenshots },
+        full,
       );
       if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      if (metadataCache[String(appId)] !== metadata) return;
+      if (metadataCache[String(appId)] !== full) return;
       setMetadataCacheEntry(appId, saved);
       applyMetadata(appId);
       notifyCompatibilityRevision();

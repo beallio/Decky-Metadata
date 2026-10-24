@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     return { unpatch: () => { target[method] = original; } };
   }),
   getAllMetadata: vi.fn(),
+  getMetadata: vi.fn(),
   getCompatibilityDefault: vi.fn(),
   getCompatibilityDefaultScope: vi.fn(),
   autoFetchMetadata: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock("../backend", () => ({
   fetchMetadata: mocks.fetchMetadata,
   frontendLog: vi.fn(() => Promise.resolve()),
   getAllMetadata: mocks.getAllMetadata,
+  getMetadata: mocks.getMetadata,
   saveMetadataIfUnchanged: mocks.saveMetadata,
   getCompatibilityDefault: mocks.getCompatibilityDefault,
   getCompatibilityDefaultScope: mocks.getCompatibilityDefaultScope,
@@ -153,6 +155,7 @@ afterEach(() => {
   delete (globalThis as Record<string, unknown>).window;
   mocks.afterPatch.mockClear();
   mocks.getAllMetadata.mockReset();
+  mocks.getMetadata.mockReset();
   mocks.getCompatibilityDefault.mockReset();
   mocks.getCompatibilityDefaultScope.mockReset();
   mocks.getCompatibilityDefaultScope.mockResolvedValue("all");
@@ -293,6 +296,8 @@ const compatibilityMetadata = (
   store_categories: [],
   steam_dlc_appids: [],
   has_points_shop: false,
+  // Stored records always carry news; only the all-records summary leaves it out.
+  steam_news: [],
   deck_compat_category: category,
   deck_compat_override: override,
   steam_appid: steamAppId,
@@ -1048,6 +1053,29 @@ describe("compatibility metadata application", () => {
     expect(metadataCache[String(appId)]).toBe(saved);
   });
 
+  it("saves screenshots over the full record when the cache holds an all-records summary", async () => {
+    const appId = 93006;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const full = {
+      ...activityMetadata("Kept news", "52345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    beginCompatibilityLifecycle();
+    const shots = [{ url: "https://example.invalid/shot.png" }];
+    mocks.fetchMetadata.mockResolvedValue({ screenshots: shots });
+    mocks.getMetadata.mockResolvedValue(full);
+    mocks.saveMetadata.mockImplementation(async (_appId, value) => value);
+    await tryEnrichScreenshotsForApp(appId);
+    // The news survives the save, and the guard compares against the full stored record.
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, { ...full, screenshots: shots }, full);
+    expect(metadataCache[String(appId)]?.steam_news?.[0]?.title).toBe("Kept news");
+  });
+
   it("does not save screenshots over a record edited or removed during the request", async () => {
     const appId = 93004;
     installCompatibilityOverview(appId, 0xa0);
@@ -1157,6 +1185,26 @@ describe("compatibility metadata application", () => {
     metadataCache[String(appId)] = activityMetadata("", "", false) as any;
     applyMetadata(appId);
     expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
+  });
+
+  it("keeps Activity for an all-records summary until its news loads", async () => {
+    const appId = 9221;
+    installCompatibilityOverview(appId, 0xa0);
+    const store = { m_mapAppActivity: new Map<number, any>() };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    const full = activityMetadata("Lazy plugin card", "42345678901234567") as any;
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    // Applying a summary must not read its missing news as "no news".
+    applyMetadata(appId);
+    mocks.getMetadata.mockResolvedValue(full);
+    await refreshDeckyNativeActivityForApp(appId, store);
+    expect(mocks.getMetadata).toHaveBeenCalledWith(appId);
+    expect(store.m_mapAppActivity.get(appId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(metadataCache[String(appId)]).toBe(full);
+    metadataCache[String(appId)] = summary;
+    applyMetadata(appId);
+    expect(store.m_mapAppActivity.get(appId)).toMatchObject({ __deckyNativeActivity: true });
   });
 
   it("publishes one revision after a cache refresh applies the complete batch", async () => {

@@ -1,5 +1,5 @@
 import { findModuleChild } from "@decky/ui";
-import { frontendLog, getCommunityFallbackPage, refreshSteamActivityForApp } from "../backend";
+import { frontendLog, getCommunityFallbackPage, getMetadata, refreshSteamActivityForApp } from "../backend";
 import {
   requestedCommunityPage,
   resolveCommunityRequest,
@@ -48,6 +48,19 @@ export const configureActivityMetadataLoader = (
 };
 
 const activityRefreshGate = createActivityRefreshGate();
+
+/**
+ * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
+ * once it is needed; a newer cache entry written meanwhile wins.
+ */
+export const fullMetadataForApp = async (appId: number) => {
+  const key = String(appId);
+  const summary = metadataCache[key];
+  if (!summary || "steam_news" in summary) return summary;
+  const full = await getMetadata(appId);
+  if (full && metadataCache[key] === summary) setMetadataCacheEntry(appId, full);
+  return metadataCache[key];
+};
 
 const maybeRefreshSteamNewsForApp = (appId: number) => {
   const lifecycleGeneration = compatibilityLifecycleSnapshot();
@@ -846,6 +859,8 @@ const getDeckyNativeActivityForApp = (appId: number) => {
   if (!appId || !isNonSteamApp(overview)) return null;
   void maybeRefreshSteamNewsForApp(appId);
   const metadata = metadataCache[String(appId)];
+  // News not loaded yet: keep any built Activity; refreshDeckyNativeActivityForApp loads it.
+  if (metadata && !("steam_news" in metadata)) return deckyNativeActivityCache().get(appId) ?? null;
   if (!metadata || !metadata.steam_news?.length) {
     clearDeckyNativeActivityForApp(appId);
     return null;
@@ -864,7 +879,8 @@ export const refreshDeckyNativeActivityForApp = async (appId: number, store?: an
   if (!appId || !isNonSteamApp(overview)) return null;
   await ensureMetadataCacheFn();
   if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
-  const metadata = metadataCache[String(appId)];
+  const metadata = await fullMetadataForApp(appId);
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   if (!metadata) {
     clearDeckyNativeActivityForApp(appId, store);
     return null;
