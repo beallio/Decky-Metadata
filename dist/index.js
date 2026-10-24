@@ -86,6 +86,8 @@ function FaTags (props) {
 const getAllMetadata = callable("get_all_metadata");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+const saveMetadataIfUnchanged = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
 const clearMetadataCache = callable("clear_metadata_cache");
 const getShortcutNameManagement = callable("get_shortcut_name_management");
@@ -177,6 +179,7 @@ var backend = /*#__PURE__*/Object.freeze({
     removeMetadata: removeMetadata,
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
+    saveMetadataIfUnchanged: saveMetadataIfUnchanged,
     saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
     searchSteamMatches: searchSteamMatches,
@@ -5147,19 +5150,12 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         if (metadataCache[String(appId)] !== metadata)
             return;
         if (refreshed?.screenshots?.length) {
-            // Scans and refreshes write the backend without updating this cache, so compare the
-            // stored record too. shortcut: one RPC gap remains before the save, close it with a
-            // backend-guarded save if the RPC contract may change.
-            const stored = await getMetadata(appId);
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            // The backend commits only if the stored record still equals this snapshot, which also
+            // covers scan and refresh writes this cache has not seen yet.
+            const saved = await saveMetadataIfUnchanged(appId, { ...metadata, screenshots: refreshed.screenshots }, metadata);
+            if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            if (JSON.stringify(stored) !== JSON.stringify(metadata) || metadataCache[String(appId)] !== metadata)
-                return;
-            const saved = await saveMetadata(appId, {
-                ...metadata,
-                screenshots: refreshed.screenshots,
-            });
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            if (metadataCache[String(appId)] !== metadata)
                 return;
             setMetadataCacheEntry(appId, saved);
             applyMetadata(appId);

@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { autorun, observable, runInAction } from "mobx";
 import type { MetadataData } from "../types";
 
-// The backend mock serves the frontend cache by default, i.e. no backend-only change.
-const metadataCacheRef = vi.hoisted(() => ({ current: null as Record<string, unknown> | null }));
 const mocks = vi.hoisted(() => ({
   afterPatch: vi.fn((target: Record<string, unknown>, method: string, handler: Function) => {
     const original = target[method] as Function;
@@ -13,7 +11,6 @@ const mocks = vi.hoisted(() => ({
     return { unpatch: () => { target[method] = original; } };
   }),
   getAllMetadata: vi.fn(),
-  getMetadata: vi.fn(async (appId: number) => metadataCacheRef.current?.[String(appId)] ?? null),
   getCompatibilityDefault: vi.fn(),
   getCompatibilityDefaultScope: vi.fn(),
   autoFetchMetadata: vi.fn(),
@@ -27,7 +24,7 @@ vi.mock("../backend", () => ({
   fetchMetadata: mocks.fetchMetadata,
   frontendLog: vi.fn(() => Promise.resolve()),
   getAllMetadata: mocks.getAllMetadata,
-  getMetadata: mocks.getMetadata,
+  saveMetadataIfUnchanged: mocks.saveMetadata,
   getCompatibilityDefault: mocks.getCompatibilityDefault,
   getCompatibilityDefaultScope: mocks.getCompatibilityDefaultScope,
   saveMetadata: mocks.saveMetadata,
@@ -41,7 +38,6 @@ import {
   metadataState,
   subscribeCompatibilityRevision,
 } from "./core";
-metadataCacheRef.current = metadataCache as Record<string, unknown>;
 import { refreshDeckyNativeActivityForApp } from "./activity";
 import {
   applyMetadata,
@@ -1048,7 +1044,7 @@ describe("compatibility metadata application", () => {
     mocks.fetchMetadata.mockResolvedValue({ screenshots: saved.screenshots });
     mocks.saveMetadata.mockResolvedValue(saved);
     await tryEnrichScreenshotsForApp(appId);
-    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.objectContaining({ screenshots: saved.screenshots }));
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.objectContaining({ screenshots: saved.screenshots }), existing);
     expect(metadataCache[String(appId)]).toBe(saved);
   });
 
@@ -1079,7 +1075,7 @@ describe("compatibility metadata application", () => {
     }
   });
 
-  it("does not save screenshots over a newer backend record the frontend cache has not seen", async () => {
+  it("keeps the cache when the backend rejects a screenshot save over a record it changed", async () => {
     const appId = 93005;
     installCompatibilityOverview(appId, 0xa0);
     metadataState.metadataLoaded = true;
@@ -1092,10 +1088,11 @@ describe("compatibility metadata application", () => {
     metadataCache[String(appId)] = existing;
     beginCompatibilityLifecycle();
     mocks.fetchMetadata.mockResolvedValue({ screenshots: [{ url: "https://example.invalid/shot.png" }] });
-    // A metadata scan committed a new description; the frontend cache still holds the old record.
-    mocks.getMetadata.mockResolvedValueOnce({ ...existing, description: "Saved by a scan" });
+    // A metadata scan committed a newer record the frontend cache has not seen; the backend
+    // compares against the snapshot under its storage lock and returns null.
+    mocks.saveMetadata.mockResolvedValue(null);
     await tryEnrichScreenshotsForApp(appId);
-    expect(mocks.saveMetadata).not.toHaveBeenCalled();
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.anything(), existing);
     expect(metadataCache[String(appId)]).toBe(existing);
   });
 
