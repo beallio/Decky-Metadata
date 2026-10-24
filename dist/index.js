@@ -83,6 +83,7 @@ function FaTags (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M345 39.1L472.8 168.4c52.4 53 52.4 138.2 0 191.2L360.8 472.9c-9.3 9.4-24.5 9.5-33.9 .2s-9.5-24.5-.2-33.9L438.6 325.9c33.9-34.3 33.9-89.4 0-123.7L310.9 72.9c-9.3-9.4-9.2-24.6 .2-33.9s24.6-9.2 33.9 .2zM0 229.5L0 80C0 53.5 21.5 32 48 32l149.5 0c17 0 33.3 6.7 45.3 18.7l168 168c25 25 25 65.5 0 90.5L277.3 442.7c-25 25-65.5 25-90.5 0l-168-168C6.7 262.7 0 246.5 0 229.5zM144 144a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"},"child":[]}]})(props);
 }
 
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 const getAllMetadata = callable("get_all_metadata");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
@@ -2477,6 +2478,32 @@ const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => 
     applyMetadataFn = applyMetadata;
 };
 const activityRefreshGate = createActivityRefreshGate();
+/** One full-record read per summary object; Steam's activity getters can ask many times. */
+const fullMetadataLoads = new WeakMap();
+/**
+ * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
+ * once it is needed; a newer cache entry written meanwhile wins. A failed read resolves to the
+ * summary, so callers must treat a missing `steam_news` key as "not loaded".
+ */
+const fullMetadataForApp = (appId) => {
+    const key = String(appId);
+    const summary = metadataCache[key];
+    if (!summary || "steam_news" in summary)
+        return Promise.resolve(summary);
+    let load = fullMetadataLoads.get(summary);
+    if (!load) {
+        load = getMetadata(appId)
+            .then((full) => {
+            if (full && metadataCache[key] === summary)
+                setMetadataCacheEntry(appId, full);
+        })
+            .catch((error) => info("activity", "full metadata load failed", error))
+            .then(() => metadataCache[key])
+            .finally(() => fullMetadataLoads.delete(summary));
+        fullMetadataLoads.set(summary, load);
+    }
+    return load;
+};
 const maybeRefreshSteamNewsForApp = (appId) => {
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
@@ -3257,6 +3284,9 @@ const getDeckyNativeActivityForApp = (appId) => {
         return null;
     void maybeRefreshSteamNewsForApp(appId);
     const metadata = metadataCache[String(appId)];
+    // News not loaded yet: keep any built Activity; refreshDeckyNativeActivityForApp loads it.
+    if (metadata && !("steam_news" in metadata))
+        return deckyNativeActivityCache().get(appId) ?? null;
     if (!metadata || !metadata.steam_news?.length) {
         clearDeckyNativeActivityForApp(appId);
         return null;
@@ -3279,7 +3309,12 @@ const refreshDeckyNativeActivityForApp = async (appId, store) => {
     await ensureMetadataCacheFn();
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
         return null;
-    const metadata = metadataCache[String(appId)];
+    const metadata = await fullMetadataForApp(appId);
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
+    // News could not load: keep whatever Activity is already shown.
+    if (metadata && !("steam_news" in metadata))
+        return deckyNativeActivityCache().get(appId) ?? null;
     if (!metadata) {
         clearDeckyNativeActivityForApp(appId, store);
         return null;
@@ -4954,7 +4989,8 @@ const applyMetadataToOverview = (appId, overview) => {
     if (!isNativeNonSteamShortcut(overview))
         return false;
     const metadata = metadataCache[String(appId)];
-    if (!metadata || !metadata.steam_news?.length) {
+    // An unloaded news list (no `steam_news` key) is not "no news"; only a loaded empty one is.
+    if (!metadata || (Array.isArray(metadata.steam_news) && !metadata.steam_news.length)) {
         clearDeckyNativeActivityForApp(appId);
     }
     if (!metadata) {
@@ -5136,26 +5172,37 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         String(metadata.source || "").toUpperCase() !== "IGN") {
         return;
     }
-    const source = metadata.source_url || String(metadata.id || "");
-    if (!source)
+    if (!(metadata.source_url || metadata.id))
         return;
     const request = { lifecycleGeneration };
     metadataState.screenshotRequestOwners.set(appId, request);
     metadataState.loadingScreenshots.add(appId);
     try {
+        // Snapshot the full record first: the all-records load leaves out news, so saving the
+        // summary would drop it, and the fetch source must come from the same snapshot the
+        // backend later compares against. A re-match or edit after this point fails that check.
+        const full = await fullMetadataForApp(appId);
+        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            return;
+        // A failed full-record read leaves the summary; saving it would drop the stored news.
+        if (!full || !("steam_news" in full) || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN")
+            return;
+        const source = full.source_url || String(full.id || "");
+        if (!source)
+            return;
         const refreshed = await fetchMetadata(source);
         if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
             return;
-        // A save, re-match or removal during the request wins over this background fill-in.
-        if (metadataCache[String(appId)] !== metadata)
+        // A frontend save, re-match or removal during the request wins over this fill-in.
+        if (metadataCache[String(appId)] !== full)
             return;
         if (refreshed?.screenshots?.length) {
-            // The backend commits only if the stored record still equals this snapshot, which also
+            // The backend commits only while the stored record still equals `full`, which also
             // covers scan and refresh writes this cache has not seen yet.
-            const saved = await saveMetadataIfUnchanged(appId, { ...metadata, screenshots: refreshed.screenshots }, metadata);
+            const saved = await saveMetadataIfUnchanged(appId, { ...full, screenshots: refreshed.screenshots }, full);
             if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            if (metadataCache[String(appId)] !== metadata)
+            if (metadataCache[String(appId)] !== full)
                 return;
             setMetadataCacheEntry(appId, saved);
             applyMetadata(appId);

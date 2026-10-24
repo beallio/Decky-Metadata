@@ -11,7 +11,11 @@
     ["get_all_metadata", "get_all_metadata", 200],
   ];
 
-  function validateFixtureRecord(value, expected) {
+  // The Rust all-records reply leaves out non-empty news; the Python original sends it.
+  function validateFixtureRecord(value, expected, newsMayBeOmitted = false) {
+    if (newsMayBeOmitted && value && typeof value === "object" && !("steam_news" in value)) {
+      value = { ...value, steam_news: expected.steam_news };
+    }
     if (!value || typeof value !== "object" ||
         (expected.appid !== undefined && value.appid !== expected.appid) ||
         value.id !== expected.id || value.title !== expected.title || value.source !== "Manual" ||
@@ -69,7 +73,7 @@
         if (!Object.prototype.hasOwnProperty.call(value, String(record.appid))) {
           throw new Error(`get_all_metadata omitted ${record.appid}`);
         }
-        validateFixtureRecord(value[String(record.appid)], record);
+        validateFixtureRecord(value[String(record.appid)], record, true);
       }
     } else if (method === "save_metadata") {
       validateFixtureRecord(value, expected.record);

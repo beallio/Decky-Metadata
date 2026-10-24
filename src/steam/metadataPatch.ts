@@ -8,7 +8,7 @@ import {
   getCompatibilityDefaultScope,
   saveMetadataIfUnchanged,
 } from "../backend";
-import { clearDeckyNativeActivityForApp } from "./activity";
+import { clearDeckyNativeActivityForApp, fullMetadataForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
 import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
@@ -854,7 +854,8 @@ const syncStoreCategories = (overview: any, categories: number[] | undefined) =>
 const applyMetadataToOverview = (appId: number, overview: any) => {
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
-  if (!metadata || !metadata.steam_news?.length) {
+  // An unloaded news list (no `steam_news` key) is not "no news"; only a loaded empty one is.
+  if (!metadata || (Array.isArray(metadata.steam_news) && !metadata.steam_news.length)) {
     clearDeckyNativeActivityForApp(appId);
   }
   if (!metadata) {
@@ -1061,26 +1062,34 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   ) {
     return;
   }
-  const source = metadata.source_url || String(metadata.id || "");
-  if (!source) return;
+  if (!(metadata.source_url || metadata.id)) return;
   const request = { lifecycleGeneration };
   metadataState.screenshotRequestOwners.set(appId, request);
   metadataState.loadingScreenshots.add(appId);
   try {
+    // Snapshot the full record first: the all-records load leaves out news, so saving the
+    // summary would drop it, and the fetch source must come from the same snapshot the
+    // backend later compares against. A re-match or edit after this point fails that check.
+    const full = await fullMetadataForApp(appId);
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+    // A failed full-record read leaves the summary; saving it would drop the stored news.
+    if (!full || !("steam_news" in full) || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN") return;
+    const source = full.source_url || String(full.id || "");
+    if (!source) return;
     const refreshed = await fetchMetadata(source);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-    // A save, re-match or removal during the request wins over this background fill-in.
-    if (metadataCache[String(appId)] !== metadata) return;
+    // A frontend save, re-match or removal during the request wins over this fill-in.
+    if (metadataCache[String(appId)] !== full) return;
     if (refreshed?.screenshots?.length) {
-      // The backend commits only if the stored record still equals this snapshot, which also
+      // The backend commits only while the stored record still equals `full`, which also
       // covers scan and refresh writes this cache has not seen yet.
       const saved = await saveMetadataIfUnchanged(
         appId,
-        { ...metadata, screenshots: refreshed.screenshots },
-        metadata,
+        { ...full, screenshots: refreshed.screenshots },
+        full,
       );
       if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      if (metadataCache[String(appId)] !== metadata) return;
+      if (metadataCache[String(appId)] !== full) return;
       setMetadataCacheEntry(appId, saved);
       applyMetadata(appId);
       notifyCompatibilityRevision();
