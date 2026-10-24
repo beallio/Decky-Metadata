@@ -85,9 +85,14 @@ impl Storage {
                 self.loaded = true;
                 return Ok(true);
             }
-            Err(LoadError::Invalid) => return Ok(false),
+            // The cache no longer matches the file; refuse writes until a valid file loads.
+            Err(LoadError::Invalid) => {
+                self.loaded = false;
+                return Ok(false);
+            }
             Err(LoadError::Failure(error)) => {
                 log_load_failure(&self.path, &error);
+                self.loaded = false;
                 return Ok(false);
             }
         };
@@ -1319,7 +1324,15 @@ mod tests {
             .unwrap();
         assert!(!store.refresh().await.unwrap());
         assert_eq!(store.data(), &before);
-        assert_eq!(tokio::fs::read(path).await.unwrap(), invalid);
+        assert_eq!(tokio::fs::read(&path).await.unwrap(), invalid);
+        // A later mutation must not replace the damaged file with the cached document.
+        assert!(
+            store
+                .transaction(|tx| tx.set(&["settings", "mini_achievements_enabled"], json!(true)))
+                .await
+                .is_err()
+        );
+        assert_eq!(tokio::fs::read(&path).await.unwrap(), invalid);
     }
     #[tokio::test]
     async fn failed_store_state_normalization_is_logged_to_plugin_events() {

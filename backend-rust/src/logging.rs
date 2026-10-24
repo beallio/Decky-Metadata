@@ -23,8 +23,9 @@ static REDACTIONS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     [
         r"(?i)([?&]y=)[^&#\s]+",
         r"(?i)(\bapi[_-]?key=)[^&#\s]+",
-        r#"(?i)((?:['"])?\bAuthorization(?:['"])?\s*[:=]\s*(?:['"])?)(?:Bearer\s+)?[^'"\s,}]+"#,
-        r#"(?i)((?:['"])?\bX-Authorization(?:['"])?\s*[:=]\s*(?:['"])?)[^'"\s,}]+"#,
+        // Any scheme word (Bearer, Basic, token…) is consumed so its credentials are hidden too.
+        r#"(?i)((?:['"])?\bAuthorization(?:['"])?\s*[:=]\s*(?:['"])?)(?:[A-Za-z][\w-]*\s+)?[^'"\s,}]+"#,
+        r#"(?i)((?:['"])?\bX-Authorization(?:['"])?\s*[:=]\s*(?:['"])?)(?:[A-Za-z][\w-]*\s+)?[^'"\s,}]+"#,
     ]
     .iter()
     .map(|pattern| Regex::new(pattern).unwrap())
@@ -251,9 +252,9 @@ mod tests {
     #[test]
     fn sensitive_fields_redact_without_disclosing_bearer_or_query() {
         let text = redact(
-            "https://host/?y=secret&api_key=key Authorization: Bearer abc X-Authorization='xyz'",
+            "https://host/?y=secret&api_key=key Authorization: Bearer abc X-Authorization='xyz' authorization='Basic dXNlcjpwYXNz'",
         );
-        for secret in ["secret", "=key", "abc", "xyz"] {
+        for secret in ["secret", "=key", "abc", "xyz", "dXNlcjpwYXNz"] {
             assert!(!text.contains(secret), "{text}");
         }
         assert!(text.contains("Authorization: ***"));

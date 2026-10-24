@@ -4,7 +4,10 @@ use serde_json::{Value, json};
 use std::{
     collections::HashSet,
     path::{Path, PathBuf},
-    sync::LazyLock,
+    sync::{
+        LazyLock,
+        atomic::{AtomicU64, Ordering},
+    },
     time::Duration,
 };
 use tokio_util::sync::CancellationToken;
@@ -38,7 +41,9 @@ pub fn parse_delisted_html(html_text: &str) -> Vec<Value> {
         let Some(raw_name) = capture.get(2) else {
             continue;
         };
-        let name = matching::decode_html_entities(raw_name.as_str().trim()).into_owned();
+        // Decode before trimming, as the original did, so an entity-only name is empty.
+        let decoded = matching::decode_html_entities(raw_name.as_str());
+        let name = matching::py_strip(&decoded).to_owned();
         if appid == 0 || name.is_empty() || !seen.insert(appid) {
             continue;
         }
@@ -110,13 +115,22 @@ async fn save_delisted_index(
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or(DELISTED_INDEX_FILENAME);
-        let temporary = path.with_file_name(format!("{filename}.tmp"));
-        tokio::fs::write(&temporary, bytes)
-            .await
-            .map_err(|error| error.to_string())?;
-        tokio::fs::rename(&temporary, path)
-            .await
-            .map_err(|error| error.to_string())
+        // Each writer stages its own file; a shared name lets two refreshes interleave
+        // truncation, writes and renames and leave invalid JSON behind.
+        static NEXT_TEMPORARY: AtomicU64 = AtomicU64::new(0);
+        let temporary = path.with_file_name(format!(
+            "{filename}.{}.{}.tmp",
+            std::process::id(),
+            NEXT_TEMPORARY.fetch_add(1, Ordering::Relaxed)
+        ));
+        let staged = match tokio::fs::write(&temporary, bytes).await {
+            Ok(()) => tokio::fs::rename(&temporary, path).await,
+            Err(error) => Err(error),
+        };
+        if staged.is_err() {
+            let _ = tokio::fs::remove_file(&temporary).await;
+        }
+        staged.map_err(|error| error.to_string())
     }
     .await;
     if let Err(error) = &result {
@@ -479,11 +493,11 @@ mod tests {
         http.assert_drained();
         let stored: Value = serde_json::from_slice(&tokio::fs::read(&path).await.unwrap()).unwrap();
         assert_eq!(stored, index);
-        assert!(
-            !path
-                .with_file_name(format!("{DELISTED_INDEX_FILENAME}.tmp"))
-                .exists()
-        );
+        let entries = std::fs::read_dir(&directory.0)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<Vec<_>>();
+        assert_eq!(entries, vec![std::ffi::OsString::from(DELISTED_INDEX_FILENAME)]);
 
         let cancelled_http = Http::new(CancellationToken::new(), "test").unwrap();
         cancelled_http.cancel.cancel();
@@ -514,5 +528,32 @@ mod tests {
         assert_eq!(refreshed["source"], STEAM_TRACKER_DELISTED_URL);
         assert!(blocked_path.is_dir());
         http.assert_drained();
+    }
+
+    #[test]
+    fn delisted_parser_skips_an_entity_only_name_without_reserving_its_id() {
+        let html = "<a href='https://steam-tracker.com/app/338930/'>&nbsp;</a>\n<a href='https://steam-tracker.com/app/338930/'>TRANSFORMERS: Devastation</a>";
+        assert_eq!(
+            parse_delisted_html(html),
+            vec![json!([338930, "TRANSFORMERS: Devastation"])]
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn concurrent_delisted_saves_leave_one_complete_index() {
+        let directory = TempDir::new();
+        let path = directory.0.join(DELISTED_INDEX_FILENAME);
+        let token = CancellationToken::new();
+        for _ in 0..32 {
+            let documents: Vec<Value> = (1..=8)
+                .map(|rows| json!({"fetched_at":1,"source":"test","apps":vec![json!([1,"x".repeat(rows * 4096)]); rows]}))
+                .collect();
+            let saves = documents.iter().map(|document| save_delisted_index(&path, document, &token));
+            for result in futures_util::future::join_all(saves).await {
+                result.unwrap();
+            }
+            let stored: Value = serde_json::from_slice(&tokio::fs::read(&path).await.unwrap()).unwrap();
+            assert!(documents.contains(&stored));
+        }
     }
 }

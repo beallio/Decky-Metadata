@@ -203,6 +203,27 @@ fn py_is_whitespace(ch: char) -> bool {
     ch.is_whitespace() || matches!(ch, '\u{1c}'..='\u{1f}')
 }
 
+/// Python's `\w` is `[\p{L}\p{N}_]`, while the regex crate also counts marks, connector
+/// punctuation and join controls, but not other numbers. Swap each disagreeing character for
+/// one both treat alike so `\b` splits words as the original did. Every caller only tests
+/// ASCII words, and title normalization later turns all non-ASCII characters into spaces.
+fn python_word_boundaries(text: &str) -> Cow<'_, str> {
+    static RX_RUST_ONLY_WORD: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"[\w&&[^\p{L}\p{N}_]]").expect("fixed Rust-only word regex")
+    });
+    static RX_PYTHON_ONLY_WORD: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"[\p{L}\p{N}_&&\W]").expect("fixed Python-only word regex")
+    });
+    if text.is_ascii() {
+        return Cow::Borrowed(text);
+    }
+    let text = RX_RUST_ONLY_WORD.replace_all(text, " ");
+    if let Cow::Owned(replaced) = RX_PYTHON_ONLY_WORD.replace_all(&text, "ª") {
+        return Cow::Owned(replaced);
+    }
+    text
+}
+
 pub(crate) fn py_strip(value: &str) -> &str {
     value.trim_matches(py_is_whitespace)
 }
@@ -413,6 +434,7 @@ pub fn normalise_match_title(title: &str) -> String {
     let mut text = casefold(decode_html_entities(title).as_ref());
     text = RX_TITLE_MARKS.replace_all(&text, "").into_owned();
     text = RX_TITLE_BRACKETS.replace_all(&text, " ").into_owned();
+    text = python_word_boundaries(&text).into_owned();
     text = remove_words_unless_last_letter_erased(&RX_TITLE_ARTICLES, text);
     text = remove_words_unless_last_letter_erased(&RX_TITLE_EDITIONS, text);
     text = remove_words_unless_last_letter_erased(&RX_TITLE_REGIONS, text);
@@ -423,7 +445,9 @@ pub fn normalise_match_title(title: &str) -> String {
 /// Detect Steam search results that are variants rather than the requested game.
 pub fn is_non_primary_steam_title(name: &str, query: &str) -> bool {
     let name = casefold(decode_html_entities(name).as_ref());
+    let name = python_word_boundaries(&name);
     let query = casefold(decode_html_entities(query).as_ref());
+    let query = python_word_boundaries(&query);
     NON_PRIMARY_PATTERNS
         .iter()
         .any(|pattern| pattern.is_match(&name) && (query.is_empty() || !pattern.is_match(&query)))
@@ -701,23 +725,23 @@ pub fn normalize_release_date(value: &Value) -> Option<String> {
 
     let (year, month, day) = if let Some(captures) = RX_ISO_DATE.captures(text) {
         (
-            captures.get(1)?.as_str().parse::<i32>().ok()?,
-            captures.get(2)?.as_str().parse::<u32>().ok()?,
-            captures.get(3)?.as_str().parse::<u32>().ok()?,
+            date_part(captures.get(1)?.as_str())?,
+            date_part(captures.get(2)?.as_str())?,
+            date_part(captures.get(3)?.as_str())?,
         )
     } else if let Some(captures) = RX_MONTH_FIRST_DATE.captures(text) {
         let month = english_month(captures.get(1)?.as_str())?;
         (
-            captures.get(3)?.as_str().parse::<i32>().ok()?,
+            date_part(captures.get(3)?.as_str())?,
             month,
-            captures.get(2)?.as_str().parse::<u32>().ok()?,
+            date_part(captures.get(2)?.as_str())?,
         )
     } else if let Some(captures) = RX_DAY_FIRST_DATE.captures(text) {
         let month = english_month(captures.get(2)?.as_str())?;
         (
-            captures.get(3)?.as_str().parse::<i32>().ok()?,
+            date_part(captures.get(3)?.as_str())?,
             month,
-            captures.get(1)?.as_str().parse::<u32>().ok()?,
+            date_part(captures.get(1)?.as_str())?,
         )
     } else {
         return None;
@@ -726,6 +750,11 @@ pub fn normalize_release_date(value: &Value) -> Option<String> {
         return None;
     }
     NaiveDate::from_ymd_opt(year, month, day).map(|date| date.format("%Y-%m-%d").to_string())
+}
+
+/// `\d` also captures non-ASCII decimal digits, which Python's `int()` accepts.
+fn date_part<T: std::str::FromStr>(digits: &str) -> Option<T> {
+    integer_string(digits)?.parse().ok()
 }
 
 fn english_month(value: &str) -> Option<u32> {
@@ -1164,6 +1193,28 @@ fn append_python_string_repr(value: &str, output: &mut String) {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn word_boundaries_and_date_digits_follow_python() {
+        // U+200D is not a Python word character, so `the` is still an article here.
+        assert_eq!(normalise_match_title("The\u{200d} Witcher"), "witcher");
+        assert_eq!(normalise_match_title("Cafe\u{301} the Game"), "cafe game");
+        // `²` is a Python word character, so `demo²` is not the word `demo`.
+        assert!(!is_non_primary_steam_title("Game demo²", "Game"));
+        assert!(is_non_primary_steam_title("Game demo", "Game"));
+        assert_eq!(
+            normalize_release_date(&json!("Apr １８, ２０１１")).as_deref(),
+            Some("2011-04-18")
+        );
+        assert_eq!(
+            normalize_release_date(&json!("２０１１-０４-１８")).as_deref(),
+            Some("2011-04-18")
+        );
+        assert_eq!(
+            normalize_release_date(&json!("１８ Apr ２０１１")).as_deref(),
+            Some("2011-04-18")
+        );
+    }
 
     #[test]
     fn unicode_keys_keep_full_folding_and_modern_case_pairs() {
