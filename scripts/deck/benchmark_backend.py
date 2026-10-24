@@ -1464,14 +1464,19 @@ def summarize_workload_resource_windows(
         calls = measurement.get("completedCalls") if isinstance(measurement, Mapping) else None
         if not isinstance(calls, int) or isinstance(calls, bool) or calls <= 0:
             raise BenchmarkError(f"{name} workload has no valid completed-call count")
-        pss_samples = [
-            memory_totals[index]["pss_kib"]
-            for index, sample in enumerate(samples)
-            if start_ns <= sample_times[index] <= end_ns and any(
-                isinstance(process, Mapping) and process.get("role") in roles
-                for process in sample.get("processes", [])
-            )
+        with_metadata = [
+            index for index, sample in enumerate(samples)
+            if any(isinstance(process, Mapping) and process.get("role") in roles for process in sample.get("processes", []))
         ]
+        inside = [index for index in with_metadata if start_ns <= sample_times[index] <= end_ns]
+        # A window shorter than one 5 Hz interval can fall between samples; use the
+        # samples just before and after it and report that it was bracketed.
+        bracketed = not inside
+        if bracketed:
+            before = [index for index in with_metadata if sample_times[index] < start_ns]
+            after = [index for index in with_metadata if sample_times[index] > end_ns]
+            inside = before[-1:] + after[:1]
+        pss_samples = [memory_totals[index]["pss_kib"] for index in inside]
         if not pss_samples:
             raise BenchmarkError(f"{name} workload window contains no sampled Metadata PSS")
         cpu_seconds = float(cpu_usec) / 1_000_000
@@ -1482,7 +1487,8 @@ def summarize_workload_resource_windows(
             "service_cpu_seconds": cpu_seconds,
             "service_cpu_ms_per_call": cpu_seconds * 1000 / calls,
             "metadata_pss_sampled_peak_kib": max(pss_samples),
-            "metadata_pss_sample_count": len(pss_samples),
+            "metadata_pss_sample_count": 0 if bracketed else len(pss_samples),
+            "metadata_pss_bracketed": bracketed,
         }
     return result
 
