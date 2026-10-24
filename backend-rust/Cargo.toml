@@ -7,7 +7,7 @@ license = "GPL-3.0-or-later"
 publish = false
 
 [dependencies]
-decky-plugin = { git = "https://github.com/beallio/decky-loader", rev = "98d49588d23724d95c3f8f5103bb78d8dde55312" }
+decky-plugin = { git = "https://github.com/beallio/decky-loader", rev = "9d0b16765db4e2a3f796fe0bf1c6433e3a0544c5" }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 serde = { version = "1", features = ["derive"] }
