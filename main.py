@@ -126,6 +126,7 @@ class Plugin:
         self._ids = itertools.count()
         self._deadline = None
         self._trim = None
+        self._trim_armed = False
 
     def __getattr__(self, name):
         # Upstream finds frontend methods with getattr; hooks start with "_".
@@ -141,6 +142,7 @@ class Plugin:
         await self._ready.wait()
         if self._error is not None:
             raise RuntimeError(self._error)
+        self._postpone_trim()
         key = str(next(self._ids))
         reply = asyncio.get_running_loop().create_future()
         self._pending[key] = reply
@@ -181,11 +183,11 @@ class Plugin:
             while line := await reader.readline():
                 # Handled in its own frame, so no reference to a reply outlives it
                 # while the relay waits for the next line.
-                large = len(line) > TRIM_LINE_BYTES
+                if len(line) > TRIM_LINE_BYTES:
+                    self._trim_armed = True
                 await self._handle(line)
                 line = None
-                if large:
-                    self._schedule_trim()
+                self._postpone_trim()
         except Exception as error:
             self._fail(f"native backend relay failed: {error}")
         finally:
@@ -207,14 +209,23 @@ class Plugin:
         elif message.get("type") == 2:
             await decky.emit(message["event"], *message.get("args", []))
 
-    def _schedule_trim(self):
-        # glibc keeps freed reply memory in its arenas; give it back once the
-        # large replies stop, rather than after each one.
-        if _malloc_trim is None:
+    def _postpone_trim(self):
+        # glibc keeps freed reply memory in its arenas. After a large reply, give
+        # it back only once the relay has been quiet: any call or reply restarts
+        # the wait, so the trim and its page refaults stay out of active traffic.
+        if not self._trim_armed or _malloc_trim is None:
             return
         if self._trim is not None:
             self._trim.cancel()
-        self._trim = asyncio.get_running_loop().call_later(TRIM_DELAY_SECONDS, _malloc_trim, 0)
+        self._trim = asyncio.get_running_loop().call_later(TRIM_DELAY_SECONDS, self._idle_trim)
+
+    def _idle_trim(self):
+        self._trim = None
+        if self._pending:
+            self._postpone_trim()
+            return
+        self._trim_armed = False
+        _malloc_trim(0)
 
     def _fail(self, error):
         self._error = error
