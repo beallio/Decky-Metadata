@@ -34,8 +34,9 @@ from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 # Upstream SteamDeckHomebrew/decky-loader v3.3.0 PluginLoader (tag commit 67196adf, the fork's base).
 UPSTREAM_RUNTIME_SHA256 = "e80d03e641d1766a33a817cb27ab8d2e0a4633685e5d27e4de948a6687526181"
-FORK_RUNTIME_SHA256 = "548f4d4c4ed66ca83b8fcd6a660c29b62ce97b996729ad75bd4668de115e231a"
-FORK_SOURCE_COMMIT = "fa0b26aeb2fd85e92688b8c72396b10176e2cde0"
+# beallio/decky-loader main at 98bce11, the same revision as the shipped decky-plugin SDK and shim.
+FORK_RUNTIME_SHA256 = "608495897e32be00d5516f59273a29252f858169a6d0c4691aeeaaaf7d2fac41"
+FORK_SOURCE_COMMIT = "98bce11fffffa59a331098edd8671591fb98a9a5"
 FORK_SOURCE_BASELINE = {
     "tag": "v3.3.0",
     "commit": "67196adfa9b299f20dfb0cc932e88a169417b7d5",

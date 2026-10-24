@@ -139,6 +139,26 @@ the pinned fork. It is a VM-only developer tool, not a normal deployment command
 It requires exclusive use of the VM, working non-interactive administrator access,
 and an existing CDP tunnel. It does not launch games or replace the normal install.
 
+Pinned inputs (both harness files check them):
+
+|Input|Pin|
+|---|---|
+|Upstream Loader|`SteamDeckHomebrew/decky-loader` `v3.3.0` `PluginLoader` (tag commit `67196adf`); get it with `gh release download v3.3.0 -R SteamDeckHomebrew/decky-loader -p PluginLoader` and check the release asset digest|
+|Fork Loader|`beallio/decky-loader` `main` at `98bce11`, a runtime bundle built from source|
+|Plugin SDK and shim|the same `98bce11`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and root `main.py` copied from `backend-rust/decky-plugin/shim/main.py`|
+
+Build the fork bundle from a detached clone of that commit. Its build checks the
+upstream `v3.3.0` tag, so fetch it first:
+
+```bash
+git -C "$FORK" fetch https://github.com/SteamDeckHomebrew/decky-loader 'refs/tags/v3.3.0:refs/tags/v3.3.0'
+python3 "$FORK/scripts/runtime/build.py" --release-version dev --output "$RUN_ROOT/fork-runtime"
+```
+
+Use the fork's pinned Rust toolchain (`backend-rust/build-config.json`), not this
+repository's. Pass `"$RUN_ROOT/fork-runtime/bundle"` as `--fork-runtime`. When you
+move a pin, change the SDK, the shim and the harness constants together.
+
 Resolve the evidence directory with `./run.sh python3 scripts/deck/temp_paths.py root`.
 Pass the original ZIP, candidate ZIP, upstream executable and complete fork bundle
 with `--python-zip`, `--rust-zip`, `--upstream-runtime` and `--fork-runtime`.
