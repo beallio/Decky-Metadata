@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "decky-plugin"
 version = "0.1.0"
-source = "git+https://github.com/beallio/decky-loader?rev=9d0b16765db4e2a3f796fe0bf1c6433e3a0544c5#9d0b16765db4e2a3f796fe0bf1c6433e3a0544c5"
+source = "git+https://github.com/beallio/decky-loader?rev=5f1fbd5d9e6f038f7aeb0a28aa2aa73e8d9718bc#5f1fbd5d9e6f038f7aeb0a28aa2aa73e8d9718bc"
 dependencies = [
  "libc",
  "log",
@@ -239,7 +239,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -880,7 +880,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

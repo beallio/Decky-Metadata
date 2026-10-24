@@ -27,6 +27,9 @@ import decky
 STOP_SECONDS = 4.5
 PR_SET_PDEATHSIG = 1
 _prctl = ctypes.CDLL(None, use_errno=True).prctl
+_malloc_trim = getattr(ctypes.CDLL(None), "malloc_trim", None)  # glibc only
+TRIM_LINE_BYTES = 1024 * 1024
+TRIM_DELAY_SECONDS = 1.0
 
 
 def _park_at_socket_eof():
@@ -122,6 +125,7 @@ class Plugin:
         self._pending = {}
         self._ids = itertools.count()
         self._deadline = None
+        self._trim = None
 
     def __getattr__(self, name):
         # Upstream finds frontend methods with getattr; hooks start with "_".
@@ -175,23 +179,42 @@ class Plugin:
     async def _relay(self, reader):
         try:
             while line := await reader.readline():
-                message = json.loads(line)
-                if message.get("type") == 1:
-                    reply = self._pending.get(message.get("id"))
-                    if reply is None or reply.done():
-                        continue
-                    if message.get("success"):
-                        reply.set_result(message.get("res"))
-                    else:
-                        reply.set_exception(RuntimeError(message.get("res")))
-                elif message.get("type") == 2:
-                    await decky.emit(message["event"], *message.get("args", []))
+                # Handled in its own frame, so no reference to a reply outlives it
+                # while the relay waits for the next line.
+                large = len(line) > TRIM_LINE_BYTES
+                await self._handle(line)
+                line = None
+                if large:
+                    self._schedule_trim()
         except Exception as error:
             self._fail(f"native backend relay failed: {error}")
         finally:
             self._writer.close()
             if self._error is None:
                 self._fail("native backend stopped")
+
+    async def _handle(self, line):
+        message = json.loads(line)
+        del line
+        if message.get("type") == 1:
+            reply = self._pending.get(message.get("id"))
+            if reply is None or reply.done():
+                return
+            if message.get("success"):
+                reply.set_result(message.get("res"))
+            else:
+                reply.set_exception(RuntimeError(message.get("res")))
+        elif message.get("type") == 2:
+            await decky.emit(message["event"], *message.get("args", []))
+
+    def _schedule_trim(self):
+        # glibc keeps freed reply memory in its arenas; give it back once the
+        # large replies stop, rather than after each one.
+        if _malloc_trim is None:
+            return
+        if self._trim is not None:
+            self._trim.cancel()
+        self._trim = asyncio.get_running_loop().call_later(TRIM_DELAY_SECONDS, _malloc_trim, 0)
 
     def _fail(self, error):
         self._error = error
