@@ -271,12 +271,11 @@ pub fn prepare_save(
     let trusted = trusted_appid.is_some_and(|id| id > 0 && Some(id) == next);
     if previous.is_some_and(|id| id != 0) && previous != next && !trusted {
         value["deck_compat_category"] = Value::Null;
-        // Data fetched for the old Steam app must not describe the new match.
+        // Data fetched for the old Steam app must not describe the new match. The store
+        // URL and name stay: the editor sends them for the new ID and enrichment refills them.
         if let Some(object) = value.as_object_mut() {
             for key in [
                 "steam_store_state",
-                "steam_store_url",
-                "steam_store_name",
                 "steam_news",
                 "steam_news_enriched_at",
                 "steam_dlc_appids",
@@ -748,8 +747,6 @@ mod tests {
         rematch["steam_appid"] = json!(11);
         let saved = prepare_save(&old, rematch.clone(), false, None, &Value::Null).unwrap();
         assert_eq!(saved["steam_store_state"], "unknown");
-        assert_eq!(saved["steam_store_url"], "");
-        assert_eq!(saved["steam_store_name"], "");
         assert_eq!(saved["steam_news"], json!([]));
         assert_eq!(saved["steam_news_enriched_at"], 0);
         assert_eq!(saved["steam_dlc_appids"], json!([]));
