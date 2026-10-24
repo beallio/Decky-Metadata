@@ -1486,9 +1486,10 @@ def summarize_workload_resource_windows(
             "completed_calls": calls,
             "service_cpu_seconds": cpu_seconds,
             "service_cpu_ms_per_call": cpu_seconds * 1000 / calls,
-            "metadata_pss_sampled_peak_kib": max(pss_samples),
+            # Neighbouring samples do not bound memory inside the window, so no peak is claimed.
+            "metadata_pss_sampled_peak_kib": None if bracketed else max(pss_samples),
             "metadata_pss_sample_count": 0 if bracketed else len(pss_samples),
-            "metadata_pss_bracketed": bracketed,
+            "metadata_pss_adjacent_kib": pss_samples if bracketed else None,
         }
     return result
 
@@ -1777,12 +1778,14 @@ def aggregate_collector_trials(trials: Sequence[Mapping[str, Any]], arm: str, si
         if method_calls != expected_calls * TRIALS_PER_DATASET_ARM:
             raise BenchmarkError(f"{name} workload CPU denominator does not match completed calls")
         peaks = [item["metadata_pss_sampled_peak_kib"] for item in method_trials]
+        measured = [peak for peak in peaks if peak is not None]
         per_workload[name] = {
             "completed_calls": method_calls,
             "service_cpu_ms_per_call": sum(item["service_cpu_seconds"] for item in method_trials) * 1000 / method_calls,
             "per_trial_service_cpu_ms_per_call": [item["service_cpu_ms_per_call"] for item in method_trials],
-            "metadata_pss_sampled_peak_kib_median": statistics.median(peaks),
-            "metadata_pss_sampled_peak_kib_max": max(peaks),
+            "metadata_pss_sampled_peak_kib_median": statistics.median(measured) if measured else None,
+            "metadata_pss_sampled_peak_kib_max": max(measured) if measured else None,
+            "metadata_pss_sampled_trials": len(measured),
             "per_trial_metadata_pss_sampled_peak_kib": peaks,
             "per_trial": method_trials,
         }
