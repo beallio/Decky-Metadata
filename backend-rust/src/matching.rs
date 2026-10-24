@@ -205,8 +205,9 @@ fn py_is_whitespace(ch: char) -> bool {
 
 /// Python's `\w` is `[\p{L}\p{N}_]`, while the regex crate also counts marks, connector
 /// punctuation and join controls, but not other numbers. Swap each disagreeing character for
-/// one both treat alike so `\b` splits words as the original did. Every caller only tests
-/// ASCII words, and title normalization later turns all non-ASCII characters into spaces.
+/// one both treat alike so `\b` splits words as the original did. The non-word sentinel is
+/// `-`, not a space, because patterns like `season\s+pass` must not see new whitespace.
+/// Every caller only tests ASCII words; title normalization later turns `-` into a space.
 fn python_word_boundaries(text: &str) -> Cow<'_, str> {
     static RX_RUST_ONLY_WORD: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"[\w&&[^\p{L}\p{N}_]]").expect("fixed Rust-only word regex")
@@ -217,7 +218,7 @@ fn python_word_boundaries(text: &str) -> Cow<'_, str> {
     if text.is_ascii() {
         return Cow::Borrowed(text);
     }
-    let text = RX_RUST_ONLY_WORD.replace_all(text, " ");
+    let text = RX_RUST_ONLY_WORD.replace_all(text, "-");
     if let Cow::Owned(replaced) = RX_PYTHON_ONLY_WORD.replace_all(&text, "ª") {
         return Cow::Owned(replaced);
     }
@@ -1202,6 +1203,10 @@ mod tests {
         // `²` is a Python word character, so `demo²` is not the word `demo`.
         assert!(!is_non_primary_steam_title("Game demo²", "Game"));
         assert!(is_non_primary_steam_title("Game demo", "Game"));
+        // A join control or combining mark is not whitespace, so `season\s+pass` must not match.
+        assert!(!is_non_primary_steam_title("Game season\u{200d}pass", "Game"));
+        assert!(!is_non_primary_steam_title("Game art\u{301} book", "Game"));
+        assert!(is_non_primary_steam_title("Game season pass", "Game"));
         assert_eq!(
             normalize_release_date(&json!("Apr １８, ２０１１")).as_deref(),
             Some("2011-04-18")
