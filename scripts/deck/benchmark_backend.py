@@ -1890,6 +1890,33 @@ def run_reload_measurement(
 QUIESCENCE_ATTEMPTS = 3
 
 
+def _run_trial_with_retry(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
+                          evidence: Evidence, arm: str, size: int, number: int, fixture_hash: str,
+                          lease: Lease) -> dict[str, Any]:
+    for attempt in range(1, QUIESCENCE_ATTEMPTS + 1):
+        lease.check()
+        try:
+            return run_trial(remote, artifacts, hashes, evidence, arm, size, number, fixture_hash, lease)
+        except BenchmarkError as error:
+            # Upstream drops loader/notify_updates when the frontend socket is not yet
+            # connected; that start never becomes measurable, so start the trial again.
+            if "quiescence not observed" not in str(error) or attempt == QUIESCENCE_ATTEMPTS:
+                raise
+            evidence.append({"kind": "trial-retry", "label": f"{arm}-{size}-{number}", "attempt": attempt, "error": str(error)})
+    raise AssertionError("unreachable")
+
+
+def run_diagnostic(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
+                   evidence: Evidence, fixture_hashes: Mapping[int, str], lease: Lease,
+                   arm: str, count: int) -> dict[str, Any]:
+    """A/B checks of one arm at 1,000 records; never an official comparison."""
+    labels = [
+        _run_trial_with_retry(remote, artifacts, hashes, evidence, arm, 1000, number, fixture_hashes[1000], lease)["label"]
+        for number in range(1, count + 1)
+    ]
+    return {"diagnostic": True, "gui_verified": False, "arm": arm, "dataset_size": 1000, "trials": labels}
+
+
 def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: Mapping[str, str],
                     evidence: Evidence, fixture_hashes: Mapping[int, str], lease: Lease) -> dict[str, Any]:
     # Reloads are standalone and shorter, so a reload-path failure surfaces before the 30 trials.
@@ -1897,20 +1924,10 @@ def run_timed_suite(remote: RemoteClient, artifacts: Mapping[str, Any], hashes: 
         run_reload_measurement(remote, artifacts, evidence, arm, number, lease)
         for arm, number in reload_order()
     ]
-    trials: list[dict[str, Any]] = []
-    for arm, size, number in trial_order():
-        for attempt in range(1, QUIESCENCE_ATTEMPTS + 1):
-            lease.check()
-            try:
-                trial = run_trial(remote, artifacts, hashes, evidence, arm, size, number, fixture_hashes[size], lease)
-                break
-            except BenchmarkError as error:
-                # Upstream drops loader/notify_updates when the frontend socket is not yet
-                # connected; that start never becomes measurable, so start the trial again.
-                if "quiescence not observed" not in str(error) or attempt == QUIESCENCE_ATTEMPTS:
-                    raise
-                evidence.append({"kind": "trial-retry", "label": f"{arm}-{size}-{number}", "attempt": attempt, "error": str(error)})
-        trials.append(trial)
+    trials = [
+        _run_trial_with_retry(remote, artifacts, hashes, evidence, arm, size, number, fixture_hashes[size], lease)
+        for arm, size, number in trial_order()
+    ]
     expected_order = trial_order()
     actual_order = [(trial["arm"], trial["dataset_size"], trial["trial"]) for trial in trials]
     if actual_order != expected_order:
@@ -2013,7 +2030,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     scratch_relative = safe_relative_scratch(args.scratch_homebrew)
     artifacts = load_local_artifacts(args)
     verification: dict[str, Any] | None = None
-    if not args.dry_run and args.ui_arm is None:
+    if not args.dry_run and args.ui_arm is None and args.diagnostic_arm is None:
         if not args.verification_record:
             raise ValueError("timed mode requires --verification-record from verified GUI arms A, B and C")
         verification = validate_verification_record(args.verification_record, artifacts["hashes"])
@@ -2064,6 +2081,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             if args.ui_arm is not None:
                 run_ui_arm(remote, artifacts, args.ui_arm, lease, evidence, signal_event)
                 result = {"ui_arm": args.ui_arm, "ready": True, "timed_trials": 0}
+            elif args.diagnostic_arm is not None:
+                result = run_diagnostic(remote, artifacts, _hashes_for_capture(artifacts), evidence, fixture_hashes, lease,
+                                        args.diagnostic_arm, args.diagnostic_trials)
             else:
                 if verification is None:
                     raise BenchmarkError("timed mode lost its GUI verification record")
@@ -2110,6 +2130,10 @@ def build_parser() -> argparse.ArgumentParser:
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--dry-run", action="store_true", help="capture, run watchdog fixture/assertions and recover without timed trials")
     group.add_argument("--ui-arm", choices=("A", "B", "C"), help="stage a real QAM GUI correctness arm and hold the recovery lease")
+    group.add_argument("--diagnostic-arm", choices=("A", "B", "C"),
+                       help="run only this arm's 1,000-record trials for an A/B check; never an official summary")
+    parser.add_argument("--diagnostic-trials", type=int, choices=range(1, 11), default=3, metavar="N",
+                        help="trial count for --diagnostic-arm (1-10, default 3)")
     return parser
 
 
