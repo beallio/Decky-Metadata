@@ -1049,7 +1049,7 @@ LEDGER_KEYS = {
     "undo_entries", "recovery", "test_scope",
 }
 INPUT_KEYS = {"python_zip", "rust_zip", "upstream_runtime", "fork_runtime"}
-EXPECTED_KEYS = {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_binary_sha256", "python_version", "rust_version"}
+EXPECTED_KEYS = {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_ui_sha256", "rust_binary_sha256", "python_version", "rust_version"}
 
 
 def _validate_hash(value: Any, label: str) -> str:
@@ -1142,7 +1142,7 @@ def _zip_metadata(archive: zipfile.ZipFile, index: Mapping[str, zipfile.ZipInfo]
     if plugin.get("version") != expected_version:
         _fail("plugin ZIP version does not match the captured arm")
     ui_hash = _archive_file_hash(archive, index[f"{PLUGIN_DIR_NAME}/dist/index.js"])
-    if ui_hash != expected["ui_sha256"]:
+    if ui_hash != expected["ui_sha256" if arm == "A" else "rust_ui_sha256"]:
         _fail("plugin ZIP frontend does not match the pinned UI bundle")
     backend_info = index.get(f"{PLUGIN_DIR_NAME}/bin/backend")
     if arm == "A":
@@ -1724,7 +1724,7 @@ def _validate_ledger(ledger: Any, requested: Path | None = None) -> dict[str, An
         require_contained(path, canonical_root, label=f"{name} input")
     expected = ledger.get("expected")
     exact_keys(expected, EXPECTED_KEYS, context="ledger expectation")
-    for key in {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_binary_sha256"}:
+    for key in {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_ui_sha256", "rust_binary_sha256"}:
         _validate_hash(expected[key], key)
     for key in {"python_version", "rust_version"}:
         if not isinstance(expected[key], str) or not expected[key] or len(expected[key]) > 128 or any(ch in expected[key] for ch in "\r\n\x00"):
@@ -2140,7 +2140,7 @@ def _new_ledger(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
         require_contained(item, run_root, label=f"{name} input")
     expected = payload["expected"]
     exact_keys(expected, EXPECTED_KEYS, context="capture expectation")
-    for name in {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_binary_sha256"}:
+    for name in {"python_zip_sha256", "rust_zip_sha256", "ui_sha256", "rust_ui_sha256", "rust_binary_sha256"}:
         _validate_hash(expected[name], name)
     for name in {"python_version", "rust_version"}:
         if not isinstance(expected[name], str) or not expected[name] or len(expected[name]) > 128:
@@ -2636,7 +2636,7 @@ def _verify_plugin(ledger: Mapping[str, Any]) -> dict[str, Any]:
         "hashes": {
             "python_zip_sha256": ledger["expected"]["python_zip_sha256"],
             "rust_zip_sha256": ledger["expected"]["rust_zip_sha256"],
-            "ui_sha256": ledger["expected"]["ui_sha256"],
+            "ui_sha256": ledger["expected"]["ui_sha256" if arm == "A" else "rust_ui_sha256"],
             "rust_binary_sha256": ledger["expected"]["rust_binary_sha256"],
             "loader_runtime_sha256": loader_runtime_sha256,
             "fork_binary_sha256": None if arm == "A" else ledger["expected"]["rust_binary_sha256"],

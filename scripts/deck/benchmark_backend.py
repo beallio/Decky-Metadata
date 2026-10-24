@@ -598,7 +598,9 @@ def load_local_artifacts(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("original ZIP UI bundle is not the pinned baseline")
     if "backend_path" in python_package:
         raise ValueError("original Python ZIP unexpectedly contains a native backend")
-    validate_ui_parity(python_package, rust_package)
+    # Timed comparisons need the same frontend; a GUI correctness arm checks a new one.
+    if getattr(args, "ui_arm", None) is None:
+        validate_ui_parity(python_package, rust_package)
     backend_path = rust_package.get("backend_path")
     if backend_path != f"{PLUGIN_ROOT}/bin/backend" or rust_package.get("backend_mode") != 0o755:
         raise ValueError("Rust ZIP must package the x86-64 executable as bin/backend mode 0755")
@@ -1060,6 +1062,7 @@ def _capture(remote: RemoteClient, artifacts: Mapping[str, Any]) -> dict[str, An
             "python_zip_sha256": package_python["zip_sha256"],
             "rust_zip_sha256": package_rust["zip_sha256"],
             "ui_sha256": package_python["ui_sha256"],
+            "rust_ui_sha256": package_rust["ui_sha256"],
             "rust_binary_sha256": package_rust["backend_sha256"],
             "python_version": package_python["version"],
             "rust_version": package_rust["version"],
