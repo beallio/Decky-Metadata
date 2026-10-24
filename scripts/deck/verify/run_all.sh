@@ -55,8 +55,8 @@ remote_homebrew="$(ssh "$host" "realpath -e -- $remote_homebrew")"
   exit 1
 }
 metadata="$run_dir/metadata.json"
-printf -v remote_metadata '%q' "$remote_homebrew/settings/Decky-Metadata/decky_metadata.json"
-ssh "$host" "cat -- $remote_metadata" >"$metadata"
+printf -v remote_settings '%q' "$remote_homebrew/settings/Decky-Metadata"
+ssh "$host" "python3 - $remote_settings" <"${here}/../read_store.py" >"$metadata"
 fixture_args=()
 [[ -z "${MATCHED_APPID:-}" ]] || fixture_args+=(--listed-match "$MATCHED_APPID")
 [[ -z "${DELISTED_APPID:-}" ]] || fixture_args+=(--delisted-match "$DELISTED_APPID")

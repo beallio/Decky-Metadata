@@ -65,6 +65,20 @@ A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
 
+### Per-game metadata files
+
+The backend keeps each metadata record in
+`settings/Decky-Metadata/metadata/<game id>.json` (non-decimal keys use `~` plus
+UTF-8 hex). `decky_metadata.json` keeps every other field and the
+`"metadata_layout": "files-v1"` key. A settings file without that key is the
+single-file layout: the backend converts it on load, replacing the `metadata`
+folder. `record_update_install_requested` writes the single-file layout back so
+an older version reads it; the next write by a running newer version restores
+the layout key. Tools read either layout as one document with
+`ssh steamdeck "python3 - <settings dir>" < scripts/deck/read_store.py`.
+Record files edited in place without a rename do not change the folder's
+modification time, so a running backend does not reload them.
+
 ### Date-only release dates
 
 This change needs a full-plugin ZIP because storage and RPCs use calendar-date
