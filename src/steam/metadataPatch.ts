@@ -4,10 +4,9 @@ import {
   fetchMetadata,
   frontendLog,
   getAllMetadata,
-  getMetadata,
   getCompatibilityDefault,
   getCompatibilityDefaultScope,
-  saveMetadata,
+  saveMetadataIfUnchanged,
 } from "../backend";
 import { clearDeckyNativeActivityForApp } from "./activity";
 import { decideBIsModOrShortcut } from "./spoofDecision";
@@ -1073,17 +1072,15 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
     // A save, re-match or removal during the request wins over this background fill-in.
     if (metadataCache[String(appId)] !== metadata) return;
     if (refreshed?.screenshots?.length) {
-      // Scans and refreshes write the backend without updating this cache, so compare the
-      // stored record too. shortcut: one RPC gap remains before the save, close it with a
-      // backend-guarded save if the RPC contract may change.
-      const stored = await getMetadata(appId);
-      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      if (JSON.stringify(stored) !== JSON.stringify(metadata) || metadataCache[String(appId)] !== metadata) return;
-      const saved = await saveMetadata(appId, {
-        ...metadata,
-        screenshots: refreshed.screenshots,
-      });
-      if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      // The backend commits only if the stored record still equals this snapshot, which also
+      // covers scan and refresh writes this cache has not seen yet.
+      const saved = await saveMetadataIfUnchanged(
+        appId,
+        { ...metadata, screenshots: refreshed.screenshots },
+        metadata,
+      );
+      if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      if (metadataCache[String(appId)] !== metadata) return;
       setMetadataCacheEntry(appId, saved);
       applyMetadata(appId);
       notifyCompatibilityRevision();

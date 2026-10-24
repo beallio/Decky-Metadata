@@ -34,6 +34,11 @@ export const saveMetadata = callable<
   [appId: number, metadata: MetadataData],
   MetadataData
 >("save_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+export const saveMetadataIfUnchanged = callable<
+  [appId: number, metadata: MetadataData, expected: MetadataData | null],
+  MetadataData | null
+>("save_metadata");
 export const removeMetadata = callable<
   [appId: number],
   Record<string, MetadataData>

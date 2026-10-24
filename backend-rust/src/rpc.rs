@@ -355,8 +355,22 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             Ok(state.cef.eval_in_big_picture(&args[0]).await)
         }
         "save_metadata" => {
-            arity(&args, 2, 2)?;
-            metadata::save(&state, &args[0], args[1].clone(), false, None).await
+            arity(&args, 2, 3)?;
+            // An optional third argument is the record the caller started from (null = absent).
+            // The save then commits only if the stored record still equals it, else returns null.
+            match args.get(2) {
+                None => metadata::save(&state, &args[0], args[1].clone(), false, None).await,
+                Some(expected) => metadata::save_guarded(
+                    &state,
+                    &args[0],
+                    args[1].clone(),
+                    false,
+                    None,
+                    Some(expected),
+                )
+                .await
+                .map(|saved| saved.unwrap_or(Value::Null)),
+            }
         }
         "search_metadata" => {
             arity(&args, 1, 2)?;
@@ -515,8 +529,8 @@ mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
 
-    #[tokio::test]
-    async fn preference_getters_reject_an_unreadable_settings_file() {
+    /// A fresh backend over `settings_file` bytes (none = no file); returns its root and state.
+    async fn test_state(settings_file: Option<&[u8]>) -> (std::path::PathBuf, Arc<AppState>) {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
         let base = std::env::var_os("TMPDIR")
             .map(std::path::PathBuf::from)
@@ -529,8 +543,9 @@ mod tests {
         let settings = root.join("settings");
         std::fs::create_dir_all(&settings).unwrap();
         std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700)).unwrap();
-        let path = settings.join(storage::SETTINGS_FILE_NAME);
-        std::fs::write(&path, b"{broken").unwrap();
+        if let Some(bytes) = settings_file {
+            std::fs::write(settings.join(storage::SETTINGS_FILE_NAME), bytes).unwrap();
+        }
         let state = AppState::new(decky_plugin::Env {
             plugin_settings_dir: settings,
             plugin_runtime_dir: root.join("runtime"),
@@ -540,6 +555,36 @@ mod tests {
         })
         .unwrap();
         state.initialize().await.unwrap();
+        (root, state)
+    }
+
+    #[tokio::test]
+    async fn guarded_save_commits_only_over_the_expected_record() {
+        let (root, state) = test_state(None).await;
+        let save = |args: Vec<Value>| dispatch(Arc::clone(&state), "save_metadata", args);
+        let original = save(vec![json!(7), json!({"title":"Game","source":"IGN"})]).await.unwrap();
+        // A scan saved a newer record after the caller read `original`.
+        let newer = save(vec![json!(7), json!({"title":"Game","source":"IGN","description":"Scan"})])
+            .await
+            .unwrap();
+        let stale = json!({"title":"Game","source":"IGN","screenshots":[{"url":"https://a.example/1.png"}]});
+        assert_eq!(save(vec![json!(7), stale.clone(), original]).await.unwrap(), Value::Null);
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["7"], newer);
+        // A removed record (expected was present) and an absent record (expected null).
+        assert_eq!(save(vec![json!(8), stale.clone(), newer.clone()]).await.unwrap(), Value::Null);
+        assert!(state.store().await.unwrap().data()["metadata"].get("8").is_none());
+        let created = save(vec![json!(8), stale.clone(), Value::Null]).await.unwrap();
+        assert_eq!(created["screenshots"][0]["url"], "https://a.example/1.png");
+        let updated = save(vec![json!(7), stale, newer]).await.unwrap();
+        assert_eq!(updated["screenshots"][0]["url"], "https://a.example/1.png");
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn preference_getters_reject_an_unreadable_settings_file() {
+        let (root, state) = test_state(Some(b"{broken")).await;
+        let path = root.join("settings").join(storage::SETTINGS_FILE_NAME);
 
         let getters = [
             "get_compatibility_default",
