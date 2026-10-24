@@ -538,6 +538,24 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0x9b);
   });
 
+  it("takes back store categories the user unchecks or whose record is removed", () => {
+    const appId = 9105;
+    const overview: any = installCompatibilityOverview(appId, 0x9b);
+    overview.m_setStoreCategories = new Set<number>([22]);
+    metadataCache[String(appId)] = { ...compatibilityMetadata(null, null), store_categories: [1, 2, 22] };
+    applyMetadata(appId);
+    expect([...overview.m_setStoreCategories].sort((a, b) => a - b)).toEqual([1, 2, 22]);
+
+    metadataCache[String(appId)] = { ...compatibilityMetadata(null, null), store_categories: [2] };
+    applyMetadata(appId);
+    expect([...overview.m_setStoreCategories].sort((a, b) => a - b)).toEqual([2, 22]);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    // Steam's own category stays; only the plugin-added ones go.
+    expect([...overview.m_setStoreCategories]).toEqual([22]);
+  });
+
   it("recomputes inheritance instead of restoring baseline when metadata removal leaves a global default", () => {
     const appId = 9101;
     const overview = installCompatibilityOverview(appId, 0x9b);
@@ -1027,6 +1045,33 @@ describe("compatibility metadata application", () => {
     await tryEnrichScreenshotsForApp(appId);
     expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.objectContaining({ screenshots: saved.screenshots }));
     expect(metadataCache[String(appId)]).toBe(saved);
+  });
+
+  it("does not save screenshots over a record edited or removed during the request", async () => {
+    const appId = 93004;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...compatibilityMetadata(null, null),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    for (const change of ["edit", "remove"] as const) {
+      metadataCache[String(appId)] = existing;
+      beginCompatibilityLifecycle();
+      let resolveFetch!: (metadata: Record<string, any> | null) => void;
+      mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
+        resolveFetch = resolve;
+      }));
+      const pending = tryEnrichScreenshotsForApp(appId);
+      await Promise.resolve();
+      if (change === "edit") metadataCache[String(appId)] = { ...existing, description: "User edit" };
+      else delete metadataCache[String(appId)];
+      resolveFetch({ screenshots: [{ url: "https://example.invalid/shot.png" }] });
+      await pending;
+      expect(mocks.saveMetadata).not.toHaveBeenCalled();
+    }
   });
 
   it("retries cached metadata when its native overview appears after the first bootstrap pass", async () => {

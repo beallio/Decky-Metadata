@@ -80,6 +80,9 @@ export function usePluginUpdateController({
   const skipInitialCheck = useRef(false);
   const automaticCheckToggleHydrated = useRef(false);
   const latestChannel = useRef(updateChannel);
+  // Read at call time so toggling the preference does not re-create checkForUpdates.
+  const automaticUpdateChecksRef = useRef(automaticUpdateChecks);
+  automaticUpdateChecksRef.current = automaticUpdateChecks;
 
   if (latestChannel.current !== updateChannel) {
     latestChannel.current = updateChannel;
@@ -111,6 +114,10 @@ export function usePluginUpdateController({
         return;
       }
       if (opts.source === "automatic" && !settingsLoaded) {
+        return;
+      }
+      if (opts.source === "automatic" && !automaticUpdateChecksRef.current) {
+        logUpdate(null, "automatic_check_suppressed_disabled");
         return;
       }
       if (opts.source === "automatic" && (state.installedOverride || state.pendingInstallVersion)) {

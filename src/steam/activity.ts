@@ -898,6 +898,10 @@ export const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
     if (!store || store.__deckyNativeActivityPatched) return !!store?.__deckyNativeActivityPatched;
     try {
       store.__deckyNativeActivityPatched = true;
+      // Steam keeps the store across plugin reloads; the marker must not outlive its patches.
+      unpatchers.push(() => {
+        delete store.__deckyNativeActivityPatched;
+      });
       unpatchers.push(
         patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
           const appId = Number(args[0]);
@@ -951,6 +955,9 @@ export const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
     if (partnerStore.__deckyNativePartnerEventsPatched || patchedStores.has(partnerStore)) return true;
     partnerStore.__deckyNativePartnerEventsPatched = true;
     patchedStores.add(partnerStore);
+    unpatchers.push(() => {
+      delete partnerStore.__deckyNativePartnerEventsPatched;
+    });
 
     const maybePatch = (methodName: string, handler: (original: (...args: any[]) => any, args: any[]) => any) => {
       if (typeof partnerStore[methodName] !== "function") return;

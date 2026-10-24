@@ -802,6 +802,9 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
     const skipInitialCheck = SP_REACT.useRef(false);
     const automaticCheckToggleHydrated = SP_REACT.useRef(false);
     const latestChannel = SP_REACT.useRef(updateChannel);
+    // Read at call time so toggling the preference does not re-create checkForUpdates.
+    const automaticUpdateChecksRef = SP_REACT.useRef(automaticUpdateChecks);
+    automaticUpdateChecksRef.current = automaticUpdateChecks;
     if (latestChannel.current !== updateChannel) {
         latestChannel.current = updateChannel;
         activeCheckId.current += 1;
@@ -826,6 +829,10 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
             return;
         }
         if (opts.source === "automatic" && !settingsLoaded) {
+            return;
+        }
+        if (opts.source === "automatic" && !automaticUpdateChecksRef.current) {
+            logUpdate(null, "automatic_check_suppressed_disabled");
             return;
         }
         if (opts.source === "automatic" && (state.installedOverride || state.pendingInstallVersion)) {
@@ -3305,6 +3312,10 @@ const installNativeActivityStorePatch = (unpatchers) => {
             return !!store?.__deckyNativeActivityPatched;
         try {
             store.__deckyNativeActivityPatched = true;
+            // Steam keeps the store across plugin reloads; the marker must not outlive its patches.
+            unpatchers.push(() => {
+                delete store.__deckyNativeActivityPatched;
+            });
             unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
                 const appId = Number(args[0]);
                 const native = getDeckyNativeActivityForApp(appId);
@@ -3361,6 +3372,9 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
             return true;
         partnerStore.__deckyNativePartnerEventsPatched = true;
         patchedStores.add(partnerStore);
+        unpatchers.push(() => {
+            delete partnerStore.__deckyNativePartnerEventsPatched;
+        });
         const maybePatch = (methodName, handler) => {
             if (typeof partnerStore[methodName] !== "function")
                 return;
@@ -4909,6 +4923,30 @@ const applyReleaseDateToOverview = (appId, overview) => {
         return false;
     }
 };
+// Categories this plugin added, keyed by Steam's category set (replacement overviews share it),
+// so a category the user unchecks or a removed record is taken back out.
+const pluginStoreCategories = new WeakMap();
+const syncStoreCategories = (overview, categories) => {
+    if (!overview.m_setStoreCategories) {
+        overview.m_setStoreCategories = new Set();
+    }
+    const native = overview.m_setStoreCategories;
+    const added = pluginStoreCategories.get(native) ?? new Set();
+    const wanted = new Set((categories ?? []).map(Number));
+    for (const category of added) {
+        if (wanted.has(category))
+            continue;
+        native.delete(category);
+        added.delete(category);
+    }
+    for (const category of wanted) {
+        if (native.has(category))
+            continue;
+        native.add(category);
+        added.add(category);
+    }
+    pluginStoreCategories.set(native, added);
+};
 const applyMetadataToOverview = (appId, overview) => {
     if (!isNativeNonSteamShortcut(overview))
         return false;
@@ -4917,6 +4955,13 @@ const applyMetadataToOverview = (appId, overview) => {
         clearDeckyNativeActivityForApp(appId);
     }
     if (!metadata) {
+        try {
+            if (overview.m_setStoreCategories)
+                syncStoreCategories(overview, []);
+        }
+        catch {
+            // Steam objects are not always writable during early bootstrap.
+        }
         const compatibilityChanged = applyCompatibilityToOverview(appId, overview);
         return compatibilityChanged;
     }
@@ -4926,12 +4971,7 @@ const applyMetadataToOverview = (appId, overview) => {
             overview.metacritic_score = metadata.rating;
         }
         compatibilityChanged = applyCompatibilityToOverview(appId, overview);
-        if (!overview.m_setStoreCategories) {
-            overview.m_setStoreCategories = new Set();
-        }
-        metadata.store_categories?.forEach((category) => {
-            overview.m_setStoreCategories.add(Number(category));
-        });
+        syncStoreCategories(overview, metadata.store_categories);
     }
     catch {
         // Steam objects are not always writable during early bootstrap.
@@ -5102,6 +5142,9 @@ const tryEnrichScreenshotsForApp = async (appId) => {
     try {
         const refreshed = await fetchMetadata(source);
         if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            return;
+        // A save, re-match or removal during the request wins over this background fill-in.
+        if (metadataCache[String(appId)] !== metadata)
             return;
         if (refreshed?.screenshots?.length) {
             const saved = await saveMetadata(appId, {
@@ -7846,6 +7889,9 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     let innerPatch;
     let outerPatch;
+    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
+    const bodyPatches = [];
+    const patchedBodies = new Set();
     // Steam reuses a single context-menu instance and installs the inner
     // (body) render patches only once. Those patches must read the appid of
     // whichever game is *currently* opening the menu, not the one captured on
@@ -7859,8 +7905,12 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
             if (!innerPatch) {
                 innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    const bodyPrototype = rendered?.type?.prototype;
+                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
+                        return rendered;
+                    patchedBodies.add(bodyPrototype);
                     // First render of the menu body.
-                    DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
                         const items = output?.props?.children?.[0];
                         try {
                             syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
@@ -7869,9 +7919,9 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                             // Steam reshapes this tree often; skip on mismatch.
                         }
                         return output;
-                    });
+                    }));
                     // Subsequent updates when Steam refreshes the app overview.
-                    DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
                             if (shouldUpdate === true) {
                                 syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
@@ -7884,7 +7934,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                             // Not our menu; leave the decision untouched.
                         }
                         return shouldUpdate;
-                    });
+                    }));
                     return rendered;
                 });
             }
@@ -7907,6 +7957,8 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     return {
         unpatch: () => {
+            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
+            patchedBodies.clear();
             outerPatch?.unpatch();
             innerPatch?.unpatch();
         },
@@ -14720,6 +14772,18 @@ const Content = () => {
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
     const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
+    // One scan-progress poll is pending at a time; unmounting the panel stops polling.
+    const scanPoll = SP_REACT.useRef({ timer: null, stopped: false });
+    SP_REACT.useEffect(() => {
+        const poll = scanPoll.current;
+        poll.stopped = false;
+        return () => {
+            poll.stopped = true;
+            if (poll.timer !== null)
+                window.clearTimeout(poll.timer);
+            poll.timer = null;
+        };
+    }, []);
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
@@ -15222,30 +15286,48 @@ const Content = () => {
         setBusy(true);
         setScanMessage("");
         setScanStatusKind("active");
-        try {
-            await startScanMissing(games);
-            const interval = window.setInterval(async () => {
-                const progress = await getScanProgress();
-                setScanStatusKind("active");
-                setScanMessage(progress.current ||
-                    progress.message ||
-                    `${progress.completed}/${progress.total}`);
-                if (!progress.running) {
-                    window.clearInterval(interval);
-                    await refresh();
-                    setBusy(false);
-                    setScanStatusKind(scanCompleteStatusKind(progress));
-                    setScanMessage(scanCompleteMessage(progress));
-                    toastSuccess("Metadata", "Refresh complete");
-                }
-            }, 800);
-        }
-        catch (error) {
+        const failScan = (error) => {
             setBusy(false);
             setScanStatusKind("error");
             setScanMessage(String(error));
             toastError("Metadata refresh failed", String(error));
+        };
+        try {
+            await startScanMissing(games);
         }
+        catch (error) {
+            failScan(error);
+            return;
+        }
+        const poll = scanPoll.current;
+        const pollProgress = async () => {
+            poll.timer = null;
+            try {
+                const progress = await getScanProgress();
+                if (poll.stopped)
+                    return;
+                setScanStatusKind("active");
+                setScanMessage(progress.current ||
+                    progress.message ||
+                    `${progress.completed}/${progress.total}`);
+                if (progress.running) {
+                    poll.timer = window.setTimeout(pollProgress, 800);
+                    return;
+                }
+                await refresh();
+                if (poll.stopped)
+                    return;
+                setBusy(false);
+                setScanStatusKind(scanCompleteStatusKind(progress));
+                setScanMessage(scanCompleteMessage(progress));
+                toastSuccess("Metadata", "Refresh complete");
+            }
+            catch (error) {
+                if (!poll.stopped)
+                    failScan(error);
+            }
+        };
+        poll.timer = window.setTimeout(pollProgress, 800);
     };
     const clearCache = async () => {
         if (cacheBusy || busy)
@@ -16284,6 +16366,11 @@ const MetadataPage = () => {
             return;
         }
         const requestedEntry = editorEntryToken;
+        // Until this entry's record loads, the form holds defaults that would overwrite it.
+        if (metadataHydratedEntry !== requestedEntry) {
+            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            return;
+        }
         if (!beginBusy(requestedEntry))
             return;
         const requestedRevision = formRevisionRef.current;
@@ -16312,6 +16399,10 @@ const MetadataPage = () => {
             return;
         }
         const requestedEntry = editorEntryToken;
+        if (metadataHydratedEntry !== requestedEntry) {
+            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            return;
+        }
         if (!beginBusy(requestedEntry))
             return;
         const saveBaselineMetadata = metadataRef.current;

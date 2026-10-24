@@ -827,6 +827,30 @@ const applyReleaseDateToOverview = (appId: number, overview: SteamOverview): boo
   }
 };
 
+// Categories this plugin added, keyed by Steam's category set (replacement overviews share it),
+// so a category the user unchecks or a removed record is taken back out.
+const pluginStoreCategories = new WeakMap<Set<number>, Set<number>>();
+
+const syncStoreCategories = (overview: any, categories: number[] | undefined) => {
+  if (!overview.m_setStoreCategories) {
+    overview.m_setStoreCategories = new Set<number>();
+  }
+  const native: Set<number> = overview.m_setStoreCategories;
+  const added = pluginStoreCategories.get(native) ?? new Set<number>();
+  const wanted = new Set((categories ?? []).map(Number));
+  for (const category of added) {
+    if (wanted.has(category)) continue;
+    native.delete(category);
+    added.delete(category);
+  }
+  for (const category of wanted) {
+    if (native.has(category)) continue;
+    native.add(category);
+    added.add(category);
+  }
+  pluginStoreCategories.set(native, added);
+};
+
 const applyMetadataToOverview = (appId: number, overview: any) => {
   if (!isNativeNonSteamShortcut(overview)) return false;
   const metadata = metadataCache[String(appId)];
@@ -834,6 +858,11 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
     clearDeckyNativeActivityForApp(appId);
   }
   if (!metadata) {
+    try {
+      if (overview.m_setStoreCategories) syncStoreCategories(overview, []);
+    } catch {
+      // Steam objects are not always writable during early bootstrap.
+    }
     const compatibilityChanged = applyCompatibilityToOverview(appId, overview);
     return compatibilityChanged;
   }
@@ -844,12 +873,7 @@ const applyMetadataToOverview = (appId: number, overview: any) => {
       overview.metacritic_score = metadata.rating;
     }
     compatibilityChanged = applyCompatibilityToOverview(appId, overview);
-    if (!overview.m_setStoreCategories) {
-      overview.m_setStoreCategories = new Set<number>();
-    }
-    metadata.store_categories?.forEach((category) => {
-      overview.m_setStoreCategories.add(Number(category));
-    });
+    syncStoreCategories(overview, metadata.store_categories);
   } catch {
     // Steam objects are not always writable during early bootstrap.
   }
@@ -1045,6 +1069,8 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   try {
     const refreshed = await fetchMetadata(source);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+    // A save, re-match or removal during the request wins over this background fill-in.
+    if (metadataCache[String(appId)] !== metadata) return;
     if (refreshed?.screenshots?.length) {
       const saved = await saveMetadata(appId, {
         ...metadata,

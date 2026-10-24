@@ -231,4 +231,17 @@ describe("native Activity metadata removal", () => {
 
     unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
   });
+
+  it("patches the same Steam store again after a plugin reload", () => {
+    const store = { GetAppActivity: (_appId: number) => undefined };
+    const originalGetAppActivity = store.GetAppActivity;
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    for (let load = 0; load < 2; load += 1) {
+      const unpatchers: Array<() => void> = [];
+      installNativeActivityStorePatch(unpatchers);
+      expect(store.GetAppActivity).not.toBe(originalGetAppActivity);
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      expect(store.GetAppActivity).toBe(originalGetAppActivity);
+    }
+  });
 });
