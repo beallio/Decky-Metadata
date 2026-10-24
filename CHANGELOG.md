@@ -25,6 +25,8 @@ Find Steam matches and run the plugin backend in Rust
   if it failed at startup.
 - The plugin now loads less data when it starts and when you open the Quick Access
   panel. A game's Steam news loads when you open that game.
+- Saving metadata is about twice as fast. The settings file is now stored without
+  indentation; its contents are unchanged.
 
 ## [0.5.4] - 2026-10-11
 

@@ -107,7 +107,7 @@ async fn save_delisted_index(
         tokio::fs::create_dir_all(parent)
             .await
             .map_err(|error| error.to_string())?;
-        let bytes = serde_json::to_vec_pretty(index).map_err(|error| error.to_string())?;
+        let bytes = serde_json::to_vec(index).map_err(|error| error.to_string())?;
         if cancel.is_cancelled() {
             return Err("backend stopping".to_owned());
         }
