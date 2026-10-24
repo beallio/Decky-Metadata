@@ -605,6 +605,11 @@ export const MetadataPage = () => {
       return;
     }
     const requestedEntry = editorEntryToken;
+    // Until this entry's record loads, the form holds defaults that would overwrite it.
+    if (metadataHydratedEntry !== requestedEntry) {
+      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      return;
+    }
     if (!beginBusy(requestedEntry)) return;
     const requestedRevision = formRevisionRef.current;
     try {
@@ -633,6 +638,10 @@ export const MetadataPage = () => {
       return;
     }
     const requestedEntry = editorEntryToken;
+    if (metadataHydratedEntry !== requestedEntry) {
+      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      return;
+    }
     if (!beginBusy(requestedEntry)) return;
     const saveBaselineMetadata = metadataRef.current;
     const saveBaselineText: FormTextSnapshot = {

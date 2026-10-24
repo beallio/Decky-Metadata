@@ -331,8 +331,35 @@ impl Updater {
         let mut selected = None;
         for prevalidated in releases.iter().take(MAX_MANIFEST_FETCH_ATTEMPTS) {
             let manifest_response = self.client.get_manifest(&manifest_url(prevalidated)).await;
+            if matches!(manifest_response.status, 403 | 429) {
+                let until = retry_after_until(&manifest_response.headers, self.now());
+                self.rate_limited_until = Some(until);
+                crate::logging::event(
+                    "update",
+                    "GitHub release manifest download was rate limited",
+                    json!({"status": manifest_response.status, "tag": prevalidated.tag_name}),
+                    Level::Warn,
+                );
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": checked_at,
+                    "message": "Rate limit exceeded",
+                    "retry_after": isoformat_utc(until)
+                }));
+            }
+            // An undownloadable manifest leaves this release unknown, so "current" would be a guess.
             if manifest_response.status != 200 {
-                continue;
+                crate::logging::event(
+                    "update",
+                    "GitHub release manifest download failed",
+                    json!({"status": manifest_response.status, "tag": prevalidated.tag_name}),
+                    Level::Error,
+                );
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": checked_at,
+                    "message": "Failed to download the release manifest"
+                }));
             }
             if let Some(candidate) =
                 validate_manifest_candidate(prevalidated, &manifest_response.body)
@@ -1010,19 +1037,32 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn invalid_manifest_download_and_private_repository_failures_keep_baseline_envelopes() {
+    async fn manifest_download_failures_and_private_repository_return_failure_envelopes() {
         let http = Http::fixtures(vec![
             fixture(RELEASES_URL, 200, json!([release("0.4.0", "stable")]), &[]),
             fixture(MANIFEST_URL, 503, json!({}), &[]),
         ]);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
+        let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
+        assert_eq!(result["status"], "failed");
+        // An unknown release must not be cached as "current" for a day.
+        assert!(updater.cache.get("last_result").is_none());
+        fixture_http.assert_drained();
+
+        let http = Http::fixtures(vec![
+            fixture(RELEASES_URL, 200, json!([release("0.4.0", "stable")]), &[]),
+            fixture(MANIFEST_URL, 429, json!({}), &[("retry-after", "120")]),
+        ]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.3.1", &json!({}));
+        let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
+        assert_eq!(result["status"], "failed");
+        assert!(result["retry_after"].is_string());
+        // The cooldown also blocks the next network check.
         assert_eq!(
-            updater
-                .check_for_update(&json!("0.3.1"), true)
-                .await
-                .unwrap()["status"],
-            "current"
+            updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["message"],
+            "Update check skipped due to rate-limit cooldown"
         );
         fixture_http.assert_drained();
 

@@ -271,6 +271,19 @@ pub fn prepare_save(
     let trusted = trusted_appid.is_some_and(|id| id > 0 && Some(id) == next);
     if previous.is_some_and(|id| id != 0) && previous != next && !trusted {
         value["deck_compat_category"] = Value::Null;
+        // Data fetched for the old Steam app must not describe the new match. The store
+        // URL and name stay: the editor sends them for the new ID and enrichment refills them.
+        if let Some(object) = value.as_object_mut() {
+            for key in [
+                "steam_store_state",
+                "steam_news",
+                "steam_news_enriched_at",
+                "steam_dlc_appids",
+                "has_points_shop",
+            ] {
+                object.remove(key);
+            }
+        }
     }
     Ok(stamp_updated(existing, sanitize(&value, index)?))
 }
@@ -437,6 +450,21 @@ pub async fn save(
     preserve_override: bool,
     trusted_appid: Option<i64>,
 ) -> Result<Value, String> {
+    save_guarded(state, app_id, value, preserve_override, trusted_appid, None)
+        .await
+        .map(|saved| saved.expect("an unguarded save always commits"))
+}
+
+/// With `expected`, a background result commits only while the stored record (`Null` when
+/// absent) still equals the copy it was computed from; otherwise it returns `None`.
+pub async fn save_guarded(
+    state: &crate::state::AppState,
+    app_id: &Value,
+    value: Value,
+    preserve_override: bool,
+    trusted_appid: Option<i64>,
+    expected: Option<&Value>,
+) -> Result<Option<Value>, String> {
     let value = metadata_mapping(value)?;
     let key = py_string(app_id);
     let mut storage = state.store().await?;
@@ -447,6 +475,9 @@ pub async fn save(
     storage
         .transaction(|transaction| {
             let existing = transaction.get(&["metadata", &key]).unwrap_or(&Value::Null);
+            if expected.is_some_and(|expected| expected != existing) {
+                return Ok(None);
+            }
             let cleaned = prepare_save(
                 existing,
                 value,
@@ -455,7 +486,7 @@ pub async fn save(
                 index.as_deref().unwrap_or(&Value::Null),
             )?;
             transaction.set(&["metadata", &key], cleaned.clone())?;
-            Ok(cleaned)
+            Ok(Some(cleaned))
         })
         .await
 }
@@ -703,6 +734,27 @@ mod tests {
         let automatic = prepare_save(&old,json!({"title":"Game","steam_appid":11,"deck_compat_override":null,"deck_compat_category":2}),false,Some(11),&Value::Null).unwrap();
         assert_eq!(automatic["deck_compat_override"], Value::Null);
         assert_eq!(automatic["deck_compat_category"], 2);
+    }
+    #[test]
+    fn a_changed_steam_match_drops_the_old_apps_store_state_and_news() {
+        let news = json!([{"id":"a","title":"Old game news","url":"https://example.com/a","body":"Body"}]);
+        let old = json!({
+            "title":"Game","steam_appid":10,"steam_store_state":"delisted",
+            "steam_store_url":"https://store.steampowered.com/app/10/","steam_store_name":"Old Game",
+            "steam_news":news,"steam_news_enriched_at":5,"steam_dlc_appids":[12],"has_points_shop":true,
+        });
+        let mut rematch = old.clone();
+        rematch["steam_appid"] = json!(11);
+        let saved = prepare_save(&old, rematch.clone(), false, None, &Value::Null).unwrap();
+        assert_eq!(saved["steam_store_state"], "unknown");
+        assert_eq!(saved["steam_news"], json!([]));
+        assert_eq!(saved["steam_news_enriched_at"], 0);
+        assert_eq!(saved["steam_dlc_appids"], json!([]));
+        assert_eq!(saved["has_points_shop"], false);
+        // Data the provider fetched for the new ID itself is kept.
+        let trusted = prepare_save(&old, rematch, false, Some(11), &Value::Null).unwrap();
+        assert_eq!(trusted["steam_store_state"], "delisted");
+        assert_eq!(trusted["steam_news"][0]["id"], "a");
     }
     #[test]
     fn dates_preserve_absence_null_and_literal_manual_description() {

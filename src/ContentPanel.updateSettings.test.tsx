@@ -1043,5 +1043,37 @@ describe("Content update settings", () => {
     expect(compatibilityDropdownReturnOrigin()).toBe("scope");
   });
 
+  it("stops polling scan progress after an unmount or a failed poll", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("window", {
+      setTimeout: (callback: () => void, ms: number) => setTimeout(callback, ms),
+      clearTimeout: (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer),
+    });
+    try {
+      backend.startScanMissing.mockResolvedValue({ running: true });
+      backend.getScanProgress.mockResolvedValue({ running: true, completed: 0, total: 2, current: "", message: "" });
+      render();
+      const cleanups = harness.effects.map((effect) => effect()).filter((cleanup) => typeof cleanup === "function");
+      await flushPromises();
+      children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
+      await vi.advanceTimersByTimeAsync(800);
+      expect(backend.getScanProgress).toHaveBeenCalledTimes(1);
+      for (const cleanup of cleanups) (cleanup as () => void)();
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(backend.getScanProgress).toHaveBeenCalledTimes(1);
+
+      remount();
+      runEffects();
+      await flushPromises();
+      backend.getScanProgress.mockRejectedValue(new Error("backend stopped"));
+      children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(backend.getScanProgress).toHaveBeenCalledTimes(2);
+      expect(children(render()).find((node) => node.type === "MetadataSection").props.scanBusy).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
 
 });

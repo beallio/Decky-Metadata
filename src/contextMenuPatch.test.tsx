@@ -228,4 +228,24 @@ describe("contextMenuPatch", () => {
     expect(items.filter((item: any) => item?.key === LEGACY_COMPATIBILITY_ENTRY_KEY)).toHaveLength(0);
     expect(items.filter((item: any) => item?.key === ENTRY_KEY)).toHaveLength(1);
   });
+
+  it("removes the menu body patches on unpatch so a reload installs one fresh layer", () => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack();
+    const originalRender = MenuBody.prototype.render;
+    const first = contextMenuPatch(LibraryContextMenu);
+    const menu = new LibraryContextMenu(100).render();
+    menu.type();
+    menu.type();
+    expect(MenuBody.prototype.render).not.toBe(originalRender);
+
+    first.unpatch();
+    expect(MenuBody.prototype.render).toBe(originalRender);
+    expect((MenuBody.prototype as any).shouldComponentUpdate).toBeUndefined();
+
+    const second = contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(200).render().type();
+    expect(injectedTarget(new MenuBody().render().props.children[0])).toBe("/decky-metadata/200");
+    second.unpatch();
+    expect(MenuBody.prototype.render).toBe(originalRender);
+  });
 });

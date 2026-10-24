@@ -119,6 +119,19 @@ pub async fn dispatch_raw(state: &AppState, method: &str, args: &[Value]) -> Raw
     serde_json::value::to_raw_value(value).map_err(|error| error.to_string())
 }
 
+/// Preference getters reject when the settings file could not be read, like the original backend.
+async fn loaded_store<'a>(
+    state: &'a AppState,
+    what: &str,
+) -> Result<tokio::sync::MutexGuard<'a, storage::Storage>, String> {
+    let storage = state.store().await?;
+    if storage.loaded_successfully() {
+        Ok(storage)
+    } else {
+        Err(format!("{what} could not be loaded"))
+    }
+}
+
 pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> MethodResult {
     match method {
         "get_platform_capabilities" => {
@@ -164,7 +177,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default" => {
             arity(&args, 0, 0)?;
             Ok(json!(storage::compatibility_default(
-                &state.store().await?.data()["settings"]["deck_compat_default"]
+                &loaded_store(&state, "compatibility default").await?.data()["settings"]["deck_compat_default"]
             )))
         }
         "set_compatibility_default" => {
@@ -179,7 +192,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default_scope" => {
             arity(&args, 0, 0)?;
             Ok(storage::compatibility_default_scope(
-                &state.store().await?.data()["settings"]["deck_compat_default_scope"],
+                &loaded_store(&state, "compatibility default scope").await?.data()["settings"]
+                    ["deck_compat_default_scope"],
             )
             .unwrap_or("all")
             .into())
@@ -196,7 +210,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_trailer_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_trailer_settings(
-                &state.store().await?.data()["settings"]["game_trailers"],
+                &loaded_store(&state, "trailer settings").await?.data()["settings"]["game_trailers"],
             ))
         }
         "set_trailer_settings" => {
@@ -211,7 +225,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_mini_achievements_enabled" => {
             arity(&args, 0, 0)?;
             Ok(
-                state.store().await?.data()["settings"]["mini_achievements_enabled"]
+                loaded_store(&state, "mini achievements settings").await?.data()["settings"]
+                    ["mini_achievements_enabled"]
                     .as_bool()
                     .unwrap_or(false)
                     .into(),
@@ -229,7 +244,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_protondb_badge_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_protondb_badge_settings(
-                &state.store().await?.data()["settings"]["protondb_badges"],
+                &loaded_store(&state, "ProtonDB badge settings").await?.data()["settings"]
+                    ["protondb_badges"],
             ))
         }
         "set_protondb_badge_settings" => {
@@ -491,5 +507,67 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 .unwrap_or_else(|error| update_failure(error, false)))
         }
         _ => Err(format!("Plugin has no method {method}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[tokio::test]
+    async fn preference_getters_reject_an_unreadable_settings_file() {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let base = std::env::var_os("TMPDIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| "/var/tmp/omp-1000".into());
+        let root = base.join(format!(
+            "metadata-rpc-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        let settings = root.join("settings");
+        std::fs::create_dir_all(&settings).unwrap();
+        std::fs::set_permissions(&root, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = settings.join(storage::SETTINGS_FILE_NAME);
+        std::fs::write(&path, b"{broken").unwrap();
+        let state = AppState::new(decky_plugin::Env {
+            plugin_settings_dir: settings,
+            plugin_runtime_dir: root.join("runtime"),
+            plugin_log_dir: root.join("logs"),
+            plugin_version: "0.5.5".into(),
+            ..Default::default()
+        })
+        .unwrap();
+        state.initialize().await.unwrap();
+
+        let getters = [
+            "get_compatibility_default",
+            "get_compatibility_default_scope",
+            "get_trailer_settings",
+            "get_mini_achievements_enabled",
+            "get_protondb_badge_settings",
+        ];
+        for method in getters {
+            assert!(dispatch(Arc::clone(&state), method, Vec::new()).await.is_err(), "{method}");
+        }
+        std::fs::write(&path, br#"{"settings":{"mini_achievements_enabled":true}}"#).unwrap();
+        // Coarse filesystem clocks can repeat an mtime; the store reloads only when it changes.
+        let modified = std::fs::metadata(&path).unwrap().modified().unwrap()
+            + std::time::Duration::from_secs(1);
+        std::fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert_eq!(
+            dispatch(Arc::clone(&state), "get_mini_achievements_enabled", Vec::new())
+                .await
+                .unwrap(),
+            json!(true)
+        );
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
     }
 }

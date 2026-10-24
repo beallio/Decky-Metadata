@@ -262,6 +262,9 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
 
   let innerPatch: Patch | undefined;
   let outerPatch: Patch | undefined;
+  // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
+  const bodyPatches: Patch[] = [];
+  const patchedBodies = new Set<object>();
 
   // Steam reuses a single context-menu instance and installs the inner
   // (body) render patches only once. Those patches must read the appid of
@@ -283,9 +286,12 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
 
       if (!innerPatch) {
         innerPatch = afterPatch(menu, "type", (_typeArgs: any[], rendered: any) => {
+          const bodyPrototype = rendered?.type?.prototype;
+          if (!bodyPrototype || patchedBodies.has(bodyPrototype)) return rendered;
+          patchedBodies.add(bodyPrototype);
           // First render of the menu body.
-          afterPatch(
-            rendered.type.prototype,
+          bodyPatches.push(afterPatch(
+            bodyPrototype,
             "render",
             (_args: any[], output: any) => {
               const items = output?.props?.children?.[0];
@@ -296,11 +302,11 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
               }
               return output;
             }
-          );
+          ));
 
           // Subsequent updates when Steam refreshes the app overview.
-          afterPatch(
-            rendered.type.prototype,
+          bodyPatches.push(afterPatch(
+            bodyPrototype,
             "shouldComponentUpdate",
             ([nextProps]: any[], shouldUpdate: boolean) => {
               try {
@@ -314,7 +320,7 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
               }
               return shouldUpdate;
             }
-          );
+          ));
 
           return rendered;
         });
@@ -338,6 +344,8 @@ const contextMenuPatch = (LibraryContextMenuClass: any) => {
 
   return {
     unpatch: () => {
+      bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
+      patchedBodies.clear();
       outerPatch?.unpatch();
       innerPatch?.unpatch();
     },
