@@ -1062,22 +1062,26 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
   ) {
     return;
   }
-  const source = metadata.source_url || String(metadata.id || "");
-  if (!source) return;
+  if (!(metadata.source_url || metadata.id)) return;
   const request = { lifecycleGeneration };
   metadataState.screenshotRequestOwners.set(appId, request);
   metadataState.loadingScreenshots.add(appId);
   try {
+    // Snapshot the full record first: the all-records load leaves out news, so saving the
+    // summary would drop it, and the fetch source must come from the same snapshot the
+    // backend later compares against. A re-match or edit after this point fails that check.
+    const full = await fullMetadataForApp(appId);
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+    if (!full || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN") return;
+    const source = full.source_url || String(full.id || "");
+    if (!source) return;
     const refreshed = await fetchMetadata(source);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-    // A save, re-match or removal during the request wins over this background fill-in.
-    if (metadataCache[String(appId)] !== metadata) return;
+    // A frontend save, re-match or removal during the request wins over this fill-in.
+    if (metadataCache[String(appId)] !== full) return;
     if (refreshed?.screenshots?.length) {
-      // Save over the full record: the all-records load leaves out news, and a save of that
-      // summary would drop it. The backend commits only if the stored record still equals
-      // this snapshot, which also covers scan and refresh writes this cache has not seen yet.
-      const full = await fullMetadataForApp(appId);
-      if (!full || full.screenshots?.length || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+      // The backend commits only while the stored record still equals `full`, which also
+      // covers scan and refresh writes this cache has not seen yet.
       const saved = await saveMetadataIfUnchanged(
         appId,
         { ...full, screenshots: refreshed.screenshots },

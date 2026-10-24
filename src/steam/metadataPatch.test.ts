@@ -995,20 +995,22 @@ describe("compatibility metadata application", () => {
     mocks.fetchMetadata
       .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
       .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+    // Each call snapshots the full record before its fetch starts.
+    const settle = async () => { for (let tick = 0; tick < 5; tick += 1) await Promise.resolve(); };
 
     beginCompatibilityLifecycle();
     const first = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
     beginCompatibilityLifecycle();
     const second = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
 
     resolveFirst(null);
     await first;
 
     expect(metadataState.loadingScreenshots.has(appId)).toBe(true);
     const third = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
     expect(mocks.fetchMetadata).toHaveBeenCalledTimes(2);
 
     const saved = { ...existing, screenshots: [{ url: "https://example.invalid/shot.png" }] };
@@ -1074,6 +1076,31 @@ describe("compatibility metadata application", () => {
     // The news survives the save, and the guard compares against the full stored record.
     expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, { ...full, screenshots: shots }, full);
     expect(metadataCache[String(appId)]?.steam_news?.[0]?.title).toBe("Kept news");
+  });
+
+  it("compares a screenshot save with the full record read before the fetch", async () => {
+    const appId = 93007;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const before = {
+      ...activityMetadata("Old game news", "62345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/old-game",
+      screenshots: [],
+    } as any;
+    const { steam_news: _news, ...summary } = before;
+    metadataCache[String(appId)] = summary;
+    beginCompatibilityLifecycle();
+    mocks.getMetadata.mockResolvedValue(before);
+    // A scan re-matches the game on the backend while the old game's screenshots load.
+    mocks.fetchMetadata.mockImplementation(async () => {
+      mocks.getMetadata.mockResolvedValue({ ...before, source_url: "https://example.invalid/new-game" });
+      return { screenshots: [{ url: "https://example.invalid/old-shot.png" }] };
+    });
+    mocks.saveMetadata.mockResolvedValue(null);
+    await tryEnrichScreenshotsForApp(appId);
+    expect(mocks.fetchMetadata).toHaveBeenCalledWith("https://example.invalid/old-game");
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.anything(), before);
   });
 
   it("does not save screenshots over a record edited or removed during the request", async () => {
