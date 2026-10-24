@@ -991,9 +991,18 @@ async fn load_store(dir: &Path) -> Result<(Value, Persist), LoadError> {
     let records_dir = dir.join(RECORDS_DIR_NAME);
     let (mut data, persist) = match load_file(&dir.join(SETTINGS_FILE_NAME)).await {
         Ok(data) => (data, Persist::None),
-        // A lost settings file must not discard the record files beside it.
-        Err(LoadError::Missing) if tokio::fs::try_exists(&records_dir).await.unwrap_or(false) => {
-            (default_data(), Persist::Envelope)
+        // A lost settings file must not discard the record files beside it, including the
+        // `.old` set an interrupted full rewrite leaves (`read_records` restores it).
+        Err(LoadError::Missing) => {
+            let failed = |error: std::io::Error| LoadError::Failure(format!("failed reading metadata records: {error}"));
+            let backup = dir.join(format!("{RECORDS_DIR_NAME}.old"));
+            if tokio::fs::try_exists(&records_dir).await.map_err(failed)?
+                || tokio::fs::try_exists(&backup).await.map_err(failed)?
+            {
+                (default_data(), Persist::Envelope)
+            } else {
+                return Err(LoadError::Missing);
+            }
         }
         Err(error) => return Err(error),
     };
@@ -1899,6 +1908,14 @@ mod tests {
         let recovered = Storage::open(dir.0.clone()).await.unwrap();
         assert_eq!(recovered.data()["metadata"]["1"]["title"], "Kept");
         assert!(records.join("1.json").exists());
+
+        // The same crash while recreating a lost settings file: no settings file, only `metadata.old`.
+        std::fs::remove_file(&path).unwrap();
+        std::fs::rename(&records, dir.0.join(format!("{RECORDS_DIR_NAME}.old"))).unwrap();
+        let recovered = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(recovered.data()["metadata"]["1"]["title"], "Kept");
+        assert!(records.join("1.json").exists());
+        assert!(path.exists());
 
         // A damaged settings file the user then deletes must not empty the records.
         std::fs::write(&path, b"{broken").unwrap();
