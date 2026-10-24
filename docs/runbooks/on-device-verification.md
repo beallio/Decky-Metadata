@@ -73,8 +73,8 @@ UTF-8 hex). `decky_metadata.json` keeps every other field and the
 `"metadata_layout": "files-v1"` key. A settings file without that key is the
 single-file layout: the backend converts it on load, replacing the `metadata`
 folder. `record_update_install_requested` writes the single-file layout back so
-an older version reads it; the next write by a running newer version restores
-the layout key. Tools read either layout as one document with
+an older version reads it; later writes keep that file complete until the next
+load converts it back. Tools read either layout as one document with
 `ssh steamdeck "python3 - <settings dir>" < scripts/deck/read_store.py`.
 Record files edited in place without a rename do not change the folder's
 modification time, so a running backend does not reload them.

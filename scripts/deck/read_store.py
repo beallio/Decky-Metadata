@@ -39,6 +39,8 @@ def read_store(directory: str) -> dict[str, Any]:
     if store.pop(LAYOUT_KEY, None) is None:
         return store
     records_dir = os.path.join(directory, RECORDS_DIR)
+    if not os.path.isdir(records_dir) and os.path.isdir(records_dir + ".old"):
+        records_dir += ".old"  # an interrupted full rewrite; the backend restores it on load
     records = {}
     for name in sorted(os.listdir(records_dir)) if os.path.isdir(records_dir) else ():
         key = record_key(name)

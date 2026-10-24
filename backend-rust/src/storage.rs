@@ -42,8 +42,9 @@ impl Storage {
             loaded: false,
             legacy_exported: false,
         };
+        let stamp = read_stamp(&store.dir).await?;
         match load_store(&store.dir).await {
-            Ok(loaded) => store.adopt(loaded).await?,
+            Ok(loaded) => store.adopt(loaded, stamp).await?,
             Err(LoadError::Missing) => {
                 write_all(&store.dir, &store.data).await?;
                 store.stamp = read_stamp(&store.dir).await?;
@@ -60,7 +61,8 @@ impl Storage {
     }
 
     /// Publishes loaded data, first converting single-file data or old release dates on disk.
-    async fn adopt(&mut self, (mut data, persist): (Value, Persist)) -> Result<(), String> {
+    /// `stamp` is read before loading, so a change during the read causes another reload.
+    async fn adopt(&mut self, (mut data, persist): (Value, Persist), stamp: Stamp) -> Result<(), String> {
         let migrated = migrate_release_dates(&mut data)?;
         if migrated || persist == Persist::All {
             write_all(&self.dir, &data).await?;
@@ -68,7 +70,11 @@ impl Storage {
             write_envelope(&self.dir, &data).await?;
         }
         self.data = normalize_loaded_data(data)?;
-        self.stamp = read_stamp(&self.dir).await?;
+        self.stamp = if migrated || persist != Persist::None {
+            read_stamp(&self.dir).await?
+        } else {
+            stamp
+        };
         self.loaded = true;
         self.legacy_exported = false;
         Ok(())
@@ -80,7 +86,8 @@ impl Storage {
 
     pub async fn refresh(&mut self) -> Result<bool, String> {
         let stamp = read_stamp(&self.dir).await?;
-        if stamp.0.is_none() {
+        // An unloaded cache holds defaults; it must not replace record files beside a lost settings file.
+        if stamp.0.is_none() && self.loaded {
             write_all(&self.dir, &self.data).await?;
             self.stamp = read_stamp(&self.dir).await?;
             self.loaded = true;
@@ -92,7 +99,7 @@ impl Storage {
         }
         match load_store(&self.dir).await {
             Ok(loaded) => {
-                self.adopt(loaded).await?;
+                self.adopt(loaded, stamp).await?;
                 Ok(true)
             }
             Err(LoadError::Missing) => {
@@ -130,7 +137,8 @@ impl Storage {
 
     /// Writes the whole store as one settings file, the layout older versions read.
     /// Call it before the updater hands off to another version: an older version
-    /// sees no records otherwise, and a newer start converts the file back.
+    /// sees no records otherwise. Later writes keep that file complete until the next
+    /// load, which converts it back.
     pub async fn export_legacy(&mut self) -> Result<(), String> {
         self.ensure_writable()?;
         let encoded = serde_json::to_vec(&self.data).map_err(|error| error.to_string())?;
@@ -189,11 +197,13 @@ impl Storage {
     /// `records: None` rewrites every record file. A failed write leaves the stamp stale, so the
     /// next refresh reloads whatever reached the disk.
     async fn persist(&mut self, envelope: bool, records: Option<&[String]>) -> Result<(), String> {
-        if std::mem::take(&mut self.legacy_exported) {
-            if let Err(error) = write_envelope(&self.dir, &self.data).await {
-                self.legacy_exported = true;
-                return Err(error);
-            }
+        if self.legacy_exported {
+            // Until the next load, the single settings file stays the complete store: an older
+            // version may start from it at any moment during the install.
+            let encoded = serde_json::to_vec(&self.data).map_err(|error| error.to_string())?;
+            write_atomic(self.dir.join(SETTINGS_FILE_NAME), encoded).await?;
+            self.stamp = read_stamp(&self.dir).await?;
+            return Ok(());
         }
         match records {
             None => write_records_dir(&self.dir, &self.data).await?,
@@ -1037,8 +1047,10 @@ async fn read_records(records_dir: PathBuf) -> Result<Map<String, Value>, String
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                 // A crash between the two renames in `write_records_dir` leaves only the previous set.
                 let previous = records_dir.with_file_name(format!("{RECORDS_DIR_NAME}.old"));
-                if std::fs::rename(&previous, &records_dir).is_err() {
-                    return Ok(Map::new());
+                match std::fs::rename(&previous, &records_dir) {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Map::new()),
+                    Err(error) => return Err(format!("failed restoring metadata records: {error}")),
                 }
                 std::fs::read_dir(&records_dir)
                     .map_err(|error| format!("failed reading metadata records: {error}"))?
@@ -1841,16 +1853,22 @@ mod tests {
         assert_eq!(exported, *store.data());
         assert!(!store.refresh().await.unwrap());
 
-        // A cancelled install: this instance keeps running and must not leave a stale single file.
+        // Writes during the install (a scan, the handoff confirmation) keep the single file complete.
         store
-            .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("After")))
+            .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("During install")))
             .await
             .unwrap();
-        assert_eq!(persisted(&dir.0), *store.data());
+        let during: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        assert_eq!(during, *store.data());
+        assert!(!store.refresh().await.unwrap());
+
+        // A cancelled install: the next load converts the single file back.
+        let reloaded = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(reloaded.data()["metadata"]["1"]["title"], "During install");
+        assert_eq!(persisted(&dir.0), *reloaded.data());
 
         // A completed downgrade: the older version edits and saves the exported file.
-        store.export_legacy().await.unwrap();
-        let mut older = exported;
+        let mut older = during;
         older["metadata"]["1"]["title"] = json!("Edited by older version");
         older["metadata"]["5"] = json!({"title": "Added by older version"});
         std::fs::write(&path, serde_json::to_vec(&older).unwrap()).unwrap();
@@ -1880,6 +1898,15 @@ mod tests {
         std::fs::rename(&records, dir.0.join(format!("{RECORDS_DIR_NAME}.old"))).unwrap();
         let recovered = Storage::open(dir.0.clone()).await.unwrap();
         assert_eq!(recovered.data()["metadata"]["1"]["title"], "Kept");
+        assert!(records.join("1.json").exists());
+
+        // A damaged settings file the user then deletes must not empty the records.
+        std::fs::write(&path, b"{broken").unwrap();
+        let mut damaged = Storage::open(dir.0.clone()).await.unwrap();
+        assert!(!damaged.loaded_successfully());
+        std::fs::remove_file(&path).unwrap();
+        assert!(damaged.refresh().await.unwrap());
+        assert_eq!(damaged.data()["metadata"]["1"]["title"], "Kept");
         assert!(records.join("1.json").exists());
 
         let future = br#"{"metadata_layout":"files-v9"}"#;
