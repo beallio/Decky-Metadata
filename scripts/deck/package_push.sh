@@ -201,7 +201,8 @@ if validate_archive 2>/dev/null; then
     remote_ready=1
     remote_sha="$(ssh "$host" "sha256sum '${dest%/}/Decky-Metadata.zip' | awk '{print \$1}'" 2>/dev/null || true)"
   fi
-  if ((!force)) && [[ -f "$ledger" ]] && {
+  # The ZIP version names only HEAD, so uncommitted edits always need a fresh build.
+  if ((!force)) && [[ -f "$ledger" ]] && [[ -z "$(git status --porcelain)" ]] && {
     ((!push)) || ((remote_ready)) && [[ "$remote_sha" == "$digest" ]]
   }; then
     already_current=1
