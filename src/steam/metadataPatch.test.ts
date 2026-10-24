@@ -1214,6 +1214,38 @@ describe("compatibility metadata application", () => {
     expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
   });
 
+  it("loads a summary's news once for overlapping requests and keeps Activity when the read fails", async () => {
+    const appId = 9222;
+    installCompatibilityOverview(appId, 0xa0);
+    const store = { m_mapAppActivity: new Map<number, any>() };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    const full = activityMetadata("Shown plugin card", "72345678901234567") as any;
+    metadataCache[String(appId)] = full;
+    await refreshDeckyNativeActivityForApp(appId, store);
+    const shown = store.m_mapAppActivity.get(appId);
+    expect(shown).toMatchObject({ __deckyNativeActivity: true });
+
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    let rejectRead!: (error: Error) => void;
+    mocks.getMetadata.mockReturnValue(new Promise((_resolve, reject) => { rejectRead = reject; }));
+    const refreshes = [1, 2, 3].map(() => refreshDeckyNativeActivityForApp(appId, store));
+    for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+    expect(mocks.getMetadata).toHaveBeenCalledTimes(1);
+    rejectRead(new Error("backend unavailable"));
+    await Promise.all(refreshes);
+    expect(store.m_mapAppActivity.get(appId)).toBe(shown);
+
+    // A failed read must not let the screenshot fill-in save the news-free summary.
+    Object.assign(summary, { source: "IGN", source_url: "https://example.invalid/game", screenshots: [] });
+    metadataState.metadataLoaded = true;
+    beginCompatibilityLifecycle();
+    mocks.getMetadata.mockRejectedValue(new Error("backend unavailable"));
+    await tryEnrichScreenshotsForApp(appId);
+    expect(mocks.fetchMetadata).not.toHaveBeenCalled();
+    expect(mocks.saveMetadata).not.toHaveBeenCalled();
+  });
+
   it("keeps Activity for an all-records summary until its news loads", async () => {
     const appId = 9221;
     installCompatibilityOverview(appId, 0xa0);

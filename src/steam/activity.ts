@@ -49,17 +49,30 @@ export const configureActivityMetadataLoader = (
 
 const activityRefreshGate = createActivityRefreshGate();
 
+/** One full-record read per summary object; Steam's activity getters can ask many times. */
+const fullMetadataLoads = new WeakMap<MetadataData, Promise<MetadataData | undefined>>();
+
 /**
  * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
- * once it is needed; a newer cache entry written meanwhile wins.
+ * once it is needed; a newer cache entry written meanwhile wins. A failed read resolves to the
+ * summary, so callers must treat a missing `steam_news` key as "not loaded".
  */
-export const fullMetadataForApp = async (appId: number) => {
+export const fullMetadataForApp = (appId: number): Promise<MetadataData | undefined> => {
   const key = String(appId);
   const summary = metadataCache[key];
-  if (!summary || "steam_news" in summary) return summary;
-  const full = await getMetadata(appId);
-  if (full && metadataCache[key] === summary) setMetadataCacheEntry(appId, full);
-  return metadataCache[key];
+  if (!summary || "steam_news" in summary) return Promise.resolve(summary);
+  let load = fullMetadataLoads.get(summary);
+  if (!load) {
+    load = getMetadata(appId)
+      .then((full) => {
+        if (full && metadataCache[key] === summary) setMetadataCacheEntry(appId, full);
+      })
+      .catch((error) => log.info("activity", "full metadata load failed", error))
+      .then(() => metadataCache[key])
+      .finally(() => fullMetadataLoads.delete(summary));
+    fullMetadataLoads.set(summary, load);
+  }
+  return load;
 };
 
 const maybeRefreshSteamNewsForApp = (appId: number) => {
@@ -881,6 +894,8 @@ export const refreshDeckyNativeActivityForApp = async (appId: number, store?: an
   if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
   const metadata = await fullMetadataForApp(appId);
   if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
+  // News could not load: keep whatever Activity is already shown.
+  if (metadata && !("steam_news" in metadata)) return deckyNativeActivityCache().get(appId) ?? null;
   if (!metadata) {
     clearDeckyNativeActivityForApp(appId, store);
     return null;

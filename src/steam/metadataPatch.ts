@@ -1072,7 +1072,8 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
     // backend later compares against. A re-match or edit after this point fails that check.
     const full = await fullMetadataForApp(appId);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-    if (!full || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN") return;
+    // A failed full-record read leaves the summary; saving it would drop the stored news.
+    if (!full || !("steam_news" in full) || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN") return;
     const source = full.source_url || String(full.id || "");
     if (!source) return;
     const refreshed = await fetchMetadata(source);

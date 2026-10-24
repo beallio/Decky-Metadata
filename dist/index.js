@@ -2478,19 +2478,31 @@ const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => 
     applyMetadataFn = applyMetadata;
 };
 const activityRefreshGate = createActivityRefreshGate();
+/** One full-record read per summary object; Steam's activity getters can ask many times. */
+const fullMetadataLoads = new WeakMap();
 /**
  * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
- * once it is needed; a newer cache entry written meanwhile wins.
+ * once it is needed; a newer cache entry written meanwhile wins. A failed read resolves to the
+ * summary, so callers must treat a missing `steam_news` key as "not loaded".
  */
-const fullMetadataForApp = async (appId) => {
+const fullMetadataForApp = (appId) => {
     const key = String(appId);
     const summary = metadataCache[key];
     if (!summary || "steam_news" in summary)
-        return summary;
-    const full = await getMetadata(appId);
-    if (full && metadataCache[key] === summary)
-        setMetadataCacheEntry(appId, full);
-    return metadataCache[key];
+        return Promise.resolve(summary);
+    let load = fullMetadataLoads.get(summary);
+    if (!load) {
+        load = getMetadata(appId)
+            .then((full) => {
+            if (full && metadataCache[key] === summary)
+                setMetadataCacheEntry(appId, full);
+        })
+            .catch((error) => info("activity", "full metadata load failed", error))
+            .then(() => metadataCache[key])
+            .finally(() => fullMetadataLoads.delete(summary));
+        fullMetadataLoads.set(summary, load);
+    }
+    return load;
 };
 const maybeRefreshSteamNewsForApp = (appId) => {
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
@@ -3300,6 +3312,9 @@ const refreshDeckyNativeActivityForApp = async (appId, store) => {
     const metadata = await fullMetadataForApp(appId);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
         return null;
+    // News could not load: keep whatever Activity is already shown.
+    if (metadata && !("steam_news" in metadata))
+        return deckyNativeActivityCache().get(appId) ?? null;
     if (!metadata) {
         clearDeckyNativeActivityForApp(appId, store);
         return null;
@@ -5169,7 +5184,8 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         const full = await fullMetadataForApp(appId);
         if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
             return;
-        if (!full || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN")
+        // A failed full-record read leaves the summary; saving it would drop the stored news.
+        if (!full || !("steam_news" in full) || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN")
             return;
         const source = full.source_url || String(full.id || "");
         if (!source)
