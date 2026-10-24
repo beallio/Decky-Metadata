@@ -95,12 +95,12 @@ active="$(find "$tmp_base/verification" -name fixtures.json -type f 2>/dev/null 
 if [[ -n "$active" ]]; then cp "$active" "$root/fixtures.json"; record "copy active fixture manifest" 0 "$root/fixtures.json"; fi
 failed="$(find "$tmp_base/verification" -name 'failed-command*' -type f 2>/dev/null | sort | tail -1 || true)"
 if [[ -n "$failed" ]]; then cp "$failed" "$root/failed-command.txt"; record "copy failed command output" 0 "$root/failed-command.txt"; fi
-settings_remote="/home/deck/homebrew/settings/Decky-Metadata/decky_metadata.json"
+settings_remote="/home/deck/homebrew/settings/Decky-Metadata"
 if ((include_settings)); then
   echo "WARNING: --include-settings copies private plugin settings into restricted-raw." >&2
-  if ssh "${DECKY_DECK_HOST:-steamdeck}" "cat '$settings_remote'" >"$restricted/settings.json" 2>"$root/settings.stderr"; then record "read full settings" 0 "$restricted/settings.json"; else record "read full settings" 1 "$restricted/settings.json"; fi
+  if ssh "${DECKY_DECK_HOST:-steamdeck}" "python3 - '$settings_remote'" <scripts/deck/read_store.py >"$restricted/settings.json" 2>"$root/settings.stderr"; then record "read full settings" 0 "$restricted/settings.json"; else record "read full settings" 1 "$restricted/settings.json"; fi
 else
-  if ssh "${DECKY_DECK_HOST:-steamdeck}" "cat '$settings_remote'" 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); m=d.get("metadata",d); vals=[v for v in m.values() if isinstance(v,dict)]; matched=[v for v in vals if v.get("steam_appid")]; delisted=[v for v in matched if v.get("delisted") is True or str(v.get("steam_store_state") or v.get("store_state") or "").lower() in {"delisted","unavailable","removed"}]; print(json.dumps({"entry_count":len(m),"listed_match":len(matched)-len(delisted),"delisted_match":len(delisted),"never_on_steam":len(vals)-len(matched)},sort_keys=True))' >"$root/metadata-summary.json"; then record "read redacted metadata summary" 0 "$root/metadata-summary.json"; else record "read redacted metadata summary" 1 "$root/metadata-summary.json"; fi
+  if ssh "${DECKY_DECK_HOST:-steamdeck}" "python3 - '$settings_remote'" <scripts/deck/read_store.py 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); m=d.get("metadata",d); vals=[v for v in m.values() if isinstance(v,dict)]; matched=[v for v in vals if v.get("steam_appid")]; delisted=[v for v in matched if v.get("delisted") is True or str(v.get("steam_store_state") or v.get("store_state") or "").lower() in {"delisted","unavailable","removed"}]; print(json.dumps({"entry_count":len(m),"listed_match":len(matched)-len(delisted),"delisted_match":len(delisted),"never_on_steam":len(vals)-len(matched)},sort_keys=True))' >"$root/metadata-summary.json"; then record "read redacted metadata summary" 0 "$root/metadata-summary.json"; else record "read redacted metadata summary" 1 "$root/metadata-summary.json"; fi
 fi
 find "$restricted" -type d -exec chmod 700 {} +
 find "$restricted" -type f -exec chmod 600 {} +

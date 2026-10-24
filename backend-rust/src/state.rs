@@ -407,7 +407,11 @@ impl AppState {
             return result;
         }
         let rate_limit = *self.updater_rate_limit.lock().await;
-        self.change(|transaction| {
+        let mut storage = self.store().await?;
+        if self.cancel.is_cancelled() {
+            return Err("backend stopping".into());
+        }
+        let result = storage.transaction(|transaction| {
             let mut backend = crate::updater::Updater::new(
                 self.http.clone(),
                 self.env.plugin_version.clone(),
@@ -447,7 +451,12 @@ impl AppState {
             }
             Ok(result)
         })
-        .await
+        .await?;
+        if method == "record_update_install_requested" {
+            // The next start may be an older version that reads only the single settings file.
+            storage.export_legacy().await?;
+        }
+        Ok(result)
     }
 }
 
@@ -693,6 +702,13 @@ mod tests {
             )
             .await
             .unwrap();
+        // An older version installed by this handoff reads only the single settings file.
+        let exported: Value = serde_json::from_slice(
+            &std::fs::read(state.env.plugin_settings_dir.join(crate::storage::SETTINGS_FILE_NAME)).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(exported["metadata"]["42"]["title"], "Concurrent user edit");
+        assert_eq!(exported["update_check_cache"]["pending_update_install"]["version"], "0.5.6");
         gate.resume.notify_one();
         assert_eq!(task.await.unwrap().unwrap()["status"], "current");
         let storage = state.store().await.unwrap();

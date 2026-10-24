@@ -19,7 +19,8 @@ if not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts.endpoint_health import DiagnosticsError, redact, run_diagnostics
 
-STORE_PATH = "/home/deck/homebrew/settings/Decky-Metadata/decky_metadata.json"
+SETTINGS_DIR = "/home/deck/homebrew/settings/Decky-Metadata"
+READ_STORE = Path(__file__).with_name("read_store.py")
 
 
 def _error(message: str) -> int:
@@ -41,7 +42,8 @@ def main() -> int:
             raw = Path(args.store).read_text(encoding="utf-8")
         else:
             result = subprocess.run(
-                ["ssh", args.host, f"cat {STORE_PATH}"],
+                ["ssh", args.host, f"python3 - {SETTINGS_DIR}"],
+                input=READ_STORE.read_text(encoding="utf-8"),
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

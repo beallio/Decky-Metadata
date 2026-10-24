@@ -10,14 +10,24 @@ use tokio::io::AsyncReadExt;
 
 pub const RELEASE_DATE_FORMAT: &str = "date-only-v1";
 pub const SETTINGS_FILE_NAME: &str = "decky_metadata.json";
+/// One `<game id>.json` per metadata record; the settings file keeps every other root field.
+pub const RECORDS_DIR_NAME: &str = "metadata";
+/// Present only in a per-game layout settings file. Without it, the file's `metadata` is authoritative.
+const LAYOUT_KEY: &str = "metadata_layout";
+const LAYOUT_FILES: &str = "files-v1";
 const TRAILER_QUALITIES: &[i64] = &[720, 1080, 1440, 2160];
 const PROTONDB_COVER_POSITIONS: &[&str] = &["bottom-left", "top-left", "top-right"];
 
+/// Settings file and records directory modification times, used to detect external changes.
+type Stamp = (Option<i128>, Option<i128>);
+
 pub struct Storage {
     data: Value,
-    path: PathBuf,
-    mtime_ns: Option<i128>,
+    dir: PathBuf,
+    stamp: Stamp,
     loaded: bool,
+    /// The settings file holds a full single-file copy for an older version; replace it before the next write.
+    legacy_exported: bool,
 }
 
 impl Storage {
@@ -25,41 +35,49 @@ impl Storage {
         tokio::fs::create_dir_all(&settings_dir)
             .await
             .map_err(|error| format!("failed creating settings directory: {error}"))?;
-        let path = settings_dir.join(SETTINGS_FILE_NAME);
-        match load_file(&path).await {
-            Ok((mut data, mut mtime_ns)) => {
-                if migrate_release_dates(&mut data)? {
-                    mtime_ns = write_atomic(&path, &data).await?;
-                }
-                Ok(Self {
-                    data: normalize_loaded_data(data)?,
-                    path,
-                    mtime_ns,
-                    loaded: true,
-                })
-            }
+        let mut store = Self {
+            data: default_data(),
+            dir: settings_dir,
+            stamp: (None, None),
+            loaded: false,
+            legacy_exported: false,
+        };
+        let stamp = read_stamp(&store.dir).await?;
+        match load_store(&store.dir).await {
+            Ok(loaded) => store.adopt(loaded, stamp).await?,
             Err(LoadError::Missing) => {
-                let data = default_data();
-                let mtime_ns = write_atomic(&path, &data).await?;
-                Ok(Self {
-                    data,
-                    path,
-                    mtime_ns,
-                    loaded: true,
-                })
+                write_all(&store.dir, &store.data).await?;
+                store.stamp = read_stamp(&store.dir).await?;
+                store.loaded = true;
             }
             Err(error) => {
                 if let LoadError::Failure(message) = &error {
-                    log_load_failure(&path, message);
+                    log_load_failure(&store.dir, message);
                 }
-                Ok(Self {
-                    data: default_data(),
-                    mtime_ns: file_mtime_ns(&path).await.unwrap_or(None),
-                    path,
-                    loaded: false,
-                })
+                store.stamp = read_stamp(&store.dir).await.unwrap_or((None, None));
             }
         }
+        Ok(store)
+    }
+
+    /// Publishes loaded data, first converting single-file data or old release dates on disk.
+    /// `stamp` is read before loading, so a change during the read causes another reload.
+    async fn adopt(&mut self, (mut data, persist): (Value, Persist), stamp: Stamp) -> Result<(), String> {
+        let migrated = migrate_release_dates(&mut data)?;
+        if migrated || persist == Persist::All {
+            write_all(&self.dir, &data).await?;
+        } else if persist == Persist::Envelope {
+            write_envelope(&self.dir, &data).await?;
+        }
+        self.data = normalize_loaded_data(data)?;
+        self.stamp = if migrated || persist != Persist::None {
+            read_stamp(&self.dir).await?
+        } else {
+            stamp
+        };
+        self.loaded = true;
+        self.legacy_exported = false;
+        Ok(())
     }
 
     pub fn loaded_successfully(&self) -> bool {
@@ -67,45 +85,44 @@ impl Storage {
     }
 
     pub async fn refresh(&mut self) -> Result<bool, String> {
-        match file_mtime_ns(&self.path).await {
-            Ok(Some(mtime_ns)) if self.mtime_ns == Some(mtime_ns) => return Ok(false),
-            Ok(Some(_)) => {}
-            Ok(None) => {
-                self.mtime_ns = write_atomic(&self.path, &self.data).await?;
-                self.loaded = true;
-                return Ok(true);
-            }
-            Err(error) => return Err(error),
+        let stamp = read_stamp(&self.dir).await?;
+        // An unloaded cache holds defaults; it must not replace record files beside a lost settings file.
+        if stamp.0.is_none() && self.loaded {
+            write_all(&self.dir, &self.data).await?;
+            self.stamp = read_stamp(&self.dir).await?;
+            self.loaded = true;
+            self.legacy_exported = false;
+            return Ok(true);
         }
-
-        let (mut data, mut mtime_ns) = match load_file(&self.path).await {
-            Ok(loaded) => loaded,
-            Err(LoadError::Missing) => {
-                self.mtime_ns = write_atomic(&self.path, &self.data).await?;
-                self.loaded = true;
-                return Ok(true);
+        if stamp == self.stamp {
+            return Ok(false);
+        }
+        match load_store(&self.dir).await {
+            Ok(loaded) => {
+                self.adopt(loaded, stamp).await?;
+                Ok(true)
             }
-            // The cache no longer matches the file; refuse writes until a valid file loads.
+            Err(LoadError::Missing) => {
+                write_all(&self.dir, &self.data).await?;
+                self.stamp = read_stamp(&self.dir).await?;
+                self.loaded = true;
+                self.legacy_exported = false;
+                Ok(true)
+            }
+            // The cache no longer matches the files; refuse writes until valid files load.
             Err(LoadError::Invalid) => {
                 self.loaded = false;
-                return Ok(false);
+                Ok(false)
             }
             Err(LoadError::Failure(error)) => {
-                log_load_failure(&self.path, &error);
+                log_load_failure(&self.dir, &error);
                 self.loaded = false;
-                return Ok(false);
+                Ok(false)
             }
-        };
-        if migrate_release_dates(&mut data)? {
-            mtime_ns = write_atomic(&self.path, &data).await?;
         }
-        self.data = normalize_loaded_data(data)?;
-        self.mtime_ns = mtime_ns;
-        self.loaded = true;
-        Ok(true)
     }
 
-    /// Startup fell back to defaults because the file is unusable; saving now would replace it.
+    /// Startup fell back to defaults because the files are unusable; saving now would replace them.
     fn ensure_writable(&self) -> Result<(), String> {
         if self.loaded {
             Ok(())
@@ -118,15 +135,16 @@ impl Storage {
         &self.data
     }
 
-    pub async fn replace(&mut self, next: Value) -> Result<(), String> {
-        if !next.is_object() {
-            return Err("metadata settings must be a JSON object".to_owned());
-        }
-        self.refresh().await?;
+    /// Writes the whole store as one settings file, the layout older versions read.
+    /// Call it before the updater hands off to another version: an older version
+    /// sees no records otherwise. Later writes keep that file complete until the next
+    /// load, which converts it back.
+    pub async fn export_legacy(&mut self) -> Result<(), String> {
         self.ensure_writable()?;
-        let mtime_ns = write_atomic(&self.path, &next).await?;
-        self.data = next;
-        self.mtime_ns = mtime_ns;
+        let encoded = serde_json::to_vec(&self.data).map_err(|error| error.to_string())?;
+        write_atomic(self.dir.join(SETTINGS_FILE_NAME), encoded).await?;
+        self.legacy_exported = true;
+        self.stamp = read_stamp(&self.dir).await?;
         Ok(())
     }
 
@@ -144,21 +162,31 @@ impl Storage {
                 return Err(error);
             }
         };
-        // A mutation that leaves every touched path equal (e.g. re-saving the same record) skips the file write.
-        let changed = transaction.undo.iter().any(|(path, previous)| {
-            let path: Vec<&str> = path.iter().map(String::as_str).collect();
-            value_at(transaction.data, &path) != previous.as_ref()
-        });
+        // Only paths whose value changed are written; re-saving the same record writes nothing.
+        let mut envelope = false;
+        let mut records = Some(Vec::<String>::new());
+        for (path, previous) in &transaction.undo {
+            let parts: Vec<&str> = path.iter().map(String::as_str).collect();
+            if value_at(transaction.data, &parts) == previous.as_ref() {
+                continue;
+            }
+            match parts.as_slice() {
+                ["metadata"] => records = None,
+                ["metadata", key, ..] => {
+                    if let Some(keys) = records.as_mut().filter(|keys| !keys.iter().any(|saved| saved == key)) {
+                        keys.push((*key).to_owned());
+                    }
+                }
+                _ => envelope = true,
+            }
+        }
         let undo = std::mem::take(&mut transaction.undo);
         drop(transaction);
-        if !changed {
+        if !envelope && records.as_ref().is_some_and(Vec::is_empty) {
             return Ok(value);
         }
-        match write_atomic(&self.path, &self.data).await {
-            Ok(mtime_ns) => {
-                self.mtime_ns = mtime_ns;
-                Ok(value)
-            }
+        match self.persist(envelope, records.as_deref()).await {
+            Ok(()) => Ok(value),
             Err(error) => {
                 rollback_changes(&mut self.data, undo);
                 Err(error)
@@ -166,21 +194,47 @@ impl Storage {
         }
     }
 
+    /// `records: None` rewrites every record file. A failed write leaves the stamp stale, so the
+    /// next refresh reloads whatever reached the disk.
+    async fn persist(&mut self, envelope: bool, records: Option<&[String]>) -> Result<(), String> {
+        if self.legacy_exported {
+            // Until the next load, the single settings file stays the complete store: an older
+            // version may start from it at any moment during the install.
+            let encoded = serde_json::to_vec(&self.data).map_err(|error| error.to_string())?;
+            write_atomic(self.dir.join(SETTINGS_FILE_NAME), encoded).await?;
+            self.stamp = read_stamp(&self.dir).await?;
+            return Ok(());
+        }
+        match records {
+            None => write_records_dir(&self.dir, &self.data).await?,
+            Some(keys) => {
+                for key in keys {
+                    write_record(&self.dir, key, self.data["metadata"].get(key)).await?;
+                }
+            }
+        }
+        if envelope {
+            write_envelope(&self.dir, &self.data).await?;
+        }
+        self.stamp = read_stamp(&self.dir).await?;
+        Ok(())
+    }
+
     /// Store normalization remains visible in memory even when its best-effort save fails.
     pub async fn normalize_loaded_store_states(&mut self, cached_index: Option<&Value>) -> bool {
         let changed = normalize_store_states(&mut self.data, cached_index);
-        if changed {
-            match write_atomic(&self.path, &self.data).await {
-                Ok(mtime_ns) => self.mtime_ns = mtime_ns,
-                Err(error) => logging::event(
-                    "load",
-                    "failed normalizing loaded Steam store states",
-                    json!({"error":error}),
-                    log::Level::Error,
-                ),
-            }
+        if changed.is_empty() {
+            return false;
         }
-        changed
+        if let Err(error) = self.persist(false, Some(&changed)).await {
+            logging::event(
+                "load",
+                "failed normalizing loaded Steam store states",
+                json!({"error":error}),
+                log::Level::Error,
+            );
+        }
+        true
     }
 }
 
@@ -701,13 +755,16 @@ pub fn build_shortcut_name_state(
     }))
 }
 
-/// Normalizes loaded states using only a previously cached delisted index.
-pub fn normalize_store_states(data: &mut Value, cached_index: Option<&Value>) -> bool {
+/// Normalizes loaded states using only a previously cached delisted index; returns the changed record keys.
+pub fn normalize_store_states(data: &mut Value, cached_index: Option<&Value>) -> Vec<String> {
     let Some(metadata) = data.get_mut("metadata").and_then(Value::as_object_mut) else {
-        return false;
+        return Vec::new();
     };
-    let mut changed = false;
-    for record in metadata.values_mut().filter_map(Value::as_object_mut) {
+    let mut changed = Vec::new();
+    for (key, record) in metadata.iter_mut() {
+        let Some(record) = record.as_object_mut() else {
+            continue;
+        };
         let raw = record.get("steam_store_state");
         let normalized = raw
             .and_then(Value::as_str)
@@ -724,7 +781,7 @@ pub fn normalize_store_states(data: &mut Value, cached_index: Option<&Value>) ->
         });
         if raw.and_then(Value::as_str) != Some(normalized.as_str()) {
             record.insert("steam_store_state".to_owned(), Value::String(normalized));
-            changed = true;
+            changed.push(key.clone());
         }
     }
     changed
@@ -921,7 +978,45 @@ fn valid_delay(value: &Value) -> bool {
     integer(value).is_some_and(|delay| (0..=10).contains(&delay))
 }
 
-async fn load_file(path: &Path) -> Result<(Value, Option<i128>), LoadError> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Persist {
+    None,
+    Envelope,
+    All,
+}
+
+/// Loads the settings file and, for the per-game layout, every record file. `Persist::All`
+/// marks single-file data that must be converted; `Persist::Envelope` a lost settings file.
+async fn load_store(dir: &Path) -> Result<(Value, Persist), LoadError> {
+    let records_dir = dir.join(RECORDS_DIR_NAME);
+    let (mut data, persist) = match load_file(&dir.join(SETTINGS_FILE_NAME)).await {
+        Ok(data) => (data, Persist::None),
+        // A lost settings file must not discard the record files beside it.
+        Err(LoadError::Missing) if tokio::fs::try_exists(&records_dir).await.unwrap_or(false) => {
+            (default_data(), Persist::Envelope)
+        }
+        Err(error) => return Err(error),
+    };
+    let object = data.as_object_mut().ok_or(LoadError::Invalid)?;
+    match object.remove(LAYOUT_KEY) {
+        None if persist == Persist::None => return Ok((data, Persist::All)),
+        None => {}
+        Some(Value::String(layout)) if layout == LAYOUT_FILES => {}
+        Some(_) => {
+            return Err(LoadError::Failure(
+                "unsupported metadata layout; a newer plugin version wrote these files".to_owned(),
+            ));
+        }
+    }
+    // shortcut: an older version installed by hand (not by the updater, which exports first)
+    // keeps the layout key and writes `metadata` here; those edits are ignored.
+    object.remove("metadata");
+    let records = read_records(records_dir).await.map_err(LoadError::Failure)?;
+    object.insert("metadata".to_owned(), Value::Object(records));
+    Ok((data, persist))
+}
+
+async fn load_file(path: &Path) -> Result<Value, LoadError> {
     let mut file = match tokio::fs::File::open(path).await {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
@@ -930,14 +1025,6 @@ async fn load_file(path: &Path) -> Result<(Value, Option<i128>), LoadError> {
         Err(error) => {
             return Err(LoadError::Failure(format!(
                 "failed reading metadata settings: {error}"
-            )));
-        }
-    };
-    let mtime_ns = match file.metadata().await {
-        Ok(metadata) => modified_ns(metadata.modified().ok()),
-        Err(error) => {
-            return Err(LoadError::Failure(format!(
-                "failed stat metadata settings: {error}"
             )));
         }
     };
@@ -950,7 +1037,179 @@ async fn load_file(path: &Path) -> Result<(Value, Option<i128>), LoadError> {
     if !value.is_object() {
         return Err(LoadError::Invalid);
     }
-    Ok((value, mtime_ns))
+    Ok(value)
+}
+
+async fn read_records(records_dir: PathBuf) -> Result<Map<String, Value>, String> {
+    tokio::task::spawn_blocking(move || {
+        let entries = match std::fs::read_dir(&records_dir) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                // A crash between the two renames in `write_records_dir` leaves only the previous set.
+                let previous = records_dir.with_file_name(format!("{RECORDS_DIR_NAME}.old"));
+                match std::fs::rename(&previous, &records_dir) {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(Map::new()),
+                    Err(error) => return Err(format!("failed restoring metadata records: {error}")),
+                }
+                std::fs::read_dir(&records_dir)
+                    .map_err(|error| format!("failed reading metadata records: {error}"))?
+            }
+            Err(error) => return Err(format!("failed reading metadata records: {error}")),
+        };
+        let mut records = Vec::new();
+        for entry in entries {
+            let entry = entry.map_err(|error| format!("failed reading metadata records: {error}"))?;
+            let Some(key) = entry.file_name().to_str().and_then(record_key) else {
+                continue;
+            };
+            let bytes = std::fs::read(entry.path())
+                .map_err(|error| format!("failed reading metadata record {key}: {error}"))?;
+            let record = serde_json::from_slice::<Value>(&bytes)
+                .map_err(|error| format!("failed reading metadata record {key}: {error}"))?;
+            records.push((key, record));
+        }
+        records.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+        Ok(records.into_iter().collect())
+    })
+    .await
+    .map_err(|error| format!("failed reading metadata records: {error}"))?
+}
+
+/// Game IDs are decimal; any other key is hex-encoded so it cannot name a path outside the directory.
+fn record_file_name(key: &str) -> String {
+    if !key.is_empty() && key.bytes().all(|byte| byte.is_ascii_digit()) {
+        format!("{key}.json")
+    } else {
+        let hex: String = key.bytes().map(|byte| format!("{byte:02x}")).collect();
+        format!("~{hex}.json")
+    }
+}
+
+/// Inverse of `record_file_name`; temporary and foreign files return `None`.
+fn record_key(file_name: &str) -> Option<String> {
+    let stem = file_name.strip_suffix(".json")?;
+    let Some(hex) = stem.strip_prefix('~') else {
+        return (!stem.is_empty() && stem.bytes().all(|byte| byte.is_ascii_digit()))
+            .then(|| stem.to_owned());
+    };
+    if hex.len() % 2 != 0 {
+        return None;
+    }
+    let bytes = (0..hex.len())
+        .step_by(2)
+        .map(|index| u8::from_str_radix(hex.get(index..index + 2)?, 16).ok())
+        .collect::<Option<Vec<u8>>>()?;
+    String::from_utf8(bytes).ok()
+}
+
+/// Runs on every request: both stats share one blocking-pool hop, the cost of the single-file stat.
+async fn read_stamp(dir: &Path) -> Result<Stamp, String> {
+    let settings = dir.join(SETTINGS_FILE_NAME);
+    let records = dir.join(RECORDS_DIR_NAME);
+    tokio::task::spawn_blocking(move || Ok((file_mtime_ns(&settings)?, file_mtime_ns(&records)?)))
+        .await
+        .map_err(|error| format!("failed stat metadata settings: {error}"))?
+}
+
+/// Every root field except `metadata`, plus the layout key.
+fn encode_envelope(data: &Value) -> Result<Vec<u8>, String> {
+    struct Envelope<'a>(&'a Map<String, Value>);
+    impl serde::Serialize for Envelope<'_> {
+        fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let layout = Value::String(LAYOUT_FILES.to_owned());
+            serializer.collect_map(
+                self.0
+                    .iter()
+                    .filter(|(key, _)| key.as_str() != "metadata" && key.as_str() != LAYOUT_KEY)
+                    .map(|(key, value)| (key.as_str(), value))
+                    .chain(std::iter::once((LAYOUT_KEY, &layout))),
+            )
+        }
+    }
+    let object = data
+        .as_object()
+        .ok_or_else(|| "metadata settings must be a JSON object".to_owned())?;
+    serde_json::to_vec(&Envelope(object)).map_err(|error| error.to_string())
+}
+
+async fn write_envelope(dir: &Path, data: &Value) -> Result<(), String> {
+    write_atomic(dir.join(SETTINGS_FILE_NAME), encode_envelope(data)?).await
+}
+
+/// Converts any data to the per-game layout: records first, then the settings file that marks the layout.
+async fn write_all(dir: &Path, data: &Value) -> Result<(), String> {
+    let envelope = encode_envelope(data)?;
+    write_records_dir(dir, data).await?;
+    write_atomic(dir.join(SETTINGS_FILE_NAME), envelope).await
+}
+
+async fn write_record(dir: &Path, key: &str, record: Option<&Value>) -> Result<(), String> {
+    let records_dir = dir.join(RECORDS_DIR_NAME);
+    let path = records_dir.join(record_file_name(key));
+    let Some(record) = record else {
+        return match tokio::fs::remove_file(&path).await {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                Err(format!("failed removing metadata record: {error}"))
+            }
+            _ => Ok(()),
+        };
+    };
+    let encoded = serde_json::to_vec(record).map_err(|error| error.to_string())?;
+    tokio::fs::create_dir_all(&records_dir)
+        .await
+        .map_err(|error| format!("failed creating metadata records directory: {error}"))?;
+    write_atomic(path, encoded).await
+}
+
+/// Replaces the whole records directory: a staged copy is renamed into place.
+async fn write_records_dir(dir: &Path, data: &Value) -> Result<(), String> {
+    let files = data
+        .get("metadata")
+        .and_then(Value::as_object)
+        .into_iter()
+        .flatten()
+        .map(|(key, record)| {
+            serde_json::to_vec(record)
+                .map(|encoded| (record_file_name(key), encoded))
+                .map_err(|error| error.to_string())
+        })
+        .collect::<Result<Vec<_>, String>>()?;
+    let dir = dir.to_path_buf();
+    tokio::task::spawn_blocking(move || {
+        let failed = |action: &str, error: std::io::Error| format!("failed {action} metadata records: {error}");
+        let target = dir.join(RECORDS_DIR_NAME);
+        let staged = dir.join(format!("{RECORDS_DIR_NAME}.new"));
+        let previous = dir.join(format!("{RECORDS_DIR_NAME}.old"));
+        // Loading restores `.old` when `target` is missing, so a leftover here is stale.
+        for leftover in [&staged, &previous] {
+            match std::fs::remove_dir_all(leftover) {
+                Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+                    return Err(failed("clearing", error));
+                }
+                _ => {}
+            }
+        }
+        std::fs::create_dir(&staged).map_err(|error| failed("staging", error))?;
+        for (name, encoded) in files {
+            std::fs::write(staged.join(name), encoded).map_err(|error| failed("writing", error))?;
+        }
+        let had_target = match std::fs::rename(&target, &previous) {
+            Ok(()) => true,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) => return Err(failed("replacing", error)),
+        };
+        if let Err(error) = std::fs::rename(&staged, &target) {
+            if had_target {
+                let _ = std::fs::rename(&previous, &target);
+            }
+            return Err(failed("replacing", error));
+        }
+        let _ = std::fs::remove_dir_all(&previous);
+        Ok(())
+    })
+    .await
+    .map_err(|error| format!("failed replacing metadata records: {error}"))?
 }
 
 fn log_load_failure(path: &Path, error: &str) {
@@ -962,8 +1221,8 @@ fn log_load_failure(path: &Path, error: &str) {
     );
 }
 
-async fn file_mtime_ns(path: &Path) -> Result<Option<i128>, String> {
-    match tokio::fs::metadata(path).await {
+fn file_mtime_ns(path: &Path) -> Result<Option<i128>, String> {
+    match std::fs::metadata(path) {
         Ok(metadata) => Ok(modified_ns(metadata.modified().ok())),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(format!("failed stat metadata settings: {error}")),
@@ -983,13 +1242,7 @@ fn modified_ns(time: Option<SystemTime>) -> Option<i128> {
     }
 }
 
-async fn write_atomic(path: &Path, data: &Value) -> Result<Option<i128>, String> {
-    if !data.is_object() {
-        return Err("metadata settings must be a JSON object".to_owned());
-    }
-    // Compact: indenting took about 60% of a 1,000-record save; the data is unchanged.
-    let encoded = serde_json::to_vec(data).map_err(|error| error.to_string())?;
-    let path = path.to_path_buf();
+async fn write_atomic(path: PathBuf, encoded: Vec<u8>) -> Result<(), String> {
     tokio::task::spawn_blocking(move || {
         let name = path
             .file_name()
@@ -1003,9 +1256,7 @@ async fn write_atomic(path: &Path, data: &Value) -> Result<Option<i128>, String>
             let _ = std::fs::remove_file(&temp_path);
             return Err(format!("failed replacing metadata settings: {error}"));
         }
-        Ok(std::fs::metadata(path)
-            .ok()
-            .and_then(|metadata| modified_ns(metadata.modified().ok())))
+        Ok(())
     })
     .await
     .map_err(|error| format!("failed replacing metadata settings: {error}"))?
@@ -1046,6 +1297,24 @@ mod tests {
 
     fn settings(path: &Value) -> &Value {
         path.get("settings").expect("settings present")
+    }
+
+    /// The whole store as an older single-file reader would rebuild it from disk.
+    fn persisted(dir: &Path) -> Value {
+        let mut data: Value =
+            serde_json::from_slice(&std::fs::read(dir.join(SETTINGS_FILE_NAME)).unwrap()).unwrap();
+        let object = data.as_object_mut().unwrap();
+        assert_eq!(object.remove(LAYOUT_KEY), Some(json!(LAYOUT_FILES)));
+        let mut records = Map::new();
+        for entry in std::fs::read_dir(dir.join(RECORDS_DIR_NAME)).unwrap() {
+            let entry = entry.unwrap();
+            let Some(key) = record_key(entry.file_name().to_str().unwrap()) else {
+                continue;
+            };
+            records.insert(key, serde_json::from_slice(&std::fs::read(entry.path()).unwrap()).unwrap());
+        }
+        object.insert("metadata".to_owned(), Value::Object(records));
+        data
     }
 
     #[test]
@@ -1153,7 +1422,10 @@ mod tests {
             "unknown": {"steam_appid": 12, "steam_store_state": "bogus"},
         }});
         let cached = json!({"apps": [[11, "Removed"]]});
-        assert!(normalize_store_states(&mut data, Some(&cached)));
+        assert_eq!(
+            normalize_store_states(&mut data, Some(&cached)),
+            ["indexed", "available", "unknown"]
+        );
         assert_eq!(data["metadata"]["indexed"]["steam_store_state"], "delisted");
         assert_eq!(
             data["metadata"]["available"]["steam_store_state"],
@@ -1164,7 +1436,7 @@ mod tests {
             "delisted"
         );
         assert_eq!(data["metadata"]["unknown"]["steam_store_state"], "unknown");
-        assert!(!normalize_store_states(&mut data, Some(&cached)));
+        assert!(normalize_store_states(&mut data, Some(&cached)).is_empty());
     }
 
     #[test]
@@ -1222,11 +1494,16 @@ mod tests {
         assert_eq!(store.data()["update_settings"]["channel"], "development");
         assert_eq!(store.data()["update_check_cache"]["tag"], "v1");
         assert!(!store.refresh().await.unwrap());
+        // The single file became the per-game layout.
+        let envelope: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        assert!(envelope.get("metadata").is_none());
+        assert_eq!(envelope[LAYOUT_KEY], LAYOUT_FILES);
+        assert_eq!(persisted(&dir.0)["metadata"], store.data()["metadata"]);
 
         let bytes =
             br#"{"release_date_format":"date-only-v1","metadata":{"1":{"title":"external"}}}"#;
         tokio::fs::write(&path, bytes).await.unwrap();
-        let changed_ns = store.mtime_ns.unwrap() + 1;
+        let changed_ns = store.stamp.0.unwrap() + 1;
         let modified =
             UNIX_EPOCH + std::time::Duration::from_nanos(u64::try_from(changed_ns).unwrap());
         std::fs::File::open(&path)
@@ -1241,10 +1518,7 @@ mod tests {
         let dir = TempDir::new();
         let mut store = Storage::open(dir.0.clone()).await.unwrap();
         let path = dir.0.join(SETTINGS_FILE_NAME);
-        assert_eq!(
-            serde_json::from_slice::<Value>(&tokio::fs::read(&path).await.unwrap()).unwrap(),
-            default_data()
-        );
+        assert_eq!(persisted(&dir.0), default_data());
         store
             .transaction(|tx| tx.set(&["metadata", "42"], json!({"title":"Keep me"})))
             .await
@@ -1253,10 +1527,7 @@ mod tests {
 
         assert!(store.refresh().await.unwrap());
         assert_eq!(store.data()["metadata"]["42"]["title"], "Keep me");
-        assert_eq!(
-            serde_json::from_slice::<Value>(&tokio::fs::read(path).await.unwrap()).unwrap(),
-            *store.data()
-        );
+        assert_eq!(persisted(&dir.0), *store.data());
     }
 
     #[tokio::test]
@@ -1266,13 +1537,14 @@ mod tests {
         let mut store = Storage::open(dir.0.clone()).await.unwrap();
         let record = json!({"title":"Same","screenshots":[{"url":"https://a"}]});
         store.transaction(|tx| tx.set(&["metadata", "1"], record.clone())).await.unwrap();
-        // With the directory read-only, any real write (temp file + rename) fails.
-        std::fs::set_permissions(&dir.0, std::fs::Permissions::from_mode(0o500)).unwrap();
+        // With the records directory read-only, any real record write (temp file + rename) fails.
+        let records = dir.0.join(RECORDS_DIR_NAME);
+        std::fs::set_permissions(&records, std::fs::Permissions::from_mode(0o500)).unwrap();
         let same = store.transaction(|tx| tx.set(&["metadata", "1"], record.clone())).await;
         let changed = store
             .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("Different")))
             .await;
-        std::fs::set_permissions(&dir.0, std::fs::Permissions::from_mode(0o700)).unwrap();
+        std::fs::set_permissions(&records, std::fs::Permissions::from_mode(0o700)).unwrap();
         same.unwrap();
         assert!(changed.is_err());
         assert_eq!(store.data()["metadata"]["1"], record);
@@ -1290,7 +1562,6 @@ mod tests {
 
             let save = |tx: &mut StoreTransaction<'_>| tx.set(&["metadata", "9"], json!({"title":"Explicit save"}));
             assert!(store.transaction(save).await.is_err());
-            assert!(store.replace(default_data()).await.is_err());
             assert_eq!(store.data(), &default_data());
             assert_eq!(tokio::fs::read(&path).await.unwrap(), bytes);
 
@@ -1302,7 +1573,7 @@ mod tests {
                 .unwrap();
             assert!(store.refresh().await.unwrap());
             store.transaction(save).await.unwrap();
-            let saved = serde_json::from_slice::<Value>(&tokio::fs::read(&path).await.unwrap()).unwrap();
+            let saved = persisted(&dir.0);
             assert_eq!(saved["metadata"]["1"]["title"], "Kept");
             assert_eq!(saved["metadata"]["9"]["title"], "Explicit save");
         }
@@ -1316,7 +1587,7 @@ mod tests {
         let path = dir.0.join(SETTINGS_FILE_NAME);
         let invalid = b"{invalid";
         tokio::fs::write(&path, invalid).await.unwrap();
-        let changed_ns = store.mtime_ns.unwrap() + 1;
+        let changed_ns = store.stamp.0.unwrap() + 1;
         let modified =
             UNIX_EPOCH + std::time::Duration::from_nanos(u64::try_from(changed_ns).unwrap());
         std::fs::File::open(&path)
@@ -1343,7 +1614,7 @@ mod tests {
             .transaction(|tx| tx.set(&["metadata", "1"], json!({"steam_appid":1})))
             .await
             .unwrap();
-        std::fs::create_dir(dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"))).unwrap();
+        std::fs::create_dir(dir.0.join(RECORDS_DIR_NAME).join("1.json.tmp")).unwrap();
         let before = logging::test_events().len();
 
         assert!(store.normalize_loaded_store_states(None).await);
@@ -1369,7 +1640,9 @@ mod tests {
         let path = dir.0.join(SETTINGS_FILE_NAME);
         let expected = json!({"payload":"x".repeat(16 * 1024 * 1024)});
         let write_path = path.clone();
-        let write = tokio::spawn(async move { write_atomic(&write_path, &expected).await });
+        let write = tokio::spawn(async move {
+            write_atomic(write_path, serde_json::to_vec(&expected).unwrap()).await
+        });
         let temporary = dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"));
         tokio::time::timeout(std::time::Duration::from_secs(10), async {
             loop {
@@ -1426,10 +1699,9 @@ mod tests {
         assert_eq!(error, "mutation rejected");
         assert_eq!(store.data()["metadata"]["1"], before);
 
-        let persisted_before = tokio::fs::read(dir.0.join(SETTINGS_FILE_NAME))
-            .await
-            .unwrap();
-        std::fs::create_dir(dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"))).unwrap();
+        let record_path = dir.0.join(RECORDS_DIR_NAME).join("1.json");
+        let persisted_before = tokio::fs::read(&record_path).await.unwrap();
+        std::fs::create_dir(dir.0.join(RECORDS_DIR_NAME).join("1.json.tmp")).unwrap();
         assert!(
             store
                 .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("failed")))
@@ -1437,21 +1709,7 @@ mod tests {
                 .is_err()
         );
         assert_eq!(store.data()["metadata"]["1"], before);
-        assert_eq!(
-            tokio::fs::read(dir.0.join(SETTINGS_FILE_NAME))
-                .await
-                .unwrap(),
-            persisted_before
-        );
-        assert!(store.replace(json!([])).await.is_err());
-        assert!(store.replace(json!({"metadata": {}})).await.is_err());
-        assert_eq!(store.data()["metadata"]["1"], before);
-        assert_eq!(
-            tokio::fs::read(dir.0.join(SETTINGS_FILE_NAME))
-                .await
-                .unwrap(),
-            persisted_before
-        );
+        assert_eq!(tokio::fs::read(&record_path).await.unwrap(), persisted_before);
     }
 
     #[tokio::test]
@@ -1462,19 +1720,14 @@ mod tests {
             .transaction(|tx| tx.set(&["metadata", "42"], json!({"steam_appid": 90})))
             .await
             .unwrap();
-        std::fs::create_dir(dir.0.join(format!("{SETTINGS_FILE_NAME}.tmp"))).unwrap();
+        std::fs::create_dir(dir.0.join(RECORDS_DIR_NAME).join("42.json.tmp")).unwrap();
         let cached = json!({"apps": [[90, "Gone"]]});
         assert!(store.normalize_loaded_store_states(Some(&cached)).await);
         assert_eq!(
             store.data()["metadata"]["42"]["steam_store_state"],
             "delisted"
         );
-        let persisted: Value = serde_json::from_slice(
-            &tokio::fs::read(dir.0.join(SETTINGS_FILE_NAME))
-                .await
-                .unwrap(),
-        )
-        .unwrap();
+        let persisted = persisted(&dir.0);
         assert!(
             persisted["metadata"]["42"]
                 .get("steam_store_state")
@@ -1502,12 +1755,7 @@ mod tests {
         let cached = json!({"apps": [[90, "Gone"]]});
         assert!(store.normalize_loaded_store_states(Some(&cached)).await);
         assert!(!store.normalize_loaded_store_states(Some(&cached)).await);
-        let persisted: Value = serde_json::from_slice(
-            &tokio::fs::read(dir.0.join(SETTINGS_FILE_NAME))
-                .await
-                .unwrap(),
-        )
-        .unwrap();
+        let persisted = persisted(&dir.0);
         assert_eq!(
             persisted["metadata"]["indexed"]["steam_store_state"],
             "delisted"
@@ -1543,5 +1791,130 @@ mod tests {
         }
         let store = store.lock().await;
         assert_eq!(store.data()["metadata"].as_object().unwrap().len(), 8);
+    }
+
+    fn set_old_mtime(path: &Path) {
+        let old = UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+        std::fs::File::open(path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(old))
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn record_saves_touch_only_their_file_and_odd_keys_stay_inside_the_directory() {
+        let dir = TempDir::new();
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        for key in ["1", "2", "../escape", "007", "€"] {
+            store
+                .transaction(|tx| tx.set(&["metadata", key], json!({"title": key})))
+                .await
+                .unwrap();
+        }
+        let records = dir.0.join(RECORDS_DIR_NAME);
+        let mut names: Vec<String> = std::fs::read_dir(&records)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+            .collect();
+        names.sort();
+        assert_eq!(names, ["007.json", "1.json", "2.json", "~2e2e2f657363617065.json", "~e282ac.json"]);
+        assert!(!dir.0.join("escape.json").exists());
+
+        let envelope = dir.0.join(SETTINGS_FILE_NAME);
+        set_old_mtime(&envelope);
+        set_old_mtime(&records.join("1.json"));
+        store
+            .transaction(|tx| tx.set(&["metadata", "2", "title"], json!("changed")))
+            .await
+            .unwrap();
+        store.transaction(|tx| tx.remove(&["metadata", "007"])).await.unwrap();
+        let old = UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+        assert_eq!(std::fs::metadata(&envelope).unwrap().modified().unwrap(), old);
+        assert_eq!(std::fs::metadata(records.join("1.json")).unwrap().modified().unwrap(), old);
+        assert!(!records.join("007.json").exists());
+
+        let reopened = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(reopened.data(), store.data());
+        assert_eq!(reopened.data()["metadata"]["../escape"]["title"], "../escape");
+        assert_eq!(reopened.data()["metadata"]["2"]["title"], "changed");
+    }
+
+    #[tokio::test]
+    async fn legacy_export_serves_an_older_reader_and_converts_back() {
+        let dir = TempDir::new();
+        let path = dir.0.join(SETTINGS_FILE_NAME);
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        store
+            .transaction(|tx| tx.set(&["metadata", "1"], json!({"title": "Before"})))
+            .await
+            .unwrap();
+        store.export_legacy().await.unwrap();
+        let exported: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        assert_eq!(exported, *store.data());
+        assert!(!store.refresh().await.unwrap());
+
+        // Writes during the install (a scan, the handoff confirmation) keep the single file complete.
+        store
+            .transaction(|tx| tx.set(&["metadata", "1", "title"], json!("During install")))
+            .await
+            .unwrap();
+        let during: Value = serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        assert_eq!(during, *store.data());
+        assert!(!store.refresh().await.unwrap());
+
+        // A cancelled install: the next load converts the single file back.
+        let reloaded = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(reloaded.data()["metadata"]["1"]["title"], "During install");
+        assert_eq!(persisted(&dir.0), *reloaded.data());
+
+        // A completed downgrade: the older version edits and saves the exported file.
+        let mut older = during;
+        older["metadata"]["1"]["title"] = json!("Edited by older version");
+        older["metadata"]["5"] = json!({"title": "Added by older version"});
+        std::fs::write(&path, serde_json::to_vec(&older).unwrap()).unwrap();
+        let upgraded = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(upgraded.data()["metadata"]["1"]["title"], "Edited by older version");
+        assert_eq!(upgraded.data()["metadata"]["5"]["title"], "Added by older version");
+        assert_eq!(persisted(&dir.0), *upgraded.data());
+    }
+
+    #[tokio::test]
+    async fn lost_settings_file_unknown_layout_and_interrupted_swap_keep_records() {
+        let dir = TempDir::new();
+        let path = dir.0.join(SETTINGS_FILE_NAME);
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        store
+            .transaction(|tx| tx.set(&["metadata", "1"], json!({"title": "Kept"})))
+            .await
+            .unwrap();
+
+        std::fs::remove_file(&path).unwrap();
+        let reopened = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(reopened.data()["metadata"]["1"]["title"], "Kept");
+        assert_eq!(persisted(&dir.0)["metadata"]["1"]["title"], "Kept");
+
+        // A crash between the two renames of a full rewrite leaves only `metadata.old`.
+        let records = dir.0.join(RECORDS_DIR_NAME);
+        std::fs::rename(&records, dir.0.join(format!("{RECORDS_DIR_NAME}.old"))).unwrap();
+        let recovered = Storage::open(dir.0.clone()).await.unwrap();
+        assert_eq!(recovered.data()["metadata"]["1"]["title"], "Kept");
+        assert!(records.join("1.json").exists());
+
+        // A damaged settings file the user then deletes must not empty the records.
+        std::fs::write(&path, b"{broken").unwrap();
+        let mut damaged = Storage::open(dir.0.clone()).await.unwrap();
+        assert!(!damaged.loaded_successfully());
+        std::fs::remove_file(&path).unwrap();
+        assert!(damaged.refresh().await.unwrap());
+        assert_eq!(damaged.data()["metadata"]["1"]["title"], "Kept");
+        assert!(records.join("1.json").exists());
+
+        let future = br#"{"metadata_layout":"files-v9"}"#;
+        std::fs::write(&path, future).unwrap();
+        let mut newer = Storage::open(dir.0.clone()).await.unwrap();
+        assert!(!newer.loaded_successfully());
+        assert!(newer.transaction(|tx| tx.set(&["metadata", "2"], json!({}))).await.is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), future);
+        assert!(records.join("1.json").exists());
     }
 }

@@ -16,6 +16,13 @@ def _executable(path: Path, body: str) -> None:
 def test_capture_redacts_derived_reports_and_keeps_opt_in_raw_settings(tmp_path):
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
+    # The per-game layout: records live beside the settings file, not inside it.
+    settings_dir = tmp_path / "settings"
+    (settings_dir / "metadata").mkdir(parents=True)
+    (settings_dir / "decky_metadata.json").write_text('{"token":"secret","metadata_layout":"files-v1"}')
+    for key, record in {"10": {"steam_appid": "100"}, "20": {"steam_appid": "200", "delisted": True}, "30": {}}.items():
+        (settings_dir / "metadata" / f"{key}.json").write_text(json.dumps(record))
+    (settings_dir / "metadata" / "10.json.tmp").write_text("{partial")
     _executable(
         fake_bin / "ssh",
         """#!/usr/bin/env bash
@@ -23,8 +30,8 @@ case "$*" in
   *\"tail -n 400\"*)
     echo '/home/deck/private 76561191234567890 https://example.test/a?token=secret Authorization: bearer'
     ;;
-  *\"cat '\"*decky_metadata.json*\"'\"*)
-    echo '{"token":"secret","metadata":{"10":{"steam_appid":"100"},"20":{"steam_appid":"200","delisted":true},"30":{}}}'
+  *\"python3 - '/home/deck/homebrew/settings/Decky-Metadata'\"*)
+    exec python3 - "$FAKE_SETTINGS_DIR"
     ;;
   *) exit 1 ;;
 esac
@@ -35,6 +42,7 @@ esac
         **os.environ,
         "PATH": f"{fake_bin}:{os.environ['PATH']}",
         "DECKY_TMP_ROOT": str(temp_root),
+        "FAKE_SETTINGS_DIR": str(settings_dir),
     }
     first = subprocess.run(
         [str(ROOT / "scripts/deck/capture.sh")],
@@ -71,7 +79,9 @@ esac
     )
     assert second.returncode == 0
     settings = temp_root / "diagnostics/second/restricted-raw/settings.json"
-    assert json.loads(settings.read_text())["token"] == "secret"
+    restored = json.loads(settings.read_text())
+    assert restored["token"] == "secret" and "metadata_layout" not in restored
+    assert restored["metadata"]["20"] == {"steam_appid": "200", "delisted": True}
     assert stat.S_IMODE(settings.stat().st_mode) == 0o600
     assert json.loads((settings.parents[1] / "manifest.json").read_text())["include_settings"] is True
 

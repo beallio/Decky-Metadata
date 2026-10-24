@@ -25,8 +25,13 @@ Find Steam matches and run the plugin backend in Rust
   if it failed at startup.
 - The plugin now loads less data when it starts and when you open the Quick Access
   panel. A game's Steam news loads when you open that game.
-- Saving metadata is about twice as fast. The settings file is now stored without
-  indentation; its contents are unchanged.
+- Saving one game's metadata is much faster, also with large libraries. Each
+  game's metadata is now kept in its own file in a `metadata` folder beside the
+  settings file. The first start after the update moves existing metadata there.
+- Before the built-in updater installs a different version, the plugin copies
+  all metadata back into the single settings file, so an older version still
+  finds it. An older version installed by hand from a ZIP gets no copy and does
+  not show saved metadata; use the built-in updater to change versions.
 
 ## [0.5.4] - 2026-10-11
 
