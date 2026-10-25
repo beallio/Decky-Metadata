@@ -1,97 +1,66 @@
 from __future__ import annotations
 
+import json
+import sys
 
 import pytest
 
 from scripts import check_ign_trailers as monitor
 
 
-GOOD_MP4 = b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isom"
+def _install_diagnostics(tmp_path, monkeypatch, stdout, returncode=0):
+    target = tmp_path / "target"
+    binary = target / "debug" / "backend-diagnostics"
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    binary.write_text(
+        f"#!{sys.executable}\nimport sys\nsys.stdout.write({json.dumps(stdout)})\nsys.exit({returncode})\n",
+        encoding="utf-8",
+    )
+    binary.chmod(0o755)
+    monkeypatch.setenv("CARGO_TARGET_DIR", str(target))
 
 
-def trailer(name: str, *urls: str) -> dict:
-    return {
-        "name": name,
-        "candidates": [
-            {"format": "mp4", "url": url, "height": 720 + index * 360}
-            for index, url in enumerate(urls)
-        ],
-    }
+def test_monitor_preserves_human_success_output_and_exit_status(tmp_path, monkeypatch, capsys):
+    checked = ["Deadpool: Deadpool Official Trailer (720p MP4)",
+               "Bloodborne: Bloodborne Story Trailer (1080p MP4)"]
+    _install_diagnostics(tmp_path, monkeypatch, json.dumps({"checked": checked, "error": None}))
+
+    assert monitor.main() == 0
+    assert capsys.readouterr().out == "".join(f"OK: {item}\n" for item in checked)
 
 
-def test_both_known_games_must_resolve_to_verified_trailers(monkeypatch) -> None:
-    monkeypatch.setattr(
-        monitor.ign,
-        "find_trailer",
-        lambda name, _game_url, _graphql, _fetch_html: (
-            trailer("Deadpool Official Trailer", "https://assets14.ign.com/deadpool.mp4")
-            if name == "Deadpool" else None
-        ),
+def test_monitor_preserves_native_failure_as_human_failure(tmp_path, monkeypatch, capsys):
+    message = "Bloodborne: no accessible IGN MP4 (2 qualities; last error: HTTP error)"
+    _install_diagnostics(
+        tmp_path, monkeypatch,
+        json.dumps({"checked": ["Deadpool: Deadpool Official Trailer (720p MP4)"],
+                    "error": {"type": "ContractError", "message": message}}),
+        returncode=1,
     )
 
-    with pytest.raises(monitor.ProbeFailure, match="Bloodborne"):
-        monitor.check_sources(lambda *_args: {}, lambda *_args, **_kwargs: "", lambda _url: None)
+    assert monitor.main() == 1
+    assert capsys.readouterr().err == f"IGN trailer capability check failed: {message}\n"
 
 
-def test_one_failed_quality_does_not_alert_when_another_mp4_works(monkeypatch) -> None:
-    def select(name, _game_url, _graphql, _fetch_html):
-        if name == "Deadpool":
-            return trailer(
-                "Deadpool Official Trailer",
-                "https://assets14.ign.com/broken.mp4",
-                "https://assets14.ign.com/working.mp4",
-            )
-        return trailer("Bloodborne Story Trailer", "https://assets14.ign.com/bloodborne.mp4")
+@pytest.mark.parametrize(("stdout", "returncode"), [
+    ("not JSON", 0),
+    (json.dumps({"checked": [], "error": None}), 0),
+    (json.dumps({"checked": [], "error": None}), 2),
+    (json.dumps({"checked": ["", ""], "error": None}), 0),
+    (json.dumps({"checked": ["Bloodborne: trailer", "Deadpool: trailer"], "error": None}), 0),
+    (json.dumps({"checked": ["Deadpool: trailer", "Bloodborne: trailer"]}), 0),
+])
+def test_monitor_does_not_turn_malformed_or_failed_process_output_into_success(
+    tmp_path, monkeypatch, capsys, stdout, returncode
+):
+    _install_diagnostics(tmp_path, monkeypatch, stdout, returncode)
 
-    monkeypatch.setattr(monitor.ign, "find_trailer", select)
-    checked: list[str] = []
-
-    def inspect(url: str) -> None:
-        checked.append(url)
-        if url.endswith("broken.mp4"):
-            raise OSError("HTTP 404")
-
-    monitor.check_sources(lambda *_args: {}, lambda *_args, **_kwargs: "", inspect)
-    assert checked == [
-        "https://assets14.ign.com/broken.mp4",
-        "https://assets14.ign.com/working.mp4",
-        "https://assets14.ign.com/bloodborne.mp4",
-    ]
+    assert monitor.main() == 1
+    assert "failed:" in capsys.readouterr().err
 
 
-def test_all_unavailable_mp4_qualities_fail(monkeypatch) -> None:
-    monkeypatch.setattr(
-        monitor.ign,
-        "find_trailer",
-        lambda *_args: trailer("Deadpool Official Trailer", "https://assets14.ign.com/deadpool.mp4"),
-    )
+def test_monitor_reports_missing_native_binary(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CARGO_TARGET_DIR", str(tmp_path / "empty-target"))
 
-    def unavailable(_url: str) -> None:
-        raise OSError("HTTP 403")
-
-    with pytest.raises(monitor.ProbeFailure, match="Deadpool.*MP4"):
-        monitor.check_sources(lambda *_args: {}, lambda *_args, **_kwargs: "", unavailable)
-
-
-class MediaResponse:
-    def __init__(self, content_type: str, body: bytes):
-        self.status = 206
-        self.headers = {"Content-Type": content_type}
-        self.body = body
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_args):
-        return False
-
-    def read(self, size: int = -1) -> bytes:
-        assert 0 < size <= 32
-        return self.body[:size]
-
-
-def test_mp4_probe_rejects_html_error_and_accepts_media_header() -> None:
-    url = "https://assets14.ign.com/deadpool.mp4"
-    with pytest.raises(monitor.ProbeFailure, match="MP4"):
-        monitor.probe_mp4(url, open_url=lambda *_args, **_kwargs: MediaResponse("text/html", b"blocked"))
-    monitor.probe_mp4(url, open_url=lambda *_args, **_kwargs: MediaResponse("video/mp4", GOOD_MP4))
+    assert monitor.main() == 1
+    assert "build it explicitly first" in capsys.readouterr().err

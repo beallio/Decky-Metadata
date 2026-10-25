@@ -1,5 +1,6 @@
 {
   "name": "Decky Metadata",
+  "backend": "bin/backend",
   "author": "beallio",
   "flags": [],
   "api_version": 1,

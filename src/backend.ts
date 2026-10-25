@@ -24,6 +24,7 @@ import {
   IgnTrailerResult,
 } from "./types";
 
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
   "get_all_metadata"
 );
@@ -33,6 +34,11 @@ export const getMetadata = callable<[appId: number], MetadataData | null>(
 export const saveMetadata = callable<
   [appId: number, metadata: MetadataData],
   MetadataData
+>("save_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+export const saveMetadataIfUnchanged = callable<
+  [appId: number, metadata: MetadataData, expected: MetadataData | null],
+  MetadataData | null
 >("save_metadata");
 export const removeMetadata = callable<
   [appId: number],

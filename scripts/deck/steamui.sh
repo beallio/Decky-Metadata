@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"; cd "$repo_root"
-tmp_root="$(realpath -m "${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}")"
-[[ "$tmp_root" == /tmp || "$tmp_root" == /tmp/* ]] || { echo "steamui: DECKY_TMP_ROOT must resolve below /tmp" >&2; exit 2; }
+tmp_root="$(python3 "$repo_root/scripts/deck/temp_paths.py" root)"
 root="$tmp_root/steamui"
 host="${DECKY_DECK_HOST:-steamdeck}"
 usage() { echo "Usage: steamui.sh snapshot | search PATTERN [--build BUILD_ID]"; }

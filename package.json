@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
+    "build:backend": "./run.sh node ./scripts/build_backend.mjs",
+    "test:backend": "./run.sh cargo test --locked --manifest-path backend-rust/Cargo.toml",
     "watch": "rollup -c -w",
-    "package": "npm run build && node ./scripts/package.mjs",
-    "package:linux": "npm run build && node ./scripts/package.mjs",
+    "package": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
+    "package:linux": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
     "test": "vitest run"
   },
   "keywords": [

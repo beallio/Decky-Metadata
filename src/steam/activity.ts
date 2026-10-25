@@ -1,5 +1,5 @@
 import { findModuleChild } from "@decky/ui";
-import { frontendLog, getCommunityFallbackPage, refreshSteamActivityForApp } from "../backend";
+import { frontendLog, getCommunityFallbackPage, getMetadata, refreshSteamActivityForApp } from "../backend";
 import {
   requestedCommunityPage,
   resolveCommunityRequest,
@@ -48,6 +48,32 @@ export const configureActivityMetadataLoader = (
 };
 
 const activityRefreshGate = createActivityRefreshGate();
+
+/** One full-record read per summary object; Steam's activity getters can ask many times. */
+const fullMetadataLoads = new WeakMap<MetadataData, Promise<MetadataData | undefined>>();
+
+/**
+ * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
+ * once it is needed; a newer cache entry written meanwhile wins. A failed read resolves to the
+ * summary, so callers must treat a missing `steam_news` key as "not loaded".
+ */
+export const fullMetadataForApp = (appId: number): Promise<MetadataData | undefined> => {
+  const key = String(appId);
+  const summary = metadataCache[key];
+  if (!summary || "steam_news" in summary) return Promise.resolve(summary);
+  let load = fullMetadataLoads.get(summary);
+  if (!load) {
+    load = getMetadata(appId)
+      .then((full) => {
+        if (full && metadataCache[key] === summary) setMetadataCacheEntry(appId, full);
+      })
+      .catch((error) => log.info("activity", "full metadata load failed", error))
+      .then(() => metadataCache[key])
+      .finally(() => fullMetadataLoads.delete(summary));
+    fullMetadataLoads.set(summary, load);
+  }
+  return load;
+};
 
 const maybeRefreshSteamNewsForApp = (appId: number) => {
   const lifecycleGeneration = compatibilityLifecycleSnapshot();
@@ -846,6 +872,8 @@ const getDeckyNativeActivityForApp = (appId: number) => {
   if (!appId || !isNonSteamApp(overview)) return null;
   void maybeRefreshSteamNewsForApp(appId);
   const metadata = metadataCache[String(appId)];
+  // News not loaded yet: keep any built Activity; refreshDeckyNativeActivityForApp loads it.
+  if (metadata && !("steam_news" in metadata)) return deckyNativeActivityCache().get(appId) ?? null;
   if (!metadata || !metadata.steam_news?.length) {
     clearDeckyNativeActivityForApp(appId);
     return null;
@@ -864,7 +892,10 @@ export const refreshDeckyNativeActivityForApp = async (appId: number, store?: an
   if (!appId || !isNonSteamApp(overview)) return null;
   await ensureMetadataCacheFn();
   if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
-  const metadata = metadataCache[String(appId)];
+  const metadata = await fullMetadataForApp(appId);
+  if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return null;
+  // News could not load: keep whatever Activity is already shown.
+  if (metadata && !("steam_news" in metadata)) return deckyNativeActivityCache().get(appId) ?? null;
   if (!metadata) {
     clearDeckyNativeActivityForApp(appId, store);
     return null;
@@ -898,6 +929,10 @@ export const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
     if (!store || store.__deckyNativeActivityPatched) return !!store?.__deckyNativeActivityPatched;
     try {
       store.__deckyNativeActivityPatched = true;
+      // Steam keeps the store across plugin reloads; the marker must not outlive its patches.
+      unpatchers.push(() => {
+        delete store.__deckyNativeActivityPatched;
+      });
       unpatchers.push(
         patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
           const appId = Number(args[0]);
@@ -951,6 +986,9 @@ export const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
     if (partnerStore.__deckyNativePartnerEventsPatched || patchedStores.has(partnerStore)) return true;
     partnerStore.__deckyNativePartnerEventsPatched = true;
     patchedStores.add(partnerStore);
+    unpatchers.push(() => {
+      delete partnerStore.__deckyNativePartnerEventsPatched;
+    });
 
     const maybePatch = (methodName: string, handler: (original: (...args: any[]) => any, args: any[]) => any) => {
       if (typeof partnerStore[methodName] !== "function") return;

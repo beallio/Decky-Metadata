@@ -29,13 +29,21 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Set up Rust 1.99.0
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.0
+
+      - name: Build host endpoint diagnostics
+        run: ./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
       - name: Probe all external endpoints
         id: probe
         # Let the reporter run even when an endpoint check fails.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/check_endpoint_health.py --report "$RUNNER_TEMP/report.json"
+        run: ./run.sh python3 scripts/check_endpoint_health.py --report "$RUNNER_TEMP/report.json"
+
 
       - name: Track consecutive scheduled failures and recovery
         id: report

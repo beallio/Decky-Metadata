@@ -4,7 +4,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Find and confirm Steam matches in the game editor
+Find Steam matches and run the plugin backend in Rust
 
 ### Added
 
@@ -15,6 +15,23 @@ Find and confirm Steam matches in the game editor
 - Manual Steam App ID and page-link entry remain available beside the separate
   IGN metadata search. Match confirmation does not rename shortcuts or replace
   custom artwork.
+
+### Changed
+
+- Replaced the plugin's Python backend with Rust. The same ZIP runs directly on
+  the beallio Loader fork and uses a small compatibility shim on standard Decky
+  Loader. Saved metadata, preferences, and shortcut-name restore history stay in place.
+- Preserved provider-specific request headers. Log viewing retries file setup
+  if it failed at startup.
+- The plugin now loads less data when it starts and when you open the Quick Access
+  panel. A game's Steam news loads when you open that game.
+- Saving one game's metadata is much faster, also with large libraries. Each
+  game's metadata is now kept in its own file in a `metadata` folder beside the
+  settings file. The first start after the update moves existing metadata there.
+- Before the built-in updater installs a different version, the plugin copies
+  all metadata back into the single settings file, so an older version still
+  finds it. An older version installed by hand from a ZIP gets no copy and does
+  not show saved metadata; use the built-in updater to change versions.
 
 ## [0.5.4] - 2026-10-11
 

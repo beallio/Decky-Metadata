@@ -3,13 +3,6 @@ set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "decky: not in a Git repository" >&2; exit 1; }
 cd "$repo_root"
-tmp_root="${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}"
-tmp_root="$(realpath -m "$tmp_root")"
-[[ "$tmp_root" == /tmp || "$tmp_root" == /tmp/* ]] || {
-  echo "decky: DECKY_TMP_ROOT must resolve below /tmp" >&2
-  exit 2
-}
-mkdir -p "$tmp_root"
 
 usage() {
   cat <<'EOF'
@@ -55,10 +48,12 @@ case "$cmd" in
       base="$(bash -c 'source orchestration.conf; [[ -f orchestration.conf.local ]] && source orchestration.conf.local; printf %s "${ORCH_BASE_BRANCH:-main}"')"
     fi
     merge_base="$(git merge-base "$base" HEAD 2>/dev/null)" || { echo "verify-change: cannot resolve merge base for $base" >&2; exit 1; }
-    mapfile -t paths < <(git diff --name-only "$merge_base"...HEAD)
+    changed_paths="$(git diff --name-only "$merge_base" && git ls-files --others --exclude-standard)"
+    mapfile -t paths < <(printf '%s\n' "$changed_paths" | LC_ALL=C sort -u)
     printf 'MERGE_BASE %s\n' "$merge_base"
     printf 'CHANGED_PATH %s\n' "${paths[@]:-<none>}"
     class=local
+    native_package=0
     declare -A required_checks=([quality-gates]=1)
     add_checks() {
       local item
@@ -66,24 +61,26 @@ case "$cmd" in
     }
     for path in "${paths[@]}"; do
       case "$path" in
+        main.py|backend-rust/*|plugin.json|package.json|scripts/package.mjs)
+          class=device; native_package=1; add_checks full-package quick-links re-render ;;
         src/steam/*|src/steam.ts) class=device; add_checks quick-links re-render launch ;;
         src/*[Ss]poof*|src/*[Ll]aunch*) class=device; add_checks quick-links launch ;;
         src/*[Pp]atch*|src/*[Rr]outer*|src/*[Rr]ender*|src/*[Aa]ctivity*) class=device; add_checks quick-links re-render ;;
         src/*) class=device; add_checks quick-links re-render ;;
-        package.json|plugin.json|scripts/*|run.sh|AGENTS.md)
+        scripts/*|run.sh|AGENTS.md)
           [[ "$class" == device ]] || class=tooling
           add_checks tooling-provenance
           ;;
       esac
     done
     checks=()
-    for check_name in quality-gates tooling-provenance quick-links re-render launch; do
+    for check_name in quality-gates tooling-provenance full-package quick-links re-render launch; do
       [[ -n "${required_checks[$check_name]:-}" ]] && checks+=("$check_name")
     done
     printf 'CLASSIFICATION %s\n' "$class"
     printf 'CHECKS %s\n' "${checks[*]}"
     ((explain)) && printf 'BASE_REF %s\n' "$base"
-    scripts/orchestration/run-quality-gates
+    scripts/orchestration-hooks/quality-gates
     if [[ "$class" == device ]]; then
       if ((!device)); then
         echo "STATUS DEFERRED"
@@ -94,7 +91,17 @@ case "$cmd" in
         echo "verify-change: --allow-launch requires an explicit MATCHED_APPID for this change" >&2
         exit 2
       fi
-      scripts/deck/deploy.sh
+      if ((native_package)); then
+        package_status="$(scripts/deck/package_push.sh --build --push --json)"
+        printf 'PACKAGE_STATUS %s\n' "$package_status"
+        if [[ "$(python3 -c 'import json,sys; print(json.load(sys.stdin)["INSTALLED_STATE"])' <<<"$package_status")" != CURRENT ]]; then
+          echo "STATUS DEFERRED"
+          echo "OUTSTANDING install the delivered ZIP through Decky Loader, then rerun --device"
+          exit 0
+        fi
+      else
+        scripts/deck/deploy.sh
+      fi
       args=(--no-launch)
       ((allow_launch)) && args=()
       ((extended)) && args+=(--extended)

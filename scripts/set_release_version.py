@@ -6,6 +6,7 @@ import json
 import re
 import sys
 from pathlib import Path
+import tomllib
 
 
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -35,12 +36,38 @@ def set_release_version(version: str, project_root: Path) -> None:
 
     plugin_data = _read_json(plugin_path)
     package_data = _read_json(package_path)
+    native_root = project_root / "backend-rust"
+    manifest_path = native_root / "Cargo.toml"
+    lock_path = native_root / "Cargo.lock"
+    manifest = manifest_path.read_text(encoding="utf-8")
+    lock = lock_path.read_text(encoding="utf-8")
+    native_package = tomllib.loads(manifest).get("package", {})
+    if native_package.get("name") != "decky-metadata-backend":
+        raise ValueError("Cargo.toml does not describe the Metadata backend")
+    locked = [
+        package for package in tomllib.loads(lock).get("package", [])
+        if package.get("name") == "decky-metadata-backend"
+    ]
+    if len(locked) != 1 or locked[0].get("version") != native_package.get("version"):
+        raise ValueError("Cargo.toml and Cargo.lock backend versions do not match")
+    manifest, manifest_count = re.subn(
+        r'(?ms)(^\[package\][ \t]*\n(?:(?!^\[).)*?^[ \t]*version[ \t]*=[ \t]*)"[^"]*"',
+        lambda match: match[1] + json.dumps(version), manifest, count=1,
+    )
+    lock, lock_count = re.subn(
+        r'(?m)(^\[\[package\]\]\nname = "decky-metadata-backend"\nversion = )"[^"]*"',
+        lambda match: match[1] + json.dumps(version), lock, count=1,
+    )
+    if manifest_count != 1 or lock_count != 1:
+        raise ValueError("Cannot locate the backend version fields in Cargo metadata")
 
     plugin_data["version"] = version
     package_data["version"] = version
 
     _write_json(plugin_path, plugin_data)
     _write_json(package_path, package_data)
+    manifest_path.write_text(manifest, encoding="utf-8")
+    lock_path.write_text(lock, encoding="utf-8")
 
 
 def main() -> int:
@@ -56,11 +83,11 @@ def main() -> int:
 
     try:
         set_release_version(args.version, args.project_root.resolve())
-    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Updated plugin.json and package.json version to {args.version}")
+    print(f"Updated plugin, package, and Rust backend versions to {args.version}")
     return 0
 
 

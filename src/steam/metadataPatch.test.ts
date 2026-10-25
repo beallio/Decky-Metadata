@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     return { unpatch: () => { target[method] = original; } };
   }),
   getAllMetadata: vi.fn(),
+  getMetadata: vi.fn(),
   getCompatibilityDefault: vi.fn(),
   getCompatibilityDefaultScope: vi.fn(),
   autoFetchMetadata: vi.fn(),
@@ -24,6 +25,8 @@ vi.mock("../backend", () => ({
   fetchMetadata: mocks.fetchMetadata,
   frontendLog: vi.fn(() => Promise.resolve()),
   getAllMetadata: mocks.getAllMetadata,
+  getMetadata: mocks.getMetadata,
+  saveMetadataIfUnchanged: mocks.saveMetadata,
   getCompatibilityDefault: mocks.getCompatibilityDefault,
   getCompatibilityDefaultScope: mocks.getCompatibilityDefaultScope,
   saveMetadata: mocks.saveMetadata,
@@ -152,6 +155,7 @@ afterEach(() => {
   delete (globalThis as Record<string, unknown>).window;
   mocks.afterPatch.mockClear();
   mocks.getAllMetadata.mockReset();
+  mocks.getMetadata.mockReset();
   mocks.getCompatibilityDefault.mockReset();
   mocks.getCompatibilityDefaultScope.mockReset();
   mocks.getCompatibilityDefaultScope.mockResolvedValue("all");
@@ -292,6 +296,8 @@ const compatibilityMetadata = (
   store_categories: [],
   steam_dlc_appids: [],
   has_points_shop: false,
+  // Stored records always carry news; only the all-records summary leaves it out.
+  steam_news: [],
   deck_compat_category: category,
   deck_compat_override: override,
   steam_appid: steamAppId,
@@ -536,6 +542,24 @@ describe("compatibility metadata application", () => {
     applyMetadata(appId);
 
     expect(overview.steam_hw_compat_category_packed).toBe(0x9b);
+  });
+
+  it("takes back store categories the user unchecks or whose record is removed", () => {
+    const appId = 9105;
+    const overview: any = installCompatibilityOverview(appId, 0x9b);
+    overview.m_setStoreCategories = new Set<number>([22]);
+    metadataCache[String(appId)] = { ...compatibilityMetadata(null, null), store_categories: [1, 2, 22] };
+    applyMetadata(appId);
+    expect([...overview.m_setStoreCategories].sort((a, b) => a - b)).toEqual([1, 2, 22]);
+
+    metadataCache[String(appId)] = { ...compatibilityMetadata(null, null), store_categories: [2] };
+    applyMetadata(appId);
+    expect([...overview.m_setStoreCategories].sort((a, b) => a - b)).toEqual([2, 22]);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    // Steam's own category stays; only the plugin-added ones go.
+    expect([...overview.m_setStoreCategories]).toEqual([22]);
   });
 
   it("recomputes inheritance instead of restoring baseline when metadata removal leaves a global default", () => {
@@ -971,20 +995,22 @@ describe("compatibility metadata application", () => {
     mocks.fetchMetadata
       .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve; }))
       .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve; }));
+    // Each call snapshots the full record before its fetch starts.
+    const settle = async () => { for (let tick = 0; tick < 5; tick += 1) await Promise.resolve(); };
 
     beginCompatibilityLifecycle();
     const first = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
     beginCompatibilityLifecycle();
     const second = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
 
     resolveFirst(null);
     await first;
 
     expect(metadataState.loadingScreenshots.has(appId)).toBe(true);
     const third = tryEnrichScreenshotsForApp(appId);
-    await Promise.resolve();
+    await settle();
     expect(mocks.fetchMetadata).toHaveBeenCalledTimes(2);
 
     const saved = { ...existing, screenshots: [{ url: "https://example.invalid/shot.png" }] };
@@ -1025,8 +1051,104 @@ describe("compatibility metadata application", () => {
     mocks.fetchMetadata.mockResolvedValue({ screenshots: saved.screenshots });
     mocks.saveMetadata.mockResolvedValue(saved);
     await tryEnrichScreenshotsForApp(appId);
-    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.objectContaining({ screenshots: saved.screenshots }));
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.objectContaining({ screenshots: saved.screenshots }), existing);
     expect(metadataCache[String(appId)]).toBe(saved);
+  });
+
+  it("saves screenshots over the full record when the cache holds an all-records summary", async () => {
+    const appId = 93006;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const full = {
+      ...activityMetadata("Kept news", "52345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    beginCompatibilityLifecycle();
+    const shots = [{ url: "https://example.invalid/shot.png" }];
+    mocks.fetchMetadata.mockResolvedValue({ screenshots: shots });
+    mocks.getMetadata.mockResolvedValue(full);
+    mocks.saveMetadata.mockImplementation(async (_appId, value) => value);
+    await tryEnrichScreenshotsForApp(appId);
+    // The news survives the save, and the guard compares against the full stored record.
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, { ...full, screenshots: shots }, full);
+    expect(metadataCache[String(appId)]?.steam_news?.[0]?.title).toBe("Kept news");
+  });
+
+  it("compares a screenshot save with the full record read before the fetch", async () => {
+    const appId = 93007;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const before = {
+      ...activityMetadata("Old game news", "62345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/old-game",
+      screenshots: [],
+    } as any;
+    const { steam_news: _news, ...summary } = before;
+    metadataCache[String(appId)] = summary;
+    beginCompatibilityLifecycle();
+    mocks.getMetadata.mockResolvedValue(before);
+    // A scan re-matches the game on the backend while the old game's screenshots load.
+    mocks.fetchMetadata.mockImplementation(async () => {
+      mocks.getMetadata.mockResolvedValue({ ...before, source_url: "https://example.invalid/new-game" });
+      return { screenshots: [{ url: "https://example.invalid/old-shot.png" }] };
+    });
+    mocks.saveMetadata.mockResolvedValue(null);
+    await tryEnrichScreenshotsForApp(appId);
+    expect(mocks.fetchMetadata).toHaveBeenCalledWith("https://example.invalid/old-game");
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.anything(), before);
+  });
+
+  it("does not save screenshots over a record edited or removed during the request", async () => {
+    const appId = 93004;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...compatibilityMetadata(null, null),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    for (const change of ["edit", "remove"] as const) {
+      metadataCache[String(appId)] = existing;
+      beginCompatibilityLifecycle();
+      let resolveFetch!: (metadata: Record<string, any> | null) => void;
+      mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
+        resolveFetch = resolve;
+      }));
+      const pending = tryEnrichScreenshotsForApp(appId);
+      await Promise.resolve();
+      if (change === "edit") metadataCache[String(appId)] = { ...existing, description: "User edit" };
+      else delete metadataCache[String(appId)];
+      resolveFetch({ screenshots: [{ url: "https://example.invalid/shot.png" }] });
+      await pending;
+      expect(mocks.saveMetadata).not.toHaveBeenCalled();
+    }
+  });
+
+  it("keeps the cache when the backend rejects a screenshot save over a record it changed", async () => {
+    const appId = 93005;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...compatibilityMetadata(null, null),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    beginCompatibilityLifecycle();
+    mocks.fetchMetadata.mockResolvedValue({ screenshots: [{ url: "https://example.invalid/shot.png" }] });
+    // A metadata scan committed a newer record the frontend cache has not seen; the backend
+    // compares against the snapshot under its storage lock and returns null.
+    mocks.saveMetadata.mockResolvedValue(null);
+    await tryEnrichScreenshotsForApp(appId);
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.anything(), existing);
+    expect(metadataCache[String(appId)]).toBe(existing);
   });
 
   it("retries cached metadata when its native overview appears after the first bootstrap pass", async () => {
@@ -1090,6 +1212,58 @@ describe("compatibility metadata application", () => {
     metadataCache[String(appId)] = activityMetadata("", "", false) as any;
     applyMetadata(appId);
     expect(store.m_mapAppActivity.get(appId)).toBeUndefined();
+  });
+
+  it("loads a summary's news once for overlapping requests and keeps Activity when the read fails", async () => {
+    const appId = 9222;
+    installCompatibilityOverview(appId, 0xa0);
+    const store = { m_mapAppActivity: new Map<number, any>() };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    const full = activityMetadata("Shown plugin card", "72345678901234567") as any;
+    metadataCache[String(appId)] = full;
+    await refreshDeckyNativeActivityForApp(appId, store);
+    const shown = store.m_mapAppActivity.get(appId);
+    expect(shown).toMatchObject({ __deckyNativeActivity: true });
+
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    let rejectRead!: (error: Error) => void;
+    mocks.getMetadata.mockReturnValue(new Promise((_resolve, reject) => { rejectRead = reject; }));
+    const refreshes = [1, 2, 3].map(() => refreshDeckyNativeActivityForApp(appId, store));
+    for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+    expect(mocks.getMetadata).toHaveBeenCalledTimes(1);
+    rejectRead(new Error("backend unavailable"));
+    await Promise.all(refreshes);
+    expect(store.m_mapAppActivity.get(appId)).toBe(shown);
+
+    // A failed read must not let the screenshot fill-in save the news-free summary.
+    Object.assign(summary, { source: "IGN", source_url: "https://example.invalid/game", screenshots: [] });
+    metadataState.metadataLoaded = true;
+    beginCompatibilityLifecycle();
+    mocks.getMetadata.mockRejectedValue(new Error("backend unavailable"));
+    await tryEnrichScreenshotsForApp(appId);
+    expect(mocks.fetchMetadata).not.toHaveBeenCalled();
+    expect(mocks.saveMetadata).not.toHaveBeenCalled();
+  });
+
+  it("keeps Activity for an all-records summary until its news loads", async () => {
+    const appId = 9221;
+    installCompatibilityOverview(appId, 0xa0);
+    const store = { m_mapAppActivity: new Map<number, any>() };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    const full = activityMetadata("Lazy plugin card", "42345678901234567") as any;
+    const { steam_news: _news, ...summary } = full;
+    metadataCache[String(appId)] = summary;
+    // Applying a summary must not read its missing news as "no news".
+    applyMetadata(appId);
+    mocks.getMetadata.mockResolvedValue(full);
+    await refreshDeckyNativeActivityForApp(appId, store);
+    expect(mocks.getMetadata).toHaveBeenCalledWith(appId);
+    expect(store.m_mapAppActivity.get(appId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(metadataCache[String(appId)]).toBe(full);
+    metadataCache[String(appId)] = summary;
+    applyMetadata(appId);
+    expect(store.m_mapAppActivity.get(appId)).toMatchObject({ __deckyNativeActivity: true });
   });
 
   it("publishes one revision after a cache refresh applies the complete batch", async () => {

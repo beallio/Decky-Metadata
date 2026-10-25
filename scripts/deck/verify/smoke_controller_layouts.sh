@@ -5,11 +5,11 @@
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
 fixtures="${1:?usage: smoke_controller_layouts.sh <fixtures-json> [evidence-json]}"
-evidence="${2:-/tmp/Decky-Metadata/verification/controller-layouts-$(date -u +%Y%m%dT%H%M%SZ).json}"
-case "$evidence" in
-  /tmp/Decky-Metadata/*) ;;
-  *) fail "controller-layout evidence must stay below /tmp/Decky-Metadata" ;;
-esac
+tmp_root="$(python3 "$DECK_DIR/temp_paths.py" root)" || fail "temporary root is invalid"
+evidence="${2:-$tmp_root/verification/controller-layouts-$(date -u +%Y%m%dT%H%M%SZ).json}"
+evidence="$(python3 "$DECK_DIR/temp_paths.py" validate "$evidence")" || fail "controller-layout evidence must stay inside the private temporary root"
+umask 077
+
 
 read -r listed_appid listed_source delisted_appid delisted_source never_appid < <(
   python3 - "$fixtures" <<'PY'
