@@ -136,6 +136,9 @@ pub async fn get_missing_metadata_count(state: &AppState, games: &Value) -> Resu
             continue;
         };
         let key = app_id.to_string();
+        if metadata::removed_by_user(storage.data(), &key) {
+            continue;
+        }
         if !records
             .and_then(|records| records.get(&key))
             .is_some_and(metadata::complete)
@@ -176,10 +179,14 @@ pub async fn refresh_steam_activity_for_app(
     }
 
     let key = matching::py_string(app_id);
-    let value = state.store().await?.data()["metadata"][&key].clone();
-    if !value.is_object() {
-        return Ok(None);
-    }
+    let value = {
+        let storage = state.store().await?;
+        let value = storage.data()["metadata"][&key].clone();
+        if !value.is_object() || title_match_blocked(storage.data(), &key, &value) {
+            return Ok(None);
+        }
+        value
+    };
     let app_id = python_int_argument(app_id)?;
     let raw_title = if matching::py_truthy(&value["title"]) {
         matching::py_string(&value["title"])
@@ -290,15 +297,25 @@ fn game_inputs(games: &Value) -> Result<Vec<GameInput>, String> {
     Ok(inputs)
 }
 
+/// A removed game keeps only a Steam match the user saved; news refresh never title-matches it.
+fn title_match_blocked(data: &Value, key: &str, record: &Value) -> bool {
+    metadata::removed_by_user(data, key)
+        && matching::safe_int(&record["steam_appid"])
+            .filter(|id| *id != 0)
+            .is_none()
+}
+
 async fn metadata_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<Target>, String> {
     let storage = state.store().await?;
     let records = storage.data()["metadata"].as_object();
     Ok(games
         .iter()
         .filter(|game| {
-            !records
-                .and_then(|records| records.get(&game.app_id.to_string()))
-                .is_some_and(metadata::complete)
+            let key = game.app_id.to_string();
+            !metadata::removed_by_user(storage.data(), &key)
+                && !records
+                    .and_then(|records| records.get(&key))
+                    .is_some_and(metadata::complete)
         })
         .map(|game| Target {
             app_id: game.app_id.clone(),
@@ -314,9 +331,11 @@ async fn activity_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<T
     Ok(games
         .iter()
         .filter_map(|game| {
+            let key = game.app_id.to_string();
             let value = records?
-                .get(&game.app_id.to_string())
-                .filter(|value| value.is_object())?;
+                .get(&key)
+                .filter(|value| value.is_object())
+                .filter(|value| !title_match_blocked(storage.data(), &key, value))?;
             let raw_title = game.name.as_deref().map(str::to_owned).unwrap_or_else(|| {
                 if matching::py_truthy(&value["title"]) {
                     matching::py_string(&value["title"])
@@ -1517,6 +1536,38 @@ mod tests {
 
         assert_eq!(task.await.unwrap().unwrap(), None);
         assert!(state.store().await.unwrap().data()["metadata"].get("101").is_none());
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn a_removed_game_is_not_matched_again_until_the_user_saves_a_steam_match() {
+        // Issue #3: Remove metadata, then Save, leaves this title-only record behind.
+        let (_directory, state) = test_state(vec![steam_events(400, json!([event(400)]))]).await;
+        metadata::remove(&state, &json!(101)).await.unwrap();
+        let template = json!({"title":"Dolphin","source":"Manual","steam_appid":null,"steam_news":[]});
+        let template = metadata::save(&state, &json!(101), template, false, None).await.unwrap();
+        let games = json!([{"appid": 101, "name": "Dolphin"}]);
+
+        assert_eq!(refresh_steam_activity_for_app(&state, &json!(101)).await.unwrap(), None);
+        assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 0);
+        start_scan_missing(Arc::clone(&state), &games).await.unwrap();
+        state.jobs.drain().await;
+        start_refresh_steam_activities(Arc::clone(&state), &games).await.unwrap();
+        state.jobs.drain().await;
+        assert_eq!(get_scan_progress(&state).await["total"], 0);
+        assert_eq!(get_activity_refresh_progress(&state).await["total"], 0);
+        let data = state.store().await.unwrap().data().clone();
+        assert_eq!(data["metadata"]["101"], template);
+        assert!(metadata::removed_by_user(&data, "101"));
+
+        // A Steam match the user saves lifts the block; the refresh then uses only that match.
+        let matched = json!({"title":"Dolphin","source":"Manual","steam_appid":400,"steam_news":[]});
+        metadata::save(&state, &json!(101), matched, false, None).await.unwrap();
+        assert!(!metadata::removed_by_user(state.store().await.unwrap().data(), "101"));
+        let refreshed = refresh_steam_activity_for_app(&state, &json!(101)).await.unwrap().unwrap();
+        assert_eq!(refreshed["steam_appid"], 400);
+        assert_eq!(refreshed["steam_news"].as_array().unwrap().len(), 1);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

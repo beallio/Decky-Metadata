@@ -8,6 +8,29 @@ pub fn now() -> i64 {
     chrono::Utc::now().timestamp()
 }
 
+/// Root map of app IDs whose metadata the user removed (issue #3). Automatic matching — the
+/// page-view IGN fetch, the passive news refresh and the missing-metadata scan — skips them
+/// until the user picks metadata again or clears the cache.
+pub const REMOVED: &str = "removed_metadata";
+
+pub fn removed_by_user(data: &Value, key: &str) -> bool {
+    data[REMOVED].get(key).is_some()
+}
+
+pub async fn remove(state: &crate::state::AppState, app_id: &Value) -> Result<Value, String> {
+    let key = py_string(app_id);
+    state
+        .change(|transaction| {
+            transaction.remove(&["metadata", &key])?;
+            transaction.set(&[REMOVED, &key], now().into())?;
+            Ok(transaction
+                .get(&["metadata"])
+                .cloned()
+                .unwrap_or_else(|| json!({})))
+        })
+        .await
+}
+
 pub fn integer(value: &Value) -> Option<i64> {
     match value {
         Value::Bool(value) => Some(i64::from(*value)),
@@ -486,6 +509,10 @@ pub async fn save_guarded(
                 index.as_deref().unwrap_or(&Value::Null),
             )?;
             transaction.set(&["metadata", &key], cleaned.clone())?;
+            if safe_int(&cleaned["steam_appid"]).is_some_and(|id| id > 0) {
+                // A saved Steam match is the user's pick, so automatic matching may resume.
+                transaction.remove(&[REMOVED, &key])?;
+            }
             Ok(Some(cleaned))
         })
         .await
@@ -512,11 +539,18 @@ async fn save_fetched(
     state: &crate::state::AppState,
     app_id: &Value,
     fetched: Value,
-) -> Result<Value, String> {
+    picked: bool,
+) -> Result<Option<Value>, String> {
     let key = py_string(app_id);
     let index = state.delisted.lock().await.clone();
     state
         .change(move |transaction| {
+            if transaction.get(&[REMOVED, &key]).is_some() {
+                if !picked {
+                    return Ok(None);
+                }
+                transaction.remove(&[REMOVED, &key])?;
+            }
             let existing = transaction
                 .get(&["metadata", &key])
                 .cloned()
@@ -530,7 +564,7 @@ async fn save_fetched(
                 index.as_deref().unwrap_or(&Value::Null),
             )?;
             transaction.set(&["metadata", &key], cleaned.clone())?;
-            Ok(cleaned)
+            Ok(Some(cleaned))
         })
         .await
 }
@@ -543,7 +577,7 @@ pub async fn apply_fetched(
     let Some(fetched) = fetch(state, slug).await? else {
         return Ok(None);
     };
-    Ok(Some(save_fetched(state, app_id, fetched).await?))
+    save_fetched(state, app_id, fetched, true).await
 }
 
 pub async fn apply_auto_fetched(
@@ -551,10 +585,13 @@ pub async fn apply_auto_fetched(
     app_id: &Value,
     title: &str,
 ) -> Result<Option<Value>, String> {
+    if removed_by_user(state.store().await?.data(), &py_string(app_id)) {
+        return Ok(None);
+    }
     let Some(fetched) = auto_fetch(state, title).await? else {
         return Ok(None);
     };
-    Ok(Some(save_fetched(state, app_id, fetched).await?))
+    save_fetched(state, app_id, fetched, false).await
 }
 
 pub async fn with_steam_news(
@@ -963,6 +1000,52 @@ mod tests {
             state.store().await.unwrap().data()["metadata"]["42"]["deck_compat_override"],
             "valve"
         );
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn removal_blocks_ign_auto_fetch_until_the_user_picks_a_result() {
+        use crate::{
+            http::{Fixture, Http},
+            providers::ign::IGN_GRAPHQL_URL,
+            state::AppState,
+        };
+        use reqwest::{Method, header::HeaderMap};
+        use std::sync::Arc;
+
+        let payload = json!({"data":{"objectSelectByTypeAndSlug":{
+            "id":"dolphin","slug":"dolphin","url":"https://www.ign.com/games/dolphin",
+            "type":"Game","metadata":{"names":{"name":"Dolphin","short":"Dolphin"},
+                "descriptions":{"short":"Description","long":""}},"objectRegions":[]
+        }}});
+        // Only the explicit pick may reach IGN.
+        let http = Http::fixtures(vec![Fixture {
+            method: Method::POST,
+            url: IGN_GRAPHQL_URL.to_owned(),
+            result: Ok(crate::http::Response {
+                status: 200,
+                headers: HeaderMap::new(),
+                body: serde_json::to_vec(&payload).unwrap(),
+                url: IGN_GRAPHQL_URL.to_owned(),
+            }),
+        }]);
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        save(&state, &json!(42), json!({"title":"Dolphin"}), false, None).await.unwrap();
+        remove(&state, &json!(42)).await.unwrap();
+
+        assert_eq!(apply_auto_fetched(&state, &json!(42), "Dolphin").await.unwrap(), None);
+        assert!(state.store().await.unwrap().data()["metadata"].get("42").is_none());
+        let picked = apply_fetched(&state, &json!(42), "dolphin").await.unwrap().unwrap();
+        assert_eq!(picked["title"], "Dolphin");
+        let data = state.store().await.unwrap().data().clone();
+        assert_eq!(data["metadata"]["42"], picked);
+        assert!(!removed_by_user(&data, "42"));
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

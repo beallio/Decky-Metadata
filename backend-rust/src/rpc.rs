@@ -289,16 +289,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "remove_metadata" => {
             arity(&args, 1, 1)?;
-            let key = py_string(&args[0]);
-            state
-                .change(|transaction| {
-                    transaction.remove(&["metadata", &key])?;
-                    Ok(transaction
-                        .get(&["metadata"])
-                        .cloned()
-                        .unwrap_or_else(|| json!({})))
-                })
-                .await
+            metadata::remove(&state, &args[0]).await
         }
         "clear_metadata_cache" => {
             arity(&args, 0, 0)?;
@@ -309,6 +300,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                         .and_then(Value::as_object)
                         .map_or(0, |metadata| metadata.len());
                     transaction.set(&["metadata"], json!({}))?;
+                    // "Clear cache" lets every game be matched again, including removed ones.
+                    transaction.remove(&[metadata::REMOVED])?;
                     Ok(count)
                 })
                 .await?;
@@ -607,6 +600,24 @@ mod tests {
         assert_eq!(created["screenshots"][0]["url"], "https://a.example/1.png");
         let updated = save(vec![json!(7), stale, newer]).await.unwrap();
         assert_eq!(updated["screenshots"][0]["url"], "https://a.example/1.png");
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn removal_is_saved_on_disk_until_clear_cache() {
+        let (root, state) = test_state(None).await;
+        let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
+        call("save_metadata", vec![json!(5), json!({"title":"Dolphin","steam_appid":400})]).await.unwrap();
+        assert_eq!(call("remove_metadata", vec![json!(5)]).await.unwrap(), json!({}));
+        // Save after Remove keeps the title-only record blocked from automatic matching.
+        call("save_metadata", vec![json!(5), json!({"title":"Dolphin","steam_appid":null})]).await.unwrap();
+        let saved = std::fs::read(root.join("settings").join(storage::SETTINGS_FILE_NAME)).unwrap();
+        let saved: Value = serde_json::from_slice(&saved).unwrap();
+        assert!(metadata::removed_by_user(&saved, "5"));
+
+        call("clear_metadata_cache", Vec::new()).await.unwrap();
+        assert!(!metadata::removed_by_user(state.store().await.unwrap().data(), "5"));
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

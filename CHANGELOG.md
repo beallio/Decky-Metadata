@@ -33,6 +33,16 @@ Find Steam matches and run the plugin backend in Rust
   finds it. An older version installed by hand from a ZIP gets no copy and does
   not show saved metadata; use the built-in updater to change versions.
 
+### Fixed
+
+- **Removed metadata stays removed.** After **Remove metadata**, the plugin no
+  longer matches that game again by itself. Before, the background news refresh
+  could match the game's title to a Steam game after about 15 minutes, and its
+  news came back. Opening the game page also no longer fetches IGN metadata for
+  it, and **Refresh metadata** skips it. To match the game again, pick a Steam
+  match or an IGN result in its editor, or use **Clear cache**. Fix for
+  [issue #3](https://github.com/beallio/Decky-Metadata/issues/3).
+
 ## [0.5.4] - 2026-10-11
 
 Add Home trailer previews and separate controls for each view
