@@ -25,6 +25,7 @@ import {
   metadataCache,
   metadataState,
   patchInstallStatus,
+  removeMetadataCacheEntry,
 } from "./core";
 
 const makeMetadata = (
@@ -150,6 +151,26 @@ describe("activity compatibility refresh", () => {
     await steamActivityPayloadForApp(nextAppId);
     await vi.waitFor(() => expect(metadataCache[String(nextAppId)]).toBe(refreshed));
     expect(applyMetadata).toHaveBeenCalledWith(nextAppId);
+  });
+
+  it("does not restore metadata removed before a late refresh reply arrives", async () => {
+    // Plugin replies can arrive out of commit order: the refresh saved first, Remove replied first.
+    const appId = 9608;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Old news", "12345678901234567");
+    let resolveRefresh!: (metadata: MetadataData | null) => void;
+    mocks.refreshSteamActivityForApp.mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }));
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    removeMetadataCacheEntry(appId);
+    resolveRefresh(makeNewsMetadata("Fresh news", "22345678901234567"));
+    for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+
+    expect(metadataCache[String(appId)]).toBeUndefined();
+    expect(deckyNativeActivityCache().has(appId)).toBe(false);
   });
 });
 
