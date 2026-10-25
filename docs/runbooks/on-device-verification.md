@@ -57,7 +57,7 @@ explicitly supplied; an automatically selected fixture is render-only.
 | Change touches | Required checks |
 | --- | --- |
 | `BIsModOrShortcut` afterPatch, bypassCounter, route shield (`metadataPatch.ts`, `core.ts` shield fns) | `smoke_launch.sh` (Play inside the shield window must launch with a 64-bit gameid) AND `smoke_quicklinks.sh` (the spoof must keep rendering the rich page) |
-| Route render patches, `applyMetadata`, activity refresh (`routerPatches.ts`) | `smoke_rerender.sh` (0 cache writes on same-app subsection round-trips) + a manual subsection→B focus check with a controller |
+| Route render patches, `applyMetadata`, activity refresh (`routerPatches.ts`) | `smoke_rerender.sh` (0 plugin cache writes on same-app subsection round-trips; Steam's own background writes for other apps are listed, not failed) + a manual subsection→B focus check with a controller |
 | Quick-links suppression / section hooks | `smoke_quicklinks.sh` both directions |
 | Anything else in `src/steam/` | `run_all.sh` — the suite is cheap; run all of it |
 
