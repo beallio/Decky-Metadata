@@ -63,6 +63,35 @@ export const editorSearchButtonStyle = {
   whiteSpace: "nowrap",
 } as const;
 
+export const editorSteamMatchCardStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  gap: 12,
+  width: "100%",
+  minWidth: 0,
+  textAlign: "left",
+  whiteSpace: "normal",
+} as const;
+
+export const editorSteamMatchImageStyle = {
+  width: 138,
+  height: 52,
+  flexShrink: 0,
+  objectFit: "cover",
+  borderRadius: 4,
+} as const;
+
+export const editorSteamMatchPreviewStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 8,
+  minWidth: 0,
+  padding: 12,
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: 4,
+} as const;
+
 export const editorSourceStackStyle = {
   width: "100%",
   minWidth: 0,

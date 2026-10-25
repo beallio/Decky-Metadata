@@ -25,6 +25,7 @@ import {
   metadataCache,
   metadataState,
   patchInstallStatus,
+  removeMetadataCacheEntry,
 } from "./core";
 
 const makeMetadata = (
@@ -151,6 +152,26 @@ describe("activity compatibility refresh", () => {
     await vi.waitFor(() => expect(metadataCache[String(nextAppId)]).toBe(refreshed));
     expect(applyMetadata).toHaveBeenCalledWith(nextAppId);
   });
+
+  it("does not restore metadata removed before a late refresh reply arrives", async () => {
+    // Plugin replies can arrive out of commit order: the refresh saved first, Remove replied first.
+    const appId = 9608;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Old news", "12345678901234567");
+    let resolveRefresh!: (metadata: MetadataData | null) => void;
+    mocks.refreshSteamActivityForApp.mockReturnValue(new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }));
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    removeMetadataCacheEntry(appId);
+    resolveRefresh(makeNewsMetadata("Fresh news", "22345678901234567"));
+    for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+
+    expect(metadataCache[String(appId)]).toBeUndefined();
+    expect(deckyNativeActivityCache().has(appId)).toBe(false);
+  });
 });
 
 describe("native Activity metadata removal", () => {
@@ -230,5 +251,18 @@ describe("native Activity metadata removal", () => {
     expect(store.GetAppActivity(nativeSteamAppId)).toBe(nativeSteamActivity);
 
     unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+  });
+
+  it("patches the same Steam store again after a plugin reload", () => {
+    const store = { GetAppActivity: (_appId: number) => undefined };
+    const originalGetAppActivity = store.GetAppActivity;
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    for (let load = 0; load < 2; load += 1) {
+      const unpatchers: Array<() => void> = [];
+      installNativeActivityStorePatch(unpatchers);
+      expect(store.GetAppActivity).not.toBe(originalGetAppActivity);
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      expect(store.GetAppActivity).toBe(originalGetAppActivity);
+    }
   });
 });

@@ -237,6 +237,17 @@ export const Content = () => {
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
+  // One scan-progress poll is pending at a time; unmounting the panel stops polling.
+  const scanPoll = useRef<{ timer: number | null; stopped: boolean }>({ timer: null, stopped: false });
+  useEffect(() => {
+    const poll = scanPoll.current;
+    poll.stopped = false;
+    return () => {
+      poll.stopped = true;
+      if (poll.timer !== null) window.clearTimeout(poll.timer);
+      poll.timer = null;
+    };
+  }, []);
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{
     count: number;
@@ -767,31 +778,45 @@ export const Content = () => {
     setBusy(true);
     setScanMessage("");
     setScanStatusKind("active");
+    const failScan = (error: unknown) => {
+      setBusy(false);
+      setScanStatusKind("error");
+      setScanMessage(String(error));
+      toastError("Metadata refresh failed", String(error));
+    };
     try {
       await startScanMissing(games);
-      const interval = window.setInterval(async () => {
+    } catch (error) {
+      failScan(error);
+      return;
+    }
+    const poll = scanPoll.current;
+    const pollProgress = async () => {
+      poll.timer = null;
+      try {
         const progress = await getScanProgress();
+        if (poll.stopped) return;
         setScanStatusKind("active");
         setScanMessage(
           progress.current ||
             progress.message ||
             `${progress.completed}/${progress.total}`
         );
-        if (!progress.running) {
-          window.clearInterval(interval);
-          await refresh();
-          setBusy(false);
-          setScanStatusKind(scanCompleteStatusKind(progress));
-          setScanMessage(scanCompleteMessage(progress));
-          toastSuccess("Metadata", "Refresh complete");
+        if (progress.running) {
+          poll.timer = window.setTimeout(pollProgress, 800);
+          return;
         }
-      }, 800);
-    } catch (error) {
-      setBusy(false);
-      setScanStatusKind("error");
-      setScanMessage(String(error));
-      toastError("Metadata refresh failed", String(error));
-    }
+        await refresh();
+        if (poll.stopped) return;
+        setBusy(false);
+        setScanStatusKind(scanCompleteStatusKind(progress));
+        setScanMessage(scanCompleteMessage(progress));
+        toastSuccess("Metadata", "Refresh complete");
+      } catch (error) {
+        if (!poll.stopped) failScan(error);
+      }
+    };
+    poll.timer = window.setTimeout(pollProgress, 800);
   };
 
   const clearCache = async () => {

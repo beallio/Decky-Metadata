@@ -1,13 +1,15 @@
 {
   "name": "decky-metadata",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Add game metadata, Steam activity news, and Steam community controller layouts to non-Steam games in Steam Gaming Mode.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
+    "build:backend": "./run.sh node ./scripts/build_backend.mjs",
+    "test:backend": "./run.sh cargo test --locked --manifest-path backend-rust/Cargo.toml",
     "watch": "rollup -c -w",
-    "package": "npm run build && node ./scripts/package.mjs",
-    "package:linux": "npm run build && node ./scripts/package.mjs",
+    "package": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
+    "package:linux": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
     "test": "vitest run"
   },
   "keywords": [
@@ -28,7 +30,7 @@
     "mobx": "6.16.1",
     "rollup": "^4.22.5",
     "typescript": "^5.6.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@decky/api": "^1.1.2",

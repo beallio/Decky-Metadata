@@ -1,45 +1,38 @@
 #!/usr/bin/env bash
-# Pre-commit sanity check for Decky-Metadata.
-#
-# This repo is a Decky plugin: TS/React frontend + single-file Python backend.
-# Guard the checks that break a build silently:
-#   1. staged TypeScript still type-checks
-#   2. a staged main.py still parses
-#   3. backend tests pass when backend/test files are staged
-#
-# Exit non-zero to block the commit. Skips cleanly when the relevant files or
-# tools are not part of the staged change.
+# Pre-commit sanity checks for the frontend and native packaging paths.
 set -euo pipefail
 
 staged=$(git diff --cached --name-only --diff-filter=ACM)
 
-# --- frontend: type-check staged TS -----------------------------------------
 if echo "$staged" | grep -q '^src/.*\.tsx\?$'; then
   if command -v npx >/dev/null 2>&1 && [ -d node_modules ]; then
-    npx tsc --noEmit
+    ./run.sh npx tsc --noEmit
   else
-    echo "⚠️  skipping tsc (node_modules/npx unavailable)"
+    echo "check_tdd: tsc requires installed node_modules and npx" >&2
+    exit 1
   fi
 fi
 
-# --- backend: syntax-check staged main.py -----------------------------------
 if echo "$staged" | grep -qx 'main.py'; then
-  python_bin=$(command -v python3 || command -v python || true)
-  if [ -n "$python_bin" ]; then
-    "$python_bin" -m py_compile main.py
-  else
-    echo "⚠️  skipping py_compile (python unavailable)"
-  fi
+  ./run.sh python3 -m py_compile main.py
 fi
 
-# --- backend: pytest staged backend/tests -----------------------------------
-if [ -d tests ] && echo "$staged" | grep -Eq '^(main\.py|tests/)'; then
+if echo "$staged" | grep -Eq '^(backend-rust/.*|package\.json|plugin\.json|main\.py|scripts/package\.mjs|scripts/build_backend\.mjs)$'; then
+  ./run.sh npm run test:backend
+  ./run.sh npm run build:backend
+  ./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
+fi
+
+if echo "$staged" | grep -Eq '^(package\.json|plugin\.json|main\.py|scripts/package\.mjs|scripts/build_backend\.mjs|tests/package_mjs_test\.mjs)$'; then
+  ./run.sh node --test tests/package_mjs_test.mjs
+fi
+
+if [ -d tests ] && echo "$staged" | grep -Eq '^(main\.py|scripts/decky_doctor\.py|scripts/deck/package_push\.sh|tests/)'; then
   if command -v uv >/dev/null 2>&1; then
-    export UV_CACHE_DIR="/tmp/Decky-Metadata/.uv"
-    mkdir -p "$UV_CACHE_DIR"
-    uv run --with pytest -- pytest -q
+    ./run.sh uv run --with pytest -- pytest -q
   else
-    echo "⚠️  skipping pytest (uv unavailable)"
+    echo "check_tdd: uv is required for Python tooling tests" >&2
+    exit 1
   fi
 fi
 

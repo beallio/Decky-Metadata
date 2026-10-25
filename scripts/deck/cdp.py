@@ -60,6 +60,13 @@ import sys
 import time
 import urllib.request
 
+if __package__:
+    from .temp_paths import output_path as _private_output_path
+else:
+    from temp_paths import output_path as _private_output_path
+
+
+
 HOST = os.environ.get("CDP_HOST", "localhost")
 PORT = int(os.environ.get("CDP_PORT", "18081"))
 
@@ -192,9 +199,10 @@ def rpc(sock, msg_id, method, params=None):
             return msg
 
 
-def evaluate(title, expr):
+def evaluate(title, expr, *, timeout=30):
     sock = target_socket(title)
     try:
+        sock.settimeout(timeout)
         msg = rpc(sock, 1, "Runtime.evaluate", {
             "expression": expr,
             "returnByValue": True,
@@ -219,20 +227,15 @@ def decode_screenshot_data(payload):
 
 
 def _screenshot_output_path(output_arg):
-    tmp_root = Path(os.environ.get("DECKY_TMP_ROOT", "/tmp/Decky-Metadata")).resolve()
-    system_tmp = Path("/tmp").resolve()
-    if tmp_root != system_tmp and system_tmp not in tmp_root.parents:
-        raise SystemExit("cdp: DECKY_TMP_ROOT must resolve below /tmp")
-
     requested = Path(output_arg)
-    output_path = (
-        requested.resolve()
-        if requested.is_absolute()
-        else (tmp_root / "screenshots" / requested).resolve()
-    )
-    if output_path != tmp_root and tmp_root not in output_path.parents:
-        raise SystemExit(f"cdp: screenshot output must be below {tmp_root}")
-    return output_path
+    if not requested.is_absolute():
+        requested = Path("screenshots") / requested
+    try:
+        return _private_output_path(requested)
+    except ValueError as exc:
+        raise SystemExit(f"cdp: {exc}") from exc
+
+
 
 
 def capture_screenshot(title, output_arg):
@@ -256,8 +259,20 @@ def capture_screenshot(title, output_arg):
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(png_bytes)
+    output_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor = os.open(
+        output_path,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0),
+        0o600,
+    )
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "wb") as output:
+            descriptor = -1
+            output.write(png_bytes)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
     print(output_path)
 
 

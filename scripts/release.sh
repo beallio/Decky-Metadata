@@ -58,11 +58,11 @@ fi
 python3 scripts/changelog.py check "$version"
 scripts/orchestration/run-quality-gates
 scripts/set_release_version.py "$version"
-git add package.json plugin.json
+git add package.json plugin.json backend-rust/Cargo.toml backend-rust/Cargo.lock
 if ! git diff --cached --quiet; then
   git commit -m "release: $tag"
 else
-  echo "release: package.json/plugin.json already at $version; tagging current HEAD"
+  echo "release: plugin and Rust backend metadata already at $version; tagging current HEAD"
 fi
 node scripts/package.mjs --release
 git tag -a "$tag" -m "Release $tag"

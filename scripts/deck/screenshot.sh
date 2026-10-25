@@ -3,18 +3,14 @@
 #
 # Usage: screenshot.sh OUTPUT.png [TARGET_TITLE]
 #
-# Relative outputs are written below /tmp/Decky-Metadata/screenshots. Absolute
-# outputs must remain below DECKY_TMP_ROOT (default /tmp/Decky-Metadata).
+# Relative outputs use the configured temporary root's screenshots directory.
+# Absolute outputs must remain below that same root.
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-tmp_root="$(realpath -m "${DECKY_TMP_ROOT:-/tmp/Decky-Metadata}")"
-[[ "$tmp_root" == /tmp || "$tmp_root" == /tmp/* ]] || {
-  echo "screenshot: DECKY_TMP_ROOT must resolve below /tmp" >&2
-  exit 2
-}
+tmp_root="$(python3 "$repo_root/scripts/deck/temp_paths.py" root)"
 
 if [[ $# -lt 1 || $# -gt 2 ]]; then
   echo "Usage: screenshot.sh OUTPUT.png [TARGET_TITLE]" >&2

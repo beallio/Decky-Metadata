@@ -1,67 +1,35 @@
 #!/usr/bin/env bash
-# Project quality gates. Invoked by orchestration/run-quality-gates from the repo
-# root. Exit non-zero to fail the gate.
-#
-# Decky-Metadata is a Decky Loader plugin:
-#   - TypeScript/React frontend in src/*.tsx, built with rollup -> dist/
-#   - a Python backend: main.py (thin RPC facade) plus backend/*.py services
-#
-# The gate is a build + static check + Python unit test pass:
-#   1. TypeScript type-check (tsc --noEmit) and rollup production build
-#   2. Python backend byte-compile (syntax check) of main.py and backend/*.py
-#   3. Python tests when tests/ exists
+# Project quality gates. Invoked from the repository root.
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-# Keep generated caches/installs outside Dropbox through the same environment
-# contract used by direct contributor commands.
-export TMPDIR="/tmp/Decky-Metadata"
-export XDG_CACHE_HOME="$TMPDIR/.cache"
-export npm_config_cache="$TMPDIR/.npm"
-export PYTHONPYCACHEPREFIX="$TMPDIR/__pycache__"
-export UV_CACHE_DIR="$TMPDIR/.uv"
-mkdir -p "$TMPDIR" "$XDG_CACHE_HOME" "$npm_config_cache" "$PYTHONPYCACHEPREFIX" "$UV_CACHE_DIR"
-
-# --- frontend: type-check + build -------------------------------------------
 if [[ -f package.json ]]; then
   if [[ ! -d node_modules ]]; then
     if command -v pnpm >/dev/null 2>&1; then
-      pnpm install --frozen-lockfile
+      ./run.sh pnpm install --frozen-lockfile
     else
-      npm ci
+      ./run.sh npm ci
     fi
   fi
 
-  # Type-check without emitting, then run the real rollup build.
-  npx tsc --noEmit
-  npm run build
-
-  # Frontend unit tests. package.json declares vitest, so a stale or incomplete
-  # node_modules must fail the gate instead of silently skipping this step.
-  npm test
+  ./run.sh npx tsc --noEmit
+  ./run.sh npm run build
+  ./run.sh npm test
 fi
 
-# --- backend: Python syntax check -------------------------------------------
-if [[ -f main.py ]]; then
-  python_bin="$(command -v python3 || command -v python)"
-  "$python_bin" -m py_compile main.py
-  if [[ -d backend ]]; then
-    find backend -name "*.py" -print0 | xargs -0 "$python_bin" -m py_compile
-  fi
-fi
+./run.sh npm run test:backend
+./run.sh npm run build:backend
+./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
+./run.sh node --test tests/package_mjs_test.mjs
+./run.sh python3 -m py_compile main.py
+./run.sh uv run --with pytest -- pytest -q
+./run.sh npm run package
 
-# --- backend: Python tests ---------------------------------------------------
-if [[ -d tests ]]; then
-  uv run --with pytest -- pytest -q
-fi
-
-# --- release version drift guard --------------------------------------------
 if [[ -f package.json && -f scripts/version_guard.py ]]; then
-  python_bin="$(command -v python3 || command -v python)"
-  base_version="$("$python_bin" -c 'import json; print(json.load(open("package.json", encoding="utf-8"))["version"])')"
-  "$python_bin" scripts/version_guard.py check-drift "$base_version"
+  base_version="$(node -p "require('./package.json').version")"
+  ./run.sh python3 scripts/version_guard.py check-drift "$base_version"
 fi
 
 echo "quality-gates: OK"

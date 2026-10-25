@@ -32,11 +32,20 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install pinned Rust and musl target
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup toolchain install 1.99.0 --profile minimal --target x86_64-unknown-linux-musl
+
       - name: Install dependencies
-        run: npm ci
+        run: ./run.sh npm ci
+
+      - name: Test Rust backend
+        run: ./run.sh npm run test:backend
 
       - name: Build plugin
-        run: npm run build
+        run: ./run.sh npm run build
 
       - name: Package selected release channel
         id: package
@@ -57,7 +66,7 @@ jobs:
               echo "plugin.json version $plugin_version does not match package.json version $version" >&2
               exit 1
             fi
-            node scripts/package.mjs --release \
+            ./run.sh node scripts/package.mjs --release \
               --release-version "$version" \
               --release-tag "$tag" \
               --channel stable \
@@ -66,7 +75,7 @@ jobs:
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
             echo "version=$version" >> "$GITHUB_OUTPUT"
           else
-            node scripts/package.mjs
+            ./run.sh node scripts/package.mjs
             echo "channel=dev" >> "$GITHUB_OUTPUT"
           fi
 

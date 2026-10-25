@@ -1,0 +1,62 @@
+pub mod cef_bridge;
+pub mod http;
+pub mod logging;
+pub mod matching;
+pub mod metadata;
+pub mod providers;
+pub mod rpc;
+pub mod scan_runner;
+pub mod shortcuts_vdf;
+pub mod state;
+pub mod steam_paths;
+pub mod storage;
+pub mod updater;
+
+use decky_plugin::Plugin;
+pub use state::AppState;
+use std::sync::Arc;
+
+pub fn plugin(state: Arc<AppState>) -> Plugin {
+    let migration = Arc::clone(&state);
+    let unload = Arc::clone(&state);
+    let mut plugin = Plugin::new();
+    for &method in rpc::METHODS {
+        let state = Arc::clone(&state);
+        plugin = if rpc::RAW_METHODS.contains(&method) {
+            plugin.method_raw(method, move |_, args| {
+                let state = Arc::clone(&state);
+                async move { rpc::dispatch_raw(&state, method, &args).await }
+            })
+        } else {
+            plugin.method(method, move |_, args| {
+                let state = Arc::clone(&state);
+                async move { rpc::dispatch(state, method, args).await }
+            })
+        };
+    }
+    plugin
+        .on_migration(move |_| async move {
+            let result = migration.initialize().await;
+            if let Err(error) = &result {
+                logging::event(
+                    "load",
+                    "backend startup failed",
+                    serde_json::json!({"error":error}),
+                    log::Level::Error,
+                );
+            }
+            result
+        })
+        .on_unload(move |_| async move {
+            let result = unload.shutdown().await;
+            if let Err(error) = &result {
+                logging::event(
+                    "load",
+                    "backend unload failed",
+                    serde_json::json!({"error":error}),
+                    log::Level::Error,
+                );
+            }
+            result
+        })
+}

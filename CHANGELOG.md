@@ -4,6 +4,61 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-25
+
+Faster plugin, Steam match picker, and removed metadata stays removed
+
+### Added
+
+- **Pick a Steam match in the editor.** In a game's editor, search Steam and
+  compare the results by artwork, developer, and release date. Select **Use
+  this Steam match** to save one. Looking at results or selecting Cancel
+  changes nothing, and Cancel returns you to the result you had selected.
+- You can still type a Steam App ID or paste a Steam page link, and IGN search
+  is still there. Choosing a Steam match does not rename the shortcut or
+  replace your custom artwork.
+
+### Changed
+
+- **Faster plugin.** The part of the plugin that runs in the background was
+  rewritten. Saving a game's details is much faster, also with large
+  libraries. It works with the standard Decky Loader and with the beallio
+  Loader fork. Your saved details, settings, and shortcut-name history stay in
+  place.
+- The plugin loads less data when it starts and when you open the Quick Access
+  panel. A game's Steam news now loads when you open that game.
+- Each game's details are now kept in their own file, in a `metadata` folder
+  next to the settings file. The first start after the update moves your
+  existing details there.
+- **Going back to an older version:** use the plugin's built-in updater. It
+  first copies your details back into the single settings file, so the older
+  version still finds them. An older version that you install by hand from a
+  ZIP file does not show your saved details.
+- On the standard Decky Loader, the plugin gives back memory it used for large
+  data transfers when it is idle.
+- Updated the tools used to build and test the plugin, to fix reported security
+  problems. These tools are not part of the installed plugin.
+
+### Fixed
+
+- **Removed metadata stays removed.** After **Remove metadata**, the plugin no
+  longer matches that game again by itself. Before, the background news update
+  could match the game's name to a Steam game about 15 minutes later, and the
+  news came back. Opening the game no longer fetches IGN details for it, and
+  **Refresh metadata** skips it. To match the game again, pick a Steam match or
+  an IGN result in its editor, or use **Clear cache**. If you removed a game's
+  metadata before this update, remove it once more after you update. Fix for
+  [issue #3](https://github.com/beallio/Decky-Metadata/issues/3).
+- If a game's news cannot load, its Activity tab keeps what it already showed.
+- When you choose a different Steam match, the new store link and Steam name
+  are kept.
+- If the plugin cannot read its settings file, it no longer saves over that
+  file, so your saved details are not lost.
+- Screenshots that finish loading late no longer overwrite changes you made in
+  the meantime.
+- **View logs** now works even if the log file could not be set up when the
+  plugin started.
+
 ## [0.5.4] - 2026-10-11
 
 Add Home trailer previews and separate controls for each view

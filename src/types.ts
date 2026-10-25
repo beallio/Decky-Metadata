@@ -194,6 +194,29 @@ export type MetadataSearchResult = {
   rating?: number | null;
 };
 
+export type SteamMatchCandidate = {
+  steam_appid: number;
+  title: string;
+  cover_url: string | null;
+};
+
+export type SteamMatchPreview = SteamMatchCandidate & {
+  developers: string[];
+  /** Steam's display label, including partial dates or "Coming Soon". */
+  release_date_label: string | null;
+  app_type: string | null;
+};
+
+export type SteamMatchSearchResponse = {
+  items: SteamMatchCandidate[];
+  error: string | null;
+};
+
+export type SteamMatchPreviewResponse = {
+  preview: SteamMatchPreview | null;
+  error: string | null;
+};
+
 export type MetadataNews = {
   id: string;
   title: string;

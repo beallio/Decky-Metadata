@@ -104,8 +104,9 @@ Manual GitHub runs are diagnostic-only: they retain a sanitized report but do
 not change counts or issues. Run the same probes locally:
 
 ```bash
+./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
 ./run.sh python3 scripts/check_endpoint_health.py \
-  --report /tmp/Decky-Metadata/endpoint-health/report.json
+  --report "${TMPDIR:-/var/tmp/omp-1000}/endpoint-health/report.json"
 ```
 
 Add `--only protondb-summary` (repeatable) for a local check of selected
@@ -113,11 +114,133 @@ endpoints. GitHub probes require authenticated `gh` access. The workflow uses
 its `GITHUB_TOKEN` with read access to contents and Actions, plus issue write
 access; no personal token is required.
 
+Rust `1.99.0` is required for the backend and host diagnostics. ZIP builds also
+need the `x86_64-unknown-linux-musl` target and musl C tools. `npm run build`
+still builds only the frontend; `npm run build:backend` builds the locked static
+backend. `npm run test:backend` runs the Rust behavior tests.
+
+The three Python diagnostic adapters run the existing host
+`backend-diagnostics` executable from `$CARGO_TARGET_DIR/debug`; they never build
+or download it implicitly. `run.sh` defaults that directory to
+`${TMPDIR}/cargo-target/Decky-Metadata`. The native checks reuse the plugin's
+providers and updater validation. Independent Python probes and HLS/DASH checks remain.
+
 `scripts/report_endpoint_health.py` defaults to a local dry run. Its
 `--scheduled` flag advances only the supplied local state file; GitHub issue
 writes additionally require `--apply`. The workflow also supplies `--restore`
 to retrieve the previous scheduled state. Do not use `--apply` for local
 experiments.
+
+## Backend rewrite comparison
+
+`scripts/deck/benchmark_backend.py` compares the pinned Python package on upstream
+Loader, the Rust package on the same upstream Loader, then that exact Rust ZIP on
+the pinned fork. It is a VM-only developer tool, not a normal deployment command.
+It requires exclusive use of the VM, working non-interactive administrator access,
+and an existing CDP tunnel. It does not launch games or replace the normal install.
+
+Pinned inputs (both harness files check them):
+
+|Input|Pin|
+|---|---|
+|Upstream Loader|`SteamDeckHomebrew/decky-loader` `v3.3.0` `PluginLoader` (tag commit `67196adf`); get it with `gh release download v3.3.0 -R SteamDeckHomebrew/decky-loader -p PluginLoader` and check the release asset digest|
+|Fork Loader|`beallio/decky-loader` `main` at `98bce11`, a runtime bundle built from source|
+|Plugin SDK and shim|the same `98bce11`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and root `main.py` copied from `backend-rust/decky-plugin/shim/main.py`|
+
+Build the fork bundle from a detached clone of that commit. Its build checks the
+upstream `v3.3.0` tag, so fetch it first:
+
+```bash
+git -C "$FORK" fetch https://github.com/SteamDeckHomebrew/decky-loader 'refs/tags/v3.3.0:refs/tags/v3.3.0'
+python3 "$FORK/scripts/runtime/build.py" --release-version dev --output "$RUN_ROOT/fork-runtime"
+```
+
+Use the fork's pinned Rust toolchain (`backend-rust/build-config.json`), not this
+repository's. Pass `"$RUN_ROOT/fork-runtime/bundle"` as `--fork-runtime`. When you
+move a pin, change the SDK, the shim and the harness constants together.
+
+Resolve the evidence directory with `./run.sh python3 scripts/deck/temp_paths.py root`.
+Pass the original ZIP, candidate ZIP, upstream executable and complete fork bundle
+with `--python-zip`, `--rust-zip`, `--upstream-runtime` and `--fork-runtime`.
+Use `--host steamdeck-vm --cdp-port 18082 --scratch-homebrew scratch-homebrew`
+and a new `--output-dir` below that evidence root.
+
+Run `--dry-run` first. It captures the installed state, exercises a real disposable
+watchdog service, and verifies recovery. Use `--ui-arm A`, then `B`, then `C` to
+hold each scratch Loader open for ZIP installation through QAM and correctness
+checks. Register shortcut-name undo with the printed remote helper before a name
+check. Send `finish` on standard input only after the arm's checks are complete.
+GUI mode leaves the plugin destination absent. Do not pre-create it: the fork
+refuses an occupied directory that has no installed plugin manifest.
+Timed mode requires `--verification-record` with all three arms and their exact
+artifact hashes; see the script's validation contract for the record fields.
+
+The scratch Loader copies the normal Loader preferences. If they select a custom
+plugin store, upstream v3.3.0 stacks a new store warning on every render of the
+Decky settings page until the Steam renderer stops responding. Before you open
+that page, set the scratch store to the default in SharedJSContext with
+`DeckyBackend.call("utilities/settings/set", "store", 0)`. Recovery restores the
+normal preferences. If the UI already stopped responding and no game runs,
+`systemctl --user restart steam-launcher.service` on the VM recovers it.
+
+`run_all.sh` reads the scratch store when `DECKY_TEST_HOMEBREW` names the scratch
+homebrew. Its Community smoke needs the plugin's debug-level `feed selected` log
+line, so enable debug logging for that run and disable it afterward.
+
+A timed run needs the original and Rust ZIPs to share `dist/index.js`. When the
+frontend has changed, time a copy of the Rust ZIP that keeps the original
+frontend, GUI-verify that copy for the record, and verify the shipping ZIP with
+`--ui-arm B` and `--ui-arm C` separately.
+
+Native Library shortcuts may come from another computer and have no local VDF
+entry. Check `get_local_shortcuts` and name-management eligibility before a name
+test. With explicit approval, the printed remote helper's `shortcuts` command
+(with `{}` on stdin and the run's `--ledger`) creates three marked local test
+shortcuts. It copies `/usr/bin/true` into the private run directory, uses Steam's
+own shortcut preview, and records undo before each creation. Never launch them.
+The helper backs up local shortcut files but never restores a whole live VDF.
+Recovery removes only unchanged task entries; an unpublished or ambiguous
+creation remains unresolved instead of being reported as removed.
+
+Take another VDF backup before the name test, then register `name-undo` before
+using its visible controls. After closing QAM, focus the main Steam target with
+CDP `Page.bringToFront` before an editor screenshot. A background target can
+have a populated DOM while its screenshot is black.
+
+CEF forwarding checks preserve the socket's activation and unit definition.
+Its proxy process can start on a connection or exit when idle; that alone is
+not a restoration conflict. Scratch Loader settings follow the saved socket
+policy, and recovery does not start or stop the proxy to mimic a transient PID.
+
+Each dataset has five trials per arm. Browser RPC timers exclude response
+validation; throughput includes it. Startup measures authenticated backend
+readiness from a pre-primed Steam document, not a cold filesystem or a full
+webhelper restart. An early document hook tracks every Loader update/catalog
+check before timing. Idle, warmup and workload windows use the VM's monotonic
+clock; host control gaps are excluded. Per-phase CPU is interpolated from 5 Hz
+cgroup samples, and memory peaks are sampled peaks.
+The collector keeps a fixed 5 Hz schedule. It catches up when less than one
+period late and rejects a full-period delay. Actual timestamps remain in the
+raw samples.
+
+Each timed preparation first destroys the previous native browser clients,
+before writing the next fixture or arming its observer. This prevents retained
+CEF heaps from accumulating across long trials. The reset is outside every
+measurement window; backend startup still begins with a ready Steam document.
+Long workload commands allow up to 30 minutes without changing RPC sample counts.
+
+Priming enables the CDP Page domain before registering the early hook. It waits
+for the owned marker across the reload; observer cleanup checks the run identity.
+The hook does not change child frames. Recovery also resets the native context
+when preparation stopped the original Loader but the test Loader never started.
+
+Recovery first drains scratch processes and resets Steam's browser clients.
+It then undoes marked shortcut and name changes with a fresh native context,
+before restoring the original Loader and normal RPC access. Queued test writes
+cannot replay against normal settings.
+Files, names and service selection are checked against the undo ledger; a later independent change is a
+conflict, not permission to overwrite it. Keep raw results and recovery evidence
+outside the repository.
 
 ## Optional setup
 

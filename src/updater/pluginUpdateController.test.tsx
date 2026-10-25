@@ -65,16 +65,22 @@ const candidate = (action: "update" | "downgrade_to_stable" = "update") => ({
   action,
 });
 
-function render(updateChannel: "stable" | "development" = "stable", settingsLoaded = true) {
+function render(
+  updateChannel: "stable" | "development" = "stable",
+  settingsLoaded = true,
+  automaticUpdateChecks = true
+) {
   hookIndex = 0;
   effects.length = 0;
   return usePluginUpdateController({
     currentVersion: "0.3.1",
     updateChannel,
-    automaticUpdateChecks: true,
+    automaticUpdateChecks,
     settingsLoaded,
   });
 }
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("plugin update controller", () => {
   beforeEach(() => {
@@ -161,6 +167,29 @@ describe("plugin update controller", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(backend.checkForPluginUpdate).not.toHaveBeenCalled();
+  });
+
+  it("does not check automatically after the preference is turned off", async () => {
+    vi.mocked(backend.checkForPluginUpdate).mockResolvedValue({
+      status: "current",
+      checked_at: "now",
+      channel: "stable",
+    });
+    render();
+    for (const effect of effects) effect();
+    await settle();
+    render();
+    for (const effect of effects) effect();
+    await settle();
+    expect(backend.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+
+    render("stable", true, false);
+    for (const effect of effects) effect();
+    await settle();
+    expect(backend.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+
+    await render("stable", true, false).checkNow();
+    expect(backend.checkForPluginUpdate).toHaveBeenCalledTimes(2);
   });
 
   it("discards a result when the channel changes during the check", async () => {

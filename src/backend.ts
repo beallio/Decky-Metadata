@@ -6,6 +6,8 @@ import {
   DeckCompatibilityCategory,
   MetadataData,
   MetadataSearchResult,
+  SteamMatchSearchResponse,
+  SteamMatchPreviewResponse,
   PluginUpdateCandidate,
   RevalidateResult,
   ScanProgress,
@@ -22,6 +24,7 @@ import {
   IgnTrailerResult,
 } from "./types";
 
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
   "get_all_metadata"
 );
@@ -31,6 +34,11 @@ export const getMetadata = callable<[appId: number], MetadataData | null>(
 export const saveMetadata = callable<
   [appId: number, metadata: MetadataData],
   MetadataData
+>("save_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+export const saveMetadataIfUnchanged = callable<
+  [appId: number, metadata: MetadataData, expected: MetadataData | null],
+  MetadataData | null
 >("save_metadata");
 export const removeMetadata = callable<
   [appId: number],
@@ -71,6 +79,14 @@ export const searchMetadata = callable<
   [query: string, limit?: number],
   MetadataSearchResult[]
 >("search_metadata");
+export const searchSteamMatches = callable<
+  [query: string, limit?: number],
+  SteamMatchSearchResponse
+>("search_steam_matches");
+export const getSteamMatchPreview = callable<
+  [steamAppId: number],
+  SteamMatchPreviewResponse
+>("get_steam_match_preview");
 export const fetchMetadata = callable<[slugOrUrl: string], MetadataData | null>(
   "fetch_metadata"
 );

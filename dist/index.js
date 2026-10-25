@@ -83,9 +83,12 @@ function FaTags (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M345 39.1L472.8 168.4c52.4 53 52.4 138.2 0 191.2L360.8 472.9c-9.3 9.4-24.5 9.5-33.9 .2s-9.5-24.5-.2-33.9L438.6 325.9c33.9-34.3 33.9-89.4 0-123.7L310.9 72.9c-9.3-9.4-9.2-24.6 .2-33.9s24.6-9.2 33.9 .2zM0 229.5L0 80C0 53.5 21.5 32 48 32l149.5 0c17 0 33.3 6.7 45.3 18.7l168 168c25 25 25 65.5 0 90.5L277.3 442.7c-25 25-65.5 25-90.5 0l-168-168C6.7 262.7 0 246.5 0 229.5zM144 144a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"},"child":[]}]})(props);
 }
 
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 const getAllMetadata = callable("get_all_metadata");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+const saveMetadataIfUnchanged = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
 const clearMetadataCache = callable("clear_metadata_cache");
 const getShortcutNameManagement = callable("get_shortcut_name_management");
@@ -95,6 +98,8 @@ const refreshDelistedIndex = callable("refresh_delisted_index");
 const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
 const searchMetadata = callable("search_metadata");
+const searchSteamMatches = callable("search_steam_matches");
+const getSteamMatchPreview = callable("get_steam_match_preview");
 const fetchMetadata = callable("fetch_metadata");
 const applyFetchedMetadata = callable("apply_fetched_metadata");
 const getCommunityFallbackPage = callable("get_community_fallback_page");
@@ -164,6 +169,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
+    getSteamMatchPreview: getSteamMatchPreview,
     getSystemVersions: getSystemVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
@@ -174,8 +180,10 @@ var backend = /*#__PURE__*/Object.freeze({
     removeMetadata: removeMetadata,
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
+    saveMetadataIfUnchanged: saveMetadataIfUnchanged,
     saveShortcutNameState: saveShortcutNameState,
     searchMetadata: searchMetadata,
+    searchSteamMatches: searchSteamMatches,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
@@ -798,6 +806,9 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
     const skipInitialCheck = SP_REACT.useRef(false);
     const automaticCheckToggleHydrated = SP_REACT.useRef(false);
     const latestChannel = SP_REACT.useRef(updateChannel);
+    // Read at call time so toggling the preference does not re-create checkForUpdates.
+    const automaticUpdateChecksRef = SP_REACT.useRef(automaticUpdateChecks);
+    automaticUpdateChecksRef.current = automaticUpdateChecks;
     if (latestChannel.current !== updateChannel) {
         latestChannel.current = updateChannel;
         activeCheckId.current += 1;
@@ -822,6 +833,10 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
             return;
         }
         if (opts.source === "automatic" && !settingsLoaded) {
+            return;
+        }
+        if (opts.source === "automatic" && !automaticUpdateChecksRef.current) {
+            logUpdate(null, "automatic_check_suppressed_disabled");
             return;
         }
         if (opts.source === "automatic" && (state.installedOverride || state.pendingInstallVersion)) {
@@ -1775,16 +1790,26 @@ const setMetadataCacheEntry = (appId, value) => {
     if (previousMatch !== nextMatch)
         notifyMetadataMatchChanged(appId);
 };
+// Plugin replies can arrive out of commit order, so a background result taken before a removal
+// checks this per-app count before it writes the cache.
+const metadataRemovals = new Map();
+const metadataRemovalSnapshot = (appId) => metadataRemovals.get(String(appId)) ?? 0;
+const countRemoval = (key) => metadataRemovals.set(key, (metadataRemovals.get(key) ?? 0) + 1);
 const removeMetadataCacheEntry = (appId) => {
     const key = String(appId);
     const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
     delete metadataCache[key];
+    countRemoval(key);
     if (previousMatch !== null)
         notifyMetadataMatchChanged(appId);
 };
 const replaceMetadataCacheEntries = (records) => {
     const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
-    Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+    Object.keys(metadataCache).forEach((key) => {
+        if (!(key in (records || {})))
+            countRemoval(key);
+        delete metadataCache[key];
+    });
     Object.assign(metadataCache, records || {});
     const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
     for (const key of appIds) {
@@ -2463,6 +2488,32 @@ const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => 
     applyMetadataFn = applyMetadata;
 };
 const activityRefreshGate = createActivityRefreshGate();
+/** One full-record read per summary object; Steam's activity getters can ask many times. */
+const fullMetadataLoads = new WeakMap();
+/**
+ * The all-records load leaves out non-empty news (no `steam_news` key). Load the full record
+ * once it is needed; a newer cache entry written meanwhile wins. A failed read resolves to the
+ * summary, so callers must treat a missing `steam_news` key as "not loaded".
+ */
+const fullMetadataForApp = (appId) => {
+    const key = String(appId);
+    const summary = metadataCache[key];
+    if (!summary || "steam_news" in summary)
+        return Promise.resolve(summary);
+    let load = fullMetadataLoads.get(summary);
+    if (!load) {
+        load = getMetadata(appId)
+            .then((full) => {
+            if (full && metadataCache[key] === summary)
+                setMetadataCacheEntry(appId, full);
+        })
+            .catch((error) => info("activity", "full metadata load failed", error))
+            .then(() => metadataCache[key])
+            .finally(() => fullMetadataLoads.delete(summary));
+        fullMetadataLoads.set(summary, load);
+    }
+    return load;
+};
 const maybeRefreshSteamNewsForApp = (appId) => {
     const lifecycleGeneration = compatibilityLifecycleSnapshot();
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
@@ -2477,10 +2528,11 @@ const maybeRefreshSteamNewsForApp = (appId) => {
     void (async () => {
         try {
             const previous = metadataCache[String(appId)];
+            const removals = metadataRemovalSnapshot(appId);
             const refreshed = await refreshSteamActivityForApp(appId);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            if (!refreshed)
+            if (!refreshed || metadataRemovalSnapshot(appId) !== removals)
                 return;
             const newsKey = (metadata) => JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
             const changed = newsKey(previous) !== newsKey(refreshed);
@@ -3243,6 +3295,9 @@ const getDeckyNativeActivityForApp = (appId) => {
         return null;
     void maybeRefreshSteamNewsForApp(appId);
     const metadata = metadataCache[String(appId)];
+    // News not loaded yet: keep any built Activity; refreshDeckyNativeActivityForApp loads it.
+    if (metadata && !("steam_news" in metadata))
+        return deckyNativeActivityCache().get(appId) ?? null;
     if (!metadata || !metadata.steam_news?.length) {
         clearDeckyNativeActivityForApp(appId);
         return null;
@@ -3265,7 +3320,12 @@ const refreshDeckyNativeActivityForApp = async (appId, store) => {
     await ensureMetadataCacheFn();
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
         return null;
-    const metadata = metadataCache[String(appId)];
+    const metadata = await fullMetadataForApp(appId);
+    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        return null;
+    // News could not load: keep whatever Activity is already shown.
+    if (metadata && !("steam_news" in metadata))
+        return deckyNativeActivityCache().get(appId) ?? null;
     if (!metadata) {
         clearDeckyNativeActivityForApp(appId, store);
         return null;
@@ -3301,6 +3361,10 @@ const installNativeActivityStorePatch = (unpatchers) => {
             return !!store?.__deckyNativeActivityPatched;
         try {
             store.__deckyNativeActivityPatched = true;
+            // Steam keeps the store across plugin reloads; the marker must not outlive its patches.
+            unpatchers.push(() => {
+                delete store.__deckyNativeActivityPatched;
+            });
             unpatchers.push(patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
                 const appId = Number(args[0]);
                 const native = getDeckyNativeActivityForApp(appId);
@@ -3357,6 +3421,9 @@ const installNativePartnerEventStorePatch = (unpatchers) => {
             return true;
         partnerStore.__deckyNativePartnerEventsPatched = true;
         patchedStores.add(partnerStore);
+        unpatchers.push(() => {
+            delete partnerStore.__deckyNativePartnerEventsPatched;
+        });
         const maybePatch = (methodName, handler) => {
             if (typeof partnerStore[methodName] !== "function")
                 return;
@@ -4905,14 +4972,46 @@ const applyReleaseDateToOverview = (appId, overview) => {
         return false;
     }
 };
+// Categories this plugin added, keyed by Steam's category set (replacement overviews share it),
+// so a category the user unchecks or a removed record is taken back out.
+const pluginStoreCategories = new WeakMap();
+const syncStoreCategories = (overview, categories) => {
+    if (!overview.m_setStoreCategories) {
+        overview.m_setStoreCategories = new Set();
+    }
+    const native = overview.m_setStoreCategories;
+    const added = pluginStoreCategories.get(native) ?? new Set();
+    const wanted = new Set((categories ?? []).map(Number));
+    for (const category of added) {
+        if (wanted.has(category))
+            continue;
+        native.delete(category);
+        added.delete(category);
+    }
+    for (const category of wanted) {
+        if (native.has(category))
+            continue;
+        native.add(category);
+        added.add(category);
+    }
+    pluginStoreCategories.set(native, added);
+};
 const applyMetadataToOverview = (appId, overview) => {
     if (!isNativeNonSteamShortcut(overview))
         return false;
     const metadata = metadataCache[String(appId)];
-    if (!metadata || !metadata.steam_news?.length) {
+    // An unloaded news list (no `steam_news` key) is not "no news"; only a loaded empty one is.
+    if (!metadata || (Array.isArray(metadata.steam_news) && !metadata.steam_news.length)) {
         clearDeckyNativeActivityForApp(appId);
     }
     if (!metadata) {
+        try {
+            if (overview.m_setStoreCategories)
+                syncStoreCategories(overview, []);
+        }
+        catch {
+            // Steam objects are not always writable during early bootstrap.
+        }
         const compatibilityChanged = applyCompatibilityToOverview(appId, overview);
         return compatibilityChanged;
     }
@@ -4922,12 +5021,7 @@ const applyMetadataToOverview = (appId, overview) => {
             overview.metacritic_score = metadata.rating;
         }
         compatibilityChanged = applyCompatibilityToOverview(appId, overview);
-        if (!overview.m_setStoreCategories) {
-            overview.m_setStoreCategories = new Set();
-        }
-        metadata.store_categories?.forEach((category) => {
-            overview.m_setStoreCategories.add(Number(category));
-        });
+        syncStoreCategories(overview, metadata.store_categories);
     }
     catch {
         // Steam objects are not always writable during early bootstrap.
@@ -5089,22 +5183,37 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         String(metadata.source || "").toUpperCase() !== "IGN") {
         return;
     }
-    const source = metadata.source_url || String(metadata.id || "");
-    if (!source)
+    if (!(metadata.source_url || metadata.id))
         return;
     const request = { lifecycleGeneration };
     metadataState.screenshotRequestOwners.set(appId, request);
     metadataState.loadingScreenshots.add(appId);
     try {
+        // Snapshot the full record first: the all-records load leaves out news, so saving the
+        // summary would drop it, and the fetch source must come from the same snapshot the
+        // backend later compares against. A re-match or edit after this point fails that check.
+        const full = await fullMetadataForApp(appId);
+        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            return;
+        // A failed full-record read leaves the summary; saving it would drop the stored news.
+        if (!full || !("steam_news" in full) || full.screenshots?.length || String(full.source || "").toUpperCase() !== "IGN")
+            return;
+        const source = full.source_url || String(full.id || "");
+        if (!source)
+            return;
         const refreshed = await fetchMetadata(source);
         if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
             return;
+        // A frontend save, re-match or removal during the request wins over this fill-in.
+        if (metadataCache[String(appId)] !== full)
+            return;
         if (refreshed?.screenshots?.length) {
-            const saved = await saveMetadata(appId, {
-                ...metadata,
-                screenshots: refreshed.screenshots,
-            });
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+            // The backend commits only while the stored record still equals `full`, which also
+            // covers scan and refresh writes this cache has not seen yet.
+            const saved = await saveMetadataIfUnchanged(appId, { ...full, screenshots: refreshed.screenshots }, full);
+            if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            if (metadataCache[String(appId)] !== full)
                 return;
             setMetadataCacheEntry(appId, saved);
             applyMetadata(appId);
@@ -7842,6 +7951,9 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     let innerPatch;
     let outerPatch;
+    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
+    const bodyPatches = [];
+    const patchedBodies = new Set();
     // Steam reuses a single context-menu instance and installs the inner
     // (body) render patches only once. Those patches must read the appid of
     // whichever game is *currently* opening the menu, not the one captured on
@@ -7855,8 +7967,12 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
             currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
             if (!innerPatch) {
                 innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    const bodyPrototype = rendered?.type?.prototype;
+                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
+                        return rendered;
+                    patchedBodies.add(bodyPrototype);
                     // First render of the menu body.
-                    DFL.afterPatch(rendered.type.prototype, "render", (_args, output) => {
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
                         const items = output?.props?.children?.[0];
                         try {
                             syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
@@ -7865,9 +7981,9 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                             // Steam reshapes this tree often; skip on mismatch.
                         }
                         return output;
-                    });
+                    }));
                     // Subsequent updates when Steam refreshes the app overview.
-                    DFL.afterPatch(rendered.type.prototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
                         try {
                             if (shouldUpdate === true) {
                                 syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
@@ -7880,7 +7996,7 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
                             // Not our menu; leave the decision untouched.
                         }
                         return shouldUpdate;
-                    });
+                    }));
                     return rendered;
                 });
             }
@@ -7903,6 +8019,8 @@ const contextMenuPatch = (LibraryContextMenuClass) => {
     }
     return {
         unpatch: () => {
+            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
+            patchedBodies.clear();
             outerPatch?.unpatch();
             innerPatch?.unpatch();
         },
@@ -14716,6 +14834,18 @@ const Content = () => {
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
     const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
+    // One scan-progress poll is pending at a time; unmounting the panel stops polling.
+    const scanPoll = SP_REACT.useRef({ timer: null, stopped: false });
+    SP_REACT.useEffect(() => {
+        const poll = scanPoll.current;
+        poll.stopped = false;
+        return () => {
+            poll.stopped = true;
+            if (poll.timer !== null)
+                window.clearTimeout(poll.timer);
+            poll.timer = null;
+        };
+    }, []);
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
@@ -15218,30 +15348,48 @@ const Content = () => {
         setBusy(true);
         setScanMessage("");
         setScanStatusKind("active");
-        try {
-            await startScanMissing(games);
-            const interval = window.setInterval(async () => {
-                const progress = await getScanProgress();
-                setScanStatusKind("active");
-                setScanMessage(progress.current ||
-                    progress.message ||
-                    `${progress.completed}/${progress.total}`);
-                if (!progress.running) {
-                    window.clearInterval(interval);
-                    await refresh();
-                    setBusy(false);
-                    setScanStatusKind(scanCompleteStatusKind(progress));
-                    setScanMessage(scanCompleteMessage(progress));
-                    toastSuccess("Metadata", "Refresh complete");
-                }
-            }, 800);
-        }
-        catch (error) {
+        const failScan = (error) => {
             setBusy(false);
             setScanStatusKind("error");
             setScanMessage(String(error));
             toastError("Metadata refresh failed", String(error));
+        };
+        try {
+            await startScanMissing(games);
         }
+        catch (error) {
+            failScan(error);
+            return;
+        }
+        const poll = scanPoll.current;
+        const pollProgress = async () => {
+            poll.timer = null;
+            try {
+                const progress = await getScanProgress();
+                if (poll.stopped)
+                    return;
+                setScanStatusKind("active");
+                setScanMessage(progress.current ||
+                    progress.message ||
+                    `${progress.completed}/${progress.total}`);
+                if (progress.running) {
+                    poll.timer = window.setTimeout(pollProgress, 800);
+                    return;
+                }
+                await refresh();
+                if (poll.stopped)
+                    return;
+                setBusy(false);
+                setScanStatusKind(scanCompleteStatusKind(progress));
+                setScanMessage(scanCompleteMessage(progress));
+                toastSuccess("Metadata", "Refresh complete");
+            }
+            catch (error) {
+                if (!poll.stopped)
+                    failScan(error);
+            }
+        };
+        poll.timer = window.setTimeout(pollProgress, 800);
     };
     const clearCache = async () => {
         if (cacheBusy || busy)
@@ -15420,67 +15568,6 @@ const CATEGORY_LABELS = {
     [StoreCategory.Achievements]: "Achievements",
 };
 
-const parseSteamAppId = (input) => {
-    const s = String(input || "").trim();
-    if (!s)
-        return 0;
-    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
-        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
-        s.match(/[?&]appid=(\d+)/i) ||
-        s.match(/\bapp\/(\d+)\b/i);
-    const parsed = Number(match?.[1] || 0);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-        ? parsed
-        : 0;
-};
-const metadataTemplate = (title) => ({
-    title,
-    id: title,
-    source: "Manual",
-    source_url: "",
-    description: "",
-    short_description: "",
-    developers: [],
-    publishers: [],
-    release_date: null,
-    rating: null,
-    store_categories: [StoreCategory.SinglePlayer],
-    steam_dlc_appids: [],
-    has_points_shop: false,
-    genres: [],
-    features: [],
-    screenshots: [],
-});
-const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
-const textToPersons = (value) => value
-    .split(",")
-    .map((name) => name.trim())
-    .filter(Boolean)
-    .map((name) => ({ name, url: "" }));
-const normalizeReleaseDate = (value) => {
-    const text = value.trim();
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
-    if (!match)
-        return null;
-    const [year, month, day] = match.slice(1).map(Number);
-    if (year < 1)
-        return null;
-    const date = new Date(0);
-    date.setUTCFullYear(year, month - 1, day);
-    date.setUTCHours(0, 0, 0, 0);
-    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
-        return null;
-    return text;
-};
-const parseRating = (value) => {
-    if (!value.trim())
-        return null;
-    const number = Number(value);
-    if (!Number.isFinite(number))
-        return null;
-    return Math.max(0, Math.min(100, Math.round(number)));
-};
-
 const editorRootClassName = "decky-metadata-editor";
 const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 const editorToolbarClearance = 104;
@@ -15536,6 +15623,32 @@ const editorSearchButtonStyle = {
     width: "100%",
     minWidth: 112,
     whiteSpace: "nowrap",
+};
+const editorSteamMatchCardStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 12,
+    width: "100%",
+    minWidth: 0,
+    textAlign: "left",
+    whiteSpace: "normal",
+};
+const editorSteamMatchImageStyle = {
+    width: 138,
+    height: 52,
+    flexShrink: 0,
+    objectFit: "cover",
+    borderRadius: 4,
+};
+const editorSteamMatchPreviewStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    minWidth: 0,
+    padding: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 4,
 };
 const editorSourceStackStyle = {
     width: "100%",
@@ -15672,6 +15785,208 @@ const editorScopedCss = `
   box-shadow: 0 0 0 5px #1a9fff !important;
 }
 `;
+
+const EMPTY_MATCHES = [];
+const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }) => {
+    const [query, setQuery] = SP_REACT.useState(initialQuery);
+    const [items, setItems] = SP_REACT.useState(EMPTY_MATCHES);
+    const [status, setStatus] = SP_REACT.useState("idle");
+    const [searchError, setSearchError] = SP_REACT.useState(null);
+    const [selected, setSelected] = SP_REACT.useState(null);
+    const [preview, setPreview] = SP_REACT.useState(null);
+    const [previewLoading, setPreviewLoading] = SP_REACT.useState(false);
+    const [previewError, setPreviewError] = SP_REACT.useState(null);
+    const queryRef = SP_REACT.useRef(initialQuery);
+    const searchRequestRef = SP_REACT.useRef(0);
+    const previewRequestRef = SP_REACT.useRef(0);
+    const lifetimeRef = SP_REACT.useRef(0);
+    const mountedRef = SP_REACT.useRef(true);
+    const itemsRef = SP_REACT.useRef(EMPTY_MATCHES);
+    const selectedRef = SP_REACT.useRef(null);
+    const pendingQueryRef = SP_REACT.useRef(null);
+    const resultsRootRef = SP_REACT.useRef(null);
+    const disabledRef = SP_REACT.useRef(disabled);
+    const onApplyRef = SP_REACT.useRef(onApply);
+    disabledRef.current = disabled;
+    onApplyRef.current = onApply;
+    // A row can be selected again; identity alone does not retire its old button.
+    const confirmationRequest = previewRequestRef.current;
+    SP_REACT.useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            lifetimeRef.current += 1;
+        };
+    }, []);
+    const clearSelection = () => {
+        previewRequestRef.current += 1;
+        selectedRef.current = null;
+        setSelected(null);
+        setPreview(null);
+        setPreviewLoading(false);
+        setPreviewError(null);
+    };
+    const cancelSelection = () => {
+        const appId = selectedRef.current?.steam_appid;
+        clearSelection();
+        const request = previewRequestRef.current;
+        requestAnimationFrame(() => {
+            if (!mountedRef.current || previewRequestRef.current !== request || appId === undefined)
+                return;
+            resultsRootRef.current
+                ?.querySelector(`[data-steam-match-appid="${appId}"] button`)
+                ?.focus();
+        });
+    };
+    const changeQuery = (value) => {
+        queryRef.current = value;
+        searchRequestRef.current += 1;
+        pendingQueryRef.current = null;
+        setQuery(value);
+        itemsRef.current = EMPTY_MATCHES;
+        setItems(EMPTY_MATCHES);
+        setStatus("idle");
+        setSearchError(null);
+        clearSelection();
+    };
+    const search = async () => {
+        const requestedQuery = queryRef.current.trim();
+        if (!mountedRef.current || disabled || !requestedQuery || pendingQueryRef.current === requestedQuery)
+            return;
+        const request = ++searchRequestRef.current;
+        const lifetime = lifetimeRef.current;
+        pendingQueryRef.current = requestedQuery;
+        clearSelection();
+        itemsRef.current = EMPTY_MATCHES;
+        setItems(EMPTY_MATCHES);
+        setStatus("loading");
+        setSearchError(null);
+        const isCurrent = () => lifetimeRef.current === lifetime && searchRequestRef.current === request;
+        try {
+            const response = await searchSteamMatches(requestedQuery, 8);
+            if (!isCurrent())
+                return;
+            if (response.error) {
+                setSearchError(response.error);
+                setStatus("error");
+            }
+            else {
+                itemsRef.current = response.items;
+                setItems(response.items);
+                setStatus(response.items.length ? "results" : "empty");
+            }
+        }
+        catch {
+            if (!isCurrent())
+                return;
+            setSearchError("Steam search is unavailable. Try again.");
+            setStatus("error");
+        }
+        finally {
+            if (isCurrent())
+                pendingQueryRef.current = null;
+        }
+    };
+    const select = async (candidate) => {
+        if (!mountedRef.current || disabled || !itemsRef.current.includes(candidate))
+            return;
+        if (selectedRef.current === candidate && (previewLoading || preview))
+            return;
+        const request = ++previewRequestRef.current;
+        const lifetime = lifetimeRef.current;
+        selectedRef.current = candidate;
+        setSelected(candidate);
+        setPreview(null);
+        setPreviewLoading(true);
+        setPreviewError(null);
+        const isCurrent = () => lifetimeRef.current === lifetime && previewRequestRef.current === request;
+        try {
+            const response = await getSteamMatchPreview(candidate.steam_appid);
+            if (!isCurrent())
+                return;
+            setPreview(response.preview);
+            setPreviewError(response.error);
+        }
+        catch {
+            if (!isCurrent())
+                return;
+            setPreviewError("Steam details are unavailable. You can still use this match.");
+        }
+        finally {
+            if (isCurrent())
+                setPreviewLoading(false);
+        }
+    };
+    const apply = async () => {
+        if (!mountedRef.current || disabledRef.current || previewLoading ||
+            previewRequestRef.current !== confirmationRequest ||
+            !selected || selectedRef.current !== selected)
+            return;
+        await onApplyRef.current(selected.steam_appid);
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Find a Steam match", children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game." }), matchedSteamAppId ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Current Steam App ID: ${matchedSteamAppId}` }) : null, SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": "Steam game search", value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? "Searching Steam..." : "Search Steam" })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? "Enter a game name to find Steam matches." : null, status === "loading" ? "Searching Steam..." : null, status === "empty" ? "No Steam matches found. Try another name or use the Steam App ID field below." : null, status === "error" ? searchError : null] }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, style: rowStackStyle, children: [SP_JSX.jsxs(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, "aria-pressed": selected?.steam_appid === candidate.steam_appid, disabled: disabled, onClick: () => void select(candidate), style: editorSteamMatchCardStyle, children: [candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : null, SP_JSX.jsxs("div", { style: { minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("b", { children: candidate.title }), SP_JSX.jsxs("div", { style: compactTextStyle, children: [`Steam App ID: ${candidate.steam_appid}`, candidate.steam_appid === matchedSteamAppId ? " · Current match" : null, candidate.steam_appid === selected?.steam_appid ? " · Selected" : null] })] })] }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: editorSteamMatchPreviewStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: "Loading Steam details..." }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: previewError }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: `${preview.title} Steam artwork`, style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length ? `Developer: ${preview.developers.join(", ")}` : "Developer unavailable" }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label ? `Release: ${preview.release_date_label}` : "Release date unavailable" }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam type: ${preview.app_type}. Check that this is the game or edition you want.` }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork." }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: "Use this Steam match" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: "Cancel selection" })] })) : null] }, candidate.steam_appid)))] }) })] }));
+};
+
+const parseSteamAppId = (input) => {
+    const s = String(input || "").trim();
+    if (!s)
+        return 0;
+    const match = (/^\d+$/.test(s) ? [s, s] : null) ||
+        s.match(/(?:store\.steampowered\.com|steamcommunity\.com|steamdb\.info)\/app\/(\d+)/i) ||
+        s.match(/[?&]appid=(\d+)/i) ||
+        s.match(/\bapp\/(\d+)\b/i);
+    const parsed = Number(match?.[1] || 0);
+    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
+        ? parsed
+        : 0;
+};
+const metadataTemplate = (title) => ({
+    title,
+    id: title,
+    source: "Manual",
+    source_url: "",
+    description: "",
+    short_description: "",
+    developers: [],
+    publishers: [],
+    release_date: null,
+    rating: null,
+    store_categories: [StoreCategory.SinglePlayer],
+    steam_dlc_appids: [],
+    has_points_shop: false,
+    genres: [],
+    features: [],
+    screenshots: [],
+});
+const personsToText = (people) => (people || []).map((person) => person.name).join(", ");
+const textToPersons = (value) => value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, url: "" }));
+const normalizeReleaseDate = (value) => {
+    const text = value.trim();
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+    if (!match)
+        return null;
+    const [year, month, day] = match.slice(1).map(Number);
+    if (year < 1)
+        return null;
+    const date = new Date(0);
+    date.setUTCFullYear(year, month - 1, day);
+    date.setUTCHours(0, 0, 0, 0);
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)
+        return null;
+    return text;
+};
+const parseRating = (value) => {
+    if (!value.trim())
+        return null;
+    const number = Number(value);
+    if (!Number.isFinite(number))
+        return null;
+    return Math.max(0, Math.min(100, Math.round(number)));
+};
 
 // Shared look for the multiline Description field, applied to both the
 // gamepad-aware textarea and the plain fallback.
@@ -16113,6 +16428,11 @@ const MetadataPage = () => {
             return;
         }
         const requestedEntry = editorEntryToken;
+        // Until this entry's record loads, the form holds defaults that would overwrite it.
+        if (metadataHydratedEntry !== requestedEntry) {
+            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            return;
+        }
         if (!beginBusy(requestedEntry))
             return;
         const requestedRevision = formRevisionRef.current;
@@ -16135,12 +16455,16 @@ const MetadataPage = () => {
             endBusy(requestedEntry);
         }
     };
-    const applySteamAppId = async () => {
+    const applySteamAppId = async (explicitSteamAppId) => {
         if (!nonSteam) {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
             return;
         }
         const requestedEntry = editorEntryToken;
+        if (metadataHydratedEntry !== requestedEntry) {
+            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            return;
+        }
         if (!beginBusy(requestedEntry))
             return;
         const saveBaselineMetadata = metadataRef.current;
@@ -16152,7 +16476,7 @@ const MetadataPage = () => {
             steamAppIdText: steamAppIdTextRef.current,
         };
         try {
-            const parsed = normalizedSteamAppId(parseSteamAppId(steamAppIdText));
+            const parsed = normalizedSteamAppId(explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId);
             const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
             const steamAppIdChanged = parsed !== savedSteamAppId;
             const next = {
@@ -16446,7 +16770,11 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
+                        if (!isCurrentEditorEntry(editorEntryToken))
+                            return;
+                        await applySteamAppId(steamAppId);
+                    } }, editorEntryToken), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...editorSearchRowStyle,
                                     ...editorSearchInputRowSpacingStyle,
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
@@ -16482,7 +16810,7 @@ const MetadataPage = () => {
                                 })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: applySteamAppId, style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
+                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
 };
 
 const HTML_ENTITIES = {

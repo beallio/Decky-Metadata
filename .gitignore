@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 build-package/
 *.zip
+target/
 
 # orchestration engine: machine/trial-only config override
 orchestration.conf.local

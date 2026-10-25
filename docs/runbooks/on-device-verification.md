@@ -2,9 +2,9 @@
 
 Every frontend change that touches Steam patching must be verified on the Deck
 before `dev` is considered good. Local gates cover type checking, builds,
-frontend/backend tests, Python compilation, and version drift; they do not
-exercise the live Steam tree. Session logs must name any unrun live checks and
-their prerequisites. Run the applicable checks below before integration.
+frontend/backend tests, shim syntax, and version drift; they do not
+exercise the live Steam tree. Report unrun live checks and their prerequisites
+in chat. Run the applicable checks below before integration.
 
 ## Tooling (committed — do not recreate ad hoc)
 
@@ -15,8 +15,8 @@ All under `scripts/deck/`. Assumes SSH alias `steamdeck` (override
 | Tool | Purpose |
 | --- | --- |
 | `tunnel.sh up\|down\|status` | SSH tunnel `localhost:18081` → deck debugger |
-| `cdp.py list\|eval\|reload\|wait-ready\|input\|screenshot` | stdlib CDP client; `eval` takes inline JS, `@file`, or `-`, with `--var KEY=VALUE` substituting `__KEY__` in snippets; `input [<target>] <key>…` dispatches synthetic D-pad/`enter`/`escape` key events (default target Big Picture) to drive gamepad focus without a physical controller; `screenshot OUTPUT.png [TARGET]` captures a visual page below `/tmp/Decky-Metadata` |
-| `screenshot.sh OUTPUT.png [TARGET]` | Opens the debugger tunnel and captures a PNG below `/tmp/Decky-Metadata/screenshots`; defaults to the composited `Steam Big Picture Mode` target and accepts a visual overlay target such as the active `QuickAccess_uid*` page |
+| `cdp.py list\|eval\|reload\|wait-ready\|input\|screenshot` | Python CDP client; `eval` accepts inline JS, `@file`, or `-`, with `--var KEY=VALUE` for snippet parameters. `input [<target>] <key>…` uses the existing synthetic controller keys. Screenshots stay below `DECKY_TMP_ROOT`, defaulting to `${TMPDIR}/Decky-Metadata`. |
+| `screenshot.sh OUTPUT.png [TARGET]` | Opens the debugger tunnel and captures a PNG in the configured evidence root's `screenshots` directory; defaults to `Steam Big Picture Mode` and accepts the active visual `QuickAccess_uid*` target. |
 | `deploy.sh [--no-build]` | build → scp `dist/index.js` → hard reload → wait ready. A plain Decky reload does NOT bust the CEF cache; only the hard reload (or full Steam restart) does |
 | `install_release.sh <tag> [auto\|update\|downgrade]` | install a published GitHub release through Decky's installer; `auto` is the default. Fetches the ZIP URL and checksum and opens the on-device confirmation prompt. See the self-update section below. |
 | `logs.sh reasons\|hijacks\|gameactions\|launches\|tail\|sync\|audit` | canned queries plus deterministic local audit |
@@ -30,16 +30,14 @@ The controller-layout smoke populates Steam's in-memory controller configuration
 cache while issuing bounded read queries, so it also requires explicit current
 device approval even though it never persists a selection or launches a game.
 
-`scripts/decky verify-change --device` deploys only the frontend bundle
-(`dist/index.js`) through `scripts/deck/deploy.sh`. It does not deploy changes to
-`main.py` or `backend/`. When either backend path changes, on-device verification
-and release require a full-plugin build and push:
-
-```bash
-scripts/decky package-push --build --push
-```
-
-Install the resulting zip through the Decky UI before running the live checks.
+For frontend-only changes, `scripts/decky verify-change --device` uses
+`scripts/deck/deploy.sh`. Changes to the supplied `main.py` shim, `backend-rust/`,
+or native package metadata instead build and deliver the complete ZIP. The
+dispatcher checks installed version, frontend, backend, shim and manifest hashes.
+If they do not match, it returns `DEFERRED` with the QAM ZIP-install step instead
+of running smokes against an old backend. Install the delivered ZIP through
+Decky Loader, then rerun the command. A manual package delivery is still available
+through `scripts/decky package-push --build --push`.
 
 Typical loop, after authorization for the current device:
 
@@ -59,13 +57,27 @@ explicitly supplied; an automatically selected fixture is render-only.
 | Change touches | Required checks |
 | --- | --- |
 | `BIsModOrShortcut` afterPatch, bypassCounter, route shield (`metadataPatch.ts`, `core.ts` shield fns) | `smoke_launch.sh` (Play inside the shield window must launch with a 64-bit gameid) AND `smoke_quicklinks.sh` (the spoof must keep rendering the rich page) |
-| Route render patches, `applyMetadata`, activity refresh (`routerPatches.ts`) | `smoke_rerender.sh` (0 cache writes on same-app subsection round-trips) + a manual subsection→B focus check with a controller |
+| Route render patches, `applyMetadata`, activity refresh (`routerPatches.ts`) | `smoke_rerender.sh` (0 plugin cache writes on same-app subsection round-trips; Steam's own background writes for other apps are listed, not failed) + a manual subsection→B focus check with a controller |
 | Quick-links suppression / section hooks | `smoke_quicklinks.sh` both directions |
 | Anything else in `src/steam/` | `run_all.sh` — the suite is cheap; run all of it |
 
 A manual physical-controller Play press remains the final say for launch
 behavior — the smoke test dispatches synthetic pointer events, which has
 matched real behavior so far but is not identical input.
+
+### Per-game metadata files
+
+The backend keeps each metadata record in
+`settings/Decky-Metadata/metadata/<game id>.json` (non-decimal keys use `~` plus
+UTF-8 hex). `decky_metadata.json` keeps every other field and the
+`"metadata_layout": "files-v1"` key. A settings file without that key is the
+single-file layout: the backend converts it on load, replacing the `metadata`
+folder. `record_update_install_requested` writes the single-file layout back so
+an older version reads it; later writes keep that file complete until the next
+load converts it back. Tools read either layout as one document with
+`ssh steamdeck "python3 - <settings dir>" < scripts/deck/read_store.py`.
+Record files edited in place without a rename do not change the folder's
+modification time, so a running backend does not reload them.
 
 ### Date-only release dates
 
@@ -221,7 +233,7 @@ Get explicit approval for the current Deck and disposable fixtures before any
 deploy, package push, QAM selection, metadata removal, or shortcut creation.
 Capture the native baseline first and restore every fixture and the original
 global setting at the end. Use a full package because this feature changes both
-the frontend and `main.py`:
+the frontend and backend:
 
 ```bash
 ./run.sh scripts/decky doctor --deck

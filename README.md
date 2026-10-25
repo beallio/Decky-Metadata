@@ -16,6 +16,10 @@ Play Time.
 
 You need SteamOS Gaming Mode and [Decky Loader](https://decky.xyz/).
 
+The same ZIP works with standard Decky Loader and the
+[beallio Loader fork](https://github.com/beallio/decky-loader). The plugin includes
+its backend; you do not need to set up Rust or Python.
+
 1. Open the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest).
 2. Download `Decky-Metadata.zip`. Do not unzip it.
 3. Open the Quick Access Menu and select Decky.
@@ -36,10 +40,11 @@ heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
 
-To edit one game, open its menu and select **Decky metadata...**. Find the right
-game in the Steam Store, paste its page link into **Steam App ID**, and select
-**Apply Steam App ID**. Select **Save** for other details you change. If the
-match is wrong, replace it with the right one.
+To edit one game, open its menu and select **Decky metadata...**. Use **Find a
+Steam match** to search by name. Select a result to check its artwork, developer,
+and release date, then select **Use this Steam match**. You can still paste a
+Steam page link or app ID under **Steam App ID**. Select **Save** after you make
+further edits.
 
 The editor can preview a cleaner shortcut name. It changes the name only if you
 confirm; you can restore the original name later. See [matching and editing

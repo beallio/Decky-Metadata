@@ -14,6 +14,8 @@ const backend = vi.hoisted(() => ({
   saveMetadata: vi.fn(),
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
+  searchSteamMatches: vi.fn(),
+  getSteamMatchPreview: vi.fn(),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -112,6 +114,7 @@ vi.mock("react", () => ({
 import { MetadataPage } from "./MetadataPage";
 import { metadataTemplate } from "./metadataForm";
 import type { MetadataData } from "./types";
+import { SteamMatchPicker } from "./SteamMatchPicker";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
@@ -252,6 +255,7 @@ describe("MetadataPage compatibility status", () => {
 
   it("shows Follow Valve as a separate persisted per-game choice", async () => {
     state.values[0] = makeMetadata({ deck_compat_category: 2 });
+    state.values[14] = 0;
     const saved = makeMetadata({ deck_compat_category: 2, deck_compat_override: "valve" });
     backend.saveMetadata.mockResolvedValue(saved);
 
@@ -327,6 +331,7 @@ describe("MetadataPage compatibility status", () => {
 
   it("saves a dropdown change atomically and refreshes after success", async () => {
     state.values[0] = makeMetadata({ deck_compat_category: 3 });
+    state.values[14] = 0;
     const saved = makeMetadata({ deck_compat_category: 3, deck_compat_override: 0 });
     backend.saveMetadata.mockResolvedValue(saved);
 
@@ -350,6 +355,7 @@ describe("MetadataPage compatibility status", () => {
   it("does not change cache or runtime compatibility when save fails", async () => {
     const persisted = makeMetadata({ deck_compat_override: 3 });
     state.values[0] = persisted;
+    state.values[14] = 0;
     steam.metadataCache["100"] = persisted;
     backend.saveMetadata.mockRejectedValue(new Error("backend unavailable"));
 
@@ -472,6 +478,7 @@ describe("MetadataPage compatibility status", () => {
 
   it("clears a stale Steam proposal when the manual Steam ID changes, even if enrichment fails", async () => {
     state.values[0] = makeMetadata({ steam_appid: 15100, steam_store_name: "Old Steam Name" });
+    state.values[14] = 0;
     state.values[8] = "15100";
     backend.saveMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15200, steam_store_name: "" }));
     backend.enrichSteamApp.mockResolvedValue(null);
@@ -778,6 +785,27 @@ describe("MetadataPage compatibility status", () => {
       steam_appid: 15200,
       steam_store_name: "Saved Steam name",
     }));
+  });
+
+  it("does not save the default form over a record that has not loaded yet", async () => {
+    effects.enabled = true;
+    const pendingMetadata = deferred<any>();
+    backend.getMetadata.mockReturnValue(pendingMetadata.promise);
+    backend.getShortcutNameManagement.mockResolvedValue(shortcutState());
+
+    renderPage();
+    const loading = effects.callbacks[0]();
+    await saveButton(renderPage()).props.onClick();
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(toast.toastWarn).toHaveBeenCalledWith("Not loaded", expect.any(String));
+
+    pendingMetadata.resolve(makeMetadata({ title: "Saved title", description: "Saved description" }));
+    await loading;
+    await flushAsyncWork();
+    backend.saveMetadata.mockImplementation(async (_id, value) => value);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "Saved description" }));
   });
 
   it("keeps a newer title edit while applying the saved Steam identity", async () => {
@@ -1139,6 +1167,7 @@ describe("metadata summary and date persistence", () => {
   beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });
   it("displays saved summary but saves the original untouched description and calendar date", async () => {
     state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
+    state.values[14] = 0;
     state.values[3] = "2009-04-28";
     const page = renderPage();
     expect(walk(page, node => node.type === "textarea")[0].props.value).toBe("Source summary");
@@ -1151,11 +1180,13 @@ describe("metadata summary and date persistence", () => {
   });
   it("keeps a legitimate absent date absent on an unrelated save", async () => {
     state.values[0] = makeMetadata({ release_date: null });
+    state.values[14] = 0;
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[0][1].release_date).toBeNull();
   });
   it("saves a changed calendar date and supports explicitly clearing it", async () => {
     state.values[0] = makeMetadata({ release_date: "2009-04-28" });
+    state.values[14] = 0;
     state.values[3] = "2009-04-28";
     renderPage();
     const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0];
@@ -1169,11 +1200,71 @@ describe("metadata summary and date persistence", () => {
   it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
     textarea.component = component;
     state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });
+    state.values[14] = 0;
     for (const input of ["Fly <pilot>\n\nLand", ""]) {
       walk(renderPage(), node => node.type === (component || "textarea"))[0].props.onChange({ target: { value: input } });
       await saveButton(renderPage()).props.onClick();
       expect(backend.saveMetadata.mock.calls[backend.saveMetadata.mock.calls.length - 1]?.[1]).toMatchObject({ description: input, short_description: input });
     }
     textarea.component = null;
+  });
+});
+
+describe("Steam-match picker application", () => {
+  beforeEach(() => {
+    state.values = [];
+    refs.values = [];
+    effects.enabled = false;
+    effects.callbacks = [];
+    route.appid = "100";
+    textarea.component = null;
+    vi.clearAllMocks();
+    Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
+    steam.isNonSteamApp.mockReturnValue(true);
+    steam.nativeShortcutName.mockReturnValue("Shortcut");
+  });
+
+  const picker = (page: any) => walk(page, (node) => node.type === SteamMatchPicker)[0];
+
+  it("uses the chosen match instead of a conflicting manual ID and preserves edits made during saving", async () => {
+    const saving = deferred<MetadataData>();
+    configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
+    state.values[8] = "620";
+    backend.saveMetadata.mockReturnValueOnce(saving.promise);
+    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+      title: "Portal", steam_appid: 400, steam_store_name: "Portal",
+      description: "Steam description", short_description: "Steam description",
+      developers: [{ name: "Valve", url: "" }], deck_compat_override: "valve",
+    }));
+    const applying = picker(renderPage()).props.onApply(400);
+    walk(renderPage(), (node) => node.type === "textarea")[0]
+      .props.onChange({ target: { value: "My edit during the request" } });
+    saving.resolve(makeMetadata({
+      title: "Shortcut", steam_appid: 400, description: "Old description",
+      deck_compat_override: "valve",
+    }));
+    await applying;
+
+    expect(backend.saveMetadata.mock.calls[0][1].steam_appid).toBe(400);
+    expect(steam.metadataCache["100"]).toMatchObject({
+      steam_appid: 400, title: "Portal", description: "My edit during the request",
+      short_description: "My edit during the request", deck_compat_override: "valve",
+    });
+    expect(state.values[8]).toBe("400");
+    expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
+  });
+
+  it("rejects a retired picker callback after visiting another game and returning", async () => {
+    const retired = picker(renderPage()).props.onApply;
+    route.appid = "101";
+    renderPage();
+    route.appid = "100";
+    renderPage();
+
+    await retired(400);
+
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
   });
 });

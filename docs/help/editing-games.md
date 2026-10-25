@@ -6,14 +6,34 @@ Open the game's menu in your Steam library and select **Decky metadata...**. Thi
 
 A Steam match connects your non-Steam game to the right Steam store entry so Decky Metadata can use that game's details and other available information. Check the game title carefully before applying a match, especially when several games have similar names or editions.
 
-1. Find the correct game in the Steam Store and open its store page.
-2. In **Decky metadata...**, go to **Steam App ID** and enter the game's Steam App ID, or paste its Steam Store, Community, or SteamDB URL.
-3. Select **Apply Steam App ID**. The match is saved and Decky Metadata loads information for it.
-4. Check that the match is for the intended game. Select **Save** for any other edits you made in the editor.
+1. In **Find a Steam match**, enter the game's name and select **Search Steam**.
+2. Select a result to view its developer and release date, when available.
+   Artwork helps distinguish similar titles. Some results are demos or DLC;
+   check the title and the Steam type shown in the preview.
+3. Select **Use this Steam match** to save the match and load its Steam details.
+4. Select **Save** after you make further manual edits.
 
-The editor's **Search IGN metadata** section searches IGN metadata, not Steam matches. Choosing an IGN result fills in source information; it does not choose a Steam game. Use the **Steam App ID** field to set the Steam match.
+Searching and selecting a preview do not change saved metadata. **Cancel
+selection** closes the preview and returns controller focus to that result.
+Using a match does not rename your shortcut or replace your custom artwork.
+Steam search needs an internet connection.
 
-If the match is wrong, repeat those steps with the correct game's app ID or URL. To remove a match instead, clear the **Steam App ID** field and select **Apply Steam App ID**. This clears the pinned match; you can then add the correct one. **Remove metadata** removes the game's saved metadata, rather than just clearing its Steam match.
+### Enter an app ID or page link instead
+
+If you already know the correct Steam entry, go to **Steam App ID**, enter its
+app ID or paste its Steam Store, Community, or SteamDB URL, and select **Apply
+Steam App ID**. This saves the match and loads its details. This option also
+works when the game does not appear in search results.
+
+**Search IGN metadata** is separate: it searches IGN information, not Steam
+matches. Choosing an IGN result does not choose a Steam game.
+
+To correct a match, choose another Steam result or apply the correct app ID.
+To clear the pinned match, empty **Steam App ID** and select **Apply Steam App
+ID**. **Remove metadata** removes the game's saved metadata, not just its match.
+After you remove it, Metadata does not match the game again by itself: opening
+the game, news updates, and **Refresh metadata** skip it. To match it again,
+pick a Steam match or an IGN result in the editor, or use **Clear cache**.
 
 A saved Steam App ID also takes priority when Metadata chooses a ProtonDB
 rating for the shortcut. Correcting or clearing the match updates badges that
@@ -22,7 +42,10 @@ shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
 
 ## Change or fill in details
 
-Use the editor's **Search IGN metadata** section to search by the game's name. Select the result that describes your game to fill in its source information. You can also edit the fields in the editor yourself. Select **Save** when you finish editing. Applying a Steam App ID saves that match separately; use **Save** to save your other edits.
+Use **Search IGN metadata** to find source information by the game's name, or
+edit the fields yourself. Select **Save** when you finish editing. Choosing a
+Steam match or applying an app ID saves the match and loads Steam details; use
+**Save** after you make further manual edits.
 
 ## Descriptions and release dates
 

@@ -24,9 +24,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install frontend dependencies
-        run: npm ci
-
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -39,25 +36,44 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install pinned Rust and musl target
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup toolchain install 1.99.0 --profile minimal --target x86_64-unknown-linux-musl
+
+      - name: Install frontend dependencies
+        run: ./run.sh npm ci
+
       - name: Type-check frontend
-        run: npx tsc --noEmit
+        run: ./run.sh npx tsc --noEmit
 
       - name: Build frontend
-        run: npm run build
+        run: ./run.sh npm run build
 
       - name: Verify committed bundle
         run: git diff --exit-code dist/index.js
 
       - name: Test frontend
-        run: npm test
+        run: ./run.sh npm test
 
-      - name: Compile Python backend
-        run: |
-          python -m py_compile main.py
-          find backend -name "*.py" -print0 | xargs -0 python -m py_compile
+      - name: Test Rust backend
+        run: ./run.sh npm run test:backend
 
-      - name: Test Python backend and tooling
-        run: uv run --with pytest -- pytest -q
+      - name: Build locked static Rust backend
+        run: ./run.sh npm run build:backend
+
+      - name: Build host diagnostics binary
+        run: ./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
+
+      - name: Test native packaging behavior
+        run: ./run.sh node --test tests/package_mjs_test.mjs
+
+      - name: Compile upstream shim
+        run: ./run.sh python3 -m py_compile main.py
+
+      - name: Test Python tooling
+        run: ./run.sh uv run --with pytest -- pytest -q
 
       - name: Check release version drift
-        run: python scripts/version_guard.py check-drift "$(node -p "require('./package.json').version")"
+        run: ./run.sh python3 scripts/version_guard.py check-drift "$(node -p "require('./package.json').version")"
