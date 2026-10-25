@@ -4,9 +4,10 @@
 #   smoke_rerender.sh <appid>
 #
 # Opens the game page, then does 3 same-app subsection round-trips
-# (detail -> /activity -> back). The plugin must not issue any
-# SetCachedDataForApp writes during the round-trips: that churn is what reset
-# focus/scroll before the fix.
+# (detail -> /activity -> back). There must be no SetCachedDataForApp writes
+# for this app, and none of the keys the plugin writes for any app: that churn
+# is what reset focus/scroll before the fix. Steam itself refreshes other apps'
+# details (e.g. "achievements") in the background; those are listed, not failed.
 source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 
 appid="${1:?usage: smoke_rerender.sh <appid>}"
@@ -26,12 +27,18 @@ for _ in 1 2 3; do
 done
 
 dump="$(cdp eval SharedJSContext "@$JS_DIR/counter_cachewrites_dump.js" --var RESTORE=yes)"
-python3 - "$dump" <<'PY' || exit 1
+python3 - "$dump" "$appid" <<'PY' || exit 1
 import json, sys
 d = json.loads(sys.argv[1])
 if d.get("error"):
     sys.exit(f"FAIL: {d['error']}")
-if d["sinceBase"] != 0:
-    sys.exit(f"FAIL: {d['sinceBase']} cache writes during same-app round-trips: {d['calls']}")
+# Keep in sync with the SetCachedDataForApp keys in src/steam/metadataPatch.ts.
+plugin_keys = {"descriptions", "associations", "screenshots"}
+churn = [c for c in d["calls"] if str(c.get("appid")) == sys.argv[2] or c.get("key") in plugin_keys]
+if churn:
+    sys.exit(f"FAIL: {len(churn)} cache writes during same-app round-trips: {churn}")
+other = sorted({f"{c.get('appid')}:{c.get('key')}" for c in d["calls"]})
+if other:
+    print(f"note: ignored Steam's own writes for other apps: {', '.join(other)}")
 PY
-pass "re-render churn: 0 cache writes across 3 subsection round-trips on $appid"
+pass "re-render churn: 0 plugin cache writes across 3 subsection round-trips on $appid"
