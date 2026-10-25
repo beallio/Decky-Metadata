@@ -501,6 +501,11 @@ pub async fn save_guarded(
             if expected.is_some_and(|expected| expected != existing) {
                 return Ok(None);
             }
+            // Guarded saves are automatic (scan, screenshot enrichment); a removal can leave the
+            // record unchanged (absent), so the marker itself must also reject them.
+            if expected.is_some() && transaction.get(&[REMOVED, &key]).is_some() {
+                return Ok(None);
+            }
             let cleaned = prepare_save(
                 existing,
                 value,
@@ -509,8 +514,8 @@ pub async fn save_guarded(
                 index.as_deref().unwrap_or(&Value::Null),
             )?;
             transaction.set(&["metadata", &key], cleaned.clone())?;
-            if safe_int(&cleaned["steam_appid"]).is_some_and(|id| id > 0) {
-                // A saved Steam match is the user's pick, so automatic matching may resume.
+            if expected.is_none() && safe_int(&cleaned["steam_appid"]).is_some_and(|id| id > 0) {
+                // Only the user's own save of a Steam match lets automatic matching resume.
                 transaction.remove(&[REMOVED, &key])?;
             }
             Ok(Some(cleaned))

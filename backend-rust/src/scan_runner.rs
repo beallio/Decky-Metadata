@@ -1513,6 +1513,32 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn metadata_scan_cannot_rematch_a_game_removed_during_its_fetch() {
+        let title = "Removed Mid Scan";
+        let (_directory, mut state) = test_state(complete_steam_fixtures(title, 100)).await;
+        let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
+        // No record yet, so the scan's snapshot is absent and stays absent after Remove.
+        start_scan_missing(Arc::clone(&state), &json!([{"appid": 1, "name": title}]))
+            .await
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
+            .await
+            .unwrap();
+        metadata::remove(&state, &json!(1)).await.unwrap();
+        gate.resume.notify_one();
+        state.jobs.drain().await;
+
+        let progress = get_scan_progress(&state).await;
+        assert_eq!(progress["assigned"], 0);
+        assert_eq!(progress["failed"], 1);
+        let data = state.store().await.unwrap().data().clone();
+        assert!(data["metadata"].get("1").is_none());
+        assert!(metadata::removed_by_user(&data, "1"));
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn passive_activity_refresh_does_not_resurrect_removed_metadata() {
         let (_directory, mut state) = test_state(vec![steam_events(400, json!([event(400)]))]).await;
         set_record(
