@@ -31,6 +31,9 @@ matches. Choosing an IGN result does not choose a Steam game.
 To correct a match, choose another Steam result or apply the correct app ID.
 To clear the pinned match, empty **Steam App ID** and select **Apply Steam App
 ID**. **Remove metadata** removes the game's saved metadata, not just its match.
+After you remove it, Metadata does not match the game again by itself: opening
+the game, news updates, and **Refresh metadata** skip it. To match it again,
+pick a Steam match or an IGN result in the editor, or use **Clear cache**.
 
 A saved Steam App ID also takes priority when Metadata chooses a ProtonDB
 rating for the shortcut. Correcting or clearing the match updates badges that

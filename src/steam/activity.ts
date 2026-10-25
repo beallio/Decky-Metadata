@@ -35,6 +35,7 @@ import {
   rewriteSteamLinkToMatchedApp,
   rewriteSteamwebNavState,
   steamInternals,
+  metadataRemovalSnapshot,
 } from "./core";
 
 let ensureMetadataCacheFn: () => Promise<void> = async () => undefined;
@@ -86,9 +87,10 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
   void (async () => {
     try {
       const previous = metadataCache[String(appId)];
+      const removals = metadataRemovalSnapshot(appId);
       const refreshed = await refreshSteamActivityForApp(appId);
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      if (!refreshed) return;
+      if (!refreshed || metadataRemovalSnapshot(appId) !== removals) return;
       const newsKey = (metadata?: MetadataData | null) =>
         JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
       const changed = newsKey(previous) !== newsKey(refreshed);

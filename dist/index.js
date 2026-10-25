@@ -1790,16 +1790,26 @@ const setMetadataCacheEntry = (appId, value) => {
     if (previousMatch !== nextMatch)
         notifyMetadataMatchChanged(appId);
 };
+// Plugin replies can arrive out of commit order, so a background result taken before a removal
+// checks this per-app count before it writes the cache.
+const metadataRemovals = new Map();
+const metadataRemovalSnapshot = (appId) => metadataRemovals.get(String(appId)) ?? 0;
+const countRemoval = (key) => metadataRemovals.set(key, (metadataRemovals.get(key) ?? 0) + 1);
 const removeMetadataCacheEntry = (appId) => {
     const key = String(appId);
     const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
     delete metadataCache[key];
+    countRemoval(key);
     if (previousMatch !== null)
         notifyMetadataMatchChanged(appId);
 };
 const replaceMetadataCacheEntries = (records) => {
     const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
-    Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+    Object.keys(metadataCache).forEach((key) => {
+        if (!(key in (records || {})))
+            countRemoval(key);
+        delete metadataCache[key];
+    });
     Object.assign(metadataCache, records || {});
     const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
     for (const key of appIds) {
@@ -2518,10 +2528,11 @@ const maybeRefreshSteamNewsForApp = (appId) => {
     void (async () => {
         try {
             const previous = metadataCache[String(appId)];
+            const removals = metadataRemovalSnapshot(appId);
             const refreshed = await refreshSteamActivityForApp(appId);
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            if (!refreshed)
+            if (!refreshed || metadataRemovalSnapshot(appId) !== removals)
                 return;
             const newsKey = (metadata) => JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
             const changed = newsKey(previous) !== newsKey(refreshed);
