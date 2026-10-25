@@ -175,6 +175,23 @@ refuses an occupied directory that has no installed plugin manifest.
 Timed mode requires `--verification-record` with all three arms and their exact
 artifact hashes; see the script's validation contract for the record fields.
 
+The scratch Loader copies the normal Loader preferences. If they select a custom
+plugin store, upstream v3.3.0 stacks a new store warning on every render of the
+Decky settings page until the Steam renderer stops responding. Before you open
+that page, set the scratch store to the default in SharedJSContext with
+`DeckyBackend.call("utilities/settings/set", "store", 0)`. Recovery restores the
+normal preferences. If the UI already stopped responding and no game runs,
+`systemctl --user restart steam-launcher.service` on the VM recovers it.
+
+`run_all.sh` reads the scratch store when `DECKY_TEST_HOMEBREW` names the scratch
+homebrew. Its Community smoke needs the plugin's debug-level `feed selected` log
+line, so enable debug logging for that run and disable it afterward.
+
+A timed run needs the original and Rust ZIPs to share `dist/index.js`. When the
+frontend has changed, time a copy of the Rust ZIP that keeps the original
+frontend, GUI-verify that copy for the record, and verify the shipping ZIP with
+`--ui-arm B` and `--ui-arm C` separately.
+
 Native Library shortcuts may come from another computer and have no local VDF
 entry. Check `get_local_shortcuts` and name-management eligibility before a name
 test. With explicit approval, the printed remote helper's `shortcuts` command
