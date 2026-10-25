@@ -1049,6 +1049,17 @@ export const tryFetchMetadataForApp = async (appId: number) => {
   }
 };
 
+/** Deep JSON equality; key order does not matter. */
+const sameRecord = (left: unknown, right: unknown): boolean => {
+  if (left === right) return true;
+  if (!left || !right || typeof left !== "object" || typeof right !== "object" || Array.isArray(left) !== Array.isArray(right)) {
+    return false;
+  }
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length && keys.every((key) =>
+    Object.prototype.hasOwnProperty.call(right, key) && sameRecord((left as any)[key], (right as any)[key]));
+};
+
 export const tryEnrichScreenshotsForApp = async (appId: number) => {
   const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
   await ensureMetadataCache();
@@ -1078,8 +1089,9 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
     if (!source) return;
     const refreshed = await fetchMetadata(source);
     if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-    // A frontend save, re-match or removal during the request wins over this fill-in.
-    if (metadataCache[String(appId)] !== full) return;
+    // A frontend save, re-match or removal during the request wins over this fill-in. Compare
+    // content: the route's Activity refresh stores the unchanged record as a new object.
+    if (!sameRecord(metadataCache[String(appId)], full)) return;
     if (refreshed?.screenshots?.length) {
       // The backend commits only while the stored record still equals `full`, which also
       // covers scan and refresh writes this cache has not seen yet.
@@ -1089,7 +1101,7 @@ export const tryEnrichScreenshotsForApp = async (appId: number) => {
         full,
       );
       if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      if (metadataCache[String(appId)] !== full) return;
+      if (!sameRecord(metadataCache[String(appId)], full)) return;
       setMetadataCacheEntry(appId, saved);
       applyMetadata(appId);
       notifyCompatibilityRevision();

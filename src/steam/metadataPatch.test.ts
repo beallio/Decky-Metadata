@@ -1130,6 +1130,34 @@ describe("compatibility metadata application", () => {
     }
   });
 
+  it("saves screenshots when an Activity refresh replaces the cache entry with the same record", async () => {
+    const appId = 93008;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...activityMetadata("Kept news", "72345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    beginCompatibilityLifecycle();
+    let resolveFetch!: (metadata: Record<string, any> | null) => void;
+    mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
+      resolveFetch = resolve;
+    }));
+    const shots = [{ url: "https://example.invalid/shot.png" }];
+    mocks.saveMetadata.mockImplementation(async (_appId, value) => value);
+    const pending = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    // The route's Activity refresh returns the unchanged record as a new object.
+    metadataCache[String(appId)] = structuredClone(existing);
+    resolveFetch({ screenshots: shots });
+    await pending;
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, { ...existing, screenshots: shots }, existing);
+    expect(metadataCache[String(appId)]?.screenshots).toEqual(shots);
+  });
+
   it("keeps the cache when the backend rejects a screenshot save over a record it changed", async () => {
     const appId = 93005;
     installCompatibilityOverview(appId, 0xa0);
