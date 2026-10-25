@@ -603,7 +603,8 @@ def test_recovery_does_not_hold_ledger_lock_during_slow_undo(monkeypatch: pytest
     monkeypatch.setattr(vm, "_ledger_lock", ledger_lock)
     monkeypatch.setattr(vm, "_load_ledger", lambda *_args: json.loads(json.dumps(store)))
     monkeypatch.setattr(vm, "_write_ledger", lambda ledger: store.update(json.loads(json.dumps(ledger))))
-    monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_uid=1000, pw_name="deck"))
+    # Recovery checks that the run directory belongs to this account; CI runs as uid 1001, not 1000.
+    monkeypatch.setattr(vm, "_account", lambda _name: SimpleNamespace(pw_uid=os.getuid(), pw_name="deck"))
     monkeypatch.setattr(vm, "_verified_user_bus", lambda _account: {"XDG_RUNTIME_DIR": "/run/user/1000"})
 
     def slow_undo(_ledger, _path, _conflicts, *, only_kind=None):
