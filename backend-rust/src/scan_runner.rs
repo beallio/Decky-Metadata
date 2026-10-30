@@ -653,10 +653,13 @@ async fn metadata_match(
 }
 
 async fn activity_match(state: &AppState, value: Value, title: &str) -> Result<ScanResult, String> {
-    let refreshed = metadata::with_steam_news(state, value, title, 10, false).await?;
+    let refreshed = metadata::with_steam_news(state, value.clone(), title, 10, false).await?;
     if !matching::py_truthy(&refreshed) {
         return Ok(ScanResult::miss(None, "steam_activity"));
     }
+    // Sanitizing drops `updated_at`; keep it so a refresh that finds nothing new leaves the
+    // stored record equal and does not invalidate concurrent guarded saves.
+    let refreshed = metadata::stamp_updated(&value, refreshed);
     let has_news = !metadata::sanitize_news(&refreshed["steam_news"])?.is_empty();
     Ok(if has_news {
         ScanResult::matched(refreshed, "steam_activity")
@@ -1304,6 +1307,32 @@ mod tests {
             "https://store.steampowered.com/app/456/"
         );
         drop(storage);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn activity_refresh_that_finds_nothing_new_leaves_the_record_unchanged() {
+        let fixtures = vec![
+            steam_events(456, json!([])),
+            Fixture::failure(steam_news_url(456)),
+            steam_events(456, json!([])),
+            Fixture::failure(steam_news_url(456)),
+        ];
+        let (_directory, state) = test_state(fixtures).await;
+        set_record(
+            &state,
+            202,
+            json!({"title":"No News Game","source":"IGN","steam_appid":456,"steam_news":[],"updated_at":7}),
+        )
+        .await;
+        refresh_steam_activity_for_app(&state, &json!(202)).await.unwrap();
+        let first = state.store().await.unwrap().data()["metadata"]["202"].clone();
+        // The first refresh fills in defaults, so the record changed and carries a fresh stamp.
+        assert!(first["updated_at"].as_i64().is_some_and(|stamp| stamp > 7));
+        refresh_steam_activity_for_app(&state, &json!(202)).await.unwrap();
+        // A screenshot fill-in that snapshotted `first` must still find it unchanged.
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["202"], first);
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

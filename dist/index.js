@@ -5171,6 +5171,16 @@ const tryFetchMetadataForApp = async (appId) => {
         }
     }
 };
+/** Deep JSON equality; key order does not matter. */
+const sameRecord = (left, right) => {
+    if (left === right)
+        return true;
+    if (!left || !right || typeof left !== "object" || typeof right !== "object" || Array.isArray(left) !== Array.isArray(right)) {
+        return false;
+    }
+    const keys = Object.keys(left);
+    return keys.length === Object.keys(right).length && keys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && sameRecord(left[key], right[key]));
+};
 const tryEnrichScreenshotsForApp = async (appId) => {
     const lifecycleGeneration = metadataState.compatibilityLifecycleGeneration;
     await ensureMetadataCache();
@@ -5202,22 +5212,31 @@ const tryEnrichScreenshotsForApp = async (appId) => {
         if (!source)
             return;
         const refreshed = await fetchMetadata(source);
-        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        if (!isCompatibilityLifecycleCurrent(lifecycleGeneration) || !refreshed?.screenshots?.length)
             return;
-        // A frontend save, re-match or removal during the request wins over this fill-in.
-        if (metadataCache[String(appId)] !== full)
-            return;
-        if (refreshed?.screenshots?.length) {
-            // The backend commits only while the stored record still equals `full`, which also
-            // covers scan and refresh writes this cache has not seen yet.
-            const saved = await saveMetadataIfUnchanged(appId, { ...full, screenshots: refreshed.screenshots }, full);
-            if (!saved || !isCompatibilityLifecycleCurrent(lifecycleGeneration))
+        // The backend commits only while the stored record still equals `base`, so a save, scan
+        // or removal during the request wins. An Activity refresh can also store newer news
+        // meanwhile (a Steam-matched game gets a new timestamp each time), so retry once against
+        // the stored record while it is still the same IGN game without screenshots.
+        let base = full;
+        for (let attempt = 0; base && attempt < 2; attempt += 1) {
+            const saved = await saveMetadataIfUnchanged(appId, { ...base, screenshots: refreshed.screenshots }, base);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            if (metadataCache[String(appId)] !== full)
+            if (saved) {
+                // Content compare: the refresh stores an equal record as a new object.
+                if (!sameRecord(metadataCache[String(appId)], base))
+                    return;
+                setMetadataCacheEntry(appId, saved);
+                applyMetadata(appId);
+                notifyCompatibilityRevision();
                 return;
-            setMetadataCacheEntry(appId, saved);
-            applyMetadata(appId);
-            notifyCompatibilityRevision();
+            }
+            const stored = attempt === 0 ? await getMetadata(appId) : null;
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            base = stored && !stored.screenshots?.length && String(stored.source || "").toUpperCase() === "IGN" &&
+                (stored.source_url || String(stored.id || "")) === source ? stored : null;
         }
     }
     catch (error) {

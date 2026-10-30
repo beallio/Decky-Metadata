@@ -313,7 +313,7 @@ pub fn prepare_save(
 
 /// Sets `updated_at`, but returns the existing record unchanged when nothing else
 /// differs, so re-saving the same data skips the settings-file write.
-fn stamp_updated(existing: &Value, mut result: Value) -> Value {
+pub(crate) fn stamp_updated(existing: &Value, mut result: Value) -> Value {
     if let Some(previous) = existing.get("updated_at") {
         result["updated_at"] = previous.clone();
         if &result == existing {
