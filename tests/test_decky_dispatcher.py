@@ -5,11 +5,13 @@ import json
 import subprocess
 from pathlib import Path
 
+from scripts.deck import temp_paths
+
 ROOT = Path(__file__).parents[1]
 
 
 def invoke(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run([str(ROOT / "scripts/decky"), *args], cwd=ROOT, text=True, capture_output=True, env={**os.environ, "DECKY_TMP_ROOT": "/tmp/Decky-Metadata/test-dispatcher"})
+    return subprocess.run([str(ROOT / "scripts/decky"), *args], cwd=ROOT, text=True, capture_output=True, env={**os.environ, "DECKY_TMP_ROOT": str(temp_paths.root_path() / "test-dispatcher")})
 
 
 def test_help_pins_public_commands():

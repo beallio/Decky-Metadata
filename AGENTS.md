@@ -79,6 +79,12 @@ Never reference files that have not been confirmed through filesystem inspection
 Honor the existing `TMPDIR`. If unset, use `/var/tmp/omp-1000` and create it with
 mode `0700`. Keep generated caches and build output outside the checkout.
 
+Project scratch output lives in `$TMPDIR/Decky-Metadata`
+(`scripts/deck/temp_paths.py root`): Deck evidence, synced logs, screenshots,
+diagnostics, and the pytest cache. Create Git worktrees and dependency installs
+(`node_modules`) under `$TMPDIR/Decky-Metadata/worktrees/<branch>`. Never put
+scratch files in the Dropbox checkout or in `/tmp`.
+
 Run project commands through the wrapper so the redirections apply:
 
 ```
@@ -120,7 +126,7 @@ native build output. `dist/index.js` is the intentionally committed build artifa
 | --- | --- | --- |
 | Implement/change/refactor | `scripts/decky doctor`, then `scripts/decky verify-change [BASE] --explain` | `--device` deploys; `--allow-launch` permits a configured launch fixture |
 | Diagnose Deck/log behavior | `scripts/decky doctor --deck`, `scripts/deck/logs.sh audit --json`, `scripts/decky capture` | read-only unless the user requests changes |
-| Inspect SteamUI | `scripts/decky steamui snapshot` / `search PATTERN` | snapshots only below `/tmp/Decky-Metadata` |
+| Inspect SteamUI | `scripts/decky steamui snapshot` / `search PATTERN` | snapshots only below `$TMPDIR/Decky-Metadata` |
 | Package/send/check | `scripts/decky status --deck`, then `scripts/decky package-push` | require explicit `--build` / `--push` outside an authorized hook |
 
 Use [docs/runbooks/agent-workflow.md](docs/runbooks/agent-workflow.md) for the

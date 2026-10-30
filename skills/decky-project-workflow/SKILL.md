@@ -11,7 +11,7 @@ description: Run the repository-local Decky-Metadata workflow. Use when an agent
 
 For `change`, run `scripts/decky doctor`, follow the repository plan and TDD contract, then run `scripts/decky verify-change [BASE_REF] --explain`.
 
-For `device-investigation`, remain read-only unless the user requests changes. Start with `scripts/decky doctor --deck`, `scripts/deck/logs.sh audit --json`, and `scripts/decky capture`. Use `scripts/decky steamui snapshot|search` for versioned SteamUI evidence. Route failures to the diagnostic bundle below `/tmp/Decky-Metadata/diagnostics/`.
+For `device-investigation`, remain read-only unless the user requests changes. Start with `scripts/decky doctor --deck`, `scripts/deck/logs.sh audit --json`, and `scripts/decky capture`. Use `scripts/decky steamui snapshot|search` for versioned SteamUI evidence. Route failures to the diagnostic bundle below `$TMPDIR/Decky-Metadata/diagnostics/`.
 
 For `package-delivery`, use `scripts/decky status` before `scripts/decky package-push`. Require explicit `--build` and `--push` for their mutations. Treat local validation, package creation, delivery, and installed state as separate outcomes.
 

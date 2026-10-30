@@ -7,12 +7,10 @@ source "$(dirname -- "${BASH_SOURCE[0]}")/_lib.sh"
 displayed_appid="${1:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
 source_appid="${2:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
 expected_controller_type="${3:?usage: smoke_controller_tab_persistence.sh <displayed-appid> <source-appid> <expected-controller-type> [evidence-json]}"
-evidence="${4:-/tmp/Decky-Metadata/controller-layout-tab-preservation/tab-persistence-$(date -u +%Y%m%dT%H%M%SZ).json}"
+tmp_root="$(python3 "$DECK_DIR/temp_paths.py" root)" || fail "temporary root is invalid"
+evidence="${4:-$tmp_root/controller-layout-tab-preservation/tab-persistence-$(date -u +%Y%m%dT%H%M%SZ).json}"
 [[ "$expected_controller_type" =~ ^[0-9]+$ ]] || fail "expected type must be a non-negative integer"
-case "$evidence" in
-  /tmp/Decky-Metadata/*) ;;
-  *) fail "tab-persistence evidence must stay below /tmp/Decky-Metadata" ;;
-esac
+evidence="$(python3 "$DECK_DIR/temp_paths.py" validate "$evidence")" || fail "tab-persistence evidence must stay inside the private temporary root"
 
 probe() {
   local target="$1"

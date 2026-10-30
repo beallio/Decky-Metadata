@@ -1,6 +1,6 @@
 # Agent Workflow
 
-Use the tracked dispatcher for deterministic project and Deck operations. Generated Deck evidence stays under `/tmp/Decky-Metadata`. Keep plans and review notes in task state; do not commit them.
+Use the tracked dispatcher for deterministic project and Deck operations. Generated Deck evidence stays under `$TMPDIR/Decky-Metadata` (`scripts/deck/temp_paths.py root`). Keep plans and review notes in task state; do not commit them.
 
 ## Change
 
@@ -226,7 +226,7 @@ Both installers are non-mutating by default:
 
 ```bash
 scripts/install_hooks.sh --check
-scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
+scripts/install_project_skill.sh --dest "$TMPDIR/Decky-Metadata/skill-install-test"
 ```
 
 Use `--install` explicitly. The skill installer refuses external Git worktrees unless `--allow-external-worktree` is also supplied.
