@@ -16457,6 +16457,8 @@ const Content = () => {
         setCacheBusy(true);
         try {
             await clearMetadataCache();
+            // Clear cache takes every game off the removed list; HLTB must ask again.
+            hltbStore.reset();
             await refreshMetadataCache();
             if (games.length) {
                 void startScanMissing(games).catch((error) => {
@@ -17744,6 +17746,8 @@ const MetadataPage = () => {
                 return;
             }
             setMetadataCacheEntry(appId, saved);
+            // An explicit pick takes the game off the removed list; ask HLTB again.
+            hltbStore.forget(appId);
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             setFormMetadata(saved);
