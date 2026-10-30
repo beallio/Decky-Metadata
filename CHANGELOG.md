@@ -4,6 +4,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Security
+
+- Updated a development-only URI library to fix four security advisories.
+  The affected library is used by the build tools, not the installed plugin.
+
 ## [0.6.0] - 2026-10-25
 
 Faster plugin, Steam match picker, and removed metadata stays removed
