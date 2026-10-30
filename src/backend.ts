@@ -22,6 +22,7 @@ import {
   TrailerSettings,
   ProtonDbBadgeSettings,
   IgnTrailerResult,
+  ProtonDbTier,
 } from "./types";
 
 /** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
@@ -206,6 +207,21 @@ export const setProtonDbBadgeSettings = callable<
   [settings: ProtonDbBadgeSettings],
   ProtonDbBadgeSettings
 >("set_protondb_badge_settings");
+export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
+export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
+export type ProviderCacheSnapshot = {
+  version: 1;
+  protondb: {
+    ratings: Record<string, ProtonDbRatingRecord>;
+    name_ids: Record<string, ProtonDbNameRecord>;
+  };
+  hltb: { entries: Record<string, unknown> };
+};
+export const getProviderCache = callable<[], ProviderCacheSnapshot>("get_provider_cache");
+export const putProtonDbCache = callable<
+  [ratings: Record<string, ProtonDbRatingRecord>, nameIds: Record<string, ProtonDbNameRecord>],
+  { ok: boolean }
+>("put_protondb_cache");
 export const findIgnTrailer = callable<
   [title: string, gameUrl?: string | null],
   IgnTrailerResult | null

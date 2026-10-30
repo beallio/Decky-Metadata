@@ -187,4 +187,56 @@ describe("ProtonDbRatingCache", () => {
     await vi.advanceTimersByTimeAsync(5_000);
     expect(cache.getRating(1200)).toEqual({ tier: null, status: "error", updatedAt: null });
   });
+
+  it("shows a saved rating younger than a day without a request", () => {
+    const cache = newCache();
+    cache.seed([[570, "gold", Date.now() - 60 * 60 * 1000]]);
+    mountEnabled(cache);
+    cache.subscribeRating(570, vi.fn());
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(cache.getRating(570)).toMatchObject({ tier: "gold", status: "ready" });
+  });
+
+  it("keeps an older saved tier visible while it refreshes it once", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ tier: "silver" }), { status: 200 }));
+    const cache = newCache();
+    cache.seed([[570, "gold", Date.now() - PROTONDB_RATING_TTL_MS - 1]]);
+    mountEnabled(cache);
+    cache.subscribeRating(570, vi.fn());
+    cache.subscribeRating(570, vi.fn());
+
+    expect(cache.getRating(570)).toMatchObject({ tier: "gold", status: "loading" });
+    await flushMicrotasks();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(cache.getRating(570)).toMatchObject({ tier: "silver", status: "ready" });
+  });
+
+  it("reports successful lookups for saving, including no tier, but never failures", async () => {
+    const saved = vi.fn();
+    const cache = newCache();
+    cache.setResultListener(saved);
+    mountEnabled(cache);
+    fetchMock.mockResolvedValueOnce(new Response("{}", { status: 503 }));
+    cache.subscribeRating(10, vi.fn());
+    await flushMicrotasks();
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 404 }));
+    cache.subscribeRating(20, vi.fn());
+    await flushMicrotasks();
+
+    expect(saved.mock.calls).toEqual([[20, null, Date.now()]]);
+  });
+
+  it("does not replace a newer rating with an older saved one", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ tier: "platinum" }), { status: 200 }));
+    const cache = newCache();
+    mountEnabled(cache);
+    cache.subscribeRating(30, vi.fn());
+    cache.seed([[30, "borked", Date.now() - 1]]);
+    await flushMicrotasks();
+    cache.seed([[30, "borked", Date.now() - 1]]);
+
+    expect(cache.getRating(30)).toMatchObject({ tier: "platinum", status: "ready" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

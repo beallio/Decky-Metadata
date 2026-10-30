@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Changed
+
+- **ProtonDB badges appear right after a restart.** Ratings are now saved, so
+  badges show at once after Steam or the Deck restarts. Ratings older than a
+  day still refresh in the background.
+
 ### Fixed
 
 - Screenshots for games matched through IGN now appear the first time you open

@@ -1,6 +1,8 @@
-import { getProtonDbBadgeSettings, setProtonDbBadgeSettings } from "../backend";
+import { getProtonDbBadgeSettings, getProviderCache, setProtonDbBadgeSettings, type ProviderCacheSnapshot } from "../backend";
 import type { ProtonDbBadgeSettings } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
+import { seedProtonDbAppIdResolutions, setResolvedNameListener } from "./identity";
+import { ProtonDbCacheWriter } from "./persist";
 import { protonDbRatingCache, type ProtonDbRating, type ProtonDbRatingCache } from "./ratings";
 
 export type ProtonDbBadgeSnapshot = Readonly<{
@@ -57,6 +59,8 @@ export class ProtonDbBadgeController {
     private readonly settingsStore: ProtonDbBadgeSettingsStore = backendSettingsStore,
     private readonly ratings: ProtonDbRatingCache = protonDbRatingCache,
     private readonly conflicts: PluginConflictSource = pluginConflicts,
+    private readonly loadCache: () => Promise<ProviderCacheSnapshot> = getProviderCache,
+    private readonly writer: ProtonDbCacheWriter = new ProtonDbCacheWriter(),
   ) {
     this.snapshot = Object.freeze({
       settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
@@ -82,6 +86,17 @@ export class ProtonDbBadgeController {
     this.mounted = true;
     const lifecycle = ++this.lifecycle;
     this.ratings.mount();
+    this.ratings.setResultListener((id, tier, updatedAt) => this.writer.rating(id, tier, updatedAt));
+    setResolvedNameListener((shortcutId, name, steamId) => this.writer.name(shortcutId, name, steamId));
+    void this.loadCache().then(
+      (cache) => {
+        if (!this.isCurrent(lifecycle)) return;
+        const { ratings, name_ids: names } = cache.protondb;
+        this.ratings.seed(Object.entries(ratings).map(([id, entry]) => [Number(id), entry.tier, entry.updated_at] as const));
+        seedProtonDbAppIdResolutions(Object.entries(names).map(([id, entry]) => [Number(id), entry.name, entry.steam_appid] as const));
+      },
+      () => undefined, // Without the saved cache, ratings are fetched as before.
+    );
     this.unsubscribeConflicts = this.conflicts.subscribe(() => {
       this.publish({ conflict: this.conflicts.getConflict("protondb") });
     });
@@ -112,6 +127,9 @@ export class ProtonDbBadgeController {
     this.lifecycle += 1;
     this.unsubscribeConflicts?.();
     this.unsubscribeConflicts = undefined;
+    this.ratings.setResultListener(undefined);
+    setResolvedNameListener(undefined);
+    this.writer.flush();
     this.ratings.stop();
     this.publish({
       settingsLoaded: false,

@@ -136,6 +136,8 @@ const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
 const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
 const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
 const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
+const getProviderCache = callable("get_provider_cache");
+const putProtonDbCache = callable("put_protondb_cache");
 const findIgnTrailer = callable("find_ign_trailer");
 const evalInBigPicture = callable("eval_in_big_picture");
 
@@ -167,6 +169,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
+    getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
     getSteamMatchPreview: getSteamMatchPreview,
@@ -174,6 +177,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
+    putProtonDbCache: putProtonDbCache,
     recordUpdateInstallRequested: recordUpdateInstallRequested,
     refreshDelistedIndex: refreshDelistedIndex,
     refreshSteamActivityForApp: refreshSteamActivityForApp,
@@ -14311,8 +14315,347 @@ function startMiniAchievementsController() {
     return () => miniAchievementsController.stop();
 }
 
+const HTML_ENTITIES = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    trade: '™',
+    reg: '®',
+    copy: '©'
+};
+function unescapeHtml(value) {
+    return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
+        if (entity[0] === '#') {
+            const hex = entity[1] === 'x' || entity[1] === 'X';
+            const code = parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+            if (!Number.isFinite(code) || code < 0 || code > 0x10ffff)
+                return match;
+            try {
+                return String.fromCodePoint(code);
+            }
+            catch {
+                return match;
+            }
+        }
+        return HTML_ENTITIES[entity.toLowerCase()] ?? match;
+    });
+}
+/**
+ * Normalise a game title for comparison against Steam search results.
+ *
+ * Ported from Decky-Metadata's backend/matching.py:normalise_match_title.
+ * Drops bracketed segments, articles, edition/remaster wording and region or
+ * version tokens, then collapses everything that is not alphanumeric.
+ *
+ * Unlike the Python original, a removal that would leave the title with no
+ * letters is skipped: "Prototype" and "Prototype 2" are games, not version
+ * markers, and stripping the word leaves nothing to match on.
+ */
+const TITLE_REMOVALS = [
+    /\b(?:the|a|an)\b/g,
+    /\b(?:remaster(?:ed)?|hd|definitive|ultimate|complete|goty|edition)\b/g,
+    /\b(?:usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b/g
+];
+function normaliseMatchTitle(title) {
+    let text = unescapeHtml(String(title ?? ''))
+        .toLowerCase()
+        .replace(/[\u2122\u00ae\u00a9]/g, '')
+        .replace(/\[[^\]]+\]|\([^)]*\)/g, ' ');
+    for (const removal of TITLE_REMOVALS) {
+        const stripped = text.replace(removal, ' ');
+        if (/[a-z]/.test(stripped)) {
+            text = stripped;
+        }
+    }
+    return text
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+// Markers that identify a store entry as something other than the main game.
+// Ported from Decky-Metadata's NON_PRIMARY_STEAM_TITLE_PATTERNS.
+const NON_PRIMARY_PATTERNS = [
+    /\bdemo\b/,
+    /\bbeta\b/,
+    /\bplaytest\b/,
+    /\bprototype\b/,
+    /\bsoundtrack\b/,
+    /\bost\b/,
+    /\bseason\s+pass\b/,
+    /\bdlc\b/,
+    /\bpack\b/,
+    /\bbundle\b/,
+    /\bartbook\b/,
+    /\bart\s+book\b/,
+    /\btrailer\b/,
+    /\bdedicated\s+server\b/,
+    /\bserver\b/,
+    /\btest\b/
+];
+/**
+ * Which "not the main game" markers a title carries.
+ *
+ * normaliseMatchTitle strips words like "demo" and "beta", so a demo entry can
+ * normalise onto the base game's title. Comparing the markers of the query and
+ * of the candidate keeps that apart, while still letting a title whose real
+ * name contains a marker (Prototype, Test Drive) match itself.
+ */
+function nonPrimaryMarkers(title) {
+    const text = unescapeHtml(String(title ?? '')).toLowerCase();
+    return NON_PRIMARY_PATTERNS.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
+}
+
+const SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
+const FETCH_TIMEOUT_MS$1 = 2000;
+const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
+const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
+const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
+async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS$1) {
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+    });
+    return Promise.race([fetchPromise, timeoutPromise]);
+}
+async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
+    const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Algolia-Application-Id': ALGOLIA_APPLICATION_ID,
+            'X-Algolia-API-Key': ALGOLIA_SEARCH_KEY,
+            Origin: 'https://www.protondb.com',
+            Referer: 'https://www.protondb.com/'
+        },
+        body: JSON.stringify({
+            query: gameName,
+            facetFilters: [['appType:Game']],
+            restrictSearchableAttributes: ['name'],
+            attributesToRetrieve: ['name', 'objectID'],
+            attributesToHighlight: [],
+            attributesToSnippet: [],
+            hitsPerPage: 10
+        })
+    }));
+    if (res.status !== 200)
+        return null;
+    const hits = (await res.json())?.hits;
+    if (!Array.isArray(hits))
+        return null;
+    const match = hits.find((item) => typeof item?.name === 'string' &&
+        typeof item.objectID === 'string' &&
+        /^[1-9]\d*$/.test(item.objectID) &&
+        normaliseMatchTitle(item.name) === query &&
+        nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+    return typeof match?.objectID === 'string' ? match.objectID : null;
+}
+/**
+ * Resolve a non-Steam shortcut name to a Steam app ID.
+ *
+ * Uses the store search endpoint rather than the community autocomplete: it
+ * returns full store titles ("Assassin's Creed™: Director's Cut Edition")
+ * where the autocomplete only returns short ones ("Assassin's Creed"), so
+ * more shortcuts normalise onto a candidate. Results are pinned to English so
+ * the candidate names match what normaliseMatchTitle expects.
+ * If Steam returns no acceptable match, try ProtonDB's SteamDB title index.
+ * Transport errors do not trigger the fallback.
+ */
+async function findSteamAppIdByName(gameName) {
+    const query = normaliseMatchTitle(gameName);
+    if (!query)
+        return null;
+    const queryMarkers = new Set(nonPrimaryMarkers(gameName));
+    try {
+        const params = new URLSearchParams({
+            term: gameName,
+            cc: 'US',
+            l: 'english'
+        });
+        const res = await fetchWithTimeout(fetchNoCors(`${SEARCH_URL}?${params.toString()}`, { method: 'GET' }));
+        if (res.status === 200) {
+            const items = (await res.json())?.items;
+            if (!Array.isArray(items))
+                return null;
+            const match = items.find((item) => item?.type === 'app' &&
+                item?.name &&
+                normaliseMatchTitle(item.name) === query &&
+                nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+            if (typeof match?.id === 'number')
+                return String(match.id);
+            return await findAlgoliaAppIdByName(gameName, query, queryMarkers);
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+    return null;
+}
+
+const resolutions = new Map();
+let generation = 0;
+let resolvedNameListener;
+const resetProtonDbAppIdResolution = () => {
+    generation += 1;
+    resolutions.clear();
+};
+/** Receives only found Steam IDs; a null search result is a miss or an error and is never reported. */
+const setResolvedNameListener = (listener) => {
+    resolvedNameListener = listener;
+};
+/** Load saved name lookups; a later rename of the shortcut makes its entry unused. */
+const seedProtonDbAppIdResolutions = (entries) => {
+    for (const [shortcutAppId, name, savedId] of entries) {
+        const id = steamAppId(savedId);
+        if (id === null || !Number.isSafeInteger(shortcutAppId) || shortcutAppId <= 0 ||
+            shortcutAppId > 0xffffffff || !name || resolutions.has(shortcutAppId))
+            continue;
+        resolutions.set(shortcutAppId, { name, promise: Promise.resolve(id), id });
+    }
+};
+const steamAppId = (value) => {
+    if (typeof value === "string" && !/^\d{1,10}$/.test(value))
+        return null;
+    if (typeof value !== "string" && typeof value !== "number")
+        return null;
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
+};
+const savedProtonDbAppId = (displayedAppId) => steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
+/** Read known identity without making navigation wait for an effect or Promise. */
+const getResolvedProtonDbAppId = (displayedAppId, overview) => {
+    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff)
+        return null;
+    if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
+        !("appid" in overview) || overview.appid !== displayedAppId)
+        return null;
+    const native = getNativeOverview(displayedAppId) ?? overview;
+    if (!("appid" in native) || native.appid !== displayedAppId ||
+        !("app_type" in native) || typeof native.app_type !== "number" ||
+        !Number.isSafeInteger(native.app_type))
+        return null;
+    try {
+        if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native))
+            return displayedAppId;
+        const savedId = savedProtonDbAppId(displayedAppId);
+        if (savedId !== null)
+            return savedId;
+        if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim())
+            return null;
+        const resolution = resolutions.get(displayedAppId);
+        return resolution?.name === native.display_name ? resolution.id : undefined;
+    }
+    catch {
+        return null;
+    }
+};
+/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
+const resolveProtonDbAppId = async (displayedAppId, overview) => {
+    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
+    if (knownId !== undefined)
+        return knownId;
+    const native = (getNativeOverview(displayedAppId) ?? overview);
+    const name = native.display_name;
+    const requestedGeneration = generation;
+    try {
+        let resolution = resolutions.get(displayedAppId);
+        if (resolution?.name !== name) {
+            const promise = findSteamAppIdByName(name).then(result => {
+                if (generation !== requestedGeneration)
+                    return null;
+                const current = getNativeOverview(displayedAppId);
+                if (current && current.display_name !== name)
+                    return null;
+                const id = steamAppId(result);
+                if (resolution)
+                    resolution.id = id;
+                if (id !== null) {
+                    try {
+                        resolvedNameListener?.(displayedAppId, name, id);
+                    }
+                    catch {
+                        // Saving is best effort.
+                    }
+                }
+                return id;
+            });
+            resolution = { name, promise };
+            resolutions.set(displayedAppId, resolution);
+        }
+        const result = await resolution.promise;
+        if (generation !== requestedGeneration)
+            return null;
+        return savedProtonDbAppId(displayedAppId) ?? result;
+    }
+    catch {
+        return null;
+    }
+};
+
+/** Collects saved-cache changes and sends them to the backend at most once per delay. */
+class ProtonDbCacheWriter {
+    constructor(put = putProtonDbCache, delayMs = 1000) {
+        Object.defineProperty(this, "put", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: put
+        });
+        Object.defineProperty(this, "delayMs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: delayMs
+        });
+        Object.defineProperty(this, "ratings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "nameIds", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "timer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+    }
+    rating(steamAppId, tier, updatedAt) {
+        this.ratings[String(steamAppId)] = { tier, updated_at: updatedAt };
+        this.schedule();
+    }
+    name(shortcutAppId, name, steamAppId, resolvedAt = Date.now()) {
+        this.nameIds[String(shortcutAppId)] = { name, steam_appid: steamAppId, resolved_at: resolvedAt };
+        this.schedule();
+    }
+    flush() {
+        if (this.timer !== undefined)
+            globalThis.clearTimeout(this.timer);
+        this.timer = undefined;
+        const ratings = this.ratings;
+        const nameIds = this.nameIds;
+        if (Object.keys(ratings).length === 0 && Object.keys(nameIds).length === 0)
+            return;
+        this.ratings = {};
+        this.nameIds = {};
+        // A failed save only costs a fetch after the next restart.
+        void this.put(ratings, nameIds).catch(() => undefined);
+    }
+    schedule() {
+        if (this.timer === undefined)
+            this.timer = globalThis.setTimeout(() => this.flush(), this.delayMs);
+    }
+}
+
 const PROTONDB_RATING_TTL_MS = 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS$1 = 5000;
+const FETCH_TIMEOUT_MS = 5000;
 const RETRY_COOLDOWN_MS = 30000;
 const SUMMARY_URL = "https://www.protondb.com/api/v1/reports/summaries";
 const protonDbTiers = {
@@ -14377,6 +14720,31 @@ class ProtonDbRatingCache {
             writable: true,
             value: false
         });
+        Object.defineProperty(this, "resultListener", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+    }
+    /** Receives every successful lookup (including "no tier yet") so it can be saved. */
+    setResultListener(listener) {
+        this.resultListener = listener;
+    }
+    /** Load saved ratings; never replaces a newer or in-flight in-memory rating. */
+    seed(ratings) {
+        for (const [steamAppId, tier, updatedAt] of ratings) {
+            if (!validSteamAppId(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0)
+                continue;
+            if (tier !== null && !isProtonDbTier$1(tier))
+                continue;
+            const entry = this.getEntry(steamAppId);
+            if (entry.request || (entry.rating.updatedAt !== null && entry.rating.updatedAt >= updatedAt))
+                continue;
+            this.setRating(entry, tier, "ready", updatedAt);
+            this.clearExpiry(entry);
+            this.loadIfNeeded(steamAppId, entry);
+        }
     }
     getRating(steamAppId) {
         if (!validSteamAppId(steamAppId))
@@ -14463,7 +14831,7 @@ class ProtonDbRatingCache {
         this.clearExpiry(entry);
         const request = {
             lifecycle: this.lifecycle,
-            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS$1),
+            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
         };
         entry.request = request;
         this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
@@ -14484,6 +14852,12 @@ class ProtonDbRatingCache {
         entry.request = undefined;
         entry.retryAfter = 0;
         this.setRating(entry, tier, "ready", Date.now());
+        try {
+            this.resultListener?.(steamAppId, tier, entry.rating.updatedAt);
+        }
+        catch {
+            // Saving is best effort; the in-memory rating is already current.
+        }
         this.scheduleExpiry(steamAppId, entry);
     }
     failRequest(entry, request, _error) {
@@ -14565,7 +14939,7 @@ const copySettings = (settings) => Object.freeze({
 });
 const errorText = (error, fallback) => error instanceof Error && error.message ? error.message : fallback;
 class ProtonDbBadgeController {
-    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts) {
+    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts, loadCache = getProviderCache, writer = new ProtonDbCacheWriter()) {
         Object.defineProperty(this, "settingsStore", {
             enumerable: true,
             configurable: true,
@@ -14583,6 +14957,18 @@ class ProtonDbBadgeController {
             configurable: true,
             writable: true,
             value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "writer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: writer
         });
         Object.defineProperty(this, "listeners", {
             enumerable: true,
@@ -14636,6 +15022,15 @@ class ProtonDbBadgeController {
         this.mounted = true;
         const lifecycle = ++this.lifecycle;
         this.ratings.mount();
+        this.ratings.setResultListener((id, tier, updatedAt) => this.writer.rating(id, tier, updatedAt));
+        setResolvedNameListener((shortcutId, name, steamId) => this.writer.name(shortcutId, name, steamId));
+        void this.loadCache().then((cache) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            const { ratings, name_ids: names } = cache.protondb;
+            this.ratings.seed(Object.entries(ratings).map(([id, entry]) => [Number(id), entry.tier, entry.updated_at]));
+            seedProtonDbAppIdResolutions(Object.entries(names).map(([id, entry]) => [Number(id), entry.name, entry.steam_appid]));
+        }, () => undefined);
         this.unsubscribeConflicts = this.conflicts.subscribe(() => {
             this.publish({ conflict: this.conflicts.getConflict("protondb") });
         });
@@ -14663,6 +15058,9 @@ class ProtonDbBadgeController {
         this.lifecycle += 1;
         this.unsubscribeConflicts?.();
         this.unsubscribeConflicts = undefined;
+        this.ratings.setResultListener(undefined);
+        setResolvedNameListener(undefined);
+        this.writer.flush();
         this.ratings.stop();
         this.publish({
             settingsLoaded: false,
@@ -16830,261 +17228,6 @@ const MetadataPage = () => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
-};
-
-const HTML_ENTITIES = {
-    amp: '&',
-    lt: '<',
-    gt: '>',
-    quot: '"',
-    apos: "'",
-    nbsp: ' ',
-    trade: '™',
-    reg: '®',
-    copy: '©'
-};
-function unescapeHtml(value) {
-    return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
-        if (entity[0] === '#') {
-            const hex = entity[1] === 'x' || entity[1] === 'X';
-            const code = parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
-            if (!Number.isFinite(code) || code < 0 || code > 0x10ffff)
-                return match;
-            try {
-                return String.fromCodePoint(code);
-            }
-            catch {
-                return match;
-            }
-        }
-        return HTML_ENTITIES[entity.toLowerCase()] ?? match;
-    });
-}
-/**
- * Normalise a game title for comparison against Steam search results.
- *
- * Ported from Decky-Metadata's backend/matching.py:normalise_match_title.
- * Drops bracketed segments, articles, edition/remaster wording and region or
- * version tokens, then collapses everything that is not alphanumeric.
- *
- * Unlike the Python original, a removal that would leave the title with no
- * letters is skipped: "Prototype" and "Prototype 2" are games, not version
- * markers, and stripping the word leaves nothing to match on.
- */
-const TITLE_REMOVALS = [
-    /\b(?:the|a|an)\b/g,
-    /\b(?:remaster(?:ed)?|hd|definitive|ultimate|complete|goty|edition)\b/g,
-    /\b(?:usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b/g
-];
-function normaliseMatchTitle(title) {
-    let text = unescapeHtml(String(title ?? ''))
-        .toLowerCase()
-        .replace(/[\u2122\u00ae\u00a9]/g, '')
-        .replace(/\[[^\]]+\]|\([^)]*\)/g, ' ');
-    for (const removal of TITLE_REMOVALS) {
-        const stripped = text.replace(removal, ' ');
-        if (/[a-z]/.test(stripped)) {
-            text = stripped;
-        }
-    }
-    return text
-        .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-// Markers that identify a store entry as something other than the main game.
-// Ported from Decky-Metadata's NON_PRIMARY_STEAM_TITLE_PATTERNS.
-const NON_PRIMARY_PATTERNS = [
-    /\bdemo\b/,
-    /\bbeta\b/,
-    /\bplaytest\b/,
-    /\bprototype\b/,
-    /\bsoundtrack\b/,
-    /\bost\b/,
-    /\bseason\s+pass\b/,
-    /\bdlc\b/,
-    /\bpack\b/,
-    /\bbundle\b/,
-    /\bartbook\b/,
-    /\bart\s+book\b/,
-    /\btrailer\b/,
-    /\bdedicated\s+server\b/,
-    /\bserver\b/,
-    /\btest\b/
-];
-/**
- * Which "not the main game" markers a title carries.
- *
- * normaliseMatchTitle strips words like "demo" and "beta", so a demo entry can
- * normalise onto the base game's title. Comparing the markers of the query and
- * of the candidate keeps that apart, while still letting a title whose real
- * name contains a marker (Prototype, Test Drive) match itself.
- */
-function nonPrimaryMarkers(title) {
-    const text = unescapeHtml(String(title ?? '')).toLowerCase();
-    return NON_PRIMARY_PATTERNS.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
-}
-
-const SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
-const FETCH_TIMEOUT_MS = 2000;
-const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
-const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
-const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
-async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS) {
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
-    });
-    return Promise.race([fetchPromise, timeoutPromise]);
-}
-async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
-    const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Algolia-Application-Id': ALGOLIA_APPLICATION_ID,
-            'X-Algolia-API-Key': ALGOLIA_SEARCH_KEY,
-            Origin: 'https://www.protondb.com',
-            Referer: 'https://www.protondb.com/'
-        },
-        body: JSON.stringify({
-            query: gameName,
-            facetFilters: [['appType:Game']],
-            restrictSearchableAttributes: ['name'],
-            attributesToRetrieve: ['name', 'objectID'],
-            attributesToHighlight: [],
-            attributesToSnippet: [],
-            hitsPerPage: 10
-        })
-    }));
-    if (res.status !== 200)
-        return null;
-    const hits = (await res.json())?.hits;
-    if (!Array.isArray(hits))
-        return null;
-    const match = hits.find((item) => typeof item?.name === 'string' &&
-        typeof item.objectID === 'string' &&
-        /^[1-9]\d*$/.test(item.objectID) &&
-        normaliseMatchTitle(item.name) === query &&
-        nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
-    return typeof match?.objectID === 'string' ? match.objectID : null;
-}
-/**
- * Resolve a non-Steam shortcut name to a Steam app ID.
- *
- * Uses the store search endpoint rather than the community autocomplete: it
- * returns full store titles ("Assassin's Creed™: Director's Cut Edition")
- * where the autocomplete only returns short ones ("Assassin's Creed"), so
- * more shortcuts normalise onto a candidate. Results are pinned to English so
- * the candidate names match what normaliseMatchTitle expects.
- * If Steam returns no acceptable match, try ProtonDB's SteamDB title index.
- * Transport errors do not trigger the fallback.
- */
-async function findSteamAppIdByName(gameName) {
-    const query = normaliseMatchTitle(gameName);
-    if (!query)
-        return null;
-    const queryMarkers = new Set(nonPrimaryMarkers(gameName));
-    try {
-        const params = new URLSearchParams({
-            term: gameName,
-            cc: 'US',
-            l: 'english'
-        });
-        const res = await fetchWithTimeout(fetchNoCors(`${SEARCH_URL}?${params.toString()}`, { method: 'GET' }));
-        if (res.status === 200) {
-            const items = (await res.json())?.items;
-            if (!Array.isArray(items))
-                return null;
-            const match = items.find((item) => item?.type === 'app' &&
-                item?.name &&
-                normaliseMatchTitle(item.name) === query &&
-                nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
-            if (typeof match?.id === 'number')
-                return String(match.id);
-            return await findAlgoliaAppIdByName(gameName, query, queryMarkers);
-        }
-    }
-    catch (error) {
-        console.error(error);
-    }
-    return null;
-}
-
-const resolutions = new Map();
-let generation = 0;
-const resetProtonDbAppIdResolution = () => {
-    generation += 1;
-    resolutions.clear();
-};
-const steamAppId = (value) => {
-    if (typeof value === "string" && !/^\d{1,10}$/.test(value))
-        return null;
-    if (typeof value !== "string" && typeof value !== "number")
-        return null;
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
-};
-const savedProtonDbAppId = (displayedAppId) => steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
-/** Read known identity without making navigation wait for an effect or Promise. */
-const getResolvedProtonDbAppId = (displayedAppId, overview) => {
-    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff)
-        return null;
-    if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
-        !("appid" in overview) || overview.appid !== displayedAppId)
-        return null;
-    const native = getNativeOverview(displayedAppId) ?? overview;
-    if (!("appid" in native) || native.appid !== displayedAppId ||
-        !("app_type" in native) || typeof native.app_type !== "number" ||
-        !Number.isSafeInteger(native.app_type))
-        return null;
-    try {
-        if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native))
-            return displayedAppId;
-        const savedId = savedProtonDbAppId(displayedAppId);
-        if (savedId !== null)
-            return savedId;
-        if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim())
-            return null;
-        const resolution = resolutions.get(displayedAppId);
-        return resolution?.name === native.display_name ? resolution.id : undefined;
-    }
-    catch {
-        return null;
-    }
-};
-/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
-const resolveProtonDbAppId = async (displayedAppId, overview) => {
-    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
-    if (knownId !== undefined)
-        return knownId;
-    const native = (getNativeOverview(displayedAppId) ?? overview);
-    const name = native.display_name;
-    const requestedGeneration = generation;
-    try {
-        let resolution = resolutions.get(displayedAppId);
-        if (resolution?.name !== name) {
-            const promise = findSteamAppIdByName(name).then(result => {
-                if (generation !== requestedGeneration)
-                    return null;
-                const current = getNativeOverview(displayedAppId);
-                if (current && current.display_name !== name)
-                    return null;
-                const id = steamAppId(result);
-                if (resolution)
-                    resolution.id = id;
-                return id;
-            });
-            resolution = { name, promise };
-            resolutions.set(displayedAppId, resolution);
-        }
-        const result = await resolution.promise;
-        if (generation !== requestedGeneration)
-            return null;
-        return savedProtonDbAppId(displayedAppId) ?? result;
-    }
-    catch {
-        return null;
-    }
 };
 
 const protonDbCoverSurface = (path) => {

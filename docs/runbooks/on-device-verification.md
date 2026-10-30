@@ -550,6 +550,29 @@ marker and let CI's build of another commit replace the build under test. Use a
 published release for development-prerelease testing, and use the stable handoff
 to leave a local build.
 
+## Performance checks
+
+Compare a baseline ZIP and a candidate ZIP on the same device. `deploy.sh` copies
+only the frontend, so install each complete ZIP through Decky Loader and check
+with `scripts/decky status --deck` that the installed frontend, backend, shim
+and manifest hashes match that ZIP before each run.
+
+- `cdp.py eval SharedJSContext @scripts/deck/js/perf_gameview.js --var MODE=gameview --var APPID=<appid>` —
+  opens the game page and reports, from the navigation call, when the native
+  details container, the HLTB row, the ProtonDB game-page button and the Play
+  section appear (`afterInnerContainerMs`), long tasks over 50 ms, and Loader
+  HTTP proxy requests (`fetchNoCors`) in a 3 s window (`--var WINDOW_MS=` to change).
+- `cdp.py eval SharedJSContext @scripts/deck/js/perf_gameview.js --var MODE=rpc` —
+  times `get_metadata` ×1,000, `get_all_metadata` ×200 and `get_provider_cache`
+  (`--var RPC_REPEAT=`), and reports the saved cache sizes.
+- `scripts/deck/perf/seed_provider_cache.py --entries 20000 [--expired] --output provider_cache.json` —
+  writes a valid synthetic cache. Stop the Loader, copy it to the plugin
+  settings directory (`/home/deck/homebrew/settings/Decky-Metadata/`), then
+  start the Loader. Back up the real file first and restore it afterwards.
+
+Run five measured runs per build after one warm-up run. Keep raw output under
+`$(./run.sh python3 scripts/deck/temp_paths.py root)/perf/`, not in the repository.
+
 ## Debugging beyond the suite
 
 - `cdp.py eval SharedJSContext @scripts/deck/js/state.js` — device state.
