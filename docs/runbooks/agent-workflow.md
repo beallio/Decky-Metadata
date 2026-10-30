@@ -1,6 +1,6 @@
 # Agent Workflow
 
-Use the tracked dispatcher for deterministic project and Deck operations. Generated Deck evidence stays under `/tmp/Decky-Metadata`; orchestration plans and reviews use private run state.
+Use the tracked dispatcher for deterministic project and Deck operations. Generated Deck evidence stays under `$TMPDIR/Decky-Metadata` (`scripts/deck/temp_paths.py root`). Keep plans and review notes in task state; do not commit them.
 
 ## Change
 
@@ -9,29 +9,7 @@ scripts/decky doctor
 scripts/decky verify-change dev --explain
 ```
 
-The second command runs local gates and classifies changed paths. A reported `DEFERRED` status names required Deck checks without mutating the device. Only an authorized modifying run may add `--device`; add `--allow-launch` only when launching the configured safe fixture is also authorized. Follow the existing plan/review/finalize flow through `scripts/orchestration`. Promotion from `dev` to `main` remains a human gate.
-
-## Private orchestration workflow
-
-Run `scripts/orchestration/new-plan SLUG` and edit the private plan at the path
-it returns. Validate with `scripts/orchestration/validate-plan SLUG`, not a plan
-filename. Do not commit generated plans, review notes, or session logs.
-
-Before reviewing a finished implementation, capture
-`scripts/orchestration/status SLUG --json`. Require a valid finished revision
-and retain that snapshot's `run_id`, `round`, `plan_version`, and `head` as
-`RUN_ID`, `ROUND`, `PLAN_VERSION`, and `HEAD_SHA`. Review that exact revision and
-plan; submit the findings through stdin using those captured values:
-
-```bash
-scripts/orchestration/submit-review SLUG CHANGES_REQUESTED \
-  --run-id "$RUN_ID" --round "$ROUND" \
-  --plan-version "$PLAN_VERSION" --head "$HEAD_SHA" < "$REVIEW_FILE"
-```
-
-`REVIEW_FILE` is a private findings file, not a committed review document.
-Use `APPROVED` only when authorized. If the target changes during review,
-review the new target rather than substituting fresh identity values for old findings.
+The second command runs local gates (`scripts/quality-gates`) and classifies changed paths. The base ref defaults to `dev`. A reported `DEFERRED` status names required Deck checks without mutating the device. Only an authorized modifying run may add `--device`; add `--allow-launch` only when launching the configured safe fixture is also authorized. Promotion from `dev` to `main` remains a human gate.
 
 ## Device investigation
 
@@ -248,7 +226,7 @@ Both installers are non-mutating by default:
 
 ```bash
 scripts/install_hooks.sh --check
-scripts/install_project_skill.sh --dest /tmp/Decky-Metadata/skill-install-test
+scripts/install_project_skill.sh --dest "$TMPDIR/Decky-Metadata/skill-install-test"
 ```
 
 Use `--install` explicitly. The skill installer refuses external Git worktrees unless `--allow-external-worktree` is also supplied.
@@ -260,8 +238,7 @@ check or bypass the external-worktree opt-in.
 ## Documentation status
 
 [Compatibility behavior](../specs/compatibility-status.md) and this runbook are
-current guidance. The retained [research proposals](../plans/) and historical
-runbook are reference material, not active execution plans or required process
-records. Their retention does not require restoring deleted plans, reviews, or
-session logs. Do not execute historical setup or polling commands.
+current guidance. The retained [research proposals](../plans/) are reference
+material, not active execution plans or required process records. Their
+retention does not require restoring deleted plans, reviews, or session logs.
 Revalidate research proposals against current code before scheduling work.

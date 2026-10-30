@@ -44,9 +44,7 @@ case "$cmd" in
       shift
     done
     if ((allow_launch && !device)); then invalid "--allow-launch requires --device"; fi
-    if [[ -z "$base" ]]; then
-      base="$(bash -c 'source orchestration.conf; [[ -f orchestration.conf.local ]] && source orchestration.conf.local; printf %s "${ORCH_BASE_BRANCH:-main}"')"
-    fi
+    [[ -n "$base" ]] || base=dev
     merge_base="$(git merge-base "$base" HEAD 2>/dev/null)" || { echo "verify-change: cannot resolve merge base for $base" >&2; exit 1; }
     changed_paths="$(git diff --name-only "$merge_base" && git ls-files --others --exclude-standard)"
     mapfile -t paths < <(printf '%s\n' "$changed_paths" | LC_ALL=C sort -u)
@@ -80,7 +78,7 @@ case "$cmd" in
     printf 'CLASSIFICATION %s\n' "$class"
     printf 'CHECKS %s\n' "${checks[*]}"
     ((explain)) && printf 'BASE_REF %s\n' "$base"
-    scripts/orchestration-hooks/quality-gates
+    scripts/quality-gates
     if [[ "$class" == device ]]; then
       if ((!device)); then
         echo "STATUS DEFERRED"

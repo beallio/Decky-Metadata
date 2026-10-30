@@ -17,7 +17,7 @@ cd "$repo_root" || exit 0
 
 branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
 
-# Skip on feature/orchestration branches so in-progress rounds don't spam
+# Skip on feature branches so in-progress work doesn't spam
 # packages/pushes. Set DECKY_POST_COMMIT_ALL=1 to package on any branch.
 if [[ "${DECKY_POST_COMMIT_ALL:-0}" != "1" && "$branch" != "dev" && "$branch" != "main" ]]; then
   echo "post-commit: branch '$branch' is not dev/main; skipping package (DECKY_POST_COMMIT_ALL=1 to force)."

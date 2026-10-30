@@ -137,8 +137,7 @@ def test_local_doctor_accepts_native_runtime_without_python_backend(
         "scripts/deck/cdp.py",
         "scripts/deck/tunnel.sh",
         "scripts/deck/deploy.sh",
-        "scripts/orchestration-hooks/quality-gates",
-        "scripts/orchestration-hooks/finalize-release",
+        "scripts/quality-gates",
     ):
         tool = root / relative
         tool.parent.mkdir(parents=True, exist_ok=True)

@@ -292,7 +292,7 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    and confirm the selector is unavailable but keeps its value through reload.
    Restore the captured scope and fixtures.
 
-Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
+Store screenshots and diagnostics below `$TMPDIR/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with
 separate current approval. Restore the original setting, records, shortcuts,
 and debugger tunnel before recording results.
@@ -308,7 +308,7 @@ reload. A trap restores the captured native name through Steam's API if an
 assertion after arming cleanup fails, verifies the exact original name and
 `sort_as`, and reports an explicit cleanup failure if it cannot restore them.
 The command stores only app IDs,
-booleans, timestamps, and SHA-256 name hashes below `/tmp/Decky-Metadata`.
+booleans, timestamps, and SHA-256 name hashes below `$TMPDIR/Decky-Metadata`.
 
 This smoke changes one real shortcut briefly. Get explicit approval for the
 current device and fixture before running it. Do not add it to `run_all.sh`.
@@ -337,7 +337,7 @@ preflight, unavailable and delayed editor/modal controls, delayed native observa
 cleanup request. The emergency cleanup helper calls Steam through its Apps
 receiver and preserves the exact captured name, including edge whitespace; no
 fixed-error mode is accepted as smoke evidence. After a successful
-live run, capture the editor under `/tmp/Decky-Metadata/` and use
+live run, capture the editor under `$TMPDIR/Decky-Metadata/` and use
 `gpfocus_dump.js`, `focus_order.js`, and D-pad input to check initial focus,
 visual order, modal cancellation, and focus return to the launching control.
 
@@ -353,20 +353,20 @@ corrected bundle, then run the identity smoke:
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh --capture-artwork-files \
   2155012430 \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/deploy.sh
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh \
   2155012430 55150 library-home true \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home \
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json" \
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home" \
   "$SIDEBAR_LABEL_HASH"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/screenshot.sh \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
@@ -424,12 +424,12 @@ For the verified Space Marine fixtures, deploy first and use separate CDP ports:
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  3213262460 55150 102 /tmp/Decky-Metadata/controller-layout-tab-preservation/legos.json
+  3213262460 55150 102 "$TMPDIR/Decky-Metadata/controller-layout-tab-preservation/legos.json"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  2155012430 55150 4 /tmp/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json
+  2155012430 55150 4 "$TMPDIR/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json"
 ```
 
 It fails when Community is not selected before and after the direct query, the
