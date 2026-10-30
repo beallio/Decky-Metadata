@@ -5,8 +5,7 @@ Protocol Version: 2
 
 This document is the project-local operating contract for agents working in this
 directory or its subdirectories. It adapts the universal scripting standards from
-`project_template` to this repository's actual stack, and it wires in the
-`agent-orchestration` plan → implement → review → finalize engine.
+`project_template` to this repository's actual stack.
 
 Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gaming Mode):
 
@@ -19,7 +18,7 @@ Decky-Metadata is a **Decky Loader plugin** for SteamOS / Steam Deck (Steam Gami
 Python development tools and their pytest tests remain. Rust behavior tests run
 through locked Cargo commands (`.protocol: TDD_REQUIRED=true`).
 The quality gate covers type checking, build, frontend tests, and backend checks.
-It is defined in `scripts/orchestration-hooks/quality-gates`.
+It is defined in `scripts/quality-gates`.
 
 ---
 
@@ -67,9 +66,7 @@ main.py                           # pinned upstream-Loader Python transport shim
 backend-rust/                     # Cargo manifest/lock, Rust backend and diagnostics
 plugin.json                       # Decky plugin manifest
 scripts/check_tdd.sh              # pre-commit sanity check
-scripts/orchestration            # symlink -> agent-orchestration engine
-scripts/orchestration-hooks/      # project quality-gates + finalize-release
-orchestration.conf                # orchestration engine config (committed)
+scripts/quality-gates             # project quality gate (Section 6)
 docs/specs/                       # durable behavior/interface specs
 ```
 
@@ -137,9 +134,7 @@ Lifecycle for a modifying task:
 ANALYZE → PLAN → IMPLEMENT → VALIDATE → COMMIT → DOCUMENT
 ```
 
-- **PLAN:** keep non-trivial native plans in task state. For an orchestration run,
-  edit the private path returned by `scripts/orchestration/new-plan <slug> <title>`
-  and validate it with `scripts/orchestration/validate-plan <slug>`.
+- **PLAN:** keep non-trivial plans in task state. Do not commit plans.
 - **VALIDATE:** run the quality gate (Section 6) and confirm it passes.
 - **COMMIT:** Conventional Commits, on a feature branch (Section 7).
 - **DOCUMENT:** update maintained product documentation when behavior or usage
@@ -155,7 +150,7 @@ findings.
 Before any commit, the change must pass the project quality gate:
 
 ```
-./scripts/orchestration-hooks/quality-gates
+./scripts/quality-gates
 ```
 
 which runs:
@@ -222,7 +217,7 @@ Install the script as **both** hooks, each execing it (same pattern as
 
 - `.git/hooks/post-commit` — fires on direct `git commit` (e.g. feature-branch work).
 - `.git/hooks/post-merge` — fires on `git merge` / `git pull`. This one is
-  required for the orchestration flow: `dev` is advanced only by `git merge --no-ff`,
+  required because `dev` is advanced only by `git merge --no-ff`,
   and **git merge fires `post-merge`, not `post-commit`**, so without it the auto
   build/package/push never runs when work lands on `dev`.
 
@@ -348,29 +343,15 @@ are re-captured so GitHub's image proxy serves the updated images.
 
 ---
 
-# 8. Agent Orchestration (plan → implement → review → finalize)
+# 8. Skills
 
-This repo uses `scripts/orchestration` and the effective settings from
-`orchestration.conf` plus `orchestration.conf.local`. Active plans and recovery data
-stay in private Git metadata by default. Project caches still use `/tmp/Decky-Metadata`.
+The **`decky-project-workflow`** project skill routes change, device-investigation,
+and package-delivery work through `scripts/decky` (Section 5).
 
-Two skills drive it:
-
-- **`orchestration-plan-author`** creates and validates a private local plan, then
-  stops. It does not commit a plan or start implementation.
-- **`/orchestrated-implementation`** explicitly launches an authorized implementer,
-  submits review findings through stdin with the captured run, round, plan version,
-  and completed revision, and integrates the feature only after approval.
-
-The companion **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
+The **`decky-release-notes`** project skill drafts `CHANGELOG.md` notes
 and can perform the full local stable cut required by §7. Its Mode B stops before
 the public push by default and publishes only with explicit per-invocation
 authorization.
-
-Run `scripts/orchestration/run-quality-gates` before marking a round complete.
-`finalize` checks the approved target and invokes the release hook unless local-only
-mode disables it. Base-to-`main` promotion remains a human gate. See the shared
-engine's `USAGE.md` for the conversational workflow.
 
 ---
 

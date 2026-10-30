@@ -50,7 +50,7 @@ def _fake_change_repo(tmp_path: Path, changed_paths: list[str]) -> tuple[dict[st
     fake_root = tmp_path / "repo"
     fake_bin = tmp_path / "bin"
     log = tmp_path / "actions.log"
-    (fake_root / "scripts/orchestration-hooks").mkdir(parents=True)
+    (fake_root / "scripts").mkdir(parents=True)
     (fake_root / "scripts/deck/verify").mkdir(parents=True)
     fake_bin.mkdir()
     git = fake_bin / "git"
@@ -66,7 +66,7 @@ def _fake_change_repo(tmp_path: Path, changed_paths: list[str]) -> tuple[dict[st
     )
     git.chmod(0o755)
     for relative, label in (
-        ("scripts/orchestration-hooks/quality-gates", "quality"),
+        ("scripts/quality-gates", "quality"),
         ("scripts/deck/deploy.sh", "deploy"),
         ("scripts/deck/verify/run_all.sh", "run-all $*"),
         ("scripts/deck/capture.sh", "capture"),

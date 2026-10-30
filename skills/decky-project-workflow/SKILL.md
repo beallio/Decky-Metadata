@@ -1,6 +1,6 @@
 ---
 name: decky-project-workflow
-description: Run the repository-local Decky-Metadata workflow. Use when an agent is asked to implement, change, or refactor this repository; diagnose live Steam Deck behavior or logs; verify SteamUI behavior; package, send, or check a build; or continue a Decky-Metadata orchestration workflow.
+description: Run the repository-local Decky-Metadata workflow. Use when an agent is asked to implement, change, or refactor this repository; diagnose live Steam Deck behavior or logs; verify SteamUI behavior; or package, send, or check a build.
 ---
 
 # Decky Project Workflow
@@ -9,7 +9,7 @@ description: Run the repository-local Decky-Metadata workflow. Use when an agent
 2. Choose exactly one starting mode: `change`, `device-investigation`, or `package-delivery`. Allow an implementation to progress through later modes after local gates pass.
 3. Use `scripts/decky` for project checks and dispatch. Do not recreate behavior already provided under `scripts/deck/`.
 
-For `change`, run `scripts/decky doctor`, follow the repository plan and TDD contract, then run `scripts/decky verify-change [BASE_REF] --explain`. Delegate plan, implement, review, and finalize lifecycle state to `orchestration-plan-author`, `orchestrated-implementation`, and `scripts/orchestration`; never replace or modify that lifecycle.
+For `change`, run `scripts/decky doctor`, follow the repository plan and TDD contract, then run `scripts/decky verify-change [BASE_REF] --explain`.
 
 For `device-investigation`, remain read-only unless the user requests changes. Start with `scripts/decky doctor --deck`, `scripts/deck/logs.sh audit --json`, and `scripts/decky capture`. Use `scripts/decky steamui snapshot|search` for versioned SteamUI evidence. Route failures to the diagnostic bundle below `/tmp/Decky-Metadata/diagnostics/`.
 

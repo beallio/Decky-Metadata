@@ -56,7 +56,7 @@ if [[ "$(git branch --show-current)" != "main" ]]; then
 fi
 
 python3 scripts/changelog.py check "$version"
-scripts/orchestration/run-quality-gates
+scripts/quality-gates
 scripts/set_release_version.py "$version"
 git add package.json plugin.json backend-rust/Cargo.toml backend-rust/Cargo.lock
 if ! git diff --cached --quiet; then

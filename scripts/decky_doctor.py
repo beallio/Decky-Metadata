@@ -153,23 +153,11 @@ def archive_metadata(path: Path) -> dict[str, object]:
     return result
 
 
-def effective_base(root: Path) -> str:
-    base = "main"
-    for name in ("orchestration.conf", "orchestration.conf.local"):
-        path = root / name
-        if not path.exists():
-            continue
-        for line in path.read_text().splitlines():
-            if line.startswith("ORCH_BASE_BRANCH="):
-                base = line.split("=", 1)[1].strip().strip("\"'")
-    return base
-
-
 def local_checks(root: Path) -> list[dict[str, object]]:
     checks: list[dict[str, object]] = []
     branch = run("git", "branch", "--show-current", cwd=root).stdout.strip()
     status = run("git", "status", "--porcelain", "--untracked-files=all", cwd=root).stdout.splitlines()
-    checks.append(check("repository", "PASS", "Git repository located", root=str(root), branch=branch, base=effective_base(root)))
+    checks.append(check("repository", "PASS", "Git repository located", root=str(root), branch=branch, base="dev"))
     checks.append(check("working-tree", "WARN" if status else "PASS", "Working tree has changes" if status else "Working tree is clean", entries=status))
     required = ["git", "node", "npm", "python3", "uv", "cargo", "rustc"]
     missing = [name for name in required if shutil.which(name) is None]
@@ -262,7 +250,7 @@ def local_checks(root: Path) -> list[dict[str, object]]:
         else "Local package is absent or stale"
     )
     checks.append(check("local-package", package_status, package_summary, head=head, **archive))
-    executables = ["scripts/deck/cdp.py", "scripts/deck/tunnel.sh", "scripts/deck/deploy.sh", "scripts/orchestration-hooks/quality-gates", "scripts/orchestration-hooks/finalize-release"]
+    executables = ["scripts/deck/cdp.py", "scripts/deck/tunnel.sh", "scripts/deck/deploy.sh", "scripts/quality-gates"]
     bad = [name for name in executables if not (root / name).is_file() or not os.access(root / name, os.X_OK)]
     checks.append(check("project-tools", "FAIL" if bad else "PASS", "Tracked project tools checked", invalid=bad))
     return checks
