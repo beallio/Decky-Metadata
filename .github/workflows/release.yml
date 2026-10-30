@@ -50,6 +50,8 @@ jobs:
       - name: Package selected release channel
         id: package
         shell: bash
+        env:
+          DECKY_PACKAGE_DIR: ${{ github.workspace }}
         run: |
           set -euo pipefail
           short_hash="${GITHUB_SHA::7}"

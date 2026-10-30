@@ -81,9 +81,12 @@ mode `0700`. Keep generated caches and build output outside the checkout.
 
 Project scratch output lives in `$TMPDIR/Decky-Metadata`
 (`scripts/deck/temp_paths.py root`): Deck evidence, synced logs, screenshots,
-diagnostics, and the pytest cache. Create Git worktrees and dependency installs
-(`node_modules`) under `$TMPDIR/Decky-Metadata/worktrees/<branch>`. Never put
-scratch files in the Dropbox checkout or in `/tmp`.
+diagnostics, the pytest cache, and the local plugin package
+(`package/Decky-Metadata.zip` plus release sidecars). CI release workflows set
+`DECKY_PACKAGE_DIR` to the workspace instead. Create Git worktrees and
+dependency installs (`node_modules`) under
+`$TMPDIR/Decky-Metadata/worktrees/<branch>`. Never put scratch files in the
+Dropbox checkout or in `/tmp`.
 
 Run project commands through the wrapper so the redirections apply:
 
@@ -212,7 +215,8 @@ these checks.
 
 `scripts/post_commit.sh` is an optional build-package-push hook that builds +
 packages the plugin (`npm run package`, which stamps the short git hash into the
-plugin version) and `scp`s the fixed-name `Decky-Metadata.zip` to the Steam Deck
+plugin version) and `scp`s the fixed-name `Decky-Metadata.zip` (built in
+`$TMPDIR/Decky-Metadata/package/`) to the Steam Deck
 for the Developer-Mode sideload loop. It runs only on `dev`/`main` by default (set
 `DECKY_POST_COMMIT_ALL=1` to force any branch), skips the push when the Deck is
 unreachable, and never blocks a commit. Config: `DECKY_DECK_HOST` (default `steamdeck`),

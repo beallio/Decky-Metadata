@@ -69,7 +69,7 @@ git tag -a "$tag" -m "Release $tag"
 
 cat <<EOF
 
-Prepared $tag locally on main and built Decky-Metadata.zip.
+Prepared $tag locally on main and built the package shown above.
 Review the tag, package, and any version commit. When ready, publish with:
 
   git push origin main

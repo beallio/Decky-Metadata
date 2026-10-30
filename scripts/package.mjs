@@ -55,9 +55,17 @@ function main() {
     path.join(stagingBase, "decky-metadata-package-"),
   );
   const stagingPlugin = path.join(stagingRoot, PLUGIN_FOLDER_NAME);
-  const zipPath = path.join(repoRoot, "Decky-Metadata.zip");
+  // Keep local packages out of the (Dropbox-synced) checkout; CI sets DECKY_PACKAGE_DIR.
+  const outputDir =
+    process.env.DECKY_PACKAGE_DIR?.trim() ||
+    path.join(
+      process.env.DECKY_TMP_ROOT?.trim() || path.join(stagingBase, "Decky-Metadata"),
+      "package",
+    );
+  fs.mkdirSync(outputDir, { recursive: true });
+  const zipPath = path.join(outputDir, "Decky-Metadata.zip");
   const zipTempPath = path.join(
-    repoRoot,
+    outputDir,
     `.Decky-Metadata.zip.${process.pid}.${randomUUID()}.tmp`,
   );
 
@@ -118,7 +126,7 @@ function main() {
     console.log(zipPath);
     if (releaseOptions) {
       emitReleaseMetadata({
-        repoRoot,
+        outputDir,
         zipPath,
         version,
         packageJson,
@@ -151,7 +159,7 @@ function resolveReleaseMetadataOptions(version) {
 
 // The checksum is for the complete archive, as required by Decky update discovery.
 function emitReleaseMetadata({
-  repoRoot,
+  outputDir,
   zipPath,
   version,
   packageJson,
@@ -175,8 +183,8 @@ function emitReleaseMetadata({
     generatedAt: new Date().toISOString(),
   };
 
-  const manifestPath = path.join(repoRoot, `${PLUGIN_FOLDER_NAME}-${tag}.manifest.json`);
-  const shaPath = path.join(repoRoot, `${PLUGIN_FOLDER_NAME}-${tag}.zip.sha256`);
+  const manifestPath = path.join(outputDir, `${PLUGIN_FOLDER_NAME}-${tag}.manifest.json`);
+  const shaPath = path.join(outputDir, `${PLUGIN_FOLDER_NAME}-${tag}.zip.sha256`);
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   // `sha256sum -c` format: "<hash>  <filename>"; run from the zip's directory.
   fs.writeFileSync(shaPath, `${sha256}  ${assetName}\n`);

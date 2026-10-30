@@ -14,6 +14,11 @@ import sys
 import zipfile
 from pathlib import Path
 
+try:
+    from scripts.deck import temp_paths
+except ImportError:
+    from deck import temp_paths  # type: ignore[no-redef]
+
 SCHEMA_VERSION = 1
 
 LEGACY_HOOK_BODIES = {
@@ -230,7 +235,8 @@ def local_checks(root: Path) -> list[dict[str, object]]:
     pycache = sorted(str(path.relative_to(root)) for path in root.rglob("__pycache__") if ".git" not in path.parts)
     checks.append(check("cache-policy", "WARN" if pycache else "PASS" if cache_ok else "FAIL", "Cache policy checked", configured=cache_ok, repository_pycache=pycache))
     checks.append(check("node-modules-location", "WARN" if (root / "node_modules").exists() else "PASS", "Repository-local node_modules is intentionally retained"))
-    archive = archive_metadata(root / "Decky-Metadata.zip")
+    package_dir = Path(os.environ.get("DECKY_PACKAGE_DIR") or temp_paths.root_path() / "package")
+    archive = archive_metadata(package_dir / "Decky-Metadata.zip")
     head = run("git", "rev-parse", "--short", "HEAD", cwd=root).stdout.strip()
     native = archive.get("native_backend", {})
     broken = bool(archive.get("error")) or (

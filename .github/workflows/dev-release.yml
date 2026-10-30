@@ -98,6 +98,8 @@ jobs:
 
       - name: Package dev prerelease
         shell: bash
+        env:
+          DECKY_PACKAGE_DIR: ${{ github.workspace }}
         run: |
           set -euo pipefail
           ./run.sh node scripts/package.mjs --release \

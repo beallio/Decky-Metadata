@@ -7,7 +7,7 @@ cd "$repo_root"
 
 if [[ -f package.json ]]; then
   if [[ ! -d node_modules ]]; then
-    if command -v pnpm >/dev/null 2>&1; then
+    if [[ -f pnpm-lock.yaml ]] && command -v pnpm >/dev/null 2>&1; then
       ./run.sh pnpm install --frozen-lockfile
     else
       ./run.sh npm ci

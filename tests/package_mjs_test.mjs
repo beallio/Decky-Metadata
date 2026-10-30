@@ -140,8 +140,13 @@ test("packages the native allowlist with Unix modes and whole-ZIP identity", () 
       fs.readFileSync(path.join(sourceRoot, "package.json"), "utf8"),
     ).version,
   );
+  assert.equal(
+    fs.existsSync(path.join(fixture.repoRoot, "Decky-Metadata.zip")),
+    false,
+    "local packages stay out of the checkout",
+  );
   const manifestPath = path.join(
-    fixture.repoRoot,
+    path.dirname(fixture.zipPath),
     `Decky-Metadata-v${version}.manifest.json`,
   );
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
@@ -152,7 +157,7 @@ test("packages the native allowlist with Unix modes and whole-ZIP identity", () 
   assert.equal(manifest.sha256, digest);
   assert.equal(
     fs.readFileSync(
-      path.join(fixture.repoRoot, `Decky-Metadata-v${version}.zip.sha256`),
+      path.join(path.dirname(fixture.zipPath), `Decky-Metadata-v${version}.zip.sha256`),
       "utf8",
     ),
     `${digest}  Decky-Metadata.zip\n`,
@@ -276,6 +281,8 @@ function makeFixture({ cargoMode = "valid" } = {}) {
     ...process.env,
     PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
     TMPDIR: cacheRoot,
+    DECKY_PACKAGE_DIR: "",
+    DECKY_TMP_ROOT: "",
     CARGO_HOME: cargoHome,
     CARGO_TARGET_DIR: targetDir,
     FAKE_CARGO_MODE: cargoMode,
@@ -285,12 +292,9 @@ function makeFixture({ cargoMode = "valid" } = {}) {
     FAKE_ELF_NEEDED: neededElf.toString("base64"),
     FAKE_ELF_NO_ENTRY: noEntryElf.toString("base64"),
   };
-  return {
-    repoRoot,
-    cacheRoot,
-    zipPath: path.join(repoRoot, "Decky-Metadata.zip"),
-    env,
-  };
+  const zipPath = path.join(cacheRoot, "Decky-Metadata", "package", "Decky-Metadata.zip");
+  fs.mkdirSync(path.dirname(zipPath), { recursive: true });
+  return { repoRoot, cacheRoot, zipPath, env };
 }
 
 function packageFixture(fixture, args = ["--release"]) {
