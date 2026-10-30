@@ -108,11 +108,15 @@
   };
 
   const seen = {};
+  // Elements of the page we navigate away from must not count as this page's.
+  const previous = Object.fromEntries(Object.entries(selectors).map(([name, selector]) =>
+    [name, new Set(selector ? ui.querySelectorAll(selector) : [])]));
   const start = performance.now();
   const check = () => {
     const now = performance.now() - start;
     for (const [name, selector] of Object.entries(selectors)) {
-      if (selector && seen[name] === undefined && ui.querySelector(selector)) seen[name] = now;
+      if (!selector || seen[name] !== undefined) continue;
+      if ([...ui.querySelectorAll(selector)].some((element) => !previous[name].has(element))) seen[name] = now;
     }
   };
   const mutation = new (ui.defaultView?.MutationObserver ?? MutationObserver)(check);

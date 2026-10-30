@@ -178,12 +178,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
     match method {
         "put_protondb_cache" => {
             arity(&args, 2, 2)?;
-            let mut cache = state.provider_cache.lock().await;
-            cache.merge_protondb(&args[0], &args[1])?;
-            crate::provider_cache::save(
-                &state.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
-                &cache,
-            ).await?;
+            state.provider_cache.lock().await.merge_protondb(&args[0], &args[1])?;
+            crate::provider_cache::schedule_save(&state);
             Ok(json!({"ok": true}))
         }
         "get_hltb_settings" => {

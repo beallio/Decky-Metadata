@@ -202,6 +202,11 @@ fn search_path_from_script(script: &str) -> Option<String> {
     first
 }
 
+/// Search text for a store title. Marks become spaces so "ACE COMBAT™7" stays two words.
+fn search_title(title: &str) -> String {
+    matching::clean_game_title(&title.replace(['™', '®', '©'], " "))
+}
+
 fn rank_by_title<'a>(title: &str, results: &'a [SearchResult]) -> Vec<&'a SearchResult> {
     let query = matching::normalise_match_title(title);
     let mut ranked: Vec<(u8, i64, usize, &SearchResult)> = results
@@ -427,9 +432,17 @@ impl HltbClient {
                 None => LookupOutcome::NoMatch,
             });
         }
-        let mut title = matching::clean_game_title(&input.title);
+        let original = search_title(&input.title);
+        let mut title = original.clone();
         let steam_appid = input.steam_appid.filter(|id| *id > 0);
         let mut results = if title.is_empty() { Vec::new() } else { self.search(http, &title).await? };
+        // HLTB finds nothing for store names such as "Batman: Arkham Asylum GOTY
+        // Edition"; one more search without edition and region words often does.
+        // Only for Latin titles: the simplifier drops every non-ASCII letter.
+        let simpler = matching::normalise_match_title(&original);
+        if results.is_empty() && original.is_ascii() && !simpler.is_empty() && simpler != original.to_lowercase() {
+            results = self.search(http, &simpler).await?;
+        }
         if results.is_empty() && input.native_steam {
             if let Some(appid) = steam_appid {
                 let english = steam::steam_appdetails_for_appid(http, appid)
@@ -606,6 +619,19 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn an_empty_search_is_retried_without_edition_words() {
+        let http = Http::fixtures(vec![
+            init(),
+            search(vec![]),
+            search(vec![game(1043, "Batman: Arkham Asylum", 0, 1)]),
+            page(1043, "Batman: Arkham Asylum", 35140, 0),
+        ]);
+        let outcome = client().lookup(&http, input(Some(35140), "Batman: Arkham Asylum GOTY Edition")).await.unwrap();
+        assert_eq!(matched(outcome), (1043, MatchVia::SteamId));
+        http.assert_drained();
+    }
+
+    #[tokio::test]
     async fn zero_results_without_a_steam_game_is_no_match() {
         let http = Http::fixtures(vec![init(), search(vec![])]);
         assert_eq!(client().lookup(&http, input(None, "Nothing Like This")).await.unwrap(), LookupOutcome::NoMatch);
@@ -707,6 +733,13 @@ mod tests {
         assert_eq!(client.refresh(&http, 7231, Some(620)).await.unwrap(), RefreshOutcome::Invalid);
         assert_eq!(client.refresh(&http, 7231, None).await.unwrap(), RefreshOutcome::Invalid);
         assert!(matches!(client.refresh(&http, 7231, None).await.unwrap(), RefreshOutcome::Updated(_)));
+    }
+
+    #[test]
+    fn search_titles_keep_words_apart_around_trademark_marks() {
+        assert_eq!(search_title("ACE COMBAT™7: SKIES UNKNOWN"), "ACE COMBAT 7: SKIES UNKNOWN");
+        assert_eq!(search_title("Batman™: Arkham Knight"), "Batman : Arkham Knight");
+        assert_eq!(search_title("  Diablo® IV "), "Diablo IV");
     }
 
     #[test]

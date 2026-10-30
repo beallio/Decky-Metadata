@@ -253,7 +253,7 @@ impl AppState {
             Value::Null,
             log::Level::Info,
         );
-        if let Err(error) = crate::hltb::flush(self).await {
+        if let Err(error) = crate::provider_cache::flush(self).await {
             logging::event("load", "provider cache save failed", json!({"error": error}), log::Level::Warn);
         }
         self.cancel.cancel();

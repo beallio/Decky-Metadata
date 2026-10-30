@@ -19,7 +19,6 @@ const DAY_MS: i64 = 86_400_000;
 pub const MATCHED_TTL_MS: i64 = 14 * DAY_MS;
 pub const NO_MATCH_TTL_MS: i64 = 7 * DAY_MS;
 const ERROR_RETRY: Duration = Duration::from_secs(30);
-const SAVE_DELAY: Duration = Duration::from_secs(1);
 const MAX_TITLE_CHARS: usize = 512;
 
 fn now_ms() -> i64 {
@@ -70,29 +69,6 @@ fn entry(page: Option<&GamePage>, inputs: &Inputs, now: i64) -> HltbEntry {
 
 fn retry_error(retry_after: Duration) -> Value {
     json!({"status": "error", "retry_after_ms": retry_after.as_millis() as u64})
-}
-
-/// Save the provider cache at most once per second; `flush` writes any pending change now.
-fn schedule_save(state: &Arc<AppState>) {
-    if state.provider_cache_dirty.swap(true, Ordering::SeqCst) {
-        return;
-    }
-    let state = Arc::clone(state);
-    tokio::spawn(async move {
-        tokio::select! {
-            _ = tokio::time::sleep(SAVE_DELAY) => {},
-            _ = state.cancel.cancelled() => {},
-        }
-        let _ = flush(&state).await;
-    });
-}
-
-pub async fn flush(state: &AppState) -> Result<(), String> {
-    if !state.provider_cache_dirty.swap(false, Ordering::SeqCst) {
-        return Ok(());
-    }
-    let cache = state.provider_cache.lock().await;
-    provider_cache::save(&state.env.plugin_settings_dir.join(provider_cache::FILENAME), &cache).await
 }
 
 fn reply(entry: &HltbEntry) -> Result<Value, String> {
@@ -165,7 +141,7 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
                 cache.cap_all();
             }
             state.hltb_retry.lock().await.remove(&app_id);
-            schedule_save(state);
+            provider_cache::schedule_save(state);
             reply(&entry)
         }
         Err(error) => {
@@ -304,7 +280,7 @@ mod tests {
             let refreshed = stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap();
             assert_eq!(refreshed["stats"]["main"], 7200);
             state.http.assert_drained();
-            flush(&state).await.unwrap();
+            provider_cache::flush(&state).await.unwrap();
             let saved = provider_cache::load(&state.env.plugin_settings_dir.join(provider_cache::FILENAME)).await;
             assert_eq!(serde_json::to_value(&saved.hltb[&620]).unwrap(), refreshed);
         }
