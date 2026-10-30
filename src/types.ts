@@ -142,6 +142,8 @@ export type MetadataData = {
   features?: string[];
   screenshots?: MetadataScreenshot[];
   steam_appid?: number | string | null;
+  /** A HowLongToBeat game the user chose for this shortcut. */
+  hltb_game_id?: number | null;
   /** Steam's own cleaned display name, kept separate from editable title data. */
   steam_store_name?: string;
   steam_dlc_appids: number[];

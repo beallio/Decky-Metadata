@@ -1,4 +1,5 @@
 pub mod cef_bridge;
+pub mod hltb;
 pub mod http;
 pub mod logging;
 pub mod matching;

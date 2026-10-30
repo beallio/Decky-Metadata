@@ -223,7 +223,7 @@ fn rank_by_title<'a>(title: &str, results: &'a [SearchResult]) -> Vec<&'a Search
 }
 
 impl HltbClient {
-    fn with_config(search_interval: Duration, cooldown: Duration, clock_ms: fn() -> i64) -> Self {
+    pub(crate) fn with_config(search_interval: Duration, cooldown: Duration, clock_ms: fn() -> i64) -> Self {
         Self {
             session: Arc::new(Mutex::new(Session {
                 search_path: DEFAULT_SEARCH_PATH.to_owned(),

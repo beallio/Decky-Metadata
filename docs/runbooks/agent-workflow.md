@@ -38,7 +38,7 @@ The [Endpoint Health workflow](../../.github/workflows/endpoint-health.yml) is
 scheduled at minute 17 of every hour (UTC). GitHub can delay scheduled runs.
 The schedule starts only after the workflow reaches the default branch, `main`.
 
-It runs 15 separate contract checks:
+It runs 16 separate contract checks:
 
 | Source | Checks and fixtures |
 |---|---|
@@ -48,6 +48,7 @@ It runs 15 separate contract checks:
 | Steam Community | Dota 2 homecontent parsed into usable screenshot cards |
 | Steam Tracker | Delisted-page parsing with at least 100 games, including Metro 2033 |
 | GitHub updater | Latest stable release discovery, manifest validation, and ZIP delivery with a matching SHA-256 |
+| HowLongToBeat | Portal 2: search token, site search, Steam ID check on the game page (HLTB 7231 lists Steam 620), and a one-page refresh |
 
 The checks validate the response fields used by the plugin, not just HTTP
 success. They do not exercise Steam's UI, Decky Loader installation, or on-device

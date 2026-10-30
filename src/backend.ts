@@ -24,6 +24,7 @@ import {
   IgnTrailerResult,
   ProtonDbTier,
 } from "./types";
+import type { HltbSettings } from "./hltb/settings";
 
 /** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
@@ -209,19 +210,47 @@ export const setProtonDbBadgeSettings = callable<
 >("set_protondb_badge_settings");
 export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
 export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
+export type HltbTimes = { main: number; plus: number; complete: number; all: number };
+/** A saved HowLongToBeat result; times are seconds. */
+export type HltbEntry = {
+  status: "matched" | "no_match";
+  hltb_id: number | null;
+  game_name: string | null;
+  stats: HltbTimes | null;
+  steam_appid_used: number | null;
+  title_used: string;
+  pinned_id_used: number | null;
+  fetched_at: number;
+};
+export type HltbStatsResult =
+  | HltbEntry
+  | { status: "error"; retry_after_ms: number }
+  | { status: "disabled" }
+  | { status: "blocked" };
 export type ProviderCacheSnapshot = {
   version: 1;
   protondb: {
     ratings: Record<string, ProtonDbRatingRecord>;
     name_ids: Record<string, ProtonDbNameRecord>;
   };
-  hltb: { entries: Record<string, unknown> };
+  hltb: { entries: Record<string, HltbEntry> };
 };
 export const getProviderCache = callable<[], ProviderCacheSnapshot>("get_provider_cache");
 export const putProtonDbCache = callable<
   [ratings: Record<string, ProtonDbRatingRecord>, nameIds: Record<string, ProtonDbNameRecord>],
   { ok: boolean }
 >("put_protondb_cache");
+export const getHltbSettings = callable<[], HltbSettings>("get_hltb_settings");
+export const setHltbSettings = callable<[settings: HltbSettings], HltbSettings>("set_hltb_settings");
+export const getHltbStats = callable<
+  [appId: number, isShortcut: boolean, title: string],
+  HltbStatsResult
+>("get_hltb_stats");
+export const checkHltbGameId = callable<
+  [gameId: number],
+  { found: true; game_id: number; game_name: string } | { found: false }
+>("check_hltb_game_id");
+export const clearHltbCache = callable<[], { ok: boolean }>("clear_hltb_cache");
 export const findIgnTrailer = callable<
   [title: string, gameUrl?: string | null],
   IgnTrailerResult | null

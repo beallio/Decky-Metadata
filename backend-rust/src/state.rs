@@ -19,6 +19,10 @@ pub struct AppState {
     storage: OnceCell<Mutex<Storage>>,
     pub delisted: Mutex<Option<Arc<Value>>>,
     pub provider_cache: Mutex<crate::provider_cache::ProviderCache>,
+    pub provider_cache_dirty: std::sync::atomic::AtomicBool,
+    pub hltb: crate::providers::hltb::HltbClient,
+    /// Per-app time before another HLTB lookup after a failure.
+    pub hltb_retry: Mutex<std::collections::HashMap<u32, tokio::time::Instant>>,
     pub jobs: crate::scan_runner::Jobs,
     updater_rate_limit: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
@@ -36,6 +40,9 @@ impl AppState {
             storage: OnceCell::new(),
             delisted: Mutex::new(None),
             provider_cache: Mutex::new(Default::default()),
+            provider_cache_dirty: std::sync::atomic::AtomicBool::new(false),
+            hltb: crate::providers::hltb::HltbClient::default(),
+            hltb_retry: Mutex::new(std::collections::HashMap::new()),
             jobs: crate::scan_runner::Jobs::new(),
             updater_rate_limit: Mutex::new(None),
         }))
@@ -246,6 +253,9 @@ impl AppState {
             Value::Null,
             log::Level::Info,
         );
+        if let Err(error) = crate::hltb::flush(self).await {
+            logging::event("load", "provider cache save failed", json!({"error": error}), log::Level::Warn);
+        }
         self.cancel.cancel();
         // A replacement already in progress must finish its atomic section.
         tokio::time::timeout(Duration::from_secs(4), async {

@@ -1,4 +1,5 @@
-import { getProtonDbBadgeSettings, getProviderCache, setProtonDbBadgeSettings, type ProviderCacheSnapshot } from "../backend";
+import { getProtonDbBadgeSettings, setProtonDbBadgeSettings, type ProviderCacheSnapshot } from "../backend";
+import { loadProviderCache } from "../providerCache";
 import type { ProtonDbBadgeSettings } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import { seedProtonDbAppIdResolutions, setResolvedNameListener } from "./identity";
@@ -59,7 +60,7 @@ export class ProtonDbBadgeController {
     private readonly settingsStore: ProtonDbBadgeSettingsStore = backendSettingsStore,
     private readonly ratings: ProtonDbRatingCache = protonDbRatingCache,
     private readonly conflicts: PluginConflictSource = pluginConflicts,
-    private readonly loadCache: () => Promise<ProviderCacheSnapshot> = getProviderCache,
+    private readonly loadCache: () => Promise<ProviderCacheSnapshot> = loadProviderCache,
     private readonly writer: ProtonDbCacheWriter = new ProtonDbCacheWriter(),
   ) {
     this.snapshot = Object.freeze({
