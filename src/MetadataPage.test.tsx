@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hltbStore } from "./hltb/store";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
@@ -1268,5 +1269,27 @@ describe("Steam-match picker application", () => {
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(backend.enrichSteamApp).not.toHaveBeenCalled();
     expect(steam.metadataCache["100"]).toBeUndefined();
+  });
+
+  it("shows HLTB times again after a removed game gets an IGN match, without a reload", async () => {
+    const inputs = { steam: null, title: "Hades", pinned: null };
+    configureShortcutPanel({ metadata: { title: "Hades" } });
+    // The game page asked once after Remove metadata and was told the game is removed.
+    backend.getHltbStats.mockResolvedValueOnce({ status: "blocked" });
+    hltbStore.request(100, true, inputs);
+    await flushAsyncWork();
+    expect(hltbStore.view(100, inputs)).toEqual({ entry: null, needsFetch: false });
+
+    state.values[6] = [{ slug: "hades", url: "https://www.ign.com/games/hades", title: "Hades", description: "" }];
+    backend.applyFetchedMetadata.mockResolvedValue(makeMetadata({ title: "Hades", source: "IGN" }));
+    // `walk` skips nested arrays such as `results.map(...)`; search them here.
+    const find = (node: any): any => Array.isArray(node) ? node.map(find).find(Boolean)
+      : node && typeof node === "object" ? (String(node.props?.className ?? "").includes("decky-metadata-editor__result")
+        ? node : find(node.props?.children)) : undefined;
+    const result = find(renderPage());
+    await result.props.onClick();
+    await flushAsyncWork();
+
+    expect(hltbStore.view(100, inputs).needsFetch).toBe(true);
   });
 });

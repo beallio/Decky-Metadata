@@ -143,6 +143,7 @@ vi.mock("./steam/miniAchievementsController", () => ({
 }));
 vi.mock("./protondb/controller", () => ({ protonDbBadgeController: protonDb }));
 vi.mock("./components/qam/HltbSection", () => ({ HltbSection: "HltbSection" }));
+vi.mock("./hltb/store", () => ({ hltbStore: { reset: vi.fn() } }));
 vi.mock("./hltb/gameView", () => ({
   hltbController: {
     getSnapshot: () => ({

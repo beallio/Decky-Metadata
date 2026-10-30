@@ -820,6 +820,8 @@ export const MetadataPage = () => {
         return;
       }
       setMetadataCacheEntry(appId, saved);
+      // An explicit pick takes the game off the removed list; ask HLTB again.
+      hltbStore.forget(appId);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);

@@ -36,6 +36,7 @@ import { VersionsSection } from "./components/qam/VersionsSection";
 import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
 import { HltbSection } from "./components/qam/HltbSection";
 import { hltbController } from "./hltb/gameView";
+import { hltbStore } from "./hltb/store";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
@@ -853,6 +854,8 @@ export const Content = () => {
     setCacheBusy(true);
     try {
       await clearMetadataCache();
+      // Clear cache takes every game off the removed list; HLTB must ask again.
+      hltbStore.reset();
       await refreshMetadataCache();
       if (games.length) {
         void startScanMissing(games).catch((error) => {

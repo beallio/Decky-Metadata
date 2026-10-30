@@ -33,8 +33,10 @@ To hide the times for one game, open the game's menu and select
   If HowLongToBeat does not list the Steam App ID, no times appear.
 - **Non-Steam games** use the Steam match saved in **Decky metadata...** in the
   same way. Without a Steam match, the game's name is used.
-- If **Remove metadata** was used for a non-Steam game, its times are not looked
-  up by name. Choose an HLTB game by hand instead (below).
+- If **Remove metadata** was used for a non-Steam game, its times are hidden and
+  not looked up by name. They come back when you pick a Steam match or an IGN
+  result in **Decky metadata...**, or after **Clear cache**. You can also choose
+  an HLTB game by hand (below); that works even after Remove metadata.
 
 ### Choose the HLTB game for a non-Steam game
 
