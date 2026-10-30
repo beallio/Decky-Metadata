@@ -29,6 +29,8 @@ pub const METHODS: &[&str] = &[
     "set_mini_achievements_enabled",
     "get_protondb_badge_settings",
     "set_protondb_badge_settings",
+    "get_provider_cache",
+    "put_protondb_cache",
     "get_metadata",
     "get_all_metadata",
     "remove_metadata",
@@ -97,9 +99,14 @@ fn update_failure(error: String, check: bool) -> Value {
 
 /// Store reads that return large parts of the settings file. They serialize straight
 /// from the locked store, so a reply never needs a full in-memory copy of it.
-pub const RAW_METHODS: &[&str] = &["get_state", "get_metadata", "get_all_metadata"];
+pub const RAW_METHODS: &[&str] = &["get_state", "get_metadata", "get_all_metadata", "get_provider_cache"];
 
 pub async fn dispatch_raw(state: &AppState, method: &str, args: &[Value]) -> RawMethodResult {
+    if method == "get_provider_cache" {
+        arity(args, 0, 0)?;
+        return serde_json::value::to_raw_value(&*state.provider_cache.lock().await)
+            .map_err(|error| error.to_string());
+    }
     let store = state.store().await?;
     let data = store.data();
     let value = match method {
@@ -164,6 +171,16 @@ async fn loaded_store<'a>(
 
 pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> MethodResult {
     match method {
+        "put_protondb_cache" => {
+            arity(&args, 2, 2)?;
+            let mut cache = state.provider_cache.lock().await;
+            cache.merge_protondb(&args[0], &args[1])?;
+            crate::provider_cache::save(
+                &state.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
+                &cache,
+            ).await?;
+            Ok(json!({"ok": true}))
+        }
         "get_platform_capabilities" => {
             arity(&args, 0, 0)?;
             tokio::task::spawn_blocking(state::platform_capabilities)

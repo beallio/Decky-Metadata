@@ -18,6 +18,7 @@ pub struct AppState {
     pub cef: crate::cef_bridge::BigPictureEvaluator,
     storage: OnceCell<Mutex<Storage>>,
     pub delisted: Mutex<Option<Arc<Value>>>,
+    pub provider_cache: Mutex<crate::provider_cache::ProviderCache>,
     pub jobs: crate::scan_runner::Jobs,
     updater_rate_limit: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
@@ -34,6 +35,7 @@ impl AppState {
             cef,
             storage: OnceCell::new(),
             delisted: Mutex::new(None),
+            provider_cache: Mutex::new(Default::default()),
             jobs: crate::scan_runner::Jobs::new(),
             updater_rate_limit: Mutex::new(None),
         }))
@@ -59,6 +61,9 @@ impl AppState {
             return Err("DECKY_PLUGIN_SETTINGS_DIR is not set".into());
         }
         let cached = read_cached_index(&self.env.plugin_settings_dir).await;
+        *self.provider_cache.lock().await = crate::provider_cache::load(
+            &self.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
+        ).await;
         let mut storage = Storage::open(self.env.plugin_settings_dir.clone()).await?;
         let loaded = storage.loaded_successfully();
         storage

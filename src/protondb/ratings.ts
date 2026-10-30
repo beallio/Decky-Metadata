@@ -67,14 +67,35 @@ const ratingValue = (
 
 const invalidRating = ratingValue(null, "idle", null);
 
+export type ProtonDbRatingResultListener = (steamAppId: number, tier: ProtonDbTier | null, updatedAt: number) => void;
+
 /** Shared in-memory ratings; fetches are owned by the currently visible subscribers. */
 export class ProtonDbRatingCache {
   private readonly entries = new Map<number, RatingEntry>();
   private lifecycle = 0;
   private mounted = false;
   private enabled = false;
+  private resultListener: ProtonDbRatingResultListener | undefined;
 
   constructor(private readonly fetchTier: ProtonDbTierFetcher = fetchProtonDbTier) {}
+
+  /** Receives every successful lookup (including "no tier yet") so it can be saved. */
+  setResultListener(listener: ProtonDbRatingResultListener | undefined): void {
+    this.resultListener = listener;
+  }
+
+  /** Load saved ratings; never replaces a newer or in-flight in-memory rating. */
+  seed(ratings: Iterable<readonly [steamAppId: number, tier: ProtonDbTier | null, updatedAt: number]>): void {
+    for (const [steamAppId, tier, updatedAt] of ratings) {
+      if (!validSteamAppId(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0) continue;
+      if (tier !== null && !isProtonDbTier(tier)) continue;
+      const entry = this.getEntry(steamAppId);
+      if (entry.request || (entry.rating.updatedAt !== null && entry.rating.updatedAt >= updatedAt)) continue;
+      this.setRating(entry, tier, "ready", updatedAt);
+      this.clearExpiry(entry);
+      this.loadIfNeeded(steamAppId, entry);
+    }
+  }
 
   getRating(steamAppId: number): ProtonDbRating {
     if (!validSteamAppId(steamAppId)) return invalidRating;
@@ -196,6 +217,11 @@ export class ProtonDbRatingCache {
     entry.request = undefined;
     entry.retryAfter = 0;
     this.setRating(entry, tier, "ready", Date.now());
+    try {
+      this.resultListener?.(steamAppId, tier, entry.rating.updatedAt as number);
+    } catch {
+      // Saving is best effort; the in-memory rating is already current.
+    }
     this.scheduleExpiry(steamAppId, entry);
   }
 

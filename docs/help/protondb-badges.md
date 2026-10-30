@@ -48,7 +48,7 @@ The tier names are **Platinum**, **Gold**, **Silver**, **Bronze**, and **Borked*
 
 A game without a match or a ProtonDB tier has no badge. A failed network request is not treated as a Borked rating.
 
-Ratings are reused across the different views and cached for 24 hours. An expired rating can refresh while the game is visible. A first lookup may take time. Cached badges stay with their covers or controls during Steam's page animations.
+Ratings are reused across the different views and kept for 24 hours. They are also saved, so badges appear right away after Steam or the Deck restarts. A rating older than 24 hours stays visible while it refreshes in the background. A first lookup may take time. Cached badges stay with their covers or controls during Steam's page animations.
 
 ## Enable Store badges
 
