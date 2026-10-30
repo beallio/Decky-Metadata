@@ -34,6 +34,8 @@ import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
 import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
+import { HltbSection } from "./components/qam/HltbSection";
+import { hltbController } from "./hltb/gameView";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
@@ -223,6 +225,13 @@ export const Content = () => {
     refresh();
     return unsubscribe;
   }, []);
+  const [hltbSnapshot, setHltbSnapshot] = useState(hltbController.getSnapshot());
+  useEffect(() => {
+    const refresh = () => setHltbSnapshot(hltbController.getSnapshot());
+    const unsubscribe = hltbController.subscribe(refresh);
+    refresh();
+    return unsubscribe;
+  }, []);
   const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
   const initialPendingCompatibilityPolicySave =
     initialCompatibilityPolicySave
@@ -287,6 +296,8 @@ export const Content = () => {
     useState<HTMLDivElement | null>(null);
   const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
   const [protonDbCoverControl, setProtonDbCoverControlState] = useState<HTMLDivElement | null>(null);
+  const [hltbStyleControl, setHltbStyleControlState] = useState<HTMLDivElement | null>(null);
+  const [hltbLinkColorControl, setHltbLinkColorControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -305,6 +316,14 @@ export const Content = () => {
   const setProtonDbCoverControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setProtonDbCoverControlState(element);
+  }, []);
+  const setHltbStyleControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setHltbStyleControlState(element);
+  }, []);
+  const setHltbLinkColorControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setHltbLinkColorControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -336,7 +355,8 @@ export const Content = () => {
   }, []);
 
   useEffect(() => {
-    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl || protonDbCoverControl;
+    const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
+      protonDbCoverControl || hltbStyleControl || hltbLinkColorControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -354,7 +374,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbLinkColorControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -384,10 +404,15 @@ export const Content = () => {
     const control = origin === "scope"
       ? compatibilityDefaultScopeControl
       : origin === "quality" ? trailerQualityControl
+      : origin === "hltb-style" ? hltbStyleControl
+      : origin === "hltb-link-color" ? hltbLinkColorControl
       : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+    const hltbOrigin = origin === "hltb-style" || origin === "hltb-link-color";
     const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
+      : hltbOrigin ? hltbSnapshot.settingsLoaded
       : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
     const busy = origin === "quality" ? trailerSnapshot.busy
+      : hltbOrigin ? hltbSnapshot.busy
       : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
     if (!isCompatibilityDropdownReturnReady() || !control) return;
     let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
@@ -499,6 +524,10 @@ export const Content = () => {
     protonDbCoverControl,
     protonDbSnapshot.busy,
     protonDbSnapshot.settingsLoaded,
+    hltbStyleControl,
+    hltbLinkColorControl,
+    hltbSnapshot.busy,
+    hltbSnapshot.settingsLoaded,
   ]);
 
   const updateMissingCount = useCallback((currentGames: GameOption[]) => {
@@ -947,6 +976,45 @@ export const Content = () => {
           noteCompatibilityDropdownControlUnmounted();
         }}
         onCoverPositionControlRef={setProtonDbCoverControl}
+      />
+      <HltbSection
+        initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color"}
+        settings={hltbSnapshot.settings}
+        settingsLoaded={hltbSnapshot.settingsLoaded}
+        busy={hltbSnapshot.busy}
+        conflict={hltbSnapshot.conflict}
+        settingsError={hltbSnapshot.settingsError}
+        onSettingsChange={(settings) => hltbController.setSettings(settings)}
+        onClearCache={() => hltbController.clearCache()}
+        onStyleChange={async (style) => {
+          requestCompatibilityDropdownReturn("hltb-style");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            return await hltbController.setSettings({ ...hltbController.getSnapshot().settings, style });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
+          }
+        }}
+        onLinkColorChange={async (linkColor) => {
+          requestCompatibilityDropdownReturn("hltb-link-color");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            const settings = hltbController.getSnapshot().settings;
+            return await hltbController.setSettings({ ...settings, appearance: { ...settings.appearance, linkColor } });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
+          }
+        }}
+        onStyleMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("hltb-style");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
+        onLinkColorMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("hltb-link-color");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
+        onStyleControlRef={setHltbStyleControl}
+        onLinkColorControlRef={setHltbLinkColorControl}
       />
       <GameTrailersSection
         initiallyExpanded={returningDropdown === "quality"}

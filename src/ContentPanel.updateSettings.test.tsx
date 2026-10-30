@@ -142,6 +142,16 @@ vi.mock("./steam/miniAchievementsController", () => ({
   },
 }));
 vi.mock("./protondb/controller", () => ({ protonDbBadgeController: protonDb }));
+vi.mock("./components/qam/HltbSection", () => ({ HltbSection: "HltbSection" }));
+vi.mock("./hltb/gameView", () => ({
+  hltbController: {
+    getSnapshot: () => ({
+      settings: {}, settingsLoaded: false, busy: false, settingsError: "",
+      conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: false,
+    }),
+    subscribe: () => () => undefined,
+  },
+}));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./useNonSteamGames", () => ({

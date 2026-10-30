@@ -138,6 +138,11 @@ const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
 const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
 const getProviderCache = callable("get_provider_cache");
 const putProtonDbCache = callable("put_protondb_cache");
+const getHltbSettings = callable("get_hltb_settings");
+const setHltbSettings = callable("set_hltb_settings");
+const getHltbStats = callable("get_hltb_stats");
+const checkHltbGameId = callable("check_hltb_game_id");
+const clearHltbCache = callable("clear_hltb_cache");
 const findIgnTrailer = callable("find_ign_trailer");
 const evalInBigPicture = callable("eval_in_big_picture");
 
@@ -146,6 +151,8 @@ var backend = /*#__PURE__*/Object.freeze({
     applyFetchedMetadata: applyFetchedMetadata,
     autoFetchMetadata: autoFetchMetadata,
     checkForPluginUpdate: checkForPluginUpdate,
+    checkHltbGameId: checkHltbGameId,
+    clearHltbCache: clearHltbCache,
     clearMetadataCache: clearMetadataCache,
     clearPendingUpdateInstall: clearPendingUpdateInstall,
     clearShortcutNameState: clearShortcutNameState,
@@ -162,6 +169,8 @@ var backend = /*#__PURE__*/Object.freeze({
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
+    getHltbSettings: getHltbSettings,
+    getHltbStats: getHltbStats,
     getLocalShortcuts: getLocalShortcuts,
     getMetadata: getMetadata,
     getMiniAchievementsEnabled: getMiniAchievementsEnabled,
@@ -192,6 +201,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
     setDebugLogging: setDebugLogging,
+    setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setProtonDbBadgeSettings: setProtonDbBadgeSettings,
     setTrailerSettings: setTrailerSettings,
@@ -322,6 +332,8 @@ function FaTrophy (props) {
   return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
 }function FaExclamationTriangle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaClock (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
 }function FaChevronUp (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M240.971 130.524l194.343 194.343c9.373 9.373 9.373 24.569 0 33.941l-22.667 22.667c-9.357 9.357-24.522 9.375-33.901.04L224 227.495 69.255 381.516c-9.379 9.335-24.544 9.317-33.901-.04l-22.667-22.667c-9.373-9.373-9.373-24.569 0-33.941L207.03 130.525c9.372-9.373 24.568-9.373 33.941-.001z"},"child":[]}]})(props);
 }function FaChevronDown (props) {
@@ -409,8 +421,9 @@ const KNOWN_CONFLICTS = {
     protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
     trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
     miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
 };
-const FEATURES = ["protondb", "trailers", "miniAchievements"];
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
 const FALLBACK_POLL_MS = 1000;
 const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
 const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
@@ -458,6 +471,7 @@ class PluginConflictMonitor {
                 protondb: UNAVAILABLE,
                 trailers: UNAVAILABLE,
                 miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
             }
         });
         Object.defineProperty(this, "handleUpdate", {
@@ -1452,214 +1466,61 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
 
-let verbose = false;
-const setVerboseLogging = (enabled) => {
-    verbose = !!enabled;
+const DEFAULT_HLTB_SETTINGS = {
+    enabled: false, style: "default", hideViewDetails: false,
+    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    appearance: { custom: false, barAlpha: 25, linkColor: "steam", textShadow: false, textScale: 100, border: true },
+    hiddenAppIds: [],
 };
-const prefix = (area) => `[Decky Metadata][${area}]`;
-const debug = (area, message, ...args) => {
-    if (verbose)
-        console.debug(prefix(area), message, ...args);
-};
-const info = (area, message, ...args) => {
-    if (verbose)
-        console.info(prefix(area), message, ...args);
-};
-const warn = (area, message, ...args) => {
-    console.warn(prefix(area), message, ...args);
-};
-const error = (area, message, ...args) => {
-    console.error(prefix(area), message, ...args);
-};
-
-const PLAYHUB_COMMUNITY_IGN_ICON = "data:image/png;base64,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";
-const PLAYHUB_COMMUNITY_RAWG_ICON = "data:image/png;base64,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";
-const PLAYHUB_COMMUNITY_STEAM_ICON = "https://store.steampowered.com/favicon.ico";
-const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
-    const cleanSteamAppId = Number(steamAppId || 0);
-    if (cleanSteamAppId <= 0)
-        return null;
-    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
-        return null;
-    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
-};
-const pageFromValue = (value) => {
-    if (value == null || String(value).trim() === "")
-        return null;
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed))
-        return null;
-    return Math.max(1, Math.min(Math.trunc(parsed), 100));
-};
-const pageFromTransportValue = (value, depth = 0) => {
-    if (depth > 3 || value == null)
-        return null;
-    if (value instanceof URLSearchParams) {
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(value.get(key));
-            if (page)
-                return page;
-        }
-        return null;
-    }
-    if (typeof value === "string") {
-        const query = value.includes("?") ? value.slice(value.indexOf("?") + 1) : value;
-        const params = new URLSearchParams(query);
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(params.get(key));
-            if (page)
-                return page;
-        }
-        const cursorPage = value.match(/(?:^|[^a-z])page[_:=/-]?(\d+)/i)?.[1];
-        return pageFromValue(cursorPage);
-    }
-    if (typeof value === "object") {
-        const record = value;
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(record[key]);
-            if (page)
-                return page;
-        }
-        for (const key of ["body", "data", "params", "cursor"]) {
-            const page = pageFromTransportValue(record[key], depth + 1);
-            if (page)
-                return page;
-        }
-    }
-    return null;
-};
-const requestedCommunityPage = (url, transportArgs = []) => {
-    for (const value of transportArgs) {
-        const page = pageFromTransportValue(value);
-        if (page)
-            return page;
-    }
-    return pageFromTransportValue(url) || 1;
-};
-const nativeHubHasContent = (response) => Boolean(response && typeof response === "object" && Array.isArray(response.hub) && response.hub.length);
-const syntheticCommunityId = (appId, page, index) => {
-    const cleanAppId = String(Math.max(0, Math.trunc(Number(appId) || 0))).padStart(10, "0").slice(-10);
-    const cleanPage = String(Math.max(1, Math.min(Math.trunc(Number(page) || 1), 100))).padStart(3, "0");
-    const cleanIndex = String(Math.max(0, Math.trunc(Number(index) || 0))).padStart(2, "0").slice(-2);
-    return `90909${cleanAppId}${cleanPage}${cleanIndex}`;
-};
-const communityProviderIcon = (source) => {
-    const cleanSource = String(source || "").trim().toLowerCase();
-    if (cleanSource.includes("steam"))
-        return PLAYHUB_COMMUNITY_STEAM_ICON;
-    if (cleanSource.includes("rawg"))
-        return PLAYHUB_COMMUNITY_RAWG_ICON;
-    return PLAYHUB_COMMUNITY_IGN_ICON;
-};
-const communityCreator = (source, avatar) => ({
-    steamid: "76561197960287930",
-    name: source || "Playhub Metadata",
-    avatar,
-    avatar_url: avatar,
-    avatar_medium: avatar,
-    avatar_full: avatar,
-    avatarFullURL: avatar,
-});
-const fallbackPageToNativeHub = (appId, fallback) => ({
-    cached: fallback.source === "metadata",
-    hub: fallback.items.map((item, index) => {
-        const sourceLabel = fallback.source === "steam-scrape"
-            ? item.author ? `Steam Community · ${item.author}` : "Steam Community"
-            : item.author || "Metadata";
-        const providerIcon = communityProviderIcon(sourceLabel);
-        const itemLink = item.link || item.image_url;
-        const publishedFileId = syntheticCommunityId(appId, fallback.page, index);
-        return {
-            appid: appId,
-            consumer_appid: appId,
-            published_file_id: publishedFileId,
-            publishedfileid: publishedFileId,
-            type: 5,
-            title: item.title,
-            preview_image_url: item.image_url,
-            full_image_url: item.image_url,
-            image_width: item.width,
-            image_height: item.height,
-            url: itemLink,
-            link: itemLink,
-            external_url: itemLink,
-            strURL: itemLink,
-            avatar: providerIcon,
-            avatar_url: providerIcon,
-            creator_avatar_url: providerIcon,
-            author_avatar_url: providerIcon,
-            owner_avatar_url: providerIcon,
-            content_descriptorids: [],
-            spoiler_tag: false,
-            description: item.description,
-            creator: communityCreator(sourceLabel, providerIcon),
-            author: sourceLabel,
-            time_created: Math.floor(Date.now() / 1000) - index * 60,
-            votes_up: 0,
-            votes_down: 0,
-            num_comments_public: 0,
-            reactions: [],
-        };
-    }),
-});
-const resolveCommunityFeed = async ({ appId, page, originalArgs, rewrittenArgs, nativeRequest, fallbackRequest, onFallbackError, }) => {
-    const nativeArgs = rewrittenArgs || originalArgs;
-    let native;
-    let nativeError;
-    try {
-        native = await nativeRequest(nativeArgs);
-        if (nativeHubHasContent(native))
-            return native;
-    }
-    catch (error) {
-        nativeError = error;
-    }
-    try {
-        const fallback = await fallbackRequest(appId, page);
-        if (fallback.items.length)
-            return fallbackPageToNativeHub(appId, fallback);
-    }
-    catch (error) {
-        onFallbackError?.(error);
-        // Native preservation rules below intentionally handle fallback failures.
-    }
-    if (!nativeError)
-        return native;
-    if (rewrittenArgs)
-        return nativeRequest(originalArgs);
-    throw nativeError;
-};
-const resolveCommunityRequest = (options) => options.isNonSteam
-    ? resolveCommunityFeed(options)
-    : options.nativeRequest(options.originalArgs);
-
-const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
-const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) => {
-    const attempts = new Map();
-    const inFlight = new Set();
-    const isFresh = (timestampMs, nowMs) => typeof timestampMs === "number" && timestampMs > 0 && nowMs - timestampMs < intervalMs;
+const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
+const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
+function normalizeHltbSettings(value) {
+    const stored = object(value);
+    const appearance = object(stored.appearance);
+    const defaults = DEFAULT_HLTB_SETTINGS;
+    const defaultAppearance = defaults.appearance;
+    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
+        ? stored.style : defaults.style;
+    const ids = Array.isArray(stored.hiddenAppIds) ? stored.hiddenAppIds : [];
     return {
-        shouldAttempt: (appId, nowMs, enrichedAtSeconds) => {
-            if (!appId || inFlight.has(appId))
-                return false;
-            if (isFresh(attempts.get(appId), nowMs))
-                return false;
-            const enrichedAtMs = Number(enrichedAtSeconds || 0) * 1000;
-            if (isFresh(enrichedAtMs, nowMs))
-                return false;
-            return true;
+        enabled: bool(stored.enabled, defaults.enabled), style,
+        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
+        showMain: bool(stored.showMain, defaults.showMain),
+        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
+        showComplete: bool(stored.showComplete, defaults.showComplete),
+        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        appearance: {
+            custom: bool(appearance.custom, defaultAppearance.custom),
+            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
+            linkColor: appearance.linkColor === "steam" || appearance.linkColor === "text" ? appearance.linkColor : defaultAppearance.linkColor,
+            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
+            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
+            border: bool(appearance.border, defaultAppearance.border),
         },
-        markAttempt: (appId, nowMs) => {
-            if (!appId)
-                return;
-            attempts.set(appId, nowMs);
-            inFlight.add(appId);
-        },
-        markSettled: (appId) => {
-            inFlight.delete(appId);
-        },
+        hiddenAppIds: [...new Set(ids.filter((id) => typeof id === "number" && Number.isInteger(id) && id > 0 && id <= 0xffffffff))].slice(0, 5000),
     };
-};
+}
+
+const styles = [
+    { data: "default", label: "Default" }, { data: "clean", label: '"Clean"' },
+    { data: "clean-left", label: '"Clean" Left' }, { data: "clean-default", label: '"Clean" Default' },
+];
+const statControls = [
+    ["showMain", "Toggle main stat", "Shows/Hides just the main stat"],
+    ["showMainPlus", "Toggle main+ stat", "Shows/Hides just the main+ stat"],
+    ["showComplete", "Toggle completionist stat", "Shows/Hides just the completionist stat"],
+    ["showAllStyles", 'Toggle "all play styles" stat', "Shows/Hides just the all play styles stat"],
+];
+function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, onSettingsChange, onClearCache, onStyleChange, onLinkColorChange, onStyleMenuWillOpen, onLinkColorMenuWillOpen, onStyleControlRef, onLinkColorControlRef, }) {
+    const controlsDisabled = !settingsLoaded || busy;
+    const disabled = controlsDisabled || !settings.enabled;
+    const appearance = settings.appearance;
+    const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
+    const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
+    const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
+    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "View Details"', description: 'Hides "View Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: controlsDisabled, onClick: () => { void onClearCache(); }, children: "Clear HLTB cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onLinkColorControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: '"View Details" color', description: 'Color of the "View Details" link', rgOptions: [{ data: "steam", label: "Steam blue" }, { data: "text", label: "Match stats text" }], selectedOption: appearance.linkColor, disabled: disabled, onMenuWillOpen: onLinkColorMenuWillOpen, onChange: option => { const color = option.data; void (onLinkColorChange ? onLinkColorChange(color) : updateAppearance("linkColor", color)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+}
 
 const patchInstallStatus = {
     activity: "pending",
@@ -2483,6 +2344,978 @@ const consumeRouteShield = (appId) => {
 };
 const clearRouteShield = () => {
     metadataState.routeShield = null;
+};
+
+let verbose = false;
+const setVerboseLogging = (enabled) => {
+    verbose = !!enabled;
+};
+const prefix = (area) => `[Decky Metadata][${area}]`;
+const debug = (area, message, ...args) => {
+    if (verbose)
+        console.debug(prefix(area), message, ...args);
+};
+const info = (area, message, ...args) => {
+    if (verbose)
+        console.info(prefix(area), message, ...args);
+};
+const warn = (area, message, ...args) => {
+    console.warn(prefix(area), message, ...args);
+};
+const error = (area, message, ...args) => {
+    console.error(prefix(area), message, ...args);
+};
+
+// The edit key is inserted for shortcuts; the HLTB key for any game while HLTB
+// times are on. Keep the legacy key in the removal set because Steam can reuse
+// menu arrays created by older builds.
+const ENTRY_KEY = "decky-metadata-edit";
+const HLTB_KEY = "decky-metadata-hltb";
+const REMOVAL_KEYS = new Set([ENTRY_KEY, HLTB_KEY, "decky-metadata-compatibility"]);
+let hltbMenuItem;
+/** Set while HLTB times are on; the item must use the `decky-metadata-hltb` key. */
+const setHltbMenuItem = (item) => {
+    hltbMenuItem = item;
+};
+let contextMenuTraceEnabled = false;
+const setContextMenuTraceEnabled = (enabled) => {
+    contextMenuTraceEnabled = enabled;
+};
+const hasAppPropertiesHelper = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.onSelected?.toString?.().includes("AppProperties"));
+};
+const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProperties, hasLaunchSource, removedExisting, insertedOrSkipped, items) => {
+    if (!contextMenuTraceEnabled)
+        return;
+    try {
+        const snippets = (Array.isArray(items) ? items : [])
+            .slice(0, 5)
+            .map((node) => ({
+            key: node?.key,
+            text: typeof node?.props?.children === "string" ? node.props.children : undefined,
+        }));
+        frontendLog("trace", "context-menu", {
+            phase,
+            ownerAppId,
+            fallbackAppId,
+            finalAppId,
+            isGameContextMenu: isGameMenu,
+            hasAppProperties,
+            hasLaunchSource,
+            removedExisting,
+            insertedOrSkipped,
+            snippets,
+        }).catch(() => undefined);
+    }
+    catch (_e) { }
+};
+/**
+ * Resolve Steam's internal LibraryContextMenu class at runtime.
+ *
+ * The class is not exported, so we locate the webpack module that references
+ * it, pick the member whose source mentions "navigator:", and read the type
+ * back from a throwaway render.
+ */
+const resolveLibraryContextMenu = () => {
+    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
+        member.toString().includes("().LibraryContextMenu"));
+    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
+        member.toString().includes("navigator:"));
+    return DFL.fakeRenderComponent(menuComponent).type;
+};
+const LibraryContextMenu = resolveLibraryContextMenu();
+/**
+ * Work out which appid the menu is really for.
+ *
+ * Steam reuses context-menu instances, so the appid passed in can be stale.
+ * Prefer a fresh appid carried on the owning React node; otherwise scan the
+ * node tree for an `app.appid` (used by newer Steam clients).
+ */
+const resolveAppId = (nodes, fallbackAppId) => {
+    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
+        node._owner.pendingProps.overview.appid !== fallbackAppId);
+    if (fresherNode) {
+        return Number(fresherNode._owner.pendingProps.overview.appid);
+    }
+    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
+        walkable: ["props", "children"],
+    });
+    return Number(taggedNode?.app?.appid ?? fallbackAppId);
+};
+/**
+ * True only for the per-game context menu. Its launch action's handler
+ * references "launchSource"; menus like the screenshot menu do not, which
+ * lets us ignore them.
+ */
+const isGameContextMenu = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
+};
+/** Remove any previously injected entry so re-renders cannot stack copies. */
+const removeOurEntry = (items) => {
+    let removed = false;
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+        if (REMOVAL_KEYS.has(items[index]?.key)) {
+            items.splice(index, 1);
+            removed = true;
+        }
+    }
+    return removed;
+};
+/** Insert our entries just above "Properties..." (or at the end). */
+const insertOurEntry = (items, appId) => {
+    const entries = [];
+    if (isNativeNonSteamShortcut(getNativeOverview(appId))) {
+        entries.push(SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    }
+    const hltb = hltbMenuItem?.(appId);
+    if (hltb)
+        entries.push(hltb);
+    if (entries.length === 0)
+        return false;
+    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
+    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
+    items.splice(insertAt, 0, ...entries);
+    return true;
+};
+const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
+    const removed = removeOurEntry(items);
+    const isGameMenu = isGameContextMenu(items);
+    const hasAppProps = hasAppPropertiesHelper(items);
+    let inserted = "skipped";
+    let finalAppId = 0;
+    if (!isGameMenu) {
+        inserted = "skipped-not-top-level";
+    }
+    else if (ownerAppId > 0) {
+        finalAppId = ownerAppId;
+        inserted = "owner-app-id";
+    }
+    else if (fallbackAppId > 0) {
+        if (hasAppProps) {
+            finalAppId = fallbackAppId;
+            inserted = "fallback-app-id";
+        }
+        else {
+            inserted = "skipped-incomplete-shape";
+        }
+    }
+    else {
+        inserted = "skipped-no-valid-appid";
+    }
+    if (finalAppId > 0) {
+        const actuallyInserted = insertOurEntry(items, finalAppId);
+        if (!actuallyInserted) {
+            inserted = "skipped-not-non-steam";
+        }
+    }
+    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProps, isGameMenu, removed, inserted, items);
+};
+/**
+ * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
+ * @param LibraryContextMenuClass The resolved menu class.
+ * @returns An object exposing unpatch() for plugin teardown.
+ */
+const contextMenuPatch = (LibraryContextMenuClass) => {
+    if (!LibraryContextMenuClass || !hasSteamInternals()) {
+        if (patchInstallStatus.contextMenu === "pending") {
+            patchInstallStatus.contextMenu = "skipped-missing-internal";
+            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
+        }
+        return { unpatch: () => { } };
+    }
+    let innerPatch;
+    let outerPatch;
+    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
+    const bodyPatches = [];
+    const patchedBodies = new Set();
+    // Steam reuses a single context-menu instance and installs the inner
+    // (body) render patches only once. Those patches must read the appid of
+    // whichever game is *currently* opening the menu, not the one captured on
+    // first render, so keep the latest values in mutable holders that the outer
+    // render refreshes on every open.
+    let currentOwnerAppId = 0;
+    let currentFallbackAppId = 0;
+    try {
+        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
+            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
+            if (!innerPatch) {
+                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    const bodyPrototype = rendered?.type?.prototype;
+                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
+                        return rendered;
+                    patchedBodies.add(bodyPrototype);
+                    // First render of the menu body.
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
+                        const items = output?.props?.children?.[0];
+                        try {
+                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
+                        }
+                        catch (_error) {
+                            // Steam reshapes this tree often; skip on mismatch.
+                        }
+                        return output;
+                    }));
+                    // Subsequent updates when Steam refreshes the app overview.
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
+                        try {
+                            if (shouldUpdate === true) {
+                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
+                            }
+                            else {
+                                removeOurEntry(nextProps.children);
+                            }
+                        }
+                        catch (_error) {
+                            // Not our menu; leave the decision untouched.
+                        }
+                        return shouldUpdate;
+                    }));
+                    return rendered;
+                });
+            }
+            else if (Array.isArray(menu?.props?.children)) {
+                try {
+                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
+                }
+                catch (_error) {
+                    // Ignore non-matching menus.
+                }
+            }
+            return menu;
+        });
+        patchInstallStatus.contextMenu = "installed";
+        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
+    }
+    catch (error) {
+        patchInstallStatus.contextMenu = "failed";
+        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
+    }
+    return {
+        unpatch: () => {
+            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
+            patchedBodies.clear();
+            outerPatch?.unpatch();
+            innerPatch?.unpatch();
+        },
+    };
+};
+
+let pending;
+/** One saved-cache read shared by the features that seed from it at startup. */
+const loadProviderCache = () => {
+    pending ?? (pending = getProviderCache());
+    return pending;
+};
+/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
+const releaseProviderCache = () => {
+    pending = undefined;
+};
+
+const DAY_MS = 86400000;
+const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
+const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
+const isEntry = (value) => value.status === "matched" || value.status === "no_match";
+const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Saved HLTB results by app ID, available synchronously while a game page renders. */
+class HltbStore {
+    constructor(fetchStats = getHltbStats) {
+        Object.defineProperty(this, "fetchStats", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchStats
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "blocked", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "inFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "retryAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+    }
+    /** Load saved entries; a result fetched during this session wins. */
+    seed(entries) {
+        for (const [id, entry] of Object.entries(entries)) {
+            const appId = Number(id);
+            if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId))
+                this.entries.set(appId, entry);
+        }
+    }
+    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
+    view(appId, inputs, now = Date.now()) {
+        if (this.blocked.get(appId) === inputsKey(inputs))
+            return { entry: null, needsFetch: false };
+        const entry = this.entries.get(appId);
+        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
+            entry.pinned_id_used !== inputs.pinned)
+            return { entry: null, needsFetch: true };
+        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
+        return { entry, needsFetch: now - entry.fetched_at >= ttl };
+    }
+    /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
+    request(appId, isShortcut, inputs, now = Date.now()) {
+        if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
+            return;
+        const generation = this.generation;
+        this.inFlight.add(appId);
+        void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
+            if (generation !== this.generation)
+                return;
+            if (isEntry(result)) {
+                this.entries.set(appId, result);
+                this.blocked.delete(appId);
+            }
+            else if (result.status === "error") {
+                this.retryAt.set(appId, Date.now() + Math.max(1000, result.retry_after_ms));
+            }
+            else {
+                this.blocked.set(appId, inputsKey(inputs));
+            }
+            this.notify(appId);
+        }, () => {
+            if (generation === this.generation)
+                this.retryAt.set(appId, Date.now() + 30000);
+        }).finally(() => {
+            if (generation === this.generation)
+                this.inFlight.delete(appId);
+        });
+    }
+    subscribe(appId, listener) {
+        let set = this.listeners.get(appId);
+        if (!set)
+            this.listeners.set(appId, set = new Set());
+        set.add(listener);
+        return () => {
+            set.delete(listener);
+            if (set.size === 0)
+                this.listeners.delete(appId);
+        };
+    }
+    /** Forget everything, e.g. after Clear cache or when the feature stops. */
+    reset() {
+        this.generation += 1;
+        this.entries.clear();
+        this.blocked.clear();
+        this.inFlight.clear();
+        this.retryAt.clear();
+        for (const appId of [...this.listeners.keys()])
+            this.notify(appId);
+    }
+    notify(appId) {
+        for (const listener of this.listeners.get(appId) ?? []) {
+            try {
+                listener();
+            }
+            catch {
+                // One unmounting page must not block others.
+            }
+        }
+    }
+}
+const hltbStore = new HltbStore();
+
+/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
+class HltbController {
+    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }) {
+        Object.defineProperty(this, "runtime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: runtime
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: store
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposeRuntime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = this.initialSnapshot();
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = { ...this.initialSnapshot(), busy: true };
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("hltb") });
+        });
+        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
+            this.store.seed(cache.hltb.entries); }, () => undefined);
+        void this.settingsStore.get().then((settings) => {
+            if (this.isCurrent(generation))
+                this.publish({ settings: normalizeHltbSettings(settings), settingsLoaded: true, busy: false });
+        }, (error) => {
+            if (!this.isCurrent(generation))
+                return;
+            warn("bridge", "HLTB settings load failed", error);
+            this.publish({ busy: false, settingsError: "HLTB settings could not be loaded. Reload the plugin to retry." });
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.publish({ settingsLoaded: false, busy: false });
+        this.store.reset();
+        this.listeners.clear();
+    }
+    async setSettings(next) {
+        const current = this.snapshot;
+        if (!this.mounted || !current.settingsLoaded || current.busy)
+            return false;
+        if (next.enabled && !current.settings.enabled && current.conflict.pluginName)
+            return false;
+        const generation = this.generation;
+        this.publish({ busy: true, settingsError: "" });
+        try {
+            const saved = normalizeHltbSettings(await this.settingsStore.set(normalizeHltbSettings(next)));
+            if (!this.isCurrent(generation))
+                return false;
+            this.publish({ settings: saved, busy: false });
+            return true;
+        }
+        catch (error) {
+            if (!this.isCurrent(generation))
+                return false;
+            warn("bridge", "HLTB settings save failed", error);
+            this.publish({ busy: false, settingsError: "HLTB settings could not be saved." });
+            return false;
+        }
+    }
+    /** The per-game Show/Hide choice from the game's menu. */
+    async toggleHidden(appId) {
+        const { settings } = this.snapshot;
+        const hidden = settings.hiddenAppIds.includes(appId);
+        return this.setSettings({
+            ...settings,
+            hiddenAppIds: hidden ? settings.hiddenAppIds.filter((id) => id !== appId) : [...settings.hiddenAppIds, appId],
+        });
+    }
+    async clearCache() {
+        if (!this.mounted)
+            return false;
+        try {
+            await this.settingsStore.clear();
+            this.store.reset();
+            return true;
+        }
+        catch (error) {
+            warn("bridge", "HLTB cache clear failed", error);
+            this.publish({ settingsError: "The HLTB cache could not be cleared." });
+            return false;
+        }
+    }
+    initialSnapshot() {
+        return Object.freeze({
+            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false,
+        });
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    publish(update) {
+        const next = { ...this.snapshot, ...update };
+        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
+        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
+        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
+        if (changed)
+            this.applyRuntime(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // A closing QAM panel cannot block the feature.
+            }
+        }
+    }
+    applyRuntime(enabled) {
+        try {
+            if (enabled) {
+                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
+            }
+            else {
+                const dispose = this.disposeRuntime;
+                this.disposeRuntime = undefined;
+                dispose?.();
+            }
+        }
+        catch (error$1) {
+            error("patch", "HLTB runtime transition failed", error$1);
+            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: "HLTB times could not be applied. Reload the plugin." });
+        }
+    }
+}
+
+// Layout and appearance adapted from HLTB for Deck (MIT).
+
+const css = `
+#decky-metadata-hltb { position: relative; }
+.decky-metadata-hltb-info {
+  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
+  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
+  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
+}
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; }
+.decky-metadata-hltb-clean-default { padding: 0; top: calc(-40px * var(--hltb-text-scale, 1)); height: calc(40px * var(--hltb-text-scale, 1)); width: 100%; }
+.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
+.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
+.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
+.decky-metadata-hltb-info li { text-align: center; }
+.decky-metadata-hltb-info p { margin: 0; }
+.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-details { background: transparent !important; color: var(--hltb-link-color, #67c1f5) !important; margin: auto !important; font-size: 10px !important; font-weight: bold !important; text-transform: uppercase; line-height: 10px !important; }
+.decky-metadata-hltb-details:focus, .decky-metadata-hltb-details:hover { color: #fff !important; }
+`;
+function HltbStats({ stats, hltbId, settings, launching }) {
+    if (!stats || launching || Object.values(stats).every(value => value <= 0))
+        return null;
+    const { appearance, style } = settings;
+    const vars = {};
+    if (appearance.custom) {
+        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
+        if (appearance.linkColor === "text")
+            vars["--hltb-link-color"] = "currentColor";
+        if (appearance.textShadow)
+            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
+        if (appearance.textScale !== 100)
+            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
+        if (!appearance.border)
+            vars["--hltb-border-width"] = "0";
+    }
+    const items = [
+        [settings.showMain, stats.main, "Main Story"],
+        [settings.showMainPlus, stats.plus, "Main + Extras"],
+        [settings.showComplete, stats.complete, "Completionist"],
+        [settings.showAllStyles, stats.all, "All Styles"],
+    ];
+    const classes = ["decky-metadata-hltb-info", style === "clean-default" ? "decky-metadata-hltb-clean-default" : "", style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "", style === "clean-left" ? "decky-metadata-hltb-clean-left" : ""].filter(Boolean).join(" ");
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: classes, style: vars, children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { children: SP_JSX.jsx(DFL.DialogButtonPrimary, { className: "decky-metadata-hltb-details", onClick: () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`), children: "View Details" }) }) : null] }) })] });
+}
+
+const ROW_KEY = "decky-metadata-hltb-row";
+const positiveId = (value, maximum) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
+};
+/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
+const hltbInputs = (appId, isShortcut, title) => {
+    if (!isShortcut)
+        return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
+    const record = metadataCache[String(appId)];
+    return {
+        steam: positiveId(record?.steam_appid, 0x7fffffff),
+        title,
+        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
+    };
+};
+function useSnapshot() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+/** Hide the row while Steam's header animates into a game launch. */
+function useLaunching(ref, active) {
+    const [launching, setLaunching] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (!active)
+            return;
+        const header = Array.from(ref.current?.parentElement?.children ?? [])
+            .find((child) => child.className.includes(DFL.appDetailsClasses.Header));
+        const capsule = Array.from(header?.children ?? [])
+            .find((child) => child.className.includes(DFL.appDetailsHeaderClasses.TopCapsule));
+        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
+        if (!capsule || !View)
+            return;
+        const observer = new View(() => {
+            const name = capsule.className;
+            const entering = [
+                DFL.appDetailsHeaderClasses.FullscreenEnterStart, DFL.appDetailsHeaderClasses.FullscreenEnterActive,
+                DFL.appDetailsHeaderClasses.FullscreenEnterDone, DFL.appDetailsHeaderClasses.FullscreenExitStart,
+                DFL.appDetailsHeaderClasses.FullscreenExitActive,
+            ].some((value) => value && name.includes(value));
+            setLaunching(entering && !name.includes(DFL.appDetailsHeaderClasses.FullscreenExitDone));
+        });
+        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, [active]);
+    return launching;
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const [, rerender] = SP_REACT.useState(0);
+    const native = getNativeOverview(appId);
+    const isShortcut = isNativeNonSteamShortcut(native);
+    const title = String(native?.display_name ?? "").trim();
+    const inputs = hltbInputs(appId, isShortcut, title);
+    const active = snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId) && title !== "";
+    const view = hltbStore.view(appId, inputs);
+    const launching = useLaunching(ref, active);
+    SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
+    SP_REACT.useEffect(() => {
+        if (active && view.needsFetch)
+            hltbStore.request(appId, isShortcut, inputs);
+    });
+    if (!active)
+        return null;
+    const entry = view.entry?.status === "matched" ? view.entry : null;
+    return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));
+}
+/** True for the child that holds Steam's Play section (the row goes right above it). */
+const isPlaySection = (child) => {
+    const props = (child?.props ?? {});
+    const inner = props.children?.props ?? {};
+    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
+        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
+};
+function installHltbGameView() {
+    const unpatchers = [];
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+            if (!routeProps)
+                return tree;
+            let appId = 0;
+            const handler = DFL.createReactTreePatcher([
+                (inner) => {
+                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                    appId = Number(children?.props?.overview?.appid) || 0;
+                    return children ?? null;
+                },
+            ], (_args, ret) => {
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && node?.props?.className?.includes(DFL.appDetailsClasses.InnerContainer))?.props?.children;
+                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                    return ret;
+                const index = children.findIndex(isPlaySection);
+                if (index >= 0)
+                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+                return ret;
+            });
+            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
+            unpatchers.push(() => renderPatch.unpatch());
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    }
+    setHltbMenuItem((appId) => (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => { void hltbController.toggleHidden(appId); }, children: "Show/Hide HLTB Stats" }, "decky-metadata-hltb")));
+    return () => {
+        setHltbMenuItem(undefined);
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+const hltbController = new HltbController({ install: installHltbGameView });
+
+const PLAYHUB_COMMUNITY_IGN_ICON = "data:image/png;base64,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";
+const PLAYHUB_COMMUNITY_RAWG_ICON = "data:image/png;base64,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";
+const PLAYHUB_COMMUNITY_STEAM_ICON = "https://store.steampowered.com/favicon.ico";
+const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
+    const cleanSteamAppId = Number(steamAppId || 0);
+    if (cleanSteamAppId <= 0)
+        return null;
+    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
+        return null;
+    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
+};
+const pageFromValue = (value) => {
+    if (value == null || String(value).trim() === "")
+        return null;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed))
+        return null;
+    return Math.max(1, Math.min(Math.trunc(parsed), 100));
+};
+const pageFromTransportValue = (value, depth = 0) => {
+    if (depth > 3 || value == null)
+        return null;
+    if (value instanceof URLSearchParams) {
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(value.get(key));
+            if (page)
+                return page;
+        }
+        return null;
+    }
+    if (typeof value === "string") {
+        const query = value.includes("?") ? value.slice(value.indexOf("?") + 1) : value;
+        const params = new URLSearchParams(query);
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(params.get(key));
+            if (page)
+                return page;
+        }
+        const cursorPage = value.match(/(?:^|[^a-z])page[_:=/-]?(\d+)/i)?.[1];
+        return pageFromValue(cursorPage);
+    }
+    if (typeof value === "object") {
+        const record = value;
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(record[key]);
+            if (page)
+                return page;
+        }
+        for (const key of ["body", "data", "params", "cursor"]) {
+            const page = pageFromTransportValue(record[key], depth + 1);
+            if (page)
+                return page;
+        }
+    }
+    return null;
+};
+const requestedCommunityPage = (url, transportArgs = []) => {
+    for (const value of transportArgs) {
+        const page = pageFromTransportValue(value);
+        if (page)
+            return page;
+    }
+    return pageFromTransportValue(url) || 1;
+};
+const nativeHubHasContent = (response) => Boolean(response && typeof response === "object" && Array.isArray(response.hub) && response.hub.length);
+const syntheticCommunityId = (appId, page, index) => {
+    const cleanAppId = String(Math.max(0, Math.trunc(Number(appId) || 0))).padStart(10, "0").slice(-10);
+    const cleanPage = String(Math.max(1, Math.min(Math.trunc(Number(page) || 1), 100))).padStart(3, "0");
+    const cleanIndex = String(Math.max(0, Math.trunc(Number(index) || 0))).padStart(2, "0").slice(-2);
+    return `90909${cleanAppId}${cleanPage}${cleanIndex}`;
+};
+const communityProviderIcon = (source) => {
+    const cleanSource = String(source || "").trim().toLowerCase();
+    if (cleanSource.includes("steam"))
+        return PLAYHUB_COMMUNITY_STEAM_ICON;
+    if (cleanSource.includes("rawg"))
+        return PLAYHUB_COMMUNITY_RAWG_ICON;
+    return PLAYHUB_COMMUNITY_IGN_ICON;
+};
+const communityCreator = (source, avatar) => ({
+    steamid: "76561197960287930",
+    name: source || "Playhub Metadata",
+    avatar,
+    avatar_url: avatar,
+    avatar_medium: avatar,
+    avatar_full: avatar,
+    avatarFullURL: avatar,
+});
+const fallbackPageToNativeHub = (appId, fallback) => ({
+    cached: fallback.source === "metadata",
+    hub: fallback.items.map((item, index) => {
+        const sourceLabel = fallback.source === "steam-scrape"
+            ? item.author ? `Steam Community · ${item.author}` : "Steam Community"
+            : item.author || "Metadata";
+        const providerIcon = communityProviderIcon(sourceLabel);
+        const itemLink = item.link || item.image_url;
+        const publishedFileId = syntheticCommunityId(appId, fallback.page, index);
+        return {
+            appid: appId,
+            consumer_appid: appId,
+            published_file_id: publishedFileId,
+            publishedfileid: publishedFileId,
+            type: 5,
+            title: item.title,
+            preview_image_url: item.image_url,
+            full_image_url: item.image_url,
+            image_width: item.width,
+            image_height: item.height,
+            url: itemLink,
+            link: itemLink,
+            external_url: itemLink,
+            strURL: itemLink,
+            avatar: providerIcon,
+            avatar_url: providerIcon,
+            creator_avatar_url: providerIcon,
+            author_avatar_url: providerIcon,
+            owner_avatar_url: providerIcon,
+            content_descriptorids: [],
+            spoiler_tag: false,
+            description: item.description,
+            creator: communityCreator(sourceLabel, providerIcon),
+            author: sourceLabel,
+            time_created: Math.floor(Date.now() / 1000) - index * 60,
+            votes_up: 0,
+            votes_down: 0,
+            num_comments_public: 0,
+            reactions: [],
+        };
+    }),
+});
+const resolveCommunityFeed = async ({ appId, page, originalArgs, rewrittenArgs, nativeRequest, fallbackRequest, onFallbackError, }) => {
+    const nativeArgs = rewrittenArgs || originalArgs;
+    let native;
+    let nativeError;
+    try {
+        native = await nativeRequest(nativeArgs);
+        if (nativeHubHasContent(native))
+            return native;
+    }
+    catch (error) {
+        nativeError = error;
+    }
+    try {
+        const fallback = await fallbackRequest(appId, page);
+        if (fallback.items.length)
+            return fallbackPageToNativeHub(appId, fallback);
+    }
+    catch (error) {
+        onFallbackError?.(error);
+        // Native preservation rules below intentionally handle fallback failures.
+    }
+    if (!nativeError)
+        return native;
+    if (rewrittenArgs)
+        return nativeRequest(originalArgs);
+    throw nativeError;
+};
+const resolveCommunityRequest = (options) => options.isNonSteam
+    ? resolveCommunityFeed(options)
+    : options.nativeRequest(options.originalArgs);
+
+const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) => {
+    const attempts = new Map();
+    const inFlight = new Set();
+    const isFresh = (timestampMs, nowMs) => typeof timestampMs === "number" && timestampMs > 0 && nowMs - timestampMs < intervalMs;
+    return {
+        shouldAttempt: (appId, nowMs, enrichedAtSeconds) => {
+            if (!appId || inFlight.has(appId))
+                return false;
+            if (isFresh(attempts.get(appId), nowMs))
+                return false;
+            const enrichedAtMs = Number(enrichedAtSeconds || 0) * 1000;
+            if (isFresh(enrichedAtMs, nowMs))
+                return false;
+            return true;
+        },
+        markAttempt: (appId, nowMs) => {
+            if (!appId)
+                return;
+            attempts.set(appId, nowMs);
+            inFlight.add(appId);
+        },
+        markSettled: (appId) => {
+            inFlight.delete(appId);
+        },
+    };
 };
 
 let ensureMetadataCacheFn = async () => undefined;
@@ -7822,232 +8655,6 @@ const installHistoryInstanceTrace = (unpatchers) => {
         });
         delete globalState.__deckyHistoryInstanceTrace;
     });
-};
-
-// The edit key is the only entry this version inserts. Keep the legacy key in
-// the removal set because Steam can reuse menu arrays created by older builds.
-const ENTRY_KEY = "decky-metadata-edit";
-const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-compatibility"]);
-let contextMenuTraceEnabled = false;
-const setContextMenuTraceEnabled = (enabled) => {
-    contextMenuTraceEnabled = enabled;
-};
-const hasAppPropertiesHelper = (items) => {
-    if (!Array.isArray(items) || items.length === 0)
-        return false;
-    return !!DFL.findInReactTree(items, (node) => node?.onSelected?.toString?.().includes("AppProperties"));
-};
-const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProperties, hasLaunchSource, removedExisting, insertedOrSkipped, items) => {
-    if (!contextMenuTraceEnabled)
-        return;
-    try {
-        const snippets = (Array.isArray(items) ? items : [])
-            .slice(0, 5)
-            .map((node) => ({
-            key: node?.key,
-            text: typeof node?.props?.children === "string" ? node.props.children : undefined,
-        }));
-        frontendLog("trace", "context-menu", {
-            phase,
-            ownerAppId,
-            fallbackAppId,
-            finalAppId,
-            isGameContextMenu: isGameMenu,
-            hasAppProperties,
-            hasLaunchSource,
-            removedExisting,
-            insertedOrSkipped,
-            snippets,
-        }).catch(() => undefined);
-    }
-    catch (_e) { }
-};
-/**
- * Resolve Steam's internal LibraryContextMenu class at runtime.
- *
- * The class is not exported, so we locate the webpack module that references
- * it, pick the member whose source mentions "navigator:", and read the type
- * back from a throwaway render.
- */
-const resolveLibraryContextMenu = () => {
-    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
-        member.toString().includes("().LibraryContextMenu"));
-    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
-        member.toString().includes("navigator:"));
-    return DFL.fakeRenderComponent(menuComponent).type;
-};
-const LibraryContextMenu = resolveLibraryContextMenu();
-/**
- * Work out which appid the menu is really for.
- *
- * Steam reuses context-menu instances, so the appid passed in can be stale.
- * Prefer a fresh appid carried on the owning React node; otherwise scan the
- * node tree for an `app.appid` (used by newer Steam clients).
- */
-const resolveAppId = (nodes, fallbackAppId) => {
-    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
-        node._owner.pendingProps.overview.appid !== fallbackAppId);
-    if (fresherNode) {
-        return Number(fresherNode._owner.pendingProps.overview.appid);
-    }
-    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
-        walkable: ["props", "children"],
-    });
-    return Number(taggedNode?.app?.appid ?? fallbackAppId);
-};
-/**
- * True only for the per-game context menu. Its launch action's handler
- * references "launchSource"; menus like the screenshot menu do not, which
- * lets us ignore them.
- */
-const isGameContextMenu = (items) => {
-    if (!Array.isArray(items) || items.length === 0)
-        return false;
-    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
-};
-/** Remove any previously injected entry so re-renders cannot stack copies. */
-const removeOurEntry = (items) => {
-    let removed = false;
-    for (let index = items.length - 1; index >= 0; index -= 1) {
-        if (REMOVAL_KEYS.has(items[index]?.key)) {
-            items.splice(index, 1);
-            removed = true;
-        }
-    }
-    return removed;
-};
-/** Insert our entry just above "Properties..." (or at the end) for shortcuts. */
-const insertOurEntry = (items, appId) => {
-    const overview = getNativeOverview(appId);
-    if (!isNativeNonSteamShortcut(overview))
-        return false;
-    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
-    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
-    return true;
-};
-const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
-    const removed = removeOurEntry(items);
-    const isGameMenu = isGameContextMenu(items);
-    const hasAppProps = hasAppPropertiesHelper(items);
-    let inserted = "skipped";
-    let finalAppId = 0;
-    if (!isGameMenu) {
-        inserted = "skipped-not-top-level";
-    }
-    else if (ownerAppId > 0) {
-        finalAppId = ownerAppId;
-        inserted = "owner-app-id";
-    }
-    else if (fallbackAppId > 0) {
-        if (hasAppProps) {
-            finalAppId = fallbackAppId;
-            inserted = "fallback-app-id";
-        }
-        else {
-            inserted = "skipped-incomplete-shape";
-        }
-    }
-    else {
-        inserted = "skipped-no-valid-appid";
-    }
-    if (finalAppId > 0) {
-        const actuallyInserted = insertOurEntry(items, finalAppId);
-        if (!actuallyInserted) {
-            inserted = "skipped-not-non-steam";
-        }
-    }
-    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProps, isGameMenu, removed, inserted, items);
-};
-/**
- * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
- * @param LibraryContextMenuClass The resolved menu class.
- * @returns An object exposing unpatch() for plugin teardown.
- */
-const contextMenuPatch = (LibraryContextMenuClass) => {
-    if (!LibraryContextMenuClass || !hasSteamInternals()) {
-        if (patchInstallStatus.contextMenu === "pending") {
-            patchInstallStatus.contextMenu = "skipped-missing-internal";
-            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
-        }
-        return { unpatch: () => { } };
-    }
-    let innerPatch;
-    let outerPatch;
-    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
-    const bodyPatches = [];
-    const patchedBodies = new Set();
-    // Steam reuses a single context-menu instance and installs the inner
-    // (body) render patches only once. Those patches must read the appid of
-    // whichever game is *currently* opening the menu, not the one captured on
-    // first render, so keep the latest values in mutable holders that the outer
-    // render refreshes on every open.
-    let currentOwnerAppId = 0;
-    let currentFallbackAppId = 0;
-    try {
-        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
-            if (!innerPatch) {
-                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
-                    const bodyPrototype = rendered?.type?.prototype;
-                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
-                        return rendered;
-                    patchedBodies.add(bodyPrototype);
-                    // First render of the menu body.
-                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
-                        const items = output?.props?.children?.[0];
-                        try {
-                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
-                        }
-                        catch (_error) {
-                            // Steam reshapes this tree often; skip on mismatch.
-                        }
-                        return output;
-                    }));
-                    // Subsequent updates when Steam refreshes the app overview.
-                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
-                        try {
-                            if (shouldUpdate === true) {
-                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
-                            }
-                            else {
-                                removeOurEntry(nextProps.children);
-                            }
-                        }
-                        catch (_error) {
-                            // Not our menu; leave the decision untouched.
-                        }
-                        return shouldUpdate;
-                    }));
-                    return rendered;
-                });
-            }
-            else if (Array.isArray(menu?.props?.children)) {
-                try {
-                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
-                }
-                catch (_error) {
-                    // Ignore non-matching menus.
-                }
-            }
-            return menu;
-        });
-        patchInstallStatus.contextMenu = "installed";
-        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
-    }
-    catch (error) {
-        patchInstallStatus.contextMenu = "failed";
-        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
-    }
-    return {
-        unpatch: () => {
-            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
-            patchedBodies.clear();
-            outerPatch?.unpatch();
-            innerPatch?.unpatch();
-        },
-    };
 };
 
 // Safe React element-tree traversal, extracted for unit testing.
@@ -14939,7 +15546,7 @@ const copySettings = (settings) => Object.freeze({
 });
 const errorText = (error, fallback) => error instanceof Error && error.message ? error.message : fallback;
 class ProtonDbBadgeController {
-    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts, loadCache = getProviderCache, writer = new ProtonDbCacheWriter()) {
+    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts, loadCache = loadProviderCache, writer = new ProtonDbCacheWriter()) {
         Object.defineProperty(this, "settingsStore", {
             enumerable: true,
             configurable: true,
@@ -15238,6 +15845,13 @@ const Content = () => {
         refresh();
         return unsubscribe;
     }, []);
+    const [hltbSnapshot, setHltbSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setHltbSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
     const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
     const initialPendingCompatibilityPolicySave = initialCompatibilityPolicySave
         && initialCompatibilityPolicySave.pendingKind !== null
@@ -15286,6 +15900,8 @@ const Content = () => {
     const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
     const [trailerQualityControl, setTrailerQualityControlState] = SP_REACT.useState(null);
     const [protonDbCoverControl, setProtonDbCoverControlState] = SP_REACT.useState(null);
+    const [hltbStyleControl, setHltbStyleControlState] = SP_REACT.useState(null);
+    const [hltbLinkColorControl, setHltbLinkColorControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
@@ -15308,6 +15924,16 @@ const Content = () => {
             noteCompatibilityDropdownControlUnmounted();
         setProtonDbCoverControlState(element);
     }, []);
+    const setHltbStyleControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setHltbStyleControlState(element);
+    }, []);
+    const setHltbLinkColorControl = SP_REACT.useCallback((element) => {
+        if (!element)
+            noteCompatibilityDropdownControlUnmounted();
+        setHltbLinkColorControlState(element);
+    }, []);
     const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
         const shared = compatibilityPolicySaveSnapshot();
         if (shared
@@ -15329,7 +15955,8 @@ const Content = () => {
             : "");
     }, []);
     SP_REACT.useEffect(() => {
-        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl || protonDbCoverControl;
+        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
+            protonDbCoverControl || hltbStyleControl || hltbLinkColorControl;
         if (!mountedControl)
             return;
         const qamDocument = mountedControl.ownerDocument;
@@ -15351,7 +15978,7 @@ const Content = () => {
         qamDocument.addEventListener("visibilitychange", observeVisibility);
         observeVisibility();
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl]);
+    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbLinkColorControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -15380,11 +16007,16 @@ const Content = () => {
         const control = origin === "scope"
             ? compatibilityDefaultScopeControl
             : origin === "quality" ? trailerQualityControl
-                : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+                : origin === "hltb-style" ? hltbStyleControl
+                    : origin === "hltb-link-color" ? hltbLinkColorControl
+                        : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
+        const hltbOrigin = origin === "hltb-style" || origin === "hltb-link-color";
         const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
-            : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
+            : hltbOrigin ? hltbSnapshot.settingsLoaded
+                : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
         const busy = origin === "quality" ? trailerSnapshot.busy
-            : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
+            : hltbOrigin ? hltbSnapshot.busy
+                : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
         if (!isCompatibilityDropdownReturnReady() || !control)
             return;
         let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
@@ -15501,6 +16133,10 @@ const Content = () => {
         protonDbCoverControl,
         protonDbSnapshot.busy,
         protonDbSnapshot.settingsLoaded,
+        hltbStyleControl,
+        hltbLinkColorControl,
+        hltbSnapshot.busy,
+        hltbSnapshot.settingsLoaded,
     ]);
     const updateMissingCount = SP_REACT.useCallback((currentGames) => {
         void getMissingMetadataCount(currentGames)
@@ -15894,7 +16530,34 @@ const Content = () => {
                 }, onCoverPositionMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
+                    requestCompatibilityDropdownReturn("hltb-style");
+                    noteCompatibilityDropdownControlUnmounted();
+                    try {
+                        return await hltbController.setSettings({ ...hltbController.getSnapshot().settings, style });
+                    }
+                    finally {
+                        if (noteCompatibilityDropdownSelectionSaved())
+                            setCompatibilityDropdownReturnVersion((version) => version + 1);
+                    }
+                }, onLinkColorChange: async (linkColor) => {
+                    requestCompatibilityDropdownReturn("hltb-link-color");
+                    noteCompatibilityDropdownControlUnmounted();
+                    try {
+                        const settings = hltbController.getSnapshot().settings;
+                        return await hltbController.setSettings({ ...settings, appearance: { ...settings.appearance, linkColor } });
+                    }
+                    finally {
+                        if (noteCompatibilityDropdownSelectionSaved())
+                            setCompatibilityDropdownReturnVersion((version) => version + 1);
+                    }
+                }, onStyleMenuWillOpen: () => {
+                    requestCompatibilityDropdownReturn("hltb-style");
+                    noteCompatibilityDropdownControlUnmounted();
+                }, onLinkColorMenuWillOpen: () => {
+                    requestCompatibilityDropdownReturn("hltb-link-color");
+                    noteCompatibilityDropdownControlUnmounted();
+                }, onStyleControlRef: setHltbStyleControl, onLinkColorControlRef: setHltbLinkColorControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -16343,6 +17006,27 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
     };
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Find a Steam match", children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game." }), matchedSteamAppId ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Current Steam App ID: ${matchedSteamAppId}` }) : null, SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": "Steam game search", value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? "Searching Steam..." : "Search Steam" })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? "Enter a game name to find Steam matches." : null, status === "loading" ? "Searching Steam..." : null, status === "empty" ? "No Steam matches found. Try another name or use the Steam App ID field below." : null, status === "error" ? searchError : null] }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, style: rowStackStyle, children: [SP_JSX.jsxs(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, "aria-pressed": selected?.steam_appid === candidate.steam_appid, disabled: disabled, onClick: () => void select(candidate), style: editorSteamMatchCardStyle, children: [candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : null, SP_JSX.jsxs("div", { style: { minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("b", { children: candidate.title }), SP_JSX.jsxs("div", { style: compactTextStyle, children: [`Steam App ID: ${candidate.steam_appid}`, candidate.steam_appid === matchedSteamAppId ? " · Current match" : null, candidate.steam_appid === selected?.steam_appid ? " · Selected" : null] })] })] }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: editorSteamMatchPreviewStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: "Loading Steam details..." }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: previewError }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: `${preview.title} Steam artwork`, style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length ? `Developer: ${preview.developers.join(", ")}` : "Developer unavailable" }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label ? `Release: ${preview.release_date_label}` : "Release date unavailable" }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam type: ${preview.app_type}. Check that this is the game or edition you want.` }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork." }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: "Use this Steam match" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: "Cancel selection" })] })) : null] }, candidate.steam_appid)))] }) })] }));
 };
+
+function parseHltbGameId(input) {
+    const value = input.trim();
+    let digits = value;
+    if (!/^\d+$/.test(value)) {
+        try {
+            const url = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(value) ? value : `https://${value}`);
+            if (url.protocol !== "https:" || !/^(?:www\.)?howlongtobeat\.com$/i.test(url.hostname) || url.port || url.username || url.password)
+                return 0;
+            const match = /^\/game\/(\d+)(?:\/|$)/.exec(url.pathname);
+            if (!match)
+                return 0;
+            digits = match[1];
+        }
+        catch {
+            return 0;
+        }
+    }
+    const id = Number(digits);
+    return Number.isSafeInteger(id) && id > 0 ? id : 0;
+}
 
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
@@ -16839,6 +17523,10 @@ const MetadataPage = () => {
         rating: parseRating(ratingText),
         store_categories: metadata.store_categories || [],
     }), [developerText, metadata, publisherText, ratingText, releaseText]);
+    // Unsaved HLTB field text; null shows the saved choice. Declared after the
+    // other hooks so their order is unchanged.
+    const [hltbIdDraft, setHltbIdDraft] = SP_REACT.useState(null);
+    const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
     const saveCurrent = async () => {
         if (!nonSteam) {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
@@ -16969,6 +17657,50 @@ const MetadataPage = () => {
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
+        }
+        catch (error) {
+            toastError("Save failed", String(error));
+        }
+        finally {
+            endBusy(requestedEntry);
+        }
+    };
+    const applyHltbGameId = async () => {
+        if (!nonSteam) {
+            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+            return;
+        }
+        const requestedEntry = editorEntryToken;
+        if (metadataHydratedEntry !== requestedEntry) {
+            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            return;
+        }
+        const text = hltbIdText.trim();
+        const id = text ? parseHltbGameId(text) : null;
+        if (id === 0) {
+            toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+            return;
+        }
+        if (!beginBusy(requestedEntry))
+            return;
+        try {
+            let name = "";
+            if (id !== null) {
+                const found = await checkHltbGameId(id);
+                if (!found.found) {
+                    toastWarn("Not found", "HowLongToBeat has no game with that number.");
+                    return;
+                }
+                name = found.game_name;
+            }
+            const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            setMetadataCacheEntry(appId, saved);
+            setFormMetadata(saved);
+            setHltbIdDraft(null);
+            applyMetadata(appId, { publishCompatibility: false });
+            toastSuccess("Saved", id === null ? "HLTB game cleared" : `HLTB game: ${name}`);
         }
         catch (error) {
             toastError("Save failed", String(error));
@@ -17224,7 +17956,7 @@ const MetadataPage = () => {
                                                     }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
                                     ...prev,
                                     deck_compat_override: compatibilityStatusValue(option.data),
-                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "HowLongToBeat game", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a HowLongToBeat game number or game page link to choose the times shown for this game. Leave empty to match automatically." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: "Apply HLTB game" })] })] }) }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
@@ -18407,6 +19139,9 @@ var index = DFL.definePlugin(() => {
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     resetProtonDbAppIdResolution();
     protonDbBadgeController.mount();
+    hltbController.mount();
+    // Both features started their one shared read of the saved cache.
+    releaseProviderCache();
     let unpatchSteam;
     try {
         unpatchSteam = installSteamPatches();
@@ -18441,6 +19176,7 @@ var index = DFL.definePlugin(() => {
             stopProtonDbStoreBadge();
             stopProtonDbGameView();
             protonDbBadgeController.stop();
+            hltbController.stop();
             stopPluginConflicts();
             resetProtonDbAppIdResolution();
             const reloading = reloadGuard.isPending();

@@ -21,6 +21,7 @@ import {
   getMetadata,
   removeMetadata,
   saveMetadata,
+  checkHltbGameId,
   saveShortcutNameState,
   searchMetadata,
   enrichSteamApp,
@@ -57,6 +58,7 @@ import {
 } from "./types";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
+import { parseHltbGameId } from "./hltb/gameId";
 import {
   normalizeReleaseDate,
   metadataTemplate,
@@ -599,6 +601,10 @@ export const MetadataPage = () => {
     }),
     [developerText, metadata, publisherText, ratingText, releaseText]
   );
+  // Unsaved HLTB field text; null shows the saved choice. Declared after the
+  // other hooks so their order is unchanged.
+  const [hltbIdDraft, setHltbIdDraft] = useState<string | null>(null);
+  const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
   const saveCurrent = async () => {
     if (!nonSteam) {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
@@ -739,6 +745,47 @@ export const MetadataPage = () => {
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
+    } catch (error) {
+      toastError("Save failed", String(error));
+    } finally {
+      endBusy(requestedEntry);
+    }
+  };
+
+  const applyHltbGameId = async () => {
+    if (!nonSteam) {
+      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+      return;
+    }
+    const requestedEntry = editorEntryToken;
+    if (metadataHydratedEntry !== requestedEntry) {
+      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      return;
+    }
+    const text = hltbIdText.trim();
+    const id = text ? parseHltbGameId(text) : null;
+    if (id === 0) {
+      toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+      return;
+    }
+    if (!beginBusy(requestedEntry)) return;
+    try {
+      let name = "";
+      if (id !== null) {
+        const found = await checkHltbGameId(id);
+        if (!found.found) {
+          toastWarn("Not found", "HowLongToBeat has no game with that number.");
+          return;
+        }
+        name = found.game_name;
+      }
+      const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
+      if (!isCurrentEditorEntry(requestedEntry)) return;
+      setMetadataCacheEntry(appId, saved);
+      setFormMetadata(saved);
+      setHltbIdDraft(null);
+      applyMetadata(appId, { publishCompatibility: false });
+      toastSuccess("Saved", id === null ? "HLTB game cleared" : `HLTB game: ${name}`);
     } catch (error) {
       toastError("Save failed", String(error));
     } finally {
@@ -1236,6 +1283,32 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
+
+        {nonSteam ? (
+          <PanelSection title={"HowLongToBeat game"}>
+            <PanelSectionRow>
+              <div style={rowStackStyle}>
+                <div style={compactTextStyle}>{"Paste a HowLongToBeat game number or game page link to choose the times shown for this game. Leave empty to match automatically."}</div>
+                <div style={editorAppIdRowStyle}>
+                  <TextField
+                    className={editorFocusTargetClassName}
+                    value={hltbIdText}
+                    onChange={(e) => setHltbIdDraft(e.target.value)}
+                    style={fieldStyle}
+                  />
+                  <FocusableButton
+                    className={`DialogButton ${editorFocusTargetClassName}`}
+                    disabled={entryBusy}
+                    onClick={() => applyHltbGameId()}
+                    style={editorAppIdButtonStyle}
+                  >
+                    {"Apply HLTB game"}
+                  </FocusableButton>
+                </div>
+              </div>
+            </PanelSectionRow>
+          </PanelSection>
+        ) : null}
 
         <PanelSection title={"Steam App ID"}>
           <PanelSectionRow>

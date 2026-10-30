@@ -31,6 +31,11 @@ pub const METHODS: &[&str] = &[
     "set_protondb_badge_settings",
     "get_provider_cache",
     "put_protondb_cache",
+    "get_hltb_settings",
+    "set_hltb_settings",
+    "get_hltb_stats",
+    "check_hltb_game_id",
+    "clear_hltb_cache",
     "get_metadata",
     "get_all_metadata",
     "remove_metadata",
@@ -173,13 +178,31 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
     match method {
         "put_protondb_cache" => {
             arity(&args, 2, 2)?;
-            let mut cache = state.provider_cache.lock().await;
-            cache.merge_protondb(&args[0], &args[1])?;
-            crate::provider_cache::save(
-                &state.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
-                &cache,
-            ).await?;
+            state.provider_cache.lock().await.merge_protondb(&args[0], &args[1])?;
+            crate::provider_cache::schedule_save(&state);
             Ok(json!({"ok": true}))
+        }
+        "get_hltb_settings" => {
+            arity(&args, 0, 0)?;
+            Ok(storage::normalize_hltb_settings(
+                &loaded_store(&state, "HLTB settings").await?.data()["settings"]["hltb"],
+            ))
+        }
+        "set_hltb_settings" => {
+            arity(&args, 1, 1)?;
+            state.set_setting("hltb", storage::validate_hltb_settings(&args[0])?).await
+        }
+        "get_hltb_stats" => {
+            arity(&args, 3, 3)?;
+            crate::hltb::stats(&state, &args[0], &args[1], &args[2]).await
+        }
+        "check_hltb_game_id" => {
+            arity(&args, 1, 1)?;
+            crate::hltb::check_game_id(&state, &args[0]).await
+        }
+        "clear_hltb_cache" => {
+            arity(&args, 0, 0)?;
+            crate::hltb::clear(&state).await
         }
         "get_platform_capabilities" => {
             arity(&args, 0, 0)?;

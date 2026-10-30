@@ -446,6 +446,7 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
     let compatibility = saved.remove("deck_compat_default");
     let mini_achievements = saved.remove("mini_achievements_enabled");
     let protondb = saved.remove("protondb_badges");
+    let hltb = saved.remove("hltb");
     let has_scope = saved.contains_key("deck_compat_default_scope");
     let scope = saved.remove("deck_compat_default_scope");
     let legacy_scope = saved.remove("deck_compat_default_matched_only");
@@ -485,6 +486,9 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
         );
     } else {
         normalized.remove("protondb_badges");
+    }
+    if let Some(value) = hltb {
+        normalized.insert("hltb".to_owned(), normalize_hltb_settings(&value));
     }
 
     if has_scope || has_legacy_scope {
@@ -575,6 +579,99 @@ pub fn normalize_protondb_badge_settings(value: &Value) -> Value {
         );
     }
     Value::Object(normalized)
+}
+
+const HLTB_STYLES: [&str; 4] = ["default", "clean", "clean-left", "clean-default"];
+const HLTB_MAX_HIDDEN_APPS: usize = 5_000;
+
+pub fn default_hltb_settings() -> Value {
+    json!({
+        "enabled": false, "style": "default", "hideViewDetails": false,
+        "showMain": true, "showMainPlus": true, "showComplete": true, "showAllStyles": true,
+        "appearance": {"custom": false, "barAlpha": 25, "linkColor": "steam",
+                       "textShadow": false, "textScale": 100, "border": true},
+        "hiddenAppIds": [],
+    })
+}
+
+fn hltb_step(value: Option<&Value>, min: i64, max: i64) -> Option<i64> {
+    value.and_then(Value::as_i64).filter(|n| (min..=max).contains(n) && n % 5 == 0)
+}
+
+fn hltb_hidden_app_id(value: &Value) -> Option<i64> {
+    value.as_i64().filter(|id| (1..=0xffff_ffff).contains(id))
+}
+
+/// Keep every valid saved choice and replace anything else with its default.
+pub fn normalize_hltb_settings(value: &Value) -> Value {
+    let mut normalized = default_hltb_settings();
+    let Some(source) = value.as_object() else { return normalized };
+    for key in ["enabled", "hideViewDetails", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
+        if let Some(flag) = source.get(key).and_then(Value::as_bool) {
+            normalized[key] = Value::Bool(flag);
+        }
+    }
+    if let Some(style) = source.get("style").and_then(Value::as_str).filter(|style| HLTB_STYLES.contains(style)) {
+        normalized["style"] = json!(style);
+    }
+    if let Some(appearance) = source.get("appearance").and_then(Value::as_object) {
+        let target = &mut normalized["appearance"];
+        for key in ["custom", "textShadow", "border"] {
+            if let Some(flag) = appearance.get(key).and_then(Value::as_bool) {
+                target[key] = Value::Bool(flag);
+            }
+        }
+        if let Some(alpha) = hltb_step(appearance.get("barAlpha"), 0, 100) {
+            target["barAlpha"] = json!(alpha);
+        }
+        if let Some(scale) = hltb_step(appearance.get("textScale"), 75, 150) {
+            target["textScale"] = json!(scale);
+        }
+        if let Some(color) = appearance.get("linkColor").and_then(Value::as_str).filter(|c| matches!(*c, "steam" | "text")) {
+            target["linkColor"] = json!(color);
+        }
+    }
+    if let Some(ids) = source.get("hiddenAppIds").and_then(Value::as_array) {
+        let mut seen = std::collections::HashSet::new();
+        let ids: Vec<i64> = ids
+            .iter()
+            .filter_map(hltb_hidden_app_id)
+            .filter(|id| seen.insert(*id))
+            .take(HLTB_MAX_HIDDEN_APPS)
+            .collect();
+        normalized["hiddenAppIds"] = json!(ids);
+    }
+    normalized
+}
+
+/// Reject a settings object that is not exactly a valid HLTB settings value.
+pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
+    let invalid = || "invalid HLTB settings".to_owned();
+    let source = value.as_object().ok_or_else(invalid)?;
+    let defaults = default_hltb_settings();
+    let same_keys = |actual: &Map<String, Value>, expected: &Value| {
+        let expected = expected.as_object().expect("fixed HLTB defaults");
+        actual.len() == expected.len() && expected.keys().all(|key| actual.contains_key(key))
+    };
+    let appearance = source.get("appearance").and_then(Value::as_object).ok_or_else(invalid)?;
+    let ids = source.get("hiddenAppIds").and_then(Value::as_array).ok_or_else(invalid)?;
+    let flags_valid = ["enabled", "hideViewDetails", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
+        .iter()
+        .all(|key| source.get(*key).is_some_and(Value::is_boolean))
+        && ["custom", "textShadow", "border"].iter().all(|key| appearance.get(*key).is_some_and(Value::is_boolean));
+    if !same_keys(source, &defaults)
+        || !same_keys(appearance, &defaults["appearance"])
+        || !flags_valid
+        || !source.get("style").and_then(Value::as_str).is_some_and(|style| HLTB_STYLES.contains(&style))
+        || hltb_step(appearance.get("barAlpha"), 0, 100).is_none()
+        || hltb_step(appearance.get("textScale"), 75, 150).is_none()
+        || !appearance.get("linkColor").and_then(Value::as_str).is_some_and(|c| matches!(c, "steam" | "text"))
+        || ids.len() > HLTB_MAX_HIDDEN_APPS
+        || ids.iter().any(|id| hltb_hidden_app_id(id).is_none())
+    {
+        return Err(invalid());
+    }
+    Ok(normalize_hltb_settings(value))
 }
 
 pub fn compatibility_default(value: &Value) -> Option<i64> {
@@ -1283,6 +1380,40 @@ mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
     use tokio::sync::Mutex;
+
+    #[test]
+    fn hltb_settings_accept_exact_values_and_repair_saved_ones() {
+        let defaults = default_hltb_settings();
+        assert_eq!(validate_hltb_settings(&defaults).unwrap(), defaults);
+        let mut changed = defaults.clone();
+        changed["style"] = json!("clean-left");
+        changed["appearance"]["barAlpha"] = json!(55);
+        changed["hiddenAppIds"] = json!([620, 4294967295u32]);
+        assert_eq!(validate_hltb_settings(&changed).unwrap(), changed);
+        for (path, bad) in [
+            ("style", json!("fancy")), ("enabled", json!("yes")), ("hiddenAppIds", json!([0])),
+            ("hiddenAppIds", json!([4294967296u64])), ("extra", json!(true)),
+        ] {
+            let mut value = defaults.clone();
+            value[path] = bad;
+            assert!(validate_hltb_settings(&value).is_err(), "{path}");
+        }
+        for (key, bad) in [("barAlpha", json!(33)), ("textScale", json!(200)), ("linkColor", json!("red"))] {
+            let mut value = defaults.clone();
+            value["appearance"][key] = bad;
+            assert!(validate_hltb_settings(&value).is_err(), "{key}");
+        }
+        let repaired = normalize_hltb_settings(&json!({
+            "enabled": true, "style": "fancy", "appearance": {"barAlpha": 33, "textScale": 150},
+            "hiddenAppIds": [5, 5, 0, "7", 9],
+        }));
+        assert_eq!(repaired["enabled"], true);
+        assert_eq!(repaired["style"], "default");
+        assert_eq!(repaired["appearance"]["barAlpha"], 25);
+        assert_eq!(repaired["appearance"]["textScale"], 150);
+        assert_eq!(repaired["hiddenAppIds"], json!([5, 9]));
+        assert_eq!(normalize_hltb_settings(&Value::Null), defaults);
+    }
 
     static NEXT_DIR: AtomicU64 = AtomicU64::new(0);
 

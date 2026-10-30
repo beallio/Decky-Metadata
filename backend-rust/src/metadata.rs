@@ -234,6 +234,10 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
     if value.get("release_date").is_some() {
         result["release_date"] = json!(release);
     }
+    // A user-chosen HowLongToBeat game; omitted when unset or invalid.
+    if let Some(id) = safe_int(&value["hltb_game_id"]).filter(|id| *id > 0) {
+        result["hltb_game_id"] = json!(id);
+    }
     Ok(result)
 }
 
@@ -255,6 +259,9 @@ pub fn merge_fetched(existing: &Value, fetched: Value) -> Value {
     let mut merged = fetched;
     if let Some(choice) = existing.get("deck_compat_override") {
         merged["deck_compat_override"] = choice.clone();
+    }
+    if let Some(choice) = existing.get("hltb_game_id") {
+        merged["hltb_game_id"] = choice.clone();
     }
     if safe_int(&existing["steam_appid"]).is_some_and(|id| id > 0) {
         for key in [
@@ -735,6 +742,19 @@ pub async fn enrich_steam(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_chosen_hltb_game_survives_saves_fetches_and_steam_match_changes() {
+        let saved = sanitize(&json!({"title":"Game","hltb_game_id":42}), &Value::Null).unwrap();
+        assert_eq!(saved["hltb_game_id"], 42);
+        for unset in [json!(null), json!(0), json!(-3), json!("abc")] {
+            assert!(sanitize(&json!({"title":"Game","hltb_game_id":unset}), &Value::Null).unwrap().get("hltb_game_id").is_none());
+        }
+        assert_eq!(merge_fetched(&saved, json!({"title":"Fetched"}))["hltb_game_id"], 42);
+        let existing = json!({"title":"Game","steam_appid":10,"hltb_game_id":42});
+        let changed = prepare_save(&existing, json!({"title":"Game","steam_appid":20,"hltb_game_id":42}), false, None, &Value::Null).unwrap();
+        assert_eq!(changed["hltb_game_id"], 42);
+    }
 
     #[test]
     fn news_deduplication_folds_modern_case_pairs_and_keeps_the_first_item() {

@@ -251,6 +251,31 @@ pub async fn load(path: &Path) -> ProviderCache {
     }
 }
 
+const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+
+/// Save the provider cache at most once per second; `flush` writes any pending change now.
+pub fn schedule_save(state: &std::sync::Arc<crate::state::AppState>) {
+    if state.provider_cache_dirty.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let state = std::sync::Arc::clone(state);
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = tokio::time::sleep(SAVE_DELAY) => {},
+            _ = state.cancel.cancelled() => {},
+        }
+        let _ = flush(&state).await;
+    });
+}
+
+pub async fn flush(state: &crate::state::AppState) -> Result<(), String> {
+    if !state.provider_cache_dirty.swap(false, Ordering::SeqCst) {
+        return Ok(());
+    }
+    let cache = state.provider_cache.lock().await;
+    save(&state.env.plugin_settings_dir.join(FILENAME), &cache).await
+}
+
 pub async fn save(path: &Path, cache: &ProviderCache) -> Result<(), String> {
     let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
     tokio::fs::create_dir_all(parent).await.map_err(|error| error.to_string())?;
