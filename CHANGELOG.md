@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- Screenshots for games matched through IGN now appear the first time you open
+  the game. Before, a background news check could stop them from loading until
+  your next visit.
+
 ## [0.6.0] - 2026-10-25
 
 Faster plugin, Steam match picker, and removed metadata stays removed
