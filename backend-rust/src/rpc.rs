@@ -329,7 +329,9 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "remove_metadata" => {
             arity(&args, 1, 1)?;
-            metadata::remove(&state, &args[0]).await
+            let removed = metadata::remove(&state, &args[0]).await?;
+            crate::hltb::forget(&state, &args[0]).await;
+            Ok(removed)
         }
         "clear_metadata_cache" => {
             arity(&args, 0, 0)?;

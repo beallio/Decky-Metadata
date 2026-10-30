@@ -2725,6 +2725,13 @@ class HltbStore {
                 this.listeners.delete(appId);
         };
     }
+    /** Forget one game after Remove metadata; its next view asks the backend again. */
+    forget(appId) {
+        this.entries.delete(appId);
+        this.blocked.delete(appId);
+        this.retryAt.delete(appId);
+        this.notify(appId);
+    }
     /** Forget everything, e.g. after Clear cache or when the feature stops. */
     reset() {
         this.generation += 1;
@@ -17757,6 +17764,7 @@ const MetadataPage = () => {
         try {
             await removeMetadata(appId);
             removeMetadataCacheEntry(appId);
+            hltbStore.forget(appId);
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             if (!isCurrentEditorEntry(requestedEntry))

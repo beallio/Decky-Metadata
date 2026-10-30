@@ -78,6 +78,14 @@ export class HltbStore {
     };
   }
 
+  /** Forget one game after Remove metadata; its next view asks the backend again. */
+  forget(appId: number): void {
+    this.entries.delete(appId);
+    this.blocked.delete(appId);
+    this.retryAt.delete(appId);
+    this.notify(appId);
+  }
+
   /** Forget everything, e.g. after Clear cache or when the feature stops. */
   reset(): void {
     this.generation += 1;

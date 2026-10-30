@@ -64,6 +64,19 @@ describe("HltbStore", () => {
     expect(store.view(621, { ...inputs, pinned: 42 }, now).needsFetch).toBe(true);
   });
 
+  it("stops showing a cached title match after Remove metadata", async () => {
+    const fetch = vi.fn<(...args: unknown[]) => Promise<HltbStatsResult>>().mockResolvedValue({ status: "blocked" });
+    const store = new HltbStore(fetch);
+    const titleOnly = { steam: null, title: "Hades", pinned: null };
+    store.seed({ "3000000002": entry({ steam_appid_used: null, title_used: "Hades" }) });
+    expect(store.view(3000000002, titleOnly, now).entry?.hltb_id).toBe(7231);
+    store.forget(3000000002);
+    expect(store.view(3000000002, titleOnly, now)).toEqual({ entry: null, needsFetch: true });
+    store.request(3000000002, true, titleOnly, now);
+    await settle();
+    expect(store.view(3000000002, titleOnly, now)).toEqual({ entry: null, needsFetch: false });
+  });
+
   it("ignores a lookup that finishes after a reset", async () => {
     const pending = deferred();
     const store = new HltbStore(vi.fn(() => pending.promise));

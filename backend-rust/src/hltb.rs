@@ -84,6 +84,8 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
     if title.contains('\0') || title.chars().count() > MAX_TITLE_CHARS {
         return Err("invalid title".into());
     }
+    // Remove metadata or Clear cache after this point makes the lookup's result stale.
+    let epoch = state.hltb_epoch.load(Ordering::SeqCst);
     let (enabled, steam, pinned, removed) = {
         let store = state.store().await?;
         let data = store.data();
@@ -137,6 +139,10 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
             let entry = entry(page.as_ref(), &inputs, now_ms());
             {
                 let mut cache = state.provider_cache.lock().await;
+                if state.hltb_epoch.load(Ordering::SeqCst) != epoch {
+                    // Ask again: the next call sees the removal marker or the cleared cache.
+                    return Ok(retry_error(Duration::ZERO));
+                }
                 cache.hltb.insert(app_id, entry.clone());
                 cache.cap_all();
             }
@@ -176,7 +182,19 @@ pub async fn check_game_id(state: &AppState, id: &Value) -> Result<Value, String
     }
 }
 
+/// Forget one game's HLTB result, e.g. after Remove metadata, so it is not shown
+/// from the cache and is looked up again only when allowed.
+pub async fn forget(state: &Arc<AppState>, app_id: &Value) {
+    let Some(app_id) = storage::positive_shortcut_app_id(app_id) else { return };
+    state.hltb_epoch.fetch_add(1, Ordering::SeqCst);
+    state.hltb_retry.lock().await.remove(&app_id);
+    if state.provider_cache.lock().await.hltb.remove(&app_id).is_some() {
+        provider_cache::schedule_save(state);
+    }
+}
+
 pub async fn clear(state: &AppState) -> Result<Value, String> {
+    state.hltb_epoch.fetch_add(1, Ordering::SeqCst);
     state.hltb_retry.lock().await.clear();
     let mut cache = state.provider_cache.lock().await;
     cache.hltb.clear();
@@ -225,6 +243,10 @@ mod tests {
         }
 
         async fn state(fixtures: Vec<Fixture>, enabled: bool) -> (Root, Arc<AppState>) {
+            state_with(Http::fixtures(fixtures), enabled).await
+        }
+
+        async fn state_with(http: Http, enabled: bool) -> (Root, Arc<AppState>) {
             static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
             let base = std::env::var_os("TMPDIR").map(std::path::PathBuf::from).unwrap_or_else(|| "/var/tmp/omp-1000".into());
             let root = base.join(format!("hltb-stats-test-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
@@ -237,7 +259,7 @@ mod tests {
                 ..Default::default()
             };
             let mut state = AppState::new(env).unwrap();
-            let http = Http::fixtures(fixtures);
+
             let inner = Arc::get_mut(&mut state).unwrap();
             inner.cancel = http.cancel.clone();
             inner.http = http;
@@ -302,6 +324,40 @@ mod tests {
             age(&state, 3_000_000_000, 15).await;
             assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game")).await.unwrap()["hltb_id"], 3);
             state.http.assert_drained();
+        }
+
+        #[tokio::test]
+        async fn remove_metadata_drops_a_cached_title_match_from_memory_and_disk() {
+            let (_root, state) = state(vec![init(), search(62941, "Hades")], true).await;
+            let shortcut = json!(3_000_000_002u32);
+            crate::metadata::save(&state, &shortcut, json!({"title":"Hades","description":"x"}), false, None).await.unwrap();
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["hltb_id"], 62941);
+            provider_cache::flush(&state).await.unwrap();
+            crate::rpc::dispatch(Arc::clone(&state), "remove_metadata", vec![shortcut.clone()]).await.unwrap();
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["status"], "blocked");
+            provider_cache::flush(&state).await.unwrap();
+            let saved = provider_cache::load(&state.env.plugin_settings_dir.join(provider_cache::FILENAME)).await;
+            assert!(!saved.hltb.contains_key(&3_000_000_002));
+            state.http.assert_drained();
+        }
+
+        #[tokio::test]
+        async fn a_lookup_that_finishes_after_remove_metadata_is_not_saved() {
+            let mut http = Http::fixtures(vec![init(), search(62941, "Hades")]);
+            let gate = http.gate_next_request();
+            let (_root, state) = state_with(http, true).await;
+            let shortcut = json!(3_000_000_003u32);
+            crate::metadata::save(&state, &shortcut, json!({"title":"Hades","description":"x"}), false, None).await.unwrap();
+            let pending = {
+                let (state, shortcut) = (Arc::clone(&state), shortcut.clone());
+                tokio::spawn(async move { stats(&state, &shortcut, &json!(true), &json!("Hades")).await })
+            };
+            tokio::time::timeout(Duration::from_secs(2), gate.started.notified()).await.unwrap();
+            crate::rpc::dispatch(Arc::clone(&state), "remove_metadata", vec![shortcut.clone()]).await.unwrap();
+            gate.resume.notify_one();
+            assert_eq!(pending.await.unwrap().unwrap()["status"], "error");
+            assert!(!state.provider_cache.lock().await.hltb.contains_key(&3_000_000_003));
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["status"], "blocked");
         }
 
         #[tokio::test]
