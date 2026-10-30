@@ -43,12 +43,12 @@ def build(entries: int, expired: bool, now_ms: int) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--entries", type=int, default=2000, help="entries per section (max 20000)")
+    parser.add_argument("--entries", type=int, default=2000, help="entries per section (max 5000, the backend limit)")
     parser.add_argument("--expired", action="store_true", help="timestamps 15 days old instead of fresh")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    if not 0 <= args.entries <= 20_000:
-        parser.error("--entries must be between 0 and 20000")
+    if not 0 <= args.entries <= 5_000:
+        parser.error("--entries must be between 0 and 5000")
     data = build(args.entries, args.expired, int(time.time() * 1000))
     args.output.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
     print(f"{args.output} {args.output.stat().st_size} bytes, {args.entries} entries per section")

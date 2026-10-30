@@ -174,7 +174,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "put_protondb_cache" => {
             arity(&args, 2, 2)?;
             let mut cache = state.provider_cache.lock().await;
-            crate::provider_cache::merge_protondb(&mut cache, &args[0], &args[1])?;
+            cache.merge_protondb(&args[0], &args[1])?;
             crate::provider_cache::save(
                 &state.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
                 &cache,

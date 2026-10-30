@@ -18,7 +18,7 @@ pub struct AppState {
     pub cef: crate::cef_bridge::BigPictureEvaluator,
     storage: OnceCell<Mutex<Storage>>,
     pub delisted: Mutex<Option<Arc<Value>>>,
-    pub provider_cache: Mutex<Value>,
+    pub provider_cache: Mutex<crate::provider_cache::ProviderCache>,
     pub jobs: crate::scan_runner::Jobs,
     updater_rate_limit: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
@@ -35,7 +35,7 @@ impl AppState {
             cef,
             storage: OnceCell::new(),
             delisted: Mutex::new(None),
-            provider_cache: Mutex::new(crate::provider_cache::empty()),
+            provider_cache: Mutex::new(Default::default()),
             jobs: crate::scan_runner::Jobs::new(),
             updater_rate_limit: Mutex::new(None),
         }))

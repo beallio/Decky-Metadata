@@ -46,20 +46,28 @@
     };
     const all = await api.call.call(api, "get_all_metadata");
     const firstId = Number(Object.keys(all || {})[0] || 0);
-    const cache = await api.call.call(api, "get_provider_cache");
-    const sizes = {
-      ratings: Object.keys(cache?.protondb?.ratings || {}).length,
-      name_ids: Object.keys(cache?.protondb?.name_ids || {}).length,
-      hltb: Object.keys(cache?.hltb?.entries || {}).length,
-    };
-    return JSON.stringify({
+    const result = {
       mode: "rpc",
       records: Object.keys(all || {}).length,
-      cacheSizes: sizes,
       get_metadata: await timed("get_metadata", [firstId], 1000),
       get_all_metadata: await timed("get_all_metadata", [], 200),
-      get_provider_cache: await timed("get_provider_cache", [], number("__RPC_REPEAT__", 20)),
-    });
+    };
+    // Builds without the provider cache report only the metadata timings.
+    try {
+      const cache = await api.call.call(api, "get_provider_cache");
+      result.cacheSizes = {
+        ratings: Object.keys(cache?.protondb?.ratings || {}).length,
+        name_ids: Object.keys(cache?.protondb?.name_ids || {}).length,
+        hltb: Object.keys(cache?.hltb?.entries || {}).length,
+      };
+      const repeat = number("__RPC_REPEAT__", 20);
+      result.get_provider_cache = await timed("get_provider_cache", [], repeat);
+      // An empty merge still rewrites the file, so this times one cache save.
+      result.put_protondb_cache = await timed("put_protondb_cache", [{}, {}], repeat);
+    } catch (error) {
+      result.providerCache = `unavailable: ${error?.message ?? error}`;
+    }
+    return JSON.stringify(result);
   }
 
   if (MODE !== "gameview") return JSON.stringify({ error: `unknown mode ${MODE}` });

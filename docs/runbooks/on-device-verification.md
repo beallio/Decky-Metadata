@@ -565,7 +565,7 @@ and manifest hashes match that ZIP before each run.
 - `cdp.py eval SharedJSContext @scripts/deck/js/perf_gameview.js --var MODE=rpc` —
   times `get_metadata` ×1,000, `get_all_metadata` ×200 and `get_provider_cache`
   (`--var RPC_REPEAT=`), and reports the saved cache sizes.
-- `scripts/deck/perf/seed_provider_cache.py --entries 20000 [--expired] --output provider_cache.json` —
+- `scripts/deck/perf/seed_provider_cache.py --entries 5000 [--expired] --output provider_cache.json` —
   writes a valid synthetic cache. Stop the Loader, copy it to the plugin
   settings directory (`/home/deck/homebrew/settings/Decky-Metadata/`), then
   start the Loader. Back up the real file first and restore it afterwards.
