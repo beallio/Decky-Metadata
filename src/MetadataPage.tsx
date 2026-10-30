@@ -59,6 +59,7 @@ import {
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
+import { hltbStore } from "./hltb/store";
 import {
   normalizeReleaseDate,
   metadataTemplate,
@@ -837,6 +838,7 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       removeMetadataCacheEntry(appId);
+      hltbStore.forget(appId);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;

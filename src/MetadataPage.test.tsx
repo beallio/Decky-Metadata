@@ -6,6 +6,8 @@ const textarea = vi.hoisted(() => ({ component: null as any }));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
+  checkHltbGameId: vi.fn(),
+  getHltbStats: vi.fn(),
   clearShortcutNameState: vi.fn(),
   enrichSteamApp: vi.fn(),
   getShortcutNameManagement: vi.fn(),
