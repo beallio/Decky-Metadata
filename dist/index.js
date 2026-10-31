@@ -2646,7 +2646,7 @@ class HltbStore {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: new Set()
+            value: new Map()
         });
         Object.defineProperty(this, "retryAt", {
             enumerable: true,
@@ -2659,12 +2659,6 @@ class HltbStore {
             configurable: true,
             writable: true,
             value: new Map()
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
         });
     }
     /** Load saved entries; a result fetched during this session wins. */
@@ -2690,10 +2684,11 @@ class HltbStore {
     request(appId, isShortcut, inputs, now = Date.now()) {
         if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
             return;
-        const generation = this.generation;
-        this.inFlight.add(appId);
+        const request = {};
+        this.inFlight.set(appId, request);
+        const ownsRequest = () => this.inFlight.get(appId) === request;
         void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
-            if (generation !== this.generation)
+            if (!ownsRequest())
                 return;
             if (isEntry(result)) {
                 this.entries.set(appId, result);
@@ -2707,10 +2702,10 @@ class HltbStore {
             }
             this.notify(appId);
         }, () => {
-            if (generation === this.generation)
+            if (ownsRequest())
                 this.retryAt.set(appId, Date.now() + 30000);
         }).finally(() => {
-            if (generation === this.generation)
+            if (ownsRequest())
                 this.inFlight.delete(appId);
         });
     }
@@ -2730,11 +2725,11 @@ class HltbStore {
         this.entries.delete(appId);
         this.blocked.delete(appId);
         this.retryAt.delete(appId);
+        this.inFlight.delete(appId);
         this.notify(appId);
     }
     /** Forget everything, e.g. after Clear cache or when the feature stops. */
     reset() {
-        this.generation += 1;
         this.entries.clear();
         this.blocked.clear();
         this.inFlight.clear();

@@ -17,10 +17,9 @@ const inputsKey = (inputs: HltbInputs) => JSON.stringify([inputs.steam, inputs.t
 export class HltbStore {
   private readonly entries = new Map<number, HltbEntry>();
   private readonly blocked = new Map<number, string>();
-  private readonly inFlight = new Set<number>();
+  private readonly inFlight = new Map<number, object>();
   private readonly retryAt = new Map<number, number>();
   private readonly listeners = new Map<number, Set<() => void>>();
-  private generation = 0;
 
   constructor(private readonly fetchStats: Fetch = getHltbStats) {}
 
@@ -45,11 +44,12 @@ export class HltbStore {
   /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
   request(appId: number, isShortcut: boolean, inputs: HltbInputs, now = Date.now()): void {
     if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now) return;
-    const generation = this.generation;
-    this.inFlight.add(appId);
+    const request = {};
+    this.inFlight.set(appId, request);
+    const ownsRequest = () => this.inFlight.get(appId) === request;
     void this.fetchStats(appId, isShortcut, inputs.title).then(
       (result) => {
-        if (generation !== this.generation) return;
+        if (!ownsRequest()) return;
         if (isEntry(result)) {
           this.entries.set(appId, result);
           this.blocked.delete(appId);
@@ -61,10 +61,10 @@ export class HltbStore {
         this.notify(appId);
       },
       () => {
-        if (generation === this.generation) this.retryAt.set(appId, Date.now() + 30_000);
+        if (ownsRequest()) this.retryAt.set(appId, Date.now() + 30_000);
       },
     ).finally(() => {
-      if (generation === this.generation) this.inFlight.delete(appId);
+      if (ownsRequest()) this.inFlight.delete(appId);
     });
   }
 
@@ -83,12 +83,12 @@ export class HltbStore {
     this.entries.delete(appId);
     this.blocked.delete(appId);
     this.retryAt.delete(appId);
+    this.inFlight.delete(appId);
     this.notify(appId);
   }
 
   /** Forget everything, e.g. after Clear cache or when the feature stops. */
   reset(): void {
-    this.generation += 1;
     this.entries.clear();
     this.blocked.clear();
     this.inFlight.clear();

@@ -77,6 +77,26 @@ describe("HltbStore", () => {
     expect(store.view(3000000002, titleOnly, now)).toEqual({ entry: null, needsFetch: false });
   });
 
+  it("discards a reply from before removal without blocking the restored game's lookup", async () => {
+    const old = deferred();
+    const restored = deferred();
+    const fetch = vi.fn()
+      .mockReturnValueOnce(old.promise)
+      .mockReturnValueOnce(restored.promise);
+    const store = new HltbStore(fetch);
+    const titleOnly = { steam: null, title: "Hades", pinned: null };
+    store.request(3000000002, true, titleOnly, now);
+    store.forget(3000000002);
+    store.request(3000000002, true, titleOnly, now);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    old.resolve(entry({ steam_appid_used: null, title_used: "Hades" }));
+    await settle();
+    expect(store.view(3000000002, titleOnly, now).entry).toBeNull();
+    restored.resolve({ status: "blocked" });
+    await settle();
+    expect(store.view(3000000002, titleOnly, now)).toEqual({ entry: null, needsFetch: false });
+  });
+
   it("ignores a lookup that finishes after a reset", async () => {
     const pending = deferred();
     const store = new HltbStore(vi.fn(() => pending.promise));
