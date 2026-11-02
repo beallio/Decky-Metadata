@@ -43,7 +43,9 @@ To hide the times for one game, open the game's menu and select
 ### Choose the HLTB game for a non-Steam game
 
 1. Open the game's menu and select **Decky metadata...**.
-2. Under **HowLongToBeat game**, either:
+2. Under **HowLongToBeat game**, the number field and **Current game** show the
+   game whose times the game page shows, and whether you chose it or it was
+   found automatically. To choose another game, either:
    - select **Search HLTB**, change the name if needed, and select a game from
      the results. It is saved right away; or
    - paste the game's number or its page link, for example

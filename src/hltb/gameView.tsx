@@ -14,6 +14,7 @@ import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metada
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
 import { hltbStore, type HltbInputs } from "./store";
+import type { HltbEntry } from "../backend";
 
 const ROW_KEY = "decky-metadata-hltb-row";
 
@@ -33,7 +34,7 @@ export const hltbInputs = (appId: number, isShortcut: boolean, title: string): H
   };
 };
 
-function useSnapshot(): HltbSnapshot {
+export function useHltbSnapshot(): HltbSnapshot {
   const [snapshot, setSnapshot] = useState(hltbController.getSnapshot());
   useEffect(() => {
     const refresh = () => setSnapshot(hltbController.getSnapshot());
@@ -70,23 +71,31 @@ function useLaunching(ref: { current: HTMLDivElement | null }, active: boolean):
   return launching;
 }
 
-function HltbGameRow({ appId }: { appId: number }) {
-  const snapshot = useSnapshot();
-  const ref = useRef<HTMLDivElement | null>(null);
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+export function useHltbMatch(appId: number, wanted: boolean): { active: boolean; entry: HltbEntry | null } {
   const [, rerender] = useState(0);
   const native = getNativeOverview(appId);
   const isShortcut = isNativeNonSteamShortcut(native);
   const title = String(native?.display_name ?? "").trim();
   const inputs = hltbInputs(appId, isShortcut, title);
-  const active = snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId) && title !== "";
+  const active = wanted && title !== "";
   const view = hltbStore.view(appId, inputs);
-  const launching = useLaunching(ref, active);
   useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
   useEffect(() => {
     if (active && view.needsFetch) hltbStore.request(appId, isShortcut, inputs);
   });
+  return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+
+function HltbGameRow({ appId }: { appId: number }) {
+  const snapshot = useHltbSnapshot();
+  const ref = useRef<HTMLDivElement | null>(null);
+  const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId));
+  const launching = useLaunching(ref, active);
   if (!active) return null;
-  const entry = view.entry?.status === "matched" ? view.entry : null;
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <HltbStats stats={entry?.stats ?? null} hltbId={entry?.hltb_id ?? null} settings={snapshot.settings} launching={launching} />

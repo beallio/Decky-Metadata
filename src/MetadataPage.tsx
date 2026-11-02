@@ -60,6 +60,7 @@ import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
 import { HltbGameSearch } from "./hltb/HltbGameSearch";
+import { useHltbMatch, useHltbSnapshot } from "./hltb/gameView";
 import { hltbStore } from "./hltb/store";
 import {
   normalizeReleaseDate,
@@ -606,7 +607,9 @@ export const MetadataPage = () => {
   // Unsaved HLTB field text; null shows the saved choice. Declared after the
   // other hooks so their order is unchanged.
   const [hltbIdDraft, setHltbIdDraft] = useState<string | null>(null);
-  const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
+  // The HLTB game the game page shows, chosen or found automatically.
+  const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+  const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
   // Undefined means the field is not a usable HLTB game; the user has been told why.
   const checkHltbIdText = async (): Promise<{ id: number | null; name: string } | undefined> => {
     const text = hltbIdText.trim();
@@ -1303,6 +1306,11 @@ export const MetadataPage = () => {
             <PanelSectionRow>
               <div style={rowStackStyle}>
                 <div style={compactTextStyle}>{"Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically."}</div>
+                {hltbMatch?.game_name ? (
+                  <div style={compactTextStyle}>
+                    <b>{"Current game"}:</b> {hltbMatch.game_name} {hltbMatch.pinned_id_used ? "(chosen)" : "(found automatically)"}
+                  </div>
+                ) : null}
                 <div style={editorAppIdRowStyle}>
                   <TextField
                     className={editorFocusTargetClassName}

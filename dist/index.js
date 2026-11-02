@@ -3031,7 +3031,7 @@ const hltbInputs = (appId, isShortcut, title) => {
         pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
     };
 };
-function useSnapshot() {
+function useHltbSnapshot() {
     const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
     SP_REACT.useEffect(() => {
         const refresh = () => setSnapshot(hltbController.getSnapshot());
@@ -3068,25 +3068,32 @@ function useLaunching(ref, active) {
     }, [active]);
     return launching;
 }
-function HltbGameRow({ appId }) {
-    const snapshot = useSnapshot();
-    const ref = SP_REACT.useRef(null);
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+function useHltbMatch(appId, wanted) {
     const [, rerender] = SP_REACT.useState(0);
     const native = getNativeOverview(appId);
     const isShortcut = isNativeNonSteamShortcut(native);
     const title = String(native?.display_name ?? "").trim();
     const inputs = hltbInputs(appId, isShortcut, title);
-    const active = snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId) && title !== "";
+    const active = wanted && title !== "";
     const view = hltbStore.view(appId, inputs);
-    const launching = useLaunching(ref, active);
     SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
     SP_REACT.useEffect(() => {
         if (active && view.needsFetch)
             hltbStore.request(appId, isShortcut, inputs);
     });
+    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useHltbSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId));
+    const launching = useLaunching(ref, active);
     if (!active)
         return null;
-    const entry = view.entry?.status === "matched" ? view.entry : null;
     return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));
 }
 /** True for the child that holds Steam's Play section (the row goes right above it). */
@@ -17570,7 +17577,9 @@ const MetadataPage = () => {
     // Unsaved HLTB field text; null shows the saved choice. Declared after the
     // other hooks so their order is unchanged.
     const [hltbIdDraft, setHltbIdDraft] = SP_REACT.useState(null);
-    const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
+    // The HLTB game the game page shows, chosen or found automatically.
+    const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+    const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
     // Undefined means the field is not a usable HLTB game; the user has been told why.
     const checkHltbIdText = async () => {
         const text = hltbIdText.trim();
@@ -18016,7 +18025,7 @@ const MetadataPage = () => {
                                                     }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
                                     ...prev,
                                     deck_compat_override: compatibilityStatusValue(option.data),
-                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: "HowLongToBeat game", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: "Apply HLTB game" })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: "HowLongToBeat game", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically." }), hltbMatch?.game_name ? (SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("b", { children: ["Current game", ":"] }), " ", hltbMatch.game_name, " ", hltbMatch.pinned_id_used ? "(chosen)" : "(found automatically)"] })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: "Apply HLTB game" })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
                                             }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
