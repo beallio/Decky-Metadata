@@ -75,4 +75,17 @@ describe("HltbController", () => {
     await controller.toggleHidden(620);
     expect(controller.getSnapshot().settings.hiddenAppIds).toEqual([]);
   });
+
+  it("reports whether Clear HLTB cache worked", async () => {
+    const { controller, settings } = setup({ enabled: true });
+    controller.mount();
+    await flush();
+    const clearing = controller.clearCache();
+    expect(controller.getSnapshot().cacheStatus).toBe("clearing");
+    expect(await clearing).toBe(true);
+    expect(controller.getSnapshot().cacheStatus).toBe("cleared");
+    settings.clear.mockRejectedValueOnce(new Error("disk full"));
+    expect(await controller.clearCache()).toBe(false);
+    expect(controller.getSnapshot().cacheStatus).toBe("failed");
+  });
 });

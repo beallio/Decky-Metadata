@@ -43,8 +43,10 @@ To hide the times for one game, open the game's menu and select
 1. Open the game's menu and select **Decky metadata...**.
 2. Under **HowLongToBeat game**, paste the game's number or its page link, for
    example `https://howlongtobeat.com/game/7231`.
-3. Select **Apply HLTB game**. Decky Metadata checks the number and shows the
-   game's name. Leave the field empty and apply it to go back to automatic matching.
+3. Select **Apply HLTB game**, or **Save**. Decky Metadata checks the number and
+   does not save a number HowLongToBeat does not have. **Apply HLTB game** also
+   shows the game's name. Leave the field empty and apply it to go back to
+   automatic matching.
 
 ## How fresh the times are
 
@@ -71,6 +73,8 @@ times. Its settings are not copied.
 - Check **Show HowLongToBeat times** and that the game is not hidden from its menu.
 - For a non-Steam game, check its Steam match in **Decky metadata...**, or choose
   the HLTB game by hand.
+- Select **Clear HLTB cache** in the **HLTB times** section to look up every
+  game again. A message under the button tells you when the cache is clear.
 - HowLongToBeat has no official API. If it changes its site, times may stop
   appearing until Decky Metadata is updated. Check the logs as described in
   [updates and troubleshooting](updates-and-troubleshooting.md).

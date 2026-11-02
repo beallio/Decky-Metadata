@@ -12,6 +12,8 @@ export type HltbSnapshot = Readonly<{
   settingsError: string;
   conflict: FeatureConflict;
   effectiveEnabled: boolean;
+  /** Result of the last Clear HLTB cache press, shown under the button. */
+  cacheStatus: "idle" | "clearing" | "cleared" | "failed";
 }>;
 
 type Runtime = { install: () => () => void };
@@ -108,13 +110,15 @@ export class HltbController {
 
   async clearCache(): Promise<boolean> {
     if (!this.mounted) return false;
+    this.publish({ cacheStatus: "clearing" });
     try {
       await this.settingsStore.clear();
       this.store.reset();
+      this.publish({ cacheStatus: "cleared" });
       return true;
     } catch (error) {
       log.warn("bridge", "HLTB cache clear failed", error);
-      this.publish({ settingsError: "The HLTB cache could not be cleared." });
+      this.publish({ cacheStatus: "failed" });
       return false;
     }
   }
@@ -122,7 +126,7 @@ export class HltbController {
   private initialSnapshot(): HltbSnapshot {
     return Object.freeze({
       settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-      conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false,
+      conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
     });
   }
 
