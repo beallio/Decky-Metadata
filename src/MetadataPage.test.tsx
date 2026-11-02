@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hltbStore } from "./hltb/store";
+import type { HltbEntry } from "./backend";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
@@ -65,6 +66,8 @@ const toast = vi.hoisted(() => ({
   toastWarn: vi.fn(),
 }));
 
+// What the game page shows for this game; tests set it per case.
+const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null }));
 const state = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const refs = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as Array<() => unknown> }));
@@ -90,6 +93,10 @@ vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
+vi.mock("./hltb/gameView", () => ({
+  useHltbSnapshot: () => ({ effectiveEnabled: true }),
+  useHltbMatch: () => ({ active: true, entry: hltbMatch.entry }),
+}));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => unknown) => {
@@ -1211,6 +1218,20 @@ describe("metadata summary and date persistence", () => {
     hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
+  });
+  it("shows the automatically found HLTB game without saving it as a choice", async () => {
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    hltbMatch.entry = {
+      status: "matched", hltb_id: 6064, game_name: "Minecraft", stats: null,
+      steam_appid_used: null, title_used: "Minecraft Bedrock", pinned_id_used: null, fetched_at: 1,
+    };
+    const section = walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0];
+    expect(walk(section, node => node.type === "TextField")[0].props.value).toBe("6064");
+    expect(text(section)).toContain("Minecraft");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBeUndefined();
+    hltbMatch.entry = null;
   });
   it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
     textarea.component = component;
