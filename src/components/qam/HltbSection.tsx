@@ -5,7 +5,8 @@ import { DEFAULT_HLTB_SETTINGS } from "../../hltb/settings";
 import type { HltbAppearance, HltbSettings } from "../../hltb/settings";
 import { featureConflictNotice } from "../../pluginConflicts";
 import type { FeatureConflict } from "../../pluginConflicts";
-import { compactTextStyle, inlineStatusStyle } from "../../styles";
+import { ButtonLabel, compactTextStyle, inlineStatusStyle } from "../../styles";
+import type { HltbSnapshot } from "../../hltb/controller";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 type HltbSectionProps = {
@@ -15,6 +16,7 @@ type HltbSectionProps = {
   busy: boolean;
   conflict: FeatureConflict;
   settingsError?: string;
+  cacheStatus?: HltbSnapshot["cacheStatus"];
   onSettingsChange: (settings: HltbSettings) => void | Promise<unknown>;
   onClearCache: () => void | Promise<unknown>;
   /** Native dropdowns remount QAM; these let the panel return focus to them. */
@@ -36,9 +38,14 @@ const statControls = [
   ["showComplete", "Toggle completionist stat", "Shows/Hides just the completionist stat"],
   ["showAllStyles", 'Toggle "all play styles" stat', "Shows/Hides just the all play styles stat"],
 ] as const;
+const cacheStatusText = {
+  clearing: ["active", "Clearing HLTB cache..."],
+  cleared: ["success", "HLTB cache cleared. Times load again when you open a game."],
+  failed: ["error", "The HLTB cache could not be cleared."],
+} as const;
 
 export function HltbSection({
-  initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, onSettingsChange, onClearCache,
+  initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
   onStyleChange, onLinkColorChange, onStyleMenuWillOpen, onLinkColorMenuWillOpen, onStyleControlRef, onLinkColorControlRef,
 }: HltbSectionProps) {
   const controlsDisabled = !settingsLoaded || busy;
@@ -52,7 +59,12 @@ export function HltbSection({
     <PanelSectionRow><div ref={onStyleControlRef}><DropdownItem label="HLTB Style" description={'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"'} rgOptions={styles} selectedOption={settings.style} disabled={disabled} onMenuWillOpen={onStyleMenuWillOpen} onChange={option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); }} /></div></PanelSectionRow>
     <PanelSectionRow><ToggleField label={'Hide "View Details"'} description={'Hides "View Details" button on HLTB Stats'} checked={settings.hideViewDetails} disabled={disabled} onChange={value => update("hideViewDetails", value)} /></PanelSectionRow>
     {statControls.map(([key, label, description]) => <PanelSectionRow key={key}><ToggleField label={label} description={description} checked={settings[key]} disabled={disabled} onChange={value => update(key, value)} /></PanelSectionRow>)}
-    <PanelSectionRow><ButtonItem layout="below" disabled={controlsDisabled} onClick={() => { void onClearCache(); }}>Clear HLTB cache</ButtonItem></PanelSectionRow>
+    <PanelSectionRow>
+      <ButtonItem layout="below" bottomSeparator="none" disabled={controlsDisabled || cacheStatus === "clearing"} onClick={() => { void onClearCache(); }}>
+        {cacheStatus === "clearing" ? <ButtonLabel busy={true}>{"Clearing..."}</ButtonLabel> : "Clear HLTB cache"}
+      </ButtonItem>
+      {cacheStatus !== "idle" ? <div style={inlineStatusStyle(cacheStatusText[cacheStatus][0])}>{cacheStatusText[cacheStatus][1]}</div> : null}
+    </PanelSectionRow>
     <PanelSectionRow><ToggleField label="Customize appearance" description="Enable custom colors, opacity and text size for the HLTB bar" checked={appearance.custom} disabled={disabled} onChange={value => updateAppearance("custom", value)} /></PanelSectionRow>
     {appearance.custom ? <>
       <PanelSectionRow><SliderField label="Background opacity" description="Darkens the bar so stats stay readable over bright hero art" value={appearance.barAlpha} min={0} max={100} step={5} showValue valueSuffix="%" resetValue={25} disabled={disabled} onChange={value => updateAppearance("barAlpha", value)} /></PanelSectionRow>

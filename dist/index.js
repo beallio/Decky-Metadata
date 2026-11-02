@@ -1512,14 +1512,19 @@ const statControls = [
     ["showComplete", "Toggle completionist stat", "Shows/Hides just the completionist stat"],
     ["showAllStyles", 'Toggle "all play styles" stat', "Shows/Hides just the all play styles stat"],
 ];
-function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, onSettingsChange, onClearCache, onStyleChange, onLinkColorChange, onStyleMenuWillOpen, onLinkColorMenuWillOpen, onStyleControlRef, onLinkColorControlRef, }) {
+const cacheStatusText = {
+    clearing: ["active", "Clearing HLTB cache..."],
+    cleared: ["success", "HLTB cache cleared. Times load again when you open a game."],
+    failed: ["error", "The HLTB cache could not be cleared."],
+};
+function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onLinkColorChange, onStyleMenuWillOpen, onLinkColorMenuWillOpen, onStyleControlRef, onLinkColorControlRef, }) {
     const controlsDisabled = !settingsLoaded || busy;
     const disabled = controlsDisabled || !settings.enabled;
     const appearance = settings.appearance;
     const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
-    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "View Details"', description: 'Hides "View Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: controlsDisabled, onClick: () => { void onClearCache(); }, children: "Clear HLTB cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onLinkColorControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: '"View Details" color', description: 'Color of the "View Details" link', rgOptions: [{ data: "steam", label: "Steam blue" }, { data: "text", label: "Match stats text" }], selectedOption: appearance.linkColor, disabled: disabled, onMenuWillOpen: onLinkColorMenuWillOpen, onChange: option => { const color = option.data; void (onLinkColorChange ? onLinkColorChange(color) : updateAppearance("linkColor", color)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "View Details"', description: 'Hides "View Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onLinkColorControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: '"View Details" color', description: 'Color of the "View Details" link', rgOptions: [{ data: "steam", label: "Steam blue" }, { data: "text", label: "Match stats text" }], selectedOption: appearance.linkColor, disabled: disabled, onMenuWillOpen: onLinkColorMenuWillOpen, onChange: option => { const color = option.data; void (onLinkColorChange ? onLinkColorChange(color) : updateAppearance("linkColor", color)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -2903,21 +2908,23 @@ class HltbController {
     async clearCache() {
         if (!this.mounted)
             return false;
+        this.publish({ cacheStatus: "clearing" });
         try {
             await this.settingsStore.clear();
             this.store.reset();
+            this.publish({ cacheStatus: "cleared" });
             return true;
         }
         catch (error) {
             warn("bridge", "HLTB cache clear failed", error);
-            this.publish({ settingsError: "The HLTB cache could not be cleared." });
+            this.publish({ cacheStatus: "failed" });
             return false;
         }
     }
     initialSnapshot() {
         return Object.freeze({
             settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false,
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
         });
     }
     isCurrent(generation) {
@@ -16534,7 +16541,7 @@ const Content = () => {
                 }, onCoverPositionMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
                     requestCompatibilityDropdownReturn("hltb-style");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -17531,6 +17538,23 @@ const MetadataPage = () => {
     // other hooks so their order is unchanged.
     const [hltbIdDraft, setHltbIdDraft] = SP_REACT.useState(null);
     const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
+    // Undefined means the field is not a usable HLTB game; the user has been told why.
+    const checkHltbIdText = async () => {
+        const text = hltbIdText.trim();
+        const id = text ? parseHltbGameId(text) : null;
+        if (id === 0) {
+            toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+            return undefined;
+        }
+        if (id === null)
+            return { id, name: "" };
+        const found = await checkHltbGameId(id);
+        if (!found.found) {
+            toastWarn("Not found", "HowLongToBeat has no game with that number.");
+            return undefined;
+        }
+        return { id, name: found.game_name };
+    };
     const saveCurrent = async () => {
         if (!nonSteam) {
             toastWarn("Not applicable", "This plugin only changes non-Steam games.");
@@ -17546,13 +17570,19 @@ const MetadataPage = () => {
             return;
         const requestedRevision = formRevisionRef.current;
         try {
-            const saved = await saveMetadata(appId, normalizedMetadata);
+            // Save also keeps an HLTB game typed without pressing Apply HLTB game.
+            const hltb = hltbIdDraft === null ? null : await checkHltbIdText();
+            if (hltb === undefined)
+                return;
+            const saved = await saveMetadata(appId, hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata);
             if (!isCurrentEditorEntry(requestedEntry) ||
                 formRevisionRef.current !== requestedRevision) {
                 return;
             }
             setMetadataCacheEntry(appId, saved);
             setFormMetadata(saved);
+            if (hltb)
+                setHltbIdDraft(null);
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess("Saved", "Metadata saved");
@@ -17679,24 +17709,13 @@ const MetadataPage = () => {
             toastWarn("Not loaded", "Saved metadata has not loaded yet.");
             return;
         }
-        const text = hltbIdText.trim();
-        const id = text ? parseHltbGameId(text) : null;
-        if (id === 0) {
-            toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
-            return;
-        }
         if (!beginBusy(requestedEntry))
             return;
         try {
-            let name = "";
-            if (id !== null) {
-                const found = await checkHltbGameId(id);
-                if (!found.found) {
-                    toastWarn("Not found", "HowLongToBeat has no game with that number.");
-                    return;
-                }
-                name = found.game_name;
-            }
+            const hltb = await checkHltbIdText();
+            if (!hltb)
+                return;
+            const { id, name } = hltb;
             const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
             if (!isCurrentEditorEntry(requestedEntry))
                 return;

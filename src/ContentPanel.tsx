@@ -987,6 +987,7 @@ export const Content = () => {
         busy={hltbSnapshot.busy}
         conflict={hltbSnapshot.conflict}
         settingsError={hltbSnapshot.settingsError}
+        cacheStatus={hltbSnapshot.cacheStatus}
         onSettingsChange={(settings) => hltbController.setSettings(settings)}
         onClearCache={() => hltbController.clearCache()}
         onStyleChange={async (style) => {
