@@ -35,6 +35,7 @@ pub const METHODS: &[&str] = &[
     "set_hltb_settings",
     "get_hltb_stats",
     "check_hltb_game_id",
+    "search_hltb_games",
     "clear_hltb_cache",
     "get_metadata",
     "get_all_metadata",
@@ -199,6 +200,10 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "check_hltb_game_id" => {
             arity(&args, 1, 1)?;
             crate::hltb::check_game_id(&state, &args[0]).await
+        }
+        "search_hltb_games" => {
+            arity(&args, 1, 1)?;
+            crate::hltb::search_games(&state, &args[0]).await
         }
         "clear_hltb_cache" => {
             arity(&args, 0, 0)?;

@@ -5,7 +5,7 @@ use crate::{
     matching::safe_int,
     metadata,
     provider_cache::{self, HltbEntry, HltbStatus, HltbTimes},
-    providers::hltb::{Error, GamePage, LookupInput, LookupOutcome, RefreshOutcome},
+    providers::hltb::{Error, GamePage, LookupInput, LookupOutcome, RefreshOutcome, rank_by_title},
     state::AppState,
     storage,
 };
@@ -180,6 +180,23 @@ pub async fn check_game_id(state: &AppState, id: &Value) -> Result<Value, String
         Err(Error::RateLimited { .. }) => Err("HowLongToBeat is busy. Try again in a minute.".into()),
         Err(Error::Transient(message)) => Err(message),
     }
+}
+
+/// HowLongToBeat games for a user-entered name, best title matches first.
+pub async fn search_games(state: &AppState, query: &Value) -> Result<Value, String> {
+    let query = query.as_str().ok_or("query must be a string")?.trim();
+    if query.is_empty() || query.contains('\0') || query.chars().count() > MAX_TITLE_CHARS {
+        return Err("invalid search".into());
+    }
+    let results = match state.hltb.search(&state.http, query).await {
+        Ok(results) => results,
+        Err(Error::RateLimited { .. }) => return Err("HowLongToBeat is busy. Try again in a minute.".into()),
+        Err(Error::Transient(message)) => return Err(message),
+    };
+    Ok(json!(rank_by_title(query, &results).into_iter().map(|result| json!({
+        "game_id": result.page.game_id, "game_name": result.page.game_name,
+        "main_seconds": seconds(result.page.comp_main), "count": result.comp_all_count,
+    })).collect::<Vec<_>>()))
 }
 
 /// Forget one game's HLTB result, e.g. after Remove metadata, so it is not shown

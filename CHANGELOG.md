@@ -9,8 +9,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **HowLongToBeat times.** Turn on **HLTB times** to see how long players take
   to finish a game, on the game's page, for Steam and non-Steam games. Steam
   games are matched by their Steam App ID, so a remaster or remake is not
-  confused with the original. You can choose the HowLongToBeat game for a
-  non-Steam game in its editor and hide the times for one game from its menu.
+  confused with the original. You can search HowLongToBeat and choose the game
+  for a non-Steam game in its editor, and hide the times for one game from its
+  menu.
   It is off by default and cannot be turned on while HLTB for Deck is enabled.
 
 ### Changed
