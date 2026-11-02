@@ -1,7 +1,7 @@
 # Release screenshots
 
 These images are captured from the visual Steam Gaming Mode CDP target with
-`scripts/deck/screenshot.sh`, visually approved under `/tmp/Decky-Metadata`, and
+`scripts/deck/screenshot.sh`, visually approved under `$TMPDIR/Decky-Metadata`, and
 then copied here. Keep the stable filenames so README links remain reproducible.
 
 - `decky-metadata-qam.png` — current Metadata controls, cropped to the native Quick Access popup.

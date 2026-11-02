@@ -1,6 +1,6 @@
 use decky_metadata_backend::{
     http::{Http, RequestLog, RequestRecord},
-    providers::{community, delisted, ign},
+    providers::{community, delisted, hltb, ign},
     updater::{
         discovery::{prevalidate_release_candidate, validate_release_candidate},
         models::{UpdateCandidate, parse_plugin_version},
@@ -35,6 +35,7 @@ enum ProbeKind {
     SteamTracker,
     GithubReleases,
     GithubReleaseAssets,
+    Hltb,
 }
 
 #[derive(Clone, Copy)]
@@ -45,7 +46,7 @@ struct ProbeDefinition {
     kind: ProbeKind,
 }
 
-const PROBES: [ProbeDefinition; 7] = [
+const PROBES: [ProbeDefinition; 8] = [
     ProbeDefinition {
         id: "ign-search",
         name: "IGN game search",
@@ -87,6 +88,12 @@ const PROBES: [ProbeDefinition; 7] = [
         name: "GitHub updater manifest and ZIP delivery",
         fixture: "Latest published stable release",
         kind: ProbeKind::GithubReleaseAssets,
+    },
+    ProbeDefinition {
+        id: "hltb-lookup",
+        name: "HowLongToBeat search and game page",
+        fixture: "Portal 2 (Steam 620, HLTB 7231)",
+        kind: ProbeKind::Hltb,
     },
 ];
 
@@ -313,6 +320,7 @@ async fn run_probe(probe: ProbeDefinition) -> ProbeResult {
                 ProbeKind::IgnTrailers => probe_ign_trailers(&http).await,
                 ProbeKind::SteamCommunity => probe_steam_community(&http).await,
                 ProbeKind::SteamTracker => probe_steam_tracker(&http).await,
+                ProbeKind::Hltb => probe_hltb(&http).await,
                 ProbeKind::GithubReleases | ProbeKind::GithubReleaseAssets => unreachable!(),
             };
             (check, requests)
@@ -549,6 +557,25 @@ async fn probe_steam_tracker(http: &Http) -> Result<(), (&'static str, String)> 
         ));
     }
     Ok(())
+}
+
+/// The token, search, Steam-ID page check, and a one-page refresh the plugin uses.
+async fn probe_hltb(http: &Http) -> Result<(), (&'static str, String)> {
+    let client = hltb::HltbClient::default();
+    let input = hltb::LookupInput { steam_appid: Some(620), title: "Portal 2".into(), pinned_id: None, native_steam: true };
+    let page = match client.lookup(http, input).await {
+        Ok(hltb::LookupOutcome::Matched { page, via: hltb::MatchVia::SteamId }) => page,
+        Ok(other) => return Err(("ContractError", format!("Portal 2 did not match by Steam ID: {other:?}"))),
+        Err(error) => return Err(("ProviderError", format!("HLTB lookup failed: {error:?}"))),
+    };
+    if page.game_id != 7231 || page.comp_main <= 0 || page.comp_all <= 0 {
+        return Err(("ContractError", format!("unexpected Portal 2 page: id {} main {} all {}", page.game_id, page.comp_main, page.comp_all)));
+    }
+    match client.refresh(http, 7231, Some(620)).await {
+        Ok(hltb::RefreshOutcome::Updated(_)) => Ok(()),
+        Ok(hltb::RefreshOutcome::Invalid) => Err(("ContractError", "the Portal 2 page no longer lists Steam app 620".into())),
+        Err(error) => Err(("ProviderError", format!("HLTB page refresh failed: {error:?}"))),
+    }
 }
 
 fn probe_github_releases(requests: &RequestLog) -> Result<(), (&'static str, String)> {

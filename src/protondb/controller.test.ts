@@ -6,6 +6,8 @@ vi.mock("@decky/ui", () => ({ afterPatch: vi.fn(), findInReactTree: vi.fn() }));
 const backend = vi.hoisted(() => ({
   getProtonDbBadgeSettings: vi.fn(),
   setProtonDbBadgeSettings: vi.fn(),
+  getProviderCache: vi.fn(async () => ({ version: 1, protondb: { ratings: {}, name_ids: {} }, hltb: { entries: {} } })),
+  putProtonDbCache: vi.fn(async () => ({ ok: true })),
 }));
 vi.mock("../backend", () => backend);
 

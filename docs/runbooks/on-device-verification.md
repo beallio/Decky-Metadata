@@ -292,7 +292,7 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    and confirm the selector is unavailable but keeps its value through reload.
    Restore the captured scope and fixtures.
 
-Store screenshots and diagnostics below `/tmp/Decky-Metadata`. Run
+Store screenshots and diagnostics below `$TMPDIR/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with
 separate current approval. Restore the original setting, records, shortcuts,
 and debugger tunnel before recording results.
@@ -308,7 +308,7 @@ reload. A trap restores the captured native name through Steam's API if an
 assertion after arming cleanup fails, verifies the exact original name and
 `sort_as`, and reports an explicit cleanup failure if it cannot restore them.
 The command stores only app IDs,
-booleans, timestamps, and SHA-256 name hashes below `/tmp/Decky-Metadata`.
+booleans, timestamps, and SHA-256 name hashes below `$TMPDIR/Decky-Metadata`.
 
 This smoke changes one real shortcut briefly. Get explicit approval for the
 current device and fixture before running it. Do not add it to `run_all.sh`.
@@ -337,7 +337,7 @@ preflight, unavailable and delayed editor/modal controls, delayed native observa
 cleanup request. The emergency cleanup helper calls Steam through its Apps
 receiver and preserves the exact captured name, including edge whitespace; no
 fixed-error mode is accepted as smoke evidence. After a successful
-live run, capture the editor under `/tmp/Decky-Metadata/` and use
+live run, capture the editor under `$TMPDIR/Decky-Metadata/` and use
 `gpfocus_dump.js`, `focus_order.js`, and D-pad input to check initial focus,
 visual order, modal cancellation, and focus return to the launching control.
 
@@ -353,20 +353,20 @@ corrected bundle, then run the identity smoke:
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh --capture-artwork-files \
   2155012430 \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/deploy.sh
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/verify/smoke_artwork_identity.sh \
   2155012430 55150 library-home true \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home \
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/before-artwork-files.json" \
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home" \
   "$SIDEBAR_LABEL_HASH"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 \
   scripts/deck/screenshot.sh \
-  /tmp/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png
+  "$TMPDIR/Decky-Metadata/steamgriddb-artwork-compatibility/after-library-home/sidebar-icon.png"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh down
 DECKY_DECK_HOST=steamdeck CDP_PORT=18085 scripts/deck/tunnel.sh status
@@ -424,12 +424,12 @@ For the verified Space Marine fixtures, deploy first and use separate CDP ports:
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck-legos CDP_PORT=18082 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  3213262460 55150 102 /tmp/Decky-Metadata/controller-layout-tab-preservation/legos.json
+  3213262460 55150 102 "$TMPDIR/Decky-Metadata/controller-layout-tab-preservation/legos.json"
 
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 scripts/deck/deploy.sh
 DECKY_DECK_HOST=steamdeck CDP_PORT=18083 \
   scripts/deck/verify/smoke_controller_tab_persistence.sh \
-  2155012430 55150 4 /tmp/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json
+  2155012430 55150 4 "$TMPDIR/Decky-Metadata/controller-layout-tab-preservation/steamdeck.json"
 ```
 
 It fails when Community is not selected before and after the direct query, the
@@ -549,6 +549,29 @@ Do not stamp local builds as `-dev.g<sha>`. That would remove the local-build
 marker and let CI's build of another commit replace the build under test. Use a
 published release for development-prerelease testing, and use the stable handoff
 to leave a local build.
+
+## Performance checks
+
+Compare a baseline ZIP and a candidate ZIP on the same device. `deploy.sh` copies
+only the frontend, so install each complete ZIP through Decky Loader and check
+with `scripts/decky status --deck` that the installed frontend, backend, shim
+and manifest hashes match that ZIP before each run.
+
+- `cdp.py eval SharedJSContext @scripts/deck/js/perf_gameview.js --var MODE=gameview --var APPID=<appid>` —
+  opens the game page and reports, from the navigation call, when the native
+  details container, the HLTB row, the ProtonDB game-page button and the Play
+  section appear (`afterInnerContainerMs`), long tasks over 50 ms, and Loader
+  HTTP proxy requests (`fetchNoCors`) in a 3 s window (`--var WINDOW_MS=` to change).
+- `cdp.py eval SharedJSContext @scripts/deck/js/perf_gameview.js --var MODE=rpc` —
+  times `get_metadata` ×1,000, `get_all_metadata` ×200 and `get_provider_cache`
+  (`--var RPC_REPEAT=`), and reports the saved cache sizes.
+- `scripts/deck/perf/seed_provider_cache.py --entries 5000 [--expired] --output provider_cache.json` —
+  writes a valid synthetic cache. Stop the Loader, copy it to the plugin
+  settings directory (`/home/deck/homebrew/settings/Decky-Metadata/`), then
+  start the Loader. Back up the real file first and restore it afterwards.
+
+Run five measured runs per build after one warm-up run. Keep raw output under
+`$(./run.sh python3 scripts/deck/temp_paths.py root)/perf/`, not in the repository.
 
 ## Debugging beyond the suite
 

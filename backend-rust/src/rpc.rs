@@ -29,6 +29,14 @@ pub const METHODS: &[&str] = &[
     "set_mini_achievements_enabled",
     "get_protondb_badge_settings",
     "set_protondb_badge_settings",
+    "get_provider_cache",
+    "put_protondb_cache",
+    "get_hltb_settings",
+    "set_hltb_settings",
+    "get_hltb_stats",
+    "check_hltb_game_id",
+    "search_hltb_games",
+    "clear_hltb_cache",
     "get_metadata",
     "get_all_metadata",
     "remove_metadata",
@@ -97,9 +105,14 @@ fn update_failure(error: String, check: bool) -> Value {
 
 /// Store reads that return large parts of the settings file. They serialize straight
 /// from the locked store, so a reply never needs a full in-memory copy of it.
-pub const RAW_METHODS: &[&str] = &["get_state", "get_metadata", "get_all_metadata"];
+pub const RAW_METHODS: &[&str] = &["get_state", "get_metadata", "get_all_metadata", "get_provider_cache"];
 
 pub async fn dispatch_raw(state: &AppState, method: &str, args: &[Value]) -> RawMethodResult {
+    if method == "get_provider_cache" {
+        arity(args, 0, 0)?;
+        return serde_json::value::to_raw_value(&*state.provider_cache.lock().await)
+            .map_err(|error| error.to_string());
+    }
     let store = state.store().await?;
     let data = store.data();
     let value = match method {
@@ -164,6 +177,38 @@ async fn loaded_store<'a>(
 
 pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> MethodResult {
     match method {
+        "put_protondb_cache" => {
+            arity(&args, 2, 2)?;
+            state.provider_cache.lock().await.merge_protondb(&args[0], &args[1])?;
+            crate::provider_cache::schedule_save(&state);
+            Ok(json!({"ok": true}))
+        }
+        "get_hltb_settings" => {
+            arity(&args, 0, 0)?;
+            Ok(storage::normalize_hltb_settings(
+                &loaded_store(&state, "HLTB settings").await?.data()["settings"]["hltb"],
+            ))
+        }
+        "set_hltb_settings" => {
+            arity(&args, 1, 1)?;
+            state.set_setting("hltb", storage::validate_hltb_settings(&args[0])?).await
+        }
+        "get_hltb_stats" => {
+            arity(&args, 3, 3)?;
+            crate::hltb::stats(&state, &args[0], &args[1], &args[2]).await
+        }
+        "check_hltb_game_id" => {
+            arity(&args, 1, 1)?;
+            crate::hltb::check_game_id(&state, &args[0]).await
+        }
+        "search_hltb_games" => {
+            arity(&args, 1, 1)?;
+            crate::hltb::search_games(&state, &args[0]).await
+        }
+        "clear_hltb_cache" => {
+            arity(&args, 0, 0)?;
+            crate::hltb::clear(&state).await
+        }
         "get_platform_capabilities" => {
             arity(&args, 0, 0)?;
             tokio::task::spawn_blocking(state::platform_capabilities)
@@ -289,7 +334,9 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "remove_metadata" => {
             arity(&args, 1, 1)?;
-            metadata::remove(&state, &args[0]).await
+            let removed = metadata::remove(&state, &args[0]).await?;
+            crate::hltb::forget(&state, &args[0]).await;
+            Ok(removed)
         }
         "clear_metadata_cache" => {
             arity(&args, 0, 0)?;

@@ -10,15 +10,19 @@ require_positive_appid() {
   [[ "$1" =~ ^[1-9][0-9]*$ ]] || fail_early "$2 must be a positive integer"
 }
 
+tmp_root="$(python3 "$(dirname -- "${BASH_SOURCE[0]}")/../temp_paths.py" root)" || fail_early "temporary root is invalid"
+export SMOKE_TMP_ROOT="$tmp_root"
+
 prepare_output_path() {
   python3 - "$1" <<'PY'
+import os
 from pathlib import Path
 import sys
 
-root = Path("/tmp/Decky-Metadata").resolve()
+root = Path(os.environ["SMOKE_TMP_ROOT"]).resolve()
 output = Path(sys.argv[1]).resolve()
 if output.parent != root and root not in output.parents:
-    raise SystemExit("FAIL: artifact path must be below /tmp/Decky-Metadata")
+    raise SystemExit(f"FAIL: artifact path must be below {root}")
 output.parent.mkdir(parents=True, exist_ok=True)
 PY
 }
@@ -126,17 +130,18 @@ case "$expected_identity" in true|false) ;; *) fail_early "shortcut identity mus
 
 python3 - "$evidence" "$before_manifest" "$shortcut" <<'PY'
 import json
+import os
 from pathlib import Path
 import sys
 
-root = Path("/tmp/Decky-Metadata").resolve()
+root = Path(os.environ["SMOKE_TMP_ROOT"]).resolve()
 evidence = Path(sys.argv[1]).resolve()
 before = Path(sys.argv[2]).resolve()
 shortcut = int(sys.argv[3])
 if evidence != root and root not in evidence.parents:
-    raise SystemExit("FAIL: evidence directory must be below /tmp/Decky-Metadata")
+    raise SystemExit(f"FAIL: evidence directory must be below {root}")
 if before.parent != root and root not in before.parents:
-    raise SystemExit("FAIL: before artwork-file manifest must be below /tmp/Decky-Metadata")
+    raise SystemExit(f"FAIL: before artwork-file manifest must be below {root}")
 try:
     baseline = json.loads(before.read_text())
 except (OSError, json.JSONDecodeError) as exc:

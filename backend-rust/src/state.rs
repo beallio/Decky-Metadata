@@ -18,6 +18,13 @@ pub struct AppState {
     pub cef: crate::cef_bridge::BigPictureEvaluator,
     storage: OnceCell<Mutex<Storage>>,
     pub delisted: Mutex<Option<Arc<Value>>>,
+    pub provider_cache: Mutex<crate::provider_cache::ProviderCache>,
+    pub provider_cache_dirty: std::sync::atomic::AtomicBool,
+    /// Bumped by HLTB Clear cache and Remove metadata; a lookup that saw another value is not saved.
+    pub hltb_epoch: std::sync::atomic::AtomicU64,
+    pub hltb: crate::providers::hltb::HltbClient,
+    /// Per-app time before another HLTB lookup after a failure.
+    pub hltb_retry: Mutex<std::collections::HashMap<u32, tokio::time::Instant>>,
     pub jobs: crate::scan_runner::Jobs,
     updater_rate_limit: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
@@ -34,6 +41,11 @@ impl AppState {
             cef,
             storage: OnceCell::new(),
             delisted: Mutex::new(None),
+            provider_cache: Mutex::new(Default::default()),
+            provider_cache_dirty: std::sync::atomic::AtomicBool::new(false),
+            hltb_epoch: std::sync::atomic::AtomicU64::new(0),
+            hltb: crate::providers::hltb::HltbClient::default(),
+            hltb_retry: Mutex::new(std::collections::HashMap::new()),
             jobs: crate::scan_runner::Jobs::new(),
             updater_rate_limit: Mutex::new(None),
         }))
@@ -59,6 +71,9 @@ impl AppState {
             return Err("DECKY_PLUGIN_SETTINGS_DIR is not set".into());
         }
         let cached = read_cached_index(&self.env.plugin_settings_dir).await;
+        *self.provider_cache.lock().await = crate::provider_cache::load(
+            &self.env.plugin_settings_dir.join(crate::provider_cache::FILENAME),
+        ).await;
         let mut storage = Storage::open(self.env.plugin_settings_dir.clone()).await?;
         let loaded = storage.loaded_successfully();
         storage
@@ -241,6 +256,9 @@ impl AppState {
             Value::Null,
             log::Level::Info,
         );
+        if let Err(error) = crate::provider_cache::flush(self).await {
+            logging::event("load", "provider cache save failed", json!({"error": error}), log::Level::Warn);
+        }
         self.cancel.cancel();
         // A replacement already in progress must finish its atomic section.
         tokio::time::timeout(Duration::from_secs(4), async {

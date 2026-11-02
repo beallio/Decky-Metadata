@@ -21,6 +21,7 @@ import {
   getMetadata,
   removeMetadata,
   saveMetadata,
+  checkHltbGameId,
   saveShortcutNameState,
   searchMetadata,
   enrichSteamApp,
@@ -57,6 +58,10 @@ import {
 } from "./types";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
+import { parseHltbGameId } from "./hltb/gameId";
+import { HltbGameSearch } from "./hltb/HltbGameSearch";
+import { useHltbMatch, useHltbSnapshot } from "./hltb/gameView";
+import { hltbStore } from "./hltb/store";
 import {
   normalizeReleaseDate,
   metadataTemplate,
@@ -599,6 +604,28 @@ export const MetadataPage = () => {
     }),
     [developerText, metadata, publisherText, ratingText, releaseText]
   );
+  // Unsaved HLTB field text; null shows the saved choice. Declared after the
+  // other hooks so their order is unchanged.
+  const [hltbIdDraft, setHltbIdDraft] = useState<string | null>(null);
+  // The HLTB game the game page shows, chosen or found automatically.
+  const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+  const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
+  // Undefined means the field is not a usable HLTB game; the user has been told why.
+  const checkHltbIdText = async (): Promise<{ id: number | null; name: string } | undefined> => {
+    const text = hltbIdText.trim();
+    const id = text ? parseHltbGameId(text) : null;
+    if (id === 0) {
+      toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+      return undefined;
+    }
+    if (id === null) return { id, name: "" };
+    const found = await checkHltbGameId(id);
+    if (!found.found) {
+      toastWarn("Not found", "HowLongToBeat has no game with that number.");
+      return undefined;
+    }
+    return { id, name: found.game_name };
+  };
   const saveCurrent = async () => {
     if (!nonSteam) {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
@@ -613,7 +640,10 @@ export const MetadataPage = () => {
     if (!beginBusy(requestedEntry)) return;
     const requestedRevision = formRevisionRef.current;
     try {
-      const saved = await saveMetadata(appId, normalizedMetadata);
+      // Save also keeps an HLTB game typed without pressing Apply HLTB game.
+      const hltb = hltbIdDraft === null ? null : await checkHltbIdText();
+      if (hltb === undefined) return;
+      const saved = await saveMetadata(appId, hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata);
       if (
         !isCurrentEditorEntry(requestedEntry) ||
         formRevisionRef.current !== requestedRevision
@@ -622,6 +652,7 @@ export const MetadataPage = () => {
       }
       setMetadataCacheEntry(appId, saved);
       setFormMetadata(saved);
+      if (hltb) setHltbIdDraft(null);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
@@ -746,6 +777,36 @@ export const MetadataPage = () => {
     }
   };
 
+  /** Save the HLTB field, or a game picked from HLTB search, as this game's HLTB game. */
+  const applyHltbGameId = async (picked?: { id: number; name: string }) => {
+    if (!nonSteam) {
+      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+      return;
+    }
+    const requestedEntry = editorEntryToken;
+    if (metadataHydratedEntry !== requestedEntry) {
+      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      return;
+    }
+    if (!beginBusy(requestedEntry)) return;
+    try {
+      const hltb = picked ?? await checkHltbIdText();
+      if (!hltb) return;
+      const { id, name } = hltb;
+      const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
+      if (!isCurrentEditorEntry(requestedEntry)) return;
+      setMetadataCacheEntry(appId, saved);
+      setFormMetadata(saved);
+      setHltbIdDraft(null);
+      applyMetadata(appId, { publishCompatibility: false });
+      toastSuccess("Saved", id === null ? "HLTB game cleared" : `HLTB game: ${name}`);
+    } catch (error) {
+      toastError("Save failed", String(error));
+    } finally {
+      endBusy(requestedEntry);
+    }
+  };
+
   const search = async () => {
     const requestedEntry = editorEntryToken;
     if (!beginBusy(requestedEntry)) return;
@@ -772,6 +833,8 @@ export const MetadataPage = () => {
         return;
       }
       setMetadataCacheEntry(appId, saved);
+      // An explicit pick takes the game off the removed list; ask HLTB again.
+      hltbStore.forget(appId);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);
@@ -790,6 +853,7 @@ export const MetadataPage = () => {
     try {
       await removeMetadata(appId);
       removeMetadataCacheEntry(appId);
+      hltbStore.forget(appId);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;
@@ -1236,6 +1300,43 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
+
+        {nonSteam ? (
+          <PanelSection title={"HowLongToBeat game"}>
+            <PanelSectionRow>
+              <div style={rowStackStyle}>
+                <div style={compactTextStyle}>{"Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically."}</div>
+                {hltbMatch?.game_name ? (
+                  <div style={compactTextStyle}>
+                    <b>{"Current game"}:</b> {hltbMatch.game_name} {hltbMatch.pinned_id_used ? "(chosen)" : "(found automatically)"}
+                  </div>
+                ) : null}
+                <div style={editorAppIdRowStyle}>
+                  <TextField
+                    className={editorFocusTargetClassName}
+                    value={hltbIdText}
+                    onChange={(e) => setHltbIdDraft(e.target.value)}
+                    style={fieldStyle}
+                  />
+                  <FocusableButton
+                    className={`DialogButton ${editorFocusTargetClassName}`}
+                    disabled={entryBusy}
+                    onClick={() => applyHltbGameId()}
+                    style={editorAppIdButtonStyle}
+                  >
+                    {"Apply HLTB game"}
+                  </FocusableButton>
+                </div>
+              </div>
+            </PanelSectionRow>
+            <HltbGameSearch
+              key={editorEntryToken}
+              initialQuery={appName(appId)}
+              disabled={entryBusy}
+              onApply={(picked) => applyHltbGameId(picked)}
+            />
+          </PanelSection>
+        ) : null}
 
         <PanelSection title={"Steam App ID"}>
           <PanelSectionRow>

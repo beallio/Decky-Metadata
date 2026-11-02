@@ -15,6 +15,8 @@ import { resetProtonDbAppIdResolution } from "./protondb/identity";
 import { installProtonDbGameView } from "./protondb/gameView";
 import { installProtonDbStoreBadge } from "./protondb/store";
 import { startPluginConflicts } from "./pluginConflicts";
+import { hltbController } from "./hltb/gameView";
+import { releaseProviderCache } from "./providerCache";
 import {
   installSteamPatches,
   beginCompatibilityLifecycle,
@@ -80,6 +82,9 @@ export default definePlugin(() => {
 
   resetProtonDbAppIdResolution();
   protonDbBadgeController.mount();
+  hltbController.mount();
+  // Both features started their one shared read of the saved cache.
+  releaseProviderCache();
   let unpatchSteam: (() => void) | undefined;
   try {
     unpatchSteam = installSteamPatches();
@@ -115,6 +120,7 @@ export default definePlugin(() => {
       stopProtonDbStoreBadge();
       stopProtonDbGameView();
       protonDbBadgeController.stop();
+      hltbController.stop();
       stopPluginConflicts();
       resetProtonDbAppIdResolution();
       const reloading = reloadGuard.isPending();

@@ -1103,18 +1103,66 @@ describe("compatibility metadata application", () => {
     expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, expect.anything(), before);
   });
 
-  it("does not save screenshots over a record edited or removed during the request", async () => {
+  /** Backend stand-in: the guarded save commits only while `expected` equals the stored record. */
+  const storedRecord = (initial: any) => {
+    const backend = { stored: initial };
+    mocks.getMetadata.mockImplementation(async () => backend.stored);
+    mocks.saveMetadata.mockImplementation(async (_appId, value, expected) => {
+      if (JSON.stringify(expected) !== JSON.stringify(backend.stored)) return null;
+      backend.stored = value;
+      return value;
+    });
+    return backend;
+  };
+
+  it("keeps newer Activity news when a Steam-matched game's record changes during the request", async () => {
     const appId = 93004;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...activityMetadata("Old news", "82345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      steam_appid: 55150,
+      steam_news_enriched_at: 1,
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    const backend = storedRecord(existing);
+    beginCompatibilityLifecycle();
+    let resolveFetch!: (metadata: Record<string, any> | null) => void;
+    mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
+      resolveFetch = resolve;
+    }));
+    const pending = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    // The route's Activity refresh stores newer news with a new timestamp and caches it.
+    const newer = { ...activityMetadata("New news", "92345678901234567"), source: "IGN", source_url: existing.source_url, steam_appid: 55150, steam_news_enriched_at: 2, screenshots: [] } as any;
+    backend.stored = newer;
+    metadataCache[String(appId)] = structuredClone(newer);
+    const shots = [{ url: "https://example.invalid/shot.png" }];
+    resolveFetch({ screenshots: shots });
+    await pending;
+    expect(backend.stored).toEqual({ ...newer, screenshots: shots });
+    expect(metadataCache[String(appId)]?.steam_news?.[0]?.title).toBe("New news");
+    expect(metadataCache[String(appId)]?.screenshots).toEqual(shots);
+  });
+
+  it("stops the fill-in when the game is re-matched or its record removed during the request", async () => {
+    const appId = 93009;
     installCompatibilityOverview(appId, 0xa0);
     metadataState.metadataLoaded = true;
     const existing = {
       ...compatibilityMetadata(null, null),
       source: "IGN",
       source_url: "https://example.invalid/game",
+      steam_news: [],
       screenshots: [],
     } as any;
-    for (const change of ["edit", "remove"] as const) {
+    for (const change of ["re-match", "remove"] as const) {
       metadataCache[String(appId)] = existing;
+      const backend = storedRecord(existing);
+      mocks.saveMetadata.mockClear();
       beginCompatibilityLifecycle();
       let resolveFetch!: (metadata: Record<string, any> | null) => void;
       mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
@@ -1122,12 +1170,41 @@ describe("compatibility metadata application", () => {
       }));
       const pending = tryEnrichScreenshotsForApp(appId);
       await Promise.resolve();
-      if (change === "edit") metadataCache[String(appId)] = { ...existing, description: "User edit" };
-      else delete metadataCache[String(appId)];
+      backend.stored = change === "remove" ? null : { ...existing, source_url: "https://example.invalid/other-game" };
       resolveFetch({ screenshots: [{ url: "https://example.invalid/shot.png" }] });
       await pending;
-      expect(mocks.saveMetadata).not.toHaveBeenCalled();
+      // Only the first, rejected save; no screenshots of the old game land on the new state.
+      expect(mocks.saveMetadata).toHaveBeenCalledTimes(1);
+      expect(backend.stored?.screenshots ?? []).toEqual([]);
     }
+  });
+
+  it("saves screenshots when an Activity refresh replaces the cache entry with the same record", async () => {
+    const appId = 93008;
+    installCompatibilityOverview(appId, 0xa0);
+    metadataState.metadataLoaded = true;
+    const existing = {
+      ...activityMetadata("Kept news", "72345678901234567"),
+      source: "IGN",
+      source_url: "https://example.invalid/game",
+      screenshots: [],
+    } as any;
+    metadataCache[String(appId)] = existing;
+    beginCompatibilityLifecycle();
+    let resolveFetch!: (metadata: Record<string, any> | null) => void;
+    mocks.fetchMetadata.mockReturnValue(new Promise((resolve) => {
+      resolveFetch = resolve;
+    }));
+    const shots = [{ url: "https://example.invalid/shot.png" }];
+    mocks.saveMetadata.mockImplementation(async (_appId, value) => value);
+    const pending = tryEnrichScreenshotsForApp(appId);
+    await Promise.resolve();
+    // The route's Activity refresh returns the unchanged record as a new object.
+    metadataCache[String(appId)] = structuredClone(existing);
+    resolveFetch({ screenshots: shots });
+    await pending;
+    expect(mocks.saveMetadata).toHaveBeenCalledWith(appId, { ...existing, screenshots: shots }, existing);
+    expect(metadataCache[String(appId)]?.screenshots).toEqual(shots);
   });
 
   it("keeps the cache when the backend rejects a screenshot save over a record it changed", async () => {

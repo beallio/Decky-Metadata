@@ -40,7 +40,7 @@ mkdir -p -- "$state_root"
 exec 9>"$state_root/lock"
 flock -x 9
 
-zip="$repo_root/Decky-Metadata.zip"
+zip="${DECKY_PACKAGE_DIR:-$tmp_root/package}/Decky-Metadata.zip"
 if [[ -n "${DECKY_TEST_PACKAGE_ZIP:-}" ]]; then
   if ! zip="$(python3 scripts/deck/temp_paths.py validate "$DECKY_TEST_PACKAGE_ZIP")"; then
     echo "package-push: test archive must stay inside DECKY_TMP_ROOT" >&2

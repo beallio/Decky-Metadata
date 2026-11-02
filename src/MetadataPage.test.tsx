@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { hltbStore } from "./hltb/store";
+import type { HltbEntry } from "./backend";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
@@ -6,6 +8,8 @@ const textarea = vi.hoisted(() => ({ component: null as any }));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
+  checkHltbGameId: vi.fn(),
+  getHltbStats: vi.fn(),
   clearShortcutNameState: vi.fn(),
   enrichSteamApp: vi.fn(),
   getShortcutNameManagement: vi.fn(),
@@ -62,6 +66,8 @@ const toast = vi.hoisted(() => ({
   toastWarn: vi.fn(),
 }));
 
+// What the game page shows for this game; tests set it per case.
+const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null }));
 const state = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const refs = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as Array<() => unknown> }));
@@ -87,6 +93,10 @@ vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
+vi.mock("./hltb/gameView", () => ({
+  useHltbSnapshot: () => ({ effectiveEnabled: true }),
+  useHltbMatch: () => ({ active: true, entry: hltbMatch.entry }),
+}));
 vi.mock("react", () => ({
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => unknown) => {
@@ -1197,6 +1207,32 @@ describe("metadata summary and date persistence", () => {
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();
   });
+  it("saves an HLTB game typed into its field when Save is pressed, and refuses an invalid one", async () => {
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
+    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+    hltbField().props.onChange({ target: { value: "not a game" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
+  });
+  it("shows the automatically found HLTB game without saving it as a choice", async () => {
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    hltbMatch.entry = {
+      status: "matched", hltb_id: 6064, game_name: "Minecraft", stats: null,
+      steam_appid_used: null, title_used: "Minecraft Bedrock", pinned_id_used: null, fetched_at: 1,
+    };
+    const section = walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0];
+    expect(walk(section, node => node.type === "TextField")[0].props.value).toBe("6064");
+    expect(text(section)).toContain("Minecraft");
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBeUndefined();
+    hltbMatch.entry = null;
+  });
   it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
     textarea.component = component;
     state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });
@@ -1266,5 +1302,27 @@ describe("Steam-match picker application", () => {
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(backend.enrichSteamApp).not.toHaveBeenCalled();
     expect(steam.metadataCache["100"]).toBeUndefined();
+  });
+
+  it("shows HLTB times again after a removed game gets an IGN match, without a reload", async () => {
+    const inputs = { steam: null, title: "Hades", pinned: null };
+    configureShortcutPanel({ metadata: { title: "Hades" } });
+    // The game page asked once after Remove metadata and was told the game is removed.
+    backend.getHltbStats.mockResolvedValueOnce({ status: "blocked" });
+    hltbStore.request(100, true, inputs);
+    await flushAsyncWork();
+    expect(hltbStore.view(100, inputs)).toEqual({ entry: null, needsFetch: false });
+
+    state.values[6] = [{ slug: "hades", url: "https://www.ign.com/games/hades", title: "Hades", description: "" }];
+    backend.applyFetchedMetadata.mockResolvedValue(makeMetadata({ title: "Hades", source: "IGN" }));
+    // `walk` skips nested arrays such as `results.map(...)`; search them here.
+    const find = (node: any): any => Array.isArray(node) ? node.map(find).find(Boolean)
+      : node && typeof node === "object" ? (String(node.props?.className ?? "").includes("decky-metadata-editor__result")
+        ? node : find(node.props?.children)) : undefined;
+    const result = find(renderPage());
+    await result.props.onClick();
+    await flushAsyncWork();
+
+    expect(hltbStore.view(100, inputs).needsFetch).toBe(true);
   });
 });

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.deck import temp_paths
 from scripts.deck.verify.select_fixtures import select
 
 FIXTURE = Path(__file__).parent / "fixtures/agent_workflow/metadata.json"
@@ -245,7 +246,6 @@ def test_artwork_identity_probe_and_smoke_are_output_safe_and_read_only():
     assert "iconValueHash" in smoke
     assert "data[\"iconDeadlineMs\"] != 15000" in smoke
     assert "1 <= data[\"iconAttempts\"] <= 61" in smoke
-    assert "/tmp/Decky-Metadata" in smoke
     assert '"status": "started"' in smoke
     assert '"status": "pending-validation"' in smoke
     assert "shortcut identity" in smoke
@@ -523,6 +523,9 @@ def _write_artwork_identity_smoke_fixture(tmp_path: Path) -> Path:
     root = tmp_path / "fixture"
     verify = root / "scripts/deck/verify"
     verify.mkdir(parents=True)
+    (verify.parent / "temp_paths.py").write_text(
+        (Path(__file__).parents[1] / "scripts/deck/temp_paths.py").read_text(), encoding="utf-8"
+    )
     smoke = verify / "smoke_artwork_identity.sh"
     smoke.write_text(
         (Path(__file__).parents[1] / "scripts/deck/verify/smoke_artwork_identity.sh").read_text(),
@@ -618,7 +621,7 @@ print(json.dumps({\"shortcutAppId\": shortcut, \"fileCount\": len(hashes), \"fil
 
 
 def _artwork_smoke_evidence_path(tmp_path: Path) -> Path:
-    evidence = Path("/tmp/Decky-Metadata/pytest-artwork-identity") / tmp_path.name / "evidence"
+    evidence = temp_paths.root_path() / "pytest-artwork-identity" / tmp_path.name / "evidence"
     evidence.parent.mkdir(parents=True, exist_ok=True)
     return evidence
 
@@ -974,7 +977,6 @@ def test_controller_tab_persistence_probe_and_smoke_are_bounded_and_output_safe(
     assert "SOURCE_APPID" in smoke
     _assert_controller_tab_smoke_contract(smoke)
     assert "active tab changes unexpectedly" in smoke
-    assert "/tmp/Decky-Metadata/" in smoke
     assert "smoke_controller_tab_persistence.sh" not in run_all
 
     forbidden = (
@@ -1313,6 +1315,9 @@ def _write_controller_tab_smoke_fixture(tmp_path: Path) -> Path:
     root = tmp_path / "fixture"
     verify = root / "scripts/deck/verify"
     verify.mkdir(parents=True)
+    (verify.parent / "temp_paths.py").write_text(
+        (Path(__file__).parents[1] / "scripts/deck/temp_paths.py").read_text(), encoding="utf-8"
+    )
     smoke_source = (
         Path(__file__).parents[1] / "scripts/deck/verify/smoke_controller_tab_persistence.sh"
     ).read_text(encoding="utf-8")
@@ -1429,7 +1434,7 @@ def _run_controller_tab_smoke_with_failed_transport(
 
 def _controller_tab_smoke_evidence_path(tmp_path: Path) -> Path:
     evidence = (
-        Path("/tmp/Decky-Metadata/pytest-controller-tab-smoke")
+        temp_paths.root_path() / "pytest-controller-tab-smoke"
         / tmp_path.name
         / "tab-persistence.json"
     )

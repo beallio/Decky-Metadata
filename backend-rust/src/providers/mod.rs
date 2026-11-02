@@ -1,3 +1,4 @@
+pub mod hltb;
 pub mod community;
 pub mod delisted;
 pub mod ign;

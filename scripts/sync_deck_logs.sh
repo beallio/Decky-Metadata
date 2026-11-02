@@ -13,8 +13,7 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-cache_root="$(awk -F= '$1 == "CACHE_ROOT" { print $2 }' .protocol 2>/dev/null)"
-cache_root="${cache_root:-/tmp/Decky-Metadata}"
+cache_root="$(python3 scripts/deck/temp_paths.py root)"
 
 remote_dir="${DECKY_LOG_REMOTE_DIR:-/home/deck/homebrew/logs/Decky-Metadata}"
 dest_root="${DECKY_LOG_SYNC_DIR:-$cache_root/deck-logs}"

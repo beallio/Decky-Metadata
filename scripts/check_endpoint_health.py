@@ -17,7 +17,7 @@ RESULT_ORDER = (
     "ign-search", "ign-metadata", "ign-trailers", "steam-search", "steam-appdetails",
     "steam-trailers", "steam-news", "steam-events", "steam-deck-compatibility",
     "protondb-summary", "protondb-algolia", "steam-community", "steam-tracker",
-    "github-releases", "github-release-assets",
+    "github-releases", "github-release-assets", "hltb-lookup",
 )
 
 

@@ -13,7 +13,10 @@ vi.mock("../steam/core", () => ({
   metadataCache: fixtures.metadataCache,
 }));
 
-import { getResolvedProtonDbAppId, resetProtonDbAppIdResolution, resolveProtonDbAppId } from "./identity";
+import {
+  getResolvedProtonDbAppId, resetProtonDbAppIdResolution, resolveProtonDbAppId,
+  seedProtonDbAppIdResolutions, setResolvedNameListener,
+} from "./identity";
 
 const shortcutId = 3015223078;
 const native = (name: string, id = shortcutId) => {
@@ -31,7 +34,7 @@ beforeEach(() => {
   Object.keys(fixtures.metadataCache).forEach(key => delete fixtures.metadataCache[key]);
   resetProtonDbAppIdResolution();
 });
-afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => { setResolvedNameListener(undefined); vi.clearAllTimers(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("ID-first ProtonDB identity with fork fallback", () => {
   it("keeps native Steam identity direct rather than resolving a saved metadata alias", async () => {
@@ -161,5 +164,36 @@ describe("ID-first ProtonDB identity with fork fallback", () => {
     pending.resolve(steamGame("Hades", 123));
     expect(await old).toBeNull();
     expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+  });
+
+  it("reports only found IDs for saving; a failed or empty search is never saved", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const saved = vi.fn();
+    setResolvedNameListener(saved);
+    const overview = native("Hades");
+    vi.mocked(fetchNoCors).mockResolvedValueOnce(response({}, 503));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBeNull();
+    const other = native("Nothing Like This", shortcutId + 1);
+    vi.mocked(fetchNoCors).mockResolvedValueOnce(response({ items: [] }));
+    vi.mocked(fetchNoCors).mockResolvedValueOnce(response({ hits: [] }));
+    expect(await resolveProtonDbAppId(shortcutId + 1, other)).toBeNull();
+    resetProtonDbAppIdResolution();
+    vi.mocked(fetchNoCors).mockResolvedValueOnce(steamGame("Hades", 1145360));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+
+    expect(saved.mock.calls).toEqual([[shortcutId, "Hades", 1145360]]);
+  });
+
+  it("uses a saved name lookup without a request until the shortcut is renamed", async () => {
+    const overview = native("Hades");
+    seedProtonDbAppIdResolutions([[shortcutId, "Hades", 1145360]]);
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBe(1145360);
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1145360);
+    expect(fetchNoCors).not.toHaveBeenCalled();
+
+    overview.display_name = "Brotato";
+    expect(getResolvedProtonDbAppId(shortcutId, overview)).toBeUndefined();
+    vi.mocked(fetchNoCors).mockResolvedValueOnce(steamGame("Brotato", 1942280));
+    expect(await resolveProtonDbAppId(shortcutId, overview)).toBe(1942280);
   });
 });

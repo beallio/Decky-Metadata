@@ -1,8 +1,10 @@
 pub mod cef_bridge;
+pub mod hltb;
 pub mod http;
 pub mod logging;
 pub mod matching;
 pub mod metadata;
+pub mod provider_cache;
 pub mod providers;
 pub mod rpc;
 pub mod scan_runner;

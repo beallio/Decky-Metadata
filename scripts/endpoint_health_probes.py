@@ -157,6 +157,7 @@ NATIVE_PROBES = (
     ("steam-tracker", "Steam Tracker delisted index", "At least 100 games, including Metro 2033 (43110)"),
     ("github-releases", "GitHub updater release discovery", "Latest published stable release"),
     ("github-release-assets", "GitHub updater manifest and ZIP delivery", "Latest published stable release"),
+    ("hltb-lookup", "HowLongToBeat search and game page", "Portal 2 (Steam 620, HLTB 7231)"),
 )
 
 PROBES = (

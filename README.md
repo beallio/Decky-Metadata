@@ -6,7 +6,8 @@
 Decky Metadata adds Steam game details to non-Steam games in your library. It
 can show descriptions, news, community posts, and controller layouts from the
 matching game without replacing your custom artwork. For Steam and non-Steam
-games, you can also show ProtonDB community ratings and watch game trailers.
+games, you can also show ProtonDB community ratings, HowLongToBeat times, and
+watch game trailers.
 For Steam games, you can restore the small achievement progress bar beside
 Play Time.
 
@@ -34,7 +35,7 @@ if you need more help.
 
 Open Decky Metadata from the Quick Access Menu to find games that need details.
 Select a section heading to show its controls. **Versions** starts open;
-**Metadata**, **Compatibility status**, **ProtonDB badges**, **Game trailers**,
+**Metadata**, **Compatibility status**, **ProtonDB badges**, **HLTB times**, **Game trailers**,
 **Mini achievements**, **Logs**, and **Updates** start closed. Press A on a
 heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
@@ -103,6 +104,22 @@ Store requirements, and troubleshooting.
 
 ![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
 
+### HowLongToBeat times
+
+Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
+default. A game's page then shows how long players take to finish it: Main
+Story, Main + Extras, Completionist, and All Styles. Steam games are matched by
+their Steam App ID; non-Steam games use their saved Steam match or their name.
+You can choose the HowLongToBeat game for a non-Steam game in its editor, and
+hide the times for one game from its menu. The styles and appearance options of
+HLTB for Deck are included.
+
+When HLTB times are turned on, Decky Metadata sends game titles and
+HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam
+account or send your library.
+
+See the [HLTB guide](docs/help/hltb.md) for settings, matching, and troubleshooting.
+
 ### Game trailers
 
 Open **Game trailers** and turn on **Enable trailers**, the main switch.
@@ -170,6 +187,9 @@ Decky Metadata is licensed under the [GNU General Public License v3.0 or later](
 It is a fork of [Playhub Metadata](https://github.com/LoZazaMastro/Playhub-Metadata)
 by ZazaMastro and started from the
 [Decky Plugin Template](https://github.com/SteamDeckHomebrew/decky-plugin-template).
+HowLongToBeat times follow
+[HLTB for Deck](https://github.com/morwy/hltb-for-deck) by hulkrelax, morwy, and
+contributors (MIT).
 The game-menu integration is based on
 [decky-steamgriddb](https://github.com/SteamGridDB/decky-steamgriddb) by the
 SteamGridDB project.

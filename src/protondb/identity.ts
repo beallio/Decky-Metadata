@@ -2,12 +2,31 @@ import { getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../s
 import { findSteamAppIdByName } from "./steamSearch";
 
 type Resolution = { name: string; promise: Promise<number | null>; id?: number | null };
+export type ResolvedNameListener = (shortcutAppId: number, name: string, steamAppId: number) => void;
 const resolutions = new Map<number, Resolution>();
 let generation = 0;
+let resolvedNameListener: ResolvedNameListener | undefined;
 
 export const resetProtonDbAppIdResolution = (): void => {
   generation += 1;
   resolutions.clear();
+};
+
+/** Receives only found Steam IDs; a null search result is a miss or an error and is never reported. */
+export const setResolvedNameListener = (listener: ResolvedNameListener | undefined): void => {
+  resolvedNameListener = listener;
+};
+
+/** Load saved name lookups; a later rename of the shortcut makes its entry unused. */
+export const seedProtonDbAppIdResolutions = (
+  entries: Iterable<readonly [shortcutAppId: number, name: string, steamAppId: number]>,
+): void => {
+  for (const [shortcutAppId, name, savedId] of entries) {
+    const id = steamAppId(savedId);
+    if (id === null || !Number.isSafeInteger(shortcutAppId) || shortcutAppId <= 0 ||
+        shortcutAppId > 0xffffffff || !name || resolutions.has(shortcutAppId)) continue;
+    resolutions.set(shortcutAppId, { name, promise: Promise.resolve(id), id });
+  }
 };
 
 const steamAppId = (value: unknown): number | null => {
@@ -62,6 +81,13 @@ export const resolveProtonDbAppId = async (
         if (current && current.display_name !== name) return null;
         const id = steamAppId(result);
         if (resolution) resolution.id = id;
+        if (id !== null) {
+          try {
+            resolvedNameListener?.(displayedAppId, name, id);
+          } catch {
+            // Saving is best effort.
+          }
+        }
         return id;
       });
       resolution = { name, promise };

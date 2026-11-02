@@ -93,6 +93,8 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, str]]:
         **os.environ,
         "PATH": f"{fake_bin}{os.pathsep}{os.environ['PATH']}",
         "TMPDIR": str(cache),
+        "DECKY_PACKAGE_DIR": "",
+        "DECKY_TMP_ROOT": "",
         "CARGO_HOME": str(cache / "cargo-home"),
         "CARGO_TARGET_DIR": str(cache / "cargo-target"),
         "FAKE_ELF_HEX": _valid_elf().hex(),
@@ -125,7 +127,7 @@ def test_dev_package_injects_short_hash_and_preserves_sources(tmp_path: Path) ->
     original_package = package_path.read_bytes()
     original_plugin = plugin_path.read_bytes()
     base_version = str(json.loads(original_package)["version"])
-    zip_path = repo / "Decky-Metadata.zip"
+    zip_path = Path(env["TMPDIR"]) / "Decky-Metadata/package/Decky-Metadata.zip"
 
     result = _run_packager(repo, env)
 
@@ -148,7 +150,7 @@ def test_release_package_uses_base_version_and_preserves_sources(
     original_package = package_path.read_bytes()
     original_plugin = plugin_path.read_bytes()
     base_version = str(json.loads(original_package)["version"])
-    zip_path = repo / "Decky-Metadata.zip"
+    zip_path = Path(env["TMPDIR"]) / "Decky-Metadata/package/Decky-Metadata.zip"
 
     result = _run_packager(repo, env, flag)
 

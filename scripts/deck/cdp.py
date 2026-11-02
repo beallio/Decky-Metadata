@@ -33,7 +33,7 @@ Dispatching arrow keys drives Steam's gamepad focus in this CEF build; pair it
 with js/gpfocus_dump.js after each step to read the authoritative focus order.
 
 screenshot captures the composited Gaming Mode page as a PNG below
-DECKY_TMP_ROOT (default /tmp/Decky-Metadata). The default target is
+DECKY_TMP_ROOT (default $TMPDIR/Decky-Metadata). The default target is
 "Steam Big Picture Mode"; pass an explicit target as the final argument to
 override it.
 
