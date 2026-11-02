@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-02
+
+HowLongToBeat times on game pages, and ProtonDB badges right after a restart
+
 ### Added
 
 - **HowLongToBeat times.** Turn on **HLTB times** to see how long players take
