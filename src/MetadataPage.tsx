@@ -59,6 +59,7 @@ import {
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
+import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { hltbStore } from "./hltb/store";
 import {
   normalizeReleaseDate,
@@ -773,7 +774,8 @@ export const MetadataPage = () => {
     }
   };
 
-  const applyHltbGameId = async () => {
+  /** Save the HLTB field, or a game picked from HLTB search, as this game's HLTB game. */
+  const applyHltbGameId = async (picked?: { id: number; name: string }) => {
     if (!nonSteam) {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
       return;
@@ -785,7 +787,7 @@ export const MetadataPage = () => {
     }
     if (!beginBusy(requestedEntry)) return;
     try {
-      const hltb = await checkHltbIdText();
+      const hltb = picked ?? await checkHltbIdText();
       if (!hltb) return;
       const { id, name } = hltb;
       const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
@@ -1300,7 +1302,7 @@ export const MetadataPage = () => {
           <PanelSection title={"HowLongToBeat game"}>
             <PanelSectionRow>
               <div style={rowStackStyle}>
-                <div style={compactTextStyle}>{"Paste a HowLongToBeat game number or game page link to choose the times shown for this game. Leave empty to match automatically."}</div>
+                <div style={compactTextStyle}>{"Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically."}</div>
                 <div style={editorAppIdRowStyle}>
                   <TextField
                     className={editorFocusTargetClassName}
@@ -1319,6 +1321,12 @@ export const MetadataPage = () => {
                 </div>
               </div>
             </PanelSectionRow>
+            <HltbGameSearch
+              key={editorEntryToken}
+              initialQuery={appName(appId)}
+              disabled={entryBusy}
+              onApply={(picked) => applyHltbGameId(picked)}
+            />
           </PanelSection>
         ) : null}
 

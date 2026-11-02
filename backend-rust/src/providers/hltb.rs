@@ -207,7 +207,7 @@ fn search_title(title: &str) -> String {
     matching::clean_game_title(&title.replace(['™', '®', '©'], " "))
 }
 
-fn rank_by_title<'a>(title: &str, results: &'a [SearchResult]) -> Vec<&'a SearchResult> {
+pub fn rank_by_title<'a>(title: &str, results: &'a [SearchResult]) -> Vec<&'a SearchResult> {
     let query = matching::normalise_match_title(title);
     let mut ranked: Vec<(u8, i64, usize, &SearchResult)> = results
         .iter()
@@ -476,6 +476,12 @@ impl HltbClient {
                     .iter()
                     .filter(|result| matching::ign_title_acceptable(&title, &result.page.game_name))
                     .max_by_key(|result| result.comp_all_count)
+            })
+            // HLTB also searches other names, so its only result is the game, as in
+            // HLTB for Deck: "Minecraft Bedrock" finds only "Minecraft".
+            .or_else(|| match results.as_slice() {
+                [only] => Some(only),
+                _ => None,
             });
         Ok(match pick {
             Some(result) => LookupOutcome::Matched { page: result.page.clone(), via: MatchVia::Title },
@@ -651,8 +657,18 @@ mod tests {
         ]);
         let outcome = client().lookup(&http, input(None, "Hollow Knight")).await.unwrap();
         assert_eq!(matched(outcome), (4, MatchVia::Title));
-        let http = Http::fixtures(vec![init(), search(vec![game(5, "Minecraft Dungeons", 0, 5)])]);
-        assert_eq!(client().lookup(&http, input(None, "Stardew Valley")).await.unwrap(), LookupOutcome::NoMatch);
+        let http = Http::fixtures(vec![
+            init(),
+            search(vec![game(5, "Minecraft Dungeons", 0, 5), game(6, "Minecraft Legends", 0, 9)]),
+        ]);
+        assert_eq!(client().lookup(&http, input(None, "Minecraft Bedrock")).await.unwrap(), LookupOutcome::NoMatch);
+    }
+
+    #[tokio::test]
+    async fn a_lone_search_result_is_the_game_even_with_another_name() {
+        let http = Http::fixtures(vec![init(), search(vec![game(6064, "Minecraft", 0, 1364)])]);
+        assert_eq!(matched(client().lookup(&http, input(None, "Minecraft Bedrock")).await.unwrap()), (6064, MatchVia::Title));
+        http.assert_drained();
     }
 
     #[tokio::test]

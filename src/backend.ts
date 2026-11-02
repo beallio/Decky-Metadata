@@ -250,6 +250,8 @@ export const checkHltbGameId = callable<
   [gameId: number],
   { found: true; game_id: number; game_name: string } | { found: false }
 >("check_hltb_game_id");
+export type HltbSearchResult = { game_id: number; game_name: string; main_seconds: number; count: number };
+export const searchHltbGames = callable<[query: string], HltbSearchResult[]>("search_hltb_games");
 export const clearHltbCache = callable<[], { ok: boolean }>("clear_hltb_cache");
 export const findIgnTrailer = callable<
   [title: string, gameUrl?: string | null],

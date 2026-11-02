@@ -32,7 +32,9 @@ To hide the times for one game, open the game's menu and select
   Steam game on its own page, so a different edition is not used by mistake.
   If HowLongToBeat does not list the Steam App ID, no times appear.
 - **Non-Steam games** use the Steam match saved in **Decky metadata...** in the
-  same way. Without a Steam match, the game's name is used.
+  same way. Without a Steam match, the game's name is used. When HowLongToBeat
+  finds only one game for the name, that game is used. HowLongToBeat also
+  searches other names of a game, so "Minecraft Bedrock" finds "Minecraft".
 - If **Remove metadata** was used for a non-Steam game, its times are hidden and
   not looked up by name. They come back when you pick a Steam match or an IGN
   result in **Decky metadata...**, or after **Clear cache**. You can also choose
@@ -41,12 +43,15 @@ To hide the times for one game, open the game's menu and select
 ### Choose the HLTB game for a non-Steam game
 
 1. Open the game's menu and select **Decky metadata...**.
-2. Under **HowLongToBeat game**, paste the game's number or its page link, for
-   example `https://howlongtobeat.com/game/7231`.
-3. Select **Apply HLTB game**, or **Save**. Decky Metadata checks the number and
-   does not save a number HowLongToBeat does not have. **Apply HLTB game** also
-   shows the game's name. Leave the field empty and apply it to go back to
-   automatic matching.
+2. Under **HowLongToBeat game**, either:
+   - select **Search HLTB**, change the name if needed, and select a game from
+     the results. It is saved right away; or
+   - paste the game's number or its page link, for example
+     `https://howlongtobeat.com/game/7231`, then select **Apply HLTB game** or
+     **Save**. Decky Metadata checks the number and does not save a number
+     HowLongToBeat does not have.
+3. To go back to automatic matching, empty the number field and select
+   **Apply HLTB game**.
 
 ## How fresh the times are
 
