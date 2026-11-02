@@ -1200,6 +1200,18 @@ describe("metadata summary and date persistence", () => {
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();
   });
+  it("saves an HLTB game typed into its field when Save is pressed, and refuses an invalid one", async () => {
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
+    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+    hltbField().props.onChange({ target: { value: "not a game" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
+  });
   it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
     textarea.component = component;
     state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });

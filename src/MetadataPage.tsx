@@ -606,6 +606,22 @@ export const MetadataPage = () => {
   // other hooks so their order is unchanged.
   const [hltbIdDraft, setHltbIdDraft] = useState<string | null>(null);
   const hltbIdText = hltbIdDraft ?? (metadata.hltb_game_id ? String(metadata.hltb_game_id) : "");
+  // Undefined means the field is not a usable HLTB game; the user has been told why.
+  const checkHltbIdText = async (): Promise<{ id: number | null; name: string } | undefined> => {
+    const text = hltbIdText.trim();
+    const id = text ? parseHltbGameId(text) : null;
+    if (id === 0) {
+      toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+      return undefined;
+    }
+    if (id === null) return { id, name: "" };
+    const found = await checkHltbGameId(id);
+    if (!found.found) {
+      toastWarn("Not found", "HowLongToBeat has no game with that number.");
+      return undefined;
+    }
+    return { id, name: found.game_name };
+  };
   const saveCurrent = async () => {
     if (!nonSteam) {
       toastWarn("Not applicable", "This plugin only changes non-Steam games.");
@@ -620,7 +636,10 @@ export const MetadataPage = () => {
     if (!beginBusy(requestedEntry)) return;
     const requestedRevision = formRevisionRef.current;
     try {
-      const saved = await saveMetadata(appId, normalizedMetadata);
+      // Save also keeps an HLTB game typed without pressing Apply HLTB game.
+      const hltb = hltbIdDraft === null ? null : await checkHltbIdText();
+      if (hltb === undefined) return;
+      const saved = await saveMetadata(appId, hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata);
       if (
         !isCurrentEditorEntry(requestedEntry) ||
         formRevisionRef.current !== requestedRevision
@@ -629,6 +648,7 @@ export const MetadataPage = () => {
       }
       setMetadataCacheEntry(appId, saved);
       setFormMetadata(saved);
+      if (hltb) setHltbIdDraft(null);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess("Saved", "Metadata saved");
@@ -763,23 +783,11 @@ export const MetadataPage = () => {
       toastWarn("Not loaded", "Saved metadata has not loaded yet.");
       return;
     }
-    const text = hltbIdText.trim();
-    const id = text ? parseHltbGameId(text) : null;
-    if (id === 0) {
-      toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
-      return;
-    }
     if (!beginBusy(requestedEntry)) return;
     try {
-      let name = "";
-      if (id !== null) {
-        const found = await checkHltbGameId(id);
-        if (!found.found) {
-          toastWarn("Not found", "HowLongToBeat has no game with that number.");
-          return;
-        }
-        name = found.game_name;
-      }
+      const hltb = await checkHltbIdText();
+      if (!hltb) return;
+      const { id, name } = hltb;
       const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setMetadataCacheEntry(appId, saved);
