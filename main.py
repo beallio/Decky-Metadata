@@ -10,6 +10,7 @@ protocol (newline-delimited JSON on DECKY_PLUGIN_SOCKET).
 
 import asyncio
 import ctypes
+import hashlib
 import itertools
 import json
 import os
@@ -69,6 +70,48 @@ def _backend_path():
     return path
 
 
+def _digest(file):
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: file.read(1024 * 1024), b""):
+        digest.update(chunk)
+    return digest.digest()
+
+
+def _stage():
+    # A separate executable avoids ETXTBSY when upstream extracts an update
+    # over the live plugin folder. Rename also works while the old copy runs.
+    source = _backend_path()
+    os.makedirs(decky.DECKY_PLUGIN_RUNTIME_DIR, exist_ok=True)
+    copy = _copy_path()
+    with open(source, "rb") as packaged:
+        existing_digest = None
+        try:
+            if (
+                not os.path.islink(copy)
+                and os.path.isfile(copy)
+                and os.access(copy, os.X_OK)
+                and not os.path.samefile(source, copy)
+            ):
+                with open(copy, "rb") as existing:
+                    existing_digest = _digest(existing)
+        except OSError:
+            pass
+        if existing_digest is not None:
+            if _digest(packaged) == existing_digest:
+                return copy
+            packaged.seek(0)
+        fd, staged = tempfile.mkstemp(dir=decky.DECKY_PLUGIN_RUNTIME_DIR)
+        try:
+            with os.fdopen(fd, "wb") as target:
+                shutil.copyfileobj(packaged, target)
+            os.chmod(staged, 0o700)
+            os.replace(staged, copy)
+        except BaseException:
+            os.unlink(staged)
+            raise
+    return copy
+
+
 def _start(env):
     worker = os.getpid()
 
@@ -78,24 +121,8 @@ def _start(env):
         if _prctl(PR_SET_PDEATHSIG, signal.SIGKILL) != 0 or os.getppid() != worker:
             os._exit(1)
 
-    # Run a copy, so the packaged file is never busy: upstream can extract a
-    # ZIP update over the live plugin folder, and Linux refuses to overwrite a
-    # running executable (ETXTBSY). Replace the copy by rename for the same
-    # reason, and keep it while the backend runs, because a script backend's
-    # interpreter opens it by path after exec.
-    source = _backend_path()
-    os.makedirs(decky.DECKY_PLUGIN_RUNTIME_DIR, exist_ok=True)
-    fd, staged = tempfile.mkstemp(dir=decky.DECKY_PLUGIN_RUNTIME_DIR)
-    try:
-        with os.fdopen(fd, "wb") as target, open(source, "rb") as packaged:
-            shutil.copyfileobj(packaged, target)
-        os.chmod(staged, 0o700)
-        os.replace(staged, _copy_path())
-    except BaseException:
-        os.unlink(staged)
-        raise
     return subprocess.Popen(
-        [_copy_path()], env={**os.environ, **env}, preexec_fn=die_with_worker
+        [_stage()], env={**os.environ, **env}, preexec_fn=die_with_worker
     )
 
 

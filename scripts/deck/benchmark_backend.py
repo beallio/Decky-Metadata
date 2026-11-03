@@ -43,7 +43,8 @@ PINNED_ORIGINAL_ZIP_SHA256 = "49897d1db6ee0d4a320e570ce561cc8924585bf4bb24c68026
 PINNED_UI_SHA256 = "6388c846e4d112bb369ea0d27874adbd7db5570bcf20cfa091aa330ab86b79ac"
 # Upstream SteamDeckHomebrew/decky-loader v3.3.0 PluginLoader (tag commit 67196adf, the fork's base).
 PINNED_UPSTREAM_RUNTIME_SHA256 = "e80d03e641d1766a33a817cb27ab8d2e0a4633685e5d27e4de948a6687526181"
-# beallio/decky-loader main at 98bce11, the same revision as the shipped decky-plugin SDK and shim.
+# beallio/decky-loader main at 98bce11, the measured fork runtime bundle. A newer SDK pin does not
+# move it; a rebuilt, re-measured bundle replaces this commit and the SHA-256 pins with it.
 PINNED_FORK_BASE_COMMIT = "98bce11fffffa59a331098edd8671591fb98a9a5"
 PINNED_FORK_RUNTIME_EXECUTABLE_SHA256 = "608495897e32be00d5516f59273a29252f858169a6d0c4691aeeaaaf7d2fac41"
 PINNED_FORK_SOURCE_BASELINE = {
