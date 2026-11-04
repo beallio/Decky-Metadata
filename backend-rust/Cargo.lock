@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "decky-plugin"
 version = "0.1.0"
-source = "git+https://github.com/beallio/decky-loader?rev=192cedc66682a8319e039b05093a3b7e06f8824c#192cedc66682a8319e039b05093a3b7e06f8824c"
+source = "git+https://github.com/beallio/decky-loader?rev=58072a72566942368897f88485f0c61cf4afd213#58072a72566942368897f88485f0c61cf4afd213"
 dependencies = [
  "libc",
  "log",

@@ -124,7 +124,7 @@ Pinned inputs (both harness files check them):
 |---|---|
 |Upstream Loader|`SteamDeckHomebrew/decky-loader` `v3.3.0` `PluginLoader` (tag commit `67196adf`); get it with `gh release download v3.3.0 -R SteamDeckHomebrew/decky-loader -p PluginLoader` and check the release asset digest|
 |Fork Loader|`beallio/decky-loader` `main` at `98bce11`, the measured runtime bundle built from source; its constants move only with a new run|
-|Plugin SDK and shim|`192cedc`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and root `main.py` copied from `backend-rust/decky-plugin/shim/main.py`|
+|Plugin SDK and shim|`58072a7`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and root `main.py` copied from `backend-rust/decky-plugin/shim/main.py`|
 
 Build the fork bundle from a detached clone of that commit. Its build checks the
 upstream `v3.3.0` tag, so fetch it first:
