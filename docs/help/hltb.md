@@ -3,7 +3,7 @@
 HowLongToBeat (HLTB) collects how long players take to finish games. Decky
 Metadata can show four HLTB times on a game's page, for Steam games and for
 non-Steam games: **Main Story**, **Main + Extras**, **Completionist**, and
-**All Styles**. Select **View Details** to open the game's HowLongToBeat page.
+**All Styles**. Select **Details** to open the game's HowLongToBeat page.
 
 ## Turn on HLTB times
 
@@ -18,13 +18,10 @@ When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times
 | Setting | What it does |
 | --- | --- |
 | **HLTB Style** | **Default** puts a row of times above the Play button. The **"Clean"** styles place the times over the game's header image. They are meant for the CSS Loader theme "Clean Gameview". |
-| **Hide "View Details"** | Removes the button that opens the HowLongToBeat page. |
+| **Hide "Details"** | Removes the button that opens the HowLongToBeat page. |
 | **Toggle … stat** | Show or hide each of the four times. |
-| **Customize appearance** | Change the background opacity, the **View Details** color, a text shadow, the text size, and (Default style only) the bottom border. **Reset appearance** returns these to their defaults. |
+| **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. **Reset appearance** returns these to their defaults. |
 | **Clear HLTB cache** | Forgets saved times. Each game looks up its times again the next time you open it. |
-
-To hide the times for one game, open the game's menu and select
-**Show/Hide HLTB Stats**. Select it again to show them.
 
 ## How a game is matched
 
@@ -77,7 +74,7 @@ times. Its settings are not copied.
 
 ## If times are missing or wrong
 
-- Check **Show HowLongToBeat times** and that the game is not hidden from its menu.
+- Check that **Show HowLongToBeat times** is on.
 - For a non-Steam game, check its Steam match in **Decky metadata...**, or choose
   the HLTB game by hand.
 - Select **Clear HLTB cache** in the **HLTB times** section to look up every

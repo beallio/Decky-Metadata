@@ -110,9 +110,8 @@ Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
-You can choose the HowLongToBeat game for a non-Steam game in its editor, and
-hide the times for one game from its menu. The styles and appearance options of
-HLTB for Deck are included.
+You can choose the HowLongToBeat game for a non-Steam game in its editor. The
+styles and appearance options of HLTB for Deck are included.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam

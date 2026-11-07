@@ -2,7 +2,6 @@
 export type HltbAppearance = {
   custom: boolean;
   barAlpha: number;
-  linkColor: "steam" | "text";
   textShadow: boolean;
   textScale: number;
   border: boolean;
@@ -17,14 +16,12 @@ export type HltbSettings = {
   showComplete: boolean;
   showAllStyles: boolean;
   appearance: HltbAppearance;
-  hiddenAppIds: number[];
 };
 
 export const DEFAULT_HLTB_SETTINGS: HltbSettings = {
   enabled: false, style: "default", hideViewDetails: false,
   showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-  appearance: { custom: false, barAlpha: 25, linkColor: "steam", textShadow: false, textScale: 100, border: true },
-  hiddenAppIds: [],
+  appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true },
 };
 
 const object = (value: unknown): Record<string, unknown> =>
@@ -40,7 +37,6 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
   const defaultAppearance = defaults.appearance;
   const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
     ? stored.style : defaults.style;
-  const ids = Array.isArray(stored.hiddenAppIds) ? stored.hiddenAppIds : [];
   return {
     enabled: bool(stored.enabled, defaults.enabled), style,
     hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
@@ -51,12 +47,9 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
     appearance: {
       custom: bool(appearance.custom, defaultAppearance.custom),
       barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-      linkColor: appearance.linkColor === "steam" || appearance.linkColor === "text" ? appearance.linkColor : defaultAppearance.linkColor,
       textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
       textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
       border: bool(appearance.border, defaultAppearance.border),
     },
-    hiddenAppIds: [...new Set(ids.filter((id): id is number =>
-      typeof id === "number" && Number.isInteger(id) && id > 0 && id <= 0xffffffff))].slice(0, 5000),
   };
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-vi.mock("@decky/ui", () => ({ DialogButtonPrimary: "button", Navigation: { NavigateToExternalWeb: vi.fn() } }));
+vi.mock("@decky/ui", () => ({ findClassModule: () => undefined, Focusable: "div", Navigation: { NavigateToExternalWeb: vi.fn() } }));
 import { Navigation } from "@decky/ui";
 import { HltbStats } from "./HltbStats";
 import { DEFAULT_HLTB_SETTINGS } from "./settings";
@@ -24,8 +24,9 @@ describe("HLTB stats", () => {
     expect(text(tree)).toContain("1.0 hours");
     expect(text(tree)).toContain("1.5 hours");
     expect(text(tree)).toContain("-- hours");
-    const button = nodes(tree).find(node => node.type === "button")!;
-    button.props.onClick();
+    const button = nodes(tree).find(node => node.props.onActivate)!;
+    expect(text(button)).toBe("Details");
+    button.props.onActivate();
     expect(Navigation.NavigateToExternalWeb).toHaveBeenCalledWith("https://howlongtobeat.com/game/7231");
   });
   it("hides absent, empty, or launching rows", () => {
@@ -38,6 +39,6 @@ describe("HLTB stats", () => {
     expect(text(tree)).not.toContain("Main Story");
     expect(text(tree)).not.toContain("Completionist");
     expect(text(tree)).toContain("Main + Extras");
-    expect(nodes(tree).find(node => node.type === "button")).toBeUndefined();
+    expect(text(tree)).not.toContain("Details");
   });
 });

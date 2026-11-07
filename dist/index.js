@@ -1471,8 +1471,7 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
 const DEFAULT_HLTB_SETTINGS = {
     enabled: false, style: "default", hideViewDetails: false,
     showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-    appearance: { custom: false, barAlpha: 25, linkColor: "steam", textShadow: false, textScale: 100, border: true },
-    hiddenAppIds: [],
+    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true },
 };
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
 const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
@@ -1484,7 +1483,6 @@ function normalizeHltbSettings(value) {
     const defaultAppearance = defaults.appearance;
     const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
         ? stored.style : defaults.style;
-    const ids = Array.isArray(stored.hiddenAppIds) ? stored.hiddenAppIds : [];
     return {
         enabled: bool(stored.enabled, defaults.enabled), style,
         hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
@@ -1495,12 +1493,10 @@ function normalizeHltbSettings(value) {
         appearance: {
             custom: bool(appearance.custom, defaultAppearance.custom),
             barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-            linkColor: appearance.linkColor === "steam" || appearance.linkColor === "text" ? appearance.linkColor : defaultAppearance.linkColor,
             textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
             textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
             border: bool(appearance.border, defaultAppearance.border),
         },
-        hiddenAppIds: [...new Set(ids.filter((id) => typeof id === "number" && Number.isInteger(id) && id > 0 && id <= 0xffffffff))].slice(0, 5000),
     };
 }
 
@@ -1519,14 +1515,14 @@ const cacheStatusText = {
     cleared: ["success", "HLTB cache cleared. Times load again when you open a game."],
     failed: ["error", "The HLTB cache could not be cleared."],
 };
-function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onLinkColorChange, onStyleMenuWillOpen, onLinkColorMenuWillOpen, onStyleControlRef, onLinkColorControlRef, }) {
+function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onStyleMenuWillOpen, onStyleControlRef, }) {
     const controlsDisabled = !settingsLoaded || busy;
     const disabled = controlsDisabled || !settings.enabled;
     const appearance = settings.appearance;
     const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
-    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "View Details"', description: 'Hides "View Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onLinkColorControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: '"View Details" color', description: 'Color of the "View Details" link', rgOptions: [{ data: "steam", label: "Steam blue" }, { data: "text", label: "Match stats text" }], selectedOption: appearance.linkColor, disabled: disabled, onMenuWillOpen: onLinkColorMenuWillOpen, onChange: option => { const color = option.data; void (onLinkColorChange ? onLinkColorChange(color) : updateAppearance("linkColor", color)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -2373,245 +2369,6 @@ const error = (area, message, ...args) => {
     console.error(prefix(area), message, ...args);
 };
 
-// The edit key is inserted for shortcuts; the HLTB key for any game while HLTB
-// times are on. Keep the legacy key in the removal set because Steam can reuse
-// menu arrays created by older builds.
-const ENTRY_KEY = "decky-metadata-edit";
-const HLTB_KEY = "decky-metadata-hltb";
-const REMOVAL_KEYS = new Set([ENTRY_KEY, HLTB_KEY, "decky-metadata-compatibility"]);
-let hltbMenuItem;
-/** Set while HLTB times are on; the item must use the `decky-metadata-hltb` key. */
-const setHltbMenuItem = (item) => {
-    hltbMenuItem = item;
-};
-let contextMenuTraceEnabled = false;
-const setContextMenuTraceEnabled = (enabled) => {
-    contextMenuTraceEnabled = enabled;
-};
-const hasAppPropertiesHelper = (items) => {
-    if (!Array.isArray(items) || items.length === 0)
-        return false;
-    return !!DFL.findInReactTree(items, (node) => node?.onSelected?.toString?.().includes("AppProperties"));
-};
-const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProperties, hasLaunchSource, removedExisting, insertedOrSkipped, items) => {
-    if (!contextMenuTraceEnabled)
-        return;
-    try {
-        const snippets = (Array.isArray(items) ? items : [])
-            .slice(0, 5)
-            .map((node) => ({
-            key: node?.key,
-            text: typeof node?.props?.children === "string" ? node.props.children : undefined,
-        }));
-        frontendLog("trace", "context-menu", {
-            phase,
-            ownerAppId,
-            fallbackAppId,
-            finalAppId,
-            isGameContextMenu: isGameMenu,
-            hasAppProperties,
-            hasLaunchSource,
-            removedExisting,
-            insertedOrSkipped,
-            snippets,
-        }).catch(() => undefined);
-    }
-    catch (_e) { }
-};
-/**
- * Resolve Steam's internal LibraryContextMenu class at runtime.
- *
- * The class is not exported, so we locate the webpack module that references
- * it, pick the member whose source mentions "navigator:", and read the type
- * back from a throwaway render.
- */
-const resolveLibraryContextMenu = () => {
-    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
-        member.toString().includes("().LibraryContextMenu"));
-    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
-        member.toString().includes("navigator:"));
-    return DFL.fakeRenderComponent(menuComponent).type;
-};
-const LibraryContextMenu = resolveLibraryContextMenu();
-/**
- * Work out which appid the menu is really for.
- *
- * Steam reuses context-menu instances, so the appid passed in can be stale.
- * Prefer a fresh appid carried on the owning React node; otherwise scan the
- * node tree for an `app.appid` (used by newer Steam clients).
- */
-const resolveAppId = (nodes, fallbackAppId) => {
-    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
-        node._owner.pendingProps.overview.appid !== fallbackAppId);
-    if (fresherNode) {
-        return Number(fresherNode._owner.pendingProps.overview.appid);
-    }
-    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
-        walkable: ["props", "children"],
-    });
-    return Number(taggedNode?.app?.appid ?? fallbackAppId);
-};
-/**
- * True only for the per-game context menu. Its launch action's handler
- * references "launchSource"; menus like the screenshot menu do not, which
- * lets us ignore them.
- */
-const isGameContextMenu = (items) => {
-    if (!Array.isArray(items) || items.length === 0)
-        return false;
-    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
-};
-/** Remove any previously injected entry so re-renders cannot stack copies. */
-const removeOurEntry = (items) => {
-    let removed = false;
-    for (let index = items.length - 1; index >= 0; index -= 1) {
-        if (REMOVAL_KEYS.has(items[index]?.key)) {
-            items.splice(index, 1);
-            removed = true;
-        }
-    }
-    return removed;
-};
-/** Insert our entries just above "Properties..." (or at the end). */
-const insertOurEntry = (items, appId) => {
-    const entries = [];
-    if (isNativeNonSteamShortcut(getNativeOverview(appId))) {
-        entries.push(SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
-    }
-    const hltb = hltbMenuItem?.(appId);
-    if (hltb)
-        entries.push(hltb);
-    if (entries.length === 0)
-        return false;
-    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
-    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-    items.splice(insertAt, 0, ...entries);
-    return true;
-};
-const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
-    const removed = removeOurEntry(items);
-    const isGameMenu = isGameContextMenu(items);
-    const hasAppProps = hasAppPropertiesHelper(items);
-    let inserted = "skipped";
-    let finalAppId = 0;
-    if (!isGameMenu) {
-        inserted = "skipped-not-top-level";
-    }
-    else if (ownerAppId > 0) {
-        finalAppId = ownerAppId;
-        inserted = "owner-app-id";
-    }
-    else if (fallbackAppId > 0) {
-        if (hasAppProps) {
-            finalAppId = fallbackAppId;
-            inserted = "fallback-app-id";
-        }
-        else {
-            inserted = "skipped-incomplete-shape";
-        }
-    }
-    else {
-        inserted = "skipped-no-valid-appid";
-    }
-    if (finalAppId > 0) {
-        const actuallyInserted = insertOurEntry(items, finalAppId);
-        if (!actuallyInserted) {
-            inserted = "skipped-not-non-steam";
-        }
-    }
-    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProps, isGameMenu, removed, inserted, items);
-};
-/**
- * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
- * @param LibraryContextMenuClass The resolved menu class.
- * @returns An object exposing unpatch() for plugin teardown.
- */
-const contextMenuPatch = (LibraryContextMenuClass) => {
-    if (!LibraryContextMenuClass || !hasSteamInternals()) {
-        if (patchInstallStatus.contextMenu === "pending") {
-            patchInstallStatus.contextMenu = "skipped-missing-internal";
-            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
-        }
-        return { unpatch: () => { } };
-    }
-    let innerPatch;
-    let outerPatch;
-    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
-    const bodyPatches = [];
-    const patchedBodies = new Set();
-    // Steam reuses a single context-menu instance and installs the inner
-    // (body) render patches only once. Those patches must read the appid of
-    // whichever game is *currently* opening the menu, not the one captured on
-    // first render, so keep the latest values in mutable holders that the outer
-    // render refreshes on every open.
-    let currentOwnerAppId = 0;
-    let currentFallbackAppId = 0;
-    try {
-        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
-            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
-            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
-            if (!innerPatch) {
-                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
-                    const bodyPrototype = rendered?.type?.prototype;
-                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
-                        return rendered;
-                    patchedBodies.add(bodyPrototype);
-                    // First render of the menu body.
-                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
-                        const items = output?.props?.children?.[0];
-                        try {
-                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
-                        }
-                        catch (_error) {
-                            // Steam reshapes this tree often; skip on mismatch.
-                        }
-                        return output;
-                    }));
-                    // Subsequent updates when Steam refreshes the app overview.
-                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
-                        try {
-                            if (shouldUpdate === true) {
-                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
-                            }
-                            else {
-                                removeOurEntry(nextProps.children);
-                            }
-                        }
-                        catch (_error) {
-                            // Not our menu; leave the decision untouched.
-                        }
-                        return shouldUpdate;
-                    }));
-                    return rendered;
-                });
-            }
-            else if (Array.isArray(menu?.props?.children)) {
-                try {
-                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
-                }
-                catch (_error) {
-                    // Ignore non-matching menus.
-                }
-            }
-            return menu;
-        });
-        patchInstallStatus.contextMenu = "installed";
-        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
-    }
-    catch (error) {
-        patchInstallStatus.contextMenu = "failed";
-        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
-    }
-    return {
-        unpatch: () => {
-            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
-            patchedBodies.clear();
-            outerPatch?.unpatch();
-            innerPatch?.unpatch();
-        },
-    };
-};
-
 let pending;
 /** One saved-cache read shared by the features that seed from it at startup. */
 const loadProviderCache = () => {
@@ -2898,15 +2655,6 @@ class HltbController {
             return false;
         }
     }
-    /** The per-game Show/Hide choice from the game's menu. */
-    async toggleHidden(appId) {
-        const { settings } = this.snapshot;
-        const hidden = settings.hiddenAppIds.includes(appId);
-        return this.setSettings({
-            ...settings,
-            hiddenAppIds: hidden ? settings.hiddenAppIds.filter((id) => id !== appId) : [...settings.hiddenAppIds, appId],
-        });
-    }
     async clearCache() {
         if (!this.mounted)
             return false;
@@ -2968,6 +2716,8 @@ class HltbController {
 
 // Layout and appearance adapted from HLTB for Deck (MIT).
 
+// Steam's own Deck Compatibility "Details" button classes.
+const detailsClasses = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details) || {};
 const css = `
 #decky-metadata-hltb { position: relative; }
 .decky-metadata-hltb-info {
@@ -2976,7 +2726,7 @@ const css = `
   padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
 }
 .decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; }
-.decky-metadata-hltb-clean-default { padding: 0; top: calc(-40px * var(--hltb-text-scale, 1)); height: calc(40px * var(--hltb-text-scale, 1)); width: 100%; }
+.decky-metadata-hltb-clean-default { --hltb-clean-default-height: max(40px, calc(40px * var(--hltb-text-scale, 1))); padding: 0; top: calc(0px - var(--hltb-clean-default-height)); height: var(--hltb-clean-default-height); width: 100%; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
 .decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
@@ -2986,8 +2736,8 @@ const css = `
 .decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
 .decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
 .decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-details { background: transparent !important; color: var(--hltb-link-color, #67c1f5) !important; margin: auto !important; font-size: 10px !important; font-weight: bold !important; text-transform: uppercase; line-height: 10px !important; }
-.decky-metadata-hltb-details:focus, .decky-metadata-hltb-details:hover { color: #fff !important; }
+.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
+.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
 `;
 function HltbStats({ stats, hltbId, settings, launching }) {
     if (!stats || launching || Object.values(stats).every(value => value <= 0))
@@ -2996,8 +2746,6 @@ function HltbStats({ stats, hltbId, settings, launching }) {
     const vars = {};
     if (appearance.custom) {
         vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
-        if (appearance.linkColor === "text")
-            vars["--hltb-link-color"] = "currentColor";
         if (appearance.textShadow)
             vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
         if (appearance.textScale !== 100)
@@ -3012,7 +2760,7 @@ function HltbStats({ stats, hltbId, settings, launching }) {
         [settings.showAllStyles, stats.all, "All Styles"],
     ];
     const classes = ["decky-metadata-hltb-info", style === "clean-default" ? "decky-metadata-hltb-clean-default" : "", style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "", style === "clean-left" ? "decky-metadata-hltb-clean-left" : ""].filter(Boolean).join(" ");
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: classes, style: vars, children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { children: SP_JSX.jsx(DFL.DialogButtonPrimary, { className: "decky-metadata-hltb-details", onClick: () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`), children: "View Details" }) }) : null] }) })] });
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: classes, style: vars, children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: SP_JSX.jsx(DFL.Focusable, { className: `${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`, focusClassName: detailsClasses.Focused, children: SP_JSX.jsx(DFL.Focusable, { className: detailsClasses.Details, noFocusRing: false, onActivate: () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`), children: "Details" }) }) }) : null] }) })] });
 }
 
 const ROW_KEY = "decky-metadata-hltb-row";
@@ -3090,7 +2838,7 @@ function useHltbMatch(appId, wanted) {
 function HltbGameRow({ appId }) {
     const snapshot = useHltbSnapshot();
     const ref = SP_REACT.useRef(null);
-    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId));
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
     const launching = useLaunching(ref, active);
     if (!active)
         return null;
@@ -3132,9 +2880,7 @@ function installHltbGameView() {
         });
         unpatchers.push(() => routerHook.removePatch(route, patch));
     }
-    setHltbMenuItem((appId) => (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => { void hltbController.toggleHidden(appId); }, children: "Show/Hide HLTB Stats" }, "decky-metadata-hltb")));
     return () => {
-        setHltbMenuItem(undefined);
         for (const unpatch of unpatchers.splice(0)) {
             try {
                 unpatch();
@@ -8673,6 +8419,232 @@ const installHistoryInstanceTrace = (unpatchers) => {
         });
         delete globalState.__deckyHistoryInstanceTrace;
     });
+};
+
+// The edit key is inserted for shortcuts. Keep the legacy keys in the removal
+// set because Steam can reuse menu arrays created by older builds.
+const ENTRY_KEY = "decky-metadata-edit";
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-hltb", "decky-metadata-compatibility"]);
+let contextMenuTraceEnabled = false;
+const setContextMenuTraceEnabled = (enabled) => {
+    contextMenuTraceEnabled = enabled;
+};
+const hasAppPropertiesHelper = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.onSelected?.toString?.().includes("AppProperties"));
+};
+const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProperties, hasLaunchSource, removedExisting, insertedOrSkipped, items) => {
+    if (!contextMenuTraceEnabled)
+        return;
+    try {
+        const snippets = (Array.isArray(items) ? items : [])
+            .slice(0, 5)
+            .map((node) => ({
+            key: node?.key,
+            text: typeof node?.props?.children === "string" ? node.props.children : undefined,
+        }));
+        frontendLog("trace", "context-menu", {
+            phase,
+            ownerAppId,
+            fallbackAppId,
+            finalAppId,
+            isGameContextMenu: isGameMenu,
+            hasAppProperties,
+            hasLaunchSource,
+            removedExisting,
+            insertedOrSkipped,
+            snippets,
+        }).catch(() => undefined);
+    }
+    catch (_e) { }
+};
+/**
+ * Resolve Steam's internal LibraryContextMenu class at runtime.
+ *
+ * The class is not exported, so we locate the webpack module that references
+ * it, pick the member whose source mentions "navigator:", and read the type
+ * back from a throwaway render.
+ */
+const resolveLibraryContextMenu = () => {
+    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
+        member.toString().includes("().LibraryContextMenu"));
+    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
+        member.toString().includes("navigator:"));
+    return DFL.fakeRenderComponent(menuComponent).type;
+};
+const LibraryContextMenu = resolveLibraryContextMenu();
+/**
+ * Work out which appid the menu is really for.
+ *
+ * Steam reuses context-menu instances, so the appid passed in can be stale.
+ * Prefer a fresh appid carried on the owning React node; otherwise scan the
+ * node tree for an `app.appid` (used by newer Steam clients).
+ */
+const resolveAppId = (nodes, fallbackAppId) => {
+    const fresherNode = (nodes || []).find((node) => node?._owner?.pendingProps?.overview?.appid &&
+        node._owner.pendingProps.overview.appid !== fallbackAppId);
+    if (fresherNode) {
+        return Number(fresherNode._owner.pendingProps.overview.appid);
+    }
+    const taggedNode = DFL.findInTree(nodes, (node) => node?.app?.appid, {
+        walkable: ["props", "children"],
+    });
+    return Number(taggedNode?.app?.appid ?? fallbackAppId);
+};
+/**
+ * True only for the per-game context menu. Its launch action's handler
+ * references "launchSource"; menus like the screenshot menu do not, which
+ * lets us ignore them.
+ */
+const isGameContextMenu = (items) => {
+    if (!Array.isArray(items) || items.length === 0)
+        return false;
+    return !!DFL.findInReactTree(items, (node) => node?.props?.onSelected?.toString?.().includes("launchSource"));
+};
+/** Remove any previously injected entry so re-renders cannot stack copies. */
+const removeOurEntry = (items) => {
+    let removed = false;
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+        if (REMOVAL_KEYS.has(items[index]?.key)) {
+            items.splice(index, 1);
+            removed = true;
+        }
+    }
+    return removed;
+};
+/** Insert our entry just above "Properties..." (or at the end). */
+const insertOurEntry = (items, appId) => {
+    if (!isNativeNonSteamShortcut(getNativeOverview(appId)))
+        return false;
+    const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
+    const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
+    items.splice(insertAt, 0, entry);
+    return true;
+};
+const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
+    const removed = removeOurEntry(items);
+    const isGameMenu = isGameContextMenu(items);
+    const hasAppProps = hasAppPropertiesHelper(items);
+    let inserted = "skipped";
+    let finalAppId = 0;
+    if (!isGameMenu) {
+        inserted = "skipped-not-top-level";
+    }
+    else if (ownerAppId > 0) {
+        finalAppId = ownerAppId;
+        inserted = "owner-app-id";
+    }
+    else if (fallbackAppId > 0) {
+        if (hasAppProps) {
+            finalAppId = fallbackAppId;
+            inserted = "fallback-app-id";
+        }
+        else {
+            inserted = "skipped-incomplete-shape";
+        }
+    }
+    else {
+        inserted = "skipped-no-valid-appid";
+    }
+    if (finalAppId > 0) {
+        const actuallyInserted = insertOurEntry(items, finalAppId);
+        if (!actuallyInserted) {
+            inserted = "skipped-not-non-steam";
+        }
+    }
+    traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isGameMenu, hasAppProps, isGameMenu, removed, inserted, items);
+};
+/**
+ * Patch the library context menu so non-Steam games gain a Decky Metadata entry.
+ * @param LibraryContextMenuClass The resolved menu class.
+ * @returns An object exposing unpatch() for plugin teardown.
+ */
+const contextMenuPatch = (LibraryContextMenuClass) => {
+    if (!LibraryContextMenuClass || !hasSteamInternals()) {
+        if (patchInstallStatus.contextMenu === "pending") {
+            patchInstallStatus.contextMenu = "skipped-missing-internal";
+            warn("patch", "context menu patch skipped", { status: patchInstallStatus.contextMenu });
+        }
+        return { unpatch: () => { } };
+    }
+    let innerPatch;
+    let outerPatch;
+    // Body-prototype patches outlive the menu instance, so unpatch must remove them too.
+    const bodyPatches = [];
+    const patchedBodies = new Set();
+    // Steam reuses a single context-menu instance and installs the inner
+    // (body) render patches only once. Those patches must read the appid of
+    // whichever game is *currently* opening the menu, not the one captured on
+    // first render, so keep the latest values in mutable holders that the outer
+    // render refreshes on every open.
+    let currentOwnerAppId = 0;
+    let currentFallbackAppId = 0;
+    try {
+        outerPatch = DFL.afterPatch(LibraryContextMenuClass.prototype, "render", (_renderArgs, menu) => {
+            currentOwnerAppId = Number(menu?._owner?.pendingProps?.overview?.appid ?? 0);
+            currentFallbackAppId = resolveAppId(menu?.props?.children ?? [], 0);
+            if (!innerPatch) {
+                innerPatch = DFL.afterPatch(menu, "type", (_typeArgs, rendered) => {
+                    const bodyPrototype = rendered?.type?.prototype;
+                    if (!bodyPrototype || patchedBodies.has(bodyPrototype))
+                        return rendered;
+                    patchedBodies.add(bodyPrototype);
+                    // First render of the menu body.
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "render", (_args, output) => {
+                        const items = output?.props?.children?.[0];
+                        try {
+                            syncOurEntry("first-render", items, currentOwnerAppId, currentFallbackAppId);
+                        }
+                        catch (_error) {
+                            // Steam reshapes this tree often; skip on mismatch.
+                        }
+                        return output;
+                    }));
+                    // Subsequent updates when Steam refreshes the app overview.
+                    bodyPatches.push(DFL.afterPatch(bodyPrototype, "shouldComponentUpdate", ([nextProps], shouldUpdate) => {
+                        try {
+                            if (shouldUpdate === true) {
+                                syncOurEntry("should-update", nextProps.children, currentOwnerAppId, currentFallbackAppId);
+                            }
+                            else {
+                                removeOurEntry(nextProps.children);
+                            }
+                        }
+                        catch (_error) {
+                            // Not our menu; leave the decision untouched.
+                        }
+                        return shouldUpdate;
+                    }));
+                    return rendered;
+                });
+            }
+            else if (Array.isArray(menu?.props?.children)) {
+                try {
+                    syncOurEntry("outer-rerender", menu.props.children, currentOwnerAppId, currentFallbackAppId);
+                }
+                catch (_error) {
+                    // Ignore non-matching menus.
+                }
+            }
+            return menu;
+        });
+        patchInstallStatus.contextMenu = "installed";
+        info("patch", "context menu patch installed", { status: patchInstallStatus.contextMenu });
+    }
+    catch (error) {
+        patchInstallStatus.contextMenu = "failed";
+        warn("patch", "context menu patch failed", { status: patchInstallStatus.contextMenu }, error);
+    }
+    return {
+        unpatch: () => {
+            bodyPatches.splice(0).reverse().forEach((patch) => patch.unpatch());
+            patchedBodies.clear();
+            outerPatch?.unpatch();
+            innerPatch?.unpatch();
+        },
+    };
 };
 
 // Safe React element-tree traversal, extracted for unit testing.
@@ -15919,7 +15891,6 @@ const Content = () => {
     const [trailerQualityControl, setTrailerQualityControlState] = SP_REACT.useState(null);
     const [protonDbCoverControl, setProtonDbCoverControlState] = SP_REACT.useState(null);
     const [hltbStyleControl, setHltbStyleControlState] = SP_REACT.useState(null);
-    const [hltbLinkColorControl, setHltbLinkColorControlState] = SP_REACT.useState(null);
     const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
     const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
     const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
@@ -15947,11 +15918,6 @@ const Content = () => {
             noteCompatibilityDropdownControlUnmounted();
         setHltbStyleControlState(element);
     }, []);
-    const setHltbLinkColorControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setHltbLinkColorControlState(element);
-    }, []);
     const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
         const shared = compatibilityPolicySaveSnapshot();
         if (shared
@@ -15974,7 +15940,7 @@ const Content = () => {
     }, []);
     SP_REACT.useEffect(() => {
         const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
-            protonDbCoverControl || hltbStyleControl || hltbLinkColorControl;
+            protonDbCoverControl || hltbStyleControl;
         if (!mountedControl)
             return;
         const qamDocument = mountedControl.ownerDocument;
@@ -15996,7 +15962,7 @@ const Content = () => {
         qamDocument.addEventListener("visibilitychange", observeVisibility);
         observeVisibility();
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbLinkColorControl]);
+    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -16026,14 +15992,12 @@ const Content = () => {
             ? compatibilityDefaultScopeControl
             : origin === "quality" ? trailerQualityControl
                 : origin === "hltb-style" ? hltbStyleControl
-                    : origin === "hltb-link-color" ? hltbLinkColorControl
-                        : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
-        const hltbOrigin = origin === "hltb-style" || origin === "hltb-link-color";
+                    : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
         const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
-            : hltbOrigin ? hltbSnapshot.settingsLoaded
+            : origin === "hltb-style" ? hltbSnapshot.settingsLoaded
                 : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
         const busy = origin === "quality" ? trailerSnapshot.busy
-            : hltbOrigin ? hltbSnapshot.busy
+            : origin === "hltb-style" ? hltbSnapshot.busy
                 : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
         if (!isCompatibilityDropdownReturnReady() || !control)
             return;
@@ -16152,7 +16116,6 @@ const Content = () => {
         protonDbSnapshot.busy,
         protonDbSnapshot.settingsLoaded,
         hltbStyleControl,
-        hltbLinkColorControl,
         hltbSnapshot.busy,
         hltbSnapshot.settingsLoaded,
     ]);
@@ -16550,7 +16513,7 @@ const Content = () => {
                 }, onCoverPositionMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
                     requestCompatibilityDropdownReturn("hltb-style");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -16560,24 +16523,10 @@ const Content = () => {
                         if (noteCompatibilityDropdownSelectionSaved())
                             setCompatibilityDropdownReturnVersion((version) => version + 1);
                     }
-                }, onLinkColorChange: async (linkColor) => {
-                    requestCompatibilityDropdownReturn("hltb-link-color");
-                    noteCompatibilityDropdownControlUnmounted();
-                    try {
-                        const settings = hltbController.getSnapshot().settings;
-                        return await hltbController.setSettings({ ...settings, appearance: { ...settings.appearance, linkColor } });
-                    }
-                    finally {
-                        if (noteCompatibilityDropdownSelectionSaved())
-                            setCompatibilityDropdownReturnVersion((version) => version + 1);
-                    }
                 }, onStyleMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("hltb-style");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onLinkColorMenuWillOpen: () => {
-                    requestCompatibilityDropdownReturn("hltb-link-color");
-                    noteCompatibilityDropdownControlUnmounted();
-                }, onStyleControlRef: setHltbStyleControl, onLinkColorControlRef: setHltbLinkColorControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
+                }, onStyleControlRef: setHltbStyleControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
