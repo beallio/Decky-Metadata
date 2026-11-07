@@ -43,18 +43,10 @@ import {
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
-// The edit key is inserted for shortcuts; the HLTB key for any game while HLTB
-// times are on. Keep the legacy key in the removal set because Steam can reuse
-// menu arrays created by older builds.
+// The edit key is inserted for shortcuts. Keep the legacy keys in the removal
+// set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
-const HLTB_KEY = "decky-metadata-hltb";
-const REMOVAL_KEYS = new Set([ENTRY_KEY, HLTB_KEY, "decky-metadata-compatibility"]);
-
-let hltbMenuItem: ((appId: number) => JSX.Element) | undefined;
-/** Set while HLTB times are on; the item must use the `decky-metadata-hltb` key. */
-export const setHltbMenuItem = (item: ((appId: number) => JSX.Element) | undefined) => {
-  hltbMenuItem = item;
-};
+const REMOVAL_KEYS = new Set([ENTRY_KEY, "decky-metadata-hltb", "decky-metadata-compatibility"]);
 
 let contextMenuTraceEnabled = false;
 export const setContextMenuTraceEnabled = (enabled: boolean) => {
@@ -178,22 +170,17 @@ const removeOurEntry = (items: any[]): boolean => {
   return removed;
 };
 
-/** Insert our entries just above "Properties..." (or at the end). */
+/** Insert our entry just above "Properties..." (or at the end). */
 const insertOurEntry = (items: any[], appId: number): boolean => {
-  const entries: JSX.Element[] = [];
-  if (isNativeNonSteamShortcut(getNativeOverview(appId))) {
-    entries.push(
-      <MenuItem
-        key={ENTRY_KEY}
-        onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
-      >
-        {"Decky metadata..."}
-      </MenuItem>
-    );
-  }
-  const hltb = hltbMenuItem?.(appId);
-  if (hltb) entries.push(hltb);
-  if (entries.length === 0) return false;
+  if (!isNativeNonSteamShortcut(getNativeOverview(appId))) return false;
+  const entry = (
+    <MenuItem
+      key={ENTRY_KEY}
+      onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
+    >
+      {"Decky metadata..."}
+    </MenuItem>
+  );
 
   const propertiesIndex = items.findIndex((node) =>
     findInReactTree(
@@ -202,7 +189,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
     )
   );
   const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-  items.splice(insertAt, 0, ...entries);
+  items.splice(insertAt, 0, entry);
   return true;
 };
 

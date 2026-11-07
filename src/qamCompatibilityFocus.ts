@@ -2,7 +2,7 @@ import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "./typ
 
 type CompatibilityPolicySaveKind = "category" | "scope";
 type CompatibilityDropdownOrigin =
-  | "category" | "scope" | "quality" | "protondb-cover-position" | "hltb-style" | "hltb-link-color";
+  | "category" | "scope" | "quality" | "protondb-cover-position" | "hltb-style";
 
 type CompatibilityPolicySave = {
   id: number;

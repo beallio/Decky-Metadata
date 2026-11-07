@@ -6,10 +6,8 @@ import {
   appDetailsHeaderClasses,
   createReactTreePatcher,
   findInReactTree,
-  MenuItem,
 } from "@decky/ui";
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import { setHltbMenuItem } from "../contextMenuPatch";
 import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
@@ -93,7 +91,7 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
 function HltbGameRow({ appId }: { appId: number }) {
   const snapshot = useHltbSnapshot();
   const ref = useRef<HTMLDivElement | null>(null);
-  const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId));
+  const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
   if (!active) return null;
   return (
@@ -139,13 +137,7 @@ function installHltbGameView(): () => void {
     });
     unpatchers.push(() => routerHook.removePatch(route, patch));
   }
-  setHltbMenuItem((appId) => (
-    <MenuItem key="decky-metadata-hltb" onSelected={() => { void hltbController.toggleHidden(appId); }}>
-      {"Show/Hide HLTB Stats"}
-    </MenuItem>
-  ));
   return () => {
-    setHltbMenuItem(undefined);
     for (const unpatch of unpatchers.splice(0)) {
       try {
         unpatch();

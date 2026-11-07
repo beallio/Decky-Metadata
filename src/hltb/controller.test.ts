@@ -65,15 +65,11 @@ describe("HltbController", () => {
     expect(install).not.toHaveBeenCalled();
   });
 
-  it("hides and shows one game from its menu and seeds saved times at start", async () => {
+  it("seeds saved times at start", async () => {
     const { controller, seed } = setup({ enabled: true });
     controller.mount();
     await flush();
     expect(seed).toHaveBeenCalledWith({});
-    await controller.toggleHidden(620);
-    expect(controller.getSnapshot().settings.hiddenAppIds).toEqual([620]);
-    await controller.toggleHidden(620);
-    expect(controller.getSnapshot().settings.hiddenAppIds).toEqual([]);
   });
 
   it("reports whether Clear HLTB cache worked", async () => {
