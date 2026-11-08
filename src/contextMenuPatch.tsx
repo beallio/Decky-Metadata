@@ -40,6 +40,7 @@ import {
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
+import { t } from "./i18n";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 
@@ -178,7 +179,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
-      {"Decky metadata..."}
+      {t("contextMenu.edit")}
     </MenuItem>
   );
 

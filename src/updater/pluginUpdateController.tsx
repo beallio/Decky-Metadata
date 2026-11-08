@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { useRef, useCallback, useEffect, useReducer } from "react";
 import { toaster } from "@decky/api";
 import {
@@ -149,7 +150,7 @@ export function usePluginUpdateController({
           if (activeCheckId.current === checkId) {
             activeCheckId.current += 1;
             inFlightCheck.current = null;
-            dispatch({ type: "CHECK_TIMEOUT", message: "Update check interrupted. Check again." });
+            dispatch({ type: "CHECK_TIMEOUT", message: t("updates.toast.checkInterrupted") });
             logUpdate(null, "check_timeout", { checkId });
           }
         }, UPDATE_CHECK_UI_TIMEOUT_MS);
@@ -168,11 +169,11 @@ export function usePluginUpdateController({
           const elapsed_ms = Math.round(performance.now() - checkStart);
           if (res.status === "failed") {
             logUpdate(null, "check_failed", { message: res.message || "unknown", elapsed_ms });
-            dispatch({ type: "CHECK_FAILED", message: res.message || "Failed to check for updates", result: res });
+            dispatch({ type: "CHECK_FAILED", message: res.message || t("updates.toast.checkFailed.body"), result: res });
             if (opts.notify && opts.force) {
               toaster.toast({
-                title: "Update Check Failed",
-                body: res.message || "Failed to check for updates",
+                title: t("updates.toast.checkFailed.title"),
+                body: res.message || t("updates.toast.checkFailed.body"),
                 duration: 3000
               });
             }
@@ -209,7 +210,7 @@ export function usePluginUpdateController({
           dispatch({ type: "CHECK_FAILED", message: msg });
           if (opts.notify && opts.force) {
             toaster.toast({
-              title: "Update Check Failed",
+              title: t("updates.toast.checkFailed.title"),
               body: msg,
               duration: 3000
             });
@@ -244,7 +245,7 @@ export function usePluginUpdateController({
       try {
         const confirmRes = await confirmUpdateInstallHandoff(version);
         if ("status" in confirmRes && (confirmRes.status === "failed" || confirmRes.status === "skipped")) {
-          throw new Error(confirmRes.message || "Failed to confirm handoff");
+          throw new Error(confirmRes.message || t("updates.toast.handoffFailed"));
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -253,8 +254,8 @@ export function usePluginUpdateController({
       logUpdate(traceId, "handoff_resolved", { status: "success", elapsed_ms: Math.round(performance.now() - handoffStart) });
       onInstallVersionConfirmed?.(version);
       toaster.toast({
-        title: "Installation Initiated",
-        body: `Requested installation of v${version} via Decky Loader.`,
+        title: t("updates.toast.installStarted.title"),
+        body: t("updates.toast.installRequested", { version }),
         duration: 3000
       });
     },
@@ -411,7 +412,7 @@ export function usePluginUpdateController({
       ) {
         const msg = "message" in revalRes ? revalRes.message : "unknown";
         logUpdate(updateTraceId, "revalidate_failed", { message: msg, elapsed_ms: revalElapsed });
-        throw new Error(msg || "Revalidation failed");
+        throw new Error(msg || t("updates.toast.revalidationFailed"));
       }
       logUpdate(updateTraceId, "revalidate_success", { version: revalRes.version, elapsed_ms: revalElapsed });
 
@@ -426,7 +427,7 @@ export function usePluginUpdateController({
       logUpdate(updateTraceId, "record_install_start", { version: revalRes.version });
       const recordRes = await recordUpdateInstallRequested(payload);
       if ("status" in recordRes && (recordRes.status === "failed" || recordRes.status === "skipped")) {
-        throw new Error(recordRes.message || "Failed to record install request");
+        throw new Error(recordRes.message || t("updates.toast.recordFailed"));
       }
       logUpdate(updateTraceId, "record_install_success", { version: revalRes.version, elapsed_ms: Math.round(performance.now() - recordStart) });
 
@@ -472,7 +473,7 @@ export function usePluginUpdateController({
               try {
                 const clearRes = await clearPendingUpdateInstall(revalRes.version);
                 if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-                  throw new Error(clearRes.message || "Failed to clear pending install");
+                  throw new Error(clearRes.message || t("updates.toast.clearPendingFailed"));
                 }
               } catch (clearErr) {
                 const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
@@ -481,7 +482,7 @@ export function usePluginUpdateController({
               void checkForUpdates({ force: false, notify: false, source: "automatic" });
               dispatch({ type: "INSTALL_FAILED", message: msg });
               toaster.toast({
-                title: "Installation Failed",
+                title: t("updates.toast.installFailed.title"),
                 body: msg,
                 duration: 4000
               });
@@ -496,7 +497,7 @@ export function usePluginUpdateController({
       try {
         const clearRes = await clearPendingUpdateInstall(targetCandidate.version);
         if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-          throw new Error(clearRes.message || "Failed to clear pending install");
+          throw new Error(clearRes.message || t("updates.toast.clearPendingFailed"));
         }
       } catch (clearErr) {
         const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
@@ -505,7 +506,7 @@ export function usePluginUpdateController({
       void checkForUpdates({ force: false, notify: false, source: "automatic" });
       dispatch({ type: "INSTALL_FAILED", message: msg });
       toaster.toast({
-        title: "Installation Failed",
+        title: t("updates.toast.installFailed.title"),
         body: msg,
         duration: 4000
       });

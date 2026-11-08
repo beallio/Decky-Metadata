@@ -1,4 +1,5 @@
 import { getProtonDbBadgeSettings, setProtonDbBadgeSettings, type ProviderCacheSnapshot } from "../backend";
+import { t } from "../i18n";
 import { loadProviderCache } from "../providerCache";
 import type { ProtonDbBadgeSettings } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
@@ -117,7 +118,7 @@ export class ProtonDbBadgeController {
         this.publish({
           settingsLoaded: false,
           busy: false,
-          settingsError: errorText(error, "Unable to load ProtonDB badge settings."),
+          settingsError: errorText(error, t("protondb.error.load")),
         });
       },
     );
@@ -157,7 +158,7 @@ export class ProtonDbBadgeController {
       if (!this.isCurrent(lifecycle)) return false;
       this.publish({
         busy: false,
-        settingsError: errorText(error, "Unable to save ProtonDB badge settings."),
+        settingsError: errorText(error, t("protondb.error.save")),
       });
       return false;
     }

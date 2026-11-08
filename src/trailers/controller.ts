@@ -1,4 +1,5 @@
 import { evalInBigPicture, findIgnTrailer, getTrailerSettings, setTrailerSettings } from "../backend";
+import { t } from "../i18n";
 import type { IgnTrailerResult, TrailerQuality, TrailerSettings, TrailerStatus } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import {
@@ -156,7 +157,7 @@ const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
   if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
-    return { status: 'Steam UI unavailable', runtimeMissing: true };
+    return { status: t("trailers.status.steamUiUnavailable"), runtimeMissing: true };
   }
   // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
   if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
@@ -619,20 +620,20 @@ export class TrailerController {
 
   private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string; ignLookup?: IgnLookup }> {
     const route = currentRoutePath();
-    if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
+    if (!this.isEffectivelyEnabled()) return { identity: null, status: t("trailers.status.disabled") };
     const home = isTrailerHomeRoute(route);
     const selection = home ? this.homeSelection : null;
-    if (home && !this.settings.homeEnabled) return { identity: null, status: "Home view trailers are off" };
+    if (home && !this.settings.homeEnabled) return { identity: null, status: t("trailers.status.homeOff") };
     if (home && !selection) {
-      return { identity: null, status: "Select or hover over a game on Home" };
+      return { identity: null, status: t("trailers.status.selectHome") };
     }
     if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
       if (this.homeDelayTimer === undefined) this.scheduleHomeIdentity();
-      return { identity: null, status: "Waiting to show the Home trailer" };
+      return { identity: null, status: t("trailers.status.waitingHome") };
     }
-    if (!home && !this.settings.detailEnabled) return { identity: null, status: "Detail view trailers are off" };
+    if (!home && !this.settings.detailEnabled) return { identity: null, status: t("trailers.status.detailOff") };
     const pageAppId = home ? selection!.appId : parseTrailerRootRoute(route);
-    if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page or select a game on Home" };
+    if (!pageAppId) return { identity: null, status: t("trailers.status.openPage") };
     if (pageAppId !== this.pageAppId) {
       this.pageAppId = pageAppId;
       this.pageOverview = null;
@@ -643,15 +644,15 @@ export class TrailerController {
     }
     if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
         !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
-      return { identity: null, status: "Steam game is not available" };
+      return { identity: null, status: t("trailers.status.gameUnavailable") };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-      return { identity: null, status: "This game is not a native non-Steam shortcut" };
+      return { identity: null, status: t("trailers.status.notNative") };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
       try { await ensureMetadataCache(); }
-      catch { return { identity: null, status: "Saved Steam matches are not available" }; }
-      if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
+      catch { return { identity: null, status: t("trailers.status.matchesUnavailable") }; }
+      if (!this.isEffectivelyEnabled()) return { identity: null, status: t("trailers.status.disabled") };
     }
     const metadata = metadataCache[String(pageAppId)] ?? null;
     const context = {
@@ -661,7 +662,7 @@ export class TrailerController {
     const resolved = home
       ? resolveTrailerAppSource({ ...context, appId: pageAppId })
       : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
-    if (!resolved) return { identity: null, status: "Game trailer is unavailable" };
+    if (!resolved) return { identity: null, status: t("trailers.status.trailerUnavailable") };
     const gameUrl = ignGameUrl(metadata);
     const title = nativeTrailerGameTitle(this.pageOverview) ||
       (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
@@ -673,7 +674,9 @@ export class TrailerController {
         ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
       },
       ignLookup: title ? { title, gameUrl } : null,
-      status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for a Steam trailer",
+      status: resolved.sourceAppId === null
+        ? t("trailers.status.waitingIgn")
+        : t("trailers.status.waitingSteam"),
     };
   }
 

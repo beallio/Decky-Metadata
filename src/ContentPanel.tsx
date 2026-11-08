@@ -35,6 +35,7 @@ import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
 import { VersionsSection } from "./components/qam/VersionsSection";
 import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
 import { HltbSection } from "./components/qam/HltbSection";
+import { getLocale, t, useLocale } from "./i18n";
 import { hltbController } from "./hltb/gameView";
 import { hltbStore } from "./hltb/store";
 import * as log from "./log";
@@ -182,12 +183,12 @@ const scanCompleteMessage = (progress: {
   failed?: number;
 }) => {
   const total = Number(progress.total || 0);
-  if (!total) return "Refresh complete";
+  if (!total) return t("qam.metadata.refreshComplete");
   const assigned = Number(progress.assigned || 0);
   const failed = Number(progress.failed || 0);
   return failed
-    ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
-    : `Refresh complete: ${assigned}/${total} saved`;
+    ? t("qam.metadata.refreshCompleteFailed", { assigned, total, failed })
+    : t("qam.metadata.refreshCompleteSaved", { assigned, total });
 };
 
 const scanCompleteStatusKind = (progress: {
@@ -201,16 +202,20 @@ const scanCompleteStatusKind = (progress: {
   return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
-const epochToUsDate = (value?: number | null) => {
+const localeDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
   if (Number.isNaN(date.getTime())) return "";
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  return `${mm}-${dd}-${date.getUTCFullYear()}`;
+  try {
+    return new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(date);
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
 };
 
 export const Content = () => {
+  // Re-check the Steam language whenever the panel mounts or the locale changes.
+  useLocale();
   const [trailerSnapshot, setTrailerSnapshot] = useState(trailerController.getSnapshot());
   useEffect(() => trailerController.subscribe(() => {
     setTrailerSnapshot(trailerController.getSnapshot());
@@ -566,7 +571,9 @@ export const Content = () => {
           synchronizeCompatibilityPolicySave();
           return;
         }
-        setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
+        setCompatibilityDefaultError(
+          t("qam.compatibility.loadFailed", { error: String(error) }),
+        );
         log.warn("bridge", "compatibility default load failed", error);
       });
     const unsubscribeRevision = subscribeCompatibilityRevision(() => {
@@ -697,12 +704,12 @@ export const Content = () => {
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
-      toastSuccess("Compatibility", "Default compatibility status saved");
+      toastSuccess(t("toast.compatibility.title"), t("toast.compatibility.saved"));
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      const message = `Compatibility default could not be saved: ${String(error)}`;
+      const message = t("toast.compatibility.saveFailed", { error: String(error) });
       settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
-      toastError("Compatibility", message);
+      toastError(t("toast.compatibility.title"), message);
       log.warn("bridge", "compatibility default save failed", error);
     }
   };
@@ -731,12 +738,12 @@ export const Content = () => {
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
-      toastSuccess("Compatibility", "Default compatibility scope saved");
+      toastSuccess(t("toast.compatibility.title"), t("toast.compatibility.scopeSaved"));
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      const message = `Compatibility default scope could not be saved: ${String(error)}`;
+      const message = t("toast.compatibility.scopeSaveFailed", { error: String(error) });
       settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
-      toastError("Compatibility", message);
+      toastError(t("toast.compatibility.title"), message);
       log.warn("bridge", "compatibility default scope save failed", error);
     }
   };
@@ -756,7 +763,7 @@ export const Content = () => {
           saved
         );
         setUpdateChannelState(rolledBack.update_channel);
-        toastError("Updates", saved.message || "Update channel could not be saved");
+        toastError(t("toast.updates.title"), saved.message || t("toast.updates.channelFailed"));
         return;
       }
       setUpdateChannelState(saved.update_channel);
@@ -782,8 +789,8 @@ export const Content = () => {
         );
         setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
         toastError(
-          "Updates",
-          saved.message || "Automatic update setting could not be saved"
+          t("toast.updates.title"),
+          saved.message || t("toast.updates.autoFailed"),
         );
         return;
       }
@@ -804,7 +811,7 @@ export const Content = () => {
       setBusy(false);
       setScanStatusKind("error");
       setScanMessage(String(error));
-      toastError("Metadata refresh failed", String(error));
+      toastError(t("qam.metadata.refreshFailed"), String(error));
     };
     try {
       await startScanMissing(games);
@@ -833,7 +840,7 @@ export const Content = () => {
         setBusy(false);
         setScanStatusKind(scanCompleteStatusKind(progress));
         setScanMessage(scanCompleteMessage(progress));
-        toastSuccess("Metadata", "Refresh complete");
+        toastSuccess(t("qam.metadata.title"), t("qam.metadata.refreshComplete"));
       } catch (error) {
         if (!poll.stopped) failScan(error);
       }
@@ -856,9 +863,9 @@ export const Content = () => {
       }
       setMetadataCount(Object.keys(metadataCache).length);
       updateMissingCount(games);
-      toastSuccess("Cache", "Metadata cache cleared");
+      toastSuccess(t("qam.cache.title"), t("qam.cache.cleared"));
     } catch (error) {
-      toastError("Cache clear failed", String(error));
+      toastError(t("qam.cache.clearFailed"), String(error));
     } finally {
       setCacheBusy(false);
     }
@@ -870,13 +877,13 @@ export const Content = () => {
     try {
       const result = await refreshDelistedIndex();
       if (!result.ok) {
-        throw new Error("Delisted index refresh failed");
+        throw new Error(t("qam.delisted.refreshFailed"));
       }
-      toastSuccess("Delisted Steam games", "Delisted Steam games updated");
+      toastSuccess(t("qam.delisted.title"), t("qam.delisted.updated"));
       await loadDelistedStatus();
     } catch (error) {
       log.warn("bridge", "delisted index refresh failed", error);
-      toastError("Delisted Steam games", "Delisted Steam games refresh failed");
+      toastError(t("qam.delisted.title"), t("qam.delisted.refreshFailed"));
     } finally {
       setDelistedBusy(false);
     }
@@ -893,7 +900,7 @@ export const Content = () => {
       );
     } catch (error) {
       log.warn("bridge", "plugin log load failed", error);
-      toastError("Logs", "Plugin logs could not be loaded");
+      toastError(t("qam.logs.title"), t("qam.logs.loadFailed"));
     } finally {
       setLogsBusy(false);
     }
@@ -901,11 +908,11 @@ export const Content = () => {
 
   const delistedCountText =
     delistedStatus?.count && delistedStatus.fetched_at
-      ? `Delisted games: ${delistedStatus.count.toLocaleString("en-US")}`
-      : "Delisted Steam games not downloaded yet";
+      ? t("qam.delisted.count", { count: delistedStatus.count.toLocaleString(getLocale()) })
+      : t("qam.delisted.notDownloaded");
   const delistedDateText =
     delistedStatus?.count && delistedStatus.fetched_at
-      ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
+      ? t("qam.delisted.lastUpdated", { date: localeDate(delistedStatus.fetched_at) })
       : "";
 
   // A native dropdown remounts QAM; reopen its section before restoring focus.

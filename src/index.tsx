@@ -5,6 +5,7 @@ import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
+import { refreshLocale } from "./i18n";
 import { frontendLog, getDebugLogging } from "./backend";
 import * as log from "./log";
 import { startTrailerController } from "./trailers/controller";
@@ -80,6 +81,8 @@ export default definePlugin(() => {
     log.warn("bridge", "compatibility default load failed", error)
   );
 
+  // Resolve the interface language once before any panel or toast renders.
+  refreshLocale();
   resetProtonDbAppIdResolution();
   protonDbBadgeController.mount();
   hltbController.mount();
