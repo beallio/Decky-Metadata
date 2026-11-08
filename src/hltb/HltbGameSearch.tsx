@@ -8,6 +8,7 @@ import {
   editorSearchResultsSpacingStyle,
   editorSearchRowStyle,
 } from "../metadataEditorStyles";
+import { t } from "../i18n";
 import { compactTextStyle, fieldStyle, FocusableButton, rowStackStyle } from "../styles";
 
 type Props = {
@@ -58,14 +59,14 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
             onClick={() => void search()}
             style={editorSearchButtonStyle}
           >
-            {searching ? "Searching..." : "Search HLTB"}
+            {searching ? t("common.searching") : t("hltbSearch.search")}
           </FocusableButton>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
           {error ? <div style={compactTextStyle}>{error}</div> : null}
-          {!searching && results?.length === 0 ? <div style={compactTextStyle}>{"HowLongToBeat found no games."}</div> : null}
+          {!searching && results?.length === 0 ? <div style={compactTextStyle}>{t("hltbSearch.empty")}</div> : null}
           {results?.map((result) => (
             <FocusableButton
               key={result.game_id}
@@ -77,7 +78,9 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
               <div style={rowStackStyle}>
                 <b>{result.game_name}</b>
                 <span style={compactTextStyle}>
-                  {result.main_seconds > 0 ? `Main Story ${(result.main_seconds / 3600).toFixed(1)} hours` : "No Main Story time yet"}
+                  {result.main_seconds > 0
+                    ? t("hltbSearch.mainStory", { hours: (result.main_seconds / 3600).toFixed(1) })
+                    : t("hltbSearch.noMainStory")}
                 </span>
               </div>
             </FocusableButton>

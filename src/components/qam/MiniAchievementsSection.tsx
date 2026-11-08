@@ -1,5 +1,6 @@
 import { Field, PanelSectionRow, ToggleField } from "@decky/ui";
 import { FaTrophy } from "react-icons/fa";
+import { t } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { MiniAchievementsSnapshot } from "../../steam/miniAchievementsController";
 import { featureConflictNotice } from "../../pluginConflicts";
@@ -13,13 +14,13 @@ type MiniAchievementsSectionProps = {
 export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievementsSectionProps) {
   const enableDisabled = !state.settingsLoaded || state.busy ||
     (Boolean(state.conflict.pluginName) && !state.enabled);
-  const conflictNotice = featureConflictNotice(state.conflict, "mini achievements", state.enabled);
+  const conflictNotice = featureConflictNotice(state.conflict, t("qam.achievements.feature"), state.enabled);
   return (
-    <CollapsibleSection title="Mini achievements" icon={<FaTrophy size={16} />}>
+    <CollapsibleSection title={t("qam.achievements.title")} icon={<FaTrophy size={16} />}>
       <PanelSectionRow>
         <ToggleField
-          label="Enable mini achievements"
-          description="Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default."
+          label={t("qam.achievements.enable")}
+          description={t("qam.achievements.enableDesc")}
           checked={state.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -29,7 +30,7 @@ export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievem
       <PanelSectionRow>
         <Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            This restores Steam's display; it does not add achievement tracking to non-Steam games.
+            {t("qam.achievements.note")}
           </div>
           {conflictNotice && <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>}
           {state.settingsError && <div style={inlineStatusStyle("error")}>{state.settingsError}</div>}

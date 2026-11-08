@@ -55,6 +55,14 @@ games](docs/help/editing-games.md) for the full steps.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=202610011846)
 
+### Language
+
+The Quick Access Menu, the editor, the context-menu entries, and the plugin
+toasts follow the Steam interface language. English and French are bundled;
+any other Steam language falls back to English. Text that Steam or a metadata
+provider supplies (descriptions, news, Steam category names, in-game badges)
+keeps the language of its source.
+
 ## What you can see
 
 ### Game details and links

@@ -1,6 +1,8 @@
 import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
 import { SiSteamdeck } from "react-icons/si";
 
+import { t } from "../../i18n";
+import type { MessageKey } from "../../i18n";
 import { compactTextStyle, inlineStatusStyle } from "../../styles";
 import { space } from "../../tokens";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
@@ -8,33 +10,33 @@ import { CollapsibleSection } from "./CollapsibleSection";
 
 const compatibilityDefaultOptions: Array<{
   data: DeckCompatibilityCategory | null;
-  label: string;
+  labelKey: MessageKey;
 }> = [
-  { data: null, label: "Automatic — use matched Steam status" },
-  { data: 3, label: "Verified" },
-  { data: 2, label: "Playable" },
-  { data: 1, label: "Unsupported" },
-  { data: 0, label: "Unknown" },
+  { data: null, labelKey: "qam.compatibility.option.automatic" },
+  { data: 3, labelKey: "common.compatibility.verified" },
+  { data: 2, labelKey: "common.compatibility.playable" },
+  { data: 1, labelKey: "common.compatibility.unsupported" },
+  { data: 0, labelKey: "common.compatibility.unknown" },
 ];
 
 const compatibilityDefaultScopeOptions: Array<{
   data: CompatibilityDefaultScope;
-  label: string;
+  labelKey: MessageKey;
 }> = [
-  { data: "steam", label: "Steam-matched games" },
-  { data: "no-steam", label: "Saved games without a Steam ID" },
-  { data: "metadata", label: "All games with saved metadata" },
-  { data: "all", label: "All non-Steam games" },
+  { data: "steam", labelKey: "qam.compatibility.scope.steam" },
+  { data: "no-steam", labelKey: "qam.compatibility.scope.noSteam" },
+  { data: "metadata", labelKey: "qam.compatibility.scope.metadata" },
+  { data: "all", labelKey: "qam.compatibility.scope.all" },
 ];
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
 const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm } as const;
 
-const scopeDescriptions: Record<CompatibilityDefaultScope, string> = {
-  steam: "Applies to saved records with a valid Steam App ID.",
-  "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
-  metadata: "Applies to every saved metadata record, with or without a Steam ID.",
-  all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
+const scopeDescriptionKeys: Record<CompatibilityDefaultScope, MessageKey> = {
+  steam: "qam.compatibility.scopeDesc.steam",
+  "no-steam": "qam.compatibility.scopeDesc.noSteam",
+  metadata: "qam.compatibility.scopeDesc.metadata",
+  all: "qam.compatibility.scopeDesc.all",
 };
 
 type CompatibilitySectionProps = {
@@ -66,15 +68,24 @@ export function CompatibilitySection({
   onCompatibilityDefaultControlRef,
   onCompatibilityDefaultScopeControlRef,
 }: CompatibilitySectionProps) {
+  const categoryOptions = compatibilityDefaultOptions.map((option) => ({
+    data: option.data,
+    label: t(option.labelKey),
+  }));
+  const scopeOptions = compatibilityDefaultScopeOptions.map((option) => ({
+    data: option.data,
+    label: t(option.labelKey),
+  }));
+
   return (
-    <CollapsibleSection title="Compatibility status" icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
+    <CollapsibleSection title={t("qam.compatibility.title")} icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultControlRef}>
           <DropdownItem
-            label="Default compatibility status"
+            label={t("qam.compatibility.label.default")}
             layout="below"
             childrenContainerWidth="max"
-            rgOptions={compatibilityDefaultOptions}
+            rgOptions={categoryOptions}
             selectedOption={compatibilityDefault}
             disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
             onMenuWillOpen={() => {
@@ -83,7 +94,7 @@ export function CompatibilitySection({
             onChange={(option) => onCompatibilityDefaultChange(option.data)}
             renderButtonValue={() => (
               <span style={dropdownValueStyle}>
-                {compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label}
+                {categoryOptions.find((option) => option.data === compatibilityDefault)?.label}
               </span>
             )}
           />
@@ -92,11 +103,11 @@ export function CompatibilitySection({
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultScopeControlRef}>
           <DropdownItem
-            label="Apply default to"
+            label={t("qam.compatibility.label.scope")}
             layout="below"
             childrenContainerWidth="max"
             bottomSeparator="none"
-            rgOptions={compatibilityDefaultScopeOptions}
+            rgOptions={scopeOptions}
             selectedOption={compatibilityDefaultScope}
             disabled={
               !compatibilityDefaultLoaded ||
@@ -108,7 +119,7 @@ export function CompatibilitySection({
             onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
             renderButtonValue={() => (
               <span style={dropdownValueStyle}>
-                {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
+                {scopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
               </span>
             )}
           />
@@ -122,10 +133,12 @@ export function CompatibilitySection({
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            {`${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.`}
+            {t("qam.compatibility.scopeHelp", {
+              description: t(scopeDescriptionKeys[compatibilityDefaultScope]),
+            })}
           </div>
           <div style={secondaryHelpStyle}>
-            {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}
+            {t("qam.compatibility.note")}
           </div>
           {compatibilityDefaultError ? (
             <div style={inlineStatusStyle("error")}>{compatibilityDefaultError}</div>

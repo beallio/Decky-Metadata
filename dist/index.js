@@ -217,6 +217,826 @@ function SiSteamdeck (props) {
   return GenIcon({"attr":{"role":"img","viewBox":"0 0 24 24"},"child":[{"tag":"path","attr":{"d":"M8.999 0v4.309c4.242 0 7.694 3.45 7.694 7.691s-3.452 7.691-7.694 7.691V24c6.617 0 12-5.383 12-12s-5.383-12-12-12Zm0 6.011c-3.313 0-6 2.687-5.998 6a5.999 5.999 0 1 0 5.998-6z"},"child":[]}]})(props);
 }
 
+/**
+ * English catalog - canonical source for every interface key.
+ * Keep `fr.ts` in sync: both files must define the same key set.
+ */
+const en = {
+    "common.unknown": "Unknown",
+    "common.unavailable": "Unavailable",
+    "common.loading": "Loading...",
+    "common.clearing": "Clearing...",
+    "common.refreshing": "Refreshing...",
+    "common.searching": "Searching...",
+    "common.search": "Search",
+    "common.ok": "OK",
+    "common.compatibility.verified": "Verified",
+    "common.compatibility.playable": "Playable",
+    "common.compatibility.unsupported": "Unsupported",
+    "common.compatibility.unknown": "Unknown",
+    "common.quality.auto": "Auto — match display",
+    "qam.metadata.title": "Metadata",
+    "qam.metadata.detected": "Detected non-Steam games",
+    "qam.metadata.saved": "Metadata saved",
+    "qam.metadata.missing": "Missing metadata",
+    "qam.metadata.refresh": "Refresh metadata",
+    "qam.metadata.refreshing": "Refreshing metadata...",
+    "qam.metadata.help": "Find and save metadata for detected non-Steam games that do not have a match yet.",
+    "qam.metadata.refreshComplete": "Refresh complete",
+    "qam.metadata.refreshCompleteSaved": "Refresh complete: {{assigned}}/{{total}} saved",
+    "qam.metadata.refreshCompleteFailed": "Refresh complete: {{assigned}}/{{total}} saved, {{failed}} not matched",
+    "qam.metadata.refreshFailed": "Metadata refresh failed",
+    "qam.cache.title": "Metadata cache",
+    "qam.cache.clear": "Clear cache",
+    "qam.cache.help": "Clear saved matches and metadata so games can be matched again.",
+    "qam.cache.cleared": "Metadata cache cleared",
+    "qam.cache.clearFailed": "Cache clear failed",
+    "qam.delisted.title": "Delisted Steam games",
+    "qam.delisted.refresh": "Refresh delisted games",
+    "qam.delisted.count": "Delisted games: {{count}}",
+    "qam.delisted.notDownloaded": "Delisted Steam games not downloaded yet",
+    "qam.delisted.updated": "Delisted Steam games updated",
+    "qam.delisted.refreshFailed": "Delisted Steam games refresh failed",
+    "qam.delisted.lastUpdated": "Last updated: {{date}}",
+    "qam.compatibility.title": "Compatibility status",
+    "qam.compatibility.option.automatic": "Automatic — use matched Steam status",
+    "qam.compatibility.label.default": "Default compatibility status",
+    "qam.compatibility.label.scope": "Apply default to",
+    "qam.compatibility.scope.steam": "Steam-matched games",
+    "qam.compatibility.scope.noSteam": "Saved games without a Steam ID",
+    "qam.compatibility.scope.metadata": "All games with saved metadata",
+    "qam.compatibility.scope.all": "All non-Steam games",
+    "qam.compatibility.scopeDesc.steam": "Applies to saved records with a valid Steam App ID.",
+    "qam.compatibility.scopeDesc.noSteam": "Applies to saved records without a Steam ID, including manual and provider records.",
+    "qam.compatibility.scopeDesc.metadata": "Applies to every saved metadata record, with or without a Steam ID.",
+    "qam.compatibility.scopeDesc.all": "Applies to every native non-Steam shortcut, including shortcuts without a record.",
+    "qam.compatibility.loadFailed": "Compatibility default could not be loaded: {{error}}",
+    "qam.compatibility.scopeHelp": "{{description}} Per-game choices take priority.",
+    "qam.compatibility.note": "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification.",
+    "qam.protondb.title": "ProtonDB badges",
+    "qam.protondb.feature": "ProtonDB badges",
+    "qam.protondb.enable": "Enable ProtonDB badges",
+    "qam.protondb.enableDesc": "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.",
+    "qam.protondb.home": "Home game covers",
+    "qam.protondb.homeDesc": "Show a tier badge on Home covers.",
+    "qam.protondb.library": "Library game covers",
+    "qam.protondb.libraryDesc": "Show a tier badge on Library covers.",
+    "qam.protondb.gameView": "Game view",
+    "qam.protondb.gameViewDesc": "Show a ProtonDB tier button on the game's details page.",
+    "qam.protondb.store": "Store",
+    "qam.protondb.storeDesc": "Show a ProtonDB tier badge on the Steam Store page.",
+    "qam.protondb.focusOnly": "Covers only on focus or hover",
+    "qam.protondb.focusOnlyDesc": "Hide Home and Library cover badges until a game cover is focused or hovered.",
+    "qam.protondb.position": "Cover badge position",
+    "qam.protondb.position.bottomLeft": "Bottom left",
+    "qam.protondb.position.topLeft": "Top left",
+    "qam.protondb.position.topRight": "Top right",
+    "qam.protondb.loading": "Loading ProtonDB badge preferences…",
+    "qam.protondb.note": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+    "qam.hltb.title": "HLTB times",
+    "qam.hltb.feature": "HLTB times",
+    "qam.hltb.enable": "Show HowLongToBeat times",
+    "qam.hltb.enableDesc": "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
+    "qam.hltb.style": "HLTB Style",
+    "qam.hltb.styleDesc": "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
+    "qam.hltb.style.default": "Default",
+    "qam.hltb.style.clean": "\"Clean\"",
+    "qam.hltb.style.cleanLeft": "\"Clean\" Left",
+    "qam.hltb.style.cleanDefault": "\"Clean\" Default",
+    "qam.hltb.hideViewDetails": "Hide \"Details\"",
+    "qam.hltb.hideViewDetailsDesc": "Hides the \"Details\" button on HLTB Stats",
+    "qam.hltb.stat.main": "Toggle main stat",
+    "qam.hltb.stat.mainDesc": "Shows/Hides just the main stat",
+    "qam.hltb.stat.mainPlus": "Toggle main+ stat",
+    "qam.hltb.stat.mainPlusDesc": "Shows/Hides just the main+ stat",
+    "qam.hltb.stat.complete": "Toggle completionist stat",
+    "qam.hltb.stat.completeDesc": "Shows/Hides just the completionist stat",
+    "qam.hltb.stat.allStyles": "Toggle \"all play styles\" stat",
+    "qam.hltb.stat.allStylesDesc": "Shows/Hides just the all play styles stat",
+    "qam.hltb.clearCache": "Clear HLTB cache",
+    "qam.hltb.cacheClearing": "Clearing HLTB cache...",
+    "qam.hltb.cacheCleared": "HLTB cache cleared. Times load again when you open a game.",
+    "qam.hltb.cacheFailed": "The HLTB cache could not be cleared.",
+    "qam.hltb.appearance": "Customize appearance",
+    "qam.hltb.appearanceDesc": "Enable custom colors, opacity and text size for the HLTB bar",
+    "qam.hltb.opacity": "Background opacity",
+    "qam.hltb.opacityDesc": "Darkens the bar so stats stay readable over bright hero art",
+    "qam.hltb.textShadow": "Text shadow",
+    "qam.hltb.textShadowDesc": "Adds a shadow behind the stats for extra contrast",
+    "qam.hltb.textSize": "Text size",
+    "qam.hltb.textSizeDesc": "Scales the stat numbers and labels",
+    "qam.hltb.border": "Bottom border",
+    "qam.hltb.borderDesc": "Shows a divider line under the HLTB bar",
+    "qam.hltb.resetAppearance": "Reset appearance",
+    "qam.hltb.loading": "Loading HLTB preferences…",
+    "qam.trailers.title": "Game trailers",
+    "qam.trailers.feature": "game trailers",
+    "qam.trailers.enable": "Enable trailers",
+    "qam.trailers.enableDesc": "Main switch for Detail and Home trailers. Turning it off keeps your choices for each view.",
+    "qam.trailers.detail.heading": "Detail view",
+    "qam.trailers.detail.enable": "Detail view trailers",
+    "qam.trailers.detail.enableDesc": "Play a trailer over the artwork on a game's main Library page.",
+    "qam.trailers.detail.delay": "Detail fade-in delay",
+    "qam.trailers.detail.delayDesc": "Wait from opening the game page before showing a ready trailer.",
+    "qam.trailers.detail.audio": "Detail trailer audio",
+    "qam.trailers.detail.audioDesc": "Fade in audio when a Detail trailer appears. Home trailers always stay muted.",
+    "qam.trailers.detail.hideLogo": "Hide game logo during Detail trailers",
+    "qam.trailers.detail.hideLogoDesc": "Hide the game page logo while a trailer is visible. The logo returns when playback stops.",
+    "qam.trailers.home.heading": "Home view",
+    "qam.trailers.home.enable": "Home view trailers",
+    "qam.trailers.home.enableDesc": "Play a muted trailer over the Home background for the selected or hovered game.",
+    "qam.trailers.home.delay": "Home fade-in delay",
+    "qam.trailers.home.delayDesc": "Wait before looking for a trailer. Moving to another game restarts this delay.",
+    "qam.trailers.quality": "Video quality",
+    "qam.trailers.bigPicture": "Big Picture display",
+    "qam.trailers.display": "{{width}} × {{height}} pixels",
+    "qam.trailers.target": "{{display}} · target {{height}}p",
+    "qam.trailers.help": "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.",
+    "qam.achievements.title": "Mini achievements",
+    "qam.achievements.feature": "mini achievements",
+    "qam.achievements.enable": "Enable mini achievements",
+    "qam.achievements.enableDesc": "Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default.",
+    "qam.achievements.note": "This restores Steam's display; it does not add achievement tracking to non-Steam games.",
+    "qam.logs.title": "Logs",
+    "qam.logs.view": "View Logs",
+    "qam.logs.debug": "Debug Logging",
+    "qam.logs.debugDesc": "Enables verbose logging for troubleshooting.",
+    "qam.logs.modalTitle": "Plugin Logs",
+    "qam.logs.empty": "No recent logs",
+    "qam.logs.loadFailed": "Plugin logs could not be loaded",
+    "qam.updates.title": "Updates",
+    "qam.updates.installed": "Installed Version",
+    "qam.updates.localBuild": "(Local Build)",
+    "qam.updates.dev": "Receive development releases",
+    "qam.updates.devDesc": "Includes prerelease builds intended for testing. These builds may contain regressions.",
+    "qam.updates.auto": "Automatically check for updates",
+    "qam.updates.autoDesc": "Checks in the background while the plugin is loaded.",
+    "qam.updates.status": "Status",
+    "qam.updates.checking": "Checking...",
+    "qam.updates.interrupted": "Check interrupted after {{seconds}} seconds",
+    "qam.updates.failed": "Failed to check",
+    "qam.updates.upToDate": "Up to date",
+    "qam.updates.latestDev": "Latest available development build",
+    "qam.updates.available": "Update available",
+    "qam.updates.neverChecked": "Never checked",
+    "qam.updates.lastChecked": "Last checked: {{date}}",
+    "qam.updates.retryAfter": "Try again after {{date}}",
+    "qam.updates.candidate": "Candidate",
+    "qam.updates.newVersion": "New version: v{{version}} ({{channel}})",
+    "qam.updates.downgradeWarning": "Warning: Reverting to stable is a downgrade.",
+    "qam.updates.action.moveToStable": "Move to Stable v{{version}}",
+    "qam.updates.action.revertStable": "Revert to Stable v{{version}}",
+    "qam.updates.action.installDev": "Install development build v{{version}}",
+    "qam.updates.action.update": "Update to v{{version}}",
+    "qam.updates.waitingDecky": "Waiting for Decky...",
+    "qam.updates.preparing": "Preparing...",
+    "qam.updates.localOnly": "Local builds can only self-update to a stable release. Install this development release manually from GitHub Releases.",
+    "qam.updates.manualOnly": "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases.",
+    "qam.updates.releaseNotes": "View Release Notes",
+    "qam.updates.checkNow": "Check now",
+    "qam.updates.confirmDev.title": "Enable Development Releases?",
+    "qam.updates.confirmDev.body": "Includes prerelease builds intended for testing. These builds may contain regressions.",
+    "qam.updates.confirmRevert.title": "Revert to Stable?",
+    "qam.updates.confirmRevert.body": "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
+    "qam.versions.title": "Versions",
+    "qam.versions.plugin": "Decky Metadata: {{version}}",
+    "qam.versions.decky": "Decky: {{version}}",
+    "qam.versions.steamos": "SteamOS: {{version}}",
+    "qam.versions.controllers": "Controller Types: {{types}}",
+    "editor.save": "Save",
+    "editor.remove": "Remove metadata",
+    "editor.done": "Done",
+    "editor.nonSteamOnly": "This plugin only changes non-Steam games.",
+    "editor.search.title": "Search IGN metadata",
+    "editor.search.empty": "No results yet.",
+    "editor.source.title": "Source",
+    "editor.field.title": "Title",
+    "editor.field.description": "Description",
+    "editor.field.developers": "Developers",
+    "editor.field.publishers": "Publishers",
+    "editor.field.releaseDate": "Release date",
+    "editor.field.rating": "Rating",
+    "editor.compatibility.title": "Compatibility status",
+    "editor.compatibility.option.global": "Use global default",
+    "editor.compatibility.option.valve": "Follow Valve",
+    "editor.compatibility.followValveUnavailable": "Follow Valve (unavailable — original Steam status)",
+    "editor.compatibility.followValve": "Follow Valve ({{status}})",
+    "editor.compatibility.globalDefault": "Use global default ({{status}})",
+    "editor.compatibility.globalDefaultOutside": "Use global default (outside selected scope — original Steam status)",
+    "editor.compatibility.globalDefaultOutsideValve": "Use global default (outside selected scope — {{status}} from Valve)",
+    "editor.compatibility.globalDefaultAutomatic": "Use global default (Automatic — original Steam status)",
+    "editor.compatibility.globalDefaultFromValve": "Use global default ({{status}} — from Valve)",
+    "editor.compatibility.help": "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable.",
+    "editor.compatibility.note": "Manual and default categories are your choices, not Valve certification or an emulator performance result.",
+    "editor.steamFields.title": "Steam info fields",
+    "editor.hltb.title": "HowLongToBeat game",
+    "editor.hltb.help": "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically.",
+    "editor.hltb.current": "Current game",
+    "editor.hltb.chosen": "(chosen)",
+    "editor.hltb.auto": "(found automatically)",
+    "editor.hltb.apply": "Apply HLTB game",
+    "editor.steamAppId.title": "Steam App ID",
+    "editor.steamAppId.help": "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
+    "editor.steamAppId.apply": "Apply Steam App ID",
+    "editor.shortcutName.title": "Shortcut name",
+    "editor.shortcutName.current": "Current: {{name}}",
+    "editor.shortcutName.noNative": "Steam did not expose a native shortcut name",
+    "editor.shortcutName.loading": "Loading Steam name...",
+    "editor.shortcutName.noOfficial": "Steam did not return an official name",
+    "editor.shortcutName.unavailable": "Shortcut-name management is unavailable",
+    "editor.shortcutName.apiUnavailable": "Steam's native shortcut-name API is unavailable",
+    "editor.shortcutName.notFound": "Steam shortcut was not found",
+    "editor.shortcutName.derivedId": "This shortcut has a derived ID and cannot be renamed safely",
+    "editor.shortcutName.matches": "Shortcut name already matches Steam",
+    "editor.shortcutName.diverged": "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten.",
+    "editor.shortcutName.useSteam": "Use Steam name",
+    "editor.shortcutName.restore": "Restore original name",
+    "editor.shortcutName.forget": "Forget saved name history",
+    "editor.confirm.useSteam.title": "Use Steam name?",
+    "editor.confirm.useSteam.ok": "Use Steam name",
+    "editor.confirm.useSteam.body": "Change “{{current}}” to “{{steam}}”?",
+    "editor.confirm.restore.title": "Restore original shortcut name?",
+    "editor.confirm.restore.ok": "Restore original name",
+    "editor.confirm.restore.body": "Restore “{{name}}”?",
+    "editor.confirm.forget.title": "Forget saved name history?",
+    "editor.confirm.forget.ok": "Forget history",
+    "editor.confirm.forget.body": "This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name.",
+    "steamMatch.title": "Find a Steam match",
+    "steamMatch.help": "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game.",
+    "steamMatch.currentAppId": "Current Steam App ID: {{appId}}",
+    "steamMatch.ariaLabel": "Steam game search",
+    "steamMatch.search": "Search Steam",
+    "steamMatch.searching": "Searching Steam...",
+    "steamMatch.idle": "Enter a game name to find Steam matches.",
+    "steamMatch.empty": "No Steam matches found. Try another name or use the Steam App ID field below.",
+    "steamMatch.row.appId": "Steam App ID: {{appId}}",
+    "steamMatch.row.current": " · Current match",
+    "steamMatch.row.selected": " · Selected",
+    "steamMatch.loading": "Loading Steam details...",
+    "steamMatch.detailsUnavailable": "Steam details are unavailable. You can still use this match.",
+    "steamMatch.artworkAlt": "{{title}} Steam artwork",
+    "steamMatch.developer": "Developer: {{names}}",
+    "steamMatch.developerUnavailable": "Developer unavailable",
+    "steamMatch.release": "Release: {{date}}",
+    "steamMatch.releaseUnavailable": "Release date unavailable",
+    "steamMatch.appType": "Steam type: {{type}}. Check that this is the game or edition you want.",
+    "steamMatch.applyNote": "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork.",
+    "steamMatch.apply": "Use this Steam match",
+    "steamMatch.cancel": "Cancel selection",
+    "hltbSearch.search": "Search HLTB",
+    "hltbSearch.empty": "HowLongToBeat found no games.",
+    "hltbSearch.mainStory": "Main Story {{hours}} hours",
+    "hltbSearch.noMainStory": "No Main Story time yet",
+    "contextMenu.edit": "Decky metadata...",
+    "conflict.enabled": "{{plugin}} is enabled in Decky Loader. Disable that plugin to use {{feature}} here.",
+    "conflict.enabledSaved": " Your setting is saved; this feature will resume when the other plugin is disabled.",
+    "conflict.detectionUnavailable": "Could not check for conflicting plugins. Use only one {{feature}} provider at a time.",
+    "trailers.status.steamUiUnavailable": "Steam UI unavailable",
+    "trailers.status.disabled": "Disabled",
+    "trailers.status.homeOff": "Home view trailers are off",
+    "trailers.status.selectHome": "Select or hover over a game on Home",
+    "trailers.status.waitingHome": "Waiting to show the Home trailer",
+    "trailers.status.detailOff": "Detail view trailers are off",
+    "trailers.status.openPage": "Open a game's main Steam Library page or select a game on Home",
+    "trailers.status.gameUnavailable": "Steam game is not available",
+    "trailers.status.notNative": "This game is not a native non-Steam shortcut",
+    "trailers.status.matchesUnavailable": "Saved Steam matches are not available",
+    "trailers.status.trailerUnavailable": "Game trailer is unavailable",
+    "trailers.status.waitingIgn": "Waiting for an IGN game trailer",
+    "trailers.status.waitingSteam": "Waiting for a Steam trailer",
+    "protondb.error.load": "Unable to load ProtonDB badge settings.",
+    "protondb.error.save": "Unable to save ProtonDB badge settings.",
+    "toast.saved.title": "Saved",
+    "toast.saved.body": "Metadata saved",
+    "toast.saveFailed.title": "Save failed",
+    "toast.fetchFailed.title": "Fetch failed",
+    "toast.removed.title": "Removed",
+    "toast.removed.body": "Metadata removed",
+    "toast.removeFailed.title": "Remove failed",
+    "toast.notApplicable.title": "Not applicable",
+    "toast.notLoaded.title": "Not loaded",
+    "toast.notLoaded.body": "Saved metadata has not loaded yet.",
+    "toast.hltbInvalid.title": "Invalid HLTB game",
+    "toast.hltbInvalid.body": "Enter a HowLongToBeat game number or game page link.",
+    "toast.hltbNotFound.title": "Not found",
+    "toast.hltbNotFound.body": "HowLongToBeat has no game with that number.",
+    "toast.hltbCleared": "HLTB game cleared",
+    "toast.hltbGame": "HLTB game: {{name}}",
+    "toast.compatibility.title": "Compatibility",
+    "toast.compatibility.saved": "Default compatibility status saved",
+    "toast.compatibility.scopeSaved": "Default compatibility scope saved",
+    "toast.compatibility.saveFailed": "Compatibility default could not be saved: {{error}}",
+    "toast.compatibility.scopeSaveFailed": "Compatibility default scope could not be saved: {{error}}",
+    "toast.updates.title": "Updates",
+    "toast.updates.channelFailed": "Update channel could not be saved",
+    "toast.updates.autoFailed": "Automatic update setting could not be saved",
+    "toast.shortcutName.changed.title": "Shortcut name changed",
+    "toast.shortcutName.changed.rename": "Steam changed this shortcut before it could be renamed.",
+    "toast.shortcutName.changed.restore": "Steam changed this shortcut before it could be restored.",
+    "toast.shortcutName.updated.title": "Shortcut name updated",
+    "toast.shortcutName.updated.body": "Steam confirmed the new shortcut name.",
+    "toast.shortcutName.notUpdated.title": "Shortcut name was not updated",
+    "toast.shortcutName.restored.title": "Shortcut name restored",
+    "toast.shortcutName.restored.body": "Steam confirmed the original shortcut name.",
+    "toast.shortcutName.restoredHistoryFailed": "Steam restored the name, but saved history could not be cleared: {{error}}",
+    "toast.shortcutName.notRestored.title": "Shortcut name was not restored",
+    "toast.shortcutName.historyForgotten.title": "Saved name history forgotten",
+    "toast.shortcutName.historyForgotten.body": "Steam did not change the shortcut name.",
+    "toast.shortcutName.historyNotCleared.title": "Saved name history was not cleared",
+    "updates.toast.checkFailed.title": "Update Check Failed",
+    "updates.toast.checkFailed.body": "Failed to check for updates",
+    "updates.toast.checkInterrupted": "Update check interrupted. Check again.",
+    "updates.toast.installStarted.title": "Installation Initiated",
+    "updates.toast.installRequested": "Requested installation of v{{version}} via Decky Loader.",
+    "updates.toast.installFailed.title": "Installation Failed",
+    "updates.toast.handoffFailed": "Failed to confirm handoff",
+    "updates.toast.revalidationFailed": "Revalidation failed",
+    "updates.toast.recordFailed": "Failed to record install request",
+    "updates.toast.clearPendingFailed": "Failed to clear pending install",
+};
+
+const fr = {
+    "common.unknown": "Inconnu",
+    "common.unavailable": "Indisponible",
+    "common.loading": "Chargement…",
+    "common.clearing": "Suppression…",
+    "common.refreshing": "Actualisation…",
+    "common.searching": "Recherche…",
+    "common.search": "Rechercher",
+    "common.ok": "OK",
+    "common.compatibility.verified": "Vérifié",
+    "common.compatibility.playable": "Jouable",
+    "common.compatibility.unsupported": "Non pris en charge",
+    "common.compatibility.unknown": "Inconnu",
+    "common.quality.auto": "Auto — selon l'écran",
+    "qam.metadata.title": "Métadonnées",
+    "qam.metadata.detected": "Jeux non Steam détectés",
+    "qam.metadata.saved": "Métadonnées enregistrées",
+    "qam.metadata.missing": "Métadonnées manquantes",
+    "qam.metadata.refresh": "Actualiser les métadonnées",
+    "qam.metadata.refreshing": "Actualisation des métadonnées…",
+    "qam.metadata.help": "Recherche et enregistre les métadonnées des jeux non Steam détectés qui n'ont pas encore de correspondance.",
+    "qam.metadata.refreshComplete": "Actualisation terminée",
+    "qam.metadata.refreshCompleteSaved": "Actualisation terminée : {{assigned}}/{{total}} enregistrés",
+    "qam.metadata.refreshCompleteFailed": "Actualisation terminée : {{assigned}}/{{total}} enregistrés, {{failed}} non associés",
+    "qam.metadata.refreshFailed": "Échec de l'actualisation des métadonnées",
+    "qam.cache.title": "Cache des métadonnées",
+    "qam.cache.clear": "Vider le cache",
+    "qam.cache.help": "Supprime les correspondances et les métadonnées enregistrées afin que les jeux puissent être associés à nouveau.",
+    "qam.cache.cleared": "Cache des métadonnées vidé",
+    "qam.cache.clearFailed": "Échec du vidage du cache",
+    "qam.delisted.title": "Jeux Steam retirés de la vente",
+    "qam.delisted.refresh": "Actualiser les jeux retirés",
+    "qam.delisted.count": "Jeux retirés : {{count}}",
+    "qam.delisted.notDownloaded": "Liste des jeux Steam retirés pas encore téléchargée",
+    "qam.delisted.updated": "Liste des jeux Steam retirés mise à jour",
+    "qam.delisted.refreshFailed": "Échec de l'actualisation des jeux Steam retirés",
+    "qam.delisted.lastUpdated": "Dernière mise à jour : {{date}}",
+    "qam.compatibility.title": "État de compatibilité",
+    "qam.compatibility.option.automatic": "Automatique — utilise l'état Steam correspondant",
+    "qam.compatibility.label.default": "État de compatibilité par défaut",
+    "qam.compatibility.label.scope": "Appliquer par défaut à",
+    "qam.compatibility.scope.steam": "Jeux associés à Steam",
+    "qam.compatibility.scope.noSteam": "Jeux enregistrés sans identifiant Steam",
+    "qam.compatibility.scope.metadata": "Tous les jeux avec métadonnées enregistrées",
+    "qam.compatibility.scope.all": "Tous les jeux non Steam",
+    "qam.compatibility.scopeDesc.steam": "S'applique aux fiches enregistrées avec un App ID Steam valide.",
+    "qam.compatibility.scopeDesc.noSteam": "S'applique aux fiches enregistrées sans identifiant Steam, y compris les fiches manuelles et celles des fournisseurs.",
+    "qam.compatibility.scopeDesc.metadata": "S'applique à toutes les métadonnées enregistrées, avec ou sans identifiant Steam.",
+    "qam.compatibility.scopeDesc.all": "S'applique à tous les raccourcis non Steam natifs, y compris ceux sans fiche.",
+    "qam.compatibility.loadFailed": "Impossible de charger l'état de compatibilité par défaut : {{error}}",
+    "qam.compatibility.scopeHelp": "{{description}} Les choix par jeu sont prioritaires.",
+    "qam.compatibility.note": "Suivre Valve est un choix par jeu. Les catégories manuelles et par défaut sont vos choix, pas une certification Valve.",
+    "qam.protondb.title": "Badges ProtonDB",
+    "qam.protondb.feature": "les badges ProtonDB",
+    "qam.protondb.enable": "Activer les badges ProtonDB",
+    "qam.protondb.enableDesc": "Affiche les niveaux communautaires ProtonDB sur les surfaces Steam. Indépendant de l'état de compatibilité de Valve.",
+    "qam.protondb.home": "Vignettes de l'accueil",
+    "qam.protondb.homeDesc": "Affiche un badge de niveau sur les vignettes de l'accueil.",
+    "qam.protondb.library": "Vignettes de la bibliothèque",
+    "qam.protondb.libraryDesc": "Affiche un badge de niveau sur les vignettes de la bibliothèque.",
+    "qam.protondb.gameView": "Page du jeu",
+    "qam.protondb.gameViewDesc": "Affiche un bouton de niveau ProtonDB sur la page de détails du jeu.",
+    "qam.protondb.store": "Boutique",
+    "qam.protondb.storeDesc": "Affiche un badge de niveau ProtonDB sur la page de la boutique Steam.",
+    "qam.protondb.focusOnly": "Vignettes uniquement au survol ou à la sélection",
+    "qam.protondb.focusOnlyDesc": "Masque les badges des vignettes de l'accueil et de la bibliothèque tant qu'une vignette n'est pas sélectionnée ou survolée.",
+    "qam.protondb.position": "Position du badge sur la vignette",
+    "qam.protondb.position.bottomLeft": "En bas à gauche",
+    "qam.protondb.position.topLeft": "En haut à gauche",
+    "qam.protondb.position.topRight": "En haut à droite",
+    "qam.protondb.loading": "Chargement des préférences de badges ProtonDB…",
+    "qam.protondb.note": "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+    "qam.hltb.title": "Temps HLTB",
+    "qam.hltb.feature": "les temps HLTB",
+    "qam.hltb.enable": "Afficher les temps HowLongToBeat",
+    "qam.hltb.enableDesc": "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
+    "qam.hltb.style": "Style HLTB",
+    "qam.hltb.styleDesc": "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
+    "qam.hltb.style.default": "Par défaut",
+    "qam.hltb.style.clean": "« Clean »",
+    "qam.hltb.style.cleanLeft": "« Clean » gauche",
+    "qam.hltb.style.cleanDefault": "« Clean » par défaut",
+    "qam.hltb.hideViewDetails": "Masquer « Détails »",
+    "qam.hltb.hideViewDetailsDesc": "Masque le bouton « Détails » des statistiques HLTB",
+    "qam.hltb.stat.main": "Afficher/masquer le temps principal",
+    "qam.hltb.stat.mainDesc": "Affiche/masque uniquement le temps principal",
+    "qam.hltb.stat.mainPlus": "Afficher/masquer le temps principal + extras",
+    "qam.hltb.stat.mainPlusDesc": "Affiche/masque uniquement le temps principal + extras",
+    "qam.hltb.stat.complete": "Afficher/masquer le temps complétiste",
+    "qam.hltb.stat.completeDesc": "Affiche/masque uniquement le temps complétiste",
+    "qam.hltb.stat.allStyles": "Afficher/masquer le temps tous styles de jeu",
+    "qam.hltb.stat.allStylesDesc": "Affiche/masque uniquement le temps tous styles de jeu",
+    "qam.hltb.clearCache": "Vider le cache HLTB",
+    "qam.hltb.cacheClearing": "Vidage du cache HLTB…",
+    "qam.hltb.cacheCleared": "Cache HLTB vidé. Les temps se rechargent à l'ouverture d'un jeu.",
+    "qam.hltb.cacheFailed": "Le cache HLTB n'a pas pu être vidé.",
+    "qam.hltb.appearance": "Personnaliser l'apparence",
+    "qam.hltb.appearanceDesc": "Active des couleurs, une opacité et une taille de texte personnalisées pour la barre HLTB",
+    "qam.hltb.opacity": "Opacité du fond",
+    "qam.hltb.opacityDesc": "Assombrit la barre pour que les statistiques restent lisibles sur une jaquette claire",
+    "qam.hltb.textShadow": "Ombre du texte",
+    "qam.hltb.textShadowDesc": "Ajoute une ombre derrière les statistiques pour plus de contraste",
+    "qam.hltb.textSize": "Taille du texte",
+    "qam.hltb.textSizeDesc": "Met à l'échelle les chiffres et libellés des statistiques",
+    "qam.hltb.border": "Bordure inférieure",
+    "qam.hltb.borderDesc": "Affiche une ligne de séparation sous la barre HLTB",
+    "qam.hltb.resetAppearance": "Réinitialiser l'apparence",
+    "qam.hltb.loading": "Chargement des préférences HLTB…",
+    "qam.trailers.title": "Bandes-annonces",
+    "qam.trailers.feature": "les bandes-annonces de jeux",
+    "qam.trailers.enable": "Activer les bandes-annonces",
+    "qam.trailers.enableDesc": "Interrupteur principal pour les bandes-annonces de la page Détails et de l'accueil. Le désactiver conserve vos choix pour chaque vue.",
+    "qam.trailers.detail.heading": "Vue Détails",
+    "qam.trailers.detail.enable": "Bandes-annonces de la vue Détails",
+    "qam.trailers.detail.enableDesc": "Lit une bande-annonce sur la jaquette de la page principale du jeu dans la bibliothèque.",
+    "qam.trailers.detail.delay": "Délai d'apparition (Détails)",
+    "qam.trailers.detail.delayDesc": "Attente après l'ouverture de la page du jeu avant d'afficher une bande-annonce prête.",
+    "qam.trailers.detail.audio": "Audio des bandes-annonces (Détails)",
+    "qam.trailers.detail.audioDesc": "Active le son en fondu à l'apparition d'une bande-annonce. Les bandes-annonces de l'accueil restent toujours muettes.",
+    "qam.trailers.detail.hideLogo": "Masquer le logo du jeu pendant les bandes-annonces (Détails)",
+    "qam.trailers.detail.hideLogoDesc": "Masque le logo de la page du jeu tant qu'une bande-annonce est visible. Le logo revient à l'arrêt de la lecture.",
+    "qam.trailers.home.heading": "Vue Accueil",
+    "qam.trailers.home.enable": "Bandes-annonces de l'accueil",
+    "qam.trailers.home.enableDesc": "Lit une bande-annonce muette sur le fond de l'accueil pour le jeu sélectionné ou survolé.",
+    "qam.trailers.home.delay": "Délai d'apparition (Accueil)",
+    "qam.trailers.home.delayDesc": "Attente avant de chercher une bande-annonce. Passer à un autre jeu relance ce délai.",
+    "qam.trailers.quality": "Qualité vidéo",
+    "qam.trailers.bigPicture": "Écran Big Picture",
+    "qam.trailers.display": "{{width}} × {{height}} pixels",
+    "qam.trailers.target": "{{display}} · cible {{height}}p",
+    "qam.trailers.help": "La jaquette Steam reste visible jusqu'à ce qu'une bande-annonce lisible soit prête. Les bandes-annonces sont diffusées depuis Steam ou IGN et ne sont pas enregistrées pour une lecture hors ligne.",
+    "qam.achievements.title": "Mini-succès",
+    "qam.achievements.feature": "les mini-succès",
+    "qam.achievements.enable": "Activer les mini-succès",
+    "qam.achievements.enableDesc": "Restaure la petite barre de progression des succès de Steam à côté du temps de jeu sur les pages de détails. Désactivé par défaut.",
+    "qam.achievements.note": "Cela restaure l'affichage de Steam ; aucun suivi de succès n'est ajouté aux jeux non Steam.",
+    "qam.logs.title": "Journaux",
+    "qam.logs.view": "Afficher les journaux",
+    "qam.logs.debug": "Journalisation de débogage",
+    "qam.logs.debugDesc": "Active les journaux détaillés pour le dépannage.",
+    "qam.logs.modalTitle": "Journaux du plugin",
+    "qam.logs.empty": "Aucun journal récent",
+    "qam.logs.loadFailed": "Impossible de charger les journaux du plugin",
+    "qam.updates.title": "Mises à jour",
+    "qam.updates.installed": "Version installée",
+    "qam.updates.localBuild": "(version locale)",
+    "qam.updates.dev": "Recevoir les versions de développement",
+    "qam.updates.devDesc": "Inclut des versions préliminaires destinées aux tests. Elles peuvent contenir des régressions.",
+    "qam.updates.auto": "Rechercher automatiquement les mises à jour",
+    "qam.updates.autoDesc": "Vérifie en arrière-plan pendant que le plugin est chargé.",
+    "qam.updates.status": "État",
+    "qam.updates.checking": "Vérification…",
+    "qam.updates.interrupted": "Vérification interrompue après {{seconds}} secondes",
+    "qam.updates.failed": "Échec de la vérification",
+    "qam.updates.upToDate": "À jour",
+    "qam.updates.latestDev": "Dernière version de développement disponible",
+    "qam.updates.available": "Mise à jour disponible",
+    "qam.updates.neverChecked": "Jamais vérifié",
+    "qam.updates.lastChecked": "Dernière vérification : {{date}}",
+    "qam.updates.retryAfter": "Réessayez après {{date}}",
+    "qam.updates.candidate": "Version candidate",
+    "qam.updates.newVersion": "Nouvelle version : v{{version}} ({{channel}})",
+    "qam.updates.downgradeWarning": "Attention : revenir à la version stable est une rétrogradation.",
+    "qam.updates.action.moveToStable": "Passer à la version stable v{{version}}",
+    "qam.updates.action.revertStable": "Revenir à la version stable v{{version}}",
+    "qam.updates.action.installDev": "Installer la version de développement v{{version}}",
+    "qam.updates.action.update": "Mettre à jour vers v{{version}}",
+    "qam.updates.waitingDecky": "En attente de Decky…",
+    "qam.updates.preparing": "Préparation…",
+    "qam.updates.localOnly": "Les versions locales ne peuvent se mettre à jour que vers une version stable. Installez cette version de développement manuellement depuis les versions GitHub.",
+    "qam.updates.manualOnly": "L'installation automatique n'est pas disponible dans cet environnement Decky. Installez cette version manuellement depuis les versions GitHub.",
+    "qam.updates.releaseNotes": "Voir les notes de version",
+    "qam.updates.checkNow": "Vérifier maintenant",
+    "qam.updates.confirmDev.title": "Activer les versions de développement ?",
+    "qam.updates.confirmDev.body": "Inclut des versions préliminaires destinées aux tests. Elles peuvent contenir des régressions.",
+    "qam.updates.confirmRevert.title": "Revenir à la version stable ?",
+    "qam.updates.confirmRevert.body": "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
+    "qam.versions.title": "Versions",
+    "qam.versions.plugin": "Decky Metadata : {{version}}",
+    "qam.versions.decky": "Decky : {{version}}",
+    "qam.versions.steamos": "SteamOS : {{version}}",
+    "qam.versions.controllers": "Types de manettes : {{types}}",
+    "editor.save": "Enregistrer",
+    "editor.remove": "Supprimer les métadonnées",
+    "editor.done": "Terminé",
+    "editor.nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
+    "editor.search.title": "Rechercher des métadonnées IGN",
+    "editor.search.empty": "Aucun résultat pour l'instant.",
+    "editor.source.title": "Source",
+    "editor.field.title": "Titre",
+    "editor.field.description": "Description",
+    "editor.field.developers": "Développeurs",
+    "editor.field.publishers": "Éditeurs",
+    "editor.field.releaseDate": "Date de sortie",
+    "editor.field.rating": "Classification",
+    "editor.compatibility.title": "État de compatibilité",
+    "editor.compatibility.option.global": "Utiliser la valeur globale par défaut",
+    "editor.compatibility.option.valve": "Suivre Valve",
+    "editor.compatibility.followValveUnavailable": "Suivre Valve (indisponible — état Steam d'origine)",
+    "editor.compatibility.followValve": "Suivre Valve ({{status}})",
+    "editor.compatibility.globalDefault": "Utiliser la valeur globale par défaut ({{status}})",
+    "editor.compatibility.globalDefaultOutside": "Utiliser la valeur globale par défaut (hors du périmètre sélectionné — état Steam d'origine)",
+    "editor.compatibility.globalDefaultOutsideValve": "Utiliser la valeur globale par défaut (hors du périmètre sélectionné — {{status}} selon Valve)",
+    "editor.compatibility.globalDefaultAutomatic": "Utiliser la valeur globale par défaut (Automatique — état Steam d'origine)",
+    "editor.compatibility.globalDefaultFromValve": "Utiliser la valeur globale par défaut ({{status}} — selon Valve)",
+    "editor.compatibility.help": "« Utiliser la valeur globale par défaut » hérite du réglage du QAM. « Suivre Valve » l'ignore et conserve l'état Steam d'origine lorsque les données Valve sont indisponibles.",
+    "editor.compatibility.note": "Les catégories manuelles et par défaut sont vos choix, pas une certification Valve ni un résultat de performance d'émulateur.",
+    "editor.steamFields.title": "Champs d'informations Steam",
+    "editor.hltb.title": "Jeu HowLongToBeat",
+    "editor.hltb.help": "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien de page, pour choisir les temps affichés pour ce jeu. Laissez vide pour associer automatiquement.",
+    "editor.hltb.current": "Jeu actuel",
+    "editor.hltb.chosen": "(choisi)",
+    "editor.hltb.auto": "(trouvé automatiquement)",
+    "editor.hltb.apply": "Appliquer le jeu HLTB",
+    "editor.steamAppId.title": "App ID Steam",
+    "editor.steamAppId.help": "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
+    "editor.steamAppId.apply": "Appliquer l'App ID Steam",
+    "editor.shortcutName.title": "Nom du raccourci",
+    "editor.shortcutName.current": "Actuel : {{name}}",
+    "editor.shortcutName.noNative": "Steam n'a pas exposé de nom de raccourci natif",
+    "editor.shortcutName.loading": "Chargement du nom Steam…",
+    "editor.shortcutName.noOfficial": "Steam n'a pas renvoyé de nom officiel",
+    "editor.shortcutName.unavailable": "La gestion du nom du raccourci est indisponible",
+    "editor.shortcutName.apiUnavailable": "L'API native de nom de raccourci de Steam est indisponible",
+    "editor.shortcutName.notFound": "Raccourci Steam introuvable",
+    "editor.shortcutName.derivedId": "Ce raccourci a un ID dérivé et ne peut pas être renommé sans risque",
+    "editor.shortcutName.matches": "Le nom du raccourci correspond déjà à Steam",
+    "editor.shortcutName.diverged": "Ce nom de raccourci a été modifié en dehors de Decky Metadata. Le renommage et la restauration sont désactivés jusqu'à l'oubli de l'historique enregistré.",
+    "editor.shortcutName.useSteam": "Utiliser le nom Steam",
+    "editor.shortcutName.restore": "Restaurer le nom d'origine",
+    "editor.shortcutName.forget": "Oublier l'historique des noms",
+    "editor.confirm.useSteam.title": "Utiliser le nom Steam ?",
+    "editor.confirm.useSteam.ok": "Utiliser le nom Steam",
+    "editor.confirm.useSteam.body": "Remplacer « {{current}} » par « {{steam}} » ?",
+    "editor.confirm.restore.title": "Restaurer le nom d'origine du raccourci ?",
+    "editor.confirm.restore.ok": "Restaurer le nom d'origine",
+    "editor.confirm.restore.body": "Restaurer « {{name}} » ?",
+    "editor.confirm.forget.title": "Oublier l'historique des noms ?",
+    "editor.confirm.forget.ok": "Oublier l'historique",
+    "editor.confirm.forget.body": "Cela supprime uniquement l'historique de restauration enregistré par Decky Metadata. Steam ne modifiera pas le nom du raccourci.",
+    "steamMatch.title": "Trouver une correspondance Steam",
+    "steamMatch.help": "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez « Utiliser cette correspondance Steam ». La navigation ne modifie pas votre jeu.",
+    "steamMatch.currentAppId": "App ID Steam actuel : {{appId}}",
+    "steamMatch.ariaLabel": "Recherche de jeu Steam",
+    "steamMatch.search": "Rechercher sur Steam",
+    "steamMatch.searching": "Recherche sur Steam…",
+    "steamMatch.idle": "Saisissez un nom de jeu pour trouver des correspondances Steam.",
+    "steamMatch.empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
+    "steamMatch.row.appId": "App ID Steam : {{appId}}",
+    "steamMatch.row.current": " · Correspondance actuelle",
+    "steamMatch.row.selected": " · Sélectionné",
+    "steamMatch.loading": "Chargement des détails Steam…",
+    "steamMatch.detailsUnavailable": "Les détails Steam sont indisponibles. Vous pouvez tout de même utiliser cette correspondance.",
+    "steamMatch.artworkAlt": "Jaquette Steam de {{title}}",
+    "steamMatch.developer": "Développeur : {{names}}",
+    "steamMatch.developerUnavailable": "Développeur indisponible",
+    "steamMatch.release": "Sortie : {{date}}",
+    "steamMatch.releaseUnavailable": "Date de sortie indisponible",
+    "steamMatch.appType": "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
+    "steamMatch.applyNote": "Utiliser cette correspondance enregistre l'App ID Steam et charge ses métadonnées. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
+    "steamMatch.apply": "Utiliser cette correspondance Steam",
+    "steamMatch.cancel": "Annuler la sélection",
+    "hltbSearch.search": "Rechercher sur HLTB",
+    "hltbSearch.empty": "HowLongToBeat n'a trouvé aucun jeu.",
+    "hltbSearch.mainStory": "Histoire principale : {{hours}} heures",
+    "hltbSearch.noMainStory": "Pas encore de temps pour l'histoire principale",
+    "contextMenu.edit": "Métadonnées Decky…",
+    "conflict.enabled": "{{plugin}} est activé dans Decky Loader. Désactivez ce plugin pour utiliser {{feature}} ici.",
+    "conflict.enabledSaved": " Votre réglage est enregistré ; cette fonction reprendra lorsque l'autre plugin sera désactivé.",
+    "conflict.detectionUnavailable": "Impossible de vérifier les plugins en conflit. N'utilisez qu'un seul fournisseur de {{feature}} à la fois.",
+    "trailers.status.steamUiUnavailable": "Interface Steam indisponible",
+    "trailers.status.disabled": "Désactivé",
+    "trailers.status.homeOff": "Les bandes-annonces de l'accueil sont désactivées",
+    "trailers.status.selectHome": "Sélectionnez ou survolez un jeu sur l'accueil",
+    "trailers.status.waitingHome": "En attente d'affichage de la bande-annonce de l'accueil",
+    "trailers.status.detailOff": "Les bandes-annonces de la vue Détails sont désactivées",
+    "trailers.status.openPage": "Ouvrez la page principale d'un jeu dans la bibliothèque Steam ou sélectionnez un jeu sur l'accueil",
+    "trailers.status.gameUnavailable": "Le jeu Steam n'est pas disponible",
+    "trailers.status.notNative": "Ce jeu n'est pas un raccourci non Steam natif",
+    "trailers.status.matchesUnavailable": "Les correspondances Steam enregistrées ne sont pas disponibles",
+    "trailers.status.trailerUnavailable": "La bande-annonce du jeu est indisponible",
+    "trailers.status.waitingIgn": "En attente d'une bande-annonce IGN",
+    "trailers.status.waitingSteam": "En attente d'une bande-annonce Steam",
+    "protondb.error.load": "Impossible de charger les réglages des badges ProtonDB.",
+    "protondb.error.save": "Impossible d'enregistrer les réglages des badges ProtonDB.",
+    "toast.saved.title": "Enregistré",
+    "toast.saved.body": "Métadonnées enregistrées",
+    "toast.saveFailed.title": "Échec de l'enregistrement",
+    "toast.fetchFailed.title": "Échec de la récupération",
+    "toast.removed.title": "Supprimé",
+    "toast.removed.body": "Métadonnées supprimées",
+    "toast.removeFailed.title": "Échec de la suppression",
+    "toast.notApplicable.title": "Non applicable",
+    "toast.notLoaded.title": "Non chargé",
+    "toast.notLoaded.body": "Les métadonnées enregistrées ne sont pas encore chargées.",
+    "toast.hltbInvalid.title": "Jeu HLTB invalide",
+    "toast.hltbInvalid.body": "Saisissez un numéro de jeu HowLongToBeat ou un lien vers sa page.",
+    "toast.hltbNotFound.title": "Introuvable",
+    "toast.hltbNotFound.body": "HowLongToBeat n'a aucun jeu avec ce numéro.",
+    "toast.hltbCleared": "Jeu HLTB effacé",
+    "toast.hltbGame": "Jeu HLTB : {{name}}",
+    "toast.compatibility.title": "Compatibilité",
+    "toast.compatibility.saved": "État de compatibilité par défaut enregistré",
+    "toast.compatibility.scopeSaved": "Périmètre par défaut de compatibilité enregistré",
+    "toast.compatibility.saveFailed": "Impossible d'enregistrer l'état de compatibilité par défaut : {{error}}",
+    "toast.compatibility.scopeSaveFailed": "Impossible d'enregistrer le périmètre par défaut de compatibilité : {{error}}",
+    "toast.updates.title": "Mises à jour",
+    "toast.updates.channelFailed": "Impossible d'enregistrer le canal de mise à jour",
+    "toast.updates.autoFailed": "Impossible d'enregistrer le réglage de mise à jour automatique",
+    "toast.shortcutName.changed.title": "Nom du raccourci modifié",
+    "toast.shortcutName.changed.rename": "Steam a modifié ce raccourci avant qu'il puisse être renommé.",
+    "toast.shortcutName.changed.restore": "Steam a modifié ce raccourci avant qu'il puisse être restauré.",
+    "toast.shortcutName.updated.title": "Nom du raccourci mis à jour",
+    "toast.shortcutName.updated.body": "Steam a confirmé le nouveau nom du raccourci.",
+    "toast.shortcutName.notUpdated.title": "Le nom du raccourci n'a pas été mis à jour",
+    "toast.shortcutName.restored.title": "Nom du raccourci restauré",
+    "toast.shortcutName.restored.body": "Steam a confirmé le nom d'origine du raccourci.",
+    "toast.shortcutName.restoredHistoryFailed": "Steam a restauré le nom, mais l'historique enregistré n'a pas pu être effacé : {{error}}",
+    "toast.shortcutName.notRestored.title": "Le nom du raccourci n'a pas été restauré",
+    "toast.shortcutName.historyForgotten.title": "Historique des noms oublié",
+    "toast.shortcutName.historyForgotten.body": "Steam n'a pas modifié le nom du raccourci.",
+    "toast.shortcutName.historyNotCleared.title": "L'historique des noms n'a pas été effacé",
+    "updates.toast.checkFailed.title": "Échec de la vérification des mises à jour",
+    "updates.toast.checkFailed.body": "Impossible de vérifier les mises à jour",
+    "updates.toast.checkInterrupted": "Vérification des mises à jour interrompue. Réessayez.",
+    "updates.toast.installStarted.title": "Installation lancée",
+    "updates.toast.installRequested": "Installation de la version v{{version}} demandée via Decky Loader.",
+    "updates.toast.installFailed.title": "Échec de l'installation",
+    "updates.toast.handoffFailed": "Impossible de confirmer le transfert",
+    "updates.toast.revalidationFailed": "Échec de la revalidation",
+    "updates.toast.recordFailed": "Impossible d'enregistrer la demande d'installation",
+    "updates.toast.clearPendingFailed": "Impossible d'effacer l'installation en attente",
+};
+
+/**
+ * Locale discovery for the plugin interface.
+ *
+ * Decky Loader's own i18next instance is not a supported plugin API, so the
+ * plugin owns a small catalog bundle and follows the Steam language through the
+ * documented `SteamClient.Settings.GetCurrentLanguage()` call.
+ */
+const SUPPORTED_LOCALES = ["en", "fr"];
+const isLocale = (value) => typeof value === "string" && SUPPORTED_LOCALES.includes(value);
+/**
+ * Steam language names mapped to a canonical locale. Steam reports languages
+ * (not BCP-47 codes), so every advertised language must be listed explicitly.
+ * Languages without a catalog resolve to English until one ships.
+ */
+const STEAM_LANGUAGES = {
+    english: "en",
+    french: "fr",
+};
+/** Resolve a Steam language name or BCP-47 tag to a bundled locale. */
+const resolveLocale = (language) => {
+    if (!language)
+        return "en";
+    const normalized = language.trim().toLowerCase();
+    if (!normalized)
+        return "en";
+    const mapped = STEAM_LANGUAGES[normalized];
+    if (mapped)
+        return mapped;
+    // Accept "fr", "fr-FR", "fr_CA" in case Steam or a test supplies a tag.
+    const base = normalized.split(/[-_]/)[0];
+    return isLocale(base) ? base : "en";
+};
+/** Read the active Steam language, if the Steam client exposes it. */
+const readSteamLanguage = () => {
+    try {
+        const steam = globalThis?.SteamClient;
+        const value = steam?.Settings?.GetCurrentLanguage?.();
+        return typeof value === "string" ? value : null;
+    }
+    catch {
+        return null;
+    }
+};
+/** Read the browser language as a fallback before Steam answers. */
+const readBrowserLanguage = () => {
+    try {
+        const language = globalThis?.navigator?.language;
+        return typeof language === "string" ? language : null;
+    }
+    catch {
+        return null;
+    }
+};
+
+/**
+ * Plugin interface translations.
+ *
+ * The English catalog is the canonical source. Every other catalog must define
+ * exactly the same keys; `src/i18n/i18n.test.ts` enforces that parity.
+ *
+ * Conventions:
+ * - dot.notation, feature-prefixed (`qam.metadata.title`, `editor.save.action`);
+ * - `{{name}}` placeholders, interpolated from the params object.
+ */
+
+const CATALOGS = { en, fr };
+let activeLocale = "en";
+let activeCatalog = en;
+const listeners = new Set();
+const warnMissingKey = (key) => {
+    try {
+        // eslint-disable-next-line no-console
+        console.warn(`[i18n] missing translation key: ${key}`);
+    }
+    catch {
+        /* Console may be unavailable on the Deck. */
+    }
+};
+const lookup = (catalog, key) => catalog[key];
+const interpolate = (template, params) => {
+    if (!params)
+        return template;
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, name) => {
+        const value = params[name];
+        return value === undefined || value === null ? match : String(value);
+    });
+};
+/**
+ * Translate one key for the active locale.
+ *
+ * Missing locale entries fall back to English, and a key missing everywhere is
+ * returned verbatim (and reported once) so the interface never renders blank.
+ */
+const translate = (key, params) => {
+    const message = lookup(activeCatalog, key) ?? lookup(en, key);
+    if (message === undefined) {
+        warnMissingKey(String(key));
+        return String(key);
+    }
+    return interpolate(message, params);
+};
+/** Shorthand used across the interface. */
+const t = translate;
+const getLocale = () => activeLocale;
+/** Switch the active locale. Returns true when the locale actually changed. */
+const setLocale = (locale) => {
+    if (locale === activeLocale)
+        return false;
+    activeLocale = locale;
+    activeCatalog = CATALOGS[locale] ?? en;
+    for (const listener of listeners) {
+        try {
+            listener();
+        }
+        catch {
+            /* One subscriber must not block the others. */
+        }
+    }
+    return true;
+};
+/** Resolve the locale from Steam, then the browser, and apply it. */
+const refreshLocale = () => {
+    const language = readSteamLanguage() ?? readBrowserLanguage();
+    const locale = resolveLocale(language);
+    setLocale(locale);
+    return locale;
+};
+const subscribeLocale = (listener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+/**
+ * Re-render a React component when the locale changes, and re-check the Steam
+ * language on mount so a language switch is picked up without a plugin reload.
+ * Only top-level surfaces need this; children re-render through their parent.
+ */
+const useLocale = () => {
+    const [locale, setLocaleState] = SP_REACT.useState(getLocale);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = subscribeLocale(() => setLocaleState(getLocale()));
+        refreshLocale();
+        return unsubscribe;
+    }, []);
+    return locale;
+};
+
 // Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
 const colors = {
     accent: "#1a9fff",
@@ -388,33 +1208,43 @@ function CollapsibleSection({ title, icon, children, defaultExpanded = false }) 
 }
 
 const compatibilityDefaultOptions = [
-    { data: null, label: "Automatic — use matched Steam status" },
-    { data: 3, label: "Verified" },
-    { data: 2, label: "Playable" },
-    { data: 1, label: "Unsupported" },
-    { data: 0, label: "Unknown" },
+    { data: null, labelKey: "qam.compatibility.option.automatic" },
+    { data: 3, labelKey: "common.compatibility.verified" },
+    { data: 2, labelKey: "common.compatibility.playable" },
+    { data: 1, labelKey: "common.compatibility.unsupported" },
+    { data: 0, labelKey: "common.compatibility.unknown" },
 ];
 const compatibilityDefaultScopeOptions = [
-    { data: "steam", label: "Steam-matched games" },
-    { data: "no-steam", label: "Saved games without a Steam ID" },
-    { data: "metadata", label: "All games with saved metadata" },
-    { data: "all", label: "All non-Steam games" },
+    { data: "steam", labelKey: "qam.compatibility.scope.steam" },
+    { data: "no-steam", labelKey: "qam.compatibility.scope.noSteam" },
+    { data: "metadata", labelKey: "qam.compatibility.scope.metadata" },
+    { data: "all", labelKey: "qam.compatibility.scope.all" },
 ];
 const dropdownValueStyle$1 = { whiteSpace: "normal" };
 const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm };
-const scopeDescriptions = {
-    steam: "Applies to saved records with a valid Steam App ID.",
-    "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
-    metadata: "Applies to every saved metadata record, with or without a Steam ID.",
-    all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
+const scopeDescriptionKeys = {
+    steam: "qam.compatibility.scopeDesc.steam",
+    "no-steam": "qam.compatibility.scopeDesc.noSteam",
+    metadata: "qam.compatibility.scopeDesc.metadata",
+    all: "qam.compatibility.scopeDesc.all",
 };
 function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Compatibility status", icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Default compatibility status", layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
+    const categoryOptions = compatibilityDefaultOptions.map((option) => ({
+        data: option.data,
+        label: t(option.labelKey),
+    }));
+    const scopeOptions = compatibilityDefaultScopeOptions.map((option) => ({
+        data: option.data,
+        label: t(option.labelKey),
+    }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.compatibility.title"), icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compatibility.label.default"), layout: "below", childrenContainerWidth: "max", rgOptions: categoryOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
                             onCompatibilityDefaultMenuWillOpen("category");
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Apply default to", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: categoryOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compatibility.label.scope"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: scopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                             compatibilityDefaultBusy ||
                             compatibilityDefaultScopeBusy ||
-                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.` }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: "Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification." }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
+                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: scopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.compatibility.scopeHelp", {
+                                description: t(scopeDescriptionKeys[compatibilityDefaultScope]),
+                            }) }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: t("qam.compatibility.note") }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: compatibilityDefaultError })) : null] }) })] }));
 }
 
 const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
@@ -581,11 +1411,11 @@ class PluginConflictMonitor {
 }
 function featureConflictNotice(conflict, feature, savedEnabled) {
     if (conflict.pluginName) {
-        return `${conflict.pluginName} is enabled in Decky Loader. Disable that plugin to use ${feature} here.` +
-            (savedEnabled ? " Your setting is saved; this feature will resume when the other plugin is disabled." : "");
+        return t("conflict.enabled", { plugin: conflict.pluginName, feature }) +
+            (savedEnabled ? t("conflict.enabledSaved") : "");
     }
     return conflict.detectionAvailable ? ""
-        : `Could not check for conflicting plugins. Use only one ${feature} provider at a time.`;
+        : t("conflict.detectionUnavailable", { feature });
 }
 const pluginConflicts = new PluginConflictMonitor();
 function startPluginConflicts() {
@@ -595,40 +1425,42 @@ function startPluginConflicts() {
 
 const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg };
 const qualityOptions = [
-    { data: "auto", label: "Auto — match display" },
+    { data: "auto", labelKey: "common.quality.auto" },
     { data: 720, label: "720p" },
     { data: 1080, label: "1080p" },
     { data: 1440, label: "1440p" },
     { data: 2160, label: "2160p" },
 ];
+const qualityLabel = (option) => option.labelKey ? t(option.labelKey) : option.label ?? "";
 function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const disabled = !state.settingsLoaded || state.busy;
     const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
-    const conflictNotice = featureConflictNotice(state.conflict, "game trailers", state.settings.enabled);
+    const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.feature"), state.settings.enabled);
+    const selectedQuality = qualityOptions.find((option) => option.data === state.settings.quality);
     const display = state.displayWidth && state.displayHeight
-        ? `${state.displayWidth} × ${state.displayHeight} pixels`
-        : "Unavailable";
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Game trailers", icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable trailers", description: "Main switch for Detail and Home trailers. Turning it off keeps your choices for each view.", checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: "Detail view" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Detail view trailers", description: "Play a trailer over the artwork on a game's main Library page.", checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Detail fade-in delay", description: "Wait from opening the game page before showing a ready trailer.", value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Detail trailer audio", description: "Fade in audio when a Detail trailer appears. Home trailers always stay muted.", checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Hide game logo during Detail trailers", description: "Hide the game page logo while a trailer is visible. The logo returns when playback stops.", checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: "Home view" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home view trailers", description: "Play a muted trailer over the Home background for the selected or hovered game.", checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Home fade-in delay", description: "Wait before looking for a trailer. Moving to another game restarts this delay.", value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Video quality", layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Big Picture display", childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [display, " \u00B7 target ", state.targetHeight, "p"] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback." }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+        ? t("qam.trailers.display", { width: state.displayWidth, height: state.displayHeight })
+        : t("common.unavailable");
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enable"), description: t("qam.trailers.enableDesc"), checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: t("qam.trailers.detail.heading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detail.enable"), description: t("qam.trailers.detail.enableDesc"), checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detail.delay"), description: t("qam.trailers.detail.delayDesc"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detail.audio"), description: t("qam.trailers.detail.audioDesc"), checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detail.hideLogo"), description: t("qam.trailers.detail.hideLogoDesc"), checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: t("qam.trailers.home.heading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.home.enable"), description: t("qam.trailers.home.enableDesc"), checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.home.delay"), description: t("qam.trailers.home.delayDesc"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.quality"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions.map((option) => ({ data: option.data, label: qualityLabel(option) })), selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: selectedQuality ? qualityLabel(selectedQuality) : "" })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.bigPicture"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.trailers.target", { display, height: state.targetHeight }) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: t("qam.trailers.help") }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Logs", icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? "Loading..." : "View Logs" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Debug Logging", description: "Enables verbose logging for troubleshooting.", bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? t("common.loading") : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debug"), description: t("qam.logs.debugDesc"), bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
 }
 
 function MiniAchievementsSection({ state, onEnabledChange }) {
     const enableDisabled = !state.settingsLoaded || state.busy ||
         (Boolean(state.conflict.pluginName) && !state.enabled);
-    const conflictNotice = featureConflictNotice(state.conflict, "mini achievements", state.enabled);
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Mini achievements", icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable mini achievements", description: "Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default.", checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: "This restores Steam's display; it does not add achievement tracking to non-Steam games." }), conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
+    const conflictNotice = featureConflictNotice(state.conflict, t("qam.achievements.feature"), state.enabled);
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.achievements.title"), icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.achievements.enable"), description: t("qam.achievements.enableDesc"), checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: t("qam.achievements.note") }), conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
 }
 
 const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md };
 function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Metadata", icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Detected non-Steam games", ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Metadata saved", ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: ["Missing metadata", ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh metadata") }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || "Refreshing metadata..." })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: "Find and save metadata for detected non-Steam games that do not have a match yet." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Metadata cache" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." })) : ("Clear cache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: "Clear saved matches and metadata so games can be matched again." }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: "Delisted Steam games" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: "Refreshing..." })) : ("Refresh delisted games") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedCountText }) }), delistedDateText ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedDateText }) })) : null] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.metadata.title"), icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("qam.metadata.detected"), ":"] }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("qam.metadata.saved"), ":"] }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("b", { children: [t("qam.metadata.missing"), ":"] }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("common.refreshing") })) : (t("qam.metadata.refresh")) }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || t("qam.metadata.refreshing") })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: t("qam.metadata.help") }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.cache.title") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("common.clearing") })) : (t("qam.cache.clear")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: t("qam.cache.help") }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.delisted.title") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("common.refreshing") })) : (t("qam.delisted.refresh")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedCountText }) }), delistedDateText ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedDateText }) })) : null] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
-    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: "Plugin Logs", strOKButtonText: "OK", onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx("div", { style: {
+    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: t("qam.logs.modalTitle"), strOKButtonText: t("common.ok"), onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx("div", { style: {
                 maxHeight: "60vh",
                 overflowY: "auto",
                 fontFamily: "monospace",
@@ -639,7 +1471,7 @@ function PluginLogModal({ logs, closeModal }) {
                 padding: "10px",
                 borderRadius: "4px",
                 userSelect: "text",
-            }, children: logs || "No recent logs" }) }));
+            }, children: logs || t("qam.logs.empty") }) }));
 }
 
 // Must equal plugin.json "name" (Decky's find_plugin_folder identity). Space,
@@ -885,7 +1717,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                 if (activeCheckId.current === checkId) {
                     activeCheckId.current += 1;
                     inFlightCheck.current = null;
-                    dispatch({ type: "CHECK_TIMEOUT", message: "Update check interrupted. Check again." });
+                    dispatch({ type: "CHECK_TIMEOUT", message: t("updates.toast.checkInterrupted") });
                     logUpdate(null, "check_timeout", { checkId });
                 }
             }, UPDATE_CHECK_UI_TIMEOUT_MS);
@@ -899,11 +1731,11 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                 const elapsed_ms = Math.round(performance.now() - checkStart);
                 if (res.status === "failed") {
                     logUpdate(null, "check_failed", { message: res.message || "unknown", elapsed_ms });
-                    dispatch({ type: "CHECK_FAILED", message: res.message || "Failed to check for updates", result: res });
+                    dispatch({ type: "CHECK_FAILED", message: res.message || t("updates.toast.checkFailed.body"), result: res });
                     if (opts.notify && opts.force) {
                         toaster.toast({
-                            title: "Update Check Failed",
-                            body: res.message || "Failed to check for updates",
+                            title: t("updates.toast.checkFailed.title"),
+                            body: res.message || t("updates.toast.checkFailed.body"),
                             duration: 3000
                         });
                     }
@@ -939,7 +1771,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                 dispatch({ type: "CHECK_FAILED", message: msg });
                 if (opts.notify && opts.force) {
                     toaster.toast({
-                        title: "Update Check Failed",
+                        title: t("updates.toast.checkFailed.title"),
                         body: msg,
                         duration: 3000
                     });
@@ -968,7 +1800,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
         try {
             const confirmRes = await confirmUpdateInstallHandoff(version);
             if ("status" in confirmRes && (confirmRes.status === "failed" || confirmRes.status === "skipped")) {
-                throw new Error(confirmRes.message || "Failed to confirm handoff");
+                throw new Error(confirmRes.message || t("updates.toast.handoffFailed"));
             }
         }
         catch (err) {
@@ -978,8 +1810,8 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
         logUpdate(traceId, "handoff_resolved", { status: "success", elapsed_ms: Math.round(performance.now() - handoffStart) });
         onInstallVersionConfirmed?.(version);
         toaster.toast({
-            title: "Installation Initiated",
-            body: `Requested installation of v${version} via Decky Loader.`,
+            title: t("updates.toast.installStarted.title"),
+            body: t("updates.toast.installRequested", { version }),
             duration: 3000
         });
     }, [currentVersion, onInstallVersionConfirmed, clearCheckTimeout]);
@@ -1117,7 +1949,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                 !("version" in revalRes)) {
                 const msg = "message" in revalRes ? revalRes.message : "unknown";
                 logUpdate(updateTraceId, "revalidate_failed", { message: msg, elapsed_ms: revalElapsed });
-                throw new Error(msg || "Revalidation failed");
+                throw new Error(msg || t("updates.toast.revalidationFailed"));
             }
             logUpdate(updateTraceId, "revalidate_success", { version: revalRes.version, elapsed_ms: revalElapsed });
             const installType = targetCandidate.action === "downgrade_to_stable"
@@ -1128,7 +1960,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
             logUpdate(updateTraceId, "record_install_start", { version: revalRes.version });
             const recordRes = await recordUpdateInstallRequested(payload);
             if ("status" in recordRes && (recordRes.status === "failed" || recordRes.status === "skipped")) {
-                throw new Error(recordRes.message || "Failed to record install request");
+                throw new Error(recordRes.message || t("updates.toast.recordFailed"));
             }
             logUpdate(updateTraceId, "record_install_success", { version: revalRes.version, elapsed_ms: Math.round(performance.now() - recordStart) });
             activeCheckId.current += 1;
@@ -1163,7 +1995,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                         try {
                             const clearRes = await clearPendingUpdateInstall(revalRes.version);
                             if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-                                throw new Error(clearRes.message || "Failed to clear pending install");
+                                throw new Error(clearRes.message || t("updates.toast.clearPendingFailed"));
                             }
                         }
                         catch (clearErr) {
@@ -1173,7 +2005,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
                         void checkForUpdates({ force: false, notify: false, source: "automatic" });
                         dispatch({ type: "INSTALL_FAILED", message: msg });
                         toaster.toast({
-                            title: "Installation Failed",
+                            title: t("updates.toast.installFailed.title"),
                             body: msg,
                             duration: 4000
                         });
@@ -1190,7 +2022,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
             try {
                 const clearRes = await clearPendingUpdateInstall(targetCandidate.version);
                 if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-                    throw new Error(clearRes.message || "Failed to clear pending install");
+                    throw new Error(clearRes.message || t("updates.toast.clearPendingFailed"));
                 }
             }
             catch (clearErr) {
@@ -1200,7 +2032,7 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
             void checkForUpdates({ force: false, notify: false, source: "automatic" });
             dispatch({ type: "INSTALL_FAILED", message: msg });
             toaster.toast({
-                title: "Installation Failed",
+                title: t("updates.toast.installFailed.title"),
                 body: msg,
                 duration: 4000
             });
@@ -1252,7 +2084,7 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     });
     const handleToggleChannel = (checked) => {
         if (checked) {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Enable Development Releases?", onOK: () => onToggleUpdateChannel(true), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: "Includes prerelease builds intended for testing. These builds may contain regressions." }) }));
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.updates.confirmDev.title"), onOK: () => onToggleUpdateChannel(true), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.updates.confirmDev.body") }) }));
         }
         else {
             onToggleUpdateChannel(false);
@@ -1260,7 +2092,7 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     };
     const handleInstallClick = (targetCandidate) => {
         if (targetCandidate.action === "downgrade_to_stable") {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Revert to Stable?", onOK: () => handleInstall(targetCandidate), children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: ["Are you sure you want to revert to stable v", targetCandidate.version, "? This is a downgrade and could result in data loss or configuration issues."] }) }));
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.updates.confirmRevert.title"), onOK: () => handleInstall(targetCandidate), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.updates.confirmRevert.body", { version: targetCandidate.version }) }) }));
         }
         else {
             void handleInstall(targetCandidate);
@@ -1272,41 +2104,43 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     const getActionText = (c) => {
         switch (c.action) {
             case "move_to_stable":
-                return `Move to Stable v${c.version}`;
+                return t("qam.updates.action.moveToStable", { version: c.version });
             case "downgrade_to_stable":
-                return `Revert to Stable v${c.version}`;
+                return t("qam.updates.action.revertStable", { version: c.version });
             default:
                 if (c.channel === "development") {
-                    return `Install development build v${c.version}`;
+                    return t("qam.updates.action.installDev", { version: c.version });
                 }
-                return `Update to v${c.version}`;
+                return t("qam.updates.action.update", { version: c.version });
         }
     };
     const getStatusContent = () => {
         if (isChecking) {
-            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }), SP_JSX.jsx("span", { children: "Checking..." })] }));
+            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }), SP_JSX.jsx("span", { children: t("qam.updates.checking") })] }));
         }
         if (errorMsg) {
             return (SP_JSX.jsx("span", { style: { color: "#f87171" }, children: errorMsg.includes("interrupted")
-                    ? `Check interrupted after ${UPDATE_CHECK_UI_TIMEOUT_MS / 1000} seconds`
-                    : "Failed to check" }));
+                    ? t("qam.updates.interrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+                    : t("qam.updates.failed") }));
         }
         if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: { color: "#4ade80" }, children: "Up to date" });
+            return SP_JSX.jsx("span", { style: { color: "#4ade80" }, children: t("qam.updates.upToDate") });
         }
         if (checkResult?.status === "available") {
             return (SP_JSX.jsx("span", { style: { color: "#60a5fa" }, children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
-                    ? "Latest available development build"
-                    : "Update available" }));
+                    ? t("qam.updates.latestDev")
+                    : t("qam.updates.available") }));
         }
-        return SP_JSX.jsx("span", { children: "Never checked" });
+        return SP_JSX.jsx("span", { children: t("qam.updates.neverChecked") });
     };
     const lastCheckedText = checkResult?.checked_at
-        ? `Last checked: ${new Date(checkResult.checked_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`
+        ? t("qam.updates.lastChecked", {
+            date: new Date(checkResult.checked_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }),
+        })
         : undefined;
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "Updates", icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Installed Version", childrenLayout: "below", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? "(Local Build)" : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Receive development releases", description: "Includes prerelease builds intended for testing. These builds may contain regressions.", checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Automatically check for updates", description: "Checks in the background while the plugin is loaded.", checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Status", description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMsg }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsxs("div", { children: ["Try again after ", new Date(checkResult.retry_after).toLocaleString()] }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: "Candidate", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsxs("div", { children: ["New version: v", candidate.version, " (", candidate.channel, ")"] }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: "Warning: Reverting to stable is a downgrade." }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? "Waiting for Decky..." : "Preparing..." })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild && candidate.channel !== "stable"
-                            ? "Local builds can only self-update to a stable release. Install this development release manually from GitHub Releases."
-                            : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases." }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: "View Release Notes" }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: "Check now" })] }) }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.updates.title"), icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.updates.installed"), childrenLayout: "below", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.updates.localBuild") : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.updates.dev"), description: t("qam.updates.devDesc"), checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.updates.auto"), description: t("qam.updates.autoDesc"), checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.updates.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMsg }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.updates.retryAfter", { date: new Date(checkResult.retry_after).toLocaleString() }) }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.updates.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsx("div", { children: t("qam.updates.newVersion", { version: candidate.version, channel: candidate.channel }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: t("qam.updates.downgradeWarning") }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? t("qam.updates.waitingDecky") : t("qam.updates.preparing") })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild && candidate.channel !== "stable"
+                            ? t("qam.updates.localOnly")
+                            : t("qam.updates.manualOnly") }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.updates.releaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: t("qam.updates.checkNow") })] }) }) })] }));
 }
 
 const STEAM_DECK_CONTROLLER_TYPE = 4;
@@ -1434,7 +2268,7 @@ const formatConnectedControllerTypes = (types) => {
 };
 
 function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
-    return (SP_JSX.jsx(CollapsibleSection, { title: "Versions", icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("div", { children: ["Decky Metadata: ", pluginVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Decky: ", deckyVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["SteamOS: ", steamosVersion.trim() || "Unknown"] }), SP_JSX.jsxs("div", { children: ["Controller Types: ", formatConnectedControllerTypes(controllerTypes)] })] }) }) }) }));
+    return (SP_JSX.jsx(CollapsibleSection, { title: t("qam.versions.title"), icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsx("div", { children: t("qam.versions.plugin", { version: pluginVersion.trim() || t("common.unknown") }) }), SP_JSX.jsx("div", { children: t("qam.versions.decky", { version: deckyVersion.trim() || t("common.unknown") }) }), SP_JSX.jsx("div", { children: t("qam.versions.steamos", { version: steamosVersion.trim() || t("common.unknown") }) }), SP_JSX.jsx("div", { children: t("qam.versions.controllers", { types: formatConnectedControllerTypes(controllerTypes) }) })] }) }) }) }));
 }
 
 const PROTONDB_COLORS = {
@@ -1451,9 +2285,9 @@ function ProtonDbIcon({ tier, size }) {
 }
 
 const coverPositionOptions = [
-    { data: "bottom-left", label: "Bottom left" },
-    { data: "top-left", label: "Top left" },
-    { data: "top-right", label: "Top right" },
+    { data: "bottom-left", labelKey: "qam.protondb.position.bottomLeft" },
+    { data: "top-left", labelKey: "qam.protondb.position.topLeft" },
+    { data: "top-right", labelKey: "qam.protondb.position.topRight" },
 ];
 const dropdownValueStyle = { whiteSpace: "normal" };
 function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettingsChange, onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef, }) {
@@ -1461,11 +2295,15 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
-    const conflictNotice = featureConflictNotice(snapshot.conflict, "ProtonDB badges", settings.enabled);
+    const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.feature"), settings.enabled);
+    const positionOptions = coverPositionOptions.map((option) => ({
+        data: option.data,
+        label: t(option.labelKey),
+    }));
     const updateSetting = (key, value) => {
         void onSettingsChange({ ...settings, [key]: value });
     };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.protondb.title"), icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enable"), description: t("qam.protondb.enableDesc"), checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.home"), description: t("qam.protondb.homeDesc"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.library"), description: t("qam.protondb.libraryDesc"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameView"), description: t("qam.protondb.gameViewDesc"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.store"), description: t("qam.protondb.storeDesc"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnly"), description: t("qam.protondb.focusOnlyDesc"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.position"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: positionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: positionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.loading") })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.note") }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
 
 const DEFAULT_HLTB_SETTINGS = {
@@ -1501,28 +2339,30 @@ function normalizeHltbSettings(value) {
 }
 
 const styles = [
-    { data: "default", label: "Default" }, { data: "clean", label: '"Clean"' },
-    { data: "clean-left", label: '"Clean" Left' }, { data: "clean-default", label: '"Clean" Default' },
+    { data: "default", labelKey: "qam.hltb.style.default" },
+    { data: "clean", labelKey: "qam.hltb.style.clean" },
+    { data: "clean-left", labelKey: "qam.hltb.style.cleanLeft" },
+    { data: "clean-default", labelKey: "qam.hltb.style.cleanDefault" },
 ];
 const statControls = [
-    ["showMain", "Toggle main stat", "Shows/Hides just the main stat"],
-    ["showMainPlus", "Toggle main+ stat", "Shows/Hides just the main+ stat"],
-    ["showComplete", "Toggle completionist stat", "Shows/Hides just the completionist stat"],
-    ["showAllStyles", 'Toggle "all play styles" stat', "Shows/Hides just the all play styles stat"],
+    ["showMain", "qam.hltb.stat.main", "qam.hltb.stat.mainDesc"],
+    ["showMainPlus", "qam.hltb.stat.mainPlus", "qam.hltb.stat.mainPlusDesc"],
+    ["showComplete", "qam.hltb.stat.complete", "qam.hltb.stat.completeDesc"],
+    ["showAllStyles", "qam.hltb.stat.allStyles", "qam.hltb.stat.allStylesDesc"],
 ];
 const cacheStatusText = {
-    clearing: ["active", "Clearing HLTB cache..."],
-    cleared: ["success", "HLTB cache cleared. Times load again when you open a game."],
-    failed: ["error", "The HLTB cache could not be cleared."],
+    clearing: ["active", "qam.hltb.cacheClearing"],
+    cleared: ["success", "qam.hltb.cacheCleared"],
+    failed: ["error", "qam.hltb.cacheFailed"],
 };
 function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onStyleMenuWillOpen, onStyleControlRef, }) {
     const controlsDisabled = !settingsLoaded || busy;
     const disabled = controlsDisabled || !settings.enabled;
     const appearance = settings.appearance;
-    const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
+    const notice = featureConflictNotice(conflict, t("qam.hltb.feature"), settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
-    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.enable"), description: t("qam.hltb.enableDesc"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.style"), description: t("qam.hltb.styleDesc"), rgOptions: styles.map(style => ({ data: style.data, label: t(style.labelKey) })), selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideViewDetails"), description: t("qam.hltb.hideViewDetailsDesc"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, labelKey, descriptionKey]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t(labelKey), description: t(descriptionKey), checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("common.clearing") }) : t("qam.hltb.clearCache") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: t(cacheStatusText[cacheStatus][1]) }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.appearance"), description: t("qam.hltb.appearanceDesc"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacity"), description: t("qam.hltb.opacityDesc"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadow"), description: t("qam.hltb.textShadowDesc"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSize"), description: t("qam.hltb.textSizeDesc"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.border"), description: t("qam.hltb.borderDesc"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loading") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -8517,7 +9357,7 @@ const removeOurEntry = (items) => {
 const insertOurEntry = (items, appId) => {
     if (!isNativeNonSteamShortcut(getNativeOverview(appId)))
         return false;
-    const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: t("contextMenu.edit") }, ENTRY_KEY));
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
     items.splice(insertAt, 0, entry);
@@ -13166,7 +14006,7 @@ const runtimeMissingScript = `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
   if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
-    return { status: 'Steam UI unavailable', runtimeMissing: true };
+    return { status: t("trailers.status.steamUiUnavailable"), runtimeMissing: true };
   }
   // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
   if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
@@ -13854,24 +14694,24 @@ class TrailerController {
     async resolveCurrentIdentity() {
         const route = currentRoutePath();
         if (!this.isEffectivelyEnabled())
-            return { identity: null, status: "Disabled" };
+            return { identity: null, status: t("trailers.status.disabled") };
         const home = isTrailerHomeRoute(route);
         const selection = home ? this.homeSelection : null;
         if (home && !this.settings.homeEnabled)
-            return { identity: null, status: "Home view trailers are off" };
+            return { identity: null, status: t("trailers.status.homeOff") };
         if (home && !selection) {
-            return { identity: null, status: "Select or hover over a game on Home" };
+            return { identity: null, status: t("trailers.status.selectHome") };
         }
         if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
             if (this.homeDelayTimer === undefined)
                 this.scheduleHomeIdentity();
-            return { identity: null, status: "Waiting to show the Home trailer" };
+            return { identity: null, status: t("trailers.status.waitingHome") };
         }
         if (!home && !this.settings.detailEnabled)
-            return { identity: null, status: "Detail view trailers are off" };
+            return { identity: null, status: t("trailers.status.detailOff") };
         const pageAppId = home ? selection.appId : parseTrailerRootRoute(route);
         if (!pageAppId)
-            return { identity: null, status: "Open a game's main Steam Library page or select a game on Home" };
+            return { identity: null, status: t("trailers.status.openPage") };
         if (pageAppId !== this.pageAppId) {
             this.pageAppId = pageAppId;
             this.pageOverview = null;
@@ -13882,20 +14722,20 @@ class TrailerController {
         }
         if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
             !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
-            return { identity: null, status: "Steam game is not available" };
+            return { identity: null, status: t("trailers.status.gameUnavailable") };
         }
         if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-            return { identity: null, status: "This game is not a native non-Steam shortcut" };
+            return { identity: null, status: t("trailers.status.notNative") };
         }
         if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
             try {
                 await ensureMetadataCache();
             }
             catch {
-                return { identity: null, status: "Saved Steam matches are not available" };
+                return { identity: null, status: t("trailers.status.matchesUnavailable") };
             }
             if (!this.isEffectivelyEnabled())
-                return { identity: null, status: "Disabled" };
+                return { identity: null, status: t("trailers.status.disabled") };
         }
         const metadata = metadataCache[String(pageAppId)] ?? null;
         const context = {
@@ -13906,7 +14746,7 @@ class TrailerController {
             ? resolveTrailerAppSource({ ...context, appId: pageAppId })
             : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
         if (!resolved)
-            return { identity: null, status: "Game trailer is unavailable" };
+            return { identity: null, status: t("trailers.status.trailerUnavailable") };
         const gameUrl = ignGameUrl(metadata);
         const title = nativeTrailerGameTitle(this.pageOverview) ||
             (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
@@ -13918,7 +14758,9 @@ class TrailerController {
                 ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
             },
             ignLookup: title ? { title, gameUrl } : null,
-            status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for a Steam trailer",
+            status: resolved.sourceAppId === null
+                ? t("trailers.status.waitingIgn")
+                : t("trailers.status.waitingSteam"),
         };
     }
     async refreshPageIdentity() {
@@ -15646,7 +16488,7 @@ class ProtonDbBadgeController {
             this.publish({
                 settingsLoaded: false,
                 busy: false,
-                settingsError: errorText(error, "Unable to load ProtonDB badge settings."),
+                settingsError: errorText(error, t("protondb.error.load")),
             });
         });
     }
@@ -15686,7 +16528,7 @@ class ProtonDbBadgeController {
                 return false;
             this.publish({
                 busy: false,
-                settingsError: errorText(error, "Unable to save ProtonDB badge settings."),
+                settingsError: errorText(error, t("protondb.error.save")),
             });
             return false;
         }
@@ -15796,12 +16638,12 @@ const findScrollViewport = (element) => {
 const scanCompleteMessage = (progress) => {
     const total = Number(progress.total || 0);
     if (!total)
-        return "Refresh complete";
+        return t("qam.metadata.refreshComplete");
     const assigned = Number(progress.assigned || 0);
     const failed = Number(progress.failed || 0);
     return failed
-        ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
-        : `Refresh complete: ${assigned}/${total} saved`;
+        ? t("qam.metadata.refreshCompleteFailed", { assigned, total, failed })
+        : t("qam.metadata.refreshCompleteSaved", { assigned, total });
 };
 const scanCompleteStatusKind = (progress) => {
     const total = Number(progress.total || 0);
@@ -15809,17 +16651,22 @@ const scanCompleteStatusKind = (progress) => {
     const failed = Number(progress.failed || 0);
     return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
-const epochToUsDate = (value) => {
+const localeDate = (value) => {
     if (!value)
         return "";
     const date = new Date(value * 1000);
     if (Number.isNaN(date.getTime()))
         return "";
-    const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(date.getUTCDate()).padStart(2, "0");
-    return `${mm}-${dd}-${date.getUTCFullYear()}`;
+    try {
+        return new Intl.DateTimeFormat(getLocale(), { dateStyle: "medium" }).format(date);
+    }
+    catch {
+        return date.toISOString().slice(0, 10);
+    }
 };
 const Content = () => {
+    // Re-check the Steam language whenever the panel mounts or the locale changes.
+    useLocale();
     const [trailerSnapshot, setTrailerSnapshot] = SP_REACT.useState(trailerController.getSnapshot());
     SP_REACT.useEffect(() => trailerController.subscribe(() => {
         setTrailerSnapshot(trailerController.getSnapshot());
@@ -16161,7 +17008,7 @@ const Content = () => {
                 synchronizeCompatibilityPolicySave();
                 return;
             }
-            setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
+            setCompatibilityDefaultError(t("qam.compatibility.loadFailed", { error: String(error) }));
             warn("bridge", "compatibility default load failed", error);
         });
         const unsubscribeRevision = subscribeCompatibilityRevision(() => {
@@ -16289,14 +17136,14 @@ const Content = () => {
             if (noteCompatibilityDropdownSelectionSaved()) {
                 setCompatibilityDropdownReturnVersion((version) => version + 1);
             }
-            toastSuccess("Compatibility", "Default compatibility status saved");
+            toastSuccess(t("toast.compatibility.title"), t("toast.compatibility.saved"));
         }
         catch (error) {
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            const message = `Compatibility default could not be saved: ${String(error)}`;
+            const message = t("toast.compatibility.saveFailed", { error: String(error) });
             settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
-            toastError("Compatibility", message);
+            toastError(t("toast.compatibility.title"), message);
             warn("bridge", "compatibility default save failed", error);
         }
     };
@@ -16320,14 +17167,14 @@ const Content = () => {
             if (noteCompatibilityDropdownSelectionSaved()) {
                 setCompatibilityDropdownReturnVersion((version) => version + 1);
             }
-            toastSuccess("Compatibility", "Default compatibility scope saved");
+            toastSuccess(t("toast.compatibility.title"), t("toast.compatibility.scopeSaved"));
         }
         catch (error) {
             if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
                 return;
-            const message = `Compatibility default scope could not be saved: ${String(error)}`;
+            const message = t("toast.compatibility.scopeSaveFailed", { error: String(error) });
             settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
-            toastError("Compatibility", message);
+            toastError(t("toast.compatibility.title"), message);
             warn("bridge", "compatibility default scope save failed", error);
         }
     };
@@ -16343,7 +17190,7 @@ const Content = () => {
                     automatic_update_checks: automaticUpdateChecks,
                 }, saved);
                 setUpdateChannelState(rolledBack.update_channel);
-                toastError("Updates", saved.message || "Update channel could not be saved");
+                toastError(t("toast.updates.title"), saved.message || t("toast.updates.channelFailed"));
                 return;
             }
             setUpdateChannelState(saved.update_channel);
@@ -16365,7 +17212,7 @@ const Content = () => {
                     automatic_update_checks: previous,
                 }, saved);
                 setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
-                toastError("Updates", saved.message || "Automatic update setting could not be saved");
+                toastError(t("toast.updates.title"), saved.message || t("toast.updates.autoFailed"));
                 return;
             }
             setUpdateChannelState(saved.update_channel);
@@ -16386,7 +17233,7 @@ const Content = () => {
             setBusy(false);
             setScanStatusKind("error");
             setScanMessage(String(error));
-            toastError("Metadata refresh failed", String(error));
+            toastError(t("qam.metadata.refreshFailed"), String(error));
         };
         try {
             await startScanMissing(games);
@@ -16416,7 +17263,7 @@ const Content = () => {
                 setBusy(false);
                 setScanStatusKind(scanCompleteStatusKind(progress));
                 setScanMessage(scanCompleteMessage(progress));
-                toastSuccess("Metadata", "Refresh complete");
+                toastSuccess(t("qam.metadata.title"), t("qam.metadata.refreshComplete"));
             }
             catch (error) {
                 if (!poll.stopped)
@@ -16441,10 +17288,10 @@ const Content = () => {
             }
             setMetadataCount(Object.keys(metadataCache).length);
             updateMissingCount(games);
-            toastSuccess("Cache", "Metadata cache cleared");
+            toastSuccess(t("qam.cache.title"), t("qam.cache.cleared"));
         }
         catch (error) {
-            toastError("Cache clear failed", String(error));
+            toastError(t("qam.cache.clearFailed"), String(error));
         }
         finally {
             setCacheBusy(false);
@@ -16457,14 +17304,14 @@ const Content = () => {
         try {
             const result = await refreshDelistedIndex();
             if (!result.ok) {
-                throw new Error("Delisted index refresh failed");
+                throw new Error(t("qam.delisted.refreshFailed"));
             }
-            toastSuccess("Delisted Steam games", "Delisted Steam games updated");
+            toastSuccess(t("qam.delisted.title"), t("qam.delisted.updated"));
             await loadDelistedStatus();
         }
         catch (error) {
             warn("bridge", "delisted index refresh failed", error);
-            toastError("Delisted Steam games", "Delisted Steam games refresh failed");
+            toastError(t("qam.delisted.title"), t("qam.delisted.refreshFailed"));
         }
         finally {
             setDelistedBusy(false);
@@ -16481,17 +17328,17 @@ const Content = () => {
         }
         catch (error) {
             warn("bridge", "plugin log load failed", error);
-            toastError("Logs", "Plugin logs could not be loaded");
+            toastError(t("qam.logs.title"), t("qam.logs.loadFailed"));
         }
         finally {
             setLogsBusy(false);
         }
     };
     const delistedCountText = delistedStatus?.count && delistedStatus.fetched_at
-        ? `Delisted games: ${delistedStatus.count.toLocaleString("en-US")}`
-        : "Delisted Steam games not downloaded yet";
+        ? t("qam.delisted.count", { count: delistedStatus.count.toLocaleString(getLocale()) })
+        : t("qam.delisted.notDownloaded");
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
-        ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
+        ? t("qam.delisted.lastUpdated", { date: localeDate(delistedStatus.fetched_at) })
         : "";
     // A native dropdown remounts QAM; reopen its section before restoring focus.
     const returningDropdown = hasCompatibilityDropdownReturn()
@@ -16959,7 +17806,7 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
         catch {
             if (!isCurrent())
                 return;
-            setPreviewError("Steam details are unavailable. You can still use this match.");
+            setPreviewError(t("steamMatch.detailsUnavailable"));
         }
         finally {
             if (isCurrent())
@@ -16973,7 +17820,11 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
             return;
         await onApplyRef.current(selected.steam_appid);
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Find a Steam match", children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game." }), matchedSteamAppId ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Current Steam App ID: ${matchedSteamAppId}` }) : null, SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": "Steam game search", value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? "Searching Steam..." : "Search Steam" })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? "Enter a game name to find Steam matches." : null, status === "loading" ? "Searching Steam..." : null, status === "empty" ? "No Steam matches found. Try another name or use the Steam App ID field below." : null, status === "error" ? searchError : null] }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, style: rowStackStyle, children: [SP_JSX.jsxs(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, "aria-pressed": selected?.steam_appid === candidate.steam_appid, disabled: disabled, onClick: () => void select(candidate), style: editorSteamMatchCardStyle, children: [candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : null, SP_JSX.jsxs("div", { style: { minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("b", { children: candidate.title }), SP_JSX.jsxs("div", { style: compactTextStyle, children: [`Steam App ID: ${candidate.steam_appid}`, candidate.steam_appid === matchedSteamAppId ? " · Current match" : null, candidate.steam_appid === selected?.steam_appid ? " · Selected" : null] })] })] }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: editorSteamMatchPreviewStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: "Loading Steam details..." }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: previewError }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: `${preview.title} Steam artwork`, style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length ? `Developer: ${preview.developers.join(", ")}` : "Developer unavailable" }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label ? `Release: ${preview.release_date_label}` : "Release date unavailable" }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam type: ${preview.app_type}. Check that this is the game or edition you want.` }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork." }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: "Use this Steam match" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: "Cancel selection" })] })) : null] }, candidate.steam_appid)))] }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: t("steamMatch.title"), children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("steamMatch.help") }), matchedSteamAppId ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("steamMatch.currentAppId", { appId: matchedSteamAppId }) }) : null, SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("steamMatch.ariaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("steamMatch.searching") : t("steamMatch.search") })] })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? t("steamMatch.idle") : null, status === "loading" ? t("steamMatch.searching") : null, status === "empty" ? t("steamMatch.empty") : null, status === "error" ? searchError : null] }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, style: rowStackStyle, children: [SP_JSX.jsxs(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, "aria-pressed": selected?.steam_appid === candidate.steam_appid, disabled: disabled, onClick: () => void select(candidate), style: editorSteamMatchCardStyle, children: [candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : null, SP_JSX.jsxs("div", { style: { minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("b", { children: candidate.title }), SP_JSX.jsxs("div", { style: compactTextStyle, children: [t("steamMatch.row.appId", { appId: candidate.steam_appid }), candidate.steam_appid === matchedSteamAppId ? t("steamMatch.row.current") : null, candidate.steam_appid === selected?.steam_appid ? t("steamMatch.row.selected") : null] })] })] }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: editorSteamMatchPreviewStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: t("steamMatch.loading") }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: previewError }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: t("steamMatch.artworkAlt", { title: preview.title }), style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length
+                                                        ? t("steamMatch.developer", { names: preview.developers.join(", ") })
+                                                        : t("steamMatch.developerUnavailable") }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label
+                                                        ? t("steamMatch.release", { date: preview.release_date_label })
+                                                        : t("steamMatch.releaseUnavailable") }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("steamMatch.appType", { type: preview.app_type }) }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("steamMatch.applyNote") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: t("steamMatch.apply") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: t("steamMatch.cancel") })] })) : null] }, candidate.steam_appid)))] }) })] }));
 };
 
 function parseHltbGameId(input) {
@@ -17025,7 +17876,9 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                 setSearching(false);
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? "Searching..." : "Search HLTB" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [error ? SP_JSX.jsx("div", { style: compactTextStyle, children: error }) : null, !searching && results?.length === 0 ? SP_JSX.jsx("div", { style: compactTextStyle, children: "HowLongToBeat found no games." }) : null, results?.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, disabled: disabled, onClick: () => void onApply({ id: result.game_id, name: result.game_name }), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.game_name }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.main_seconds > 0 ? `Main Story ${(result.main_seconds / 3600).toFixed(1)} hours` : "No Main Story time yet" })] }) }, result.game_id)))] }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("common.searching") : t("hltbSearch.search") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [error ? SP_JSX.jsx("div", { style: compactTextStyle, children: error }) : null, !searching && results?.length === 0 ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("hltbSearch.empty") }) : null, results?.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, disabled: disabled, onClick: () => void onApply({ id: result.game_id, name: result.game_name }), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.game_name }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.main_seconds > 0
+                                            ? t("hltbSearch.mainStory", { hours: (result.main_seconds / 3600).toFixed(1) })
+                                            : t("hltbSearch.noMainStory") })] }) }, result.game_id)))] }) })] }));
 }
 
 const parseSteamAppId = (input) => {
@@ -17103,18 +17956,24 @@ const descriptionTextareaStyle = {
     border: "1px solid rgba(255,255,255,0.18)",
 };
 const compatibilityStatusOptions = [
-    { data: null, label: "Use global default" },
-    { data: "valve", label: "Follow Valve" },
-    { data: 3, label: "Verified" },
-    { data: 2, label: "Playable" },
-    { data: 1, label: "Unsupported" },
-    { data: 0, label: "Unknown" },
+    { data: null, labelKey: "editor.compatibility.option.global" },
+    { data: "valve", labelKey: "editor.compatibility.option.valve" },
+    { data: 3, labelKey: "common.compatibility.verified" },
+    { data: 2, labelKey: "common.compatibility.playable" },
+    { data: 1, labelKey: "common.compatibility.unsupported" },
+    { data: 0, labelKey: "common.compatibility.unknown" },
 ];
 const isCompatibilityCategory = (value) => typeof value === "number" &&
     Number.isInteger(value) &&
     value >= 0 &&
     value <= 3;
-const compatibilityStatusLabel = (category) => ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[category];
+const COMPATIBILITY_STATUS_KEYS = {
+    0: "common.compatibility.unknown",
+    1: "common.compatibility.unsupported",
+    2: "common.compatibility.playable",
+    3: "common.compatibility.verified",
+};
+const compatibilityStatusLabel = (category) => t(COMPATIBILITY_STATUS_KEYS[category]);
 const compatibilityStatusValue = (value) => value === "valve" || isCompatibilityCategory(value) ? value : null;
 const compatibilityCategoryValue = (value) => isCompatibilityCategory(value) ? value : null;
 const compatibilityStatusDisplay = (metadata, globalDefault, scope) => {
@@ -17124,20 +17983,24 @@ const compatibilityStatusDisplay = (metadata, globalDefault, scope) => {
         return compatibilityStatusLabel(override);
     if (override === "valve") {
         return valveCategory === null
-            ? "Follow Valve (unavailable — original Steam status)"
-            : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
+            ? t("editor.compatibility.followValveUnavailable")
+            : t("editor.compatibility.followValve", { status: compatibilityStatusLabel(valveCategory) });
     }
     if (globalDefault !== null && isCompatibilityDefaultEligible(metadata, scope)) {
-        return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+        return t("editor.compatibility.globalDefault", { status: compatibilityStatusLabel(globalDefault) });
     }
     if (globalDefault !== null) {
         return valveCategory === null
-            ? "Use global default (outside selected scope — original Steam status)"
-            : `Use global default (outside selected scope — ${compatibilityStatusLabel(valveCategory)} from Valve)`;
+            ? t("editor.compatibility.globalDefaultOutside")
+            : t("editor.compatibility.globalDefaultOutsideValve", {
+                status: compatibilityStatusLabel(valveCategory),
+            });
     }
     return valveCategory === null
-        ? "Use global default (Automatic — original Steam status)"
-        : `Use global default (${compatibilityStatusLabel(valveCategory)} — from Valve)`;
+        ? t("editor.compatibility.globalDefaultAutomatic")
+        : t("editor.compatibility.globalDefaultFromValve", {
+            status: compatibilityStatusLabel(valveCategory),
+        });
 };
 const metadataValuesEqual = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 /**
@@ -17534,27 +18397,27 @@ const MetadataPage = () => {
         const text = hltbIdText.trim();
         const id = text ? parseHltbGameId(text) : null;
         if (id === 0) {
-            toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+            toastWarn(t("toast.hltbInvalid.title"), t("toast.hltbInvalid.body"));
             return undefined;
         }
         if (id === null)
             return { id, name: "" };
         const found = await checkHltbGameId(id);
         if (!found.found) {
-            toastWarn("Not found", "HowLongToBeat has no game with that number.");
+            toastWarn(t("toast.hltbNotFound.title"), t("toast.hltbNotFound.body"));
             return undefined;
         }
         return { id, name: found.game_name };
     };
     const saveCurrent = async () => {
         if (!nonSteam) {
-            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+            toastWarn(t("toast.notApplicable.title"), t("editor.nonSteamOnly"));
             return;
         }
         const requestedEntry = editorEntryToken;
         // Until this entry's record loads, the form holds defaults that would overwrite it.
         if (metadataHydratedEntry !== requestedEntry) {
-            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            toastWarn(t("toast.notLoaded.title"), t("toast.notLoaded.body"));
             return;
         }
         if (!beginBusy(requestedEntry))
@@ -17576,10 +18439,10 @@ const MetadataPage = () => {
                 setHltbIdDraft(null);
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
-            toastSuccess("Saved", "Metadata saved");
+            toastSuccess(t("toast.saved.title"), t("toast.saved.body"));
         }
         catch (error) {
-            toastError("Save failed", String(error));
+            toastError(t("toast.saveFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17587,12 +18450,12 @@ const MetadataPage = () => {
     };
     const applySteamAppId = async (explicitSteamAppId) => {
         if (!nonSteam) {
-            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+            toastWarn(t("toast.notApplicable.title"), t("editor.nonSteamOnly"));
             return;
         }
         const requestedEntry = editorEntryToken;
         if (metadataHydratedEntry !== requestedEntry) {
-            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            toastWarn(t("toast.notLoaded.title"), t("toast.notLoaded.body"));
             return;
         }
         if (!beginBusy(requestedEntry))
@@ -17644,7 +18507,7 @@ const MetadataPage = () => {
             if (parsed === null) {
                 applyMetadata(appId, { publishCompatibility: false });
                 refreshCompatibilitySurfaces();
-                toastSuccess("Saved", "Metadata saved");
+                toastSuccess(t("toast.saved.title"), t("toast.saved.body"));
                 return;
             }
             const enrichmentBaselineMetadata = metadataRef.current;
@@ -17681,10 +18544,10 @@ const MetadataPage = () => {
             }
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
-            toastSuccess("Saved", "Metadata saved");
+            toastSuccess(t("toast.saved.title"), t("toast.saved.body"));
         }
         catch (error) {
-            toastError("Save failed", String(error));
+            toastError(t("toast.saveFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17693,12 +18556,12 @@ const MetadataPage = () => {
     /** Save the HLTB field, or a game picked from HLTB search, as this game's HLTB game. */
     const applyHltbGameId = async (picked) => {
         if (!nonSteam) {
-            toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+            toastWarn(t("toast.notApplicable.title"), t("editor.nonSteamOnly"));
             return;
         }
         const requestedEntry = editorEntryToken;
         if (metadataHydratedEntry !== requestedEntry) {
-            toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+            toastWarn(t("toast.notLoaded.title"), t("toast.notLoaded.body"));
             return;
         }
         if (!beginBusy(requestedEntry))
@@ -17715,10 +18578,10 @@ const MetadataPage = () => {
             setFormMetadata(saved);
             setHltbIdDraft(null);
             applyMetadata(appId, { publishCompatibility: false });
-            toastSuccess("Saved", id === null ? "HLTB game cleared" : `HLTB game: ${name}`);
+            toastSuccess(t("toast.saved.title"), id === null ? t("toast.hltbCleared") : t("toast.hltbGame", { name }));
         }
         catch (error) {
-            toastError("Save failed", String(error));
+            toastError(t("toast.saveFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17732,7 +18595,7 @@ const MetadataPage = () => {
             setResults(await searchMetadata(query, 8));
         }
         catch (error) {
-            toastError("Save failed", String(error));
+            toastError(t("toast.saveFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17758,10 +18621,10 @@ const MetadataPage = () => {
             refreshCompatibilitySurfaces();
             setFormMetadata(saved);
             setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
-            toastSuccess("Saved", "Metadata saved");
+            toastSuccess(t("toast.saved.title"), t("toast.saved.body"));
         }
         catch (error) {
-            toastError("Fetch failed", String(error));
+            toastError(t("toast.fetchFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17780,10 +18643,10 @@ const MetadataPage = () => {
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
             setFormMetadata(metadataTemplate(appName(appId)));
-            toastSuccess("Removed", "Metadata removed");
+            toastSuccess(t("toast.removed.title"), t("toast.removed.body"));
         }
         catch (error) {
-            toastError("Remove failed", String(error));
+            toastError(t("toast.removeFailed.title"), String(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -17814,7 +18677,7 @@ const MetadataPage = () => {
         const current = nativeShortcutName(appId);
         if (current !== currentShortcutName) {
             if (isCurrentEditorEntry(requestedEntry)) {
-                toastError("Shortcut name changed", "Steam changed this shortcut before it could be renamed.");
+                toastError(t("toast.shortcutName.changed.title"), t("toast.shortcutName.changed.rename"));
                 await loadShortcutManagement();
             }
             return;
@@ -17830,11 +18693,11 @@ const MetadataPage = () => {
                 return;
             setCurrentShortcutName(observed);
             setShortcutManagement({ ...shortcutManagement, state });
-            toastSuccess("Shortcut name updated", "Steam confirmed the new shortcut name.");
+            toastSuccess(t("toast.shortcutName.updated.title"), t("toast.shortcutName.updated.body"));
         }
         catch (error) {
             if (isCurrentEditorEntry(requestedEntry)) {
-                toastError("Shortcut name was not updated", String(error));
+                toastError(t("toast.shortcutName.notUpdated.title"), String(error));
                 await loadShortcutManagement();
             }
         }
@@ -17852,7 +18715,7 @@ const MetadataPage = () => {
         const current = nativeShortcutName(appId);
         if (current !== state.applied_name) {
             if (isCurrentEditorEntry(requestedEntry)) {
-                toastError("Shortcut name changed", "Steam changed this shortcut before it could be restored.");
+                toastError(t("toast.shortcutName.changed.title"), t("toast.shortcutName.changed.restore"));
                 await loadShortcutManagement();
             }
             return;
@@ -17873,17 +18736,17 @@ const MetadataPage = () => {
                 if (!isCurrentEditorEntry(requestedEntry))
                     return;
                 await loadShortcutManagement();
-                toastError("Shortcut name restored", `Steam restored the name, but saved history could not be cleared: ${String(error)}`);
+                toastError(t("toast.shortcutName.restored.title"), t("toast.shortcutName.restoredHistoryFailed", { error: String(error) }));
                 return;
             }
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
             setShortcutManagement({ ...shortcutManagement, state: null });
-            toastSuccess("Shortcut name restored", "Steam confirmed the original shortcut name.");
+            toastSuccess(t("toast.shortcutName.restored.title"), t("toast.shortcutName.restored.body"));
         }
         catch (error) {
             if (isCurrentEditorEntry(requestedEntry)) {
-                toastError("Shortcut name was not restored", String(error));
+                toastError(t("toast.shortcutName.notRestored.title"), String(error));
                 await loadShortcutManagement();
             }
         }
@@ -17900,11 +18763,11 @@ const MetadataPage = () => {
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
             setShortcutManagement((current) => current ? { ...current, state: null } : current);
-            toastSuccess("Saved name history forgotten", "Steam did not change the shortcut name.");
+            toastSuccess(t("toast.shortcutName.historyForgotten.title"), t("toast.shortcutName.historyForgotten.body"));
         }
         catch (error) {
             if (isCurrentEditorEntry(requestedEntry)) {
-                toastError("Saved name history was not cleared", String(error));
+                toastError(t("toast.shortcutName.historyNotCleared.title"), String(error));
             }
         }
         finally {
@@ -17914,18 +18777,18 @@ const MetadataPage = () => {
     const showUseSteamNameModal = () => {
         if (!canUseSteamName || !currentShortcutName)
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Use Steam name?", strOKButtonText: "Use Steam name", onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Change “${currentShortcutName}” to “${steamStoreName}”?` }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.confirm.useSteam.title"), strOKButtonText: t("editor.confirm.useSteam.ok"), onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.confirm.useSteam.body", { current: currentShortcutName, steam: steamStoreName ?? "" }) }) }));
     };
     const showRestoreShortcutNameModal = () => {
         const state = shortcutManagement?.state;
         if (!state || entryBusy || !hasShortcutNameApi())
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Restore original shortcut name?", strOKButtonText: "Restore original name", onOK: () => void restoreOriginalShortcutName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: `Restore “${state.original_name}”?` }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.confirm.restore.title"), strOKButtonText: t("editor.confirm.restore.ok"), onOK: () => void restoreOriginalShortcutName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.confirm.restore.body", { name: state.original_name ?? "" }) }) }));
     };
     const showForgetShortcutNameHistoryModal = () => {
         if (entryBusy || (busyRef.current && busyEntryRef.current === editorEntryToken))
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: "Forget saved name history?", strOKButtonText: "Forget history", onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name." }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.confirm.forget.title"), strOKButtonText: t("editor.confirm.forget.ok"), onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.confirm.forget.body") }) }));
     };
     const toggleCategory = (category, checked) => {
         updateMetadata((prev) => {
@@ -17937,17 +18800,19 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
+    // Appended after the editor's own hooks so component state keeps its order.
+    useLocale();
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: t("editor.save") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: t("editor.remove") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: t("editor.done") })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId);
-                    } }, editorEntryToken), SP_JSX.jsxs(DFL.PanelSection, { title: "Search IGN metadata", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                    } }, editorEntryToken), SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.search.title"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...editorSearchRowStyle,
                                     ...editorSearchInputRowSpacingStyle,
-                                }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? "Searching..." : "Search" })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                                }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? t("common.searching") : t("common.search") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Searching..." })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "No results yet." })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: "Source", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Title" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Description" }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
+                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("common.searching") })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.search.empty") })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.source.title"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.title") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.description") }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
                                                 ...prev,
                                                 description: e.target.value,
                                                 short_description: e.target.value,
@@ -17955,29 +18820,32 @@ const MetadataPage = () => {
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,
-                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Developers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
+                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.developers") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
                                                 markFormEdited();
                                                 developerTextRef.current = e.target.value;
                                                 setDeveloperText(e.target.value);
-                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Publishers" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.publishers") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
                                                 markFormEdited();
                                                 publisherTextRef.current = e.target.value;
                                                 setPublisherText(e.target.value);
-                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Release date" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.releaseDate") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
                                                         markFormEdited();
                                                         releaseTextRef.current = e.target.value;
                                                         setReleaseText(e.target.value);
-                                                    }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: "Rating" }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
+                                                    }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.rating") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
                                                         markFormEdited();
                                                         ratingTextRef.current = e.target.value;
                                                         setRatingText(e.target.value);
-                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: "Compatibility status", children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: "Compatibility status", rgOptions: compatibilityStatusOptions, selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
+                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: t("editor.compatibility.title"), children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("editor.compatibility.title"), rgOptions: compatibilityStatusOptions.map((option) => ({
+                                    data: option.data,
+                                    label: t(option.labelKey),
+                                })), selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
                                     ...prev,
                                     deck_compat_override: compatibilityStatusValue(option.data),
-                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable." }), SP_JSX.jsx("div", { style: compactTextStyle, children: "Manual and default categories are your choices, not Valve certification or an emulator performance result." })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam info fields", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: "HowLongToBeat game", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically." }), hltbMatch?.game_name ? (SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("b", { children: ["Current game", ":"] }), " ", hltbMatch.game_name, " ", hltbMatch.pinned_id_used ? "(chosen)" : "(found automatically)"] })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: "Apply HLTB game" })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsx(DFL.PanelSection, { title: "Steam App ID", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match." }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibility.help") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibility.note") })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("editor.steamFields.title"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.entries(CATEGORY_LABELS).map(([category, label]) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: label, checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.hltb.title"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.hltb.help") }), hltbMatch?.game_name ? (SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsxs("b", { children: [t("editor.hltb.current"), ":"] }), " ", hltbMatch.game_name, " ", hltbMatch.pinned_id_used ? t("editor.hltb.chosen") : t("editor.hltb.auto")] })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: t("editor.hltb.apply") })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("editor.steamAppId.title"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppId.help") }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: "Apply Steam App ID" })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: "Shortcut name", children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: `Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}` }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading Steam name..." }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut-name management is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam's native shortcut-name API is unavailable" }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam shortcut was not found" }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut has a derived ID and cannot be renamed safely" }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Shortcut name already matches Steam" }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: "This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten." }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Steam did not return an official name" }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: "Use Steam name" })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: "Restore original name" })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: "Forget saved name history" })) : null] }) }) })] }) }));
+                                            }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: t("editor.steamAppId.apply") })] })] }) }) }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.shortcutName.title"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.current", { name: currentShortcutName ?? t("editor.shortcutName.noNative") }) }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: `Steam: ${steamStoreName}` }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.loading") }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.noOfficial") }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.unavailable") }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.apiUnavailable") }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.notFound") }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.derivedId") }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.matches") }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.diverged") }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcutName.noOfficial") }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcutName.useSteam") })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcutName.restore") })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: t("editor.shortcutName.forget") })) : null] }) }) })] }) }));
 };
 
 const protonDbCoverSurface = (path) => {
@@ -19155,6 +20023,8 @@ var index = DFL.definePlugin(() => {
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
     void refreshMetadataCache();
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
+    // Resolve the interface language once before any panel or toast renders.
+    refreshLocale();
     resetProtonDbAppIdResolution();
     protonDbBadgeController.mount();
     hltbController.mount();

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -15,6 +15,7 @@ vi.mock("../../styles", () => ({
 }));
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
 
+import { setLocale } from "../../i18n";
 import { MetadataSection } from "./MetadataSection";
 
 const refreshDelisted = vi.fn();
@@ -54,6 +55,16 @@ const refreshButton = (tree: any) => nodes(tree).find(node =>
 
 describe("Metadata delisted-games subsection", () => {
   beforeEach(() => refreshDelisted.mockClear());
+  afterEach(() => setLocale("en"));
+
+  it("renders the French catalog when the locale is French", () => {
+    setLocale("fr");
+    const rendered = text(render());
+    expect(rendered).toContain("Métadonnées");
+    expect(rendered).toContain("Actualiser les métadonnées");
+    expect(rendered).toContain("Jeux Steam retirés de la vente");
+    expect(rendered).not.toContain("qam.");
+  });
 
   it("shows the saved index count and date and refreshes that index", () => {
     const tree = render();
