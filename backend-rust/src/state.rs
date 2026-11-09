@@ -83,6 +83,11 @@ impl AppState {
             &storage.data()["settings"]["debug_logging"],
         ));
         *self.delisted.lock().await = cached;
+        // Background scans and provider requests start in the saved content
+        // language, before the interface reports Steam's active language.
+        self.http.set_content_language(&crate::storage::content_locale_value(
+            storage.data()["settings"].get("content_locale"),
+        ));
         self.storage
             .set(Mutex::new(storage))
             .map_err(|_| "backend initialized twice".to_owned())?;

@@ -137,6 +137,14 @@ export const getSystemVersions = callable<[], { decky: string; steamos: string }
   "get_system_versions"
 );
 export const getPluginLogs = callable<[], string>("get_plugin_logs");
+/** Content language used for downloaded metadata (Steam language name). */
+export const getContentLocale = callable<[], { content_locale: string }>(
+  "get_content_locale"
+);
+export const setContentLocale = callable<
+  [language: string],
+  { ok: boolean; content_locale: string }
+>("set_content_locale");
 export const getDebugLogging = callable<[], boolean>("get_debug_logging");
 export const setDebugLogging = callable<[enabled: boolean], boolean>(
   "set_debug_logging"

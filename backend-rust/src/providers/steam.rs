@@ -589,7 +589,7 @@ pub async fn steam_deck_compat_lookup_for_appid(
     }
     let url = query_url(
         STEAM_DECK_COMPAT_URL,
-        &[("nAppID", appid.to_string()), ("l", "english".into())],
+        &[("nAppID", appid.to_string()), ("l", http.content_language())],
     );
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
         Ok(payload) => payload,
@@ -708,7 +708,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
         &[
             ("term", clean_query),
             ("cc", "US".into()),
-            ("l", "english".into()),
+            ("l", http.content_language()),
         ],
     );
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
@@ -763,7 +763,7 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
         STEAM_APP_DETAILS_URL,
         &[
             ("appids", appid.to_string()),
-            ("l", "english".into()),
+            ("l", http.content_language()),
             ("filters", "basic,developers,release_date".into()),
         ],
     );
@@ -836,7 +836,7 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
     }
     let url = query_url(
         STEAM_APP_DETAILS_URL,
-        &[("appids", appid.to_string()), ("l", "english".into())],
+        &[("appids", appid.to_string()), ("l", http.content_language())],
     );
     let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
         Ok(payload) => payload,
@@ -993,7 +993,7 @@ pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64)
             ("appid", appid.to_string()),
             ("offset", "0".into()),
             ("count", count.to_string()),
-            ("l", "english".into()),
+            ("l", http.content_language()),
             ("origin", "https://store.steampowered.com".into()),
         ],
     );
@@ -1234,7 +1234,7 @@ pub async fn resolve_steam_appid_for_title(
         &[
             ("term", clean_title.clone()),
             ("cc", "US".into()),
-            ("l", "english".into()),
+            ("l", http.content_language()),
         ],
     );
     let mut payload = None;
@@ -1431,6 +1431,18 @@ mod tests {
         assert!(steam_appdetails_for_appid(&unusable, 15100).await.is_none());
         assert!(steam_appdetails_for_appid(&unusable, 15100).await.is_none());
         unusable.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn steam_requests_follow_the_active_content_language() {
+        let http = Http::fixtures(vec![json_fixture(
+            "https://store.steampowered.com/api/appdetails?appids=42&l=french",
+            json!({"42":{"success":true,"data":{"name":"Portal 2","short_description":"Description française"}}}),
+        )]);
+        http.set_content_language("french");
+        let details = steam_appdetails_for_appid(&http, 42).await.unwrap();
+        assert_eq!(details["description"], json!("Description française"));
+        http.assert_drained();
     }
 
     #[tokio::test]

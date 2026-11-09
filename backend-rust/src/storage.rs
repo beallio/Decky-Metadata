@@ -402,7 +402,27 @@ pub fn default_settings() -> Value {
         "game_trailers": default_trailer_settings(),
         "mini_achievements_enabled": false,
         "protondb_badges": default_protondb_badge_settings(),
+        "content_locale": crate::locale::DEFAULT_LANGUAGE,
     })
+}
+
+/// Validated content language, defaulting to English for absent or unknown values.
+pub fn content_locale_value(value: Option<&Value>) -> String {
+    value
+        .and_then(Value::as_str)
+        .and_then(crate::locale::normalize)
+        .unwrap_or(crate::locale::DEFAULT_LANGUAGE)
+        .to_owned()
+}
+
+/// Validate a requested content language; unknown languages are rejected so the
+/// interface never claims to follow a language the backend cannot request.
+pub fn validate_content_locale(value: &Value) -> Result<String, String> {
+    value
+        .as_str()
+        .and_then(crate::locale::normalize)
+        .map(str::to_owned)
+        .ok_or_else(|| "unsupported content language".to_owned())
 }
 
 pub fn default_trailer_settings() -> Value {
@@ -447,6 +467,7 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
     let mini_achievements = saved.remove("mini_achievements_enabled");
     let protondb = saved.remove("protondb_badges");
     let hltb = saved.remove("hltb");
+    let content_locale = saved.remove("content_locale");
     let has_scope = saved.contains_key("deck_compat_default_scope");
     let scope = saved.remove("deck_compat_default_scope");
     let legacy_scope = saved.remove("deck_compat_default_matched_only");
@@ -490,6 +511,10 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
     if let Some(value) = hltb {
         normalized.insert("hltb".to_owned(), normalize_hltb_settings(&value));
     }
+    normalized.insert(
+        "content_locale".to_owned(),
+        Value::String(content_locale_value(content_locale.as_ref())),
+    );
 
     if has_scope || has_legacy_scope {
         let canonical = scope.as_ref().and_then(compatibility_default_scope);

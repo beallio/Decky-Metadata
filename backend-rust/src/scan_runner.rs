@@ -125,6 +125,7 @@ pub async fn get_scan_progress(state: &AppState) -> Value {
 
 pub async fn get_missing_metadata_count(state: &AppState, games: &Value) -> Result<i64, String> {
     let games = game_array(games)?;
+    let language = state.http.content_language();
     let storage = state.store().await?;
     let records = storage.data()["metadata"].as_object();
     let mut count = 0;
@@ -141,7 +142,7 @@ pub async fn get_missing_metadata_count(state: &AppState, games: &Value) -> Resu
         }
         if !records
             .and_then(|records| records.get(&key))
-            .is_some_and(metadata::complete)
+            .is_some_and(|record| metadata::complete_in(record, &language))
         {
             count += 1;
         }
@@ -306,6 +307,7 @@ fn title_match_blocked(data: &Value, key: &str, record: &Value) -> bool {
 }
 
 async fn metadata_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<Target>, String> {
+    let language = state.http.content_language();
     let storage = state.store().await?;
     let records = storage.data()["metadata"].as_object();
     Ok(games
@@ -315,7 +317,7 @@ async fn metadata_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<T
             !metadata::removed_by_user(storage.data(), &key)
                 && !records
                     .and_then(|records| records.get(&key))
-                    .is_some_and(metadata::complete)
+                    .is_some_and(|record| metadata::complete_in(record, &language))
         })
         .map(|game| Target {
             app_id: game.app_id.clone(),
@@ -1021,6 +1023,19 @@ mod tests {
             1
         );
         state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn missing_count_treats_another_language_as_missing() {
+        let (_directory, state) = test_state(Vec::new()).await;
+        set_record(&state, 1, json!({"title":"Jeu","source":"IGN","description":"FR","content_locale":"french"})).await;
+        set_record(&state, 2, json!({"title":"Game","source":"IGN","description":"EN","content_locale":"english"})).await;
+        set_record(&state, 3, json!({"title":"Legacy","source":"IGN","description":"EN"})).await;
+        let games = json!([{"appid": 1}, {"appid": 2}, {"appid": 3}]);
+        assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 1);
+        state.http.set_content_language("french");
+        assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 2);
         state.shutdown().await.unwrap();
     }
 

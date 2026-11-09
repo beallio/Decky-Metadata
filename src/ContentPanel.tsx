@@ -70,6 +70,7 @@ import {
   settleCompatibilityPolicySave,
   subscribeCompatibilityPolicySave,
 } from "./qamCompatibilityFocus";
+import { consumeContentLocaleChange, syncContentLocale } from "./contentLocale";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
@@ -840,6 +841,22 @@ export const Content = () => {
     };
     poll.timer = window.setTimeout(pollProgress, 800);
   };
+
+  // A Steam language change makes records from the previous language stale:
+  // reload the cache and refill it in the background.
+  useEffect(() => {
+    let cancelled = false;
+    void syncContentLocale().then((changed) => {
+      if (cancelled) return;
+      // The boot sync may have switched the language before this panel mounted.
+      if (!changed && !consumeContentLocaleChange()) return;
+      void refresh();
+      void scanMissing();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [refresh]);
 
   const clearCache = async () => {
     if (cacheBusy || busy) return;

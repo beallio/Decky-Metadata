@@ -56,6 +56,7 @@ import {
   MetadataSearchResult,
   ShortcutNameManagement,
 } from "./types";
+import { syncContentLocale } from "./contentLocale";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
@@ -1020,6 +1021,12 @@ export const MetadataPage = () => {
       return { ...prev, store_categories: Array.from(next) };
     });
   };
+
+  // Tell the backend which language metadata should be fetched in; the editor
+  // reads each record fresh, so no cache reload is needed here.
+  useEffect(() => {
+    void syncContentLocale();
+  }, []);
 
   return (
     <ScrollPanel>

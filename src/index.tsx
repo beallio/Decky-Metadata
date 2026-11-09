@@ -1,6 +1,7 @@
 import { routerHook } from "@decky/api";
 import { definePlugin, staticClasses } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
+import { syncContentLocale } from "./contentLocale";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
@@ -75,6 +76,9 @@ export default definePlugin(() => {
   void getDebugLogging()
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
+  // Downloaded metadata follows Steam's language; the backend keeps one content
+  // language for store and news requests.
+  void syncContentLocale();
   void refreshMetadataCache();
   void ensureCompatibilityDefault().catch((error) =>
     log.warn("bridge", "compatibility default load failed", error)

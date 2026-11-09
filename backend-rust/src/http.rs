@@ -1,7 +1,10 @@
 use futures_util::StreamExt;
 use reqwest::{Client, Method, header::HeaderMap, redirect::Policy};
 use serde_json::Value;
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 use tokio_util::sync::CancellationToken;
 
 pub const BROWSER_USER_AGENT: &str =
@@ -67,12 +70,21 @@ pub type RequestLog = Arc<std::sync::Mutex<Vec<RequestRecord>>>;
 #[derive(Clone)]
 pub struct Http {
     clients: Arc<[Client; 3]>,
+    /// Steam content language used for store/news requests (`l=` and
+    /// `Accept-Language`). Defaults to English until the UI reports Steam's
+    /// active language.
+    language: Arc<RwLock<String>>,
     pub cancel: CancellationToken,
     requests: Option<RequestLog>,
     #[cfg(test)]
     fixtures: Option<Arc<std::sync::Mutex<std::collections::VecDeque<Fixture>>>>,
     #[cfg(test)]
     gate: Option<Arc<TestGate>>,
+}
+
+fn is_steam_host(url: &reqwest::Url) -> bool {
+    url.host_str()
+        .is_some_and(|host| host.ends_with("steampowered.com") || host.ends_with("steamcommunity.com"))
 }
 
 pub fn is_ign_origin(url: &reqwest::Url) -> bool {
@@ -109,6 +121,7 @@ impl Http {
             .map_err(|e| e.to_string())?;
         Ok(Self {
             clients: Arc::new([default, none, ign]),
+            language: Arc::new(RwLock::new(crate::locale::DEFAULT_LANGUAGE.to_owned())),
             cancel,
             requests: None,
             #[cfg(test)]
@@ -126,6 +139,21 @@ impl Http {
         let requests = RequestLog::default();
         http.requests = Some(Arc::clone(&requests));
         Ok((http, requests))
+    }
+
+    /// Steam content language (`english`, `french`, ...).
+    pub fn content_language(&self) -> String {
+        self.language
+            .read()
+            .map(|language| language.clone())
+            .unwrap_or_else(|_| crate::locale::DEFAULT_LANGUAGE.to_owned())
+    }
+
+    /// Switch the content language for subsequent provider requests.
+    pub fn set_content_language(&self, language: &str) {
+        if let Ok(mut current) = self.language.write() {
+            *current = language.to_owned();
+        }
     }
 
     pub async fn request(
@@ -217,9 +245,16 @@ impl Http {
             Redirects::None => 1,
             Redirects::Ign => 2,
         }];
+        // Only Steam accepts (and benefits from) the active language; IGN and
+        // other providers stay English so their contracts do not shift.
+        let accept_language = if is_steam_host(&parsed) {
+            crate::locale::accept_language(&self.content_language())
+        } else {
+            "en-US,en;q=0.9".to_owned()
+        };
         let mut request = client
             .request(method.clone(), parsed)
-            .header("Accept-Language", "en-US,en;q=0.9");
+            .header("Accept-Language", accept_language);
         for (key, value) in headers {
             request = request.header(*key, *value);
         }

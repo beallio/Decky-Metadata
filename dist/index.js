@@ -115,6 +115,9 @@ const getLocalShortcuts = callable("get_local_shortcuts");
 const getPluginVersion = callable("get_plugin_version");
 const getSystemVersions = callable("get_system_versions");
 const getPluginLogs = callable("get_plugin_logs");
+/** Content language used for downloaded metadata (Steam language name). */
+const getContentLocale = callable("get_content_locale");
+const setContentLocale = callable("set_content_locale");
 const getDebugLogging = callable("get_debug_logging");
 const setDebugLogging = callable("set_debug_logging");
 const getCompatibilityDefault = callable("get_compatibility_default");
@@ -168,6 +171,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getCommunityFallbackPage: getCommunityFallbackPage,
     getCompatibilityDefault: getCompatibilityDefault,
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
+    getContentLocale: getContentLocale,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
     getHltbSettings: getHltbSettings,
@@ -202,6 +206,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
+    setContentLocale: setContentLocale,
     setDebugLogging: setDebugLogging,
     setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
@@ -211,6 +216,104 @@ var backend = /*#__PURE__*/Object.freeze({
     startRefreshSteamActivities: startRefreshSteamActivities,
     startScanMissing: startScanMissing
 });
+
+/**
+ * Steam interface language, as reported by the Steam client.
+ *
+ * Provider requests take Steam's own language names (`l=french`), so the raw
+ * language name is what the backend needs; the plugin's UI catalogs use a
+ * smaller locale set and resolve separately.
+ */
+/** Read the active Steam language, if the Steam client exposes it. */
+const readSteamLanguage = () => {
+    try {
+        const steam = globalThis?.SteamClient;
+        const value = steam?.Settings?.GetCurrentLanguage?.();
+        return typeof value === "string" ? value : null;
+    }
+    catch {
+        return null;
+    }
+};
+/** Read the browser language as a fallback before Steam answers. */
+const readBrowserLanguage = () => {
+    try {
+        const language = globalThis?.navigator?.language;
+        return typeof language === "string" ? language : null;
+    }
+    catch {
+        return null;
+    }
+};
+/**
+ * Steam language for provider requests, falling back to the host language and
+ * then English. The backend normalizes Steam names and BCP-47 tags.
+ */
+const currentSteamLanguage = () => readSteamLanguage() ?? readBrowserLanguage() ?? "english";
+
+let verbose = false;
+const setVerboseLogging = (enabled) => {
+    verbose = !!enabled;
+};
+const prefix = (area) => `[Decky Metadata][${area}]`;
+const debug = (area, message, ...args) => {
+    if (verbose)
+        console.debug(prefix(area), message, ...args);
+};
+const info = (area, message, ...args) => {
+    if (verbose)
+        console.info(prefix(area), message, ...args);
+};
+const warn = (area, message, ...args) => {
+    console.warn(prefix(area), message, ...args);
+};
+const error = (area, message, ...args) => {
+    console.error(prefix(area), message, ...args);
+};
+
+/**
+ * Keeps the backend's metadata language in sync with Steam.
+ *
+ * Provider requests use one content language at a time (Steam store requests
+ * take `l=<language>`). Records are stamped with the language they were fetched
+ * in, and a record from another language counts as missing, so switching the
+ * Steam language makes the next refresh repopulate it.
+ */
+let syncedLanguage = null;
+/// Set when the backend switched language before a panel could react to it.
+let pendingRefresh = false;
+/**
+ * Push Steam's language to the backend.
+ *
+ * @returns true when the backend content language actually changed, which means
+ *          stored metadata belongs to the previous language.
+ */
+const syncContentLocale = async () => {
+    const language = currentSteamLanguage();
+    if (language === syncedLanguage)
+        return false;
+    try {
+        const previous = (await getContentLocale()).content_locale;
+        const saved = (await setContentLocale(language)).content_locale;
+        syncedLanguage = saved;
+        if (previous !== saved)
+            pendingRefresh = true;
+        return previous !== saved;
+    }
+    catch (error) {
+        warn("i18n", "content language sync failed", error);
+        return false;
+    }
+};
+/**
+ * Consume a language switch that happened before the caller could react (the
+ * plugin boot sync runs before any panel exists).
+ */
+const consumeContentLocaleChange = () => {
+    const changed = pendingRefresh;
+    pendingRefresh = false;
+    return changed;
+};
 
 // THIS FILE IS AUTO GENERATED
 function SiSteamdeck (props) {
@@ -2347,26 +2450,6 @@ const consumeRouteShield = (appId) => {
 };
 const clearRouteShield = () => {
     metadataState.routeShield = null;
-};
-
-let verbose = false;
-const setVerboseLogging = (enabled) => {
-    verbose = !!enabled;
-};
-const prefix = (area) => `[Decky Metadata][${area}]`;
-const debug = (area, message, ...args) => {
-    if (verbose)
-        console.debug(prefix(area), message, ...args);
-};
-const info = (area, message, ...args) => {
-    if (verbose)
-        console.info(prefix(area), message, ...args);
-};
-const warn = (area, message, ...args) => {
-    console.warn(prefix(area), message, ...args);
-};
-const error = (area, message, ...args) => {
-    console.error(prefix(area), message, ...args);
 };
 
 let pending;
@@ -16425,6 +16508,23 @@ const Content = () => {
         };
         poll.timer = window.setTimeout(pollProgress, 800);
     };
+    // A Steam language change makes records from the previous language stale:
+    // reload the cache and refill it in the background.
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void syncContentLocale().then((changed) => {
+            if (cancelled)
+                return;
+            // The boot sync may have switched the language before this panel mounted.
+            if (!changed && !consumeContentLocaleChange())
+                return;
+            void refresh();
+            void scanMissing();
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [refresh]);
     const clearCache = async () => {
         if (cacheBusy || busy)
             return;
@@ -17937,6 +18037,11 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
+    // Tell the backend which language metadata should be fetched in; the editor
+    // reads each record fresh, so no cache reload is needed here.
+    SP_REACT.useEffect(() => {
+        void syncContentLocale();
+    }, []);
     return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: "Save" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: "Remove metadata" }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: "Done" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: "This plugin only changes non-Steam games." }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
@@ -19153,6 +19258,9 @@ var index = DFL.definePlugin(() => {
     void getDebugLogging()
         .then((enabled) => setVerboseLogging(enabled))
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
+    // Downloaded metadata follows Steam's language; the backend keeps one content
+    // language for store and news requests.
+    void syncContentLocale();
     void refreshMetadataCache();
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     resetProtonDbAppIdResolution();
