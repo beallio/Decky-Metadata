@@ -55,6 +55,17 @@ games](docs/help/editing-games.md) for the full steps.
 
 ![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=202610011846)
 
+### Language
+
+Downloaded metadata follows the Steam language. Store descriptions, genres, and
+partner events are requested in that language, and saved records are marked with
+the language they were fetched in. If you switch Steam's language, the Quick
+Access Menu refreshes the affected records in the background.
+
+Steam Community posts, IGN text, and Steam's news API stay in English: those
+providers have no verified language contract, so their text is used as the
+English fallback rather than presented as a translation.
+
 ## What you can see
 
 ### Game details and links

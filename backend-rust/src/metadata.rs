@@ -255,6 +255,22 @@ pub fn complete(value: &Value) -> bool {
     !title.is_empty() && ((!source.is_empty() && source != "manual") || description)
 }
 
+/// A record counts as present only when it was fetched in the active language.
+/// Legacy records predate `content_locale` and hold English provider text.
+pub fn complete_in(record: &Value, language: &str) -> bool {
+    complete(record)
+        && record["content_locale"]
+            .as_str()
+            .map_or(language == "english", |value| value == language)
+}
+
+fn with_content_locale(mut record: Value, language: &str) -> Value {
+    if let Some(object) = record.as_object_mut() {
+        object.insert("content_locale".to_owned(), Value::String(language.to_owned()));
+    }
+    record
+}
+
 pub fn merge_fetched(existing: &Value, fetched: Value) -> Value {
     let mut merged = fetched;
     if let Some(choice) = existing.get("deck_compat_override") {
@@ -497,6 +513,7 @@ pub async fn save_guarded(
 ) -> Result<Option<Value>, String> {
     let value = metadata_mapping(value)?;
     let key = py_string(app_id);
+    let language = state.http.content_language();
     let mut storage = state.store().await?;
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
@@ -513,13 +530,16 @@ pub async fn save_guarded(
             if expected.is_some() && transaction.get(&[REMOVED, &key]).is_some() {
                 return Ok(None);
             }
-            let cleaned = prepare_save(
-                existing,
-                value,
-                preserve_override,
-                trusted_appid,
-                index.as_deref().unwrap_or(&Value::Null),
-            )?;
+            let cleaned = with_content_locale(
+                prepare_save(
+                    existing,
+                    value,
+                    preserve_override,
+                    trusted_appid,
+                    index.as_deref().unwrap_or(&Value::Null),
+                )?,
+                &language,
+            );
             transaction.set(&["metadata", &key], cleaned.clone())?;
             if expected.is_none() && safe_int(&cleaned["steam_appid"]).is_some_and(|id| id > 0) {
                 // Only the user's own save of a Steam match lets automatic matching resume.
@@ -554,6 +574,7 @@ async fn save_fetched(
     picked: bool,
 ) -> Result<Option<Value>, String> {
     let key = py_string(app_id);
+    let language = state.http.content_language();
     let index = state.delisted.lock().await.clone();
     state
         .change(move |transaction| {
@@ -568,13 +589,16 @@ async fn save_fetched(
                 .cloned()
                 .unwrap_or(Value::Null);
             let merged = merge_fetched(&existing, fetched);
-            let cleaned = prepare_save(
-                &existing,
-                merged,
-                false,
-                None,
-                index.as_deref().unwrap_or(&Value::Null),
-            )?;
+            let cleaned = with_content_locale(
+                prepare_save(
+                    &existing,
+                    merged,
+                    false,
+                    None,
+                    index.as_deref().unwrap_or(&Value::Null),
+                )?,
+                &language,
+            );
             transaction.set(&["metadata", &key], cleaned.clone())?;
             Ok(Some(cleaned))
         })
@@ -818,6 +842,20 @@ mod tests {
         assert_eq!(trusted["steam_store_state"], "delisted");
         assert_eq!(trusted["steam_news"][0]["id"], "a");
     }
+    #[test]
+    fn records_only_count_for_the_language_they_were_fetched_in() {
+        let english = json!({"title":"A","source":"IGN","content_locale":"english"});
+        assert!(complete_in(&english, "english"));
+        assert!(!complete_in(&english, "french"));
+        let french = json!({"title":"A","source":"IGN","content_locale":"french"});
+        assert!(complete_in(&french, "french"));
+        assert!(!complete_in(&french, "english"));
+        // Legacy records predate the stamp and hold English provider text.
+        let legacy = json!({"title":"A","source":"IGN"});
+        assert!(complete_in(&legacy, "english"));
+        assert!(!complete_in(&legacy, "french"));
+    }
+
     #[test]
     fn dates_preserve_absence_null_and_literal_manual_description() {
         let input = json!({"title":"A","description":"&amp; <b>literal</b>\r\nline"});

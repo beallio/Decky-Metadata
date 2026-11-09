@@ -30,6 +30,8 @@ pub const METHODS: &[&str] = &[
     "get_protondb_badge_settings",
     "set_protondb_badge_settings",
     "get_provider_cache",
+    "get_content_locale",
+    "set_content_locale",
     "put_protondb_cache",
     "get_hltb_settings",
     "set_hltb_settings",
@@ -229,6 +231,28 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 return Ok(String::new().into());
             };
             Ok(logging::read_tail(&path).await.into())
+        }
+        "get_content_locale" => {
+            arity(&args, 0, 0)?;
+            let language = storage::content_locale_value(
+                state.store().await?.data()["settings"].get("content_locale"),
+            );
+            Ok(json!({"content_locale": language}))
+        }
+        "set_content_locale" => {
+            arity(&args, 1, 1)?;
+            let language = storage::validate_content_locale(&args[0])?;
+            state
+                .set_setting("content_locale", json!(language))
+                .await?;
+            state.http.set_content_language(&language);
+            logging::event(
+                "locale",
+                "content language updated",
+                json!({"language": language}),
+                log::Level::Info,
+            );
+            Ok(json!({"ok": true, "content_locale": language}))
         }
         "get_debug_logging" => {
             arity(&args, 0, 0)?;
@@ -626,6 +650,50 @@ mod tests {
         .unwrap();
         state.initialize().await.unwrap();
         (root, state)
+    }
+
+    #[tokio::test]
+    async fn content_locale_is_validated_persisted_and_stamped_on_saves() {
+        let (root, state) = test_state(None).await;
+        let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
+        assert_eq!(state.http.content_language(), "english");
+
+        let saved = call("set_content_locale", vec![json!("french")]).await.unwrap();
+        assert_eq!(saved["content_locale"], json!("french"));
+        assert_eq!(state.http.content_language(), "french");
+        assert_eq!(
+            state.store().await.unwrap().data()["settings"]["content_locale"],
+            json!("french")
+        );
+
+        let record = call(
+            "save_metadata",
+            vec![json!(7), json!({"title":"Jeu","source":"IGN","description":"FR"})],
+        )
+        .await
+        .unwrap();
+        assert_eq!(record["content_locale"], json!("french"));
+
+        // BCP-47 input is normalized; unknown languages are rejected without
+        // changing the active language.
+        assert_eq!(
+            call("set_content_locale", vec![json!("pt-BR")]).await.unwrap()["content_locale"],
+            json!("brazilian")
+        );
+        assert!(call("set_content_locale", vec![json!("klingon")]).await.is_err());
+        assert_eq!(state.http.content_language(), "brazilian");
+
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn saved_content_locale_survives_a_restart() {
+        let settings = br#"{"settings":{"content_locale":"german"}}"#;
+        let (root, state) = test_state(Some(settings)).await;
+        assert_eq!(state.http.content_language(), "german");
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[tokio::test]
