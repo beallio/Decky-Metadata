@@ -11,10 +11,13 @@ import { currentSteamLanguage } from "./steamLanguage";
 import * as log from "./log";
 
 let syncedLanguage: string | null = null;
+/// Set when the backend switched language before a panel could react to it.
+let pendingRefresh = false;
 
 /** Test hook: forget the cached sync so the next call talks to the backend. */
 export const resetContentLocaleSync = (): void => {
   syncedLanguage = null;
+  pendingRefresh = false;
 };
 
 /**
@@ -30,9 +33,20 @@ export const syncContentLocale = async (): Promise<boolean> => {
     const previous = (await getContentLocale()).content_locale;
     const saved = (await setContentLocale(language)).content_locale;
     syncedLanguage = saved;
+    if (previous !== saved) pendingRefresh = true;
     return previous !== saved;
   } catch (error) {
     log.warn("i18n", "content language sync failed", error);
     return false;
   }
+};
+
+/**
+ * Consume a language switch that happened before the caller could react (the
+ * plugin boot sync runs before any panel exists).
+ */
+export const consumeContentLocaleChange = (): boolean => {
+  const changed = pendingRefresh;
+  pendingRefresh = false;
+  return changed;
 };

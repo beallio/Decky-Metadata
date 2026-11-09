@@ -15,7 +15,7 @@ vi.mock("./steamLanguage", () => ({
 }));
 vi.mock("./log", () => ({ warn: vi.fn() }));
 
-import { resetContentLocaleSync, syncContentLocale } from "./contentLocale";
+import { consumeContentLocaleChange, resetContentLocaleSync, syncContentLocale } from "./contentLocale";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,6 +35,24 @@ describe("content locale sync", () => {
     expect(await syncContentLocale()).toBe(false);
     expect(api.getContentLocale).toHaveBeenCalledTimes(1);
     expect(api.setContentLocale).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a change pending until a panel consumes it", async () => {
+    api.getContentLocale.mockResolvedValue({ content_locale: "english" });
+    api.setContentLocale.mockResolvedValue({ ok: true, content_locale: "french" });
+
+    expect(consumeContentLocaleChange()).toBe(false);
+    await syncContentLocale();
+    expect(consumeContentLocaleChange()).toBe(true);
+    expect(consumeContentLocaleChange()).toBe(false);
+  });
+
+  it("does not queue a refresh when the language did not change", async () => {
+    api.getContentLocale.mockResolvedValue({ content_locale: "french" });
+    api.setContentLocale.mockResolvedValue({ ok: true, content_locale: "french" });
+
+    await syncContentLocale();
+    expect(consumeContentLocaleChange()).toBe(false);
   });
 
   it("reports no change when the backend already uses the language", async () => {

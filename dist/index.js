@@ -280,6 +280,8 @@ const error = (area, message, ...args) => {
  * Steam language makes the next refresh repopulate it.
  */
 let syncedLanguage = null;
+/// Set when the backend switched language before a panel could react to it.
+let pendingRefresh = false;
 /**
  * Push Steam's language to the backend.
  *
@@ -294,12 +296,23 @@ const syncContentLocale = async () => {
         const previous = (await getContentLocale()).content_locale;
         const saved = (await setContentLocale(language)).content_locale;
         syncedLanguage = saved;
+        if (previous !== saved)
+            pendingRefresh = true;
         return previous !== saved;
     }
     catch (error) {
         warn("i18n", "content language sync failed", error);
         return false;
     }
+};
+/**
+ * Consume a language switch that happened before the caller could react (the
+ * plugin boot sync runs before any panel exists).
+ */
+const consumeContentLocaleChange = () => {
+    const changed = pendingRefresh;
+    pendingRefresh = false;
+    return changed;
 };
 
 // THIS FILE IS AUTO GENERATED
@@ -16500,7 +16513,10 @@ const Content = () => {
     SP_REACT.useEffect(() => {
         let cancelled = false;
         void syncContentLocale().then((changed) => {
-            if (cancelled || !changed)
+            if (cancelled)
+                return;
+            // The boot sync may have switched the language before this panel mounted.
+            if (!changed && !consumeContentLocaleChange())
                 return;
             void refresh();
             void scanMissing();

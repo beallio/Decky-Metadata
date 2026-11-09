@@ -70,7 +70,7 @@ import {
   settleCompatibilityPolicySave,
   subscribeCompatibilityPolicySave,
 } from "./qamCompatibilityFocus";
-import { syncContentLocale } from "./contentLocale";
+import { consumeContentLocaleChange, syncContentLocale } from "./contentLocale";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
@@ -847,7 +847,9 @@ export const Content = () => {
   useEffect(() => {
     let cancelled = false;
     void syncContentLocale().then((changed) => {
-      if (cancelled || !changed) return;
+      if (cancelled) return;
+      // The boot sync may have switched the language before this panel mounted.
+      if (!changed && !consumeContentLocaleChange()) return;
       void refresh();
       void scanMissing();
     });
