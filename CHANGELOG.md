@@ -7,14 +7,23 @@ All notable changes to this project are documented here in Keep a Changelog form
 ### Changed
 
 - **HLTB "Details" button.** The button that opens a game's HowLongToBeat page
-  is now called **Details** and looks like the **Details** button in Steam's
-  Deck Compatibility section. The **"View Details" color** option is removed.
+  is now called **Details**. In the **Default** style it looks like the
+  **Details** button in Steam's Deck Compatibility section. In the **"Clean"**
+  styles it looks like the ProtonDB and controller buttons beside Play, and it
+  follows the corner rounding of the CSS Loader theme "Round". The **"View
+  Details" color** option is removed.
 
 ### Removed
 
 - **Show/Hide HLTB Stats in the game menu.** The entry is removed. Games you
   hid this way show their times again. To hide all times, turn off **Show
   HowLongToBeat times**.
+
+### Fixed
+
+- **HLTB times no longer push the Play button down.** The **Default** and
+  **"Clean" Default** rows now sit on the bottom of the game's header image, so
+  the Play row stays in its usual place.
 
 ## [0.6.1] - 2026-11-02
 
