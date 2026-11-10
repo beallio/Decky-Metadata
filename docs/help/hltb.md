@@ -17,7 +17,7 @@ When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times
 
 | Setting | What it does |
 | --- | --- |
-| **HLTB Style** | **Default** puts a row of times above the Play button. The **"Clean"** styles place the times over the game's header image. They are meant for the CSS Loader theme "Clean Gameview". |
+| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. They are meant for the CSS Loader theme "Clean Gameview". |
 | **Hide "Details"** | Removes the button that opens the HowLongToBeat page. |
 | **Toggle … stat** | Show or hide each of the four times. |
 | **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. **Reset appearance** returns these to their defaults. |
