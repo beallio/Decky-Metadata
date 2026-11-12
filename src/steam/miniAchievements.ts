@@ -9,7 +9,8 @@ import { findSteamUiDocumentMatch } from "./steamUiHost";
 
 const ROW_CLASS = "decky-metadata-mini-achievements";
 const LABEL = "Achievements";
-const CACHE_RETRY_MS = 500;
+// Steam fills the progress cache from an RPC that can outlast one poll.
+const CACHE_RETRY_DELAYS_MS = [500, 1500, 3000, 6000, 12000] as const;
 const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000] as const;
 const MAX_FIBER_DEPTH = 12;
 const TROPHY_PATH =
@@ -179,7 +180,7 @@ export function installMiniAchievementsPatch(): () => void {
     retryTimers.add(timer);
   };
 
-  /** Ask Steam to fill a cold cache entry; the row re-reads once it has had time. */
+  /** Ask Steam to fill a cold cache entry; the row re-reads while it stays empty. */
   const queueCacheUpdate = (appId: number): void => {
     if (attemptedAppIds.has(appId)) return;
     const cache = progressCache();
@@ -188,7 +189,7 @@ export function installMiniAchievementsPatch(): () => void {
     attemptedAppIds.add(appId);
     try {
       queueUpdate.call(cache, appId);
-      setTimer(() => sync(), CACHE_RETRY_MS);
+      for (const delay of CACHE_RETRY_DELAYS_MS) setTimer(sync, delay);
     } catch (error) {
       log.debug("miniAchievements", "achievement progress queue failed", appId, error);
     }
