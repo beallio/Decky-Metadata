@@ -23,11 +23,17 @@ type HltbSectionProps = {
   onStyleChange?: (style: HltbSettings["style"]) => void | Promise<unknown>;
   onStyleMenuWillOpen?: () => void;
   onStyleControlRef?: (element: HTMLDivElement | null) => void;
+  onBlurChange?: (blur: HltbAppearance["blur"]) => void | Promise<unknown>;
+  onBlurMenuWillOpen?: () => void;
+  onBlurControlRef?: (element: HTMLDivElement | null) => void;
 };
 
 const styles: Array<{ data: HltbSettings["style"]; label: string }> = [
   { data: "default", label: "Default" }, { data: "clean", label: '"Clean"' },
   { data: "clean-left", label: '"Clean" Left' }, { data: "clean-default", label: '"Clean" Default' },
+];
+const blurOptions: Array<{ data: HltbAppearance["blur"]; label: string }> = [
+  { data: "match", label: "Match Play bar" }, { data: "blur", label: "Blur" }, { data: "none", label: "None" },
 ];
 const statControls = [
   ["showMain", "Toggle main stat", "Shows/Hides just the main stat"],
@@ -44,6 +50,7 @@ const cacheStatusText = {
 export function HltbSection({
   initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
   onStyleChange, onStyleMenuWillOpen, onStyleControlRef,
+  onBlurChange, onBlurMenuWillOpen, onBlurControlRef,
 }: HltbSectionProps) {
   const controlsDisabled = !settingsLoaded || busy;
   const disabled = controlsDisabled || !settings.enabled;
@@ -54,6 +61,7 @@ export function HltbSection({
   return <CollapsibleSection title="HLTB times" icon={<FaClock size={16} />} defaultExpanded={initiallyExpanded}>
     <PanelSectionRow><ToggleField label="Show HowLongToBeat times" description="Show HowLongToBeat times on game pages for Steam and non-Steam games." checked={settings.enabled} disabled={controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled)} onChange={value => update("enabled", value)} /></PanelSectionRow>
     <PanelSectionRow><div ref={onStyleControlRef}><DropdownItem label="HLTB Style" description={'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"'} rgOptions={styles} selectedOption={settings.style} disabled={disabled} onMenuWillOpen={onStyleMenuWillOpen} onChange={option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); }} /></div></PanelSectionRow>
+    {settings.style === "default" ? null : <PanelSectionRow><div ref={onBlurControlRef}><DropdownItem label="Background blur" description={'Matches the Play bar by default; "Blur" also blurs the times over the header image'} rgOptions={blurOptions} selectedOption={appearance.blur} disabled={disabled} onMenuWillOpen={onBlurMenuWillOpen} onChange={option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); }} /></div></PanelSectionRow>}
     <PanelSectionRow><ToggleField label={'Hide "Details"'} description={'Hides the "Details" button on HLTB Stats'} checked={settings.hideViewDetails} disabled={disabled} onChange={value => update("hideViewDetails", value)} /></PanelSectionRow>
     <PanelSectionRow><ToggleField label="Use Steam button corners" description={`Uses Steam's normal button corners on the Clean styles' Details button instead of the Round theme's rounded corners`} checked={settings.nativeDetailsCorners} disabled={disabled} onChange={value => update("nativeDetailsCorners", value)} /></PanelSectionRow>
     {statControls.map(([key, label, description]) => <PanelSectionRow key={key}><ToggleField label={label} description={description} checked={settings[key]} disabled={disabled} onChange={value => update(key, value)} /></PanelSectionRow>)}
@@ -65,7 +73,7 @@ export function HltbSection({
     </PanelSectionRow>
     <PanelSectionRow><ToggleField label="Customize appearance" description="Enable custom colors, opacity and text size for the HLTB bar" checked={appearance.custom} disabled={disabled} onChange={value => updateAppearance("custom", value)} /></PanelSectionRow>
     {appearance.custom ? <>
-      <PanelSectionRow><SliderField label="Background opacity" description="Darkens the bar so stats stay readable over bright hero art" value={appearance.barAlpha} min={0} max={100} step={5} showValue valueSuffix="%" resetValue={25} disabled={disabled} onChange={value => updateAppearance("barAlpha", value)} /></PanelSectionRow>
+      {settings.style === "default" ? <PanelSectionRow><SliderField label="Background opacity" description="Darkens the bar so stats stay readable over bright hero art" value={appearance.barAlpha} min={0} max={100} step={5} showValue valueSuffix="%" resetValue={25} disabled={disabled} onChange={value => updateAppearance("barAlpha", value)} /></PanelSectionRow> : null}
       <PanelSectionRow><ToggleField label="Text shadow" description="Adds a shadow behind the stats for extra contrast" checked={appearance.textShadow} disabled={disabled} onChange={value => updateAppearance("textShadow", value)} /></PanelSectionRow>
       <PanelSectionRow><SliderField label="Text size" description="Scales the stat numbers and labels" value={appearance.textScale} min={75} max={150} step={5} showValue valueSuffix="%" resetValue={100} disabled={disabled} onChange={value => updateAppearance("textScale", value)} /></PanelSectionRow>
       {settings.style === "default" ? <PanelSectionRow><ToggleField label="Bottom border" description="Shows a divider line under the HLTB bar" checked={appearance.border} disabled={disabled} onChange={value => updateAppearance("border", value)} /></PanelSectionRow> : null}

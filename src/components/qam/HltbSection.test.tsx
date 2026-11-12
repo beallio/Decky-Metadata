@@ -18,6 +18,14 @@ describe("HLTB controls", () => {
     expect(toggle().props.disabled).toBe(true);
     expect(toggle({ ...base.settings, enabled: true }).props.disabled).toBe(false);
   });
+  it("offers blur, and no opacity, for clean styles", () => {
+    const change = vi.fn();
+    const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, style: "clean-default" as const, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };
+    const tree = nodes(HltbSection({ settings, settingsLoaded: true, busy: false, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
+    tree.find(node => node.props.label === "Background blur")!.props.onChange({ data: "blur" });
+    expect(change).toHaveBeenCalledWith({ ...settings, appearance: { ...settings.appearance, blur: "blur" } });
+    expect(tree.some(node => node.props.label === "Background opacity")).toBe(false);
+  });
   it("updates appearance, resets it, and clears the cache", () => {
     const change = vi.fn(), clear = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };

@@ -93,7 +93,7 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
  * Mirror the native Play section's surface onto the row so the "Clean" styles
  * follow Clean Gameview's Play Bar Style, including live theme changes.
  */
-function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled: boolean, nativeBackground: boolean): void {
+function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled: boolean): void {
   useEffect(() => {
     const row = ref.current;
     const document = row?.ownerDocument;
@@ -108,8 +108,7 @@ function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled:
       }
       const computed = view.getComputedStyle(section);
       row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
-      if (nativeBackground) row.style.setProperty("--hltb-native-background", computed.background);
-      else row.style.removeProperty("--hltb-native-background");
+      row.style.setProperty("--hltb-native-background", computed.background);
     };
     update();
     const observer = new view.MutationObserver(update);
@@ -121,7 +120,7 @@ function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled:
       row.style.removeProperty("--hltb-native-backdrop");
       row.style.removeProperty("--hltb-native-background");
     };
-  }, [enabled, nativeBackground]);
+  }, [enabled]);
 }
 
 function HltbGameRow({ appId }: { appId: number }) {
@@ -129,7 +128,7 @@ function HltbGameRow({ appId }: { appId: number }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
-  useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", !snapshot.settings.appearance.custom);
+  useNativeCleanSurface(ref, active && snapshot.settings.style !== "default");
   if (!active) return null;
   return (
     <div ref={ref} style={{ position: "relative" }}>

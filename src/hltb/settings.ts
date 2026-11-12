@@ -1,10 +1,12 @@
 // Appearance adapted from HLTB for Deck (MIT).
+export type HltbBlur = "match" | "blur" | "none";
 export type HltbAppearance = {
   custom: boolean;
   barAlpha: number;
   textShadow: boolean;
   textScale: number;
   border: boolean;
+  blur: HltbBlur;
 };
 
 export type HltbSettings = {
@@ -23,7 +25,7 @@ export const DEFAULT_HLTB_SETTINGS: HltbSettings = {
   enabled: false, style: "default", hideViewDetails: false,
   showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
   nativeDetailsCorners: false,
-  appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true },
+  appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
 };
 
 const object = (value: unknown): Record<string, unknown> =>
@@ -39,6 +41,8 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
   const defaultAppearance = defaults.appearance;
   const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
     ? stored.style : defaults.style;
+  const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+    ? appearance.blur : defaultAppearance.blur;
   return {
     enabled: bool(stored.enabled, defaults.enabled), style,
     hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
@@ -53,6 +57,7 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
       textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
       textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
       border: bool(appearance.border, defaultAppearance.border),
+      blur,
     },
   };
 }
