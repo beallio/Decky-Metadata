@@ -747,6 +747,22 @@ const makeDeckyNativeActivityEvent = (appId: number, metadata: MetadataData, ite
   const date = Number(partnerEvent.postTime || 0) || Math.floor(Date.now() / 1000) - index * 60;
   const gid = numericSteamNewsGid(partnerEvent.GID || item.url) || String(date);
   const actor = fakeSteamId(0, String(item.clan_steamid || "103582791429521412"));
+  // Steam's Nov 11 posted-announcement card reads `event.preview` for its body and
+  // gates on `BCanRender()`; both derive from the partner event we already hold.
+  const preview = {
+    gid: partnerEvent.GID,
+    gidAnnouncement: partnerEvent.AnnouncementGID,
+    unTimeLastMod: date,
+    appid: partnerEvent.appid,
+    clanAccountID: partnerEvent.clanSteamID.GetAccountID(),
+    eType: partnerEvent.type,
+    strCategory: partnerEvent.GetCategoryAsString(),
+    strTitle: partnerEvent.GetNameWithFallback(),
+    strSummary: partnerEvent.GetSummaryWithFallback(),
+    strSubTitle: partnerEvent.GetSubTitleWithLanguageFallback() ?? "",
+    rtPostTime: partnerEvent.postTime ?? 0,
+    rgCapsuleImages: partnerEvent.GetImgArray(),
+  };
   return {
     __deckyNativeActivityEvent: true,
     gameid: String(appId),
@@ -775,6 +791,9 @@ const makeDeckyNativeActivityEvent = (appId: number, metadata: MetadataData, ite
     get eventModel() {
       return partnerEvent;
     },
+    get preview() {
+      return preview;
+    },
     get forumTopicGID() {
       return partnerEvent.forumTopicGID;
     },
@@ -787,6 +806,8 @@ const makeDeckyNativeActivityEvent = (appId: number, metadata: MetadataData, ite
     get comment_count() {
       return partnerEvent.nCommentCount;
     },
+    // Native PostedAnnouncement BCanRender() is `preview !== undefined`; ours is built above.
+    BCanRender: () => true,
     BIsValid: () => true,
     IsEventLoaded: () => true,
     GetEvent: async () => partnerEvent,
