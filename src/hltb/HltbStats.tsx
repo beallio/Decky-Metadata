@@ -24,7 +24,7 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.5))); backdrop-filter: var(--hltb-native-backdrop, none); }
 .decky-metadata-hltb-clean-default { padding: 0; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
@@ -38,6 +38,7 @@ const css = `
 .decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
 .decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
 `;
 
@@ -72,7 +73,7 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
             ? <Focusable className={`${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`} focusClassName={detailsClasses.Focused}>
               <Focusable className={detailsClasses.Details} noFocusRing={false} onActivate={openDetails}>Details</Focusable>
             </Focusable>
-            : <Focusable className={`${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button`} onActivate={openDetails}>Details</Focusable>}
+            : <Focusable className={`${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`} onActivate={openDetails}>Details</Focusable>}
         </li> : null}
       </ul>
     </div>

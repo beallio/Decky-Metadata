@@ -15,12 +15,14 @@ export type HltbSettings = {
   showMainPlus: boolean;
   showComplete: boolean;
   showAllStyles: boolean;
+  nativeDetailsCorners: boolean;
   appearance: HltbAppearance;
 };
 
 export const DEFAULT_HLTB_SETTINGS: HltbSettings = {
   enabled: false, style: "default", hideViewDetails: false,
   showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+  nativeDetailsCorners: false,
   appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true },
 };
 
@@ -44,6 +46,7 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
     showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
     showComplete: bool(stored.showComplete, defaults.showComplete),
     showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+    nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
     appearance: {
       custom: bool(appearance.custom, defaultAppearance.custom),
       barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),

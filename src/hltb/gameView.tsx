@@ -4,6 +4,7 @@ import {
   afterPatch,
   appDetailsClasses,
   appDetailsHeaderClasses,
+  basicAppDetailsSectionStylerClasses,
   createReactTreePatcher,
   findInReactTree,
 } from "@decky/ui";
@@ -88,11 +89,47 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
   return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
 }
 
+/**
+ * Mirror the native Play section's surface onto the row so the "Clean" styles
+ * follow Clean Gameview's Play Bar Style, including live theme changes.
+ */
+function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled: boolean, nativeBackground: boolean): void {
+  useEffect(() => {
+    const row = ref.current;
+    const document = row?.ownerDocument;
+    const view = document?.defaultView;
+    if (!enabled || !row || !document || !view || !row.parentElement) return;
+    const update = () => {
+      const section = row.nextElementSibling?.querySelector(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      if (!section) {
+        row.style.removeProperty("--hltb-native-backdrop");
+        row.style.removeProperty("--hltb-native-background");
+        return;
+      }
+      const computed = view.getComputedStyle(section);
+      row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
+      if (nativeBackground) row.style.setProperty("--hltb-native-background", computed.background);
+      else row.style.removeProperty("--hltb-native-background");
+    };
+    update();
+    const observer = new view.MutationObserver(update);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+    observer.observe(row.parentElement, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      row.style.removeProperty("--hltb-native-backdrop");
+      row.style.removeProperty("--hltb-native-background");
+    };
+  }, [enabled, nativeBackground]);
+}
+
 function HltbGameRow({ appId }: { appId: number }) {
   const snapshot = useHltbSnapshot();
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
+  useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", !snapshot.settings.appearance.custom);
   if (!active) return null;
   return (
     <div ref={ref} style={{ position: "relative" }}>
