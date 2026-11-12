@@ -1,466 +1,414 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
   addPatch: vi.fn(),
   removePatch: vi.fn(),
-  afterPatch: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
 }));
 
-const backend = vi.hoisted(() => ({
-  getMiniAchievementsEnabled: vi.fn<() => Promise<boolean>>(),
-  setMiniAchievementsEnabled: vi.fn<(enabled: boolean) => Promise<boolean>>(),
+const classes = vi.hoisted(() => ({
+  GameStat: "game-stat",
+  GameStatsSection: "stats-section",
+  Playtime: "playtime",
+  GameStatIcon: "stat-icon",
+  GameStatRight: "stat-right",
+  MiniAchievements: "mini-achievements",
+  AchievementProgressRow: "progress-row",
+  AchievementCountLabel: "achievement-count",
+  PlayBarLabel: "bar-label",
+  PlayBarDetailLabel: "bar-detail",
 }));
-vi.mock("../backend", () => backend);
+
+vi.mock("@decky/ui", async () => {
+  // The factory runs before this file's imports initialise, so the real patcher
+  // cannot be a static import here.
+  const { afterPatch } = await import("@decky/ui/dist/utils/patcher");
+  const findNode = (node: unknown, filter: (candidate: unknown) => unknown): unknown => {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const found = findNode(child, filter);
+        if (found) return found;
+      }
+      return undefined;
+    }
+    if (!node || typeof node !== "object") return undefined;
+    if (filter(node)) return node;
+    for (const key of ["props", "children"]) {
+      const found = findNode(Reflect.get(node, key), filter);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  return {
+    afterPatch,
+    findInReactTree: findNode,
+    findClassModule: () => classes,
+    Navigation: { Navigate: mocks.navigate },
+  };
+});
 
 vi.mock("@decky/api", () => ({
-  routerHook: {
-    addPatch: mocks.addPatch,
-    removePatch: mocks.removePatch,
-  },
+  routerHook: { addPatch: mocks.addPatch, removePatch: mocks.removePatch },
 }));
 
-vi.mock("@decky/ui", () => ({ afterPatch: mocks.afterPatch }));
-
-vi.mock("../log", () => ({
-  debug: mocks.debug,
-  info: mocks.info,
-  warn: mocks.warn,
-}));
+vi.mock("../log", () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import { installMiniAchievementsPatch } from "./miniAchievements";
-import { MiniAchievementsController } from "./miniAchievementsController";
-import { PluginConflictMonitor } from "../pluginConflicts";
 
-type SteamObject = Record<string, unknown>;
-type RouteCallback = (props: unknown) => unknown;
-type NativeMethod = (this: unknown, ...args: unknown[]) => unknown;
-type NativeAfterPatch = (
-  this: unknown,
-  args: unknown[],
-  result: unknown,
-) => unknown;
+const APP_ID = 1942280;
+const ROW_CLASS = "decky-metadata-mini-achievements";
+const steamGlobals = globalThis as unknown as Record<string, unknown>;
 
-interface PatchRecord {
-  target: SteamObject;
-  method: string;
-  unpatch: () => void;
-}
+type DetailPatch = { route: string; callback: (tree: unknown) => unknown };
+type FakeElement = {
+  tagName: string;
+  className: string;
+  textContent: string;
+  style: { cssText: string; width: string };
+  children: FakeElement[];
+  parentNode: FakeElement | null;
+  ownerDocument: FakeDocument;
+  listeners: Record<string, () => void>;
+  append(...nodes: FakeElement[]): void;
+  after(node: FakeElement): void;
+  remove(): void;
+  addEventListener(name: string, listener: () => void): void;
+  querySelector(selector: string): FakeElement | null;
+  querySelectorAll(selector: string): FakeElement[];
+  setAttribute(name: string, value: string): void;
+};
+type FakeDocument = {
+  querySelector(selector: string): FakeElement | null;
+  querySelectorAll(selector: string): FakeElement[];
+  createElement(tag: string): FakeElement;
+  createElementNS(namespace: string, tag: string): FakeElement;
+  defaultView: { MutationObserver: unknown };
+};
 
-interface NativeFixture {
-  instance: MiniAchievementsFixture;
-  manager: SteamObject;
-  nearestController: SteamObject;
-  outerController: SteamObject;
-}
+let detailPatches: DetailPatch[] = [];
+let register: Mock;
+let unregister: Mock;
+let onAchievementChange: ((appId?: unknown) => void) | undefined;
+let dispose: (() => void) | undefined;
+let document: FakeDocument;
+let section: FakeElement;
 
-interface InstalledPage {
-  dispose: () => void;
-}
+const hasClass = (element: FakeElement, name: string) =>
+  element.className.split(/\s+/).filter(Boolean).includes(name);
 
-let routeCallback: RouteCallback | undefined;
-let patches: PatchRecord[] = [];
-const controllers: MiniAchievementsController[] = [];
-const conflictMonitors: PluginConflictMonitor[] = [];
-
-function isSteamObject(value: unknown): value is SteamObject {
-  return typeof value === "object" && value !== null;
-}
-
-function installRealisticAfterPatch(
-  targetValue: unknown,
-  method: string,
-  handlerValue: unknown,
-): PatchRecord {
-  if (!isSteamObject(targetValue) || typeof handlerValue !== "function") {
-    throw new Error("afterPatch received an invalid target or handler");
+const collect = (element: FakeElement, found: FakeElement[] = []): FakeElement[] => {
+  for (const child of element.children) {
+    found.push(child);
+    collect(child, found);
   }
+  return found;
+};
 
-  const originalValue = targetValue[method];
-  if (typeof originalValue !== "function") {
-    throw new Error(`afterPatch target has no ${method} method`);
-  }
+const matches = (element: FakeElement, selector: string): boolean =>
+  selector.startsWith(".") ? hasClass(element, selector.slice(1)) : element.tagName === selector;
 
-  const target = targetValue;
-  const original = originalValue as NativeMethod;
-  const handler = handlerValue as NativeAfterPatch;
-  const wrapped: NativeMethod = function (this: unknown, ...args: unknown[]) {
-    const result: unknown = Reflect.apply(original, this, args);
-    return Reflect.apply(handler, this, [args, result]);
-  };
-
-  target[method] = wrapped;
-  const record: PatchRecord = {
-    target,
-    method,
-    unpatch: () => {
-      if (target[method] === wrapped) target[method] = original;
+const makeElement = (tagName: string): FakeElement => {
+  const element: FakeElement = {
+    tagName,
+    className: "",
+    textContent: "",
+    style: { cssText: "", width: "" },
+    children: [],
+    parentNode: null,
+    ownerDocument: document,
+    listeners: {},
+    append(...nodes) {
+      for (const node of nodes) {
+        node.parentNode?.remove?.();
+        node.parentNode = element;
+        element.children.push(node);
+      }
+    },
+    after(node) {
+      const parent = element.parentNode;
+      if (!parent) return;
+      const index = parent.children.indexOf(element);
+      node.parentNode?.remove?.();
+      node.parentNode = parent;
+      parent.children.splice(index + 1, 0, node);
+    },
+    remove() {
+      const parent = element.parentNode;
+      if (!parent) return;
+      parent.children = parent.children.filter((child) => child !== element);
+      element.parentNode = null;
+    },
+    addEventListener(name, listener) {
+      element.listeners[name] = listener;
+    },
+    querySelector(selector) {
+      return collect(element).find((child) => matches(child, selector)) ?? null;
+    },
+    querySelectorAll(selector) {
+      return collect(element).filter((child) => matches(child, selector));
+    },
+    setAttribute() {
+      // Attributes do not affect these assertions.
     },
   };
-  patches.push(record);
-  return record;
-}
+  return element;
+};
 
-class MiniAchievementsFixture {
-  props: unknown = { progress: "4 / 10" };
-  _reactInternals: unknown;
-  displayedProgress: string | null = null;
-
-  forceUpdate(): void {
-    this.displayedProgress = this.render()?.progress ?? null;
+const makeDocument = (): FakeDocument => {
+  class FakeMutationObserver {
+    observe() {
+      // Observation is re-armed on every sync; the tests call sync via timers.
+    }
+    disconnect() {
+      // Nothing to release in the fake document.
+    }
   }
-
-  render() {
-    const props = this.props as { progress?: string; onSeek?: (section: string) => void };
-    return props.onSeek ? { progress: props.progress } : null;
-  }
-
-  activate() {
-    const props = this.props as { onSeek?: (section: string) => void };
-    if (typeof props.onSeek === "function") props.onSeek("achievements");
-  }
-}
-
-function makeController(label: string): SteamObject {
-  const calls: string[] = [];
-  const contexts: unknown[] = [];
-  const controller: SteamObject = {
-    label,
-    calls,
-    contexts,
+  const doc: FakeDocument = {
+    querySelector: (selector) =>
+      (matches(section, selector) ? section : collect(section).find((child) => matches(child, selector))) ?? null,
+    querySelectorAll: (selector) => collect(section).filter((child) => matches(child, selector)),
+    createElement: (tag) => makeElement(tag),
+    createElementNS: (_namespace, tag) => makeElement(tag),
+    defaultView: { MutationObserver: FakeMutationObserver },
   };
-  controller.SeekToSection = function (this: unknown, section: string): void {
-    calls.push(section);
-    contexts.push(this);
+  return doc;
+};
+
+const installProgressCache = (entry?: Record<string, unknown>) => {
+  const mapCache = new Map<number, Record<string, unknown>>();
+  if (entry) mapCache.set(APP_ID, entry);
+  const hasAchievements = vi.fn(() => true);
+  const queueUpdate = vi.fn();
+  steamGlobals.appAchievementProgressCache = {
+    BGameHasAchievements: hasAchievements,
+    QueueCacheUpdate: queueUpdate,
+    m_achievementProgress: { mapCache },
   };
-  return controller;
-}
+  return { mapCache, hasAchievements, queueUpdate };
+};
 
-function makeNativeFixture(): NativeFixture {
-  const instance = new MiniAchievementsFixture();
-  const nearestController = makeController("nearest");
-  const outerController = makeController("outer");
-  const outerFiber = { stateNode: outerController };
-  const nearestFiber = { stateNode: nearestController, return: outerFiber };
-  const miniFiber = {
-    type: MiniAchievementsFixture,
-    stateNode: instance,
-    return: nearestFiber,
+const progress = (unlocked: number, total: number, percentage: number) => ({
+  appid: APP_ID,
+  unlocked,
+  total,
+  percentage,
+});
+
+const setOverview = (overview: Record<string, unknown> | null) => {
+  steamGlobals.appStore = { allApps: overview ? [overview] : [] };
+};
+
+const mountSection = (appId = APP_ID) => {
+  section = makeElement("div");
+  section.className = classes.GameStatsSection;
+  section.ownerDocument = document;
+  const lastPlayed = makeElement("div");
+  lastPlayed.className = classes.GameStat;
+  const playtime = makeElement("div");
+  playtime.className = `${classes.GameStat} ${classes.Playtime}`;
+  section.append(lastPlayed, playtime);
+  Reflect.set(section, "__reactFiber$test", {
+    memoizedProps: { overview: { appid: appId } },
+    return: null,
+  });
+  steamGlobals.SteamUIStore = {
+    m_WindowStore: { GamepadUIMainWindowInstance: { m_BrowserWindow: { document } } },
   };
-  instance._reactInternals = miniFiber;
-  const rootFiber = { child: miniFiber };
-  const document = {
-    title: "Steam Big Picture Mode",
-    body: { "__reactFiber$fixture": rootFiber },
-  };
-  const manager: SteamObject = {
-    m_rgPopups: [
-      {
-        m_strTitle: "Steam Big Picture Mode",
-        m_popup: { document },
-      },
-    ],
-  };
+  return { playtime };
+};
 
-  return { instance, manager, nearestController, outerController };
-}
+const install = () => {
+  vi.useFakeTimers();
+  dispose = installMiniAchievementsPatch();
+  vi.advanceTimersByTime(0);
+};
 
-function renderRoute(owner: SteamObject): void {
-  const renderFunc = owner.renderFunc;
-  if (typeof renderFunc !== "function") {
-    throw new Error("app-details owner has no renderFunc");
-  }
-  Reflect.apply(renderFunc, owner, []);
-}
+const row = () => section.querySelector(`.${ROW_CLASS}`);
+const countText = () =>
+  (row() ? collect(row() as FakeElement).find((child) => hasClass(child, classes.AchievementCountLabel))?.textContent : "") ?? "";
 
-function installAtAppRoute(manager: unknown): InstalledPage {
-  vi.stubGlobal("window", { g_PopupManager: manager });
-  const routeTree = { native: "app details tree" };
-  const owner: SteamObject = {
-    renderFunc: () => routeTree,
-  };
-  const routeProps = { children: { props: owner } };
-  const dispose = installMiniAchievementsPatch();
-
-  if (!routeCallback) throw new Error("router hook did not register its callback");
-  routeCallback(routeProps);
-  renderRoute(owner);
-  return { dispose };
-}
-
-function readProps(instance: MiniAchievementsFixture): SteamObject {
-  if (!isSteamObject(instance.props)) {
-    throw new Error("fixture props are not an object");
-  }
-  return instance.props;
-}
-
-function replaceSeekController(
-  instance: MiniAchievementsFixture,
-  controller: SteamObject,
-  outerController: SteamObject,
-): void {
-  instance._reactInternals = {
-    stateNode: {},
-    return: {
-      stateNode: controller,
-      return: { stateNode: outerController },
-    },
-  };
-}
+const applyDetailPatch = (routeProps: { renderFunc: () => unknown }) => {
+  detailPatches.find((candidate) => candidate.route === "/library/app/:appid")?.callback({ props: routeProps });
+};
 
 beforeEach(() => {
-  vi.useFakeTimers();
-  routeCallback = undefined;
-  patches = [];
-  backend.getMiniAchievementsEnabled.mockReset().mockResolvedValue(false);
-  backend.setMiniAchievementsEnabled.mockReset().mockImplementation(async enabled => enabled);
-
+  detailPatches = [];
   mocks.addPatch.mockReset();
-  mocks.addPatch.mockImplementation(
-    (_route: string, callback: RouteCallback) => {
-      routeCallback = callback;
-      return callback;
-    },
-  );
   mocks.removePatch.mockReset();
-  mocks.removePatch.mockImplementation(() => {});
-  mocks.afterPatch.mockReset();
-  mocks.afterPatch.mockImplementation(
-    (target: unknown, method: string, handler: unknown) =>
-      installRealisticAfterPatch(target, method, handler),
-  );
-  mocks.debug.mockReset();
-  mocks.info.mockReset();
-  mocks.warn.mockReset();
+  mocks.addPatch.mockImplementation((route: string, callback: DetailPatch["callback"]) => {
+    const record = { route, callback };
+    detailPatches.push(record);
+    return record;
+  });
+  mocks.removePatch.mockImplementation((_route: string, record: DetailPatch) => {
+    detailPatches = detailPatches.filter((candidate) => candidate !== record);
+  });
+  mocks.navigate.mockReset();
+  unregister = vi.fn();
+  onAchievementChange = undefined;
+  register = vi.fn((listener: (appId?: unknown) => void) => {
+    onAchievementChange = listener;
+    return unregister;
+  });
+  steamGlobals.SteamClient = { Apps: { RegisterForAchievementChanges: register } };
+  setOverview({ appid: APP_ID, display_name: "Brotato", installed: true });
+  document = makeDocument();
+  section = makeElement("div");
+  dispose = undefined;
 });
 
 afterEach(() => {
-  for (const controller of controllers.splice(0)) controller.stop();
-  for (const monitor of conflictMonitors.splice(0)) monitor.stop();
-  vi.clearAllTimers();
+  dispose?.();
+  dispose = undefined;
   vi.useRealTimers();
-  vi.unstubAllGlobals();
+  delete steamGlobals.SteamClient;
+  delete steamGlobals.appStore;
+  delete steamGlobals.appAchievementProgressCache;
+  delete steamGlobals.SteamUIStore;
 });
 
-describe("installMiniAchievementsPatch", () => {
-  it("coalesces route renders and captures later after an earlier page missed", () => {
-    let popupReads = 0;
-    const emptyManager = Object.defineProperty({}, "m_rgPopups", {
-      get() {
-        popupReads += 1;
-        return [];
-      },
-    });
-    const browserWindow = { g_PopupManager: emptyManager };
-    vi.stubGlobal("window", browserWindow);
+describe("mini achievements row", () => {
+  it("inserts Steam's counts right after Play Time", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    const { playtime } = mountSection();
+    install();
 
-    const routeTree = { native: "home-to-game route tree" };
-    const owner: SteamObject = { renderFunc: () => routeTree };
-    const routeProps = { children: { props: owner } };
-    const dispose = installMiniAchievementsPatch();
-    if (!routeCallback) throw new Error("router hook did not register its callback");
-    routeCallback(routeProps);
-
-    for (let render = 0; render < 6; render += 1) {
-      renderRoute(owner);
-    }
-    expect(popupReads).toBe(0);
-    vi.advanceTimersByTime(10_000);
-    const readsAfterBurst = popupReads;
-    vi.advanceTimersByTime(10_000);
-    expect(popupReads).toBe(readsAfterBurst);
-
-    const fixture = makeNativeFixture();
-    browserWindow.g_PopupManager = fixture.manager;
-    renderRoute(owner);
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    expect(popupReads).toBe(readsAfterBurst);
-    dispose();
+    const inserted = row();
+    expect(inserted).not.toBeNull();
+    expect(section.children.indexOf(inserted as FakeElement)).toBe(section.children.indexOf(playtime) + 1);
+    expect(countText()).toBe("80 / 179");
+    const fill = collect(inserted as FakeElement).find((child) => child.style.cssText.includes("height:100%"));
+    expect(fill?.style.width).toBe("45%");
   });
 
-  it("captures an already mounted page immediately when enabled", () => {
-    const fixture = makeNativeFixture();
-    vi.stubGlobal("window", { g_PopupManager: fixture.manager });
-    const owner: SteamObject = { renderFunc: () => ({ native: true }) };
-    const routeProps = { children: { props: owner } };
-    const dispose = installMiniAchievementsPatch();
+  it("opens the native achievements page when activated", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    mountSection();
+    install();
 
-    if (!routeCallback) throw new Error("router hook did not register its callback");
-    routeCallback(routeProps);
-    vi.runAllTimers();
+    row()?.listeners.click?.();
 
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    dispose();
+    expect(mocks.navigate).toHaveBeenCalledWith(`/library/app/${APP_ID}/achievements/my/individual`);
   });
 
-  it("preserves durable props while resolving the nearest controller on each activation", () => {
-    const fixture = makeNativeFixture();
-    const page = installAtAppRoute(fixture.manager);
-    vi.runAllTimers();
+  it("stays hidden for non-Steam shortcuts and games without achievements", () => {
+    installProgressCache();
+    mountSection();
+    setOverview({ appid: APP_ID, display_name: "Shortcut", app_type: 1073741824, BIsShortcut: () => true });
+    install();
+    expect(row()).toBeNull();
 
-    const originalWrappedProps = readProps(fixture.instance);
-    const handlerValue = originalWrappedProps.onSeek;
-    if (typeof handlerValue !== "function") {
-      throw new Error("native MiniAchievements props did not receive onSeek");
-    }
-    const onSeek = handlerValue as (section: string) => void;
-
-    fixture.instance.activate();
-    expect(fixture.nearestController.calls).toEqual(["achievements"]);
-    expect(fixture.nearestController.contexts[0]).toBe(fixture.nearestController);
-    expect(fixture.outerController.calls).toEqual([]);
-
-    const updatedRawProps = { label: "replacement render props" };
-    fixture.instance.props = updatedRawProps;
-    const updatedWrappedProps = readProps(fixture.instance);
-    expect(updatedWrappedProps.label).toBe("replacement render props");
-    expect(updatedWrappedProps.onSeek).toBe(onSeek);
-
-    const replacementController = makeController("replacement nearest");
-    replaceSeekController(
-      fixture.instance,
-      replacementController,
-      fixture.outerController,
-    );
-    fixture.instance.activate();
-    expect(replacementController.calls).toEqual(["achievements"]);
-    expect(replacementController.contexts[0]).toBe(replacementController);
-
-    const nativeSections: string[] = [];
-    const nativeHandler = (section: string): void => {
-      nativeSections.push(section);
+    setOverview({ appid: APP_ID, display_name: "Brotato", installed: true });
+    steamGlobals.appAchievementProgressCache = {
+      BGameHasAchievements: () => false,
+      QueueCacheUpdate: vi.fn(),
+      m_achievementProgress: { mapCache: new Map([[APP_ID, progress(0, 0, 0)]]) },
     };
-    const nativeProps = { label: "native callback", onSeek: nativeHandler };
-    fixture.instance.props = nativeProps;
-    expect(readProps(fixture.instance)).toBe(nativeProps);
-    expect(readProps(fixture.instance).onSeek).toBe(nativeHandler);
-    fixture.instance.activate();
-    expect(nativeSections).toEqual(["achievements"]);
-    expect(replacementController.calls).toEqual(["achievements"]);
-    page.dispose();
+    vi.runOnlyPendingTimers();
+    expect(row()).toBeNull();
   });
 
-  it("restores the newest raw props and continues cleanup after a route unpatch fails", () => {
-    const fixture = makeNativeFixture();
-    const originalNativeRender = MiniAchievementsFixture.prototype.render;
-    const page = installAtAppRoute(fixture.manager);
-    vi.runAllTimers();
+  it("leaves Steam's own bar alone when an older client still shows it", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    mountSection();
+    const nativeBar = makeElement("div");
+    nativeBar.className = classes.MiniAchievements;
+    section.append(nativeBar);
+    install();
 
-    const routeRenderPatch = patches.find((patch) => patch.method === "renderFunc");
-    if (!routeRenderPatch || typeof readProps(fixture.instance).onSeek !== "function") {
-      throw new Error("expected route and native render patches");
-    }
-
-    const latestRawProps = { label: "latest props before disable" };
-    fixture.instance.props = latestRawProps;
-    let routeUnpatchAttempts = 0;
-    routeRenderPatch.unpatch = () => {
-      routeUnpatchAttempts += 1;
-      throw new Error("route render owner was already detached");
-    };
-    mocks.removePatch.mockImplementation(() => {
-      throw new Error("router is shutting down");
-    });
-
-    page.dispose();
-    page.dispose();
-
-    const restoredDescriptor = Object.getOwnPropertyDescriptor(
-      fixture.instance,
-      "props",
-    );
-    expect(restoredDescriptor).toMatchObject({
-      value: latestRawProps,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-    expect(fixture.instance.props).toBe(latestRawProps);
-    expect(MiniAchievementsFixture.prototype.render).toBe(originalNativeRender);
-    expect(routeUnpatchAttempts).toBe(1);
-    expect(mocks.removePatch).toHaveBeenCalledTimes(1);
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
+    expect(section.querySelector(`.${ROW_CLASS}`)).toBeNull();
   });
 
-  it("cancels an outstanding capture attempt when disabled", () => {
-    let popupReads = 0;
-    const manager = Object.defineProperty({}, "m_rgPopups", {
-      get() {
-        popupReads += 1;
-        return [];
-      },
-    });
-    const page = installAtAppRoute(manager);
+  it("asks Steam to fill a cold progress cache and shows the counts afterwards", () => {
+    const cache = installProgressCache();
+    mountSection();
+    install();
+    expect(row()).toBeNull();
+    expect(cache.queueUpdate).toHaveBeenCalledWith(APP_ID);
 
-    page.dispose();
-    vi.runAllTimers();
+    cache.mapCache.set(APP_ID, progress(80, 179, 44.69));
+    vi.advanceTimersByTime(500);
 
-    expect(popupReads).toBe(0);
-    expect(mocks.removePatch).toHaveBeenCalledTimes(1);
+    expect(row()).not.toBeNull();
+    expect(cache.queueUpdate).toHaveBeenCalledTimes(1);
   });
-});
 
-describe("mini-achievements plugin conflict ownership", () => {
-  it("removes our native restoration while UI Restored is active and resumes after disable or removal", async () => {
-    const fixture = makeNativeFixture();
-    vi.stubGlobal("window", { g_PopupManager: fixture.manager });
-    const inventory = {
-      plugins: [] as Array<{ name: string }>,
-      disabledPlugins: [] as Array<{ name: string }>,
+  it("refreshes the counts when Steam reports an achievement change", () => {
+    const cache = installProgressCache(progress(80, 179, 44.69));
+    mountSection();
+    install();
+    expect(row()).not.toBeNull();
+
+    cache.mapCache.set(APP_ID, progress(81, 179, 45.25));
+    onAchievementChange?.(APP_ID);
+    vi.runOnlyPendingTimers();
+
+    expect(countText()).toBe("81 / 179");
+  });
+
+  it("keeps one row when it syncs twice and follows the game's app id", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    mountSection();
+    install();
+    onAchievementChange?.();
+    vi.advanceTimersByTime(0);
+    onAchievementChange?.();
+    vi.advanceTimersByTime(0);
+
+    expect(section.querySelectorAll(`.${ROW_CLASS}`)).toHaveLength(1);
+
+    const second = 1234567;
+    const cache = installProgressCache(progress(1, 2, 50));
+    cache.mapCache.set(second, progress(1, 2, 50));
+    setOverview({ appid: second, display_name: "Second", installed: true });
+    mountSection(second);
+    onAchievementChange?.();
+    vi.advanceTimersByTime(0);
+    expect(section.querySelectorAll(`.${ROW_CLASS}`)).toHaveLength(1);
+    const navigate = row()?.listeners.click;
+    navigate?.();
+    expect(mocks.navigate).toHaveBeenLastCalledWith(`/library/app/${second}/achievements/my/individual`);
+  });
+
+  it("retries after a route render until the page's stats section exists", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    mountSection();
+    steamGlobals.SteamUIStore = {
+      m_WindowStore: { GamepadUIMainWindowInstance: { m_BrowserWindow: { document: {
+        ...document,
+        querySelector: () => null,
+      } } } },
     };
-    const events = new EventTarget();
-    const monitor = new PluginConflictMonitor(() => ({
-      deckyState: { publicState: () => inventory, eventBus: events },
-    }));
-    conflictMonitors.push(monitor);
-    monitor.mount();
-    backend.getMiniAchievementsEnabled.mockResolvedValue(true);
-    const controller = new MiniAchievementsController(monitor);
-    controllers.push(controller);
-    controller.mount();
-    for (let index = 0; index < 4; index += 1) await Promise.resolve();
-    const owner: SteamObject = { renderFunc: () => ({ native: true }) };
-    const showPage = () => {
-      if (!routeCallback) throw new Error("router hook did not register its callback");
-      routeCallback({ children: { props: owner } });
-      vi.runAllTimers();
+    install();
+    expect(row()).toBeNull();
+
+    steamGlobals.SteamUIStore = {
+      m_WindowStore: { GamepadUIMainWindowInstance: { m_BrowserWindow: { document } } },
     };
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+    applyDetailPatch({ renderFunc: () => null });
+    vi.runOnlyPendingTimers();
 
-    inventory.plugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
-    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: false });
-    expect(backend.setMiniAchievementsEnabled).not.toHaveBeenCalled();
+    expect(row()).not.toBeNull();
+  });
 
-    inventory.disabledPlugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: true });
+  it("restores the page and releases every hook on dispose", () => {
+    installProgressCache(progress(80, 179, 44.69));
+    const { playtime } = mountSection();
+    install();
+    const inserted = row();
+    expect(inserted).not.toBeNull();
+    const routeProps = { renderFunc: () => null };
 
-    inventory.disabledPlugins = [];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
-    inventory.plugins = [];
-    events.dispatchEvent(new Event("update"));
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+    dispose?.();
+    dispose = undefined;
 
-    controller.stop();
-    inventory.plugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    inventory.plugins = [];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
+    expect(playtime.parentNode).toBe(section);
+    expect(section.querySelectorAll(`.${ROW_CLASS}`)).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(unregister).toHaveBeenCalledTimes(1);
+    expect(mocks.removePatch).toHaveBeenCalledTimes(3);
+    expect(detailPatches).toHaveLength(0);
+    routeProps.renderFunc();
   });
 });

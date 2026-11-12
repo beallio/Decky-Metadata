@@ -121,41 +121,47 @@ Home focus, and owned probes; leave the approved date-only migration in place.
 
 ### Mini achievements
 
-This feature changes both the frontend and a backend preference. Install a
-full-plugin ZIP before checking it; a frontend-only deployment cannot add the
-settings RPCs. Record both plugins' original settings and Loader enabled states
-before changing them. Disable **Decky UI Restored** in Decky Loader before
-testing Metadata's restoration; leave the peer's feature settings unchanged.
+This feature draws Metadata's own progress row on the game details page and
+changes a backend preference. Install a full-plugin ZIP before checking it; a
+frontend-only deployment cannot add the settings RPCs. Record both plugins'
+original settings and Loader enabled states before changing them. Disable
+**Decky UI Restored** in Decky Loader before testing Metadata's row; leave the
+peer's feature settings unchanged. Steam's November 2026 client removed the
+native bar this feature used to restore, so the row is plugin-drawn from
+Steam's progress cache.
 
 1. Use a Steam game with recorded achievement progress. With Decky UI Restored
-   disabled and Metadata's toggle off, capture the native page and progress.
+   disabled and Metadata's toggle off, confirm the Play Time stat row has no
+   achievement row.
 2. Open Metadata's **Mini achievements** section with D-pad/A. Confirm the new
    preference starts off, the section starts closed, and conflict notices are readable.
-   Enable it on the already-mounted game page. Check the visible bar beside
-   Play Time against Steam's native progress; do not use a synthetic counter.
-3. Return Home, then open the game later. Check that restoration still works
-   after the initial capture attempts have ended. Visit another Steam game and
-   return. Exercise the native achievement control and Back navigation.
-4. Disable and re-enable on a mounted page. Check that disabling restores the
-   baseline display, that enabling does not duplicate the bar, and that a QAM
-   close/reopen does not change the saved preference.
+   Enable it on the already-mounted game page. Confirm the row appears beside
+   Play Time and that its `unlocked / total` equals Steam's own achievements
+   page for the same game; open that page with A on the row and return.
+3. Return Home, then open the game later. Confirm the row returns with the same
+   counts. Visit another Steam game with achievements and return; the counts
+   must follow the game. Check a matched shortcut (Steam counts for its match),
+   an unmatched shortcut, and a game with no achievements (no row).
+4. Disable and re-enable on a mounted page. Check that disabling removes the
+   row, that enabling does not duplicate it, and that a QAM close/reopen does
+   not change the saved preference.
    Enable Decky UI Restored in Loader and verify Metadata removes only its own
-   restoration, preserves its saved choice, and shows the named conflict.
+   row, preserves its saved choice, and shows the named conflict.
    Metadata must remain paused even when the peer's mini-achievements setting
    is off, because detection is plugin-level. Disable or remove the peer and
    verify Metadata resumes. While paused, turn Metadata's switch off and verify
    it cannot be re-enabled until the peer is disabled, and does not resume after
    the peer is disabled. Hiding or freezing the peer must not clear the guard.
 5. Reload with the preference on and off. Check the corresponding display, then
-   unload Metadata and confirm its restoration is removed. Visit matched and
-   unmatched shortcuts to check that their existing metadata, links, and
-   controller behavior are unchanged; this feature adds no achievement mapping.
+   unload Metadata and confirm its row is removed. Visit matched and unmatched
+   shortcuts to check that their existing metadata, links, and controller
+   behavior are unchanged; this feature adds no achievement mapping.
 6. Run the applicable quick-link/re-render suite from the table above. Restore
    the original preferences and Loader enabled states. If both plugins are
    enabled, Metadata must stay paused regardless of the peer's feature settings.
 
-The supported configuration has one active restoration owner. Metadata's
-plugin-level guard prevents its restoration from running alongside enabled
+The supported configuration has one active display owner. Metadata's
+plugin-level guard prevents its row from appearing alongside enabled
 Decky UI Restored.
 
 ### Library cover artwork lookup

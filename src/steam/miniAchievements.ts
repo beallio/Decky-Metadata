@@ -1,648 +1,363 @@
-// Native restoration adapted from Decky UI Restored (GPL-3.0-or-later).
-// See NOTICE for source attribution.
+// Shows a mini achievement stat beside Play Time. Steam's November 2026 client
+// removed its own bar and gates the replacement behind a client feature flag, so
+// the row is drawn here from Steam's achievement progress. See NOTICE.
 import { routerHook } from "@decky/api";
-import { afterPatch } from "@decky/ui";
+import { afterPatch, findClassModule, findInReactTree, Navigation } from "@decky/ui";
 import * as log from "../log";
+import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, steamInternals } from "./core";
+import { findSteamUiDocumentMatch } from "./steamUiHost";
 
-const APP_ROUTE = "/library/app/:appid";
-const MAX_ANCESTOR_DEPTH = 2_000;
-const MAX_FIBER_NODES = 300_000;
-const MAX_FIBER_ANCHORS = 2_000;
-const INSTANCE_PATCH_FLAG = "__deckyMetadataMiniAchievementsRestore";
-const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1_000] as const;
+const ROW_CLASS = "decky-metadata-mini-achievements";
+const LABEL = "Achievements";
+const CACHE_RETRY_MS = 500;
+const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000] as const;
+const MAX_FIBER_DEPTH = 12;
+const TROPHY_PATH =
+  "M7 2h10v4a5 5 0 0 1-4 4.9V14h3v2H6v-2h3v-3.1A5 5 0 0 1 5 6V2h2Zm2 2v2a3 3 0 0 0 6 0V4H9Z";
 
-type SteamObject = Record<string, unknown>;
-type SeekHandler = (section: string) => void;
-type SeekFunction = (this: SteamObject, section: string) => void;
-type PrototypePatch = { unpatch: () => void };
-type MiniAchievementsClass = Function & { prototype: SteamObject };
-type MiniAchievementsCapture = {
-  MiniClass: MiniAchievementsClass | undefined;
-  instances: SteamObject[];
+type AchievementTotals = { unlocked: number; total: number; percentage: number };
+
+type AchievementProgressCache = {
+  BGameHasAchievements?: (appId: number) => unknown;
+  QueueCacheUpdate?: (appId: number) => unknown;
+  m_achievementProgress?: { mapCache?: { get?: (appId: number) => unknown } };
 };
-type AfterPatch = (
-  target: object,
-  method: string,
-  handler: (this: unknown, args: unknown[], result: unknown) => unknown,
-) => PrototypePatch;
-// Decky's declaration is broader than the native afterPatch callback used here.
-const patchAfter = afterPatch as unknown as AfterPatch;
 
-interface WindowWithPopupManager extends Window {
-  g_PopupManager?: unknown;
-}
+type AchievementsService = {
+  RegisterForAchievementChanges?: (listener: (appId?: unknown) => void) => unknown;
+};
 
-function isSteamObject(value: unknown): value is SteamObject {
-  return typeof value === "object" && value !== null;
-}
+type RowParts = { row: HTMLElement; count: HTMLElement; fill: HTMLElement };
 
-function safeDebug(message: string, ...args: unknown[]): void {
-  try {
-    log.debug("miniAchievements", message, ...args);
-  } catch {
-    // Logging must never escape into Steam's render path.
-  }
-}
+// Steam publishes its achievement progress cache on the global object.
+const cacheHost = globalThis as unknown as { appAchievementProgressCache?: unknown };
 
-function safeInfo(message: string, ...args: unknown[]): void {
-  try {
-    log.info("miniAchievements", message, ...args);
-  } catch {
-    // Logging must never make installation or cleanup fail.
-  }
-}
-
-function safeWarn(message: string, ...args: unknown[]): void {
-  try {
-    log.warn("miniAchievements", message, ...args);
-  } catch {
-    // Logging must never escape into Steam's render path.
-  }
-}
-
-function hasMiniAchievementsSignature(type: unknown): type is MiniAchievementsClass {
-  if (typeof type !== "function") return false;
-
-  try {
-    const prototype = type.prototype;
-    if (!isSteamObject(prototype)) return false;
-    const source = type.toString();
-    return (
-      source.includes('onSeek("achievements")') ||
-      source.includes("onSeek('achievements')")
-    );
-  } catch {
-    return false;
-  }
-}
-
-function withAchievementSeek(props: unknown, handler: SeekHandler): unknown {
-  if (!isSteamObject(props)) return props;
-
-  try {
-    if (props.onSeek != null) return props;
-    return { ...props, onSeek: handler };
-  } catch {
-    return props;
-  }
-}
-
-function findAncestorStateNode(
-  fiber: unknown,
-  predicate: (stateNode: SteamObject) => boolean,
-): SteamObject | undefined {
-  try {
-    let current = isSteamObject(fiber) ? fiber : undefined;
-    for (let depth = 0; current && depth < MAX_ANCESTOR_DEPTH; depth += 1) {
-      const stateNode = current.stateNode;
-      if (isSteamObject(stateNode) && predicate(stateNode)) return stateNode;
-      current = isSteamObject(current.return) ? current.return : undefined;
+// The play bar's CSS module, so the row inherits Steam's stat layout. It is
+// looked up on use: the module may not be registered when the plugin loads.
+let statsClassesCache: Record<string, string> | undefined;
+const statsClasses = (): Record<string, string> => {
+  if (!statsClassesCache?.GameStatsSection) {
+    try {
+      const found: unknown = findClassModule((module) => module.GameStat && module.Playtime);
+      if (found && typeof found === "object") statsClassesCache = found as Record<string, string>;
+    } catch {
+      // A failed lookup keeps the previous classes and retries on the next use.
     }
-  } catch {
-    // Fibers are Steam internals and may change while the tree is inspected.
   }
+  return statsClassesCache ?? {};
+};
 
-  return undefined;
-}
+const progressCache = (): AchievementProgressCache | undefined => {
+  const cache = cacheHost.appAchievementProgressCache;
+  return cache && typeof cache === "object" ? (cache as AchievementProgressCache) : undefined;
+};
 
-function resolveSeekController(instance: SteamObject): SteamObject | undefined {
+const achievementsService = (): AchievementsService => {
   try {
-    const fiber = instance._reactInternals ?? instance._reactInternalFiber;
-    return findAncestorStateNode(
-      fiber,
-      (stateNode) => typeof stateNode.SeekToSection === "function",
-    );
+    return (steamInternals().SteamClient?.Apps ?? {}) as AchievementsService;
   } catch {
-    return undefined;
+    return {};
   }
-}
+};
 
-function getFiberFromElement(element: unknown): SteamObject | undefined {
-  if (!isSteamObject(element)) return undefined;
-
+/** Counts Steam shows: owned achievements only, unlike the raw RPC list. */
+const totalsFor = (appId: number): AchievementTotals | null => {
+  if (!Number.isSafeInteger(appId) || appId <= 0) return null;
   try {
-    const key = Object.keys(element).find(
-      (candidate) =>
-        candidate.startsWith("__reactFiber$") ||
-        candidate.startsWith("__reactContainer$"),
-    );
-    const fiber = key ? element[key] : undefined;
-    return isSteamObject(fiber) ? fiber : undefined;
+    const cache = progressCache();
+    if (!cache) return null;
+    if (typeof cache.BGameHasAchievements === "function" && cache.BGameHasAchievements(appId) === false) return null;
+    const entry = cache.m_achievementProgress?.mapCache?.get?.(appId);
+    if (!entry || typeof entry !== "object" || !("unlocked" in entry) || !("total" in entry)) return null;
+    const unlocked = Number(entry.unlocked);
+    const total = Number(entry.total);
+    if (!Number.isFinite(unlocked) || !Number.isFinite(total) || total <= 0) return null;
+    const reported = "percentage" in entry ? Number(entry.percentage) : NaN;
+    const percentage = Number.isFinite(reported) ? reported : (unlocked / total) * 100;
+    return { unlocked, total, percentage: Math.min(100, Math.max(0, percentage)) };
   } catch {
-    return undefined;
+    return null;
   }
-}
+};
 
-function getFiberFromDocument(document: unknown): SteamObject | undefined {
-  if (!isSteamObject(document)) return undefined;
+const appIdFromProps = (props: unknown): number => {
+  if (!props || typeof props !== "object") return 0;
+  const overview = Reflect.get(props, "overview");
+  const details = Reflect.get(props, "details");
+  const fromOverview = Number(overview && typeof overview === "object" ? Reflect.get(overview, "appid") : NaN);
+  const fromDetails = Number(details && typeof details === "object" ? Reflect.get(details, "unAppID") : NaN);
+  const appId = Number.isSafeInteger(fromOverview) && fromOverview > 0 ? fromOverview : fromDetails;
+  return Number.isSafeInteger(appId) && appId > 0 ? appId : 0;
+};
 
-  try {
-    const bodyFiber = getFiberFromElement(document.body);
-    if (bodyFiber) return bodyFiber;
-
-    const querySelectorAll = document.querySelectorAll;
-    if (typeof querySelectorAll !== "function") return undefined;
-    const elements = querySelectorAll.call(
-      document,
-      "*",
-    ) as ArrayLike<unknown>;
-    const inspectedLimit = Math.min(elements.length, MAX_FIBER_ANCHORS);
-    for (let inspected = 0; inspected < inspectedLimit; inspected += 1) {
-      const fiber = getFiberFromElement(elements[inspected]);
-      if (fiber) return fiber;
-    }
-  } catch {
-    // Popup documents can disappear during navigation.
+/** The game a mounted stats section belongs to, from the fiber that rendered it. */
+const appIdFromSection = (section: unknown): number => {
+  if (!section || typeof section !== "object") return 0;
+  const key = Object.keys(section).find(
+    (name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"),
+  );
+  let fiber = key ? Reflect.get(section, key) : undefined;
+  for (let depth = 0; fiber && typeof fiber === "object" && depth < MAX_FIBER_DEPTH; depth += 1) {
+    const appId = appIdFromProps(Reflect.get(fiber, "memoizedProps"));
+    if (appId > 0) return appId;
+    fiber = Reflect.get(fiber, "return");
   }
+  return 0;
+};
 
-  return undefined;
-}
+const statsSection = () => {
+  const sectionClass = statsClasses().GameStatsSection;
+  if (!sectionClass) return undefined;
+  return findSteamUiDocumentMatch((document) => document.querySelector(`.${sectionClass}`) ?? undefined);
+};
 
-function popupValues(collection: unknown): unknown[] {
-  try {
-    if (Array.isArray(collection)) return collection;
-    if (!isSteamObject(collection)) return [];
+const buildRow = (document: Document): RowParts => {
+  const classes = statsClasses();
+  const row = document.createElement("div");
+  row.className = [ROW_CLASS, classes.GameStat].filter(Boolean).join(" ");
+  const icon = document.createElement("div");
+  icon.className = classes.GameStatIcon ?? "";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 20");
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
+  svg.style.cssText = "display:block;width:16px;height:16px";
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", TROPHY_PATH);
+  svg.append(path);
+  icon.append(svg);
+  const right = document.createElement("div");
+  right.className = classes.GameStatRight ?? "";
+  const label = document.createElement("div");
+  label.className = classes.PlayBarLabel ?? "";
+  label.textContent = LABEL;
+  const progressRow = document.createElement("div");
+  progressRow.className = classes.AchievementProgressRow ?? "";
+  const count = document.createElement("div");
+  count.className = [classes.PlayBarDetailLabel, classes.AchievementCountLabel].filter(Boolean).join(" ");
+  const bar = document.createElement("div");
+  bar.style.cssText = "height:2px;margin-top:3px;border-radius:1px;overflow:hidden;background:rgba(255,255,255,.2)";
+  const fill = document.createElement("div");
+  fill.style.cssText = "height:100%;width:0;background:#67c1f5";
+  bar.append(fill);
+  progressRow.append(count, bar);
+  right.append(label, progressRow);
+  row.append(icon, right);
+  return { row, count, fill };
+};
 
-    const values = collection.values;
-    if (typeof values === "function") {
-      return Array.from(values.call(collection) as Iterable<unknown>);
-    }
-
-    let iterator: unknown;
-    if (Symbol.iterator in collection) iterator = collection[Symbol.iterator];
-    if (typeof iterator === "function") {
-      return Array.from(collection as unknown as Iterable<unknown>);
-    }
-  } catch {
-    // Treat malformed popup collections as empty.
-  }
-
-  return [];
-}
-
-function isBigPicturePopup(popup: unknown, document: unknown): boolean {
-  try {
-    const popupObject = isSteamObject(popup) ? popup : undefined;
-    const popupData = isSteamObject(popupObject?.m_popup)
-      ? popupObject.m_popup
-      : undefined;
-    const documentObject = isSteamObject(document) ? document : undefined;
-    const titles = [
-      popupObject?.m_strTitle,
-      popupObject?.title,
-      popupData?.name,
-      documentObject?.title,
-    ];
-    return titles.some((title) => title === "Steam Big Picture Mode");
-  } catch {
-    return false;
-  }
-}
-
-function getBigPictureDocument(popupManager: unknown): unknown {
-  try {
-    if (!isSteamObject(popupManager)) return undefined;
-    const getPopups = popupManager.GetPopups;
-    const collection =
-      popupManager.m_rgPopups ??
-      (typeof getPopups === "function" ? getPopups.call(popupManager) : undefined);
-    const candidates: Array<{ document: unknown; isBigPicture: boolean }> = [];
-
-    for (const popup of popupValues(collection)) {
-      try {
-        const popupObject = isSteamObject(popup) ? popup : undefined;
-        const popupData = isSteamObject(popupObject?.m_popup)
-          ? popupObject.m_popup
-          : undefined;
-        const document = popupData?.document;
-        if (!document || !getFiberFromDocument(document)) continue;
-        candidates.push({
-          document,
-          isBigPicture: isBigPicturePopup(popup, document),
-        });
-      } catch {
-        // Skip individual popups that are closing or malformed.
-      }
-    }
-
-    return (
-      candidates.find((candidate) => candidate.isBigPicture)?.document ??
-      candidates[0]?.document
-    );
-  } catch {
-    return undefined;
-  }
-}
-
-function captureMiniAchievements(popupManager: unknown): MiniAchievementsCapture {
-  try {
-    const document = getBigPictureDocument(popupManager);
-    let rootFiber = getFiberFromDocument(document);
-    if (!rootFiber) return { MiniClass: undefined, instances: [] };
-
-    for (let depth = 0; depth < MAX_ANCESTOR_DEPTH; depth += 1) {
-      const parent = rootFiber.return;
-      if (!isSteamObject(parent)) break;
-      rootFiber = parent;
-    }
-
-    const stack = [rootFiber];
-    const instances: SteamObject[] = [];
-    const seenInstances = new Set<SteamObject>();
-    let MiniClass: MiniAchievementsClass | undefined;
-    let visited = 0;
-
-    while (stack.length > 0 && visited < MAX_FIBER_NODES) {
-      const fiber = stack.pop();
-      if (!fiber) continue;
-      visited += 1;
-
-      const type = fiber.elementType || fiber.type;
-      if (hasMiniAchievementsSignature(type)) {
-        MiniClass ??= type;
-        const instance = fiber.stateNode;
-        if (isSteamObject(instance) && !seenInstances.has(instance)) {
-          seenInstances.add(instance);
-          instances.push(instance);
-        }
-      }
-
-      // Push sibling first so the child is visited first.
-      if (isSteamObject(fiber.sibling)) stack.push(fiber.sibling);
-      if (isSteamObject(fiber.child)) stack.push(fiber.child);
-    }
-
-    return { MiniClass, instances };
-  } catch {
-    return { MiniClass: undefined, instances: [] };
-  }
-}
-
-/** Install the native mini-achievements restoration and return its disposer. */
+/** Install the achievement stat row and return its disposer. */
 export function installMiniAchievementsPatch(): () => void {
-  safeInfo("installing mini-achievements patch");
-
-  let routePatch: Parameters<typeof routerHook.removePatch>[1] | undefined;
-  let routePatchRegistered = false;
-  let routeRenderOwner: SteamObject | undefined;
-  let routeRenderPatch: PrototypePatch | undefined;
-  let prototypePatch: PrototypePatch | undefined;
-  let captureBurstActive = false;
-  let captureAttemptIndex = 0;
+  const unpatchers: Array<() => void> = [];
+  const attemptedAppIds = new Set<number>();
+  const retryTimers = new Set<ReturnType<typeof setTimeout>>();
+  let parts: RowParts | undefined;
+  let rowAppId = 0;
+  let observer: MutationObserver | undefined;
+  let observedSection: unknown;
   let captureTimer: ReturnType<typeof setTimeout> | undefined;
+  let captureAttempt = 0;
   let disposed = false;
-  const restoredInstances = new Map<SteamObject, () => void>();
-  const refreshTimers = new Map<SteamObject, ReturnType<typeof setTimeout>>();
+  let unsubscribe: (() => void) | undefined;
 
-  const finishCaptureBurst = (): void => {
-    captureTimer = undefined;
-    captureBurstActive = false;
-    captureAttemptIndex = 0;
-  };
-
-  const cancelCaptureBurst = (): void => {
-    if (captureTimer !== undefined) {
-      try {
-        clearTimeout(captureTimer);
-      } catch (error) {
-        safeWarn("capture timer cleanup failed", error);
-      }
-    }
-    finishCaptureBurst();
-  };
-
-  const cancelRefreshTimers = (): void => {
-    for (const timer of refreshTimers.values()) {
-      try {
-        clearTimeout(timer);
-      } catch (error) {
-        safeWarn("instance refresh timer cleanup failed", error);
-      }
-    }
-    refreshTimers.clear();
-  };
-
-  const scheduleRefresh = (instance: SteamObject): void => {
+  const removeRow = (): void => {
     try {
-      if (refreshTimers.has(instance)) return;
-      let timer: ReturnType<typeof setTimeout>;
-      timer = setTimeout(() => {
-        if (refreshTimers.get(instance) === timer) refreshTimers.delete(instance);
-        try {
-          const forceUpdate = instance.forceUpdate;
-          if (typeof forceUpdate === "function") forceUpdate.call(instance);
-        } catch {
-          // A detached instance is harmless; never throw into Steam.
-        }
-      }, 0);
-      refreshTimers.set(instance, timer);
+      parts?.row.remove();
     } catch {
-      // Refreshing is best-effort; never fail the native render path.
+      // The row's document may already be gone.
+    }
+    parts = undefined;
+    rowAppId = 0;
+  };
+
+  const setTimer = (callback: () => void, delay: number): void => {
+    const timer = setTimeout(() => {
+      retryTimers.delete(timer);
+      callback();
+    }, delay);
+    retryTimers.add(timer);
+  };
+
+  /** Ask Steam to fill a cold cache entry; the row re-reads once it has had time. */
+  const queueCacheUpdate = (appId: number): void => {
+    if (attemptedAppIds.has(appId)) return;
+    const cache = progressCache();
+    const queueUpdate = cache?.QueueCacheUpdate;
+    if (!cache || typeof queueUpdate !== "function") return;
+    attemptedAppIds.add(appId);
+    try {
+      queueUpdate.call(cache, appId);
+      setTimer(() => sync(), CACHE_RETRY_MS);
+    } catch (error) {
+      log.debug("miniAchievements", "achievement progress queue failed", appId, error);
     }
   };
 
-  const restoreInstance = (instance: SteamObject): (() => void) | undefined => {
+  const observeSection = (section: unknown): void => {
+    if (section === observedSection) return;
+    observer?.disconnect();
+    observedSection = section;
+    if (!section || typeof section !== "object") return;
+    const ownerDocument = Reflect.get(section, "ownerDocument");
+    const view = ownerDocument && typeof ownerDocument === "object" ? Reflect.get(ownerDocument, "defaultView") : undefined;
+    const Constructor = view ? Reflect.get(view, "MutationObserver") : undefined;
+    if (typeof Constructor !== "function") return;
+    const classes = statsClasses();
+    const closest = Reflect.get(section, "closest");
+    const playBar = classes.PlayBar && typeof closest === "function" ? closest.call(section, `.${classes.PlayBar}`) : null;
+    const scope = playBar ?? Reflect.get(section, "parentElement") ?? section;
+    observer = new Constructor(() => requestSync());
     try {
-      const existing = instance[INSTANCE_PATCH_FLAG];
-      if (typeof existing === "function") return existing as () => void;
-      if (existing != null) return undefined;
+      // A subtree watch survives Steam replacing the stats section itself.
+      (observer as MutationObserver).observe(scope as Node, { childList: true, subtree: true });
+    } catch {
+      observer = undefined;
+    }
+  };
 
-      const originalDescriptor = Object.getOwnPropertyDescriptor(instance, "props");
-      let rawProps = instance.props;
-      const onSeek: SeekHandler = (section) => {
-        try {
-          const controller = resolveSeekController(instance);
-          const seek = controller?.SeekToSection;
-          if (typeof seek === "function") {
-            (seek as SeekFunction).call(controller, section);
-          }
-        } catch {
-          // Native currently has no achievements target; activation no-ops.
-        }
-      };
-      let wrappedProps = withAchievementSeek(rawProps, onSeek);
-      let cleaned = false;
-
-      const cleanup = (): void => {
-        if (cleaned) return;
-        cleaned = true;
-
-        try {
-          if (originalDescriptor && "value" in originalDescriptor) {
-            Object.defineProperty(instance, "props", {
-              ...originalDescriptor,
-              value: rawProps,
-            });
-          } else if (originalDescriptor) {
-            Object.defineProperty(instance, "props", originalDescriptor);
-            originalDescriptor.set?.call(instance, rawProps);
-          } else {
-            delete instance.props;
-            let prototype = Object.getPrototypeOf(instance);
-            let inheritedDescriptor: PropertyDescriptor | undefined;
-            while (prototype) {
-              inheritedDescriptor = Object.getOwnPropertyDescriptor(
-                prototype,
-                "props",
-              );
-              if (inheritedDescriptor) break;
-              prototype = Object.getPrototypeOf(prototype);
-            }
-
-            if (inheritedDescriptor?.set) {
-              inheritedDescriptor.set.call(instance, rawProps);
-            } else if (
-              inheritedDescriptor &&
-              "value" in inheritedDescriptor &&
-              inheritedDescriptor.writable
-            ) {
-              instance.props = rawProps;
-            } else if (rawProps !== undefined) {
-              Object.defineProperty(instance, "props", {
-                configurable: true,
-                enumerable: true,
-                writable: true,
-                value: rawProps,
-              });
-            }
-          }
-        } catch (error) {
-          safeWarn("instance props restoration failed", error);
-        }
-
-        try {
-          if (instance[INSTANCE_PATCH_FLAG] === cleanup) {
-            delete instance[INSTANCE_PATCH_FLAG];
-          }
-        } catch (error) {
-          safeWarn("instance ownership marker cleanup failed", error);
-        }
-
-        scheduleRefresh(instance);
-      };
-
-      Object.defineProperty(instance, INSTANCE_PATCH_FLAG, {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: cleanup,
-      });
-      try {
-        Object.defineProperty(instance, "props", {
-          configurable: true,
-          enumerable: originalDescriptor?.enumerable ?? false,
-          get: () => wrappedProps,
-          set: (value: unknown) => {
-            rawProps = value;
-            wrappedProps = withAchievementSeek(rawProps, onSeek);
-          },
+  const sync = (): boolean => {
+    if (disposed) return true;
+    try {
+      const section = statsSection();
+      observeSection(section);
+      if (!section || typeof section !== "object") return false;
+      const classes = statsClasses();
+      const playtime = classes.Playtime ? Reflect.get(section, "querySelector")?.call(section, `.${classes.Playtime}`) : null;
+      if (!playtime || typeof playtime !== "object") return false;
+      const appId = appIdFromSection(section);
+      const overview = appId > 0 ? getNativeOverview(appId) : null;
+      const totals = overview && !isNativeNonSteamShortcut(overview) ? totalsFor(appId) : null;
+      if (!overview || !totals) {
+        removeRow();
+        if (overview && appId > 0) queueCacheUpdate(appId);
+        return true;
+      }
+      const document = Reflect.get(playtime, "ownerDocument");
+      if (!document || typeof document !== "object") return false;
+      // Steam's own bar is still present on clients that have not updated yet.
+      const nativeBar = classes.MiniAchievements
+        ? Reflect.get(section, "querySelector")?.call(section, `.${classes.MiniAchievements}`)
+        : null;
+      if (nativeBar) {
+        removeRow();
+        return true;
+      }
+      const current = Reflect.get(section, "querySelector")?.call(section, `.${ROW_CLASS}`);
+      if (!parts || current !== parts.row || rowAppId !== appId) {
+        removeRow();
+        parts = buildRow(document as Document);
+        rowAppId = appId;
+        parts.row.addEventListener("click", () => {
+          Navigation.Navigate(`/library/app/${appId}/achievements/my/individual`);
         });
-      } catch (error) {
-        try {
-          delete instance[INSTANCE_PATCH_FLAG];
-        } catch {
-          // Preserve the original props-definition failure.
-        }
-        throw error;
+        const after = Reflect.get(playtime, "after");
+        if (typeof after === "function") after.call(playtime, parts.row);
+        else Reflect.get(playtime, "parentNode")?.append?.(parts.row);
       }
-
-      scheduleRefresh(instance);
-      return cleanup;
-    } catch {
-      // A malformed or detached instance must never break the Steam UI.
-      return undefined;
-    }
-  };
-
-  const registerRestoredInstance = (instance: SteamObject): void => {
-    const cleanup = restoreInstance(instance);
-    if (cleanup) restoredInstances.set(instance, cleanup);
-  };
-
-  const disposeRouteRenderPatch = (): boolean => {
-    if (!routeRenderPatch) {
-      routeRenderOwner = undefined;
-      return true;
-    }
-
-    try {
-      routeRenderPatch.unpatch();
-      routeRenderPatch = undefined;
-      routeRenderOwner = undefined;
+      const countText = `${totals.unlocked} / ${totals.total}`;
+      const width = `${Math.round(totals.percentage)}%`;
+      if (parts.count.textContent !== countText) parts.count.textContent = countText;
+      if (parts.fill.style.width !== width) parts.fill.style.width = width;
       return true;
     } catch (error) {
-      safeWarn("route render trigger unpatch failed", error);
-      return false;
+      log.warn("miniAchievements", "achievement stat sync failed", error);
+      return true;
     }
   };
 
-  let scheduleNextCaptureAttempt: () => void;
-
-  const attemptCaptureAndPatch = (): void => {
-    try {
-      if (disposed || prototypePatch) {
-        finishCaptureBurst();
-        return;
-      }
-
-      let popupManager: unknown;
-      if (typeof window !== "undefined") {
-        const browserWindow = window as WindowWithPopupManager;
-        popupManager = browserWindow.g_PopupManager;
-      }
-      const { MiniClass, instances } = captureMiniAchievements(popupManager);
-      if (!MiniClass) {
-        safeDebug("MiniAchievements is not mounted; capture will retry if scheduled");
-        scheduleNextCaptureAttempt();
-        return;
-      }
-
-      if (typeof MiniClass.prototype.render !== "function") {
-        finishCaptureBurst();
-        return;
-      }
-
-      const patch = patchAfter(
-        MiniClass.prototype,
-        "render",
-        function (this: unknown, _args: unknown[], result: unknown): unknown {
-          if (!disposed && isSteamObject(this)) registerRestoredInstance(this);
-          return result;
-        },
-      );
-      if (!patch || typeof patch.unpatch !== "function") {
-        finishCaptureBurst();
-        return;
-      }
-
-      prototypePatch = patch;
-      for (const instance of instances) registerRestoredInstance(instance);
-      finishCaptureBurst();
-      safeInfo(
-        "native MiniAchievements class captured and patched",
-        `${instances.length} mounted instance(s) refreshed`,
-      );
-    } catch (error) {
-      finishCaptureBurst();
-      safeWarn("MiniAchievements capture failed", error);
-    }
+  const scheduleSync = (): void => {
+    if (disposed || captureTimer !== undefined) return;
+    const delay = CAPTURE_RETRY_DELAYS_MS[captureAttempt];
+    if (delay === undefined) return;
+    captureTimer = setTimeout(() => {
+      captureTimer = undefined;
+      if (sync() || disposed) return;
+      captureAttempt += 1;
+      scheduleSync();
+    }, delay);
   };
 
-  scheduleNextCaptureAttempt = (): void => {
-    try {
-      if (disposed || prototypePatch) {
-        finishCaptureBurst();
-        return;
-      }
-
-      const delay = CAPTURE_RETRY_DELAYS_MS[captureAttemptIndex];
-      if (delay === undefined) {
-        finishCaptureBurst();
-        return;
-      }
-
-      captureAttemptIndex += 1;
-      captureTimer = setTimeout(() => {
-        captureTimer = undefined;
-        attemptCaptureAndPatch();
-      }, delay);
-    } catch (error) {
-      finishCaptureBurst();
-      safeWarn("MiniAchievements capture scheduling failed", error);
+  /** A route render replaces the page, so its retry burst starts over at once. */
+  const requestSync = (): void => {
+    if (disposed) return;
+    captureAttempt = 0;
+    if (captureTimer !== undefined) {
+      clearTimeout(captureTimer);
+      captureTimer = undefined;
     }
+    scheduleSync();
   };
 
-  const scheduleCaptureBurst = (): void => {
-    try {
-      if (disposed || prototypePatch || captureBurstActive) return;
-      captureBurstActive = true;
-      captureAttemptIndex = 0;
-      scheduleNextCaptureAttempt();
-    } catch (error) {
-      finishCaptureBurst();
-      safeWarn("MiniAchievements capture burst failed", error);
-    }
+  const onAchievementsChanged = (appId?: unknown): void => {
+    const changed = Number(appId);
+    if (Number.isSafeInteger(changed) && changed > 0) attemptedAppIds.delete(changed);
+    else attemptedAppIds.clear();
+    requestSync();
   };
 
   try {
-    routePatch = routerHook.addPatch(APP_ROUTE, (props: unknown) => {
-      try {
-        const children = isSteamObject(props) ? props.children : undefined;
-        const ownerCandidate = isSteamObject(children) ? children.props : undefined;
-        const owner = isSteamObject(ownerCandidate) ? ownerCandidate : undefined;
-
-        if (owner !== routeRenderOwner && !disposeRouteRenderPatch()) {
-          return props;
-        }
-
-        if (typeof owner?.renderFunc !== "function") {
-          safeDebug("app-details route renderFunc is unavailable");
-          return props;
-        }
-
-        if (!routeRenderPatch) {
-          routeRenderPatch = patchAfter(
-            owner,
-            "renderFunc",
-            (_args: unknown[], renderedTree: unknown): unknown => {
-              scheduleCaptureBurst();
-              return renderedTree;
-            },
-          );
-          routeRenderOwner = owner;
-        }
-
-        // Cover enabling while an app-details page is already committed.
-        scheduleCaptureBurst();
-      } catch (error) {
-        safeWarn("app-details capture trigger installation failed", error);
-      }
-
-      return props;
-    });
-    routePatchRegistered = true;
+    const service = achievementsService();
+    const register = service.RegisterForAchievementChanges;
+    const cleanup = typeof register === "function" ? register.call(service, onAchievementsChanged) : undefined;
+    if (typeof cleanup === "function") unsubscribe = cleanup as () => void;
   } catch (error) {
-    safeWarn("app-details route hook registration failed", error);
+    log.warn("miniAchievements", "achievement change subscription failed", error);
+  }
+
+  requestSync();
+
+  for (const route of GAME_DETAIL_ROUTES) {
+    try {
+      const patch = routerHook.addPatch(route, (tree) => {
+        try {
+          const routeProps = findInReactTree(tree, (node) => node?.renderFunc);
+          if (typeof routeProps?.renderFunc === "function") {
+            const renderPatch = afterPatch(routeProps, "renderFunc", (_args: unknown[], rendered: unknown) => {
+              requestSync();
+              return rendered;
+            });
+            unpatchers.push(() => renderPatch.unpatch());
+          }
+        } catch (error) {
+          log.warn("miniAchievements", "achievement stat patch failed", error);
+        }
+        return tree;
+      });
+      unpatchers.push(() => routerHook.removePatch(route, patch));
+    } catch (error) {
+      log.warn("miniAchievements", "achievement stat route hook failed", error);
+    }
   }
 
   return () => {
-    if (disposed) return;
     disposed = true;
-    cancelCaptureBurst();
-    cancelRefreshTimers();
-
-    if (!disposeRouteRenderPatch()) {
-      safeWarn("route render trigger could not be fully removed");
+    removeRow();
+    observer?.disconnect();
+    observer = undefined;
+    observedSection = undefined;
+    if (captureTimer !== undefined) {
+      clearTimeout(captureTimer);
+      captureTimer = undefined;
     }
-
-    if (routePatchRegistered) {
+    for (const timer of retryTimers) clearTimeout(timer);
+    retryTimers.clear();
+    attemptedAppIds.clear();
+    if (unsubscribe) {
+      const release = unsubscribe;
+      unsubscribe = undefined;
       try {
-        routerHook.removePatch(APP_ROUTE, routePatch);
+        release();
       } catch (error) {
-        safeWarn("app-details route hook removal failed", error);
-      }
-      routePatchRegistered = false;
-    }
-
-    if (prototypePatch) {
-      const patch = prototypePatch;
-      prototypePatch = undefined;
-      try {
-        patch.unpatch();
-      } catch (error) {
-        safeWarn("MiniAchievements render patch removal failed", error);
+        log.warn("miniAchievements", "achievement change unsubscription failed", error);
       }
     }
-
-    for (const cleanup of restoredInstances.values()) {
+    for (const unpatch of unpatchers.splice(0)) {
       try {
-        cleanup();
-      } catch (error) {
-        safeWarn("instance props cleanup failed", error);
+        unpatch();
+      } catch {
+        // Steam may already have released the route.
       }
     }
-    restoredInstances.clear();
-
-    safeInfo("mini-achievements patch removed");
   };
 }

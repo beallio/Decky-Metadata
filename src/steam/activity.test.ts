@@ -174,6 +174,29 @@ describe("activity compatibility refresh", () => {
   });
 });
 
+describe("synthetic native Activity contract", () => {
+  // The refresh returns a Steam-shaped object; only these render fields are asserted.
+  type RenderableEvent = { BCanRender: () => boolean; preview: { strTitle: string; strSummary: string } };
+  const renderableEvents = (activity: unknown): RenderableEvent[] =>
+    ((activity as { appActivityByDay?: Array<{ events?: RenderableEvent[] }> } | null)
+      ?.appActivityByDay ?? []).flatMap((day) => day.events ?? []);
+
+  it("keeps every injected announcement renderable for the Steam feed card", async () => {
+    const appId = 9606;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Renderable news", "12345678901234567");
+
+    const events = renderableEvents(await refreshDeckyNativeActivityForApp(appId));
+
+    expect(events.length).toBeGreaterThan(0);
+    // Steam's feed filters and gates cards through event.BCanRender(), then draws
+    // the body from event.preview.
+    expect(events.every((event) => event.BCanRender() === true)).toBe(true);
+    expect(events[0].preview.strTitle).toBe("Renderable news");
+    expect(events[0].preview.strSummary).toBe("Renderable news summary");
+  });
+});
+
 describe("native Activity metadata removal", () => {
   it("removes stale injected cards for absent or empty metadata without disturbing other Activity", async () => {
     const appId = 9603;

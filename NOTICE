@@ -34,12 +34,14 @@ distributed under the GNU General Public License v3.0 or later, as stated in the
 accompanying LICENSE file. The BSD 3-Clause attribution above is retained for
 the Decky Plugin Template; the GPL terms govern this project as a whole.
 
-Mini achievements restoration
------------------------------
-src/steam/miniAchievements.ts adapts the native achievement-bar restoration
-from Decky UI Restored by beallio (the Decky-SteamAchievements source checkout).
-The source project and Decky Metadata are distributed under the
-GNU General Public License v3.0 or later.
+Mini achievements display
+-------------------------
+src/steam/miniAchievements.ts and the mini-achievements conflict guard derive
+from the achievement-bar work in Decky UI Restored by beallio (the
+Decky-SteamAchievements source checkout). Steam's November 2026 client removed
+that bar and gated its replacement, so Decky Metadata draws its own row from
+Steam's achievement progress. The source project and Decky Metadata are
+distributed under the GNU General Public License v3.0 or later.
 
     Decky UI Restored
     https://github.com/beallio/Decky-UI-Restored

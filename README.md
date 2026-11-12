@@ -141,15 +141,15 @@ The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi 
 
 ### Mini achievements
 
-Open **Mini achievements** and turn on **Enable mini achievements** to restore
-Steam's small achievement progress bar beside Play Time on game details pages.
-It is off by default and uses Steam's own progress data; it does not add
-achievement tracking to non-Steam games.
+Open **Mini achievements** and turn on **Enable mini achievements** to show a
+small achievement progress bar beside Play Time on game details pages. It is
+off by default and uses Steam's own progress data; it does not add achievement
+tracking to non-Steam games.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
 for setup, supported games, and troubleshooting.
 
-![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261003)
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261112)
 
 ### Community posts and news
 
