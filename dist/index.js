@@ -2859,9 +2859,12 @@ function useNativeCleanSurface(ref, enabled, nativeBackground) {
         if (!enabled || !row || !document || !view || !row.parentElement)
             return;
         const update = () => {
-            const section = row.nextElementSibling;
-            if (!section)
+            const section = row.nextElementSibling?.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.PlaySection}`);
+            if (!section) {
+                row.style.removeProperty("--hltb-native-backdrop");
+                row.style.removeProperty("--hltb-native-background");
                 return;
+            }
             const computed = view.getComputedStyle(section);
             row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
             if (nativeBackground)
@@ -2873,7 +2876,7 @@ function useNativeCleanSurface(ref, enabled, nativeBackground) {
         const observer = new view.MutationObserver(update);
         observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        observer.observe(row.parentElement, { childList: true });
+        observer.observe(row.parentElement, { childList: true, subtree: true });
         return () => {
             observer.disconnect();
             row.style.removeProperty("--hltb-native-backdrop");

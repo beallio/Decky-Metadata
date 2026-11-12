@@ -4,6 +4,7 @@ import {
   afterPatch,
   appDetailsClasses,
   appDetailsHeaderClasses,
+  basicAppDetailsSectionStylerClasses,
   createReactTreePatcher,
   findInReactTree,
 } from "@decky/ui";
@@ -99,8 +100,12 @@ function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled:
     const view = document?.defaultView;
     if (!enabled || !row || !document || !view || !row.parentElement) return;
     const update = () => {
-      const section = row.nextElementSibling;
-      if (!section) return;
+      const section = row.nextElementSibling?.querySelector(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      if (!section) {
+        row.style.removeProperty("--hltb-native-backdrop");
+        row.style.removeProperty("--hltb-native-background");
+        return;
+      }
       const computed = view.getComputedStyle(section);
       row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
       if (nativeBackground) row.style.setProperty("--hltb-native-background", computed.background);
@@ -110,7 +115,7 @@ function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled:
     const observer = new view.MutationObserver(update);
     observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-    observer.observe(row.parentElement, { childList: true });
+    observer.observe(row.parentElement, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
       row.style.removeProperty("--hltb-native-backdrop");
