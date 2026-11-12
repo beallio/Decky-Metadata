@@ -17,11 +17,12 @@ When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times
 
 | Setting | What it does |
 | --- | --- |
-| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. They are meant for the CSS Loader theme "Clean Gameview". In its **Transparent**, **Blur**, and **Connected with Body** Play bar styles, the times follow the Play bar's background and blur. |
+| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
+| **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the times. **None** removes the blur. |
 | **Use Steam button corners** | **"Clean"** styles only. Keeps the corners of the **Details** button as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
 | **Hide "Details"** | Removes the button that opens the HowLongToBeat page. |
 | **Toggle … stat** | Show or hide each of the four times. |
-| **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. When it is on, your background opacity also applies to the **"Clean"** styles. **Reset appearance** returns these to their defaults. |
+| **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. Background opacity and the bottom border apply to the **Default** style only, because the **"Clean"** styles match the Play bar. **Reset appearance** returns these to their defaults. |
 | **Clear HLTB cache** | Forgets saved times. Each game looks up its times again the next time you open it. |
 
 ## How a game is matched

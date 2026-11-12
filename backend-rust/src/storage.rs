@@ -582,6 +582,7 @@ pub fn normalize_protondb_badge_settings(value: &Value) -> Value {
 }
 
 const HLTB_STYLES: [&str; 4] = ["default", "clean", "clean-left", "clean-default"];
+const HLTB_BLURS: [&str; 3] = ["match", "blur", "none"];
 
 pub fn default_hltb_settings() -> Value {
     json!({
@@ -589,7 +590,7 @@ pub fn default_hltb_settings() -> Value {
         "nativeDetailsCorners": false,
         "showMain": true, "showMainPlus": true, "showComplete": true, "showAllStyles": true,
         "appearance": {"custom": false, "barAlpha": 25,
-                       "textShadow": false, "textScale": 100, "border": true},
+                       "textShadow": false, "textScale": 100, "border": true, "blur": "match"},
     })
 }
 
@@ -622,6 +623,9 @@ pub fn normalize_hltb_settings(value: &Value) -> Value {
         if let Some(scale) = hltb_step(appearance.get("textScale"), 75, 150) {
             target["textScale"] = json!(scale);
         }
+        if let Some(blur) = appearance.get("blur").and_then(Value::as_str).filter(|blur| HLTB_BLURS.contains(blur)) {
+            target["blur"] = json!(blur);
+        }
     }
     normalized
 }
@@ -646,6 +650,7 @@ pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
         || !source.get("style").and_then(Value::as_str).is_some_and(|style| HLTB_STYLES.contains(&style))
         || hltb_step(appearance.get("barAlpha"), 0, 100).is_none()
         || hltb_step(appearance.get("textScale"), 75, 150).is_none()
+        || !appearance.get("blur").and_then(Value::as_str).is_some_and(|blur| HLTB_BLURS.contains(&blur))
     {
         return Err(invalid());
     }
@@ -1367,6 +1372,7 @@ mod tests {
         changed["style"] = json!("clean-left");
         changed["nativeDetailsCorners"] = json!(true);
         changed["appearance"]["barAlpha"] = json!(55);
+        changed["appearance"]["blur"] = json!("blur");
         assert_eq!(validate_hltb_settings(&changed).unwrap(), changed);
         let mut legacy = defaults.clone();
         legacy.as_object_mut().unwrap().remove("nativeDetailsCorners");
@@ -1380,7 +1386,7 @@ mod tests {
             value[path] = bad;
             assert!(validate_hltb_settings(&value).is_err(), "{path}");
         }
-        for (key, bad) in [("barAlpha", json!(33)), ("textScale", json!(200)), ("linkColor", json!("steam"))] {
+        for (key, bad) in [("barAlpha", json!(33)), ("textScale", json!(200)), ("blur", json!("soft")), ("linkColor", json!("steam"))] {
             let mut value = defaults.clone();
             value["appearance"][key] = bad;
             assert!(validate_hltb_settings(&value).is_err(), "{key}");
@@ -1393,6 +1399,7 @@ mod tests {
         assert_eq!(repaired["style"], "default");
         assert_eq!(repaired["appearance"]["barAlpha"], 25);
         assert_eq!(repaired["appearance"]["textScale"], 150);
+        assert_eq!(repaired["appearance"]["blur"], "match");
         assert!(repaired.get("hiddenAppIds").is_none() && repaired["appearance"].get("linkColor").is_none());
         assert_eq!(normalize_hltb_settings(&Value::Null), defaults);
     }

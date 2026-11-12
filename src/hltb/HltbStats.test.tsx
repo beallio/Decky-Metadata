@@ -34,6 +34,11 @@ describe("HLTB stats", () => {
     expect(render({ launching: true })).toBeNull();
     expect(render({ stats: { main: 0, plus: -1, complete: 0, all: 0 } })).toBeNull();
   });
+  it("applies an explicit clean blur override", () => {
+    const settings = { ...DEFAULT_HLTB_SETTINGS, style: "clean-default" as const, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, blur: "blur" as const } };
+    const bar = nodes(render({ settings })).find(node => node.props.className?.includes("decky-metadata-hltb-clean-default"))!;
+    expect(bar.props.style["--hltb-clean-blur"]).toBe("blur(8px)");
+  });
   it("honors stat and details visibility", () => {
     const tree = render({ settings: { ...DEFAULT_HLTB_SETTINGS, showMain: false, showComplete: false, hideViewDetails: true } });
     expect(text(tree)).not.toContain("Main Story");

@@ -298,6 +298,7 @@ export const Content = () => {
   const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
   const [protonDbCoverControl, setProtonDbCoverControlState] = useState<HTMLDivElement | null>(null);
   const [hltbStyleControl, setHltbStyleControlState] = useState<HTMLDivElement | null>(null);
+  const [hltbBlurControl, setHltbBlurControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -320,6 +321,10 @@ export const Content = () => {
   const setHltbStyleControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setHltbStyleControlState(element);
+  }, []);
+  const setHltbBlurControl = useCallback((element: HTMLDivElement | null) => {
+    if (!element) noteCompatibilityDropdownControlUnmounted();
+    setHltbBlurControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -352,7 +357,7 @@ export const Content = () => {
 
   useEffect(() => {
     const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
-      protonDbCoverControl || hltbStyleControl;
+      protonDbCoverControl || hltbStyleControl || hltbBlurControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -370,7 +375,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbBlurControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -401,12 +406,13 @@ export const Content = () => {
       ? compatibilityDefaultScopeControl
       : origin === "quality" ? trailerQualityControl
       : origin === "hltb-style" ? hltbStyleControl
+      : origin === "hltb-blur" ? hltbBlurControl
       : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
     const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
-      : origin === "hltb-style" ? hltbSnapshot.settingsLoaded
+      : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.settingsLoaded
       : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
     const busy = origin === "quality" ? trailerSnapshot.busy
-      : origin === "hltb-style" ? hltbSnapshot.busy
+      : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.busy
       : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
     if (!isCompatibilityDropdownReturnReady() || !control) return;
     let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
@@ -973,7 +979,7 @@ export const Content = () => {
         onCoverPositionControlRef={setProtonDbCoverControl}
       />
       <HltbSection
-        initiallyExpanded={returningDropdown === "hltb-style"}
+        initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-blur"}
         settings={hltbSnapshot.settings}
         settingsLoaded={hltbSnapshot.settingsLoaded}
         busy={hltbSnapshot.busy}
@@ -996,6 +1002,21 @@ export const Content = () => {
           noteCompatibilityDropdownControlUnmounted();
         }}
         onStyleControlRef={setHltbStyleControl}
+        onBlurChange={async (blur) => {
+          requestCompatibilityDropdownReturn("hltb-blur");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            const current = hltbController.getSnapshot().settings;
+            return await hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
+          }
+        }}
+        onBlurMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("hltb-blur");
+          noteCompatibilityDropdownControlUnmounted();
+        }}
+        onBlurControlRef={setHltbBlurControl}
       />
       <GameTrailersSection
         initiallyExpanded={returningDropdown === "quality"}

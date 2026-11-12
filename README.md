@@ -112,9 +112,10 @@ Story, Main + Extras, Completionist, and All Styles. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
 You can choose the HowLongToBeat game for a non-Steam game in its editor. The
 styles and appearance options of HLTB for Deck are included. The **"Clean"**
-styles follow the Clean Gameview **Transparent**, **Blur**, and **Connected with
-Body** Play bars, and **Use Steam button corners** keeps the **Details**
-button's corners as Steam draws them.
+styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
+Body** Play bars, **Background blur** matches or overrides the Play bar's blur,
+and **Use Steam button corners** keeps the **Details** button's corners as Steam
+draws them.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam
