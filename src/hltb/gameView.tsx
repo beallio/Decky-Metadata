@@ -13,6 +13,7 @@ import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metada
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
 import { hltbStore, type HltbInputs } from "./store";
+import type { HltbBlur, HltbSettings } from "./settings";
 import type { HltbEntry } from "../backend";
 
 const ROW_KEY = "decky-metadata-hltb-row";
@@ -91,23 +92,71 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
 
 /**
  * Mirror the native Play section's surface onto the row so the "Clean" styles
- * follow Clean Gameview's Play Bar Style, including live theme changes.
+ * follow Clean Gameview's Play Bar Style, including live theme changes. For
+ * "Clean Default" with blur, extend the Play section behind the row instead of
+ * blurring a second layer, so both read as one surface.
  */
-function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled: boolean): void {
+function useNativeCleanSurface(
+  ref: { current: HTMLDivElement | null },
+  enabled: boolean,
+  style: HltbSettings["style"],
+  blur: HltbBlur,
+): void {
   useEffect(() => {
     const row = ref.current;
     const document = row?.ownerDocument;
     const view = document?.defaultView;
     if (!enabled || !row || !document || !view || !row.parentElement) return;
+    let joined: HTMLElement | null = null;
+    let saved = { margin: "", padding: "", backdrop: "" };
+    let basePadding = "0px";
+    let baseMargin = "0px";
+    let resize: ResizeObserver | null = null;
+    let observedBar: HTMLElement | null = null;
+    const unjoin = () => {
+      if (!joined) return;
+      joined.style.marginTop = saved.margin;
+      joined.style.paddingTop = saved.padding;
+      joined.style.backdropFilter = saved.backdrop;
+      joined = null;
+    };
     const update = () => {
-      const section = row.nextElementSibling?.querySelector(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      const section = row.nextElementSibling?.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      const bar = row.querySelector<HTMLElement>(".decky-metadata-hltb-info");
+      if (bar !== observedBar) {
+        resize?.disconnect();
+        observedBar = bar;
+        if (bar) {
+          resize = new view.ResizeObserver(update);
+          resize.observe(bar);
+        }
+      }
       if (!section) {
+        unjoin();
         row.style.removeProperty("--hltb-native-backdrop");
         row.style.removeProperty("--hltb-native-background");
         return;
       }
       const computed = view.getComputedStyle(section);
-      row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
+      const effective = blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter;
+      const height = bar?.offsetHeight ?? 0;
+      if (style === "clean-default" && effective !== "none" && computed.backdropFilter !== "none" && height > 0) {
+        if (joined !== section) {
+          unjoin();
+          joined = section;
+          saved = { margin: section.style.marginTop, padding: section.style.paddingTop, backdrop: section.style.backdropFilter };
+          basePadding = view.getComputedStyle(section).paddingTop;
+          baseMargin = view.getComputedStyle(section).marginTop;
+        }
+        section.style.marginTop = `calc(${baseMargin} - ${height}px)`;
+        section.style.paddingTop = `calc(${basePadding} + ${height}px)`;
+        section.style.backdropFilter = blur === "blur" ? "blur(8px)" : saved.backdrop;
+        row.style.setProperty("--hltb-native-background", "transparent");
+        row.style.setProperty("--hltb-native-backdrop", "none");
+        return;
+      }
+      unjoin();
+      row.style.setProperty("--hltb-native-backdrop", effective);
       row.style.setProperty("--hltb-native-background", computed.background);
     };
     update();
@@ -117,10 +166,12 @@ function useNativeCleanSurface(ref: { current: HTMLDivElement | null }, enabled:
     observer.observe(row.parentElement, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
+      resize?.disconnect();
+      unjoin();
       row.style.removeProperty("--hltb-native-backdrop");
       row.style.removeProperty("--hltb-native-background");
     };
-  }, [enabled]);
+  }, [enabled, style, blur]);
 }
 
 function HltbGameRow({ appId }: { appId: number }) {
@@ -128,7 +179,7 @@ function HltbGameRow({ appId }: { appId: number }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
-  useNativeCleanSurface(ref, active && snapshot.settings.style !== "default");
+  useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", snapshot.settings.style, snapshot.settings.appearance.blur);
   if (!active) return null;
   return (
     <div ref={ref} style={{ position: "relative" }}>
