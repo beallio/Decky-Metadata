@@ -1471,6 +1471,7 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
 const DEFAULT_HLTB_SETTINGS = {
     enabled: false, style: "default", hideViewDetails: false,
     showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    nativeDetailsCorners: false,
     appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true },
 };
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -1490,6 +1491,7 @@ function normalizeHltbSettings(value) {
         showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
         showComplete: bool(stored.showComplete, defaults.showComplete),
         showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
         appearance: {
             custom: bool(appearance.custom, defaultAppearance.custom),
             barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
@@ -1522,7 +1524,7 @@ function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy
     const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
-    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Use Steam button corners", description: `Uses Steam's normal button corners on the Clean styles' Details button instead of the Round theme's rounded corners`, checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -2729,7 +2731,7 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.5; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.5))); backdrop-filter: var(--hltb-native-backdrop, none); }
 .decky-metadata-hltb-clean-default { padding: 0; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
@@ -2743,6 +2745,7 @@ const css = `
 .decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
 .decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
 `;
 function HltbStats({ stats, hltbId, settings, launching }) {
@@ -2769,7 +2772,7 @@ function HltbStats({ stats, hltbId, settings, launching }) {
     const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
     return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: classes, style: vars, children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
                                 ? SP_JSX.jsx(DFL.Focusable, { className: `${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`, focusClassName: detailsClasses.Focused, children: SP_JSX.jsx(DFL.Focusable, { className: detailsClasses.Details, noFocusRing: false, onActivate: openDetails, children: "Details" }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button`, onActivate: openDetails, children: "Details" }) }) : null] }) })] });
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: "Details" }) }) : null] }) })] });
 }
 
 const ROW_KEY = "decky-metadata-hltb-row";
@@ -2844,11 +2847,46 @@ function useHltbMatch(appId, wanted) {
     });
     return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
 }
+/**
+ * Mirror the native Play section's surface onto the row so the "Clean" styles
+ * follow Clean Gameview's Play Bar Style, including live theme changes.
+ */
+function useNativeCleanSurface(ref, enabled, nativeBackground) {
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!enabled || !row || !document || !view || !row.parentElement)
+            return;
+        const update = () => {
+            const section = row.nextElementSibling;
+            if (!section)
+                return;
+            const computed = view.getComputedStyle(section);
+            row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
+            if (nativeBackground)
+                row.style.setProperty("--hltb-native-background", computed.background);
+            else
+                row.style.removeProperty("--hltb-native-background");
+        };
+        update();
+        const observer = new view.MutationObserver(update);
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        observer.observe(row.parentElement, { childList: true });
+        return () => {
+            observer.disconnect();
+            row.style.removeProperty("--hltb-native-backdrop");
+            row.style.removeProperty("--hltb-native-background");
+        };
+    }, [enabled, nativeBackground]);
+}
 function HltbGameRow({ appId }) {
     const snapshot = useHltbSnapshot();
     const ref = SP_REACT.useRef(null);
     const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
     const launching = useLaunching(ref, active);
+    useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", !snapshot.settings.appearance.custom);
     if (!active)
         return null;
     return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));

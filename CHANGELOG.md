@@ -12,6 +12,13 @@ All notable changes to this project are documented here in Keep a Changelog form
   styles it looks like the ProtonDB and controller buttons beside Play, and it
   follows the corner rounding of the CSS Loader theme "Round". The **"View
   Details" color** option is removed.
+- **HLTB "Clean" bars follow the Clean Gameview style.** In the Clean Gameview
+  **Transparent**, **Blur**, and **Connected with Body** Play bar styles, the
+  HLTB row now uses the same background and blur as the Play bar. A background
+  opacity you set with **Customize appearance** is kept.
+- **"Clean" HLTB Details corners.** The new **Use Steam button corners** option
+  keeps the **Details** button corners as Steam draws them, so the "Round" theme
+  does not round them. It is off by default.
 
 ### Removed
 
