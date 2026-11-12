@@ -334,6 +334,22 @@ describe("mini achievements row", () => {
     expect(cache.queueUpdate).toHaveBeenCalledTimes(1);
   });
 
+  it("polls past the first retry when Steam answers the cache request late", () => {
+    const cache = installProgressCache();
+    mountSection();
+    install();
+    expect(row()).toBeNull();
+
+    vi.advanceTimersByTime(500);
+    expect(row()).toBeNull();
+
+    // No DOM mutation: only the bounded poll can reveal the late cache entry.
+    cache.mapCache.set(APP_ID, progress(80, 179, 44.69));
+    vi.advanceTimersByTime(1000);
+    expect(row()).not.toBeNull();
+    expect(countText()).toBe("80 / 179");
+  });
+
   it("refreshes the counts when Steam reports an achievement change", () => {
     const cache = installProgressCache(progress(80, 179, 44.69));
     mountSection();

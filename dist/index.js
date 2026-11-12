@@ -14163,7 +14163,8 @@ const startTrailerController = () => {
 // the row is drawn here from Steam's achievement progress. See NOTICE.
 const ROW_CLASS = "decky-metadata-mini-achievements";
 const LABEL = "Achievements";
-const CACHE_RETRY_MS = 500;
+// Steam fills the progress cache from an RPC that can outlast one poll.
+const CACHE_RETRY_DELAYS_MS = [500, 1500, 3000, 6000, 12000];
 const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000];
 const MAX_FIBER_DEPTH = 12;
 const TROPHY_PATH = "M7 2h10v4a5 5 0 0 1-4 4.9V14h3v2H6v-2h3v-3.1A5 5 0 0 1 5 6V2h2Zm2 2v2a3 3 0 0 0 6 0V4H9Z";
@@ -14317,7 +14318,7 @@ function installMiniAchievementsPatch() {
         }, delay);
         retryTimers.add(timer);
     };
-    /** Ask Steam to fill a cold cache entry; the row re-reads once it has had time. */
+    /** Ask Steam to fill a cold cache entry; the row re-reads while it stays empty. */
     const queueCacheUpdate = (appId) => {
         if (attemptedAppIds.has(appId))
             return;
@@ -14328,7 +14329,8 @@ function installMiniAchievementsPatch() {
         attemptedAppIds.add(appId);
         try {
             queueUpdate.call(cache, appId);
-            setTimer(() => sync(), CACHE_RETRY_MS);
+            for (const delay of CACHE_RETRY_DELAYS_MS)
+                setTimer(sync, delay);
         }
         catch (error) {
             debug("miniAchievements", "achievement progress queue failed", appId, error);
