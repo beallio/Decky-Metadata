@@ -24,7 +24,7 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); backdrop-filter: var(--hltb-clean-blur, var(--hltb-native-backdrop, none)); }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); backdrop-filter: var(--hltb-native-backdrop, none); }
 .decky-metadata-hltb-clean-default { padding: 0; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
@@ -46,7 +46,6 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
   if (!stats || launching || Object.values(stats).every(value => value <= 0)) return null;
   const { appearance, style } = settings;
   const vars: Record<string, string> = {};
-  if (style !== "default" && appearance.blur !== "match") vars["--hltb-clean-blur"] = appearance.blur === "blur" ? "blur(8px)" : "none";
   if (appearance.custom) {
     vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
     if (appearance.textShadow) vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";

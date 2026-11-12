@@ -2737,7 +2737,7 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); backdrop-filter: var(--hltb-clean-blur, var(--hltb-native-backdrop, none)); }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); backdrop-filter: var(--hltb-native-backdrop, none); }
 .decky-metadata-hltb-clean-default { padding: 0; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
@@ -2759,8 +2759,6 @@ function HltbStats({ stats, hltbId, settings, launching }) {
         return null;
     const { appearance, style } = settings;
     const vars = {};
-    if (style !== "default" && appearance.blur !== "match")
-        vars["--hltb-clean-blur"] = appearance.blur === "blur" ? "blur(8px)" : "none";
     if (appearance.custom) {
         vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
         if (appearance.textShadow)
@@ -2857,24 +2855,68 @@ function useHltbMatch(appId, wanted) {
 }
 /**
  * Mirror the native Play section's surface onto the row so the "Clean" styles
- * follow Clean Gameview's Play Bar Style, including live theme changes.
+ * follow Clean Gameview's Play Bar Style, including live theme changes. For
+ * "Clean Default" with blur, extend the Play section behind the row instead of
+ * blurring a second layer, so both read as one surface.
  */
-function useNativeCleanSurface(ref, enabled) {
+function useNativeCleanSurface(ref, enabled, style, blur) {
     SP_REACT.useEffect(() => {
         const row = ref.current;
         const document = row?.ownerDocument;
         const view = document?.defaultView;
         if (!enabled || !row || !document || !view || !row.parentElement)
             return;
+        let joined = null;
+        let saved = { margin: "", padding: "", backdrop: "" };
+        let basePadding = "0px";
+        let baseMargin = "0px";
+        let resize = null;
+        let observedBar = null;
+        const unjoin = () => {
+            if (!joined)
+                return;
+            joined.style.marginTop = saved.margin;
+            joined.style.paddingTop = saved.padding;
+            joined.style.backdropFilter = saved.backdrop;
+            joined = null;
+        };
         const update = () => {
             const section = row.nextElementSibling?.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.PlaySection}`);
+            const bar = row.querySelector(".decky-metadata-hltb-info");
+            if (bar !== observedBar) {
+                resize?.disconnect();
+                observedBar = bar;
+                if (bar) {
+                    resize = new view.ResizeObserver(update);
+                    resize.observe(bar);
+                }
+            }
             if (!section) {
+                unjoin();
                 row.style.removeProperty("--hltb-native-backdrop");
                 row.style.removeProperty("--hltb-native-background");
                 return;
             }
             const computed = view.getComputedStyle(section);
-            row.style.setProperty("--hltb-native-backdrop", computed.backdropFilter);
+            const effective = blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter;
+            const height = bar?.offsetHeight ?? 0;
+            if (style === "clean-default" && effective !== "none" && computed.backdropFilter !== "none" && height > 0) {
+                if (joined !== section) {
+                    unjoin();
+                    joined = section;
+                    saved = { margin: section.style.marginTop, padding: section.style.paddingTop, backdrop: section.style.backdropFilter };
+                    basePadding = view.getComputedStyle(section).paddingTop;
+                    baseMargin = view.getComputedStyle(section).marginTop;
+                }
+                section.style.marginTop = `calc(${baseMargin} - ${height}px)`;
+                section.style.paddingTop = `calc(${basePadding} + ${height}px)`;
+                section.style.backdropFilter = blur === "blur" ? "blur(8px)" : saved.backdrop;
+                row.style.setProperty("--hltb-native-background", "transparent");
+                row.style.setProperty("--hltb-native-backdrop", "none");
+                return;
+            }
+            unjoin();
+            row.style.setProperty("--hltb-native-backdrop", effective);
             row.style.setProperty("--hltb-native-background", computed.background);
         };
         update();
@@ -2884,17 +2926,19 @@ function useNativeCleanSurface(ref, enabled) {
         observer.observe(row.parentElement, { childList: true, subtree: true });
         return () => {
             observer.disconnect();
+            resize?.disconnect();
+            unjoin();
             row.style.removeProperty("--hltb-native-backdrop");
             row.style.removeProperty("--hltb-native-background");
         };
-    }, [enabled]);
+    }, [enabled, style, blur]);
 }
 function HltbGameRow({ appId }) {
     const snapshot = useHltbSnapshot();
     const ref = SP_REACT.useRef(null);
     const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
     const launching = useLaunching(ref, active);
-    useNativeCleanSurface(ref, active && snapshot.settings.style !== "default");
+    useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", snapshot.settings.style, snapshot.settings.appearance.blur);
     if (!active)
         return null;
     return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));
