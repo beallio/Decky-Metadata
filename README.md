@@ -159,7 +159,7 @@ hides the row in some cases, for example when the stats row is full.
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
 for setup, when the row appears, and troubleshooting.
 
-![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261112)
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
 
 ### Community posts and news
 

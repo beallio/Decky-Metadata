@@ -31,7 +31,7 @@ progress bar. It uses Steam's own data, look, and behavior. Touch or select it
 with a mouse to open the game's My Achievements page. Like Steam's own row, the
 D-pad does not stop on it.
 
-![Brotato's native achievement progress beside Play Time](../../assets/decky-metadata-mini-achievements.png?cacheBuster=20261112)
+![Brotato's native achievement progress beside Play Time](../../assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
 
 When **Decky UI Restored** is enabled in Decky Loader, Metadata pauses its mini
 achievements. The panel names the conflict. Detection checks the whole plugin,
