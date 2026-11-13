@@ -14253,20 +14253,15 @@ const startTrailerController = () => {
     return () => trailerController.stop();
 };
 
-// Shows a mini achievement stat beside Play Time. Steam's November 2026 client
-// removed its own bar and gates the replacement behind a client feature flag, so
-// the row is drawn here from Steam's achievement progress. See NOTICE.
-const ROW_CLASS = "decky-metadata-mini-achievements";
-const LABEL = "Achievements";
-// Steam fills the progress cache from an RPC that can outlast one poll.
-const CACHE_RETRY_DELAYS_MS = [500, 1500, 3000, 6000, 12000];
+// Shows Steam's own mini achievement stat beside Play Time. The Gaming Mode game
+// page passes no onSeek, and Valve's MiniAchievements row renders nothing without
+// it (ValveSoftware/steam-for-linux#13540), so one is supplied here. See NOTICE.
 const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000];
 const MAX_FIBER_DEPTH = 12;
-const TROPHY_PATH = "M7 2h10v4a5 5 0 0 1-4 4.9V14h3v2H6v-2h3v-3.1A5 5 0 0 1 5 6V2h2Zm2 2v2a3 3 0 0 0 6 0V4H9Z";
-// Steam publishes its achievement progress cache on the global object.
-const cacheHost = globalThis;
-// The play bar's CSS module, so the row inherits Steam's stat layout. It is
-// looked up on use: the module may not be registered when the plugin loads.
+// Valve's row only checks this for truthiness and opens My Achievements itself.
+const NOOP_SEEK = () => { };
+// The play bar's CSS module. It is looked up on use: the module may not be
+// registered when the plugin loads.
 let statsClassesCache;
 const statsClasses = () => {
     if (!statsClassesCache?.GameStatsSection) {
@@ -14281,155 +14276,85 @@ const statsClasses = () => {
     }
     return statsClassesCache ?? {};
 };
-const progressCache = () => {
-    const cache = cacheHost.appAchievementProgressCache;
-    return cache && typeof cache === "object" ? cache : undefined;
+// Repeated reads must return the same object so prop comparisons stay stable.
+const seekProps = new WeakMap();
+const withSeek = (raw) => {
+    if (!raw || typeof raw !== "object")
+        return raw;
+    if (Reflect.get(raw, "onSeek"))
+        return raw;
+    if (isNativeNonSteamShortcut(Reflect.get(raw, "overview")))
+        return raw;
+    const cached = seekProps.get(raw);
+    if (cached)
+        return cached;
+    const injected = { ...raw, onSeek: NOOP_SEEK };
+    seekProps.set(raw, injected);
+    return injected;
 };
-const achievementsService = () => {
-    try {
-        return (steamInternals().SteamClient?.Apps ?? {});
-    }
-    catch {
-        return {};
-    }
-};
-/** Counts Steam shows: owned achievements only, unlike the raw RPC list. */
-const totalsFor = (appId) => {
-    if (!Number.isSafeInteger(appId) || appId <= 0)
-        return null;
-    try {
-        const cache = progressCache();
-        if (!cache)
-            return null;
-        if (typeof cache.BGameHasAchievements === "function" && cache.BGameHasAchievements(appId) === false)
-            return null;
-        const entry = cache.m_achievementProgress?.mapCache?.get?.(appId);
-        if (!entry || typeof entry !== "object" || !("unlocked" in entry) || !("total" in entry))
-            return null;
-        const unlocked = Number(entry.unlocked);
-        const total = Number(entry.total);
-        if (!Number.isFinite(unlocked) || !Number.isFinite(total) || total <= 0)
-            return null;
-        const reported = "percentage" in entry ? Number(entry.percentage) : NaN;
-        const percentage = Number.isFinite(reported) ? reported : (unlocked / total) * 100;
-        return { unlocked, total, percentage: Math.min(100, Math.max(0, percentage)) };
-    }
-    catch {
-        return null;
-    }
-};
-const appIdFromProps = (props) => {
-    if (!props || typeof props !== "object")
-        return 0;
-    const overview = Reflect.get(props, "overview");
-    const details = Reflect.get(props, "details");
-    const fromOverview = Number(overview && typeof overview === "object" ? Reflect.get(overview, "appid") : NaN);
-    const fromDetails = Number(details && typeof details === "object" ? Reflect.get(details, "unAppID") : NaN);
-    const appId = Number.isSafeInteger(fromOverview) && fromOverview > 0 ? fromOverview : fromDetails;
-    return Number.isSafeInteger(appId) && appId > 0 ? appId : 0;
-};
-/** The game a mounted stats section belongs to, from the fiber that rendered it. */
-const appIdFromSection = (section) => {
+/** The mounted stats component that owns a rendered section, from its fiber. */
+const ownerInstance = (section) => {
     if (!section || typeof section !== "object")
-        return 0;
+        return undefined;
     const key = Object.keys(section).find((name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"));
     let fiber = key ? Reflect.get(section, key) : undefined;
     for (let depth = 0; fiber && typeof fiber === "object" && depth < MAX_FIBER_DEPTH; depth += 1) {
-        const appId = appIdFromProps(Reflect.get(fiber, "memoizedProps"));
-        if (appId > 0)
-            return appId;
+        const stateNode = Reflect.get(fiber, "stateNode");
+        if (stateNode &&
+            typeof stateNode === "object" &&
+            typeof Reflect.get(stateNode, "BUserHasContentToClaim") === "function" &&
+            typeof Reflect.get(stateNode, "forceUpdate") === "function") {
+            return stateNode;
+        }
         fiber = Reflect.get(fiber, "return");
     }
-    return 0;
+    return undefined;
 };
-const statsSection = () => {
-    const sectionClass = statsClasses().GameStatsSection;
-    if (!sectionClass)
-        return undefined;
-    return findSteamUiDocumentMatch((document) => document.querySelector(`.${sectionClass}`) ?? undefined);
+const rerender = (instance) => {
+    try {
+        instance.forceUpdate?.();
+    }
+    catch (error) {
+        debug("miniAchievements", "achievement stat rerender failed", error);
+    }
 };
-const buildRow = (document) => {
-    const classes = statsClasses();
-    const row = document.createElement("div");
-    row.className = [ROW_CLASS, classes.GameStat].filter(Boolean).join(" ");
-    const icon = document.createElement("div");
-    icon.className = classes.GameStatIcon ?? "";
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("viewBox", "0 0 24 20");
-    svg.setAttribute("fill", "currentColor");
-    svg.setAttribute("width", "16");
-    svg.setAttribute("height", "16");
-    svg.style.cssText = "display:block;width:16px;height:16px";
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", TROPHY_PATH);
-    svg.append(path);
-    icon.append(svg);
-    const right = document.createElement("div");
-    right.className = classes.GameStatRight ?? "";
-    const label = document.createElement("div");
-    label.className = classes.PlayBarLabel ?? "";
-    label.textContent = LABEL;
-    const progressRow = document.createElement("div");
-    progressRow.className = classes.AchievementProgressRow ?? "";
-    const count = document.createElement("div");
-    count.className = [classes.PlayBarDetailLabel, classes.AchievementCountLabel].filter(Boolean).join(" ");
-    const bar = document.createElement("div");
-    bar.style.cssText = "height:2px;margin-top:3px;border-radius:1px;overflow:hidden;background:rgba(255,255,255,.2)";
-    const fill = document.createElement("div");
-    fill.style.cssText = "height:100%;width:0;background:#67c1f5";
-    bar.append(fill);
-    progressRow.append(count, bar);
-    right.append(label, progressRow);
-    row.append(icon, right);
-    return { row, count, fill };
-};
-/** Install the achievement stat row and return its disposer. */
+/** Install the onSeek supply and return its disposer. */
 function installMiniAchievementsPatch() {
     const unpatchers = [];
-    const attemptedAppIds = new Set();
-    const retryTimers = new Set();
-    let parts;
-    let rowAppId = 0;
+    const patched = new WeakSet();
+    const patchedStats = new Set();
     let observer;
     let observedSection;
     let captureTimer;
     let captureAttempt = 0;
     let disposed = false;
-    let unsubscribe;
-    const removeRow = () => {
-        try {
-            parts?.row.remove();
-        }
-        catch {
-            // The row's document may already be gone.
-        }
-        parts = undefined;
-        rowAppId = 0;
-    };
-    const setTimer = (callback, delay) => {
-        const timer = setTimeout(() => {
-            retryTimers.delete(timer);
-            callback();
-        }, delay);
-        retryTimers.add(timer);
-    };
-    /** Ask Steam to fill a cold cache entry; the row re-reads while it stays empty. */
-    const queueCacheUpdate = (appId) => {
-        if (attemptedAppIds.has(appId))
+    const patchInstance = (instance) => {
+        if (patched.has(instance))
             return;
-        const cache = progressCache();
-        const queueUpdate = cache?.QueueCacheUpdate;
-        if (!cache || typeof queueUpdate !== "function")
+        // React owns this property; if it is not reassignable the accessor cannot survive.
+        const descriptor = Object.getOwnPropertyDescriptor(instance, "props");
+        if (!descriptor || !("value" in descriptor) || !descriptor.configurable) {
+            debug("miniAchievements", "achievement stat props are not patchable");
             return;
-        attemptedAppIds.add(appId);
+        }
+        let raw = descriptor.value;
         try {
-            queueUpdate.call(cache, appId);
-            for (const delay of CACHE_RETRY_DELAYS_MS)
-                setTimer(sync, delay);
+            Object.defineProperty(instance, "props", {
+                configurable: true,
+                enumerable: true,
+                get: () => withSeek(raw),
+                set: (value) => {
+                    raw = value;
+                },
+            });
         }
         catch (error) {
-            debug("miniAchievements", "achievement progress queue failed", appId, error);
+            debug("miniAchievements", "achievement stat props patch failed", error);
+            return;
         }
+        patched.add(instance);
+        patchedStats.add({ instance: new WeakRef(instance), raw: () => raw });
+        rerender(instance);
     };
     const observeSection = (section) => {
         if (section === observedSection)
@@ -14460,55 +14385,35 @@ function installMiniAchievementsPatch() {
         if (disposed)
             return true;
         try {
-            const section = statsSection();
-            observeSection(section);
-            if (!section || typeof section !== "object")
+            const sectionClass = statsClasses().GameStatsSection;
+            if (!sectionClass)
                 return false;
-            const classes = statsClasses();
-            const playtime = classes.Playtime ? Reflect.get(section, "querySelector")?.call(section, `.${classes.Playtime}`) : null;
-            if (!playtime || typeof playtime !== "object")
-                return false;
-            const appId = appIdFromSection(section);
-            const overview = appId > 0 ? getNativeOverview(appId) : null;
-            const totals = overview && !isNativeNonSteamShortcut(overview) ? totalsFor(appId) : null;
-            if (!overview || !totals) {
-                removeRow();
-                if (overview && appId > 0)
-                    queueCacheUpdate(appId);
-                return true;
+            let found = false;
+            let firstSection = undefined;
+            for (const uiDocument of steamUiDocuments()) {
+                let sections;
+                try {
+                    sections = uiDocument.querySelectorAll(`.${sectionClass}`);
+                }
+                catch {
+                    continue;
+                }
+                const list = Array.from(sections);
+                if (firstSection === undefined)
+                    firstSection = list[0];
+                for (const section of list) {
+                    const instance = ownerInstance(section);
+                    if (!instance)
+                        continue;
+                    found = true;
+                    patchInstance(instance);
+                }
             }
-            const document = Reflect.get(playtime, "ownerDocument");
-            if (!document || typeof document !== "object")
-                return false;
-            // Steam's own bar is still present on clients that have not updated yet.
-            const nativeBar = classes.MiniAchievements
-                ? Reflect.get(section, "querySelector")?.call(section, `.${classes.MiniAchievements}`)
-                : null;
-            if (nativeBar) {
-                removeRow();
-                return true;
-            }
-            const current = Reflect.get(section, "querySelector")?.call(section, `.${ROW_CLASS}`);
-            if (!parts || current !== parts.row || rowAppId !== appId) {
-                removeRow();
-                parts = buildRow(document);
-                rowAppId = appId;
-                parts.row.addEventListener("click", () => {
-                    DFL.Navigation.Navigate(`/library/app/${appId}/achievements/my/individual`);
-                });
-                const after = Reflect.get(playtime, "after");
-                if (typeof after === "function")
-                    after.call(playtime, parts.row);
-                else
-                    Reflect.get(playtime, "parentNode")?.append?.(parts.row);
-            }
-            const countText = `${totals.unlocked} / ${totals.total}`;
-            const width = `${Math.round(totals.percentage)}%`;
-            if (parts.count.textContent !== countText)
-                parts.count.textContent = countText;
-            if (parts.fill.style.width !== width)
-                parts.fill.style.width = width;
-            return true;
+            observeSection(firstSection);
+            for (const entry of patchedStats)
+                if (!entry.instance.deref())
+                    patchedStats.delete(entry);
+            return found;
         }
         catch (error) {
             warn("miniAchievements", "achievement stat sync failed", error);
@@ -14540,24 +14445,6 @@ function installMiniAchievementsPatch() {
         }
         scheduleSync();
     };
-    const onAchievementsChanged = (appId) => {
-        const changed = Number(appId);
-        if (Number.isSafeInteger(changed) && changed > 0)
-            attemptedAppIds.delete(changed);
-        else
-            attemptedAppIds.clear();
-        requestSync();
-    };
-    try {
-        const service = achievementsService();
-        const register = service.RegisterForAchievementChanges;
-        const cleanup = typeof register === "function" ? register.call(service, onAchievementsChanged) : undefined;
-        if (typeof cleanup === "function")
-            unsubscribe = cleanup;
-    }
-    catch (error) {
-        warn("miniAchievements", "achievement change subscription failed", error);
-    }
     requestSync();
     for (const route of GAME_DETAIL_ROUTES) {
         try {
@@ -14584,8 +14471,9 @@ function installMiniAchievementsPatch() {
         }
     }
     return () => {
+        if (disposed)
+            return;
         disposed = true;
-        removeRow();
         observer?.disconnect();
         observer = undefined;
         observedSection = undefined;
@@ -14593,20 +14481,25 @@ function installMiniAchievementsPatch() {
             clearTimeout(captureTimer);
             captureTimer = undefined;
         }
-        for (const timer of retryTimers)
-            clearTimeout(timer);
-        retryTimers.clear();
-        attemptedAppIds.clear();
-        if (unsubscribe) {
-            const release = unsubscribe;
-            unsubscribe = undefined;
+        for (const entry of patchedStats) {
+            const instance = entry.instance.deref();
+            if (!instance)
+                continue;
             try {
-                release();
+                // Hand the latest real props back so Valve's row hides without a reload.
+                Object.defineProperty(instance, "props", {
+                    value: entry.raw(),
+                    writable: true,
+                    configurable: true,
+                    enumerable: true,
+                });
             }
             catch (error) {
-                warn("miniAchievements", "achievement change unsubscription failed", error);
+                debug("miniAchievements", "achievement stat props restore failed", error);
             }
+            rerender(instance);
         }
+        patchedStats.clear();
         for (const unpatch of unpatchers.splice(0)) {
             try {
                 unpatch();

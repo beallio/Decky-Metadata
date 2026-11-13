@@ -38,10 +38,11 @@ Mini achievements display
 -------------------------
 src/steam/miniAchievements.ts and the mini-achievements conflict guard derive
 from the achievement-bar work in Decky UI Restored by beallio (the
-Decky-SteamAchievements source checkout). Steam's November 2026 client removed
-that bar and gated its replacement, so Decky Metadata draws its own row from
-Steam's achievement progress. The source project and Decky Metadata are
-distributed under the GNU General Public License v3.0 or later.
+Decky-SteamAchievements source checkout). Steam's November 2026 client stopped
+showing its row on the Gaming Mode game page, so Decky Metadata supplies the
+missing callback that lets Steam's own component render. The source project
+and Decky Metadata are distributed under the GNU General Public License v3.0 or
+later.
 
     Decky UI Restored
     https://github.com/beallio/Decky-UI-Restored
