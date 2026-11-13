@@ -23,6 +23,10 @@ A Store info row with HowLongToBeat and ProtonDB boxes, replacing the ProtonDB S
 - **ProtonDB Store switch controls the Store box.** The ProtonDB **Store**
   switch now turns the **ProtonDB** box in the info row on or off. If only one
   box has data, it fills the row. If both switches are off, there is no row.
+- **Mini achievements for non-Steam games.** When another plugin, such as
+  Emuchievements, gives Steam the achievements for a non-Steam game, its
+  ACHIEVEMENTS row now shows beside Play Time, as it does for Steam games.
+  Non-Steam games without achievements still get no row.
 
 ### Removed
 

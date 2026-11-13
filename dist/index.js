@@ -14278,12 +14278,12 @@ const statsClasses = () => {
 };
 // Repeated reads must return the same object so prop comparisons stay stable.
 const seekProps = new WeakMap();
+// Shortcuts get the callback too: Valve's row hides itself when Steam has no
+// achievements for the app, and a plugin such as Emuchievements can supply them.
 const withSeek = (raw) => {
     if (!raw || typeof raw !== "object")
         return raw;
     if (Reflect.get(raw, "onSeek"))
-        return raw;
-    if (isNativeNonSteamShortcut(Reflect.get(raw, "overview")))
         return raw;
     const cached = seekProps.get(raw);
     if (cached)
