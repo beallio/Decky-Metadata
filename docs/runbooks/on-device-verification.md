@@ -164,6 +164,32 @@ The supported configuration has one active display owner. Metadata's
 plugin-level guard prevents its row from appearing alongside enabled
 Decky UI Restored.
 
+### HLTB backgrounds and blur
+
+Use a game with cached HLTB times. Back up the installed plugin and settings
+before testing, and restore them after the checks.
+
+1. Temporarily turn off **Detail view trailers** for a stable, real header image.
+   Opening QAM can replace the video element, so freezing one video does not
+   keep the same frame across settings changes.
+2. Start with the native Play bar unblurred (**Transparent** in Clean Gameview).
+   In **"Clean" Default**, select **None** and compare the rendered tint of both
+   bars. Then test **Blur** and **Match Play bar** through QAM, capturing each
+   state with `cdp.py screenshot`. Check the HLTB surface and its underlay against
+   the native Play section and its root: background and opacity must match.
+   The native section's inline styles and bounds must not change when the HLTB
+   blur selection changes.
+3. Compare screenshots of the same header image. **Blur** must diffuse detail
+   behind HLTB; a tint change or computed `backdrop-filter` alone is not proof.
+   Keep Steam's 3D rendering context through both HLTB wrappers: flattening an
+   intermediate wrapper can silently stop the filter from sampling the header.
+4. Check all four HLTB layouts. The times must stay visible, and Play must stay
+   in place. Restore the original trailer preference and all other test changes.
+
+The frontend surface regression covers preference, theme-update and cleanup
+behavior without writing native styles. It does not replace these rendering
+checks on the Deck.
+
 ### Library cover artwork lookup
 
 Artwork resolution must keep native shortcut identity even while the matched
