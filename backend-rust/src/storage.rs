@@ -582,15 +582,15 @@ pub fn normalize_protondb_badge_settings(value: &Value) -> Value {
 }
 
 const HLTB_STYLES: [&str; 4] = ["default", "clean", "clean-left", "clean-default"];
-const HLTB_MAX_HIDDEN_APPS: usize = 5_000;
+const HLTB_BLURS: [&str; 3] = ["match", "blur", "none"];
 
 pub fn default_hltb_settings() -> Value {
     json!({
         "enabled": false, "style": "default", "hideViewDetails": false,
+        "nativeDetailsCorners": false,
         "showMain": true, "showMainPlus": true, "showComplete": true, "showAllStyles": true,
-        "appearance": {"custom": false, "barAlpha": 25, "linkColor": "steam",
-                       "textShadow": false, "textScale": 100, "border": true},
-        "hiddenAppIds": [],
+        "appearance": {"custom": false, "barAlpha": 25,
+                       "textShadow": false, "textScale": 100, "border": true, "blur": "match"},
     })
 }
 
@@ -598,15 +598,11 @@ fn hltb_step(value: Option<&Value>, min: i64, max: i64) -> Option<i64> {
     value.and_then(Value::as_i64).filter(|n| (min..=max).contains(n) && n % 5 == 0)
 }
 
-fn hltb_hidden_app_id(value: &Value) -> Option<i64> {
-    value.as_i64().filter(|id| (1..=0xffff_ffff).contains(id))
-}
-
 /// Keep every valid saved choice and replace anything else with its default.
 pub fn normalize_hltb_settings(value: &Value) -> Value {
     let mut normalized = default_hltb_settings();
     let Some(source) = value.as_object() else { return normalized };
-    for key in ["enabled", "hideViewDetails", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
+    for key in ["enabled", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
         if let Some(flag) = source.get(key).and_then(Value::as_bool) {
             normalized[key] = Value::Bool(flag);
         }
@@ -627,19 +623,9 @@ pub fn normalize_hltb_settings(value: &Value) -> Value {
         if let Some(scale) = hltb_step(appearance.get("textScale"), 75, 150) {
             target["textScale"] = json!(scale);
         }
-        if let Some(color) = appearance.get("linkColor").and_then(Value::as_str).filter(|c| matches!(*c, "steam" | "text")) {
-            target["linkColor"] = json!(color);
+        if let Some(blur) = appearance.get("blur").and_then(Value::as_str).filter(|blur| HLTB_BLURS.contains(blur)) {
+            target["blur"] = json!(blur);
         }
-    }
-    if let Some(ids) = source.get("hiddenAppIds").and_then(Value::as_array) {
-        let mut seen = std::collections::HashSet::new();
-        let ids: Vec<i64> = ids
-            .iter()
-            .filter_map(hltb_hidden_app_id)
-            .filter(|id| seen.insert(*id))
-            .take(HLTB_MAX_HIDDEN_APPS)
-            .collect();
-        normalized["hiddenAppIds"] = json!(ids);
     }
     normalized
 }
@@ -654,8 +640,7 @@ pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
         actual.len() == expected.len() && expected.keys().all(|key| actual.contains_key(key))
     };
     let appearance = source.get("appearance").and_then(Value::as_object).ok_or_else(invalid)?;
-    let ids = source.get("hiddenAppIds").and_then(Value::as_array).ok_or_else(invalid)?;
-    let flags_valid = ["enabled", "hideViewDetails", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
+    let flags_valid = ["enabled", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
         .iter()
         .all(|key| source.get(*key).is_some_and(Value::is_boolean))
         && ["custom", "textShadow", "border"].iter().all(|key| appearance.get(*key).is_some_and(Value::is_boolean));
@@ -665,9 +650,7 @@ pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
         || !source.get("style").and_then(Value::as_str).is_some_and(|style| HLTB_STYLES.contains(&style))
         || hltb_step(appearance.get("barAlpha"), 0, 100).is_none()
         || hltb_step(appearance.get("textScale"), 75, 150).is_none()
-        || !appearance.get("linkColor").and_then(Value::as_str).is_some_and(|c| matches!(c, "steam" | "text"))
-        || ids.len() > HLTB_MAX_HIDDEN_APPS
-        || ids.iter().any(|id| hltb_hidden_app_id(id).is_none())
+        || !appearance.get("blur").and_then(Value::as_str).is_some_and(|blur| HLTB_BLURS.contains(&blur))
     {
         return Err(invalid());
     }
@@ -1387,31 +1370,37 @@ mod tests {
         assert_eq!(validate_hltb_settings(&defaults).unwrap(), defaults);
         let mut changed = defaults.clone();
         changed["style"] = json!("clean-left");
+        changed["nativeDetailsCorners"] = json!(true);
         changed["appearance"]["barAlpha"] = json!(55);
-        changed["hiddenAppIds"] = json!([620, 4294967295u32]);
+        changed["appearance"]["blur"] = json!("blur");
         assert_eq!(validate_hltb_settings(&changed).unwrap(), changed);
+        let mut legacy = defaults.clone();
+        legacy.as_object_mut().unwrap().remove("nativeDetailsCorners");
+        assert_eq!(normalize_hltb_settings(&legacy)["nativeDetailsCorners"], false);
+        assert!(validate_hltb_settings(&legacy).is_err(), "missing nativeDetailsCorners");
         for (path, bad) in [
-            ("style", json!("fancy")), ("enabled", json!("yes")), ("hiddenAppIds", json!([0])),
-            ("hiddenAppIds", json!([4294967296u64])), ("extra", json!(true)),
+            ("style", json!("fancy")), ("enabled", json!("yes")), ("nativeDetailsCorners", json!("yes")),
+            ("hiddenAppIds", json!([620])), ("extra", json!(true)),
         ] {
             let mut value = defaults.clone();
             value[path] = bad;
             assert!(validate_hltb_settings(&value).is_err(), "{path}");
         }
-        for (key, bad) in [("barAlpha", json!(33)), ("textScale", json!(200)), ("linkColor", json!("red"))] {
+        for (key, bad) in [("barAlpha", json!(33)), ("textScale", json!(200)), ("blur", json!("soft")), ("linkColor", json!("steam"))] {
             let mut value = defaults.clone();
             value["appearance"][key] = bad;
             assert!(validate_hltb_settings(&value).is_err(), "{key}");
         }
         let repaired = normalize_hltb_settings(&json!({
-            "enabled": true, "style": "fancy", "appearance": {"barAlpha": 33, "textScale": 150},
-            "hiddenAppIds": [5, 5, 0, "7", 9],
+            "enabled": true, "style": "fancy", "appearance": {"barAlpha": 33, "textScale": 150, "linkColor": "text"},
+            "hiddenAppIds": [5, 9],
         }));
         assert_eq!(repaired["enabled"], true);
         assert_eq!(repaired["style"], "default");
         assert_eq!(repaired["appearance"]["barAlpha"], 25);
         assert_eq!(repaired["appearance"]["textScale"], 150);
-        assert_eq!(repaired["hiddenAppIds"], json!([5, 9]));
+        assert_eq!(repaired["appearance"]["blur"], "match");
+        assert!(repaired.get("hiddenAppIds").is_none() && repaired["appearance"].get("linkColor").is_none());
         assert_eq!(normalize_hltb_settings(&Value::Null), defaults);
     }
 

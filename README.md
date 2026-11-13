@@ -110,9 +110,13 @@ Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
-You can choose the HowLongToBeat game for a non-Steam game in its editor, and
-hide the times for one game from its menu. The styles and appearance options of
-HLTB for Deck are included.
+You can choose the HowLongToBeat game for a non-Steam game in its editor. The
+styles and appearance options of HLTB for Deck are included. The **"Clean"**
+styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
+Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
+and the Play bar form one blurred panel. **Background blur** never changes the
+Play bar's blur. **Use Steam button corners** keeps the **Details**
+button's corners as Steam draws them.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam
@@ -142,15 +146,20 @@ The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi 
 
 ### Mini achievements
 
-Open **Mini achievements** and turn on **Enable mini achievements** to restore
-Steam's small achievement progress bar beside Play Time on game details pages.
-It is off by default and uses Steam's own progress data; it does not add
-achievement tracking to non-Steam games.
+Open **Mini achievements** and turn on **Enable mini achievements** to show
+Steam's own ACHIEVEMENTS row beside Play Time on a game's page. The row shows
+the earned/total count (for example 80/179) and a small progress bar. It uses
+Steam's own data, look, and behavior. Touch or select it with a mouse to open
+the game's My Achievements page. Like Steam's own row, the D-pad does not stop
+on it.
+
+The setting is off by default. Non-Steam games get no row, and Steam still
+hides the row in some cases, for example when the stats row is full.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
-for setup, supported games, and troubleshooting.
+for setup, when the row appears, and troubleshooting.
 
-![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261003)
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
 
 ### Community posts and news
 

@@ -1,11 +1,12 @@
 // Appearance adapted from HLTB for Deck (MIT).
+export type HltbBlur = "match" | "blur" | "none";
 export type HltbAppearance = {
   custom: boolean;
   barAlpha: number;
-  linkColor: "steam" | "text";
   textShadow: boolean;
   textScale: number;
   border: boolean;
+  blur: HltbBlur;
 };
 
 export type HltbSettings = {
@@ -16,15 +17,15 @@ export type HltbSettings = {
   showMainPlus: boolean;
   showComplete: boolean;
   showAllStyles: boolean;
+  nativeDetailsCorners: boolean;
   appearance: HltbAppearance;
-  hiddenAppIds: number[];
 };
 
 export const DEFAULT_HLTB_SETTINGS: HltbSettings = {
   enabled: false, style: "default", hideViewDetails: false,
   showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-  appearance: { custom: false, barAlpha: 25, linkColor: "steam", textShadow: false, textScale: 100, border: true },
-  hiddenAppIds: [],
+  nativeDetailsCorners: false,
+  appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
 };
 
 const object = (value: unknown): Record<string, unknown> =>
@@ -40,7 +41,8 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
   const defaultAppearance = defaults.appearance;
   const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
     ? stored.style : defaults.style;
-  const ids = Array.isArray(stored.hiddenAppIds) ? stored.hiddenAppIds : [];
+  const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+    ? appearance.blur : defaultAppearance.blur;
   return {
     enabled: bool(stored.enabled, defaults.enabled), style,
     hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
@@ -48,15 +50,14 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
     showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
     showComplete: bool(stored.showComplete, defaults.showComplete),
     showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+    nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
     appearance: {
       custom: bool(appearance.custom, defaultAppearance.custom),
       barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-      linkColor: appearance.linkColor === "steam" || appearance.linkColor === "text" ? appearance.linkColor : defaultAppearance.linkColor,
       textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
       textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
       border: bool(appearance.border, defaultAppearance.border),
+      blur,
     },
-    hiddenAppIds: [...new Set(ids.filter((id): id is number =>
-      typeof id === "number" && Number.isInteger(id) && id > 0 && id <= 0xffffffff))].slice(0, 5000),
   };
 }

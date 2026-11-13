@@ -121,42 +121,90 @@ Home focus, and owned probes; leave the approved date-only migration in place.
 
 ### Mini achievements
 
-This feature changes both the frontend and a backend preference. Install a
-full-plugin ZIP before checking it; a frontend-only deployment cannot add the
-settings RPCs. Record both plugins' original settings and Loader enabled states
-before changing them. Disable **Decky UI Restored** in Decky Loader before
-testing Metadata's restoration; leave the peer's feature settings unchanged.
+This feature turns Steam's own hidden mini achievements row back on for the game
+details page and changes a backend preference. Install a full-plugin ZIP before
+checking it; a frontend-only deployment cannot add the settings RPCs. Record
+both plugins' original settings and Loader enabled states before changing them.
+Disable **Decky UI Restored** in Decky Loader before testing Metadata's row;
+leave the peer's feature settings unchanged. Steam's November 2026 client stops
+the Gaming Mode game page from passing the callback Steam's row needs, so
+Metadata supplies that callback and Steam's own component renders. Metadata
+draws no row of its own.
 
 1. Use a Steam game with recorded achievement progress. With Decky UI Restored
-   disabled and Metadata's toggle off, capture the native page and progress.
+   disabled and Metadata's toggle off, confirm the Play Time stat row has no
+   achievement row.
 2. Open Metadata's **Mini achievements** section with D-pad/A. Confirm the new
    preference starts off, the section starts closed, and conflict notices are readable.
-   Enable it on the already-mounted game page. Check the visible bar beside
-   Play Time against Steam's native progress; do not use a synthetic counter.
-3. Return Home, then open the game later. Check that restoration still works
-   after the initial capture attempts have ended. Visit another Steam game and
-   return. Exercise the native achievement control and Back navigation.
-4. Disable and re-enable on a mounted page. Check that disabling restores the
-   baseline display, that enabling does not duplicate the bar, and that a QAM
-   close/reopen does not change the saved preference.
-   Enable Decky UI Restored in Loader and verify Metadata removes only its own
-   restoration, preserves its saved choice, and shows the named conflict.
+   Enable it on the already-mounted game page. Confirm the row appears beside
+   Play Time. Inspect the game page DOM: the row has Steam's `MiniAchievements`
+   class, and no node with the class `decky-metadata-mini-achievements` exists.
+   Confirm its `unlocked / total` equals Steam's own achievements page for the
+   same game.
+3. Select the row with touch and with the mouse or trackpad. Confirm it opens
+   the game's My Achievements page, then return with B. Press the D-pad through
+   the stat row and confirm focus skips the row, as it does for Steam's own row.
+4. Return Home, then open the game later. Confirm the row returns with the same
+   counts. Visit another Steam game with achievements and return; the counts
+   must follow the game. Check a game with no achievements and an unmatched
+   shortcut (no row), and a matched shortcut (no row; matching adds no
+   achievement mapping).
+5. Disable and re-enable on a mounted page. Check that disabling removes the
+   row at once with no reload, that enabling does not duplicate it, and that a
+   QAM close/reopen does not change the saved preference. Open a game whose
+   stats row is full, for example **Install** with **Space Required** or an
+   update status, and confirm Steam keeps the wrapped second line hidden.
+   Enable Decky UI Restored in Loader and verify Metadata hides the row, returns
+   the page to Steam's normal display, preserves its saved choice, and shows the
+   named conflict.
    Metadata must remain paused even when the peer's mini-achievements setting
    is off, because detection is plugin-level. Disable or remove the peer and
    verify Metadata resumes. While paused, turn Metadata's switch off and verify
    it cannot be re-enabled until the peer is disabled, and does not resume after
    the peer is disabled. Hiding or freezing the peer must not clear the guard.
-5. Reload with the preference on and off. Check the corresponding display, then
-   unload Metadata and confirm its restoration is removed. Visit matched and
+6. Reload with the preference on and off. Check the corresponding display, then
+   unload Metadata and confirm Steam's row disappears. Visit matched and
    unmatched shortcuts to check that their existing metadata, links, and
    controller behavior are unchanged; this feature adds no achievement mapping.
-6. Run the applicable quick-link/re-render suite from the table above. Restore
+7. Run the applicable quick-link/re-render suite from the table above. Restore
    the original preferences and Loader enabled states. If both plugins are
    enabled, Metadata must stay paused regardless of the peer's feature settings.
 
-The supported configuration has one active restoration owner. Metadata's
-plugin-level guard prevents its restoration from running alongside enabled
+The supported configuration has one active display owner. Metadata's
+plugin-level guard prevents the row from appearing alongside enabled
 Decky UI Restored.
+
+### HLTB backgrounds and blur
+
+Use a game with cached HLTB times. Back up the installed plugin and settings
+before testing, and restore them after the checks.
+
+1. Temporarily turn off **Detail view trailers** for a stable, real header image.
+   Opening QAM can replace the video element, so freezing one video does not
+   keep the same frame across settings changes.
+2. Start with the native Play bar unblurred (**Transparent** in Clean Gameview).
+   In **"Clean" Default**, select **None** and compare the rendered tint of both
+   bars. Then test **Blur** and **Match Play bar** through QAM, capturing each
+   state with `cdp.py screenshot`. Check the HLTB surface and its underlay against
+   the native Play section and its root: background and opacity must match.
+   HLTB never writes the native section's inline styles, and its bounds stay
+   the same except in one case: in **"Clean" Default** with a blurred Play bar
+   (Clean Gameview **Blur**) and a blur selection other than **None**, HLTB's
+   own stylesheet extends the Play section's box up behind the times, so one
+   blur covers both rows. The HLTB
+   row then draws no surface, the Play content stays in place, and removing the
+   row removes the rule. Confirm on Brotato that the border between the rows
+   shows no seam.
+3. Compare screenshots of the same header image. **Blur** must diffuse detail
+   behind HLTB; a tint change or computed `backdrop-filter` alone is not proof.
+   Keep Steam's 3D rendering context through both HLTB wrappers: flattening an
+   intermediate wrapper can silently stop the filter from sampling the header.
+4. Check all four HLTB layouts. The times must stay visible, and Play must stay
+   in place. Restore the original trailer preference and all other test changes.
+
+The frontend surface regression covers preference, theme-update and cleanup
+behavior without writing native styles. It does not replace these rendering
+checks on the Deck.
 
 ### Library cover artwork lookup
 

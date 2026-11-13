@@ -148,13 +148,25 @@ pub fn install(env: &Env) -> Option<PathBuf> {
     }
 }
 
-pub fn set_debug(enabled: bool) {
+pub fn set_debug(setting: bool) {
+    let enabled = debug_enabled(setting, LOADER_LOG_LEVEL.as_deref());
     DEBUG.store(enabled, Ordering::Relaxed);
     log::set_max_level(if enabled {
         log::LevelFilter::Debug
     } else {
         log::LevelFilter::Info
     });
+}
+
+/// `DECKY_PLUGIN_LOG_LEVEL`, read once, so a later setting change cannot lose the loader's level.
+static LOADER_LOG_LEVEL: LazyLock<Option<String>> =
+    LazyLock::new(|| std::env::var("DECKY_PLUGIN_LOG_LEVEL").ok());
+
+/// The plugin's own setting turns debug on, and the loader's DEBUG keeps it on when the
+/// setting is off.
+fn debug_enabled(setting: bool, loader_level: Option<&str>) -> bool {
+    setting
+        || loader_level.is_some_and(|level| level.trim().eq_ignore_ascii_case("debug"))
 }
 
 pub fn event(area: &str, message: &str, fields: Value, level: Level) {
@@ -237,6 +249,16 @@ mod tests {
     #[test]
     fn warning_level_uses_python_name() {
         assert_eq!(level_name(Level::Warn), "WARNING");
+    }
+    #[test]
+    fn debug_state_follows_the_setting_and_the_loader_level() {
+        // Both off stays at info; the setting or the loader alone turns debug on.
+        assert!(!debug_enabled(false, None));
+        assert!(!debug_enabled(false, Some("INFO")));
+        assert!(debug_enabled(true, None));
+        assert!(debug_enabled(true, Some("INFO")));
+        assert!(debug_enabled(false, Some("DEBUG")));
+        assert!(debug_enabled(false, Some(" debug ")));
     }
     static ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     fn directory() -> PathBuf {

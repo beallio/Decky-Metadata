@@ -15,7 +15,7 @@ setup steps.
 - [Show ProtonDB ratings](protondb-badges.md) — choose badges for covers, game pages, and the Steam Store.
 - [Show HowLongToBeat times](hltb.md) — show how long games take to finish, for Steam and non-Steam games.
 - [Watch game trailers](game-trailers.md) — turn trailers on and set sound, video quality, and controls.
-- [Restore mini achievements](updates-and-troubleshooting.md#mini-achievements) — restore Steam's progress bar and avoid conflicts with Decky UI Restored.
+- [Mini achievements](updates-and-troubleshooting.md#mini-achievements) — show an achievement progress row and avoid conflicts with Decky UI Restored.
 - [See community posts and news](community-and-news.md) — find posts, screenshots, and Activity news.
 - [Use controller layouts](controller-layouts.md) — find layouts from a matching Steam game.
 

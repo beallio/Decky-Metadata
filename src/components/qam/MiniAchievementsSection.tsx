@@ -19,7 +19,7 @@ export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievem
       <PanelSectionRow>
         <ToggleField
           label="Enable mini achievements"
-          description="Restore Steam's small achievement progress bar beside Play Time on game details pages. Off by default."
+          description="Show Steam's small achievement progress bar beside Play Time on game details pages. Off by default."
           checked={state.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -29,7 +29,8 @@ export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievem
       <PanelSectionRow>
         <Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            This restores Steam's display; it does not add achievement tracking to non-Steam games.
+            This uses Steam's achievement progress for Steam games; it does not add
+            achievement tracking to non-Steam games.
           </div>
           {conflictNotice && <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>}
           {state.settingsError && <div style={inlineStatusStyle("error")}>{state.settingsError}</div>}

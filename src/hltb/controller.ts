@@ -98,16 +98,6 @@ export class HltbController {
     }
   }
 
-  /** The per-game Show/Hide choice from the game's menu. */
-  async toggleHidden(appId: number): Promise<boolean> {
-    const { settings } = this.snapshot;
-    const hidden = settings.hiddenAppIds.includes(appId);
-    return this.setSettings({
-      ...settings,
-      hiddenAppIds: hidden ? settings.hiddenAppIds.filter((id) => id !== appId) : [...settings.hiddenAppIds, appId],
-    });
-  }
-
   async clearCache(): Promise<boolean> {
     if (!this.mounted) return false;
     this.publish({ cacheStatus: "clearing" });

@@ -1,466 +1,277 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   addPatch: vi.fn(),
   removePatch: vi.fn(),
-  afterPatch: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-  warn: vi.fn(),
+  documents: [] as unknown[],
 }));
 
-const backend = vi.hoisted(() => ({
-  getMiniAchievementsEnabled: vi.fn<() => Promise<boolean>>(),
-  setMiniAchievementsEnabled: vi.fn<(enabled: boolean) => Promise<boolean>>(),
+const classes = vi.hoisted(() => ({
+  GameStat: "game-stat",
+  GameStatsSection: "stats-section",
+  Playtime: "playtime",
+  PlayBar: "play-bar",
 }));
-vi.mock("../backend", () => backend);
+
+vi.mock("@decky/ui", async () => {
+  // The factory runs before this file's imports initialise, so the real patcher
+  // cannot be a static import here.
+  const { afterPatch } = await import("@decky/ui/dist/utils/patcher");
+  const findNode = (node: unknown, filter: (candidate: unknown) => unknown): unknown => {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const found = findNode(child, filter);
+        if (found) return found;
+      }
+      return undefined;
+    }
+    if (!node || typeof node !== "object") return undefined;
+    if (filter(node)) return node;
+    for (const key of ["props", "children"]) {
+      const found = findNode(Reflect.get(node, key), filter);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  return {
+    afterPatch,
+    findInReactTree: findNode,
+    findClassModule: () => classes,
+  };
+});
 
 vi.mock("@decky/api", () => ({
-  routerHook: {
-    addPatch: mocks.addPatch,
-    removePatch: mocks.removePatch,
-  },
+  routerHook: { addPatch: mocks.addPatch, removePatch: mocks.removePatch },
 }));
 
-vi.mock("@decky/ui", () => ({ afterPatch: mocks.afterPatch }));
+vi.mock("../log", () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
-vi.mock("../log", () => ({
-  debug: mocks.debug,
-  info: mocks.info,
-  warn: mocks.warn,
-}));
+vi.mock("./steamUiHost", () => ({ steamUiDocuments: () => mocks.documents }));
 
 import { installMiniAchievementsPatch } from "./miniAchievements";
-import { MiniAchievementsController } from "./miniAchievementsController";
-import { PluginConflictMonitor } from "../pluginConflicts";
 
-type SteamObject = Record<string, unknown>;
-type RouteCallback = (props: unknown) => unknown;
-type NativeMethod = (this: unknown, ...args: unknown[]) => unknown;
-type NativeAfterPatch = (
-  this: unknown,
-  args: unknown[],
-  result: unknown,
-) => unknown;
+const APP_ID = 1942280;
+const SHORTCUT_APP_ID = 228980;
 
-interface PatchRecord {
-  target: SteamObject;
-  method: string;
-  unpatch: () => void;
-}
+type DetailPatch = { route: string; callback: (tree: unknown) => unknown };
+type StatsInstance = {
+  props: unknown;
+  forceUpdate: Mock;
+  BUserHasContentToClaim(): void;
+};
+type FakeDocument = {
+  sections: unknown[];
+  querySelectorAll(selector: string): unknown[];
+  defaultView: { MutationObserver: unknown };
+};
 
-interface NativeFixture {
-  instance: MiniAchievementsFixture;
-  manager: SteamObject;
-  nearestController: SteamObject;
-  outerController: SteamObject;
-}
+let detailPatches: DetailPatch[] = [];
+let dispose: (() => void) | undefined;
+let document: FakeDocument;
 
-interface InstalledPage {
-  dispose: () => void;
-}
+const makeInstance = (props: unknown): StatsInstance => ({
+  props,
+  forceUpdate: vi.fn(),
+  BUserHasContentToClaim() {
+    // Valve's component method; the fiber walk only checks that it exists.
+  },
+});
 
-let routeCallback: RouteCallback | undefined;
-let patches: PatchRecord[] = [];
-const controllers: MiniAchievementsController[] = [];
-const conflictMonitors: PluginConflictMonitor[] = [];
+const makeSection = (instance: StatsInstance, ownerDocument: FakeDocument) => ({
+  __reactFiber$test: {
+    stateNode: { render: () => null },
+    return: { stateNode: instance, return: null },
+  },
+  ownerDocument,
+  closest: () => null,
+});
 
-function isSteamObject(value: unknown): value is SteamObject {
-  return typeof value === "object" && value !== null;
-}
-
-function installRealisticAfterPatch(
-  targetValue: unknown,
-  method: string,
-  handlerValue: unknown,
-): PatchRecord {
-  if (!isSteamObject(targetValue) || typeof handlerValue !== "function") {
-    throw new Error("afterPatch received an invalid target or handler");
+const makeDocument = (): FakeDocument => {
+  class FakeMutationObserver {
+    observe() {
+      // The tests drive sync through the retry timers instead.
+    }
+    disconnect() {
+      // Nothing to release in the fake document.
+    }
   }
-
-  const originalValue = targetValue[method];
-  if (typeof originalValue !== "function") {
-    throw new Error(`afterPatch target has no ${method} method`);
-  }
-
-  const target = targetValue;
-  const original = originalValue as NativeMethod;
-  const handler = handlerValue as NativeAfterPatch;
-  const wrapped: NativeMethod = function (this: unknown, ...args: unknown[]) {
-    const result: unknown = Reflect.apply(original, this, args);
-    return Reflect.apply(handler, this, [args, result]);
+  const doc: FakeDocument = {
+    sections: [],
+    querySelectorAll: (selector) => (selector === `.${classes.GameStatsSection}` ? doc.sections : []),
+    defaultView: { MutationObserver: FakeMutationObserver },
   };
+  return doc;
+};
 
-  target[method] = wrapped;
-  const record: PatchRecord = {
-    target,
-    method,
-    unpatch: () => {
-      if (target[method] === wrapped) target[method] = original;
-    },
-  };
-  patches.push(record);
-  return record;
-}
+const steamProps = () => ({ details: { unAppID: APP_ID }, overview: { appid: APP_ID, installed: true } });
 
-class MiniAchievementsFixture {
-  props: unknown = { progress: "4 / 10" };
-  _reactInternals: unknown;
-  displayedProgress: string | null = null;
+const mountSection = (props: unknown = steamProps(), target: FakeDocument = document) => {
+  const instance = makeInstance(props);
+  target.sections.push(makeSection(instance, target));
+  return { instance };
+};
 
-  forceUpdate(): void {
-    this.displayedProgress = this.render()?.progress ?? null;
-  }
+const install = () => {
+  vi.useFakeTimers();
+  dispose = installMiniAchievementsPatch();
+  vi.advanceTimersByTime(0);
+};
 
-  render() {
-    const props = this.props as { progress?: string; onSeek?: (section: string) => void };
-    return props.onSeek ? { progress: props.progress } : null;
-  }
-
-  activate() {
-    const props = this.props as { onSeek?: (section: string) => void };
-    if (typeof props.onSeek === "function") props.onSeek("achievements");
-  }
-}
-
-function makeController(label: string): SteamObject {
-  const calls: string[] = [];
-  const contexts: unknown[] = [];
-  const controller: SteamObject = {
-    label,
-    calls,
-    contexts,
-  };
-  controller.SeekToSection = function (this: unknown, section: string): void {
-    calls.push(section);
-    contexts.push(this);
-  };
-  return controller;
-}
-
-function makeNativeFixture(): NativeFixture {
-  const instance = new MiniAchievementsFixture();
-  const nearestController = makeController("nearest");
-  const outerController = makeController("outer");
-  const outerFiber = { stateNode: outerController };
-  const nearestFiber = { stateNode: nearestController, return: outerFiber };
-  const miniFiber = {
-    type: MiniAchievementsFixture,
-    stateNode: instance,
-    return: nearestFiber,
-  };
-  instance._reactInternals = miniFiber;
-  const rootFiber = { child: miniFiber };
-  const document = {
-    title: "Steam Big Picture Mode",
-    body: { "__reactFiber$fixture": rootFiber },
-  };
-  const manager: SteamObject = {
-    m_rgPopups: [
-      {
-        m_strTitle: "Steam Big Picture Mode",
-        m_popup: { document },
-      },
-    ],
-  };
-
-  return { instance, manager, nearestController, outerController };
-}
-
-function renderRoute(owner: SteamObject): void {
-  const renderFunc = owner.renderFunc;
-  if (typeof renderFunc !== "function") {
-    throw new Error("app-details owner has no renderFunc");
-  }
-  Reflect.apply(renderFunc, owner, []);
-}
-
-function installAtAppRoute(manager: unknown): InstalledPage {
-  vi.stubGlobal("window", { g_PopupManager: manager });
-  const routeTree = { native: "app details tree" };
-  const owner: SteamObject = {
-    renderFunc: () => routeTree,
-  };
-  const routeProps = { children: { props: owner } };
-  const dispose = installMiniAchievementsPatch();
-
-  if (!routeCallback) throw new Error("router hook did not register its callback");
-  routeCallback(routeProps);
-  renderRoute(owner);
-  return { dispose };
-}
-
-function readProps(instance: MiniAchievementsFixture): SteamObject {
-  if (!isSteamObject(instance.props)) {
-    throw new Error("fixture props are not an object");
-  }
-  return instance.props;
-}
-
-function replaceSeekController(
-  instance: MiniAchievementsFixture,
-  controller: SteamObject,
-  outerController: SteamObject,
-): void {
-  instance._reactInternals = {
-    stateNode: {},
-    return: {
-      stateNode: controller,
-      return: { stateNode: outerController },
-    },
-  };
-}
+const applyDetailPatch = (routeProps: { renderFunc: () => unknown }) => {
+  detailPatches.find((candidate) => candidate.route === "/library/app/:appid")?.callback({ props: routeProps });
+};
 
 beforeEach(() => {
-  vi.useFakeTimers();
-  routeCallback = undefined;
-  patches = [];
-  backend.getMiniAchievementsEnabled.mockReset().mockResolvedValue(false);
-  backend.setMiniAchievementsEnabled.mockReset().mockImplementation(async enabled => enabled);
-
+  detailPatches = [];
+  mocks.documents.length = 0;
   mocks.addPatch.mockReset();
-  mocks.addPatch.mockImplementation(
-    (_route: string, callback: RouteCallback) => {
-      routeCallback = callback;
-      return callback;
-    },
-  );
   mocks.removePatch.mockReset();
-  mocks.removePatch.mockImplementation(() => {});
-  mocks.afterPatch.mockReset();
-  mocks.afterPatch.mockImplementation(
-    (target: unknown, method: string, handler: unknown) =>
-      installRealisticAfterPatch(target, method, handler),
-  );
-  mocks.debug.mockReset();
-  mocks.info.mockReset();
-  mocks.warn.mockReset();
+  mocks.addPatch.mockImplementation((route: string, callback: DetailPatch["callback"]) => {
+    const record = { route, callback };
+    detailPatches.push(record);
+    return record;
+  });
+  mocks.removePatch.mockImplementation((_route: string, record: DetailPatch) => {
+    detailPatches = detailPatches.filter((candidate) => candidate !== record);
+  });
+  document = makeDocument();
+  mocks.documents.push(document);
+  dispose = undefined;
 });
 
 afterEach(() => {
-  for (const controller of controllers.splice(0)) controller.stop();
-  for (const monitor of conflictMonitors.splice(0)) monitor.stop();
-  vi.clearAllTimers();
+  dispose?.();
+  dispose = undefined;
   vi.useRealTimers();
-  vi.unstubAllGlobals();
 });
 
-describe("installMiniAchievementsPatch", () => {
-  it("coalesces route renders and captures later after an earlier page missed", () => {
-    let popupReads = 0;
-    const emptyManager = Object.defineProperty({}, "m_rgPopups", {
-      get() {
-        popupReads += 1;
-        return [];
-      },
-    });
-    const browserWindow = { g_PopupManager: emptyManager };
-    vi.stubGlobal("window", browserWindow);
+describe("mini achievements onSeek supply", () => {
+  it("gives Steam's own row an onSeek while keeping the other props", () => {
+    const props = steamProps();
+    const { instance } = mountSection(props);
+    install();
 
-    const routeTree = { native: "home-to-game route tree" };
-    const owner: SteamObject = { renderFunc: () => routeTree };
-    const routeProps = { children: { props: owner } };
-    const dispose = installMiniAchievementsPatch();
-    if (!routeCallback) throw new Error("router hook did not register its callback");
-    routeCallback(routeProps);
-
-    for (let render = 0; render < 6; render += 1) {
-      renderRoute(owner);
-    }
-    expect(popupReads).toBe(0);
-    vi.advanceTimersByTime(10_000);
-    const readsAfterBurst = popupReads;
-    vi.advanceTimersByTime(10_000);
-    expect(popupReads).toBe(readsAfterBurst);
-
-    const fixture = makeNativeFixture();
-    browserWindow.g_PopupManager = fixture.manager;
-    renderRoute(owner);
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    expect(popupReads).toBe(readsAfterBurst);
-    dispose();
+    const patched = instance.props as Record<string, unknown>;
+    expect(typeof patched.onSeek).toBe("function");
+    expect(patched.details).toBe(props.details);
+    expect(patched.overview).toBe(props.overview);
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it("captures an already mounted page immediately when enabled", () => {
-    const fixture = makeNativeFixture();
-    vi.stubGlobal("window", { g_PopupManager: fixture.manager });
-    const owner: SteamObject = { renderFunc: () => ({ native: true }) };
-    const routeProps = { children: { props: owner } };
-    const dispose = installMiniAchievementsPatch();
+  it("keeps supplying one onSeek after React assigns new props", () => {
+    const { instance } = mountSection();
+    install();
+    const first = instance.props;
+    expect(instance.props).toBe(first);
 
-    if (!routeCallback) throw new Error("router hook did not register its callback");
-    routeCallback(routeProps);
-    vi.runAllTimers();
+    const next = { details: { unAppID: APP_ID }, overview: { appid: APP_ID } };
+    instance.props = next;
 
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    dispose();
+    const patched = instance.props as Record<string, unknown>;
+    expect(typeof patched.onSeek).toBe("function");
+    // A fresh object every read would remount Valve's row.
+    expect(instance.props).toBe(patched);
+    expect(instance.props).not.toBe(next);
+    expect((next as Record<string, unknown>).onSeek).toBeUndefined();
   });
 
-  it("preserves durable props while resolving the nearest controller on each activation", () => {
-    const fixture = makeNativeFixture();
-    const page = installAtAppRoute(fixture.manager);
-    vi.runAllTimers();
+  it("leaves props that already have an onSeek untouched", () => {
+    const props = { details: { unAppID: APP_ID }, overview: { appid: APP_ID }, onSeek: () => undefined };
+    const { instance } = mountSection(props);
+    install();
 
-    const originalWrappedProps = readProps(fixture.instance);
-    const handlerValue = originalWrappedProps.onSeek;
-    if (typeof handlerValue !== "function") {
-      throw new Error("native MiniAchievements props did not receive onSeek");
-    }
-    const onSeek = handlerValue as (section: string) => void;
+    expect(instance.props).toBe(props);
+  });
 
-    fixture.instance.activate();
-    expect(fixture.nearestController.calls).toEqual(["achievements"]);
-    expect(fixture.nearestController.contexts[0]).toBe(fixture.nearestController);
-    expect(fixture.outerController.calls).toEqual([]);
-
-    const updatedRawProps = { label: "replacement render props" };
-    fixture.instance.props = updatedRawProps;
-    const updatedWrappedProps = readProps(fixture.instance);
-    expect(updatedWrappedProps.label).toBe("replacement render props");
-    expect(updatedWrappedProps.onSeek).toBe(onSeek);
-
-    const replacementController = makeController("replacement nearest");
-    replaceSeekController(
-      fixture.instance,
-      replacementController,
-      fixture.outerController,
-    );
-    fixture.instance.activate();
-    expect(replacementController.calls).toEqual(["achievements"]);
-    expect(replacementController.contexts[0]).toBe(replacementController);
-
-    const nativeSections: string[] = [];
-    const nativeHandler = (section: string): void => {
-      nativeSections.push(section);
+  it("adds no onSeek for a non-Steam shortcut", () => {
+    const props = {
+      details: { unAppID: SHORTCUT_APP_ID },
+      overview: { appid: SHORTCUT_APP_ID, app_type: 1073741824 },
     };
-    const nativeProps = { label: "native callback", onSeek: nativeHandler };
-    fixture.instance.props = nativeProps;
-    expect(readProps(fixture.instance)).toBe(nativeProps);
-    expect(readProps(fixture.instance).onSeek).toBe(nativeHandler);
-    fixture.instance.activate();
-    expect(nativeSections).toEqual(["achievements"]);
-    expect(replacementController.calls).toEqual(["achievements"]);
-    page.dispose();
+    const { instance } = mountSection(props);
+    install();
+
+    expect((instance.props as Record<string, unknown>).onSeek).toBeUndefined();
   });
 
-  it("restores the newest raw props and continues cleanup after a route unpatch fails", () => {
-    const fixture = makeNativeFixture();
-    const originalNativeRender = MiniAchievementsFixture.prototype.render;
-    const page = installAtAppRoute(fixture.manager);
-    vi.runAllTimers();
+  it("patches the section in every Steam document, such as a sticky header", () => {
+    const sticky = makeDocument();
+    mocks.documents.push(sticky);
+    const page = mountSection();
+    const header = mountSection(steamProps(), sticky);
+    install();
 
-    const routeRenderPatch = patches.find((patch) => patch.method === "renderFunc");
-    if (!routeRenderPatch || typeof readProps(fixture.instance).onSeek !== "function") {
-      throw new Error("expected route and native render patches");
-    }
-
-    const latestRawProps = { label: "latest props before disable" };
-    fixture.instance.props = latestRawProps;
-    let routeUnpatchAttempts = 0;
-    routeRenderPatch.unpatch = () => {
-      routeUnpatchAttempts += 1;
-      throw new Error("route render owner was already detached");
-    };
-    mocks.removePatch.mockImplementation(() => {
-      throw new Error("router is shutting down");
-    });
-
-    page.dispose();
-    page.dispose();
-
-    const restoredDescriptor = Object.getOwnPropertyDescriptor(
-      fixture.instance,
-      "props",
-    );
-    expect(restoredDescriptor).toMatchObject({
-      value: latestRawProps,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
-    expect(fixture.instance.props).toBe(latestRawProps);
-    expect(MiniAchievementsFixture.prototype.render).toBe(originalNativeRender);
-    expect(routeUnpatchAttempts).toBe(1);
-    expect(mocks.removePatch).toHaveBeenCalledTimes(1);
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
+    expect(typeof (page.instance.props as Record<string, unknown>).onSeek).toBe("function");
+    expect(typeof (header.instance.props as Record<string, unknown>).onSeek).toBe("function");
   });
 
-  it("cancels an outstanding capture attempt when disabled", () => {
-    let popupReads = 0;
-    const manager = Object.defineProperty({}, "m_rgPopups", {
-      get() {
-        popupReads += 1;
-        return [];
-      },
+  it("skips props that React will not let it reassign", () => {
+    const instance = makeInstance(undefined);
+    Object.defineProperty(instance, "props", {
+      value: { overview: { appid: APP_ID } },
+      writable: false,
+      configurable: false,
     });
-    const page = installAtAppRoute(manager);
+    document.sections.push(makeSection(instance, document));
 
-    page.dispose();
-    vi.runAllTimers();
-
-    expect(popupReads).toBe(0);
-    expect(mocks.removePatch).toHaveBeenCalledTimes(1);
+    expect(() => install()).not.toThrow();
+    expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
+    expect(Object.getOwnPropertyDescriptor(instance, "props")?.get).toBeUndefined();
+    expect(instance.forceUpdate).not.toHaveBeenCalled();
   });
-});
 
-describe("mini-achievements plugin conflict ownership", () => {
-  it("removes our native restoration while UI Restored is active and resumes after disable or removal", async () => {
-    const fixture = makeNativeFixture();
-    vi.stubGlobal("window", { g_PopupManager: fixture.manager });
-    const inventory = {
-      plugins: [] as Array<{ name: string }>,
-      disabledPlugins: [] as Array<{ name: string }>,
-    };
-    const events = new EventTarget();
-    const monitor = new PluginConflictMonitor(() => ({
-      deckyState: { publicState: () => inventory, eventBus: events },
-    }));
-    conflictMonitors.push(monitor);
-    monitor.mount();
-    backend.getMiniAchievementsEnabled.mockResolvedValue(true);
-    const controller = new MiniAchievementsController(monitor);
-    controllers.push(controller);
-    controller.mount();
-    for (let index = 0; index < 4; index += 1) await Promise.resolve();
-    const owner: SteamObject = { renderFunc: () => ({ native: true }) };
-    const showPage = () => {
-      if (!routeCallback) throw new Error("router hook did not register its callback");
-      routeCallback({ children: { props: owner } });
-      vi.runAllTimers();
-    };
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+  it("patches the instance once the stats section appears", () => {
+    mocks.documents.length = 0;
+    install();
+    expect(mocks.documents).toHaveLength(0);
 
-    inventory.plugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
-    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: false });
-    expect(backend.setMiniAchievementsEnabled).not.toHaveBeenCalled();
+    mocks.documents.push(document);
+    const { instance } = mountSection();
+    expect(instance.forceUpdate).not.toHaveBeenCalled();
 
-    inventory.disabledPlugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
-    expect(controller.getSnapshot()).toMatchObject({ enabled: true, effectiveEnabled: true });
+    vi.advanceTimersByTime(50);
 
-    inventory.disabledPlugins = [];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
-    inventory.plugins = [];
-    events.dispatchEvent(new Event("update"));
-    showPage();
-    expect(fixture.instance.displayedProgress).toBe("4 / 10");
+    expect(typeof (instance.props as Record<string, unknown>).onSeek).toBe("function");
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(1000);
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(1);
+  });
 
-    controller.stop();
-    inventory.plugins = [{ name: "Decky UI Restored" }];
-    events.dispatchEvent(new Event("update"));
-    inventory.plugins = [];
-    events.dispatchEvent(new Event("update"));
-    vi.runAllTimers();
-    expect(fixture.instance.displayedProgress).toBeNull();
+  it("retries after a route render until the page's stats section exists", () => {
+    mocks.documents.length = 0;
+    install();
+    mocks.documents.push(document);
+    const { instance } = mountSection();
+    expect(instance.forceUpdate).not.toHaveBeenCalled();
+
+    applyDetailPatch({ renderFunc: () => null });
+    vi.runOnlyPendingTimers();
+
+    expect(typeof (instance.props as Record<string, unknown>).onSeek).toBe("function");
+  });
+
+  it("restores the latest raw props on dispose and tolerates a second call", () => {
+    const { instance } = mountSection();
+    install();
+    const next = { details: { unAppID: APP_ID }, overview: { appid: APP_ID } };
+    instance.props = next;
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(1);
+
+    const disposePatch = dispose as () => void;
+    dispose = undefined;
+    disposePatch();
+
+    const descriptor = Object.getOwnPropertyDescriptor(instance, "props");
+    expect(descriptor).toMatchObject({ writable: true, configurable: true, enumerable: true });
+    expect(descriptor && "value" in descriptor).toBe(true);
+    expect(instance.props).toBe(next);
+    expect((instance.props as Record<string, unknown>).onSeek).toBeUndefined();
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(2);
+    expect(mocks.removePatch).toHaveBeenCalledTimes(3);
+    expect(detailPatches).toHaveLength(0);
+
+    expect(() => disposePatch()).not.toThrow();
+    expect(instance.forceUpdate).toHaveBeenCalledTimes(2);
   });
 });

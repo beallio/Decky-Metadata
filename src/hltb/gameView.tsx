@@ -4,19 +4,27 @@ import {
   afterPatch,
   appDetailsClasses,
   appDetailsHeaderClasses,
+  basicAppDetailsSectionStylerClasses,
   createReactTreePatcher,
   findInReactTree,
-  MenuItem,
 } from "@decky/ui";
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import { setHltbMenuItem } from "../contextMenuPatch";
 import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
 import { hltbStore, type HltbInputs } from "./store";
+import type { HltbBlur, HltbSettings } from "./settings";
 import type { HltbEntry } from "../backend";
 
 const ROW_KEY = "decky-metadata-hltb-row";
+const JOINED_CLASS = "decky-metadata-hltb-joined";
+const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
+
+const px = (value: number) => String(Math.round(value * 100) / 100);
+
+/** One blur surface: the Play section's own, grown up over the HLTB bar. */
+const joinedRule = (height: number, paddingTop: number) =>
+  `.${appDetailsClasses.InnerContainer}:has(> .${JOINED_CLASS}) .${basicAppDetailsSectionStylerClasses.PlaySection} { margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
 
 const positiveId = (value: unknown, maximum: number): number | null => {
   const id = Number(value);
@@ -90,14 +98,88 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
   return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
 }
 
+/**
+ * Copy the native Play section's surface onto the row for the "Clean" styles, or
+ * with clean-default on a blurred Play bar, extend that one blur over both rows:
+ * the bar and underlay stay transparent and the Play rule supplies the surface.
+ */
+function useNativeCleanSurface(
+  ref: { current: HTMLDivElement | null },
+  enabled: boolean,
+  style: HltbSettings["style"],
+  blur: HltbBlur,
+): { joined: boolean; height: number; paddingTop: number } {
+  const [surface, setSurface] = useState(NO_SURFACE);
+  const padding = useRef(0);
+  useEffect(() => {
+    const row = ref.current;
+    const document = row?.ownerDocument;
+    const view = document?.defaultView;
+    if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
+      setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+      return;
+    }
+    const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
+    const resize: { element: HTMLElement | null; observer: ResizeObserver | null } = { element: null, observer: null };
+    function update(): void {
+      const section = row.nextElementSibling?.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      const bar = row.querySelector<HTMLElement>(".decky-metadata-hltb-info");
+      if (!section) {
+        for (const name of names) row.style.removeProperty(name);
+        resize.observer?.disconnect();
+        resize.element = null;
+        setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+        return;
+      }
+      const computed = view.getComputedStyle(section);
+      // Native padding is only readable while our own rule is not applied.
+      if (!row.classList.contains(JOINED_CLASS)) padding.current = parseFloat(computed.paddingTop) || 0;
+      // Layout height, not the rect: Steam animates an ancestor transform on page entry.
+      const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
+      const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
+      const joined = style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+      row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
+      row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
+      row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+      const root = section.closest<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.AppDetailsRoot}`);
+      const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
+      row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
+      row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
+      if (bar !== resize.element) {
+        resize.observer?.disconnect();
+        resize.element = bar;
+        if (bar) {
+          resize.observer ??= new view.ResizeObserver(update);
+          resize.observer.observe(bar);
+        }
+      }
+      const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
+      setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
+    }
+    update();
+    const observer = new view.MutationObserver(update);
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+    observer.observe(row.parentElement, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      resize.observer?.disconnect();
+      for (const name of names) row.style.removeProperty(name);
+    };
+  }, [enabled, style, blur]);
+  return surface;
+}
+
 function HltbGameRow({ appId }: { appId: number }) {
   const snapshot = useHltbSnapshot();
   const ref = useRef<HTMLDivElement | null>(null);
-  const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled && !snapshot.settings.hiddenAppIds.includes(appId));
+  const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
+  const surface = useNativeCleanSurface(ref, active, snapshot.settings.style, snapshot.settings.appearance.blur);
   if (!active) return null;
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div ref={ref} className={surface.joined ? JOINED_CLASS : undefined} style={{ position: "relative", transformStyle: "preserve-3d" }}>
+      {surface.joined && <style>{joinedRule(surface.height, surface.paddingTop)}</style>}
       <HltbStats stats={entry?.stats ?? null} hltbId={entry?.hltb_id ?? null} settings={snapshot.settings} launching={launching} />
     </div>
   );
@@ -139,13 +221,7 @@ function installHltbGameView(): () => void {
     });
     unpatchers.push(() => routerHook.removePatch(route, patch));
   }
-  setHltbMenuItem((appId) => (
-    <MenuItem key="decky-metadata-hltb" onSelected={() => { void hltbController.toggleHidden(appId); }}>
-      {"Show/Hide HLTB Stats"}
-    </MenuItem>
-  ));
   return () => {
-    setHltbMenuItem(undefined);
     for (const unpatch of unpatchers.splice(0)) {
       try {
         unpatch();

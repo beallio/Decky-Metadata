@@ -176,7 +176,7 @@ checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
 name = "decky-metadata-backend"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "chrono",
  "crc32fast",
@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "decky-plugin"
 version = "0.1.0"
-source = "git+https://github.com/beallio/decky-loader?rev=98bce11fffffa59a331098edd8671591fb98a9a5#98bce11fffffa59a331098edd8671591fb98a9a5"
+source = "git+https://github.com/beallio/decky-loader?rev=58072a72566942368897f88485f0c61cf4afd213#58072a72566942368897f88485f0c61cf4afd213"
 dependencies = [
  "libc",
  "log",

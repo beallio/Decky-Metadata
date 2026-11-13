@@ -4,6 +4,54 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-13
+
+Mini achievements and Activity news work again after Steam's November update
+
+### Changed
+
+- **HLTB "Details" button.** The button that opens a game's HowLongToBeat page
+  is now called **Details**. In the **Default** style it looks like the
+  **Details** button in Steam's Deck Compatibility section. In the **"Clean"**
+  styles it looks like the ProtonDB and controller buttons beside Play, and it
+  follows the corner rounding of the CSS Loader theme "Round". The **"View
+  Details" color** option is removed.
+- **HLTB "Clean" bars match the Play bar.** In the Clean Gameview
+  **Transparent**, **Blur**, and **Connected with Body** Play bar styles, the
+  HLTB row always uses the Play bar's background. The new **Background blur**
+  option matches the Play bar by default and can also force or remove the blur.
+  **Background opacity** now applies to the **Default** style only.
+- **"Clean" HLTB Details corners.** The new **Use Steam button corners** option
+  keeps the **Details** button corners as Steam draws them, so the "Round" theme
+  does not round them. It is off by default.
+
+### Removed
+
+- **Show/Hide HLTB Stats in the game menu.** The entry is removed. Games you
+  hid this way show their times again. To hide all times, turn off **Show
+  HowLongToBeat times**.
+
+### Fixed
+
+- **HLTB background and blur.** The "Clean" bars match the Play bar's
+  background and opacity. When the Play bar is blurred, the **"Clean" Default**
+  times and the Play bar now share one seamless blurred panel. **Background
+  blur** never changes the Play bar's blur.
+- **HLTB times no longer push the Play button down.** The **Default** and
+  **"Clean" Default** rows now sit on the bottom of the game's header image, so
+  the Play row stays in its usual place.
+- **Mini achievements works again after Steam's November client update.**
+  Steam's update hid its own mini achievements row on the Steam Deck game page.
+  Metadata now turns Steam's own row back on, so it looks and behaves exactly
+  like Steam's, and selecting it opens My Achievements. Games without Steam
+  achievements get no row.
+- **Activity news shows again for matched non-Steam games.** Steam's new
+  activity cards need fields the plugin did not supply, which made the page
+  show a render error instead of the news.
+- **Debug logging follows Decky Loader's debug switch.** Turning on debug
+  logging for Decky Metadata in Decky Loader now records debug messages, even
+  when the plugin's own **Debug logging** setting is off.
+
 ## [0.6.1] - 2026-11-02
 
 HowLongToBeat times on game pages, and ProtonDB badges right after a restart

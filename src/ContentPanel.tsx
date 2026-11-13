@@ -298,7 +298,7 @@ export const Content = () => {
   const [trailerQualityControl, setTrailerQualityControlState] = useState<HTMLDivElement | null>(null);
   const [protonDbCoverControl, setProtonDbCoverControlState] = useState<HTMLDivElement | null>(null);
   const [hltbStyleControl, setHltbStyleControlState] = useState<HTMLDivElement | null>(null);
-  const [hltbLinkColorControl, setHltbLinkColorControlState] = useState<HTMLDivElement | null>(null);
+  const [hltbBlurControl, setHltbBlurControlState] = useState<HTMLDivElement | null>(null);
   const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = useState(0);
   const [controllerTypes, setControllerTypes] = useState<number[]>([]);
 
@@ -322,9 +322,9 @@ export const Content = () => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
     setHltbStyleControlState(element);
   }, []);
-  const setHltbLinkColorControl = useCallback((element: HTMLDivElement | null) => {
+  const setHltbBlurControl = useCallback((element: HTMLDivElement | null) => {
     if (!element) noteCompatibilityDropdownControlUnmounted();
-    setHltbLinkColorControlState(element);
+    setHltbBlurControlState(element);
   }, []);
 
   const synchronizeCompatibilityPolicySave = useCallback((
@@ -357,7 +357,7 @@ export const Content = () => {
 
   useEffect(() => {
     const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
-      protonDbCoverControl || hltbStyleControl || hltbLinkColorControl;
+      protonDbCoverControl || hltbStyleControl || hltbBlurControl;
     if (!mountedControl) return;
     const qamDocument = mountedControl.ownerDocument;
     const noteVisibleReturn = () => {
@@ -375,7 +375,7 @@ export const Content = () => {
     qamDocument.addEventListener("visibilitychange", observeVisibility);
     observeVisibility();
     return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbLinkColorControl]);
+  }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbBlurControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -406,14 +406,13 @@ export const Content = () => {
       ? compatibilityDefaultScopeControl
       : origin === "quality" ? trailerQualityControl
       : origin === "hltb-style" ? hltbStyleControl
-      : origin === "hltb-link-color" ? hltbLinkColorControl
+      : origin === "hltb-blur" ? hltbBlurControl
       : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
-    const hltbOrigin = origin === "hltb-style" || origin === "hltb-link-color";
     const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
-      : hltbOrigin ? hltbSnapshot.settingsLoaded
+      : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.settingsLoaded
       : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
     const busy = origin === "quality" ? trailerSnapshot.busy
-      : hltbOrigin ? hltbSnapshot.busy
+      : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.busy
       : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
     if (!isCompatibilityDropdownReturnReady() || !control) return;
     let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
@@ -526,7 +525,6 @@ export const Content = () => {
     protonDbSnapshot.busy,
     protonDbSnapshot.settingsLoaded,
     hltbStyleControl,
-    hltbLinkColorControl,
     hltbSnapshot.busy,
     hltbSnapshot.settingsLoaded,
   ]);
@@ -981,7 +979,7 @@ export const Content = () => {
         onCoverPositionControlRef={setProtonDbCoverControl}
       />
       <HltbSection
-        initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-link-color"}
+        initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-blur"}
         settings={hltbSnapshot.settings}
         settingsLoaded={hltbSnapshot.settingsLoaded}
         busy={hltbSnapshot.busy}
@@ -999,26 +997,26 @@ export const Content = () => {
             if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
           }
         }}
-        onLinkColorChange={async (linkColor) => {
-          requestCompatibilityDropdownReturn("hltb-link-color");
-          noteCompatibilityDropdownControlUnmounted();
-          try {
-            const settings = hltbController.getSnapshot().settings;
-            return await hltbController.setSettings({ ...settings, appearance: { ...settings.appearance, linkColor } });
-          } finally {
-            if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
-          }
-        }}
         onStyleMenuWillOpen={() => {
           requestCompatibilityDropdownReturn("hltb-style");
           noteCompatibilityDropdownControlUnmounted();
         }}
-        onLinkColorMenuWillOpen={() => {
-          requestCompatibilityDropdownReturn("hltb-link-color");
+        onStyleControlRef={setHltbStyleControl}
+        onBlurChange={async (blur) => {
+          requestCompatibilityDropdownReturn("hltb-blur");
+          noteCompatibilityDropdownControlUnmounted();
+          try {
+            const current = hltbController.getSnapshot().settings;
+            return await hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+          } finally {
+            if (noteCompatibilityDropdownSelectionSaved()) setCompatibilityDropdownReturnVersion((version) => version + 1);
+          }
+        }}
+        onBlurMenuWillOpen={() => {
+          requestCompatibilityDropdownReturn("hltb-blur");
           noteCompatibilityDropdownControlUnmounted();
         }}
-        onStyleControlRef={setHltbStyleControl}
-        onLinkColorControlRef={setHltbLinkColorControl}
+        onBlurControlRef={setHltbBlurControl}
       />
       <GameTrailersSection
         initiallyExpanded={returningDropdown === "quality"}

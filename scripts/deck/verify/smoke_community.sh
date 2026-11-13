@@ -52,7 +52,7 @@ if source is None or hub is None:
 print(source.group(1), hub.group(1))
 PY
 )
-cards_json="$(cdp eval "$BPM_TARGET" "@$JS_DIR/community_cards.js")"
+cards_json="$(cdp eval "$BPM_TARGET" "@$JS_DIR/community_cards.js" --var "LABEL=Community")"
 
 python3 - "$appid" "$source_val" "$hublen_val" "$cards_json" <<'PY' || exit 1
 import json, sys
