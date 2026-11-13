@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-13
+
+Mini achievements and Activity news work again after Steam's November update
+
 ### Changed
 
 - **HLTB "Details" button.** The button that opens a game's HowLongToBeat page
@@ -44,6 +48,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Activity news shows again for matched non-Steam games.** Steam's new
   activity cards need fields the plugin did not supply, which made the page
   show a render error instead of the news.
+- **Debug logging follows Decky Loader's debug switch.** Turning on debug
+  logging for Decky Metadata in Decky Loader now records debug messages, even
+  when the plugin's own **Debug logging** setting is off.
 
 ## [0.6.1] - 2026-11-02
 
