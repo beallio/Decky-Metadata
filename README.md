@@ -146,15 +146,20 @@ The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi 
 
 ### Mini achievements
 
-Open **Mini achievements** and turn on **Enable mini achievements** to show a
-small achievement progress bar beside Play Time on game details pages. It is
-off by default and uses Steam's own progress data; it does not add achievement
-tracking to non-Steam games.
+Open **Mini achievements** and turn on **Enable mini achievements** to show
+Steam's own ACHIEVEMENTS row beside Play Time on a game's page. The row shows
+the earned/total count (for example 80/179) and a small progress bar. It uses
+Steam's own data, look, and behavior. Touch or select it with a mouse to open
+the game's My Achievements page. Like Steam's own row, the D-pad does not stop
+on it.
+
+The setting is off by default. Non-Steam games get no row, and Steam still
+hides the row in some cases, for example when the stats row is full.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)
-for setup, supported games, and troubleshooting.
+for setup, when the row appears, and troubleshooting.
 
-![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261112)
+![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
 
 ### Community posts and news
 

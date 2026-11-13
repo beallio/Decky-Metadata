@@ -22,33 +22,49 @@ The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/r
    recorded achievement progress.
 
 The setting is off by default and stays saved when you close the panel or
-reload the plugin. Turning it off restores Steam's normal display. Closing
-the section or Quick Access Menu does not turn the feature off.
+reload the plugin. Turning it off hides the row at once, without a restart.
+Closing the section or Quick Access Menu does not turn the feature off.
 
-This shows a small achievement progress bar beside Play Time on game details
-pages. It uses Steam's existing data. Matching a non-Steam game does not add
-achievement tracking to that game.
+With the setting on, Steam's own ACHIEVEMENTS row shows beside Play Time on a
+game's page. It shows the earned/total count (for example 80/179) and a small
+progress bar. It uses Steam's own data, look, and behavior. Touch or select it
+with a mouse to open the game's My Achievements page. Like Steam's own row, the
+D-pad does not stop on it.
 
-![Brotato's native achievement progress beside Play Time](../../assets/decky-metadata-mini-achievements.png?cacheBuster=20261112)
+![Brotato's native achievement progress beside Play Time](../../assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
 
 When **Decky UI Restored** is enabled in Decky Loader, Metadata pauses its mini
 achievements. The panel names the conflict. Detection checks the whole plugin,
 not its individual feature settings, so turning off only the peer's mini
 achievements is not enough.
 
-Disable or remove Decky UI Restored to use Metadata's display. Hiding the peer
+Disable or remove Decky UI Restored to show the row. Hiding the peer
 or freezing its updates does not disable it. If your switch was on, it remains
-on as your saved choice while the display is paused. It resumes when the
-conflict clears.
+on as your saved choice while the row is hidden. It returns when the conflict
+clears.
 
 You can turn Metadata's switch off while paused if you do not want it to resume.
 Once it is off, you cannot turn it back on until the peer is disabled or removed.
 
 If a setting cannot load or save, the section shows an error. A failed save
 keeps the previous setting active. Reload the plugin to retry a failed load.
-If the bar is missing, check the game's achievement progress in Steam, confirm
-Metadata's switch is on, and check that Decky UI Restored is disabled in Decky
-Loader. Games without Steam achievement data do not get a progress bar.
+
+### Why don't I see it?
+
+Steam decides when to show the row. It stays hidden in these cases:
+
+- The game has no Steam achievements.
+- The game is not installed and has no earned achievements.
+- Family View or parental controls block achievements.
+- The right panel is narrow.
+- The stats row is full, for example **Install** with **Space Required** or an
+  update status. Steam moves the row to a second line that stays hidden.
+- The game is a non-Steam shortcut.
+- **Enable mini achievements** is off.
+- Decky UI Restored is enabled in Decky Loader.
+
+Check the game's achievements in Steam, confirm the setting is on, and confirm
+Decky UI Restored is disabled in Decky Loader.
 
 ## Other plugin conflicts
 

@@ -37,9 +37,10 @@ All notable changes to this project are documented here in Keep a Changelog form
   **"Clean" Default** rows now sit on the bottom of the game's header image, so
   the Play row stays in its usual place.
 - **Mini achievements works again after Steam's November client update.**
-  Steam removed the bar this feature restored and moved achievements into its
-  own pages. Metadata now draws the same small progress row beside Play Time
-  from Steam's achievement data. Games without Steam achievements get no row.
+  Steam's update hid its own mini achievements row on the Steam Deck game page.
+  Metadata now turns Steam's own row back on, so it looks and behaves exactly
+  like Steam's, and selecting it opens My Achievements. Games without Steam
+  achievements get no row.
 - **Activity news shows again for matched non-Steam games.** Steam's new
   activity cards need fields the plugin did not supply, which made the page
   show a render error instead of the news.

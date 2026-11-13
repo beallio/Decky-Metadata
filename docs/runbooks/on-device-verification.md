@@ -121,14 +121,15 @@ Home focus, and owned probes; leave the approved date-only migration in place.
 
 ### Mini achievements
 
-This feature draws Metadata's own progress row on the game details page and
-changes a backend preference. Install a full-plugin ZIP before checking it; a
-frontend-only deployment cannot add the settings RPCs. Record both plugins'
-original settings and Loader enabled states before changing them. Disable
-**Decky UI Restored** in Decky Loader before testing Metadata's row; leave the
-peer's feature settings unchanged. Steam's November 2026 client removed the
-native bar this feature used to restore, so the row is plugin-drawn from
-Steam's progress cache.
+This feature turns Steam's own hidden mini achievements row back on for the game
+details page and changes a backend preference. Install a full-plugin ZIP before
+checking it; a frontend-only deployment cannot add the settings RPCs. Record
+both plugins' original settings and Loader enabled states before changing them.
+Disable **Decky UI Restored** in Decky Loader before testing Metadata's row;
+leave the peer's feature settings unchanged. Steam's November 2026 client stops
+the Gaming Mode game page from passing the callback Steam's row needs, so
+Metadata supplies that callback and Steam's own component renders. Metadata
+draws no row of its own.
 
 1. Use a Steam game with recorded achievement progress. With Decky UI Restored
    disabled and Metadata's toggle off, confirm the Play Time stat row has no
@@ -136,32 +137,41 @@ Steam's progress cache.
 2. Open Metadata's **Mini achievements** section with D-pad/A. Confirm the new
    preference starts off, the section starts closed, and conflict notices are readable.
    Enable it on the already-mounted game page. Confirm the row appears beside
-   Play Time and that its `unlocked / total` equals Steam's own achievements
-   page for the same game; open that page with A on the row and return.
-3. Return Home, then open the game later. Confirm the row returns with the same
+   Play Time. Inspect the game page DOM: the row has Steam's `MiniAchievements`
+   class, and no node with the class `decky-metadata-mini-achievements` exists.
+   Confirm its `unlocked / total` equals Steam's own achievements page for the
+   same game.
+3. Select the row with touch and with the mouse or trackpad. Confirm it opens
+   the game's My Achievements page, then return with B. Press the D-pad through
+   the stat row and confirm focus skips the row, as it does for Steam's own row.
+4. Return Home, then open the game later. Confirm the row returns with the same
    counts. Visit another Steam game with achievements and return; the counts
-   must follow the game. Check a matched shortcut (Steam counts for its match),
-   an unmatched shortcut, and a game with no achievements (no row).
-4. Disable and re-enable on a mounted page. Check that disabling removes the
-   row, that enabling does not duplicate it, and that a QAM close/reopen does
-   not change the saved preference.
-   Enable Decky UI Restored in Loader and verify Metadata removes only its own
-   row, preserves its saved choice, and shows the named conflict.
+   must follow the game. Check a game with no achievements and an unmatched
+   shortcut (no row), and a matched shortcut (no row; matching adds no
+   achievement mapping).
+5. Disable and re-enable on a mounted page. Check that disabling removes the
+   row at once with no reload, that enabling does not duplicate it, and that a
+   QAM close/reopen does not change the saved preference. Open a game whose
+   stats row is full, for example **Install** with **Space Required** or an
+   update status, and confirm Steam keeps the wrapped second line hidden.
+   Enable Decky UI Restored in Loader and verify Metadata hides the row, returns
+   the page to Steam's normal display, preserves its saved choice, and shows the
+   named conflict.
    Metadata must remain paused even when the peer's mini-achievements setting
    is off, because detection is plugin-level. Disable or remove the peer and
    verify Metadata resumes. While paused, turn Metadata's switch off and verify
    it cannot be re-enabled until the peer is disabled, and does not resume after
    the peer is disabled. Hiding or freezing the peer must not clear the guard.
-5. Reload with the preference on and off. Check the corresponding display, then
-   unload Metadata and confirm its row is removed. Visit matched and unmatched
-   shortcuts to check that their existing metadata, links, and controller
-   behavior are unchanged; this feature adds no achievement mapping.
-6. Run the applicable quick-link/re-render suite from the table above. Restore
+6. Reload with the preference on and off. Check the corresponding display, then
+   unload Metadata and confirm Steam's row disappears. Visit matched and
+   unmatched shortcuts to check that their existing metadata, links, and
+   controller behavior are unchanged; this feature adds no achievement mapping.
+7. Run the applicable quick-link/re-render suite from the table above. Restore
    the original preferences and Loader enabled states. If both plugins are
    enabled, Metadata must stay paused regardless of the peer's feature settings.
 
 The supported configuration has one active display owner. Metadata's
-plugin-level guard prevents its row from appearing alongside enabled
+plugin-level guard prevents the row from appearing alongside enabled
 Decky UI Restored.
 
 ### HLTB backgrounds and blur
