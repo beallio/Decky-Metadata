@@ -1,6 +1,6 @@
 # Show ProtonDB ratings
 
-ProtonDB collects community reports about how games run with Proton, the software Steam uses to run Windows games on Linux. Decky Metadata can show a game's ProtonDB tier on covers, game pages, and Store pages.
+ProtonDB collects community reports about how games run with Proton, the software Steam uses to run Windows games on Linux. Decky Metadata can show a game's ProtonDB tier on covers and game pages. It can also show a ProtonDB box in an info row on Steam Store game pages, including games you do not own.
 
 These ratings are separate from Valve's Steam Deck compatibility labels. Neither a community tier nor a label you choose guarantees that your copy will run well.
 
@@ -22,13 +22,13 @@ Closing the section or Quick Access Menu does not turn badges off. Turning the m
 | **Home game covers** | On game covers in Home. |
 | **Library game covers** | On game covers in the Library, including the Non-Steam tab. |
 | **Game view** | As a Steam-styled button before the controller button on the game's details page. |
-| **Store** | As a colored icon at the bottom right of the Steam Store page. |
+| **Store** | In a box in the info row on the Steam Store page, below the trailers and screenshots. |
 
-The four switches are independent. For example, you can keep game-page ratings on while hiding cover badges.
+The four switches are independent. For example, you can keep game-page ratings on while hiding cover badges. On a Store page the ProtonDB box shares one row with the HowLongToBeat box. If only one of them has data, its box fills the row.
 
-**Cover badge position** offers **Bottom left**, **Top left**, and **Top right**. **Covers only on focus or hover** limits Home and Library badges to the cover selected with your controller or under the pointer. It does not limit game-page or Store badges.
+**Cover badge position** offers **Bottom left**, **Top left**, and **Top right**. **Covers only on focus or hover** limits Home and Library badges to the cover selected with your controller or under the pointer. It does not limit game-page badges or the Store row.
 
-Cover badges are not separate controller buttons. They do not change how you select or launch a game. Select the game-page button or Store icon to open that game's ProtonDB page and read its reports.
+Cover badges are not separate controller buttons. They do not change how you select or launch a game. Select the game-page button or the Store box to open that game's ProtonDB page and read its reports. On a Store page you can move to the boxes with the D-pad.
 
 ## Match a non-Steam game
 
@@ -50,13 +50,13 @@ A game without a match or a ProtonDB tier has no badge. A failed network request
 
 Ratings are reused across the different views and kept for 24 hours. They are also saved, so badges appear right away after Steam or the Deck restarts. A rating older than 24 hours stays visible while it refreshes in the background. A first lookup may take time. Cached badges stay with their covers or controls during Steam's page animations.
 
-## Enable Store badges
+## Enable the Store row
 
-Store badges need Steam's remote browser debugging to be enabled:
+The Store row needs Steam's remote browser debugging to be enabled:
 
 1. Open Decky Loader settings and select **Developer**.
 2. Turn on **Allow Remote CEF Debugging**.
-3. Return to the Store page and allow the badge to load.
+3. Return to the Store page and allow the row to appear.
 
 CEF is Steam's built-in browser. This debugging setting allows unauthenticated browser access from other devices on your network, so use it only on a trusted network. Follow any reload prompt from Decky; finish a running game before restarting Steam.
 
@@ -76,7 +76,7 @@ Only badges are paused. Metadata's other features remain available. If plugin de
 - With **Covers only on focus or hover** on, select or hover the cover.
 - Read any conflict or settings error in the **ProtonDB badges** section.
 - For a non-Steam game, check the saved Steam match and edition. Correct it with **Apply Steam App ID** if needed.
-- For a Store page, check **Allow Remote CEF Debugging**.
+- For the Store row, check **Allow Remote CEF Debugging** and that **Store** is on in **ProtonDB badges**.
 - Allow time for the first name or rating lookup, and check that the Deck is online.
 - A game can have no tier even when the match is correct. Open ProtonDB to check its reports.
 

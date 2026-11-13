@@ -13,6 +13,23 @@ non-Steam games: **Main Story**, **Main + Extras**, **Completionist**, and
 
 When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times.
 
+## Show times on Store pages
+
+On a Steam Store game page, Decky Metadata shows an info row directly below the
+trailers and screenshots. It is boxed like Steam's own rows, such as
+**Reviews**. The **HowLongToBeat** box shows the same four times as the game
+page, and the **Toggle … stat** switches also hide or show them here. It works
+for games you do not own. Select the box to open the game on HowLongToBeat,
+unless **Hide "Details"** is on.
+
+The **Store** switch in the **HLTB times** section turns the HowLongToBeat box
+on. It is on by default. The row also holds a ProtonDB box, which the ProtonDB
+**Store** switch controls. If only one box has data, it fills the row. If both
+switches are off, no row appears.
+
+The row needs Steam's remote browser debugging. See [Enable the Store
+row](protondb-badges.md#enable-the-store-row).
+
 ## Choose how the times look
 
 | Setting | What it does |
@@ -76,7 +93,8 @@ times. Its settings are not copied.
 
 ## If times are missing or wrong
 
-- Check that **Show HowLongToBeat times** is on.
+- Check that **Show HowLongToBeat times** is on, and that **Store** is on if the
+  game is on a Store page.
 - For a non-Steam game, check its Steam match in **Decky metadata...**, or choose
   the HLTB game by hand.
 - Select **Clear HLTB cache** in the **HLTB times** section to look up every
