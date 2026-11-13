@@ -59,7 +59,8 @@ Steam decides when to show the row. It stays hidden in these cases:
 - The right panel is narrow.
 - The stats row is full, for example **Install** with **Space Required** or an
   update status. Steam moves the row to a second line that stays hidden.
-- The game is a non-Steam shortcut.
+- The game is a non-Steam shortcut and no other plugin, such as
+  Emuchievements, gives Steam its achievements.
 - **Enable mini achievements** is off.
 - Decky UI Restored is enabled in Decky Loader.
 

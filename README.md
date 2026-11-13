@@ -156,7 +156,8 @@ Steam's own data, look, and behavior. Touch or select it with a mouse to open
 the game's My Achievements page. Like Steam's own row, the D-pad does not stop
 on it.
 
-The setting is off by default. Non-Steam games get no row, and Steam still
+The setting is off by default. Non-Steam games get a row only when another
+plugin, such as Emuchievements, gives Steam their achievements. Steam still
 hides the row in some cases, for example when the stats row is full.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)

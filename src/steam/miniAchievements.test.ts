@@ -184,15 +184,18 @@ describe("mini achievements onSeek supply", () => {
     expect(instance.props).toBe(props);
   });
 
-  it("adds no onSeek for a non-Steam shortcut", () => {
+  it("gives a non-Steam shortcut's row an onSeek so Steam's own data decides", () => {
     const props = {
       details: { unAppID: SHORTCUT_APP_ID },
-      overview: { appid: SHORTCUT_APP_ID, app_type: 1073741824 },
+      overview: { appid: SHORTCUT_APP_ID, app_type: 1073741824, BIsShortcut: () => true },
     };
     const { instance } = mountSection(props);
     install();
 
-    expect((instance.props as Record<string, unknown>).onSeek).toBeUndefined();
+    const patched = instance.props as Record<string, unknown>;
+    expect(typeof patched.onSeek).toBe("function");
+    expect(patched.details).toBe(props.details);
+    expect(patched.overview).toBe(props.overview);
   });
 
   it("patches the section in every Steam document, such as a sticky header", () => {

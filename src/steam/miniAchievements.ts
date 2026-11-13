@@ -4,7 +4,7 @@
 import { routerHook } from "@decky/api";
 import { afterPatch, findClassModule, findInReactTree } from "@decky/ui";
 import * as log from "../log";
-import { GAME_DETAIL_ROUTES, isNativeNonSteamShortcut } from "./core";
+import { GAME_DETAIL_ROUTES } from "./core";
 import { steamUiDocuments } from "./steamUiHost";
 
 const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000] as const;
@@ -39,10 +39,11 @@ const statsClasses = (): Record<string, string> => {
 // Repeated reads must return the same object so prop comparisons stay stable.
 const seekProps = new WeakMap<object, object>();
 
+// Shortcuts get the callback too: Valve's row hides itself when Steam has no
+// achievements for the app, and a plugin such as Emuchievements can supply them.
 const withSeek = (raw: unknown): unknown => {
   if (!raw || typeof raw !== "object") return raw;
   if (Reflect.get(raw, "onSeek")) return raw;
-  if (isNativeNonSteamShortcut(Reflect.get(raw, "overview"))) return raw;
   const cached = seekProps.get(raw);
   if (cached) return cached;
   const injected = { ...(raw as Record<string, unknown>), onSeek: NOOP_SEEK };
