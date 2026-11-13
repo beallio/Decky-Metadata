@@ -29,6 +29,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
+- **HLTB background and blur.** The "Clean" bars match the Play bar's
+  background and opacity. **Background blur** now blurs the HLTB bar without
+  changing the Play bar.
 - **HLTB times no longer push the Play button down.** The **Default** and
   **"Clean" Default** rows now sit on the bottom of the game's header image, so
   the Play row stays in its usual place.

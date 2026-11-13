@@ -2729,7 +2729,8 @@ class HltbController {
 const detailsClasses = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details) || {};
 const menuButtonClasses = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton) || {};
 const css = `
-#decky-metadata-hltb { position: relative; }
+/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
+#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
 .decky-metadata-hltb-info {
   background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
   border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
@@ -2737,10 +2738,13 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); backdrop-filter: var(--hltb-native-backdrop, none); }
-.decky-metadata-hltb-clean-default { padding: 0; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
+  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
+}
+.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
 .decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
 .decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
 .decky-metadata-hltb-info li { text-align: center; }
@@ -2774,9 +2778,14 @@ function HltbStats({ stats, hltbId, settings, launching }) {
         [settings.showComplete, stats.complete, "Completionist"],
         [settings.showAllStyles, stats.all, "All Styles"],
     ];
-    const classes = ["decky-metadata-hltb-info", style === "default" ? "decky-metadata-hltb-default" : "", style === "clean-default" ? "decky-metadata-hltb-clean-default" : "", style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "", style === "clean-left" ? "decky-metadata-hltb-clean-left" : ""].filter(Boolean).join(" ");
+    const classes = [
+        style === "default" ? "decky-metadata-hltb-default" : "",
+        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
+        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
+        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+    ].filter(Boolean).join(" ");
     const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: classes, style: vars, children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsxs("p", { className: "decky-metadata-hltb-gametime", children: [seconds > 0 ? (seconds / 3600).toFixed(1) : "--", " hours"] }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
                                 ? SP_JSX.jsx(DFL.Focusable, { className: `${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`, focusClassName: detailsClasses.Focused, children: SP_JSX.jsx(DFL.Focusable, { className: detailsClasses.Details, noFocusRing: false, onActivate: openDetails, children: "Details" }) })
                                 : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: "Details" }) }) : null] }) })] });
 }
@@ -2855,69 +2864,33 @@ function useHltbMatch(appId, wanted) {
 }
 /**
  * Mirror the native Play section's surface onto the row so the "Clean" styles
- * follow Clean Gameview's Play Bar Style, including live theme changes. For
- * "Clean Default" with blur, extend the Play section behind the row instead of
- * blurring a second layer, so both read as one surface.
+ * follow Clean Gameview's Play Bar Style, including live theme changes. HLTB
+ * owns both layers: the wrapper copies the AppDetails root underlay only when
+ * HLTB is outside it, and the inner bar copies the Play section.
  */
-function useNativeCleanSurface(ref, enabled, style, blur) {
+function useNativeCleanSurface(ref, enabled, blur) {
     SP_REACT.useEffect(() => {
         const row = ref.current;
         const document = row?.ownerDocument;
         const view = document?.defaultView;
         if (!enabled || !row || !document || !view || !row.parentElement)
             return;
-        let joined = null;
-        let saved = { margin: "", padding: "", backdrop: "" };
-        let basePadding = "0px";
-        let baseMargin = "0px";
-        let resize = null;
-        let observedBar = null;
-        const unjoin = () => {
-            if (!joined)
-                return;
-            joined.style.marginTop = saved.margin;
-            joined.style.paddingTop = saved.padding;
-            joined.style.backdropFilter = saved.backdrop;
-            joined = null;
-        };
+        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
         const update = () => {
             const section = row.nextElementSibling?.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.PlaySection}`);
-            const bar = row.querySelector(".decky-metadata-hltb-info");
-            if (bar !== observedBar) {
-                resize?.disconnect();
-                observedBar = bar;
-                if (bar) {
-                    resize = new view.ResizeObserver(update);
-                    resize.observe(bar);
-                }
-            }
             if (!section) {
-                unjoin();
-                row.style.removeProperty("--hltb-native-backdrop");
-                row.style.removeProperty("--hltb-native-background");
+                for (const name of names)
+                    row.style.removeProperty(name);
                 return;
             }
             const computed = view.getComputedStyle(section);
-            const effective = blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter;
-            const height = bar?.offsetHeight ?? 0;
-            if (style === "clean-default" && effective !== "none" && computed.backdropFilter !== "none" && height > 0) {
-                if (joined !== section) {
-                    unjoin();
-                    joined = section;
-                    saved = { margin: section.style.marginTop, padding: section.style.paddingTop, backdrop: section.style.backdropFilter };
-                    basePadding = view.getComputedStyle(section).paddingTop;
-                    baseMargin = view.getComputedStyle(section).marginTop;
-                }
-                section.style.marginTop = `calc(${baseMargin} - ${height}px)`;
-                section.style.paddingTop = `calc(${basePadding} + ${height}px)`;
-                section.style.backdropFilter = blur === "blur" ? "blur(8px)" : saved.backdrop;
-                row.style.setProperty("--hltb-native-background", "transparent");
-                row.style.setProperty("--hltb-native-backdrop", "none");
-                return;
-            }
-            unjoin();
-            row.style.setProperty("--hltb-native-backdrop", effective);
             row.style.setProperty("--hltb-native-background", computed.background);
+            row.style.setProperty("--hltb-native-opacity", computed.opacity);
+            row.style.setProperty("--hltb-native-backdrop", blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+            const root = section.closest(`.${DFL.basicAppDetailsSectionStylerClasses.AppDetailsRoot}`);
+            const underlay = root && !root.contains(row) ? view.getComputedStyle(root) : null;
+            row.style.setProperty("--hltb-native-underlay", underlay?.background ?? "transparent");
+            row.style.setProperty("--hltb-native-underlay-opacity", underlay?.opacity ?? "1");
         };
         update();
         const observer = new view.MutationObserver(update);
@@ -2926,22 +2899,20 @@ function useNativeCleanSurface(ref, enabled, style, blur) {
         observer.observe(row.parentElement, { childList: true, subtree: true });
         return () => {
             observer.disconnect();
-            resize?.disconnect();
-            unjoin();
-            row.style.removeProperty("--hltb-native-backdrop");
-            row.style.removeProperty("--hltb-native-background");
+            for (const name of names)
+                row.style.removeProperty(name);
         };
-    }, [enabled, style, blur]);
+    }, [enabled, blur]);
 }
 function HltbGameRow({ appId }) {
     const snapshot = useHltbSnapshot();
     const ref = SP_REACT.useRef(null);
     const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
     const launching = useLaunching(ref, active);
-    useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", snapshot.settings.style, snapshot.settings.appearance.blur);
+    useNativeCleanSurface(ref, active && snapshot.settings.style !== "default", snapshot.settings.appearance.blur);
     if (!active)
         return null;
-    return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));
+    return (SP_JSX.jsx("div", { ref: ref, style: { position: "relative", transformStyle: "preserve-3d" }, children: SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: snapshot.settings, launching: launching }) }));
 }
 /** True for the child that holds Steam's Play section (the row goes right above it). */
 const isPlaySection = (child) => {
