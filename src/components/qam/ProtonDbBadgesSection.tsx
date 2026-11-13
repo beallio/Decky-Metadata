@@ -81,7 +81,7 @@ export function ProtonDbBadgesSection({
       <PanelSectionRow>
         <ToggleField
           label="Store"
-          description="Show a ProtonDB tier badge on the Steam Store page."
+          description="Show the ProtonDB tier in an info row on Steam Store game pages."
           checked={settings.store}
           disabled={dependentControlsDisabled}
           onChange={(enabled) => updateSetting("store", enabled)}

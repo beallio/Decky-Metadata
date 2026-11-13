@@ -4,6 +4,32 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+A Store info row with HowLongToBeat and ProtonDB boxes, replacing the ProtonDB Store icon
+
+### Added
+
+- **Store info row.** Steam Store game pages now show a boxed info row directly
+  below the trailers and screenshots, in the style of Steam's own **Reviews**
+  and SteamOS Compatibility rows. It holds a **HowLongToBeat** box with the same
+  times as the game page, honoring the stat switches, and a **ProtonDB** box
+  with the game's tier. Selecting a box opens that game on HowLongToBeat or
+  ProtonDB. The row works for games you do not own, and you can select the boxes
+  with the D-pad.
+- **HLTB Store switch.** The new **Store** switch in **HLTB times** controls the
+  **HowLongToBeat** box on Store pages. It is on by default.
+
+### Changed
+
+- **ProtonDB Store switch controls the Store box.** The ProtonDB **Store**
+  switch now turns the **ProtonDB** box in the info row on or off. If only one
+  box has data, it fills the row. If both switches are off, there is no row.
+
+### Removed
+
+- **Floating ProtonDB Store badge.** The colored ProtonDB icon at the bottom
+  right of Steam Store pages is gone. The **ProtonDB** box in the info row
+  replaces it.
+
 ## [0.6.2] - 2026-11-13
 
 Mini achievements and Activity news work again after Steam's November update

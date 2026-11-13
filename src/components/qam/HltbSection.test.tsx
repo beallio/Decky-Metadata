@@ -18,6 +18,15 @@ describe("HLTB controls", () => {
     expect(toggle().props.disabled).toBe(true);
     expect(toggle({ ...base.settings, enabled: true }).props.disabled).toBe(false);
   });
+  it("wires the Store info row toggle to the setting", () => {
+    const change = vi.fn();
+    const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false };
+    const tree = nodes(HltbSection({ settings, settingsLoaded: true, busy: false, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
+    const toggle = tree.find(node => node.props.label === "Store")!;
+    expect(toggle.props.checked).toBe(false);
+    toggle.props.onChange(true);
+    expect(change).toHaveBeenCalledWith({ ...settings, store: true });
+  });
   it("offers blur, and no opacity, for clean styles", () => {
     const change = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, style: "clean-default" as const, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };

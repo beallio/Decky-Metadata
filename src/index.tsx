@@ -13,7 +13,7 @@ import { protonDbBadgeController } from "./protondb/controller";
 import { installProtonDbCoverBadges } from "./protondb/covers";
 import { resetProtonDbAppIdResolution } from "./protondb/identity";
 import { installProtonDbGameView } from "./protondb/gameView";
-import { installProtonDbStoreBadge } from "./protondb/store";
+import { installStoreInfoRow } from "./storeRow";
 import { startPluginConflicts } from "./pluginConflicts";
 import { hltbController } from "./hltb/gameView";
 import { releaseProviderCache } from "./providerCache";
@@ -99,7 +99,7 @@ export default definePlugin(() => {
   const stopMiniAchievementsController = startMiniAchievementsController();
   const stopProtonDbCovers = installProtonDbCoverBadges();
   const stopProtonDbGameView = installProtonDbGameView();
-  const stopProtonDbStoreBadge = installProtonDbStoreBadge();
+  const stopStoreInfoRow = installStoreInfoRow();
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
@@ -117,7 +117,7 @@ export default definePlugin(() => {
       stopTrailerController();
       stopMiniAchievementsController();
       stopProtonDbCovers();
-      stopProtonDbStoreBadge();
+      stopStoreInfoRow();
       stopProtonDbGameView();
       protonDbBadgeController.stop();
       hltbController.stop();

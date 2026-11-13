@@ -1465,11 +1465,11 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     const updateSetting = (key, value) => {
         void onSettingsChange({ ...settings, [key]: value });
     };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show a ProtonDB tier badge on the Steam Store page.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: "ProtonDB badges", icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Enable ProtonDB badges", description: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.", checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Home game covers", description: "Show a tier badge on Home covers.", checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Library game covers", description: "Show a tier badge on Library covers.", checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Game view", description: "Show a ProtonDB tier button on the game's details page.", checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show the ProtonDB tier in an info row on Steam Store game pages.", checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Covers only on focus or hover", description: "Hide Home and Library cover badges until a game cover is focused or hovered.", checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Cover badge position", layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading ProtonDB badge preferences\u2026" })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden." }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
 
 const DEFAULT_HLTB_SETTINGS = {
-    enabled: false, style: "default", hideViewDetails: false,
+    enabled: false, store: true, style: "default", hideViewDetails: false,
     showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
     nativeDetailsCorners: false,
     appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
@@ -1487,7 +1487,7 @@ function normalizeHltbSettings(value) {
     const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
         ? appearance.blur : defaultAppearance.blur;
     return {
-        enabled: bool(stored.enabled, defaults.enabled), style,
+        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
         hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
         showMain: bool(stored.showMain, defaults.showMain),
         showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
@@ -1530,7 +1530,7 @@ function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy
     const notice = featureConflictNotice(conflict, "HLTB times", settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
-    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Background blur", description: 'Matches the Play bar by default; "Blur" also blurs the times over the header image', rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Use Steam button corners", description: `Uses Steam's normal button corners on the Clean styles' Details button instead of the Round theme's rounded corners`, checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: "HLTB times", icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Show HowLongToBeat times", description: "Show HowLongToBeat times on game pages for Steam and non-Steam games.", checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Store", description: "Show HowLongToBeat times in an info row on Steam Store game pages.", checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "HLTB Style", description: 'The "Clean" styles are intended to work with the CSS Loader Theme "Clean Gameview"', rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: "Background blur", description: 'Matches the Play bar by default; "Blur" also blurs the times over the header image', rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: 'Hide "Details"', description: 'Hides the "Details" button on HLTB Stats', checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Use Steam button corners", description: `Uses Steam's normal button corners on the Clean styles' Details button instead of the Round theme's rounded corners`, checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: "Clearing..." }) : "Clear HLTB cache" }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Customize appearance", description: "Enable custom colors, opacity and text size for the HLTB bar", checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Background opacity", description: "Darkens the bar so stats stay readable over bright hero art", value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Text shadow", description: "Adds a shadow behind the stats for extra contrast", checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: "Text size", description: "Scales the stat numbers and labels", value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: "Bottom border", description: "Shows a divider line under the HLTB bar", checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: "Reset appearance" }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: "Loading HLTB preferences\u2026" }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -18339,6 +18339,10 @@ const LOCAL_CDP_TARGETS_URL = "http://localhost:8080/json";
 const STEAM_STORE_ROUTE = "/steamweb";
 const TARGET_DISCOVERY_INTERVAL_MS = 1500;
 const MAX_STEAM_APP_ID = 0x80000000;
+const MAX_STORE_TITLE_LENGTH = 512;
+const ROW_ID = "decky-metadata-store-info-row";
+const ROW_STYLE_ID = "decky-metadata-store-info-row-style";
+const SUMMARY_BAR_ID = "summaryBarTop";
 const STORE_TIER_KEYS = {
     platinum: true,
     gold: true,
@@ -18346,6 +18350,10 @@ const STORE_TIER_KEYS = {
     bronze: true,
     borked: true,
 };
+const STORE_TITLE_PROBE_SCRIPT = `(() => {
+  const node = document.getElementById("appHubAppName");
+  return node && typeof node.textContent === "string" ? node.textContent : null;
+})()`;
 let storeScriptRevision = Math.max(1, Date.now() * 1000);
 const nextStoreScriptRevision = () => {
     storeScriptRevision += 1;
@@ -18355,9 +18363,21 @@ const nextStoreScriptRevision = () => {
 };
 const isSteamAppId = (value) => typeof value === "number" && Number.isSafeInteger(value) && value > 0 && value < MAX_STEAM_APP_ID;
 const isProtonDbTier = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(STORE_TIER_KEYS, value);
-const isStoreBadgePayload = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+const isRowText = (value, maximumLength) => typeof value === "string" && value.length > 0 && value.length <= maximumLength &&
+    !/[\u0000-\u001f\u007f]/.test(value);
+const isRowItem = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "value" in value && isRowText(value.value, 32) && "label" in value && isRowText(value.label, 64);
+const isHltbCard = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "hltbId" in value && (value.hltbId === null || isSteamAppId(value.hltbId)) &&
+    "items" in value && Array.isArray(value.items) && value.items.length <= 4 && value.items.every(isRowItem);
+const isProtonDbCard = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
+    "tier" in value && isProtonDbTier(value.tier) &&
+    "color" in value && isRowText(value.color, 64) &&
+    "label" in value && isRowText(value.label, 64);
+const isStoreInfoRowPayload = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
     "steamAppId" in value && isSteamAppId(value.steamAppId) &&
-    "tier" in value && isProtonDbTier(value.tier);
+    "hltb" in value && (value.hltb === null || isHltbCard(value.hltb)) &&
+    "protondb" in value && (value.protondb === null || isProtonDbCard(value.protondb));
 const isSteamHistoryBoundary = (value) => typeof value === "object" && value !== null && !Array.isArray(value) &&
     "listen" in value && typeof value.listen === "function";
 const validTargetText = (value, maximumLength) => typeof value === "string" && value.length > 0 && value.length <= maximumLength &&
@@ -18380,39 +18400,79 @@ const parseStoreAppId = (value) => {
         return undefined;
     }
 };
-const makeScriptPayload = (payload) => {
-    if (!payload)
+const scriptPayloadOf = (payload) => {
+    if (payload === null)
         return null;
-    if (!isStoreBadgePayload(payload))
-        throw new TypeError("Invalid ProtonDB Store badge payload");
-    return {
-        steamAppId: payload.steamAppId,
-        tier: payload.tier,
-        color: PROTONDB_COLORS[payload.tier],
-        label: protonDbTierLabel(payload.tier),
-    };
+    if (!isStoreInfoRowPayload(payload))
+        throw new TypeError("Invalid Store info row payload");
+    return payload.hltb === null && payload.protondb === null ? null : payload;
 };
-const storeBadgeScript = (payload, revision) => {
-    const serializedPayload = JSON.stringify(makeScriptPayload(payload));
+/** Stable content identity; the page stamps it and the presence probe re-checks it. */
+const signatureOf = (payload) => payload === null ? "" : JSON.stringify(payload);
+const storeRowScript = (payload, revision) => {
+    const scriptPayload = scriptPayloadOf(payload);
+    const serializedPayload = JSON.stringify(scriptPayload);
+    const serializedSignature = JSON.stringify(signatureOf(scriptPayload));
     const serializedRevision = JSON.stringify(revision);
     return `(function () {
   "use strict";
   const requestedPayload = ${serializedPayload};
+  const requestedSignature = ${serializedSignature};
   const requestedRevision = ${serializedRevision};
-  const ownerKey = "__deckyMetadataProtonDbStoreBadgeV1";
-  const revisionKey = "__deckyMetadataProtonDbStoreBadgeRevisionV1";
-  const badgeId = "decky-metadata-protondb-store-badge";
-  const styleId = "decky-metadata-protondb-store-badge-style";
-  const ownerAttribute = "data-decky-metadata-protondb-store";
+  const ownerKey = "__deckyMetadataStoreInfoRowV1";
+  const revisionKey = "__deckyMetadataStoreInfoRowRevisionV1";
+  const rowId = "${ROW_ID}";
+  const styleId = "${ROW_STYLE_ID}";
+  const anchorId = "${SUMMARY_BAR_ID}";
+  const ownerAttribute = "data-decky-metadata-store-row";
+  const cardClass = "decky-metadata-store-row-card";
+  const headingClass = "decky-metadata-store-row-heading";
+  const statsClass = "decky-metadata-store-row-stats";
+  const valueClass = "decky-metadata-store-row-value";
+  const labelClass = "decky-metadata-store-row-label";
+  const tierClass = "decky-metadata-store-row-tier";
+  const tierLabelClass = "decky-metadata-store-row-tier-label";
+  const atomClass = "decky-metadata-store-row-atom";
   const validTiers = Object.freeze({ platinum: true, gold: true, silver: true, bronze: true, borked: true });
+  const css = "#" + rowId + "{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}" +
+    "#" + rowId + ">:only-child{grid-column:1 / -1}" +
+    "." + cardClass + "{display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:rgba(14,20,27,.5);color:var(--color-text-body-body,#c6d4df);font:16px/22.4px 'Motiva Sans',Arial,sans-serif;text-decoration:none;box-sizing:border-box;min-width:0}" +
+    "." + headingClass + "{font:700 13px/17px 'Motiva Sans',Arial,sans-serif;color:var(--color-text-body-title,#f1f2f3);border-bottom:.67px solid rgb(49,69,96);padding-bottom:3px;margin-bottom:4px;text-transform:uppercase}" +
+    "." + statsClass + "{display:flex;justify-content:space-between;list-style:none;margin:0;padding:0}" +
+    "." + statsClass + " li{display:flex;flex-direction:column}" +
+    "." + valueClass + "{color:#fff;font-weight:700}" +
+    "." + labelClass + "{font-size:12px;opacity:.8}" +
+    "." + tierClass + "{display:flex;align-items:center;gap:8px}" +
+    "." + atomClass + "{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:currentColor;stroke-width:1.7}" +
+    "." + tierLabelClass + "{color:#fff;font-weight:700}";
   const isAppId = function (value) {
     return Number.isSafeInteger(value) && value > 0 && value < 2147483648;
   };
+  const isText = function (value, maximum) {
+    return typeof value === "string" && value.length > 0 && value.length <= maximum &&
+      !/[\\u0000-\\u001f\\u007f]/.test(value);
+  };
+  const isItems = function (value) {
+    if (!Array.isArray(value) || value.length > 4) return false;
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (!item || typeof item !== "object" || !isText(item.value, 32) || !isText(item.label, 64)) return false;
+    }
+    return true;
+  };
+  const isHltb = function (value) {
+    return value !== null && typeof value === "object" &&
+      (value.hltbId === null || isAppId(value.hltbId)) && isItems(value.items);
+  };
+  const isProton = function (value) {
+    return value !== null && typeof value === "object" && typeof value.tier === "string" &&
+      Object.prototype.hasOwnProperty.call(validTiers, value.tier) &&
+      isText(value.color, 64) && isText(value.label, 64);
+  };
   const isPayload = function (value) {
     return value !== null && typeof value === "object" && isAppId(value.steamAppId) &&
-      typeof value.tier === "string" && Object.prototype.hasOwnProperty.call(validTiers, value.tier) &&
-      typeof value.color === "string" && value.color.length > 0 && value.color.length <= 64 &&
-      typeof value.label === "string" && value.label.length > 0 && value.label.length <= 64;
+      (value.hltb === null || isHltb(value.hltb)) && (value.protondb === null || isProton(value.protondb)) &&
+      (value.hltb !== null || value.protondb !== null);
   };
   const appIdOnCurrentStorePage = function () {
     try {
@@ -18434,7 +18494,7 @@ const storeBadgeScript = (payload, revision) => {
     } catch {}
   };
   const removeOrphanedDom = function () {
-    removeOwnedNode(badgeId, "badge");
+    removeOwnedNode(rowId, "row");
     removeOwnedNode(styleId, "style");
   };
   const currentRevision = window[revisionKey];
@@ -18450,18 +18510,19 @@ const storeBadgeScript = (payload, revision) => {
     return requestedPayload === null;
   }
   if (existing && typeof existing.update === "function") {
-    existing.update(requestedPayload, revision);
+    existing.update(requestedPayload, requestedSignature, revision);
     return true;
   }
 
   let disposed = false;
   let stateRevision = revision;
   let statePayload = requestedPayload;
+  let stateSignature = requestedSignature;
   let observedRoot = null;
   let observedBody = null;
   let rootObserver = null;
   let bodyObserver = null;
-  let badge = null;
+  let row = null;
   let style = null;
   const restoreHistoryMethods = [];
   const state = { update: update, dispose: dispose };
@@ -18517,7 +18578,7 @@ const storeBadgeScript = (payload, revision) => {
           const externalChange = records.some(function (record) {
             const added = Array.from(record.addedNodes || []);
             const removed = Array.from(record.removedNodes || []);
-            return added.some(function (node) { return node !== badge; }) || removed.length > 0;
+            return added.some(function (node) { return node !== row; }) || removed.length > 0;
           });
           if (externalChange) render();
         });
@@ -18538,7 +18599,7 @@ const storeBadgeScript = (payload, revision) => {
     atom.setAttribute("viewBox", "0 0 32 32");
     atom.setAttribute("aria-hidden", "true");
     atom.setAttribute("focusable", "false");
-    atom.setAttribute("class", "decky-metadata-protondb-store-atom");
+    atom.setAttribute("class", atomClass);
     ["rotate(0 16 16)", "rotate(60 16 16)", "rotate(120 16 16)"].forEach(function (rotation) {
       const orbit = document.createElementNS(namespace, "ellipse");
       orbit.setAttribute("cx", "16");
@@ -18558,6 +18619,70 @@ const storeBadgeScript = (payload, revision) => {
     return atom;
   }
 
+  function createHeading(text) {
+    const heading = document.createElement("div");
+    heading.className = headingClass;
+    heading.textContent = text;
+    return heading;
+  }
+
+  function hltbCard(payload) {
+    const data = payload.hltb;
+    if (!data) return null;
+    const card = document.createElement(data.hltbId === null ? "div" : "a");
+    card.className = cardClass;
+    card.setAttribute("data-card", "hltb");
+    card.setAttribute("aria-label", "HowLongToBeat times");
+    if (data.hltbId !== null) {
+      card.href = "https://howlongtobeat.com/game/" + data.hltbId;
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+    }
+    card.appendChild(createHeading("How Long To Beat"));
+    if (data.items.length > 0) {
+      const list = document.createElement("ul");
+      list.className = statsClass;
+      data.items.forEach(function (item) {
+        const entry = document.createElement("li");
+        const value = document.createElement("span");
+        value.className = valueClass;
+        value.textContent = item.value;
+        const label = document.createElement("span");
+        label.className = labelClass;
+        label.textContent = item.label;
+        entry.appendChild(value);
+        entry.appendChild(label);
+        list.appendChild(entry);
+      });
+      card.appendChild(list);
+    }
+    return card;
+  }
+
+  function protonDbCard(payload) {
+    const data = payload.protondb;
+    if (!data) return null;
+    const card = document.createElement("a");
+    card.className = cardClass;
+    card.setAttribute("data-card", "protondb");
+    card.setAttribute("aria-label", "ProtonDB rating: " + data.label);
+    card.href = "https://www.protondb.com/app/" + payload.steamAppId;
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.appendChild(createHeading("ProtonDB"));
+    const body = document.createElement("div");
+    body.className = tierClass;
+    const atom = createAtom();
+    atom.style.setProperty("color", data.color);
+    body.appendChild(atom);
+    const label = document.createElement("span");
+    label.className = tierLabelClass;
+    label.textContent = data.label;
+    body.appendChild(label);
+    card.appendChild(body);
+    return card;
+  }
+
   function render() {
     if (disposed) return;
     if (!pageStillMatches()) {
@@ -18569,47 +18694,69 @@ const storeBadgeScript = (payload, revision) => {
     const styleHost = document.head || document.documentElement;
     if (!body || !styleHost) return;
 
-    const existingBadge = ownedNode(badgeId, "badge");
-    if (existingBadge === false) return;
+    const existingRow = ownedNode(rowId, "row");
+    if (existingRow === false) return;
     const existingStyle = ownedNode(styleId, "style");
     if (existingStyle === false) return;
+    const anchor = document.getElementById(anchorId);
+    const parent = anchor && anchor.parentNode;
+    if (!anchor || !parent) {
+      if (existingRow && typeof existingRow.remove === "function") existingRow.remove();
+      return;
+    }
+
     style = existingStyle || document.createElement("style");
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = "#" + badgeId + "{position:fixed!important;left:auto!important;right:calc(20px + env(safe-area-inset-right,0px))!important;bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;z-index:2147483647!important;transform:none!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;max-width:calc(100vw - 32px)!important;box-sizing:border-box!important;padding:12px!important;border:0!important;border-radius:5px!important;background:var(--protondb-tier-color)!important;color:#111820!important;text-decoration:none!important;box-shadow:0 3px 16px rgba(0,0,0,.4)!important;pointer-events:auto!important}#" + badgeId + ":focus-visible{outline:2px solid #fff!important;outline-offset:3px!important}#" + badgeId + " .decky-metadata-protondb-store-atom{width:26px!important;height:26px!important;flex:0 0 26px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.7!important}";
+      style.textContent = css;
     }
-
-    badge = existingBadge || document.createElement("a");
-    if (!existingBadge) {
-      badge.id = badgeId;
-      badge.setAttribute(ownerAttribute, "badge");
-      badge.setAttribute("aria-label", "ProtonDB rating");
-      badge.target = "_blank";
-      badge.rel = "noopener noreferrer";
-    }
-
-    const tierChanged = badge.getAttribute("data-protondb-tier") !== statePayload.tier;
-    if (tierChanged) {
-      badge.replaceChildren(createAtom());
-      badge.setAttribute("data-protondb-tier", statePayload.tier);
-    }
-    badge.href = "https://www.protondb.com/app/" + statePayload.steamAppId;
-    badge.title = "ProtonDB rating: " + statePayload.label;
-    badge.setAttribute("aria-label", "ProtonDB rating: " + statePayload.label);
-    badge.style.setProperty("--protondb-tier-color", statePayload.color);
     if (style.parentNode !== styleHost) styleHost.appendChild(style);
-    if (badge.parentNode !== body) body.appendChild(badge);
+
+    const appIdText = String(statePayload.steamAppId);
+    let marginTop = "";
+    try {
+      const computed = window.getComputedStyle ? window.getComputedStyle(anchor) : null;
+      if (computed && typeof computed.marginTop === "string") marginTop = computed.marginTop;
+    } catch {}
+    if (existingRow && existingRow.getAttribute("data-app-id") === appIdText &&
+        existingRow.getAttribute("data-signature") === stateSignature && existingRow.children.length > 0 &&
+        existingRow.parentNode === parent && anchor.previousElementSibling === existingRow) {
+      row = existingRow;
+      if (marginTop) row.style.marginTop = marginTop;
+      return;
+    }
+    // Rebuild instead of patching in place: one fresh, attached registration per change keeps the nav tree simple.
+    row = document.createElement("div");
+    row.id = rowId;
+    row.setAttribute(ownerAttribute, "row");
+    // Read before the row is instrumented, so Left/Right move between cards.
+    row.setAttribute("data-panel", JSON.stringify({ "flow-children": "row" }));
+    const hltb = hltbCard(statePayload);
+    const proton = protonDbCard(statePayload);
+    if (hltb) row.appendChild(hltb);
+    if (proton) row.appendChild(proton);
+    row.setAttribute("data-app-id", appIdText);
+    row.setAttribute("data-signature", stateSignature);
+    if (marginTop) row.style.marginTop = marginTop;
+    if (existingRow && typeof existingRow.remove === "function") existingRow.remove();
+    parent.insertBefore(row, anchor);
+    // Steam's Store navigation finds a node's parent through the DOM, so register only once the row is attached.
+    try {
+      if (typeof window.ForceUpdateFocusElements === "function") window.ForceUpdateFocusElements(row);
+    } catch {}
   }
 
-  function update(nextPayload, nextRevision) {
+  function update(nextPayload, nextSignature, nextRevision) {
     if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return;
     stateRevision = nextRevision;
-    if (!isPayload(nextPayload) || appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
+    if (!isPayload(nextPayload) || !isText(nextSignature, 2048) ||
+        appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
       dispose();
       return;
     }
     statePayload = nextPayload;
+    stateSignature = nextSignature;
     render();
   }
 
@@ -18708,8 +18855,9 @@ const listStoreCefTargets = async () => {
         return undefined;
     }
 };
-/** Owns the current Store target, rating subscription, route listener, and discovery timer. */
-const installProtonDbStoreBadge = () => {
+const sameTarget = (left, right) => left.id === right.id && left.title === right.title && left.steamAppId === right.steamAppId;
+/** Owns the Store target, both feature subscriptions, the route listener, and the discovery timer. */
+const installStoreInfoRow = () => {
     let stopped = false;
     let eligible = false;
     let onStoreRoute = false;
@@ -18717,32 +18865,33 @@ const installProtonDbStoreBadge = () => {
     let discoveryTimer;
     let discoveryRevision = 0;
     let currentTarget;
-    let currentTargetSignature;
-    let pendingSignature;
+    let currentSignature;
     let injectionGeneration = 0;
     let ratingDisposer;
+    let hltbDisposer;
     let removeHistoryListener;
-    const isEligible = () => {
-        if (stopped || !onStoreRoute)
-            return false;
+    const titleCache = new Map();
+    const titleProbes = new Map();
+    const isHltbCardEnabled = () => {
+        const snapshot = hltbController.getSnapshot();
+        return snapshot.effectiveEnabled && snapshot.settings.store;
+    };
+    const isProtonDbCardEnabled = () => {
         const snapshot = protonDbBadgeController.getSnapshot();
         return snapshot.effectiveEnabled && snapshot.settings.store;
     };
+    const isEligible = () => !stopped && onStoreRoute && (isHltbCardEnabled() || isProtonDbCardEnabled());
     const clearDiscoveryTimer = () => {
         if (discoveryTimer === undefined)
             return;
         globalThis.clearTimeout(discoveryTimer);
         discoveryTimer = undefined;
     };
-    const executeBadgeScript = async (target, payload) => {
-        const script = storeBadgeScript(payload, nextStoreScriptRevision());
-        try {
-            const result = await executeInTab(target.title, false, script);
-            return result.success && result.result === true;
-        }
-        catch {
-            return false;
-        }
+    const releaseHltb = () => {
+        const dispose = hltbDisposer;
+        hltbDisposer = undefined;
+        if (dispose)
+            dispose();
     };
     const releaseRating = () => {
         const dispose = ratingDisposer;
@@ -18754,85 +18903,170 @@ const installProtonDbStoreBadge = () => {
         }
         catch { /* A torn-down rating controller has already released it. */ }
     };
+    const executeRowScript = async (target, payload) => {
+        const script = storeRowScript(payload, nextStoreScriptRevision());
+        try {
+            const result = await executeInTab(target.title, false, script);
+            return result.success && result.result === true;
+        }
+        catch {
+            return false;
+        }
+    };
+    /** The store page title, read once per target because only the game page knows it from Steam. */
+    const titleFor = (target) => {
+        const native = String(getNativeOverview(target.steamAppId)?.display_name ?? "").trim();
+        if (native.length > 0 && native.length <= MAX_STORE_TITLE_LENGTH && !/[\u0000-\u001f\u007f]/.test(native)) {
+            return Promise.resolve(native);
+        }
+        const key = target.id + "\u0000" + target.steamAppId;
+        const cached = titleCache.get(key);
+        if (cached !== undefined)
+            return Promise.resolve(cached);
+        const pending = titleProbes.get(key);
+        if (pending)
+            return pending;
+        // An empty result is not cached: the probe can run before the page has its heading.
+        const probe = executeInTab(target.title, false, STORE_TITLE_PROBE_SCRIPT).then((result) => {
+            const text = result.success && typeof result.result === "string" ? result.result.trim() : "";
+            const resolved = text.length > 0 && text.length <= MAX_STORE_TITLE_LENGTH &&
+                !/[\u0000-\u001f\u007f]/.test(text) ? text : "";
+            titleProbes.delete(key);
+            if (titleCache.size > 64)
+                titleCache.clear();
+            if (resolved !== "")
+                titleCache.set(key, resolved);
+            return resolved;
+        }, () => {
+            titleProbes.delete(key);
+            return "";
+        });
+        titleProbes.set(key, probe);
+        return probe;
+    };
+    const hltbCardFor = async (target) => {
+        const settings = hltbController.getSnapshot().settings;
+        const title = await titleFor(target);
+        if (title === "")
+            return null;
+        const inputs = { steam: target.steamAppId, title, pinned: null };
+        const view = hltbStore.view(target.steamAppId, inputs);
+        if (view.needsFetch)
+            hltbStore.request(target.steamAppId, false, inputs);
+        const entry = view.entry;
+        if (!entry || entry.status !== "matched")
+            return null;
+        const rows = [
+            { show: settings.showMain, seconds: entry.stats?.main ?? 0, label: "Main Story" },
+            { show: settings.showMainPlus, seconds: entry.stats?.plus ?? 0, label: "Main + Extras" },
+            { show: settings.showComplete, seconds: entry.stats?.complete ?? 0, label: "Completionist" },
+            { show: settings.showAllStyles, seconds: entry.stats?.all ?? 0, label: "All Styles" },
+        ];
+        if (!rows.some((row) => row.seconds > 0))
+            return null;
+        const items = rows
+            .filter((row) => row.show)
+            .map((row) => ({ value: row.seconds > 0 ? `${(row.seconds / 3600).toFixed(1)} h` : "--", label: row.label }));
+        const hltbId = settings.hideViewDetails ? null : (isSteamAppId(entry.hltb_id) ? entry.hltb_id : null);
+        if (items.length === 0 && hltbId === null)
+            return null;
+        return { hltbId, items };
+    };
+    const payloadFor = async (target) => {
+        const hltb = isHltbCardEnabled() ? await hltbCardFor(target) : null;
+        const tier = isProtonDbCardEnabled() ? protonDbBadgeController.getRating(target.steamAppId).tier : null;
+        const protondb = tier ? { tier, color: PROTONDB_COLORS[tier], label: protonDbTierLabel(tier) } : null;
+        if (hltb === null && protondb === null)
+            return null;
+        return { steamAppId: target.steamAppId, hltb, protondb };
+    };
+    const probeRow = async (target, signature) => {
+        const script = `(() => {
+  const row = document.getElementById(${JSON.stringify(ROW_ID)});
+  const anchor = document.getElementById(${JSON.stringify(SUMMARY_BAR_ID)});
+  const parent = anchor && anchor.parentNode;
+  return !!row && !!parent && row.parentNode === parent && anchor.previousElementSibling === row &&
+    row.getAttribute("data-app-id") === ${JSON.stringify(String(target.steamAppId))} &&
+    row.getAttribute("data-signature") === ${JSON.stringify(signature)};
+})()`;
+        try {
+            const result = await executeInTab(target.title, false, script);
+            return result.success && result.result === true;
+        }
+        catch {
+            return false;
+        }
+    };
+    const applyCurrent = () => {
+        const target = currentTarget;
+        if (!target || !isEligible())
+            return;
+        const generation = ++injectionGeneration;
+        void payloadFor(target).then((payload) => {
+            if (generation !== injectionGeneration || !isEligible() || !currentTarget ||
+                !sameTarget(currentTarget, target))
+                return;
+            const signature = signatureOf(payload);
+            if (signature === currentSignature)
+                return;
+            void executeRowScript(target, payload).then((applied) => {
+                if (generation !== injectionGeneration)
+                    return;
+                if (applied && isEligible() && currentTarget && sameTarget(currentTarget, target)) {
+                    currentSignature = signature;
+                }
+            });
+        }, () => undefined);
+    };
     const clearCurrentTarget = () => {
         const target = currentTarget;
         currentTarget = undefined;
-        currentTargetSignature = undefined;
-        pendingSignature = undefined;
+        currentSignature = undefined;
         injectionGeneration += 1;
+        titleCache.clear();
+        titleProbes.clear();
         releaseRating();
+        releaseHltb();
         if (target)
-            executeBadgeScript(target, null);
+            void executeRowScript(target, null);
     };
-    const applyCurrentRating = () => {
-        if (!isEligible() || !currentTarget)
-            return;
-        const target = currentTarget;
-        const tier = protonDbBadgeController.getRating(target.steamAppId).tier;
-        const payload = tier ? { steamAppId: target.steamAppId, tier } : null;
-        const signature = target.id + "\u0000" + target.title + "\u0000" + target.steamAppId + "\u0000" + (tier || "none");
-        if (signature === currentTargetSignature || signature === pendingSignature)
-            return;
-        const generation = ++injectionGeneration;
-        pendingSignature = signature;
-        void executeBadgeScript(target, payload).then(applied => {
-            if (generation !== injectionGeneration)
-                return;
-            pendingSignature = undefined;
-            if (applied && isEligible() && currentTarget?.id === target.id &&
-                currentTarget.title === target.title && currentTarget.steamAppId === target.steamAppId) {
-                currentTargetSignature = signature;
-            }
-        });
-    };
-    const onRatingChanged = () => {
-        if (!isEligible() || !currentTarget)
-            return;
-        applyCurrentRating();
+    const onCardDataChanged = () => {
+        if (isEligible() && currentTarget)
+            applyCurrent();
     };
     const setCurrentTarget = async (target) => {
         if (!target) {
             clearCurrentTarget();
             return;
         }
-        if (currentTarget && currentTarget.id === target.id && currentTarget.title === target.title &&
-            currentTarget.steamAppId === target.steamAppId) {
-            const tier = protonDbBadgeController.getRating(target.steamAppId).tier;
-            if (tier && currentTargetSignature) {
-                const presenceScript = `(() => {
-          const badge = document.getElementById("decky-metadata-protondb-store-badge");
-          return !!badge && badge.getAttribute("data-protondb-tier") === ${JSON.stringify(tier)}
-            && badge.getAttribute("href") === ${JSON.stringify(`https://www.protondb.com/app/${target.steamAppId}`)};
-        })()`;
-                try {
-                    const present = await executeInTab(target.title, false, presenceScript);
-                    if (!isEligible() || currentTarget?.id !== target.id)
-                        return;
-                    if (!present.success || present.result !== true)
-                        currentTargetSignature = undefined;
-                }
-                catch {
-                    if (!isEligible())
-                        return;
-                    currentTargetSignature = undefined;
-                }
+        if (currentTarget && sameTarget(currentTarget, target)) {
+            const signature = currentSignature;
+            if (signature !== undefined) {
+                const present = await probeRow(target, signature);
+                if (!isEligible() || !currentTarget || !sameTarget(currentTarget, target))
+                    return;
+                if (!present)
+                    currentSignature = undefined;
             }
-            applyCurrentRating();
+            applyCurrent();
             return;
         }
         const previous = currentTarget;
         if (previous && previous.id !== target.id)
-            executeBadgeScript(previous, null);
+            void executeRowScript(previous, null);
         const appChanged = !previous || previous.steamAppId !== target.steamAppId;
         currentTarget = target;
-        currentTargetSignature = undefined;
-        pendingSignature = undefined;
+        currentSignature = undefined;
         injectionGeneration += 1;
+        titleCache.clear();
+        titleProbes.clear();
         if (appChanged) {
             releaseRating();
-            ratingDisposer = protonDbBadgeController.subscribeRating(target.steamAppId, onRatingChanged);
+            ratingDisposer = protonDbBadgeController.subscribeRating(target.steamAppId, onCardDataChanged);
+            releaseHltb();
+            hltbDisposer = hltbStore.subscribe(target.steamAppId, onCardDataChanged);
         }
-        applyCurrentRating();
+        applyCurrent();
     };
     const scheduleDiscovery = () => {
         if (!isEligible() || discoveryTimer !== undefined || discoveryRunning)
@@ -18867,18 +19101,19 @@ const installProtonDbStoreBadge = () => {
     };
     const syncEligibility = () => {
         const nextEligibility = isEligible();
-        if (nextEligibility === eligible) {
-            if (nextEligibility && discoveryTimer === undefined && !discoveryRunning)
-                void discoverTarget();
-            return;
+        if (nextEligibility !== eligible) {
+            eligible = nextEligibility;
+            if (!nextEligibility) {
+                stopDiscovery();
+                return;
+            }
         }
-        eligible = nextEligibility;
-        if (!nextEligibility) {
-            stopDiscovery();
+        if (!nextEligibility)
             return;
-        }
         if (discoveryTimer === undefined && !discoveryRunning)
             void discoverTarget();
+        else
+            applyCurrent();
     };
     const history = findSteamHistory();
     if (history) {
@@ -18896,6 +19131,7 @@ const installProtonDbStoreBadge = () => {
         }
     }
     const removeControllerListener = protonDbBadgeController.subscribe(syncEligibility);
+    const removeHltbListener = hltbController.subscribe(syncEligibility);
     syncEligibility();
     return () => {
         if (stopped)
@@ -18903,6 +19139,7 @@ const installProtonDbStoreBadge = () => {
         stopped = true;
         stopDiscovery();
         removeControllerListener();
+        removeHltbListener();
         const removeHistory = removeHistoryListener;
         removeHistoryListener = undefined;
         if (removeHistory) {
@@ -18989,7 +19226,7 @@ var index = DFL.definePlugin(() => {
     const stopMiniAchievementsController = startMiniAchievementsController();
     const stopProtonDbCovers = installProtonDbCoverBadges();
     const stopProtonDbGameView = installProtonDbGameView();
-    const stopProtonDbStoreBadge = installProtonDbStoreBadge();
+    const stopStoreInfoRow = installStoreInfoRow();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     return {
@@ -19005,7 +19242,7 @@ var index = DFL.definePlugin(() => {
             stopTrailerController();
             stopMiniAchievementsController();
             stopProtonDbCovers();
-            stopProtonDbStoreBadge();
+            stopStoreInfoRow();
             stopProtonDbGameView();
             protonDbBadgeController.stop();
             hltbController.stop();
