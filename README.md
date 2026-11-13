@@ -113,8 +113,9 @@ their Steam App ID; non-Steam games use their saved Steam match or their name.
 You can choose the HowLongToBeat game for a non-Steam game in its editor. The
 styles and appearance options of HLTB for Deck are included. The **"Clean"**
 styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
-Body** Play bars. **Background blur** controls only the HLTB bar; it does not
-change the Play bar. **Use Steam button corners** keeps the **Details**
+Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
+and the Play bar form one blurred panel. **Background blur** never changes the
+Play bar's blur. **Use Steam button corners** keeps the **Details**
 button's corners as Steam draws them.
 
 When HLTB times are turned on, Decky Metadata sends game titles and

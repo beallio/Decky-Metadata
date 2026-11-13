@@ -18,7 +18,7 @@ When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times
 | Setting | What it does |
 | --- | --- |
 | **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
-| **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the HLTB background. **None** removes its blur. This setting does not change the Play bar. |
+| **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the HLTB background. **None** removes its blur. In **"Clean" Default**, when the Play bar is blurred and this setting is not **None**, the times sit on the Play bar's own blur, so both rows look like one panel. This setting never changes the Play bar's blur. |
 | **Use Steam button corners** | **"Clean"** styles only. Keeps the corners of the **Details** button as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
 | **Hide "Details"** | Removes the button that opens the HowLongToBeat page. |
 | **Toggle … stat** | Show or hide each of the four times. |

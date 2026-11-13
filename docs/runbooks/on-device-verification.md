@@ -177,8 +177,14 @@ before testing, and restore them after the checks.
    bars. Then test **Blur** and **Match Play bar** through QAM, capturing each
    state with `cdp.py screenshot`. Check the HLTB surface and its underlay against
    the native Play section and its root: background and opacity must match.
-   The native section's inline styles and bounds must not change when the HLTB
-   blur selection changes.
+   HLTB never writes the native section's inline styles, and its bounds stay
+   the same except in one case: in **"Clean" Default** with a blurred Play bar
+   (Clean Gameview **Blur**) and a blur selection other than **None**, HLTB's
+   own stylesheet extends the Play section's box up behind the times, so one
+   blur covers both rows. The HLTB
+   row then draws no surface, the Play content stays in place, and removing the
+   row removes the rule. Confirm on Brotato that the border between the rows
+   shows no seam.
 3. Compare screenshots of the same header image. **Blur** must diffuse detail
    behind HLTB; a tint change or computed `backdrop-filter` alone is not proof.
    Keep Steam's 3D rendering context through both HLTB wrappers: flattening an
