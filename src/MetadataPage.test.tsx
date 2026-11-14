@@ -121,6 +121,7 @@ vi.mock("react", () => ({
   },
 }));
 
+import { Navigation } from "@decky/ui";
 import { MetadataPage } from "./MetadataPage";
 import { metadataTemplate } from "./metadataForm";
 import type { MetadataData } from "./types";
@@ -549,6 +550,25 @@ describe("MetadataPage compatibility status", () => {
     await action(renderPage(), "Remove metadata").props.onClick();
 
     expect(action(renderPage(), "Restore original name")).toBeDefined();
+  });
+
+  it("closes the editor after a successful removal so Save cannot recreate a record", async () => {
+    configureShortcutPanel();
+    backend.removeMetadata.mockResolvedValue({});
+
+    await action(renderPage(), "Remove metadata").props.onClick();
+
+    expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("stays in the editor when removal fails", async () => {
+    configureShortcutPanel();
+    backend.removeMetadata.mockRejectedValue(new Error("disk full"));
+
+    await action(renderPage(), "Remove metadata").props.onClick();
+
+    expect(toast.toastError).toHaveBeenCalledWith("Remove failed", "Error: disk full");
+    expect(Navigation.NavigateBack).not.toHaveBeenCalled();
   });
 
   it("excludes repeated confirmations and other editor actions while a rename is pending", async () => {

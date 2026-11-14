@@ -11,10 +11,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
-- **Removing metadata clears the compatibility badge.** After **Remove metadata**,
-  the game's Steam Deck compatibility badge in **Game Info** now goes back to
-  its original state when you return to the game page. If you set a global
-  compatibility status for the game, that status still shows. (#40)
+- **Removing metadata clears the compatibility badge.** **Remove metadata** now
+  closes the editor and returns to the game page, where the game's Steam Deck
+  compatibility badge in **Game Info** goes back to its original state.
+  Before, pressing **Save** after removing saved an empty record, which brought
+  the badge back. (#40)
 
 ## [0.6.3] - 2026-11-13
 
