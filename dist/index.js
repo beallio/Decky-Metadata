@@ -5317,13 +5317,16 @@ const publishCompatibilityReplacements = (updates) => {
             const replacement = createCompatibilityReplacement(overview);
             if (!replacement)
                 continue;
-            // Another plugin can decorate the observable map setter and retain the
-            // native setter as `originalSet`. This replacement already copies every
-            // current native field, so re-entering a foreign decorator can replay
-            // its side effects against a live Game Info tree during plugin reload.
-            // Publish through the preserved native setter when it is explicitly
-            // available; it still emits the map replacement Steam filters observe.
-            const nativeSet = overviews.originalSet;
+            // Another plugin can decorate the observable map setter. This replacement
+            // already copies every current native field, so re-entering a foreign
+            // decorator can replay its side effects; a decorator that rewrites the
+            // compatibility nibble then makes every publication trigger another one
+            // (issue #35, Unifideck). Publish through an explicitly preserved
+            // `originalSet`, else the map's own prototype setter when the instance
+            // setter was replaced; both still emit the replacement Steam observes.
+            const nativeSet = typeof overviews.originalSet === "function"
+                ? overviews.originalSet
+                : Object.getPrototypeOf(overviews)?.set;
             if (typeof nativeSet === "function" && nativeSet !== overviews.set) {
                 nativeSet.call(overviews, appId, replacement);
             }

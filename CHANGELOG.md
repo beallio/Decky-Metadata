@@ -34,6 +34,14 @@ A Store info row with HowLongToBeat and ProtonDB boxes, replacing the ProtonDB S
   right of Steam Store pages is gone. The **ProtonDB** box in the info row
   replaces it.
 
+### Fixed
+
+- **Game page freeze with Unifideck 0.8.0.** Opening a Unifideck game's page
+  no longer freezes Steam on a spinning logo when Decky Metadata and Unifideck
+  have a different Steam Deck compatibility rating for it. Decky Metadata's
+  rating is shown, and Unifideck's other game details stay in place.
+  ([#35](https://github.com/beallio/Decky-Metadata/issues/35))
+
 ## [0.6.2] - 2026-11-13
 
 Mini achievements and Activity news work again after Steam's November update
