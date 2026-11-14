@@ -108,7 +108,6 @@ function useNativeCleanSurface(
   enabled: boolean,
   style: HltbSettings["style"],
   blur: HltbBlur,
-  pushPlayDown: boolean,
 ): { joined: boolean; height: number; paddingTop: number } {
   const [surface, setSurface] = useState(NO_SURFACE);
   const padding = useRef(0);
@@ -138,7 +137,7 @@ function useNativeCleanSurface(
       // Layout height, not the rect: Steam animates an ancestor transform on page entry.
       const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
       const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-      const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+      const joined = style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
       row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
       row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
       row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
@@ -167,7 +166,7 @@ function useNativeCleanSurface(
       resize.observer?.disconnect();
       for (const name of names) row.style.removeProperty(name);
     };
-  }, [enabled, style, blur, pushPlayDown]);
+  }, [enabled, style, blur]);
   return surface;
 }
 
@@ -176,7 +175,7 @@ function HltbGameRow({ appId }: { appId: number }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
-  const surface = useNativeCleanSurface(ref, active, snapshot.settings.style, snapshot.settings.appearance.blur, snapshot.settings.pushPlayDown);
+  const surface = useNativeCleanSurface(ref, active, snapshot.settings.style, snapshot.settings.appearance.blur);
   if (!active) return null;
   return (
     <div ref={ref} className={surface.joined ? JOINED_CLASS : undefined} style={{ position: "relative", transformStyle: "preserve-3d" }}>

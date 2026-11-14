@@ -126,7 +126,7 @@ describe("HLTB game-page native surface", () => {
 
   /** Renders the inserted row against a fake game page with one theme and one Play surface. */
   async function setup(options: {
-    style?: HltbSettings["style"]; blur?: HltbBlur; backdrop?: string; pushPlayDown?: boolean;
+    style?: HltbSettings["style"]; blur?: HltbBlur; backdrop?: string;
   } = {}) {
     vi.clearAllMocks();
     hooks.index = 0;
@@ -138,7 +138,6 @@ describe("HLTB game-page native surface", () => {
     });
     backend.getHltbSettings.mockResolvedValue({
       ...DEFAULT_HLTB_SETTINGS, enabled: true, style: options.style ?? "clean-default",
-      pushPlayDown: options.pushPlayDown ?? false,
       appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, blur: options.blur ?? "match" },
     });
     backend.setHltbSettings.mockImplementation(async (settings: HltbSettings) => settings);
@@ -268,8 +267,6 @@ describe("HLTB game-page native surface", () => {
     };
     const setStyle = async (style: HltbSettings["style"]) =>
       setSettings({ ...hltbController.getSnapshot().settings, style });
-    const setPushPlayDown = async (pushPlayDown: boolean) =>
-      setSettings({ ...hltbController.getSnapshot().settings, pushPlayDown });
     const expectSurface = (backdrop: string, underlay = rootSurface) => {
       expect(Object.fromEntries(properties)).toEqual({
         "--unrelated-sentinel": "keep",
@@ -298,7 +295,7 @@ describe("HLTB game-page native surface", () => {
       for (const hours of ["1.0 hours", "1.5 hours", "2.0 hours", "3.0 hours"]) expect(content).toContain(hours);
     };
     return {
-      observers, resizers, properties, settle, setBlur, setStyle, setPushPlayDown,
+      observers, resizers, properties, settle, setBlur, setStyle,
       notifyTheme: () => notify(observers),
       notifyResize: () => notify(resizers),
       setBarHeight: (height: number) => { barHeight = height; },
@@ -322,25 +319,6 @@ describe("HLTB game-page native surface", () => {
     expect(page.observers.filter((observer) => observer.connected)).toHaveLength(1);
     expect(page.resizers.filter((observer) => observer.connected)).toHaveLength(1);
     expect(backend.getHltbStats).not.toHaveBeenCalled();
-  });
-
-  it("keeps the Play bar below the times instead of joining when pushing Play down", async () => {
-    const page = await setup({ pushPlayDown: true });
-    let rendered = page.settle();
-    expect(rendered.props.className).toBeUndefined();
-    expect(ruleOf(rendered)).toBeUndefined();
-    page.expectSurface("blur(3px)");
-
-    rendered = await page.setPushPlayDown(false);
-    expect(rendered.props.className).toBe("decky-metadata-hltb-joined");
-    expect(ruleOf(rendered)).toContain("margin-top: calc(0px - 48px)");
-    page.expectJoinedSurface();
-
-    rendered = await page.setPushPlayDown(true);
-    expect(rendered.props.className).toBeUndefined();
-    expect(ruleOf(rendered)).toBeUndefined();
-    page.expectSurface("blur(3px)");
-    page.expectHours(rendered);
   });
 
   it("mirrors instead of joining when the native Play surface has no blur", async () => {
