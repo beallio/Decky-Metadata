@@ -9,6 +9,13 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Context menu label.** The game context menu entry is now **Change Metadata...**
   instead of **Decky metadata...**, to match Steam's other menu items. (#41)
 
+### Fixed
+
+- **Removing metadata clears the compatibility badge.** After **Remove metadata**,
+  the game's Steam Deck compatibility badge in **Game Info** now goes back to
+  its original state when you return to the game page. If you set a global
+  compatibility status for the game, that status still shows. (#40)
+
 ## [0.6.3] - 2026-11-13
 
 Fix game page freezes with Unifideck 0.8.0 and add a Store info row with HowLongToBeat and ProtonDB

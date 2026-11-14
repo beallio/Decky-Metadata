@@ -39,6 +39,7 @@ import {
   metadataCache,
   metadataState,
   notifyCompatibilityRevision,
+  removeMetadataCacheEntry,
 } from "./core";
 import { applyMetadata, installMetadataPatches, setConfirmedCompatibilityDefault } from "./metadataPatch";
 import {
@@ -58,6 +59,7 @@ afterEach(() => {
   metadataState.lastObservedGameDetailAppId = 0;
   metadataState.bypassCounter = 0;
   metadataState.routeShield = null;
+  metadataState.deferredEditorCompatibilityPublications.clear();
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
   delete (globalThis as any).Router;
@@ -235,6 +237,91 @@ describe("router compatibility publication", () => {
 
     routerUnpatchers.reverse().forEach((unpatch) => unpatch());
     shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
+    metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
+  });
+
+  it("publishes the restored compatibility value when Game Info re-enters after metadata removal", () => {
+    const appId = 9716;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0x0a;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+    }
+    const overview = new NativeOverview();
+    const overviews: any = new Map([[appId, overview]]);
+    const publications: Array<{ nativeIdentity: boolean; category: number }> = [];
+    const nativeSet = vi.fn((key: number, value: NativeOverview) => {
+      publications.push({
+        nativeIdentity: value.BIsModOrShortcut() === true,
+        category: value.steam_hw_compat_category_packed & 0x0f,
+      });
+      return Map.prototype.set.call(overviews, key, value);
+    });
+    overviews.originalSet = nativeSet;
+    // The editor is a separate route: an edit there applies the packed nibble
+    // immediately and only defers the observable-map publication.
+    (globalThis as any).window = { location: { pathname: `/decky-metadata/${appId}` } };
+    (globalThis as any).appStore = {
+      allApps: [overview],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? overview : null,
+    };
+    (globalThis as any).appDetailsStore = {};
+    metadataCache[String(appId)] = {
+      steam_appid: 15100,
+      deck_compat_override: 1,
+    } as any;
+
+    const metadataUnpatchers: Array<() => void> = [];
+    installMetadataPatches(metadataUnpatchers);
+    expect(applyMetadata(appId, { publishCompatibility: false })).toBe(true);
+    expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x05);
+    expect(nativeSet).not.toHaveBeenCalled();
+
+    // 'Remove metadata' deletes the record, then restores the native nibble.
+    removeMetadataCacheEntry(appId);
+    expect(applyMetadata(appId, { publishCompatibility: false })).toBe(true);
+    expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x0a);
+    expect(metadataState.deferredEditorCompatibilityPublications.has(appId)).toBe(true);
+
+    // 'Done' returns to the exact Game Info tab with the record already gone.
+    (globalThis as any).window = { location: { pathname: `/library/app/${appId}/tab/GameInfo` } };
+
+    const routeProps = {
+      renderFunc: () => ({ props: { children: { props: { overview } } } }),
+    };
+    const routerUnpatchers: Array<() => void> = [];
+    installRouterRenderPatches(routerUnpatchers, {
+      ensureMetadataCache: vi.fn(async () => undefined),
+      applyMetadata: vi.fn(() => false),
+      tryEnrichScreenshotsForApp: vi.fn(async () => undefined),
+      tryFetchMetadataForApp: vi.fn(async () => undefined),
+      refreshDeckyNativeActivityForApp: vi.fn(async () => null),
+    });
+    mocks.routeHandlers[0](routeProps);
+    routeProps.renderFunc();
+
+    // The record is gone, so no shield is armed. The restored nibble is still
+    // non-observable and needs one map publication for Steam to drop the badge.
+    expect(metadataState.routeShield).toBeNull();
+    expect(nativeSet).toHaveBeenCalledTimes(1);
+    expect(nativeSet).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
+    expect(publications).toEqual([{ nativeIdentity: true, category: 0x0a }]);
+    expect(overviews.get(appId)).not.toBe(overview);
+
+    // The deferred set is drained: a later render publishes nothing.
+    routeProps.renderFunc();
+    expect(nativeSet).toHaveBeenCalledTimes(1);
+
+    routerUnpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
   });
 
