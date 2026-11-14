@@ -4,10 +4,10 @@ When a non-Steam game has a saved match to a Steam game, its Community area can 
 
 News and announcements from the matched Steam game can also appear in Steam's Activity area. Decky Metadata adds that news for the non-Steam game; it does not replace Steam's normal Activity area.
 
-To remove a game's saved metadata, open its **Decky metadata...** editor and select **Remove metadata**. This also removes that game's injected Activity news. Metadata then does not match that game again by itself, so the news does not come back. The README explains how to open the editor: [Get started](../../README.md#get-started).
+To remove a game's saved metadata, open its **Change Metadata...** editor and select **Remove metadata**. This also removes that game's injected Activity news. Metadata then does not match that game again by itself, so the news does not come back. The README explains how to open the editor: [Get started](../../README.md#get-started).
 
 ## If posts or news are missing
 
-- Check that the game has the correct saved Steam match in **Decky metadata...**. Community posts and Activity news depend on that match.
+- Check that the game has the correct saved Steam match in **Change Metadata...**. Community posts and Activity news depend on that match.
 - Community screenshots from IGN appear only as a fallback when Steam has no Community cards to show. An empty area does not mean IGN screenshots are guaranteed to be available.
 - If you removed metadata, the injected Activity news is removed with it. Save the correct match again if you want the matched game's news to appear.

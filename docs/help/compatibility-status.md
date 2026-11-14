@@ -31,7 +31,7 @@ With a manual default, only games in the selected group inherit it; a per-game c
 
 ## Choose a status for one game
 
-Open the game's menu, select **Decky metadata...**, and find **Compatibility status**. Choose one of these options:
+Open the game's menu, select **Change Metadata...**, and find **Compatibility status**. Choose one of these options:
 
 - **Use global default** follows your Quick Access Menu default when the game is included in **Apply default to**. If it is outside that group, it uses Steam's status when available or keeps its original status.
 - **Follow Valve** ignores your default and scope for this game. It uses the matched Steam game's status, or keeps the original status if no Steam status is available.

@@ -41,7 +41,7 @@ heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
 
-To edit one game, open its menu and select **Decky metadata...**. Use **Find a
+To edit one game, open its menu and select **Change Metadata...**. Use **Find a
 Steam match** to search by name. Select a result to check its artwork, developer,
 and release date, then select **Use this Steam match**. You can still paste a
 Steam page link or app ID under **Steam App ID**. Select **Save** after you make

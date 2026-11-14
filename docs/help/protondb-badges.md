@@ -36,7 +36,7 @@ Steam games use their own Steam App IDs. A non-Steam game uses a valid saved Met
 
 To choose the intended game:
 
-1. Open the non-Steam game's menu and select **Decky metadata...**.
+1. Open the non-Steam game's menu and select **Change Metadata...**.
 2. Enter the correct Steam App ID or paste the game's Steam Store URL.
 3. Select **Apply Steam App ID**. This saves the match.
 

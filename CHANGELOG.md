@@ -4,6 +4,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Changed
+
+- **Context menu label.** The game context menu entry is now **Change Metadata...**
+  instead of **Decky metadata...**, to match Steam's other menu items. (#41)
+
 ## [0.6.3] - 2026-11-13
 
 Fix game page freezes with Unifideck 0.8.0 and add a Store info row with HowLongToBeat and ProtonDB
