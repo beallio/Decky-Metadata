@@ -35,6 +35,22 @@ describe("HLTB controls", () => {
     expect(change).toHaveBeenCalledWith({ ...settings, appearance: { ...settings.appearance, blur: "blur" } });
     expect(tree.some(node => node.props.label === "Background opacity")).toBe(false);
   });
+  it("offers pushing Play down only for the bottom styles", () => {
+    const change = vi.fn();
+    const tree = (style: (typeof DEFAULT_HLTB_SETTINGS)["style"]) => nodes(HltbSection({
+      settings: { ...DEFAULT_HLTB_SETTINGS, enabled: true, style }, settingsLoaded: true, busy: false,
+      conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn(),
+    }));
+    for (const style of ["clean", "clean-left"] as const) {
+      expect(tree(style).some(node => node.props.label === "Push Play button down")).toBe(false);
+    }
+    for (const style of ["default", "clean-default"] as const) {
+      const toggle = tree(style).find(node => node.props.label === "Push Play button down")!;
+      expect(toggle.props.checked).toBe(false);
+      toggle.props.onChange(true);
+      expect(change).toHaveBeenLastCalledWith({ ...DEFAULT_HLTB_SETTINGS, enabled: true, style, pushPlayDown: true });
+    }
+  });
   it("updates appearance, resets it, and clears the cache", () => {
     const change = vi.fn(), clear = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };
