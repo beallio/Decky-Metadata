@@ -94,13 +94,15 @@ default. Choose ratings on Home covers, Library covers, game pages, or Steam
 Store pages. Each view has its own switch. You can choose a cover corner and
 show cover badges only when a game is focused or hovered.
 
-Select the game-page button or Store badge to open that game's ProtonDB reports.
-The ratings are **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
+Select the game-page button or the Store box to open that game's ProtonDB
+reports. On a Steam Store game page the rating is in a boxed info row below the
+trailers and screenshots, beside a HowLongToBeat box. The ratings are
+**Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
 They describe community experience, not Valve certification or a guarantee
 that your copy will run. Games without a match or rating have no badge.
 
 See the [ProtonDB guide](docs/help/protondb-badges.md) for controls, matching,
-Store requirements, and troubleshooting.
+Store row requirements, and troubleshooting.
 
 ![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
 
@@ -108,7 +110,8 @@ Store requirements, and troubleshooting.
 
 Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
-Story, Main + Extras, Completionist, and All Styles. Steam games are matched by
+Story, Main + Extras, Completionist, and All Styles. The same times appear in a
+box on Steam Store game pages. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
 You can choose the HowLongToBeat game for a non-Steam game in its editor. The
 styles and appearance options of HLTB for Deck are included. The **"Clean"**
@@ -153,7 +156,8 @@ Steam's own data, look, and behavior. Touch or select it with a mouse to open
 the game's My Achievements page. Like Steam's own row, the D-pad does not stop
 on it.
 
-The setting is off by default. Non-Steam games get no row, and Steam still
+The setting is off by default. Non-Steam games get a row only when another
+plugin, such as Emuchievements, gives Steam their achievements. Steam still
 hides the row in some cases, for example when the stats row is full.
 
 See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achievements)

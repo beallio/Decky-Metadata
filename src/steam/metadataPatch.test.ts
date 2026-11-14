@@ -285,6 +285,16 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
   });
 });
 
+/**
+ * Spy on publication through the map's prototype setter, where Steam's
+ * ObservableMap keeps `set`. An instance-level spy looks like a foreign
+ * decorator, which compatibility publication deliberately bypasses.
+ */
+const spyOnMapSet = <K, V>(overviews: Map<K, V>) => {
+  Object.setPrototypeOf(overviews, Object.create(Map.prototype));
+  return vi.spyOn(Object.getPrototypeOf(overviews) as Map<K, V>, "set");
+};
+
 const compatibilityMetadata = (
   category?: MetadataData["deck_compat_category"],
   override?: MetadataData["deck_compat_override"],
@@ -1596,7 +1606,7 @@ describe("compatibility metadata application", () => {
     let packedAtFirstPublication: number | undefined;
     const overviews = new Map([[appId, original]]);
     const set = overviews.set.bind(overviews);
-    vi.spyOn(overviews, "set").mockImplementation((key, value) => {
+    spyOnMapSet(overviews).mockImplementation((key, value) => {
       if (packedAtFirstPublication === undefined) {
         packedAtFirstPublication = original.steam_hw_compat_category_packed;
       }
@@ -1668,6 +1678,58 @@ describe("compatibility metadata application", () => {
     expect(overviews.get(appId).steam_hw_compat_category_packed).toBe(0xaf);
   });
 
+  it("settles when a foreign instance setter decorator rewrites the compatibility nibble", () => {
+    const appId = 94551;
+    class NativeOverview {
+      appid = appId;
+      app_type = 1073741824;
+      steam_hw_compat_category_packed = 0xa0;
+
+      BIsShortcut() {
+        return true;
+      }
+
+      BIsModOrShortcut() {
+        return true;
+      }
+
+      GetPreservedState() {
+        return undefined;
+      }
+
+      RestorePreservedState() {}
+    }
+
+    const original = new NativeOverview();
+    const overviews: Map<number, NativeOverview> & { __unifideckOriginalSet?: Map<number, NativeOverview>["set"] } =
+      new Map([[appId, original]]);
+    // Unifideck 0.8.0 replaces the instance setter, keeps the native one under
+    // its own name, and writes its own Deck category (2) into bits 0-1.
+    const nativeSet = overviews.set.bind(overviews);
+    const decorator = vi.fn((key: number, value: NativeOverview) => {
+      value.steam_hw_compat_category_packed = (value.steam_hw_compat_category_packed & ~0x3) | 2;
+      return nativeSet(key, value);
+    });
+    overviews.__unifideckOriginalSet = nativeSet;
+    overviews.set = decorator;
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = {
+      get allApps() {
+        return [...overviews.values()];
+      },
+      m_mapApps: overviews,
+    };
+    host.appDetailsStore = {};
+    metadataCache[String(appId)] = compatibilityMetadata(3, null);
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(decorator).not.toHaveBeenCalled();
+    expect(overviews.get(appId)).not.toBe(original);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaf);
+    // A render re-entering applyMetadata must find nothing left to publish.
+    expect(applyMetadata(appId)).toBe(false);
+  });
+
   it("does not republish an unchanged default after a retained in-place reload", () => {
     const appId = 9454;
     class NativeOverview {
@@ -1693,7 +1755,7 @@ describe("compatibility metadata application", () => {
     const original = new NativeOverview();
     const overviews = new Map<number, NativeOverview>([[appId, original]]);
     const set = overviews.set.bind(overviews);
-    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const publish = spyOnMapSet(overviews).mockImplementation((key, value) => set(key, value));
     const host = globalThis as Record<string, unknown>;
     host.appStore = {
       allApps: [original],
@@ -1753,7 +1815,7 @@ describe("compatibility metadata application", () => {
     const original = new NativeOverview();
     const overviews = new Map<number, NativeOverview>([[appId, original]]);
     const set = overviews.set.bind(overviews);
-    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const publish = spyOnMapSet(overviews).mockImplementation((key, value) => set(key, value));
     const host = globalThis as Record<string, unknown>;
     host.appStore = {
       allApps: [original],
@@ -1800,7 +1862,7 @@ describe("compatibility metadata application", () => {
     const original = new NativeOverview();
     const overviews = new Map<number, NativeOverview>([[appId, original]]);
     const set = overviews.set.bind(overviews);
-    const publish = vi.spyOn(overviews, "set").mockImplementation((key, value) => set(key, value));
+    const publish = spyOnMapSet(overviews).mockImplementation((key, value) => set(key, value));
     const host = globalThis as Record<string, unknown>;
     host.appStore = {
       allApps: [original],
@@ -2137,7 +2199,7 @@ describe("compatibility metadata application", () => {
     ]);
     const publications: Array<{ appId: number; first: number; second: number }> = [];
     const set = overviews.set.bind(overviews);
-    vi.spyOn(overviews, "set").mockImplementation((appId, overview) => {
+    spyOnMapSet(overviews).mockImplementation((appId, overview) => {
       publications.push({
         appId,
         first: first.steam_hw_compat_category_packed,

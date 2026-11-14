@@ -5,6 +5,8 @@ describe("normalizeHltbSettings", () => {
   it("uses defaults for missing and invalid values", () => {
     expect(normalizeHltbSettings(null)).toEqual(DEFAULT_HLTB_SETTINGS);
     expect(normalizeHltbSettings({ style: "other", showMain: 0, appearance: { textScale: NaN } })).toEqual(DEFAULT_HLTB_SETTINGS);
+    expect(normalizeHltbSettings({ store: false }).store).toBe(false);
+    expect(normalizeHltbSettings({ store: "yes" }).store).toBe(true);
   });
   it("drops retired per-game hiding and link color", () => {
     const settings = normalizeHltbSettings({ hiddenAppIds: [620], appearance: { linkColor: "text" } });

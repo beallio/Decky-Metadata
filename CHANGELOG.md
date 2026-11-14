@@ -4,6 +4,46 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-13
+
+Fix game page freezes with Unifideck 0.8.0 and add a Store info row with HowLongToBeat and ProtonDB
+
+### Added
+
+- **Store info row.** Steam Store game pages now show a boxed info row directly
+  below the trailers and screenshots, in the style of Steam's own **Reviews**
+  and SteamOS Compatibility rows. It holds a **HowLongToBeat** box with the same
+  times as the game page, honoring the stat switches, and a **ProtonDB** box
+  with the game's tier. Selecting a box opens that game on HowLongToBeat or
+  ProtonDB. The row works for games you do not own, and you can select the boxes
+  with the D-pad.
+- **HLTB Store switch.** The new **Store** switch in **HLTB times** controls the
+  **HowLongToBeat** box on Store pages. It is on by default.
+
+### Changed
+
+- **ProtonDB Store switch controls the Store box.** The ProtonDB **Store**
+  switch now turns the **ProtonDB** box in the info row on or off. If only one
+  box has data, it fills the row. If both switches are off, there is no row.
+- **Mini achievements for non-Steam games.** When another plugin, such as
+  Emuchievements, gives Steam the achievements for a non-Steam game, its
+  ACHIEVEMENTS row now shows beside Play Time, as it does for Steam games.
+  Non-Steam games without achievements still get no row.
+
+### Removed
+
+- **Floating ProtonDB Store badge.** The colored ProtonDB icon at the bottom
+  right of Steam Store pages is gone. The **ProtonDB** box in the info row
+  replaces it.
+
+### Fixed
+
+- **Game page freeze with Unifideck 0.8.0.** Opening a Unifideck game's page
+  no longer freezes Steam on a spinning logo when Decky Metadata and Unifideck
+  have a different Steam Deck compatibility rating for it. Decky Metadata's
+  rating is shown, and Unifideck's other game details stay in place.
+  ([#35](https://github.com/beallio/Decky-Metadata/issues/35))
+
 ## [0.6.2] - 2026-11-13
 
 Mini achievements and Activity news work again after Steam's November update

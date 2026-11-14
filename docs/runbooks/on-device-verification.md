@@ -148,7 +148,11 @@ draws no row of its own.
    counts. Visit another Steam game with achievements and return; the counts
    must follow the game. Check a game with no achievements and an unmatched
    shortcut (no row), and a matched shortcut (no row; matching adds no
-   achievement mapping).
+   achievement mapping). Metadata gives shortcuts the callback too, so a
+   shortcut shows Steam's row only when Steam's achievement queries return
+   data for it, for example from Emuchievements. Without that plugin, check
+   this by putting achievement data for the shortcut into Steam's
+   `["achievements", appid, …]` query cache through CDP, then remove it.
 5. Disable and re-enable on a mounted page. Check that disabling removes the
    row at once with no reload, that enabling does not duplicate it, and that a
    QAM close/reopen does not change the saved preference. Open a game whose

@@ -586,7 +586,7 @@ const HLTB_BLURS: [&str; 3] = ["match", "blur", "none"];
 
 pub fn default_hltb_settings() -> Value {
     json!({
-        "enabled": false, "style": "default", "hideViewDetails": false,
+        "enabled": false, "store": true, "style": "default", "hideViewDetails": false,
         "nativeDetailsCorners": false,
         "showMain": true, "showMainPlus": true, "showComplete": true, "showAllStyles": true,
         "appearance": {"custom": false, "barAlpha": 25,
@@ -602,7 +602,7 @@ fn hltb_step(value: Option<&Value>, min: i64, max: i64) -> Option<i64> {
 pub fn normalize_hltb_settings(value: &Value) -> Value {
     let mut normalized = default_hltb_settings();
     let Some(source) = value.as_object() else { return normalized };
-    for key in ["enabled", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
+    for key in ["enabled", "store", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
         if let Some(flag) = source.get(key).and_then(Value::as_bool) {
             normalized[key] = Value::Bool(flag);
         }
@@ -640,7 +640,7 @@ pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
         actual.len() == expected.len() && expected.keys().all(|key| actual.contains_key(key))
     };
     let appearance = source.get("appearance").and_then(Value::as_object).ok_or_else(invalid)?;
-    let flags_valid = ["enabled", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
+    let flags_valid = ["enabled", "store", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
         .iter()
         .all(|key| source.get(*key).is_some_and(Value::is_boolean))
         && ["custom", "textShadow", "border"].iter().all(|key| appearance.get(*key).is_some_and(Value::is_boolean));
@@ -1378,8 +1378,12 @@ mod tests {
         legacy.as_object_mut().unwrap().remove("nativeDetailsCorners");
         assert_eq!(normalize_hltb_settings(&legacy)["nativeDetailsCorners"], false);
         assert!(validate_hltb_settings(&legacy).is_err(), "missing nativeDetailsCorners");
+        let mut no_store = defaults.clone();
+        no_store.as_object_mut().unwrap().remove("store");
+        assert_eq!(normalize_hltb_settings(&no_store)["store"], true);
+        assert!(validate_hltb_settings(&no_store).is_err(), "missing store");
         for (path, bad) in [
-            ("style", json!("fancy")), ("enabled", json!("yes")), ("nativeDetailsCorners", json!("yes")),
+            ("style", json!("fancy")), ("enabled", json!("yes")), ("store", json!("yes")), ("nativeDetailsCorners", json!("yes")),
             ("hiddenAppIds", json!([620])), ("extra", json!(true)),
         ] {
             let mut value = defaults.clone();
