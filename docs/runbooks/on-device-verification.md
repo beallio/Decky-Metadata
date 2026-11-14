@@ -315,7 +315,7 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    content and links while other eligible shortcuts and their native filter
    membership update. Change tabs and return to confirm Verified. Repeat back
    to Automatic. Closing QAM or a context-menu overlay must not release the
-   held value; opening **Decky metadata...** must release it, and a later editor
+   held value; opening **Change Metadata...** must release it, and a later editor
    Save must take priority. Repeat changes before exit and verify only the
    latest result applies. Navigate from game A to game B, replace/delete only a
    disposable pending fixture, and confirm no state leaks or recreation occur.

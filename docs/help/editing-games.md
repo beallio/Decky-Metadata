@@ -1,6 +1,6 @@
 # Edit a game's metadata
 
-Open the game's menu in your Steam library and select **Decky metadata...**. This opens the editor for that game. The editor changes non-Steam game entries, not games that are already on Steam.
+Open the game's menu in your Steam library and select **Change Metadata...**. This opens the editor for that game. The editor changes non-Steam game entries, not games that are already on Steam.
 
 ## Add or correct a Steam match
 

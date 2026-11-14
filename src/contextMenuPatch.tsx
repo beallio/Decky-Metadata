@@ -178,7 +178,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
-      {"Decky metadata..."}
+      {"Change Metadata..."}
     </MenuItem>
   );
 

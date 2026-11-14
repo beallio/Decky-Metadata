@@ -25,7 +25,7 @@ Saving a default saves it immediately. Eligible shortcuts other than the game
 currently open on the **Game Info** tab update immediately. The active Game
 Info game keeps its applied value and rich content until the user leaves that
 tab. Closing QAM or a context-menu overlay does not release it. A different
-tab, page, or game releases it; opening **Decky metadata...** is also an exit.
+tab, page, or game releases it; opening **Change Metadata...** is also an exit.
 The pending work then uses the latest default, match, and per-game choice, so a
 later editor Save wins over a formerly queued default.
 
@@ -88,7 +88,7 @@ same active-Game-Info deferral as any other default change.
 | S33 | Automatic -> Verified | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
 | S34 | Several global changes | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
 | S35 | Changed global default | Close QAM or cancel a context-menu overlay | Do not release the pending update while Game Info remains selected. |
-| S36 | Changed global default | Open Decky metadata... from active Game Info | Editor navigation exits; its explicit Save wins over the old queued default. |
+| S36 | Changed global default | Open Change Metadata... from active Game Info | Editor navigation exits; its explicit Save wins over the old queued default. |
 | S37 | Changed global default | Navigate from game A Game Info to game B | Release A only; do not transfer A's state to B. |
 | S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
 | S39 | Changed global default | Plugin reload or unload while pending | In-place reload retains/reconstructs pending work; real unload clears it and restores baselines. |

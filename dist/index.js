@@ -8645,7 +8645,7 @@ const removeOurEntry = (items) => {
 const insertOurEntry = (items, appId) => {
     if (!isNativeNonSteamShortcut(getNativeOverview(appId)))
         return false;
-    const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Decky metadata..." }, ENTRY_KEY));
+    const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: "Change Metadata..." }, ENTRY_KEY));
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, (x) => x?.onSelected?.toString?.().includes("AppProperties")));
     const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
     items.splice(insertAt, 0, entry);
