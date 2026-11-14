@@ -13,6 +13,7 @@ export type HltbSettings = {
   enabled: boolean;
   store: boolean;
   style: "default" | "clean" | "clean-left" | "clean-default";
+  pushPlayDown: boolean;
   hideViewDetails: boolean;
   showMain: boolean;
   showMainPlus: boolean;
@@ -23,7 +24,7 @@ export type HltbSettings = {
 };
 
 export const DEFAULT_HLTB_SETTINGS: HltbSettings = {
-  enabled: false, store: true, style: "default", hideViewDetails: false,
+  enabled: false, store: true, style: "default", pushPlayDown: false, hideViewDetails: false,
   showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
   nativeDetailsCorners: false,
   appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
@@ -46,6 +47,7 @@ export function normalizeHltbSettings(value: unknown): HltbSettings {
     ? appearance.blur : defaultAppearance.blur;
   return {
     enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
+    pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
     hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
     showMain: bool(stored.showMain, defaults.showMain),
     showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
