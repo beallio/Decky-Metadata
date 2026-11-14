@@ -1,6 +1,6 @@
 [package]
 name = "decky-metadata-backend"
-version = "0.6.3"
+version = "0.6.4"
 edition = "2024"
 rust-version = "1.99"
 license = "GPL-3.0-or-later"
