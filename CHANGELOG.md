@@ -4,7 +4,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-A Store info row with HowLongToBeat and ProtonDB boxes, replacing the ProtonDB Store icon
+## [0.6.3] - 2026-11-13
+
+Fix game page freezes with Unifideck 0.8.0 and add a Store info row with HowLongToBeat and ProtonDB
 
 ### Added
 
