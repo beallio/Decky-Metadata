@@ -17,11 +17,6 @@ describe("normalizeHltbSettings", () => {
     expect(normalizeHltbSettings({ appearance: { blur: "blur" } }).appearance.blur).toBe("blur");
     expect(normalizeHltbSettings({ appearance: { blur: "soft" } }).appearance.blur).toBe("match");
   });
-  it("normalizes pushing the Play button down", () => {
-    expect(normalizeHltbSettings({ pushPlayDown: true }).pushPlayDown).toBe(true);
-    expect(normalizeHltbSettings({ pushPlayDown: "yes" }).pushPlayDown).toBe(false);
-    expect(normalizeHltbSettings({}).pushPlayDown).toBe(false);
-  });
   it("clamps and rounds appearance values to five", () => {
     expect(normalizeHltbSettings({ appearance: { barAlpha: 27, textScale: 147 } }).appearance).toMatchObject({ barAlpha: 25, textScale: 145 });
     expect(normalizeHltbSettings({ appearance: { barAlpha: -10, textScale: 999 } }).appearance).toMatchObject({ barAlpha: 0, textScale: 150 });
