@@ -859,6 +859,8 @@ export const MetadataPage = () => {
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setFormMetadata(metadataTemplate(appName(appId)));
       toastSuccess("Removed", "Metadata removed");
+      // Leave the editor: its reset form would otherwise let Save write an empty Manual record (#40).
+      Navigation.NavigateBack();
     } catch (error) {
       toastError("Remove failed", String(error));
     } finally {
