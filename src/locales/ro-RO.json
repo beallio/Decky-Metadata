@@ -16,7 +16,7 @@
       "matched_delisted": "Potrivire găsită pentru aplicația Steam retrasă {{title}}",
       "saved_metadata": "Metadate salvate pentru {{title}}",
       "no_match": "Nicio potrivire de metadate pentru {{title}}",
-      "updated_activity": "Activitatea Steam actualizată pentru {{title}}",
+      "updated_activity": "Activitate Steam actualizată pentru {{title}}",
       "no_activity": "Nu s-a găsit nicio Activitate Steam pentru {{title}}"
     },
     "hltb_busy": "HowLongToBeat este ocupat. Încearcă din nou într-un minut.",
@@ -106,7 +106,7 @@
   },
   "quickLinks": {
     "dlc": "DLC",
-    "pointsShop": "Magazin de puncte"
+    "pointsShop": "Magazinul cu puncte"
   },
   "qam": {
     "hltb": {
@@ -170,14 +170,14 @@
       "detailDelayLabel": "Întârziere de apariție în vizualizarea Detalii",
       "detailDelayDescription": "Timpul de așteptare de la deschiderea paginii jocului până la afișarea unui trailer pregătit.",
       "audioLabel": "Sunetul trailerelor în vizualizarea Detalii",
-      "audioDescription": "Sunetul apare cu fade-in când apare un trailer în vizualizarea Detalii. Trailerele din Acasă rămân mereu fără sunet.",
+      "audioDescription": "Crește treptat volumul sunetului când apare un trailer în vizualizarea Detalii. Trailerele din Acasă rămân mereu fără sunet.",
       "hideLogoLabel": "Ascunde sigla jocului în timpul trailerelor din vizualizarea Detalii",
       "hideLogoDescription": "Ascunde sigla paginii jocului cât timp un trailer este vizibil. Sigla revine când redarea se oprește.",
       "homeHeading": "Vizualizarea Acasă",
       "homeLabel": "Trailere în vizualizarea Acasă",
       "homeDescription": "Redă un trailer fără sunet peste fundalul din Acasă pentru jocul selectat sau indicat.",
       "homeDelayLabel": "Întârziere de apariție în Acasă",
-      "homeDelayDescription": "Așteaptă înainte de a căuta un trailer. Trecerea la alt joc repornește această întârziere.",
+      "homeDelayDescription": "Timpul de așteptare înainte de a căuta un trailer. Trecerea la alt joc repornește această întârziere.",
       "qualityLabel": "Calitatea video",
       "qualityAuto": "Automat — potrivit afișajului",
       "displayLabel": "Afișaj Big Picture",
@@ -190,7 +190,7 @@
       "title": "Insigne ProtonDB",
       "conflictFeature": "insignele ProtonDB",
       "enableLabel": "Activează insignele ProtonDB",
-      "enableDescription": "Afișează nivelurile ProtonDB ale comunității pe suprafețele de joc Steam. Este separat de starea de compatibilitate a Valve.",
+      "enableDescription": "Afișează nivelurile ProtonDB ale comunității în interfața jocurilor Steam. Acest lucru este separat de starea de compatibilitate Valve.",
       "homeLabel": "Coperțile jocurilor din Acasă",
       "homeDescription": "Afișează o insignă de nivel pe coperțile din Acasă.",
       "libraryLabel": "Coperțile jocurilor din Bibliotecă",
@@ -199,7 +199,7 @@
       "gameViewDescription": "Afișează un buton cu nivelul ProtonDB pe pagina de detalii a jocului.",
       "storeLabel": "Magazin",
       "storeDescription": "Afișează nivelul ProtonDB într-un rând de informații pe paginile de joc din magazinul Steam.",
-      "focusOnlyLabel": "Coperți doar la focalizare sau hover",
+      "focusOnlyLabel": "Coperți doar la focalizare sau survolare",
       "focusOnlyDescription": "Ascunde insignele de pe coperțile din Acasă și Bibliotecă până când o copertă este focalizată sau survolată.",
       "positionLabel": "Poziția insignei pe copertă",
       "positionBottomLeft": "Jos stânga",
@@ -219,12 +219,12 @@
       "title": "Starea de compatibilitate",
       "defaultStatus": "Starea de compatibilitate implicită",
       "applyDefaultTo": "Aplică implicit la",
-      "categoryAutomatic": "Automat — folosește starea Steam potrivită",
+      "categoryAutomatic": "Automat — folosește starea Steam asociată",
       "categoryVerified": "Verificat",
       "categoryPlayable": "Jucabil",
       "categoryUnsupported": "Neacceptat",
       "categoryUnknown": "Necunoscut",
-      "scopeSteam": "Jocuri potrivite cu Steam",
+      "scopeSteam": "Jocuri cu potrivire Steam",
       "scopeNoSteam": "Jocuri salvate fără ID Steam",
       "scopeMetadata": "Toate jocurile cu metadate salvate",
       "scopeAll": "Toate jocurile non-Steam",
@@ -234,7 +234,7 @@
         "metadata": "Se aplică tuturor înregistrărilor de metadate salvate, cu sau fără ID Steam. Alegerile per joc au prioritate.",
         "all": "Se aplică tuturor scurtăturilor non-Steam native, inclusiv celor fără înregistrare. Alegerile per joc au prioritate."
       },
-      "perGameNote": "Urmărirea Valve este o alegere per joc. Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve."
+      "perGameNote": "„Urmărește Valve” este o alegere per joc. Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve."
     },
     "metadata": {
       "title": "Metadate",
@@ -294,7 +294,7 @@
       "plugin": "Decky Metadata: {{version}}",
       "decky": "Decky: {{version}}",
       "steamos": "SteamOS: {{version}}",
-      "controllerTypes": "Tipuri de controller: {{types}}"
+      "controllerTypes": "Tipuri de controler: {{types}}"
     },
     "logs": {
       "title": "Jurnale",
@@ -335,7 +335,7 @@
     "expandTrailer": "Extinde trailerul",
     "mediaSourceUnavailable": "MediaSource nu este disponibil",
     "steamUiUnavailable": "Interfața Steam nu este disponibilă",
-    "runtimeConflict": "Conflict de rulare a trailerelor de metadate",
+    "runtimeConflict": "Conflict de rulare pentru trailerele Metadata",
     "runtimeRemoved": "Rularea trailerului a fost eliminată",
     "otherPluginActive": "Un alt plugin de trailere este încă activ. Dezactivează-l și reîncarcă interfața Steam înainte de a folosi trailerele Metadata.",
     "loadingSettings": "Se încarcă setările trailerelor",
@@ -347,7 +347,7 @@
     "pausedWhilePlugin": "În pauză cât timp {{name}} este activat",
     "homeTrailersOff": "Trailerele din vizualizarea Acasă sunt dezactivate",
     "detailTrailersOff": "Trailerele din vizualizarea Detalii sunt dezactivate",
-    "openGamePage": "Deschide pagina principală a unui joc din Bibliotecă Steam sau selectează un joc din Acasă",
+    "openGamePage": "Deschide pagina principală a unui joc din Biblioteca Steam sau selectează un joc din Acasă",
     "gameNotAvailable": "Jocul Steam nu este disponibil",
     "notNativeShortcut": "Acest joc nu este o scurtătură non-Steam nativă",
     "matchesUnavailable": "Potrivirile Steam salvate nu sunt disponibile",
@@ -420,7 +420,7 @@
   "conflicts": {
     "pluginConflict": "{{pluginName}} este activat în Decky Loader. Dezactivează acel plugin pentru a folosi {{feature}} aici.",
     "pluginConflictSaved": "Setarea ta este salvată; această funcție va reveni când celălalt plugin va fi dezactivat.",
-    "detectionUnavailable": "Nu s-au putut verifica pluginurile în conflict. Folosește un singur furnizor pentru {{feature}} o dată."
+    "detectionUnavailable": "Nu s-au putut verifica pluginurile în conflict. Folosește un singur furnizor pentru {{feature}} simultan."
   },
   "editor": {
     "save": "Salvează",
@@ -456,7 +456,7 @@
       "useGlobalDefaultFromValve": "Folosește valoarea implicită globală ({{category}} — de la Valve)"
     },
     "compatibilityStatus": "Starea de compatibilitate",
-    "compatibilityHelp": "Folosirea valorii implicite globale preia setarea din meniul de acces rapid. Urmărește Valve o ignoră și păstrează starea Steam originală când datele Valve nu sunt disponibile.",
+    "compatibilityHelp": "„Folosește valoarea implicită globală” preia setarea din meniul de acces rapid. „Urmărește Valve” o ignoră și păstrează starea Steam originală când datele Valve nu sunt disponibile.",
     "compatibilityChoices": "Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve sau un rezultat de performanță al emulatorului.",
     "steamInfoFields": "Câmpuri de informații Steam",
     "hltbGame": "Joc HowLongToBeat",
@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Istoricul numelor salvat a fost uitat",
       "nameHistoryForgottenBody": "Steam nu a schimbat numele scurtăturii.",
       "nameHistoryNotClearedTitle": "Istoricul numelor salvat nu a fost șters"
-    }
+    },
+    "steamTextLanguage": "Limba textului Steam: {{language}}",
+    "fetchSteamText": "Obține textul Steam în {{language}}",
+    "steamTextUnavailable": "Steam nu a returnat text pentru acest joc."
   },
   "matchPicker": {
     "title": "Găsește o potrivire Steam",
@@ -556,12 +559,12 @@
     "localMultiPlayer": "Multijucător local",
     "localCoOp": "Cooperativ local",
     "splitScreen": "Ecran divizat",
-    "fullController": "Suport complet pentru controller",
+    "fullController": "Suport complet pentru controler",
     "mmo": "MMO",
     "achievements": "Realizări"
   },
   "controllerLayouts": {
-    "disabledHeading": "Configurațiile controllerului sunt dezactivate",
-    "disabledBody": "Se folosește interfața standard Steam pentru configurațiile controllerului până la reîncărcarea Decky Metadata."
+    "disabledHeading": "Configurațiile controlerului sunt dezactivate",
+    "disabledBody": "Se folosește interfața standard Steam pentru configurațiile controlerului până la reîncărcarea Decky Metadata."
   }
 }

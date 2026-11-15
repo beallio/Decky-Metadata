@@ -13,7 +13,7 @@
       "failed": "Error: {{title}}",
       "skipped_changed": "{{title}} omitido: los metadatos cambiaron durante la actualización",
       "matched_steam": "Coincidencia de Steam encontrada para {{title}}",
-      "matched_delisted": "Coincidencia encontrada para la aplicación retirada de Steam {{title}}",
+      "matched_delisted": "Coincidencia de aplicación retirada de Steam encontrada para {{title}}",
       "saved_metadata": "Metadatos guardados de {{title}}",
       "no_match": "Sin coincidencia de metadatos para {{title}}",
       "updated_activity": "Actividad de Steam actualizada de {{title}}",
@@ -33,7 +33,7 @@
     "compat_default_unavailable": "no se pudo cargar la compatibilidad predeterminada",
     "compat_scope_unavailable": "no se pudo cargar el ámbito de la compatibilidad predeterminada",
     "trailer_settings_unavailable": "no se pudieron cargar los ajustes de tráilers",
-    "mini_achievements_settings_unavailable": "no se pudieron cargar los ajustes de logros mini",
+    "mini_achievements_settings_unavailable": "no se pudieron cargar los ajustes de minilogros",
     "protondb_settings_unavailable": "no se pudieron cargar los ajustes de las insignias de ProtonDB",
     "steam_ui_unavailable": "Interfaz de Steam no disponible",
     "update_check_failed": "Error al buscar actualizaciones",
@@ -82,7 +82,7 @@
     },
     "details": "Detalles",
     "search": {
-      "searching": "Buscando...",
+      "searching": "Buscando…",
       "action": "Buscar en HLTB",
       "noGames": "HowLongToBeat no ha encontrado ningún juego.",
       "mainStory": "Historia principal {{hours}}",
@@ -96,9 +96,9 @@
   },
   "miniAchievements": {
     "errors": {
-      "loadFailed": "No se pudieron cargar los logros mini. Recarga el plugin para volver a intentarlo: {{error}}",
-      "saveFailed": "No se pudieron guardar los logros mini: {{error}}",
-      "applyFailed": "No se pudieron aplicar los logros mini. Recarga el plugin: {{error}}"
+      "loadFailed": "No se pudieron cargar los minilogros. Recarga el plugin para volver a intentarlo: {{error}}",
+      "saveFailed": "No se pudieron guardar los minilogros: {{error}}",
+      "applyFailed": "No se pudieron aplicar los minilogros. Recarga el plugin: {{error}}"
     }
   },
   "controllerTypes": {
@@ -123,7 +123,7 @@
       "styleCleanLeft": "«Clean» a la izquierda",
       "styleCleanDefault": "«Clean» predeterminado",
       "pushPlayLabel": "Bajar el botón Jugar",
-      "pushPlayDescription": "Muestra los tiempos debajo de la imagen de cabecera y baja el botón Jugar, como HLTB para Deck. Mientras hay una barra de estado de guardado en la parte inferior de la imagen de cabecera, los tiempos permanecen sobre la imagen.",
+      "pushPlayDescription": "Muestra los tiempos debajo de la imagen de cabecera y baja el botón Jugar, como HLTB for Deck. Mientras se muestra una barra de estado de guardado en la parte inferior de la imagen de cabecera, los tiempos permanecen sobre la imagen.",
       "blurLabel": "Desenfoque de fondo",
       "blurDescription": "Coincide con la barra Jugar de forma predeterminada; «Desenfoque» también desenfoca los tiempos sobre la imagen de cabecera",
       "blurMatchPlayBar": "Igual que la barra Jugar",
@@ -142,8 +142,8 @@
       "allStylesStatLabel": "Alternar estadística «todos los estilos»",
       "allStylesStatDescription": "Muestra u oculta solo la estadística de todos los estilos",
       "clearCacheButton": "Borrar la caché de HLTB",
-      "clearingButton": "Borrando...",
-      "cacheClearing": "Borrando la caché de HLTB...",
+      "clearingButton": "Borrando…",
+      "cacheClearing": "Borrando la caché de HLTB…",
       "cacheCleared": "Caché de HLTB borrada. Los tiempos se volverán a cargar al abrir un juego.",
       "cacheFailed": "No se pudo borrar la caché de HLTB.",
       "customizeLabel": "Personalizar la apariencia",
@@ -190,7 +190,7 @@
       "title": "Insignias de ProtonDB",
       "conflictFeature": "las insignias de ProtonDB",
       "enableLabel": "Activar insignias de ProtonDB",
-      "enableDescription": "Muestra los niveles de ProtonDB de la comunidad en las superficies de juego de Steam. Es independiente del estado de compatibilidad de Valve.",
+      "enableDescription": "Muestra los niveles de ProtonDB de la comunidad en las vistas de juego de Steam. Es independiente del estado de compatibilidad de Valve.",
       "homeLabel": "Portadas de juegos en Inicio",
       "homeDescription": "Muestra una insignia de nivel en las portadas de Inicio.",
       "libraryLabel": "Portadas de juegos en la biblioteca",
@@ -209,9 +209,9 @@
       "footnote": "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
     },
     "miniAchievements": {
-      "title": "Logros mini",
-      "conflictFeature": "los logros mini",
-      "enableLabel": "Activar logros mini",
+      "title": "Minilogros",
+      "conflictFeature": "los minilogros",
+      "enableLabel": "Activar minilogros",
       "enableDescription": "Muestra la pequeña barra de progreso de logros de Steam junto al tiempo de juego en las páginas de detalles. Desactivado de forma predeterminada.",
       "footnote": "Usa el progreso de logros de Steam para los juegos de Steam; no añade seguimiento de logros a los juegos que no son de Steam."
     },
@@ -240,14 +240,14 @@
       "title": "Metadatos",
       "detectedGames": "Juegos que no son de Steam detectados:",
       "saved": "Metadatos guardados:",
-      "missing": "Metadatos faltantes:",
+      "missing": "Sin metadatos:",
       "refresh": "Actualizar metadatos",
-      "refreshing": "Actualizando...",
-      "refreshingStatus": "Actualizando metadatos...",
+      "refreshing": "Actualizando…",
+      "refreshingStatus": "Actualizando metadatos…",
       "refreshDescription": "Busca y guarda metadatos de los juegos que no son de Steam detectados y que aún no tienen coincidencia.",
       "cacheHeading": "Caché de metadatos",
       "clearCache": "Borrar caché",
-      "clearing": "Borrando...",
+      "clearing": "Borrando…",
       "clearCacheDescription": "Borra las coincidencias y los metadatos guardados para poder volver a emparejar los juegos.",
       "delistedHeading": "Juegos de Steam retirados",
       "refreshDelisted": "Actualizar juegos retirados"
@@ -262,7 +262,7 @@
       "autoCheckDescription": "Busca en segundo plano mientras el plugin está cargado.",
       "status": "Estado",
       "lastChecked": "Última comprobación: {{date}}",
-      "checking": "Comprobando...",
+      "checking": "Comprobando…",
       "checkInterrupted": "Comprobación interrumpida tras {{seconds}} segundos",
       "checkFailed": "Error en la comprobación",
       "upToDate": "Actualizado",
@@ -274,20 +274,20 @@
       "newVersion": "Nueva versión: v{{version}} ({{channel}})",
       "channelStable": "estable",
       "channelDevelopment": "desarrollo",
-      "downgradeWarning": "Advertencia: volver a la versión estable es una degradación.",
+      "downgradeWarning": "Advertencia: volver a la versión estable supone bajar de versión.",
       "actionMoveToStable": "Cambiar a la versión estable v{{version}}",
       "actionRevertToStable": "Volver a la versión estable v{{version}}",
       "actionInstallDevelopment": "Instalar la compilación de desarrollo v{{version}}",
       "actionUpdate": "Actualizar a la v{{version}}",
-      "waitingForDecky": "Esperando a Decky...",
-      "preparing": "Preparando...",
-      "localBuildOnlyStable": "Las compilaciones locales solo pueden actualizarse a sí mismas a una versión estable. Instala esta versión de desarrollo manualmente desde GitHub Releases.",
+      "waitingForDecky": "Esperando a Decky…",
+      "preparing": "Preparando…",
+      "localBuildOnlyStable": "Las compilaciones locales solo pueden actualizarse a una versión estable. Instala esta versión de desarrollo manualmente desde GitHub Releases.",
       "manualInstallUnavailable": "La instalación automática no está disponible en este entorno de Decky. Instala esta versión manualmente desde GitHub Releases.",
       "viewReleaseNotes": "Ver notas de la versión",
       "checkNow": "Comprobar ahora",
       "enableDevelopmentTitle": "¿Activar las versiones de desarrollo?",
       "confirmRevertTitle": "¿Volver a la versión estable?",
-      "confirmRevertBody": "¿Seguro que quieres volver a la versión estable v{{version}}? Es una degradación y podría provocar pérdida de datos o problemas de configuración."
+      "confirmRevertBody": "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración."
     },
     "versions": {
       "title": "Versiones",
@@ -298,7 +298,7 @@
     },
     "logs": {
       "title": "Registros",
-      "loading": "Cargando...",
+      "loading": "Cargando…",
       "view": "Ver registros",
       "debugLogging": "Registro de depuración",
       "debugLoggingDescription": "Activa el registro detallado para la solución de problemas.",
@@ -335,7 +335,7 @@
     "expandTrailer": "Ampliar tráiler",
     "mediaSourceUnavailable": "MediaSource no está disponible",
     "steamUiUnavailable": "Interfaz de Steam no disponible",
-    "runtimeConflict": "Conflicto de ejecución de tráilers de metadatos",
+    "runtimeConflict": "Conflicto de ejecución de tráilers de Metadata",
     "runtimeRemoved": "Ejecución de tráilers eliminada",
     "otherPluginActive": "Otro plugin de tráilers sigue activo. Desactívalo y recarga la interfaz de Steam antes de usar los tráilers de Metadata.",
     "loadingSettings": "Cargando los ajustes de tráilers",
@@ -415,12 +415,12 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Cambiar metadatos..."
+    "changeMetadata": "Cambiar metadatos…"
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} está activado en Decky Loader. Desactiva ese plugin para usar {{feature}} aquí.",
     "pluginConflictSaved": "Tu ajuste está guardado; esta función se reanudará cuando se desactive el otro plugin.",
-    "detectionUnavailable": "No se pudieron comprobar los plugins en conflicto. Usa solo un proveedor de {{feature}} a la vez."
+    "detectionUnavailable": "No se pudieron comprobar los plugins en conflicto. Usa solo un proveedor para {{feature}} a la vez."
   },
   "editor": {
     "save": "Guardar",
@@ -429,7 +429,7 @@
     "nonSteamOnly": "Este plugin solo modifica juegos que no son de Steam.",
     "searchIgn": "Buscar metadatos de IGN",
     "search": "Buscar",
-    "searching": "Buscando...",
+    "searching": "Buscando…",
     "noResults": "Aún no hay resultados.",
     "source": "Origen",
     "field": {
@@ -472,7 +472,7 @@
       "current": "Actual: {{name}}",
       "missingName": "Steam no expuso un nombre de acceso directo nativo",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Cargando el nombre de Steam...",
+      "loadingSteamName": "Cargando el nombre de Steam…",
       "noOfficialName": "Steam no devolvió un nombre oficial",
       "managementUnavailable": "La gestión de nombres de accesos directos no está disponible",
       "apiUnavailable": "La API nativa de nombres de accesos directos de Steam no está disponible",
@@ -521,22 +521,25 @@
       "nameHistoryForgottenTitle": "Historial de nombres guardado olvidado",
       "nameHistoryForgottenBody": "Steam no cambió el nombre del acceso directo.",
       "nameHistoryNotClearedTitle": "No se borró el historial de nombres guardado"
-    }
+    },
+    "steamTextLanguage": "Idioma del texto de Steam: {{language}}",
+    "fetchSteamText": "Obtener el texto de Steam en {{language}}",
+    "steamTextUnavailable": "Steam no devolvió texto para este juego."
   },
   "matchPicker": {
     "title": "Buscar una coincidencia en Steam",
-    "help": "Busca en Steam, selecciona un resultado para comprobar sus detalles y luego elige Usar esta coincidencia de Steam. Navegar no cambia tu juego.",
+    "help": "Busca en Steam, selecciona un resultado para comprobar sus detalles y luego elige «Usar esta coincidencia de Steam». Navegar no cambia tu juego.",
     "currentAppId": "ID de aplicación de Steam actual: {{appId}}",
     "searchAriaLabel": "Búsqueda de juegos de Steam",
     "search": "Buscar en Steam",
-    "searching": "Buscando en Steam...",
+    "searching": "Buscando en Steam…",
     "idle": "Introduce un nombre de juego para encontrar coincidencias en Steam.",
     "empty": "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
     "appId": "ID de aplicación de Steam: {{appId}}",
     "appIdCurrent": "ID de aplicación de Steam: {{appId}} · Coincidencia actual",
     "appIdSelected": "ID de aplicación de Steam: {{appId}} · Seleccionado",
     "appIdCurrentSelected": "ID de aplicación de Steam: {{appId}} · Coincidencia actual · Seleccionado",
-    "loadingDetails": "Cargando los detalles de Steam...",
+    "loadingDetails": "Cargando los detalles de Steam…",
     "artworkAlt": "Ilustración de Steam de {{title}}",
     "developer": "Desarrollador: {{names}}",
     "developerUnavailable": "Desarrollador no disponible",
@@ -561,7 +564,7 @@
     "achievements": "Logros"
   },
   "controllerLayouts": {
-    "disabledHeading": "Diseños de mando desactivados",
-    "disabledBody": "Se usará la interfaz estándar de diseños de mando de Steam hasta que se recargue Decky Metadata."
+    "disabledHeading": "Disposiciones del mando desactivadas",
+    "disabledBody": "Se usará la interfaz estándar de disposición del mando de Steam hasta que se recargue Decky Metadata."
   }
 }

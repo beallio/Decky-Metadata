@@ -13,7 +13,7 @@
       "failed": "Non riuscito: {{title}}",
       "skipped_changed": "{{title}} ignorato: i metadati sono cambiati durante l'aggiornamento",
       "matched_steam": "Corrispondenza Steam trovata per {{title}}",
-      "matched_delisted": "Corrispondenza trovata per l'app Steam rimossa {{title}}",
+      "matched_delisted": "App Steam rimossa abbinata per {{title}}",
       "saved_metadata": "Metadati salvati per {{title}}",
       "no_match": "Nessuna corrispondenza dei metadati per {{title}}",
       "updated_activity": "Attività Steam aggiornata per {{title}}",
@@ -33,7 +33,7 @@
     "compat_default_unavailable": "impossibile caricare la compatibilità predefinita",
     "compat_scope_unavailable": "impossibile caricare l'ambito della compatibilità predefinita",
     "trailer_settings_unavailable": "impossibile caricare le impostazioni dei trailer",
-    "mini_achievements_settings_unavailable": "impossibile caricare le impostazioni degli obiettivi mini",
+    "mini_achievements_settings_unavailable": "impossibile caricare le impostazioni dei mini obiettivi",
     "protondb_settings_unavailable": "impossibile caricare le impostazioni dei badge ProtonDB",
     "steam_ui_unavailable": "Interfaccia Steam non disponibile",
     "update_check_failed": "Controllo degli aggiornamenti non riuscito",
@@ -48,13 +48,13 @@
     "revalidation_url_mismatch": "URL dell'artefatto non corrispondente durante la riconvalida",
     "revalidation_version_mismatch": "Versione non corrispondente durante la riconvalida",
     "release_fetch_failed": "Recupero della release non riuscito",
-    "invalid_shortcut_app_id": "Questo gioco non è una scorciatoia valida.",
-    "shortcut_name_target_empty": "Inserisci un nome per la scorciatoia.",
-    "native_shortcut_unavailable": "Steam non ha questa scorciatoia.",
-    "shortcut_name_changed": "Il nome della scorciatoia è cambiato prima della rinomina.",
-    "shortcut_name_api_unavailable": "L'API di Steam per il nome delle scorciatoie non è disponibile",
-    "shortcut_name_api_failed": "L'API di Steam per il nome delle scorciatoie ha restituito un errore",
-    "shortcut_name_timeout": "Steam non ha confermato in tempo il nuovo nome della scorciatoia."
+    "invalid_shortcut_app_id": "Questo gioco non è un collegamento valido.",
+    "shortcut_name_target_empty": "Inserisci un nome per il collegamento.",
+    "native_shortcut_unavailable": "Steam non ha questo collegamento.",
+    "shortcut_name_changed": "Il nome del collegamento è cambiato prima della rinomina.",
+    "shortcut_name_api_unavailable": "L'API di Steam per il nome dei collegamenti non è disponibile",
+    "shortcut_name_api_failed": "L'API di Steam per il nome dei collegamenti ha restituito un errore",
+    "shortcut_name_timeout": "Steam non ha confermato in tempo il nuovo nome del collegamento."
   },
   "updater": {
     "check": {
@@ -96,9 +96,9 @@
   },
   "miniAchievements": {
     "errors": {
-      "loadFailed": "Impossibile caricare gli obiettivi mini. Ricarica il plugin per riprovare: {{error}}",
-      "saveFailed": "Impossibile salvare gli obiettivi mini: {{error}}",
-      "applyFailed": "Impossibile applicare gli obiettivi mini. Ricarica il plugin: {{error}}"
+      "loadFailed": "Impossibile caricare i mini obiettivi. Ricarica il plugin per riprovare: {{error}}",
+      "saveFailed": "Impossibile salvare i mini obiettivi: {{error}}",
+      "applyFailed": "Impossibile applicare i mini obiettivi. Ricarica il plugin: {{error}}"
     }
   },
   "controllerTypes": {
@@ -106,7 +106,7 @@
   },
   "quickLinks": {
     "dlc": "DLC",
-    "pointsShop": "Negozio di punti"
+    "pointsShop": "Negozio dei punti"
   },
   "qam": {
     "hltb": {
@@ -170,7 +170,7 @@
       "detailDelayLabel": "Ritardo di comparsa nella vista Dettagli",
       "detailDelayDescription": "Attesa dall'apertura della pagina del gioco prima di mostrare un trailer pronto.",
       "audioLabel": "Audio dei trailer nella vista Dettagli",
-      "audioDescription": "Dissolvenza in entrata dell'audio quando compare un trailer nella vista Dettagli. I trailer nella Home restano sempre muti.",
+      "audioDescription": "Attiva l'audio in dissolvenza quando compare un trailer nella vista Dettagli. I trailer nella Home restano sempre muti.",
       "hideLogoLabel": "Nascondi il logo del gioco durante i trailer nella vista Dettagli",
       "hideLogoDescription": "Nasconde il logo della pagina del gioco mentre un trailer è visibile. Il logo ricompare quando la riproduzione si ferma.",
       "homeHeading": "Vista Home",
@@ -190,7 +190,7 @@
       "title": "Badge ProtonDB",
       "conflictFeature": "i badge ProtonDB",
       "enableLabel": "Abilita i badge ProtonDB",
-      "enableDescription": "Mostra i livelli ProtonDB della community sulle superfici di gioco Steam. È separato dallo stato di compatibilità di Valve.",
+      "enableDescription": "Mostra i livelli ProtonDB della community nelle schermate dei giochi su Steam. È separato dallo stato di compatibilità di Valve.",
       "homeLabel": "Copertine dei giochi nella Home",
       "homeDescription": "Mostra un badge di livello sulle copertine della Home.",
       "libraryLabel": "Copertine dei giochi in Libreria",
@@ -199,8 +199,8 @@
       "gameViewDescription": "Mostra un pulsante con il livello ProtonDB nella pagina dei dettagli del gioco.",
       "storeLabel": "Negozio",
       "storeDescription": "Mostra il livello ProtonDB in una riga informativa nelle pagine dei giochi del negozio Steam.",
-      "focusOnlyLabel": "Copertine solo su focus o hover",
-      "focusOnlyDescription": "Nasconde i badge delle copertine nella Home e in Libreria finché una copertina non riceve il focus o il passaggio del mouse.",
+      "focusOnlyLabel": "Copertine solo su selezione o passaggio",
+      "focusOnlyDescription": "Nasconde i badge delle copertine nella Home e in Libreria finché una copertina non viene selezionata o evidenziata con il mouse.",
       "positionLabel": "Posizione del badge sulla copertina",
       "positionBottomLeft": "In basso a sinistra",
       "positionTopLeft": "In alto a sinistra",
@@ -209,9 +209,9 @@
       "footnote": "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
     },
     "miniAchievements": {
-      "title": "Obiettivi mini",
-      "conflictFeature": "gli obiettivi mini",
-      "enableLabel": "Abilita gli obiettivi mini",
+      "title": "Mini obiettivi",
+      "conflictFeature": "i mini obiettivi",
+      "enableLabel": "Abilita i mini obiettivi",
       "enableDescription": "Mostra la piccola barra di avanzamento degli obiettivi Steam accanto al tempo di gioco nelle pagine dei dettagli. Disattivato per impostazione predefinita.",
       "footnote": "Usa l'avanzamento degli obiettivi di Steam per i giochi Steam; non aggiunge il monitoraggio degli obiettivi ai giochi non Steam."
     },
@@ -232,7 +232,7 @@
         "steam": "Si applica ai record salvati con un ID app Steam valido. Le scelte per singolo gioco hanno la priorità.",
         "noSteam": "Si applica ai record salvati senza ID Steam, inclusi i record manuali e dei provider. Le scelte per singolo gioco hanno la priorità.",
         "metadata": "Si applica a ogni record di metadati salvato, con o senza ID Steam. Le scelte per singolo gioco hanno la priorità.",
-        "all": "Si applica a ogni scorciatoia non Steam nativa, incluse quelle senza record. Le scelte per singolo gioco hanno la priorità."
+        "all": "Si applica a ogni collegamento non Steam nativo, inclusi quelli senza record. Le scelte per singolo gioco hanno la priorità."
       },
       "perGameNote": "Segui Valve è una scelta per singolo gioco. Le categorie manuali e predefinite sono scelte tue, non una certificazione Valve."
     },
@@ -259,7 +259,7 @@
       "receiveDevelopment": "Ricevi le versioni di sviluppo",
       "receiveDevelopmentDescription": "Include build preliminari destinate ai test. Queste build possono contenere regressioni.",
       "autoCheck": "Controlla automaticamente la presenza di aggiornamenti",
-      "autoCheckDescription": "Esegue il controllo in background finché il plugin è caricato.",
+      "autoCheckDescription": "Esegue il controllo in background mentre il plugin è caricato.",
       "status": "Stato",
       "lastChecked": "Ultimo controllo: {{date}}",
       "checking": "Controllo in corso...",
@@ -331,11 +331,11 @@
     "waitingGamePage": "In attesa di una pagina del gioco o di una selezione nella Home",
     "waitingHomeSelection": "Seleziona o evidenzia un gioco nella Home",
     "waitingHomeDelay": "In attesa di mostrare il trailer nella Home",
-    "muteTrailer": "Muta il trailer",
+    "muteTrailer": "Silenzia il trailer",
     "expandTrailer": "Espandi il trailer",
     "mediaSourceUnavailable": "MediaSource non è disponibile",
     "steamUiUnavailable": "Interfaccia Steam non disponibile",
-    "runtimeConflict": "Conflitto di runtime dei trailer dei metadati",
+    "runtimeConflict": "Conflitto di runtime dei trailer di Metadata",
     "runtimeRemoved": "Runtime del trailer rimosso",
     "otherPluginActive": "Un altro plugin per i trailer è ancora attivo. Disattivalo e ricarica l'interfaccia Steam prima di usare i trailer di Metadata.",
     "loadingSettings": "Caricamento delle impostazioni dei trailer",
@@ -349,7 +349,7 @@
     "detailTrailersOff": "I trailer nella vista Dettagli sono disattivati",
     "openGamePage": "Apri la pagina principale di un gioco nella Libreria Steam o seleziona un gioco nella Home",
     "gameNotAvailable": "Il gioco Steam non è disponibile",
-    "notNativeShortcut": "Questo gioco non è una scorciatoia non Steam nativa",
+    "notNativeShortcut": "Questo gioco non è un collegamento non Steam nativo",
     "matchesUnavailable": "Le corrispondenze Steam salvate non sono disponibili",
     "gameTrailerUnavailable": "Il trailer del gioco non è disponibile",
     "waitingIgnTrailer": "In attesa di un trailer di gioco IGN",
@@ -371,7 +371,7 @@
     "settingsSaveError": "Impossibile salvare le impostazioni dei badge ProtonDB."
   },
   "activity": {
-    "minorUpdatePatchNotes": "Aggiornamento minore / Note di rilascio",
+    "minorUpdatePatchNotes": "Aggiornamento minore / Note della patch",
     "update": "Aggiornamento",
     "majorUpdate": "Aggiornamento importante",
     "dlc": "Contenuti scaricabili",
@@ -382,8 +382,8 @@
     "inGameEvent": "Evento in gioco"
   },
   "community": {
-    "steamAuthor": "Community di Steam · {{author}}",
-    "steamCommunity": "Community di Steam"
+    "steamAuthor": "Comunità di Steam · {{author}}",
+    "steamCommunity": "Comunità di Steam"
   },
   "panel": {
     "refreshComplete": "Aggiornamento completato",
@@ -465,31 +465,31 @@
     "hltbCurrentAutomatic": "Gioco attuale: {{name}} (trovato automaticamente)",
     "hltbApply": "Applica il gioco HLTB",
     "steamAppId": "ID app Steam",
-    "steamAppIdHelp": "Incolla un ID app Steam, un URL del negozio, della community o di SteamDB. Lascia vuoto per cancellare la corrispondenza Steam fissata.",
+    "steamAppIdHelp": "Incolla un ID app Steam, un URL del Negozio, della Comunità o di SteamDB. Lascia vuoto per cancellare la corrispondenza Steam fissata.",
     "steamAppIdApply": "Applica l'ID app Steam",
-    "shortcutName": "Nome della scorciatoia",
+    "shortcutName": "Nome del collegamento",
     "shortcut": {
       "current": "Attuale: {{name}}",
-      "missingName": "Steam non ha esposto un nome di scorciatoia nativo",
+      "missingName": "Steam non ha fornito un nome nativo per il collegamento",
       "steamName": "Steam: {{name}}",
       "loadingSteamName": "Caricamento del nome Steam...",
       "noOfficialName": "Steam non ha restituito un nome ufficiale",
-      "managementUnavailable": "La gestione del nome della scorciatoia non è disponibile",
-      "apiUnavailable": "L'API nativa di Steam per il nome delle scorciatoie non è disponibile",
-      "notFound": "Scorciatoia Steam non trovata",
-      "derivedId": "Questa scorciatoia ha un ID derivato e non può essere rinominata in modo sicuro",
-      "alreadyMatches": "Il nome della scorciatoia corrisponde già a Steam",
-      "diverged": "Questo nome della scorciatoia è cambiato fuori da Decky Metadata. Rinomina e ripristino sono disattivati finché la cronologia salvata non viene dimenticata.",
+      "managementUnavailable": "La gestione del nome del collegamento non è disponibile",
+      "apiUnavailable": "L'API nativa di Steam per il nome dei collegamenti non è disponibile",
+      "notFound": "Collegamento Steam non trovato",
+      "derivedId": "Questo collegamento ha un ID derivato e non può essere rinominato in modo sicuro",
+      "alreadyMatches": "Il nome del collegamento corrisponde già a Steam",
+      "diverged": "Il nome di questo collegamento è cambiato fuori da Decky Metadata. Rinomina e ripristino sono disattivati finché la cronologia salvata non viene dimenticata.",
       "useSteamName": "Usa il nome Steam",
       "useSteamNameTitle": "Usare il nome Steam?",
       "useSteamNameBody": "Cambiare “{{current}}” in “{{target}}”?",
       "restore": "Ripristina il nome originale",
-      "restoreTitle": "Ripristinare il nome originale della scorciatoia?",
+      "restoreTitle": "Ripristinare il nome originale del collegamento?",
       "restoreBody": "Ripristinare “{{name}}”?",
       "forget": "Dimentica la cronologia dei nomi",
       "forgetAction": "Dimentica la cronologia",
       "forgetTitle": "Dimenticare la cronologia dei nomi salvata?",
-      "forgetBody": "Questo rimuove solo la cronologia di ripristino salvata da Decky Metadata. Steam non cambierà il nome della scorciatoia."
+      "forgetBody": "Questo rimuove solo la cronologia di ripristino salvata da Decky Metadata. Steam non cambierà il nome del collegamento."
     },
     "toast": {
       "hltbInvalidTitle": "Gioco HLTB non valido",
@@ -508,20 +508,23 @@
       "removedTitle": "Rimosso",
       "removedBody": "Metadati rimossi",
       "removeFailedTitle": "Rimozione non riuscita",
-      "shortcutNameChangedTitle": "Nome della scorciatoia cambiato",
-      "changedBeforeRename": "Steam ha modificato questa scorciatoia prima che potesse essere rinominata.",
-      "changedBeforeRestore": "Steam ha modificato questa scorciatoia prima che potesse essere ripristinata.",
-      "shortcutNameUpdatedTitle": "Nome della scorciatoia aggiornato",
-      "shortcutNameUpdatedBody": "Steam ha confermato il nuovo nome della scorciatoia.",
-      "shortcutNameNotUpdatedTitle": "Il nome della scorciatoia non è stato aggiornato",
-      "shortcutNameRestoredTitle": "Nome della scorciatoia ripristinato",
-      "shortcutNameRestoredBody": "Steam ha confermato il nome originale della scorciatoia.",
+      "shortcutNameChangedTitle": "Nome del collegamento cambiato",
+      "changedBeforeRename": "Steam ha modificato questo collegamento prima che potesse essere rinominato.",
+      "changedBeforeRestore": "Steam ha modificato questo collegamento prima che potesse essere ripristinato.",
+      "shortcutNameUpdatedTitle": "Nome del collegamento aggiornato",
+      "shortcutNameUpdatedBody": "Steam ha confermato il nuovo nome del collegamento.",
+      "shortcutNameNotUpdatedTitle": "Il nome del collegamento non è stato aggiornato",
+      "shortcutNameRestoredTitle": "Nome del collegamento ripristinato",
+      "shortcutNameRestoredBody": "Steam ha confermato il nome originale del collegamento.",
       "shortcutHistoryNotCleared": "Steam ha ripristinato il nome, ma non è stato possibile cancellare la cronologia salvata: {{error}}",
-      "shortcutNameNotRestoredTitle": "Il nome della scorciatoia non è stato ripristinato",
+      "shortcutNameNotRestoredTitle": "Il nome del collegamento non è stato ripristinato",
       "nameHistoryForgottenTitle": "Cronologia dei nomi salvata dimenticata",
-      "nameHistoryForgottenBody": "Steam non ha cambiato il nome della scorciatoia.",
+      "nameHistoryForgottenBody": "Steam non ha cambiato il nome del collegamento.",
       "nameHistoryNotClearedTitle": "La cronologia dei nomi salvata non è stata cancellata"
-    }
+    },
+    "steamTextLanguage": "Lingua del testo Steam: {{language}}",
+    "fetchSteamText": "Recupera il testo Steam in {{language}}",
+    "steamTextUnavailable": "Steam non ha restituito testo per questo gioco."
   },
   "matchPicker": {
     "title": "Trova una corrispondenza Steam",
@@ -543,25 +546,25 @@
     "release": "Uscita: {{date}}",
     "releaseUnavailable": "Data di uscita non disponibile",
     "steamType": "Tipo Steam: {{type}}. Verifica che sia il gioco o l'edizione che vuoi.",
-    "applyHelp": "Usare questa corrispondenza salva l'ID app Steam e ne carica i metadati. Non rinomina la scorciatoia né sostituisce la tua immagine personalizzata.",
+    "applyHelp": "Usare questa corrispondenza salva l'ID app Steam e ne carica i metadati. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
     "apply": "Usa questa corrispondenza Steam",
     "cancel": "Annulla la selezione"
   },
   "categories": {
     "singlePlayer": "Giocatore singolo",
     "multiPlayer": "Multigiocatore",
-    "coOp": "Coop",
+    "coOp": "Cooperativa",
     "onlineMultiPlayer": "Multigiocatore online",
-    "onlineCoOp": "Coop online",
+    "onlineCoOp": "Cooperativa online",
     "localMultiPlayer": "Multigiocatore locale",
-    "localCoOp": "Coop locale",
-    "splitScreen": "Schermo diviso",
+    "localCoOp": "Cooperativa locale",
+    "splitScreen": "Schermo condiviso",
     "fullController": "Supporto completo per controller",
     "mmo": "MMO",
     "achievements": "Obiettivi"
   },
   "controllerLayouts": {
-    "disabledHeading": "Configurazioni del controller disattivate",
-    "disabledBody": "Viene usata l'interfaccia standard delle configurazioni del controller di Steam fino al ricaricamento di Decky Metadata."
+    "disabledHeading": "Layout del controller disattivati",
+    "disabledBody": "Viene usata l'interfaccia standard dei layout del controller di Steam fino al ricaricamento di Decky Metadata."
   }
 }

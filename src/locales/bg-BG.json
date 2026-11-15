@@ -25,7 +25,7 @@
     "steam_details_unavailable": "Подробностите за играта в Steam не са достъпни",
     "steam_title_unavailable": "Заглавието на играта в Steam не е достъпно",
     "invalid_steam_game": "Изберете валидна игра от Steam.",
-    "steam_preview_unavailable": "Подробностите от Steam не са достъпни. Все още можете да използвате това съвпадение.",
+    "steam_preview_unavailable": "Подробностите от Steam не са достъпни. Все пак можете да използвате това съвпадение.",
     "settings_unreadable": "файлът с настройки на метаданните не може да бъде прочетен; коригирайте го или го премахнете, преди да запазите промени",
     "invalid_release_date": "release_date трябва да е календарна дата във формат ГГГГ-ММ-ДД или null",
     "hltb_settings_unavailable": "Настройките на HLTB не можаха да бъдат заредени",
@@ -51,8 +51,8 @@
     "shortcut_name_target_empty": "Въведете име на пряк път.",
     "native_shortcut_unavailable": "Steam няма този пряк път.",
     "shortcut_name_changed": "Името на прекия път се промени преди преименуването.",
-    "shortcut_name_api_unavailable": "API за имена на преки пътища на Steam не е достъпен",
-    "shortcut_name_api_failed": "API за имена на преки пътища на Steam върна грешка",
+    "shortcut_name_api_unavailable": "API на Steam за имена на преки пътища не е достъпен",
+    "shortcut_name_api_failed": "API на Steam за имена на преки пътища върна грешка",
     "shortcut_name_timeout": "Steam не потвърди новото име на прекия път навреме."
   },
   "updater": {
@@ -110,22 +110,22 @@
   "qam": {
     "hltb": {
       "title": "Времена от HLTB",
-      "conflictFeature": "времената от HLTB",
+      "conflictFeature": "времена от HLTB",
       "showTimesLabel": "Показване на времената от HowLongToBeat",
       "showTimesDescription": "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
       "storeLabel": "Магазин",
-      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Steam Магазина.",
+      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam.",
       "styleLabel": "Стил на HLTB",
       "styleDescription": "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
       "styleDefault": "По подразбиране",
       "styleClean": "„Clean“",
       "styleCleanLeft": "„Clean“ ляво",
       "styleCleanDefault": "„Clean“ по подразбиране",
-      "pushPlayLabel": "Избутване на бутона Играй надолу",
-      "pushPlayDescription": "Показва времената под изображението на заглавката и премества бутона Играй надолу, както HLTB за Deck. Докато в долната част на заглавното изображение се показва лента за състоянието на записа, времената остават върху изображението.",
+      "pushPlayLabel": "Изместване на бутона „Пускане“ надолу",
+      "pushPlayDescription": "Показва времената под заглавното изображение и премества бутона „Пускане“ надолу, както HLTB за Deck. Докато в долната част на заглавното изображение се показва лента за състоянието на записа, времената остават върху изображението.",
       "blurLabel": "Замъгляване на фона",
-      "blurDescription": "По подразбиране съвпада с лентата Играй; „Замъгляване“ замъглява и времената върху заглавното изображение",
-      "blurMatchPlayBar": "Както лентата Играй",
+      "blurDescription": "По подразбиране съответства на лентата „Пускане“; „Замъгляване“ замъглява и времената върху заглавното изображение",
+      "blurMatchPlayBar": "Като лентата „Пускане“",
       "blurOn": "Замъгляване",
       "blurOff": "Без",
       "hideDetailsLabel": "Скриване на „Подробности“",
@@ -183,11 +183,11 @@
       "displayPixels": "{{width}} × {{height}} пиксела",
       "displayUnavailable": "Недостъпно",
       "displayTarget": "{{display}} · цел {{height}}p",
-      "footnote": "Изображенията от Steam остават видими, докато трейлърът е готов за възпроизвеждане. Трейлърите се предават от Steam или IGN и не се запазват за офлайн възпроизвеждане."
+      "footnote": "Изображенията от Steam остават видими, докато не стане готов трейлър за възпроизвеждане. Трейлърите се предават поточно от Steam или IGN и не се запазват за офлайн възпроизвеждане."
     },
     "protondb": {
       "title": "Значки на ProtonDB",
-      "conflictFeature": "значките на ProtonDB",
+      "conflictFeature": "значки на ProtonDB",
       "enableLabel": "Активиране на значките на ProtonDB",
       "enableDescription": "Показва общностните нива на ProtonDB в интерфейсите на Steam за игри. Това е отделно от състоянието за съвместимост на Valve.",
       "homeLabel": "Корици на игрите в Начало",
@@ -197,7 +197,7 @@
       "gameViewLabel": "Изглед на играта",
       "gameViewDescription": "Показва бутон за нивото на ProtonDB на страницата с подробности на играта.",
       "storeLabel": "Магазин",
-      "storeDescription": "Показва нивото на ProtonDB в информационен ред на страниците на игрите в Steam Магазина.",
+      "storeDescription": "Показва нивото на ProtonDB в информационен ред на страниците на игрите в Магазина на Steam.",
       "focusOnlyLabel": "Корици само при фокус или посочване",
       "focusOnlyDescription": "Скрива значките върху кориците в Начало и Библиотека, докато не се фокусира или посочи корица на игра.",
       "positionLabel": "Позиция на значката върху корицата",
@@ -205,7 +205,7 @@
       "positionTopLeft": "Горе вляво",
       "positionTopRight": "Горе вдясно",
       "loadingPreferences": "Зареждане на предпочитанията за значките на ProtonDB…",
-      "footnote": "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; несъответстващите игри и игрите без ниво в ProtonDB се скриват."
+      "footnote": "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
     },
     "miniAchievements": {
       "title": "Мини постижения",
@@ -219,9 +219,9 @@
       "defaultStatus": "Състояние за съвместимост по подразбиране",
       "applyDefaultTo": "Прилагане по подразбиране към",
       "categoryAutomatic": "Автоматично — използва състоянието от Steam",
-      "categoryVerified": "Проверено",
-      "categoryPlayable": "Играемо",
-      "categoryUnsupported": "Неподдържано",
+      "categoryVerified": "Потвърдена",
+      "categoryPlayable": "Годна за пускане",
+      "categoryUnsupported": "Неподдържана",
       "categoryUnknown": "Неизвестно",
       "scopeSteam": "Игри със съвпадение в Steam",
       "scopeNoSteam": "Запазени игри без Steam ID",
@@ -233,7 +233,7 @@
         "metadata": "Прилага се за всеки запазен запис с метаданни, със или без Steam ID. Изборите за отделна игра имат приоритет.",
         "all": "Прилага се за всеки вграден пряк път за не-Steam игра, включително преки пътища без запис. Изборите за отделна игра имат приоритет."
       },
-      "perGameNote": "„Следвай Valve“ е избор за отделна игра. Ръчните категории и категориите по подразбиране са ваши избори, а не сертификация от Valve."
+      "perGameNote": "„Следване на Valve“ е избор за отделна игра. Ръчните категории и категориите по подразбиране са ваши избори, а не сертификация от Valve."
     },
     "metadata": {
       "title": "Метаданни",
@@ -258,7 +258,7 @@
       "receiveDevelopment": "Получаване на развойни издания",
       "receiveDevelopmentDescription": "Включва предварителни компилации, предназначени за тестване. Тези компилации може да съдържат регресии.",
       "autoCheck": "Автоматична проверка за актуализации",
-      "autoCheckDescription": "Проверява във фоновия режим, докато приставката е заредена.",
+      "autoCheckDescription": "Проверява във фонов режим, докато приставката е заредена.",
       "status": "Състояние",
       "lastChecked": "Последна проверка: {{date}}",
       "checking": "Проверка...",
@@ -272,7 +272,7 @@
       "candidate": "Кандидат",
       "newVersion": "Нова версия: v{{version}} ({{channel}})",
       "channelStable": "стабилна",
-      "channelDevelopment": "разработка",
+      "channelDevelopment": "развойна",
       "downgradeWarning": "Внимание: връщането към стабилна версия е понижаване.",
       "actionMoveToStable": "Преминаване към стабилна v{{version}}",
       "actionRevertToStable": "Връщане към стабилна v{{version}}",
@@ -283,7 +283,7 @@
       "localBuildOnlyStable": "Локалните компилации могат да се актуализират сами само до стабилно издание. Инсталирайте това развойно издание ръчно от GitHub Releases.",
       "manualInstallUnavailable": "Автоматичното инсталиране не е достъпно в тази среда на Decky. Инсталирайте това издание ръчно от GitHub Releases.",
       "viewReleaseNotes": "Преглед на бележките към изданието",
-      "checkNow": "Провери сега",
+      "checkNow": "Проверка сега",
       "enableDevelopmentTitle": "Да се активират ли развойни издания?",
       "confirmRevertTitle": "Да се върне ли към стабилна версия?",
       "confirmRevertBody": "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията."
@@ -299,7 +299,7 @@
       "title": "Дневници",
       "loading": "Зареждане...",
       "view": "Преглед на дневниците",
-      "debugLogging": "Отстраняване на грешки",
+      "debugLogging": "Дневник за отстраняване на грешки",
       "debugLoggingDescription": "Активира подробно записване за отстраняване на проблеми.",
       "modalTitle": "Дневници на приставката",
       "modalEmpty": "Няма скорошни записи",
@@ -334,7 +334,7 @@
     "expandTrailer": "Разгъване на трейлъра",
     "mediaSourceUnavailable": "MediaSource не е достъпен",
     "steamUiUnavailable": "Интерфейсът на Steam не е достъпен",
-    "runtimeConflict": "Конфликт в средата за изпълнение на трейлърите от метаданните",
+    "runtimeConflict": "Конфликт в средата за изпълнение на трейлърите на Metadata",
     "runtimeRemoved": "Средата за изпълнение на трейлърите е премахната",
     "otherPluginActive": "Друга приставка за трейлъри е все още активна. Изключете я и презаредете интерфейса на Steam, преди да използвате трейлърите от Metadata.",
     "loadingSettings": "Зареждане на настройките за трейлърите",
@@ -346,7 +346,7 @@
     "pausedWhilePlugin": "На пауза, докато {{name}} е активирана",
     "homeTrailersOff": "Трейлърите в Начало са изключени",
     "detailTrailersOff": "Трейлърите в Подробности са изключени",
-    "openGamePage": "Отворете главната страница на игра в Steam Библиотеката или изберете игра в Начало",
+    "openGamePage": "Отворете главната страница на игра в Библиотеката на Steam или изберете игра в Начало",
     "gameNotAvailable": "Играта в Steam не е достъпна",
     "notNativeShortcut": "Тази игра не е вграден пряк път за не-Steam игра",
     "matchesUnavailable": "Запазените съвпадения в Steam не са достъпни",
@@ -442,9 +442,9 @@
     "compat": {
       "useGlobalDefault": "Използване на глобалната стойност по подразбиране",
       "followValve": "Следване на Valve",
-      "verified": "Проверено",
-      "playable": "Играемо",
-      "unsupported": "Неподдържано",
+      "verified": "Потвърдена",
+      "playable": "Годна за пускане",
+      "unsupported": "Неподдържана",
       "unknown": "Неизвестно",
       "followValveUnavailable": "Следване на Valve (недостъпно — оригинално състояние в Steam)",
       "followValveWith": "Следване на Valve ({{category}})",
@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Запазената история на имената е забравена",
       "nameHistoryForgottenBody": "Steam не промени името на прекия път.",
       "nameHistoryNotClearedTitle": "Запазената история на имената не беше изчистена"
-    }
+    },
+    "steamTextLanguage": "Език на текста в Steam: {{language}}",
+    "fetchSteamText": "Изтегляне на текст от Steam на {{language}}",
+    "steamTextUnavailable": "Steam не върна текст за тази игра."
   },
   "matchPicker": {
     "title": "Намиране на съвпадение в Steam",
@@ -539,21 +542,21 @@
     "artworkAlt": "Изображение от Steam за {{title}}",
     "developer": "Разработчик: {{names}}",
     "developerUnavailable": "Разработчикът не е достъпен",
-    "release": "Излиза на: {{date}}",
+    "release": "Издаване: {{date}}",
     "releaseUnavailable": "Датата на излизане не е достъпна",
     "steamType": "Тип в Steam: {{type}}. Проверете дали това е играта или изданието, което искате.",
     "applyHelp": "Използването на това съвпадение запазва Steam App ID и зарежда метаданните му. То не преименува прекия път и не заменя персонализираното ви изображение.",
     "apply": "Използване на това съвпадение в Steam",
-    "cancel": "Отказ на избора"
+    "cancel": "Отказ от избора"
   },
   "categories": {
-    "singlePlayer": "Един играч",
-    "multiPlayer": "Много играчи",
-    "coOp": "Кооператив",
-    "onlineMultiPlayer": "Онлайн за много играчи",
-    "onlineCoOp": "Онлайн кооператив",
-    "localMultiPlayer": "Локално за много играчи",
-    "localCoOp": "Локален кооператив",
+    "singlePlayer": "Самостоятелна игра",
+    "multiPlayer": "Множество играчи",
+    "coOp": "Кооперативна",
+    "onlineMultiPlayer": "Множество играчи на линия",
+    "onlineCoOp": "Кооперативна на линия",
+    "localMultiPlayer": "Локално за множество играчи",
+    "localCoOp": "Локална кооперативна",
     "splitScreen": "Разделен екран",
     "fullController": "Пълна поддръжка на контролер",
     "mmo": "MMO",
@@ -561,6 +564,6 @@
   },
   "controllerLayouts": {
     "disabledHeading": "Оформленията на контролера са изключени",
-    "disabledBody": "Използва се стандартният интерфейс за оформления на контролера на Steam, докато Decky Metadata бъде презаредена."
+    "disabledBody": "Използва се стандартният интерфейс за оформления на контролера на Steam, докато Decky Metadata не бъде презаредена."
   }
 }

@@ -108,6 +108,52 @@ const steamLanguageReader = (): SteamLanguageReader | null => {
   return typeof read === "function" ? () => read.call(settings) : null;
 };
 
+/** Exactly the values `SteamClient.Settings.GetCurrentLanguage()` returns; anything else means English. */
+const STEAM_LANGUAGES: Record<string, true> = {
+  english: true,
+  german: true,
+  french: true,
+  italian: true,
+  koreana: true,
+  spanish: true,
+  schinese: true,
+  tchinese: true,
+  russian: true,
+  thai: true,
+  japanese: true,
+  portuguese: true,
+  polish: true,
+  danish: true,
+  dutch: true,
+  finnish: true,
+  norwegian: true,
+  swedish: true,
+  hungarian: true,
+  czech: true,
+  romanian: true,
+  turkish: true,
+  brazilian: true,
+  bulgarian: true,
+  greek: true,
+  ukrainian: true,
+  latam: true,
+  vietnamese: true,
+  indonesian: true,
+  malay: true,
+};
+
+/** The Steam client language for Steam-sourced text; never throws. */
+export const currentSteamLanguage = async (): Promise<string> => {
+  try {
+    const readLanguage = steamLanguageReader();
+    if (!readLanguage) return "english";
+    const language = await readLanguage();
+    return typeof language === "string" && STEAM_LANGUAGES[language] === true ? language : "english";
+  } catch {
+    return "english";
+  }
+};
+
 /** Applies the language Steam is running in; never throws, keeps the current locale on failure. */
 export const refreshLanguage = async (): Promise<string> => {
   const current = currentLocale();

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   currentLocale,
+  currentSteamLanguage,
   formatHours,
   i18n,
   refreshLanguage,
@@ -59,6 +60,82 @@ describe("refreshLanguage", () => {
     stubSteamLanguage(() => "danish");
     await expect(refreshLanguage()).resolves.toBe("en-US");
     expect(currentLocale()).toBe("en-US");
+  });
+});
+
+describe("currentSteamLanguage", () => {
+  const STEAM_LANGUAGES = [
+    "english",
+    "german",
+    "french",
+    "italian",
+    "koreana",
+    "spanish",
+    "schinese",
+    "tchinese",
+    "russian",
+    "thai",
+    "japanese",
+    "portuguese",
+    "polish",
+    "danish",
+    "dutch",
+    "finnish",
+    "norwegian",
+    "swedish",
+    "hungarian",
+    "czech",
+    "romanian",
+    "turkish",
+    "brazilian",
+    "bulgarian",
+    "greek",
+    "ukrainian",
+    "latam",
+    "vietnamese",
+    "indonesian",
+    "malay",
+  ];
+
+  it.each(STEAM_LANGUAGES)("returns the valid Steam language %s raw", async (language) => {
+    stubSteamLanguage(() => language);
+    await expect(currentSteamLanguage()).resolves.toBe(language);
+  });
+
+  it("accepts the language as a plain value or a Promise", async () => {
+    stubSteamLanguage(() => "french");
+    await expect(currentSteamLanguage()).resolves.toBe("french");
+    stubSteamLanguage(() => Promise.resolve("latam"));
+    await expect(currentSteamLanguage()).resolves.toBe("latam");
+  });
+
+  it("returns English for unknown or non-string values", async () => {
+    stubSteamLanguage(() => "arabic");
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+    stubSteamLanguage(() => "English");
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+    stubSteamLanguage(() => 42);
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+    stubSteamLanguage(() => null);
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+  });
+
+  it("returns English when Steam is missing or throws", async () => {
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+    stubSteamLanguage(() => {
+      throw new Error("Steam unavailable");
+    });
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+    stubSteamLanguage(() => Promise.reject(new Error("Steam unavailable")));
+    await expect(currentSteamLanguage()).resolves.toBe("english");
+  });
+
+  it("returns English when Steam exposes no language reader", async () => {
+    Object.defineProperty(globalThis, "SteamClient", {
+      configurable: true,
+      value: { Settings: {} },
+    });
+    await expect(currentSteamLanguage()).resolves.toBe("english");
   });
 });
 

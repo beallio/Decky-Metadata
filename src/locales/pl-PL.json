@@ -14,13 +14,13 @@
       "failed": "Błąd: {{title}}",
       "skipped_changed": "Pominięto {{title}}: metadane zmieniły się podczas odświeżania",
       "matched_steam": "Dopasowano Steam dla {{title}}",
-      "matched_delisted": "Dopasowano usuniętą ze Steam aplikację dla {{title}}",
+      "matched_delisted": "Dopasowano aplikację usuniętą ze Steam dla {{title}}",
       "saved_metadata": "Zapisano metadane dla {{title}}",
       "no_match": "Brak dopasowania metadanych dla {{title}}",
       "updated_activity": "Zaktualizowano aktywność Steam dla {{title}}",
       "no_activity": "Nie znaleziono aktywności Steam dla {{title}}"
     },
-    "hltb_busy": "HowLongToBeat jest zajęte. Spróbuj ponownie za minutę.",
+    "hltb_busy": "HowLongToBeat jest zajęty. Spróbuj ponownie za minutę.",
     "invalid_title": "nieprawidłowy tytuł",
     "invalid_search": "nieprawidłowe wyszukiwanie",
     "steam_search_unavailable": "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
@@ -52,7 +52,7 @@
     "invalid_shortcut_app_id": "Ta gra nie jest prawidłowym skrótem.",
     "shortcut_name_target_empty": "Wpisz nazwę skrótu.",
     "native_shortcut_unavailable": "Steam nie ma tego skrótu.",
-    "shortcut_name_changed": "Nazwa skrótu zmieniła się przed zmianą nazwy.",
+    "shortcut_name_changed": "Nazwa skrótu zmieniła się przed aktualizacją.",
     "shortcut_name_api_unavailable": "Interfejs API nazw skrótów Steam jest niedostępny",
     "shortcut_name_api_failed": "Błąd interfejsu API nazw skrótów Steam",
     "shortcut_name_timeout": "Steam nie potwierdził na czas nowej nazwy skrótu."
@@ -83,7 +83,7 @@
     },
     "details": "Szczegóły",
     "search": {
-      "searching": "Wyszukiwanie...",
+      "searching": "Wyszukiwanie…",
       "action": "Szukaj w HLTB",
       "noGames": "HowLongToBeat nie znalazł żadnych gier.",
       "mainStory": "Główny wątek {{hours}}",
@@ -107,7 +107,7 @@
   },
   "quickLinks": {
     "dlc": "DLC",
-    "pointsShop": "Sklep z punktami"
+    "pointsShop": "Sklep punktów"
   },
   "qam": {
     "hltb": {
@@ -136,15 +136,15 @@
       "nativeCornersDescription": "Używa zwykłych narożników przycisków Steam dla przycisku „Szczegóły” w stylach Clean zamiast zaokrąglonych narożników motywu Round",
       "mainStatLabel": "Przełącz główną statystykę",
       "mainStatDescription": "Pokazuje/ukrywa tylko główną statystykę",
-      "mainPlusStatLabel": "Przełącz statystykę główny + dodatki",
-      "mainPlusStatDescription": "Pokazuje/ukrywa tylko statystykę główny + dodatki",
+      "mainPlusStatLabel": "Przełącz statystykę „główny + dodatki”",
+      "mainPlusStatDescription": "Pokazuje/ukrywa tylko statystykę „główny + dodatki”",
       "completionistStatLabel": "Przełącz statystykę pełnego ukończenia",
       "completionistStatDescription": "Pokazuje/ukrywa tylko statystykę pełnego ukończenia",
       "allStylesStatLabel": "Przełącz statystykę „wszystkie style”",
       "allStylesStatDescription": "Pokazuje/ukrywa tylko statystykę wszystkich stylów",
       "clearCacheButton": "Wyczyść pamięć podręczną HLTB",
-      "clearingButton": "Czyszczenie...",
-      "cacheClearing": "Czyszczenie pamięci podręcznej HLTB...",
+      "clearingButton": "Czyszczenie…",
+      "cacheClearing": "Czyszczenie pamięci podręcznej HLTB…",
       "cacheCleared": "Pamięć podręczna HLTB wyczyszczona. Czasy wczytają się ponownie po otwarciu gry.",
       "cacheFailed": "Nie udało się wyczyścić pamięci podręcznej HLTB.",
       "customizeLabel": "Dostosuj wygląd",
@@ -162,7 +162,7 @@
     },
     "trailers": {
       "title": "Zwiastuny gier",
-      "conflictFeature": "zwiastuny gier",
+      "conflictFeature": "zwiastunów gier",
       "enableLabel": "Włącz zwiastuny",
       "enableDescription": "Główny przełącznik zwiastunów na stronie gry i ekranie głównym. Wyłączenie zachowuje ustawienia dla każdego widoku.",
       "detailHeading": "Widok gry",
@@ -191,7 +191,7 @@
       "title": "Odznaki ProtonDB",
       "conflictFeature": "odznak ProtonDB",
       "enableLabel": "Włącz odznaki ProtonDB",
-      "enableDescription": "Pokazuj społecznościowe poziomy ProtonDB na stronach gier Steam. Jest to oddzielne od statusu kompatybilności Valve.",
+      "enableDescription": "Pokazuj społecznościowe poziomy ProtonDB w widokach gier Steam. Jest to oddzielne od statusu kompatybilności Valve.",
       "homeLabel": "Okładki na ekranie głównym",
       "homeDescription": "Pokazuj odznakę poziomu na okładkach na ekranie głównym.",
       "libraryLabel": "Okładki w bibliotece",
@@ -200,7 +200,7 @@
       "gameViewDescription": "Pokazuj przycisk poziomu ProtonDB na stronie szczegółów gry.",
       "storeLabel": "Sklep",
       "storeDescription": "Pokazuj poziom ProtonDB w wierszu informacji na stronach gier w sklepie Steam.",
-      "focusOnlyLabel": "Okładki tylko przy fokusie lub najechaniu",
+      "focusOnlyLabel": "Okładki tylko po zaznaczeniu lub najechaniu",
       "focusOnlyDescription": "Ukrywaj odznaki na okładkach ekranu głównego i biblioteki, dopóki okładka gry nie zostanie wybrana lub najechana.",
       "positionLabel": "Położenie odznaki na okładce",
       "positionBottomLeft": "Lewy dolny róg",
@@ -211,7 +211,7 @@
     },
     "miniAchievements": {
       "title": "Mini osiągnięcia",
-      "conflictFeature": "mini osiągnięcia",
+      "conflictFeature": "mini osiągnięć",
       "enableLabel": "Włącz mini osiągnięcia",
       "enableDescription": "Pokazuj mały pasek postępu osiągnięć Steam obok czasu gry na stronach szczegółów. Domyślnie wyłączone.",
       "footnote": "Wykorzystuje postęp osiągnięć Steam dla gier Steam; nie dodaje śledzenia osiągnięć do gier spoza Steam."
@@ -231,7 +231,7 @@
       "scopeAll": "Wszystkie gry spoza Steam",
       "scopeDescription": {
         "steam": "Dotyczy zapisanych rekordów z prawidłowym Steam App ID. Wybór dla pojedynczej gry ma pierwszeństwo.",
-        "noSteam": "Dotyczy zapisanych rekordów bez identyfikatora Steam, w tym rekordów ręcznych i dostawców. Wybór dla pojedynczej gry ma pierwszeństwo.",
+        "noSteam": "Dotyczy zapisanych rekordów bez identyfikatora Steam, w tym rekordów ręcznych i od dostawców. Wybór dla pojedynczej gry ma pierwszeństwo.",
         "metadata": "Dotyczy każdego zapisanego rekordu metadanych, z identyfikatorem Steam lub bez. Wybór dla pojedynczej gry ma pierwszeństwo.",
         "all": "Dotyczy każdego natywnego skrótu gry spoza Steam, w tym skrótów bez rekordu. Wybór dla pojedynczej gry ma pierwszeństwo."
       },
@@ -243,12 +243,12 @@
       "saved": "Zapisane metadane:",
       "missing": "Brakujące metadane:",
       "refresh": "Odśwież metadane",
-      "refreshing": "Odświeżanie...",
-      "refreshingStatus": "Odświeżanie metadanych...",
+      "refreshing": "Odświeżanie…",
+      "refreshingStatus": "Odświeżanie metadanych…",
       "refreshDescription": "Znajdź i zapisz metadane dla wykrytych gier spoza Steam, które nie mają jeszcze dopasowania.",
       "cacheHeading": "Pamięć podręczna metadanych",
       "clearCache": "Wyczyść pamięć podręczną",
-      "clearing": "Czyszczenie...",
+      "clearing": "Czyszczenie…",
       "clearCacheDescription": "Wyczyść zapisane dopasowania i metadane, aby gry można było dopasować ponownie.",
       "delistedHeading": "Gry usunięte ze Steam",
       "refreshDelisted": "Odśwież usunięte gry"
@@ -263,7 +263,7 @@
       "autoCheckDescription": "Sprawdza w tle, gdy wtyczka jest wczytana.",
       "status": "Stan",
       "lastChecked": "Ostatnie sprawdzenie: {{date}}",
-      "checking": "Sprawdzanie...",
+      "checking": "Sprawdzanie…",
       "checkInterrupted": "Sprawdzanie przerwane po {{seconds}} s",
       "checkFailed": "Nie udało się sprawdzić",
       "upToDate": "Aktualna wersja",
@@ -275,20 +275,20 @@
       "newVersion": "Nowa wersja: v{{version}} ({{channel}})",
       "channelStable": "stabilny",
       "channelDevelopment": "deweloperski",
-      "downgradeWarning": "Uwaga: powrót do stabilnej wersji to downgrade.",
+      "downgradeWarning": "Uwaga: powrót do stabilnej wersji to obniżenie wersji.",
       "actionMoveToStable": "Przejdź do stabilnej v{{version}}",
       "actionRevertToStable": "Wróć do stabilnej v{{version}}",
       "actionInstallDevelopment": "Zainstaluj kompilację deweloperską v{{version}}",
       "actionUpdate": "Zaktualizuj do v{{version}}",
-      "waitingForDecky": "Oczekiwanie na Decky...",
-      "preparing": "Przygotowywanie...",
+      "waitingForDecky": "Oczekiwanie na Decky…",
+      "preparing": "Przygotowywanie…",
       "localBuildOnlyStable": "Kompilacje lokalne mogą się samodzielnie aktualizować tylko do stabilnego wydania. Zainstaluj tę kompilację deweloperską ręcznie z GitHub Releases.",
       "manualInstallUnavailable": "Automatyczna instalacja jest niedostępna w tym środowisku Decky. Zainstaluj to wydanie ręcznie z GitHub Releases.",
       "viewReleaseNotes": "Zobacz informacje o wydaniu",
       "checkNow": "Sprawdź teraz",
       "enableDevelopmentTitle": "Włączyć wydania deweloperskie?",
       "confirmRevertTitle": "Wrócić do stabilnej wersji?",
-      "confirmRevertBody": "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To downgrade, który może spowodować utratę danych lub problemy z konfiguracją."
+      "confirmRevertBody": "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją."
     },
     "versions": {
       "title": "Wersje",
@@ -299,7 +299,7 @@
     },
     "logs": {
       "title": "Dzienniki",
-      "loading": "Wczytywanie...",
+      "loading": "Wczytywanie…",
       "view": "Pokaż dzienniki",
       "debugLogging": "Dziennik debugowania",
       "debugLoggingDescription": "Włącza szczegółowe rejestrowanie do rozwiązywania problemów.",
@@ -323,9 +323,9 @@
     "noSteamTrailer": "Nie znaleziono zwiastuna Steam",
     "searchTrailerForApp": "Szukanie zwiastuna Steam dla aplikacji {{appId}}",
     "steamTrailer": "Zwiastun Steam",
-    "steamTrailerNotPlayable": "Zwiastun Steam nie jest odtwarzalny",
+    "steamTrailerNotPlayable": "Nie można odtworzyć zwiastuna Steam",
     "searchIgnTrailer": "Szukanie zwiastuna gry w IGN",
-    "noGameTrailer": "Nie znaleziono odtwarzalnego zwiastuna gry",
+    "noGameTrailer": "Nie znaleziono zwiastuna gry do odtworzenia",
     "stoppedForLaunch": "Zwiastun zatrzymany na czas uruchomienia",
     "trailerActive": "Zwiastun aktywny",
     "trailerLabel": "Zwiastun: {{name}}",
@@ -379,7 +379,7 @@
     "eventLoot": "Wydarzenie: łupy",
     "eventPerks": "Wydarzenie: bonusy",
     "eventChallenge": "Wydarzenie: wyzwanie",
-    "news": "Nowości",
+    "news": "Aktualności",
     "inGameEvent": "Wydarzenie w grze"
   },
   "community": {
@@ -389,7 +389,7 @@
   "panel": {
     "refreshComplete": "Odświeżanie zakończone",
     "scanCompleteSaved": "Odświeżanie zakończone: zapisano {{assigned}}/{{total}}",
-    "scanCompleteWithFailures": "Odświeżanie zakończone: zapisano {{assigned}}/{{total}}, niedopasowano {{failed}}",
+    "scanCompleteWithFailures": "Odświeżanie zakończone: zapisano {{assigned}}/{{total}}, nie dopasowano {{failed}}",
     "compatibilityDefaultLoadError": "Nie udało się wczytać domyślnego statusu kompatybilności: {{error}}",
     "compatibilitySaveError": "Nie udało się zapisać domyślnego statusu kompatybilności: {{error}}",
     "compatibilityScopeSaveError": "Nie udało się zapisać zakresu domyślnego statusu kompatybilności: {{error}}",
@@ -416,10 +416,10 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Zmień metadane..."
+    "changeMetadata": "Zmień metadane…"
   },
   "conflicts": {
-    "pluginConflict": "{{pluginName}} jest włączona w Decky Loader. Wyłącz tę wtyczkę, aby używać tutaj {{feature}}.",
+    "pluginConflict": "Wtyczka {{pluginName}} jest włączona w Decky Loader. Wyłącz ją, aby używać tutaj {{feature}}.",
     "pluginConflictSaved": "Ustawienie zostało zapisane; ta funkcja wznowi działanie po wyłączeniu drugiej wtyczki.",
     "detectionUnavailable": "Nie udało się sprawdzić kolidujących wtyczek. Używaj tylko jednego dostawcy {{feature}} naraz."
   },
@@ -430,13 +430,13 @@
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
     "searchIgn": "Szukaj metadanych w IGN",
     "search": "Szukaj",
-    "searching": "Wyszukiwanie...",
+    "searching": "Wyszukiwanie…",
     "noResults": "Brak wyników.",
     "source": "Źródło",
     "field": {
       "title": "Tytuł",
       "description": "Opis",
-      "developers": "Deweloperzy",
+      "developers": "Producenci",
       "publishers": "Wydawcy",
       "releaseDate": "Data wydania",
       "rating": "Ocena"
@@ -457,7 +457,7 @@
       "useGlobalDefaultFromValve": "Użyj ustawienia globalnego ({{category}} — od Valve)"
     },
     "compatibilityStatus": "Status kompatybilności",
-    "compatibilityHelp": "„Użyj ustawienia globalnego” dziedziczy ustawienie szybkiego menu. „Zgodnie z Valve” je ignoruje i zachowuje oryginalny status Steam, gdy dane Valve są niedostępne.",
+    "compatibilityHelp": "„Użyj ustawienia globalnego” dziedziczy ustawienie z menu szybkiego dostępu. „Zgodnie z Valve” je ignoruje i zachowuje oryginalny status Steam, gdy dane Valve są niedostępne.",
     "compatibilityChoices": "Ręczne kategorie i kategorie domyślne to Twoje wybory, a nie certyfikacja Valve ani wynik wydajności emulatora.",
     "steamInfoFields": "Informacje Steam",
     "hltbGame": "Gra HowLongToBeat",
@@ -473,12 +473,12 @@
       "current": "Bieżąca: {{name}}",
       "missingName": "Steam nie udostępnił nazwy natywnego skrótu",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Wczytywanie nazwy Steam...",
+      "loadingSteamName": "Wczytywanie nazwy Steam…",
       "noOfficialName": "Steam nie zwrócił oficjalnej nazwy",
       "managementUnavailable": "Zarządzanie nazwami skrótów jest niedostępne",
       "apiUnavailable": "Natywny interfejs API nazw skrótów Steam jest niedostępny",
       "notFound": "Nie znaleziono skrótu Steam",
-      "derivedId": "Ten skrót ma pochodny identyfikator i nie można go bezpiecznie zmienić nazwy",
+      "derivedId": "Ten skrót ma pochodny identyfikator i nie można bezpiecznie zmienić jego nazwy",
       "alreadyMatches": "Nazwa skrótu już odpowiada Steam",
       "diverged": "Nazwa tego skrótu została zmieniona poza Decky Metadata. Zmiana nazwy i przywracanie są wyłączone, dopóki zapisana historia nie zostanie zapomniana.",
       "useSteamName": "Użyj nazwy Steam",
@@ -522,7 +522,10 @@
       "nameHistoryForgottenTitle": "Zapomniano zapisaną historię nazw",
       "nameHistoryForgottenBody": "Steam nie zmienił nazwy skrótu.",
       "nameHistoryNotClearedTitle": "Nie wyczyszczono zapisanej historii nazw"
-    }
+    },
+    "steamTextLanguage": "Język tekstu Steam: {{language}}",
+    "fetchSteamText": "Pobierz tekst Steam w języku: {{language}}",
+    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
   },
   "matchPicker": {
     "title": "Znajdź dopasowanie Steam",
@@ -530,26 +533,26 @@
     "currentAppId": "Bieżący Steam App ID: {{appId}}",
     "searchAriaLabel": "Wyszukiwanie gry Steam",
     "search": "Szukaj w Steam",
-    "searching": "Wyszukiwanie w Steam...",
+    "searching": "Wyszukiwanie w Steam…",
     "idle": "Wpisz nazwę gry, aby znaleźć dopasowania Steam.",
     "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie",
     "appIdSelected": "Steam App ID: {{appId}} · wybrane",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · bieżące dopasowanie · wybrane",
-    "loadingDetails": "Wczytywanie szczegółów Steam...",
+    "loadingDetails": "Wczytywanie szczegółów Steam…",
     "artworkAlt": "Grafika Steam gry {{title}}",
-    "developer": "Deweloper: {{names}}",
-    "developerUnavailable": "Deweloper niedostępny",
+    "developer": "Producent: {{names}}",
+    "developerUnavailable": "Producent niedostępny",
     "release": "Wydanie: {{date}}",
     "releaseUnavailable": "Data wydania niedostępna",
-    "steamType": "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której chcesz.",
+    "steamType": "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
     "applyHelp": "Użycie tego dopasowania zapisuje Steam App ID i wczytuje jego metadane. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
     "apply": "Użyj tego dopasowania Steam",
     "cancel": "Anuluj wybór"
   },
   "categories": {
-    "singlePlayer": "Dla jednego gracza",
+    "singlePlayer": "Jednoosobowa",
     "multiPlayer": "Wieloosobowa",
     "coOp": "Kooperacja",
     "onlineMultiPlayer": "Wieloosobowa online",

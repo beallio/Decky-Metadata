@@ -146,6 +146,8 @@ export type MetadataData = {
   hltb_game_id?: number | null;
   /** Steam's own cleaned display name, kept separate from editable title data. */
   steam_store_name?: string;
+  /** Steam language of the stored Steam-sourced description/genres; absent means English. */
+  metadata_language?: string;
   steam_dlc_appids: number[];
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";

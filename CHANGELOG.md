@@ -16,7 +16,14 @@ All notable changes to this project are documented here in Keep a Changelog form
   and the plugin's text on game and Store pages now follow your Steam language,
   in the same 25 languages as Decky Loader. Numbers, dates, and hours use your
   language's format. The non-English text is an unreviewed machine translation.
-  Game details and news stay in English.
+- **Steam details in your language.** For a non-Steam game matched to a Steam
+  store page, Steam news follows your Steam language, and the description and
+  genres follow it when the plugin gets the game's Steam details. Names,
+  developers, publishers, and release dates stay in English. If you change your
+  Steam language later, the editor shows **Fetch Steam text in** *your
+  language*, which gets the description again; the plugin never replaces a description
+  by itself. Steam gives English text when the store page has no text in your
+  language. IGN details stay in English.
 
 ### Changed
 
@@ -26,6 +33,10 @@ All notable changes to this project are documented here in Keep a Changelog form
   ellipsis, and **Boutique** for the Steam Store. The notice that another plugin
   controls HLTB times or ProtonDB badges now names the feature in a sentence form
   in every language.
+- **Better translations.** A second machine review improved the wording in all
+  24 non-English languages. The text now uses more of Steam's own words in each
+  language, such as its names for Achievements, Home, and Play. No native
+  speaker has reviewed it yet.
 
 ### Fixed
 

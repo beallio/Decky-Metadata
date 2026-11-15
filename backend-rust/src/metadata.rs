@@ -231,6 +231,13 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         "steam_news":sanitize_news(&value["steam_news"])?,
         "steam_news_enriched_at":number_integer(&value["steam_news_enriched_at"],0.0)?
     });
+    // A record without this field is English; an unknown value is dropped, never coerced.
+    if let Some(language) = value["metadata_language"]
+        .as_str()
+        .and_then(crate::providers::steam::known_steam_language)
+    {
+        result["metadata_language"] = json!(language);
+    }
     if value.get("release_date").is_some() {
         result["release_date"] = json!(release);
     }
@@ -257,6 +264,9 @@ pub fn complete(value: &Value) -> bool {
 
 pub fn merge_fetched(existing: &Value, fetched: Value) -> Value {
     let mut merged = fetched;
+    // IGN text is English and describes no Steam language; an explicit null also stops
+    // `prepare_save` from restoring the stored value.
+    merged["metadata_language"] = Value::Null;
     if let Some(choice) = existing.get("deck_compat_override") {
         merged["deck_compat_override"] = choice.clone();
     }
@@ -294,6 +304,13 @@ pub fn prepare_save(
     if preserve_override || value.get("deck_compat_override").is_none() {
         if let Some(choice) = existing.get("deck_compat_override") {
             value["deck_compat_override"] = choice.clone();
+        }
+    }
+    // Only a Steam fetch that writes text sends this field (or an IGN fetch sends null).
+    // A user save keeps the stored value that describes the text.
+    if value.get("metadata_language").is_none() {
+        if let Some(language) = existing.get("metadata_language") {
+            value["metadata_language"] = language.clone();
         }
     }
     let previous = safe_int(&existing["steam_appid"]);
@@ -612,8 +629,10 @@ pub async fn with_steam_news(
     title: &str,
     limit: i64,
     include_details: bool,
+    language: &str,
 ) -> Result<Value, String> {
     use crate::providers::steam;
+    let language = steam::known_steam_language(language).unwrap_or("english");
     if !value.is_object() {
         return Ok(value);
     }
@@ -632,7 +651,7 @@ pub async fn with_steam_news(
             steam::resolve_steam_appid_for_title(&state.http, &clean_title, Some(&value)).await;
     }
     let news = if let Some(id) = appid {
-        steam::steam_news_for_appid(&state.http, id, &clean_title, limit).await?
+        steam::steam_news_for_appid(&state.http, id, &clean_title, limit, language).await?
     } else {
         Vec::new()
     };
@@ -653,6 +672,24 @@ pub async fn with_steam_news(
                 _ => Value::Null,
             };
             if let Some(mut details) = steam::steam_appdetails_for_appid(&state.http, id).await {
+                let mut description_language = "english";
+                if language != "english" {
+                    if let Some(localized) =
+                        steam::steam_localized_details_for_appid(&state.http, id, language).await
+                    {
+                        if localized.get("description").is_some() {
+                            description_language = language;
+                        }
+                        if let Some(object) = details.as_object_mut() {
+                            for key in ["description", "short_description", "genres"] {
+                                if py_truthy(&localized[key]) {
+                                    object.insert(key.into(), localized[key].clone());
+                                }
+                            }
+                        }
+                    }
+                }
+                let writes_description = details.get("description").is_some();
                 if let Some(object) = details.as_object_mut() {
                     let shots = screenshots(&object.remove("screenshots").unwrap_or(Value::Null))?;
                     if !shots.is_empty() {
@@ -664,6 +701,9 @@ pub async fn with_steam_news(
                             value[key.as_str()] = field.clone();
                         }
                     }
+                }
+                if writes_description {
+                    value["metadata_language"] = json!(description_language);
                 }
                 value["source"] = "Steam".into();
                 if text(&value["steam_store_state"]).trim().to_lowercase() != "delisted" {
@@ -692,6 +732,7 @@ pub async fn enrich_steam(
     state: &crate::state::AppState,
     app_id: &Value,
     mode: &str,
+    language: &str,
 ) -> Result<Option<Value>, String> {
     use crate::providers::steam;
     if mode != "metadata" && mode != "steam-name" {
@@ -717,8 +758,15 @@ pub async fn enrich_steam(
         value["steam_store_name"] = name.into();
         value
     } else {
-        let enriched =
-            with_steam_news(state, snapshot.clone(), &text(&snapshot["title"]), 6, true).await?;
+        let enriched = with_steam_news(
+            state,
+            snapshot.clone(),
+            &text(&snapshot["title"]),
+            6,
+            true,
+            language,
+        )
+        .await?;
         sanitize_for(state, &enriched).await?
     };
     let enriched = stamp_updated(&snapshot, enriched);
@@ -854,6 +902,52 @@ mod tests {
         assert_eq!(merged["steam_news"], json!([]));
         assert_eq!(merged["deck_compat_override"], "valve");
     }
+    #[test]
+    fn metadata_language_tracks_steam_text_and_is_validated() {
+        use crate::providers::steam;
+        for language in steam::STEAM_LANGUAGES {
+            let saved = sanitize(
+                &json!({"title":"Game","metadata_language":language}),
+                &Value::Null,
+            )
+            .unwrap();
+            assert_eq!(saved["metadata_language"], language);
+        }
+        for invalid in [
+            json!(""),
+            json!("English"),
+            json!("klingon"),
+            json!(1),
+            Value::Null,
+        ] {
+            let saved = sanitize(
+                &json!({"title":"Game","metadata_language":invalid}),
+                &Value::Null,
+            )
+            .unwrap();
+            assert!(saved.get("metadata_language").is_none());
+        }
+        // A user save keeps the stored language that describes the kept text.
+        let existing = json!({"title":"Game","metadata_language":"schinese"});
+        let kept = prepare_save(
+            &existing,
+            json!({"title":"Game","description":"User edit"}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(kept["metadata_language"], "schinese");
+        // An IGN fetch replaces the text, so it drops the Steam language (absent = english).
+        let fetched = merge_fetched(
+            &existing,
+            json!({"title":"Game","source":"IGN","description":"IGN text"}),
+        );
+        let saved = prepare_save(&existing, fetched, false, None, &Value::Null).unwrap();
+        assert!(saved.get("metadata_language").is_none());
+        assert_eq!(saved["description"], "IGN text");
+    }
+
     #[test]
     fn sanitizer_matches_original_python_records() {
         let cases: Vec<Value> =
@@ -1122,7 +1216,7 @@ mod tests {
                 .unwrap();
                 let pending = Arc::clone(&state);
                 let task =
-                    tokio::spawn(async move { enrich_steam(&pending, &json!(42), mode).await });
+                    tokio::spawn(async move { enrich_steam(&pending, &json!(42), mode, "english").await });
                 tokio::time::timeout(std::time::Duration::from_secs(2), gate.started.notified())
                     .await
                     .unwrap();
@@ -1159,6 +1253,89 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn localized_steam_refetch_keeps_english_identity_fields() {
+        use crate::{
+            http::{Fixture, Http},
+            state::AppState,
+        };
+        use std::sync::Arc;
+        let events = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/?appid=1091500&offset=0&count=30&l=schinese&origin=https%3A%2F%2Fstore.steampowered.com";
+        let http = Http::fixtures(vec![
+            Fixture::json(
+                events,
+                json!({"events": [{
+                    "gid": "event-cn", "event_type": 28,
+                    "announcement_body": {
+                        "gid": "announcement-cn", "headline": "中文新闻",
+                        "body": "更新内容", "posttime": 1
+                    }
+                }]}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=1091500&l=english",
+                json!({"results": {"resolved_category": 3}}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/api/appdetails?appids=1091500&l=english",
+                json!({"1091500": {"success": true, "data": {
+                    "name": "Cyberpunk 2077", "release_date": {"date": "Dec 9, 2020"},
+                    "developers": ["CD PROJEKT RED"], "publishers": ["CD PROJEKT RED"],
+                    "genres": [{"description": "RPG"}], "short_description": "English short",
+                    "about_the_game": "<p>English about</p>", "categories": [{"id": 2}],
+                }}}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/api/appdetails?appids=1091500&l=schinese&filters=basic,genres",
+                json!({"1091500": {"success": true, "data": {
+                    "name": "赛博朋克 2077", "release_date": {"date": "2020 年 12 月 9 日"},
+                    "developers": ["本地开发商"], "publishers": ["本地发行商"],
+                    "genres": [{"description": "角色扮演"}], "short_description": "中文简介",
+                    "about_the_game": "<p>中文详情</p>", "categories": [{"id": 999}],
+                }}}),
+            ),
+        ]);
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        save(
+            &state,
+            &json!(42),
+            json!({"title":"Cyberpunk","steam_appid":1091500}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+
+        let record = enrich_steam(&state, &json!(42), "metadata", "schinese")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(record["title"], "Cyberpunk 2077");
+        assert_eq!(record["steam_store_name"], "Cyberpunk 2077");
+        assert_eq!(record["release_date"], "2020-12-09");
+        assert_eq!(
+            record["developers"],
+            json!([{"name":"CD PROJEKT RED","url":""}])
+        );
+        assert_eq!(
+            record["publishers"],
+            json!([{"name":"CD PROJEKT RED","url":""}])
+        );
+        assert_eq!(record["store_categories"], json!([2]));
+        assert_eq!(record["description"], "中文简介");
+        assert_eq!(record["short_description"], "中文简介");
+        assert_eq!(record["genres"], json!(["角色扮演"]));
+        assert_eq!(record["metadata_language"], "schinese");
+        assert_eq!(record["steam_news"][0]["title"], "中文新闻");
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn cancelled_enrichment_cannot_publish_after_unload() {
         use crate::{http::Http, state::AppState};
         use std::sync::Arc;
@@ -1181,7 +1358,7 @@ mod tests {
         .unwrap();
         let pending = Arc::clone(&state);
         let task =
-            tokio::spawn(async move { enrich_steam(&pending, &json!(42), "steam-name").await });
+            tokio::spawn(async move { enrich_steam(&pending, &json!(42), "steam-name", "english").await });
         gate.started.notified().await;
         state.shutdown().await.unwrap();
         gate.resume.notify_one();

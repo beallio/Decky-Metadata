@@ -26,7 +26,7 @@
     "steam_search_unavailable": "Поиск в Steam недоступен. Повторите попытку.",
     "steam_details_unavailable": "Сведения об игре Steam недоступны",
     "steam_title_unavailable": "Название игры Steam недоступно",
-    "invalid_steam_game": "Выберите действительную игру Steam.",
+    "invalid_steam_game": "Выберите корректную игру Steam.",
     "steam_preview_unavailable": "Сведения Steam недоступны. Это совпадение всё равно можно использовать.",
     "settings_unreadable": "файл настроек метаданных не читается; исправьте или удалите его перед сохранением изменений",
     "invalid_release_date": "release_date должен быть календарной датой в формате ГГГГ-ММ-ДД или null",
@@ -83,7 +83,7 @@
     },
     "details": "Подробнее",
     "search": {
-      "searching": "Поиск...",
+      "searching": "Поиск…",
       "action": "Искать в HLTB",
       "noGames": "HowLongToBeat не нашёл игр.",
       "mainStory": "Основной сюжет {{hours}}",
@@ -107,7 +107,7 @@
   },
   "quickLinks": {
     "dlc": "DLC",
-    "pointsShop": "Магазин баллов"
+    "pointsShop": "Магазин очков"
   },
   "qam": {
     "hltb": {
@@ -143,8 +143,8 @@
       "allStylesStatLabel": "Переключить показатель «все стили»",
       "allStylesStatDescription": "Показывает/скрывает только показатель со всеми стилями",
       "clearCacheButton": "Очистить кэш HLTB",
-      "clearingButton": "Очистка...",
-      "cacheClearing": "Очистка кэша HLTB...",
+      "clearingButton": "Очистка…",
+      "cacheClearing": "Очистка кэша HLTB…",
       "cacheCleared": "Кэш HLTB очищен. Время загрузится снова при открытии игры.",
       "cacheFailed": "Не удалось очистить кэш HLTB.",
       "customizeLabel": "Настроить внешний вид",
@@ -184,14 +184,14 @@
       "displayLabel": "Экран Big Picture",
       "displayPixels": "{{width}} × {{height}} пикселей",
       "displayUnavailable": "Недоступно",
-      "displayTarget": "{{display}} · цель {{height}}p",
+      "displayTarget": "{{display}} · целевое {{height}}p",
       "footnote": "Арт Steam остаётся видимым, пока не будет готов воспроизводимый трейлер. Трейлеры транслируются из Steam или IGN и не сохраняются для офлайн-просмотра."
     },
     "protondb": {
       "title": "Значки ProtonDB",
       "conflictFeature": "значки ProtonDB",
       "enableLabel": "Включить значки ProtonDB",
-      "enableDescription": "Показывать уровни ProtonDB от сообщества на страницах игр Steam. Это отдельно от статуса совместимости Valve.",
+      "enableDescription": "Показывать уровни ProtonDB от сообщества на страницах игр Steam. Не зависит от статуса совместимости Valve.",
       "homeLabel": "Обложки на главном экране",
       "homeDescription": "Показывать значок уровня на обложках главного экрана.",
       "libraryLabel": "Обложки в библиотеке",
@@ -200,20 +200,20 @@
       "gameViewDescription": "Показывать кнопку уровня ProtonDB на странице сведений об игре.",
       "storeLabel": "Магазин",
       "storeDescription": "Показывать уровень ProtonDB в строке сведений на страницах игр в магазине Steam.",
-      "focusOnlyLabel": "Обложки только при фокусе или наведении",
+      "focusOnlyLabel": "На обложках только при фокусе или наведении",
       "focusOnlyDescription": "Скрывать значки на обложках главного экрана и библиотеки, пока обложка игры не в фокусе или под курсором.",
       "positionLabel": "Положение значка на обложке",
       "positionBottomLeft": "Снизу слева",
       "positionTopLeft": "Сверху слева",
       "positionTopRight": "Сверху справа",
       "loadingPreferences": "Загрузка настроек значков ProtonDB…",
-      "footnote": "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; несопоставленные игры и игры без уровня ProtonDB скрываются."
+      "footnote": "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
     },
     "miniAchievements": {
       "title": "Мини-достижения",
       "conflictFeature": "мини-достижения",
       "enableLabel": "Включить мини-достижения",
-      "enableDescription": "Показывать небольшую панель прогресса достижений Steam рядом с временем игры на страницах сведений. По умолчанию выключено.",
+      "enableDescription": "Показывать небольшую панель прогресса достижений Steam рядом со временем игры на страницах сведений. По умолчанию выключено.",
       "footnote": "Используется прогресс достижений Steam для игр Steam; для игр вне Steam отслеживание достижений не добавляется."
     },
     "compat": {
@@ -221,8 +221,8 @@
       "defaultStatus": "Статус совместимости по умолчанию",
       "applyDefaultTo": "Применять по умолчанию к",
       "categoryAutomatic": "Автоматически — использовать статус Steam",
-      "categoryVerified": "Проверено",
-      "categoryPlayable": "Играбельно",
+      "categoryVerified": "Полностью совместима",
+      "categoryPlayable": "Можно играть",
       "categoryUnsupported": "Не поддерживается",
       "categoryUnknown": "Неизвестно",
       "scopeSteam": "Игры, сопоставленные со Steam",
@@ -233,7 +233,7 @@
         "steam": "Применяется к сохранённым записям с действительным Steam App ID. Выбор для отдельной игры имеет приоритет.",
         "noSteam": "Применяется к сохранённым записям без Steam ID, включая ручные записи и записи провайдеров. Выбор для отдельной игры имеет приоритет.",
         "metadata": "Применяется ко всем сохранённым записям метаданных, со Steam ID или без него. Выбор для отдельной игры имеет приоритет.",
-        "all": "Применяется ко всем собственным ярлыкам игр вне Steam, включая ярлыки без записи. Выбор для отдельной игры имеет приоритет."
+        "all": "Применяется ко всем штатным ярлыкам игр вне Steam, включая ярлыки без записи. Выбор для отдельной игры имеет приоритет."
       },
       "perGameNote": "«Как у Valve» — выбор для отдельной игры. Ручные категории и категории по умолчанию — ваш выбор, а не сертификация Valve."
     },
@@ -243,12 +243,12 @@
       "saved": "Метаданные сохранены:",
       "missing": "Нет метаданных:",
       "refresh": "Обновить метаданные",
-      "refreshing": "Обновление...",
-      "refreshingStatus": "Обновление метаданных...",
+      "refreshing": "Обновление…",
+      "refreshingStatus": "Обновление метаданных…",
       "refreshDescription": "Найти и сохранить метаданные для найденных игр вне Steam, у которых ещё нет совпадения.",
       "cacheHeading": "Кэш метаданных",
       "clearCache": "Очистить кэш",
-      "clearing": "Очистка...",
+      "clearing": "Очистка…",
       "clearCacheDescription": "Очистить сохранённые совпадения и метаданные, чтобы игры можно было сопоставить заново.",
       "delistedHeading": "Игры, удалённые из Steam",
       "refreshDelisted": "Обновить удалённые игры"
@@ -263,7 +263,7 @@
       "autoCheckDescription": "Проверяет в фоне, пока плагин загружен.",
       "status": "Состояние",
       "lastChecked": "Последняя проверка: {{date}}",
-      "checking": "Проверка...",
+      "checking": "Проверка…",
       "checkInterrupted": "Проверка прервана через {{seconds}} с",
       "checkFailed": "Не удалось проверить",
       "upToDate": "Актуальная версия",
@@ -280,8 +280,8 @@
       "actionRevertToStable": "Вернуться к стабильной v{{version}}",
       "actionInstallDevelopment": "Установить сборку для разработки v{{version}}",
       "actionUpdate": "Обновить до v{{version}}",
-      "waitingForDecky": "Ожидание Decky...",
-      "preparing": "Подготовка...",
+      "waitingForDecky": "Ожидание Decky…",
+      "preparing": "Подготовка…",
       "localBuildOnlyStable": "Локальные сборки могут самообновляться только до стабильного выпуска. Установите эту сборку для разработки вручную из GitHub Releases.",
       "manualInstallUnavailable": "Автоматическая установка недоступна в этой среде Decky. Установите этот выпуск вручную из GitHub Releases.",
       "viewReleaseNotes": "Открыть примечания к выпуску",
@@ -299,7 +299,7 @@
     },
     "logs": {
       "title": "Журналы",
-      "loading": "Загрузка...",
+      "loading": "Загрузка…",
       "view": "Открыть журналы",
       "debugLogging": "Отладочный журнал",
       "debugLoggingDescription": "Включает подробное журналирование для диагностики.",
@@ -350,7 +350,7 @@
     "detailTrailersOff": "Трейлеры на странице игры отключены",
     "openGamePage": "Откройте главную страницу игры в библиотеке Steam или выберите игру на главном экране",
     "gameNotAvailable": "Игра Steam недоступна",
-    "notNativeShortcut": "Эта игра не является собственным ярлыком игры вне Steam",
+    "notNativeShortcut": "Эта игра не является штатным ярлыком игры вне Steam",
     "matchesUnavailable": "Сохранённые совпадения Steam недоступны",
     "gameTrailerUnavailable": "Трейлер игры недоступен",
     "waitingIgnTrailer": "Ожидание трейлера игры из IGN",
@@ -372,15 +372,15 @@
     "settingsSaveError": "Не удалось сохранить настройки значков ProtonDB."
   },
   "activity": {
-    "minorUpdatePatchNotes": "Небольшое обновление / примечания к патчу",
+    "minorUpdatePatchNotes": "Небольшое обновление / список изменений",
     "update": "Обновление",
     "majorUpdate": "Крупное обновление",
-    "dlc": "Загружаемый контент",
+    "dlc": "Дополнительный контент",
     "eventLoot": "Событие: добыча",
     "eventPerks": "Событие: бонусы",
     "eventChallenge": "Событие: испытание",
     "news": "Новости",
-    "inGameEvent": "Событие в игре"
+    "inGameEvent": "Внутриигровое событие"
   },
   "community": {
     "steamAuthor": "Сообщество Steam · {{author}}",
@@ -416,12 +416,12 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Изменить метаданные..."
+    "changeMetadata": "Изменить метаданные…"
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} включён в Decky Loader. Отключите этот плагин, чтобы использовать {{feature}} здесь.",
-    "pluginConflictSaved": "Ваша настройка сохранена; эта функция возобновится, когда другой плагин будет отключён.",
-    "detectionUnavailable": "Не удалось проверить конфликтующие плагины. Используйте только одного поставщика {{feature}} одновременно."
+    "pluginConflictSaved": "Ваша настройка сохранена; функция возобновит работу, когда другой плагин будет отключён.",
+    "detectionUnavailable": "Не удалось проверить конфликтующие плагины. Одновременно используйте только один источник для функции «{{feature}}»."
   },
   "editor": {
     "save": "Сохранить",
@@ -430,7 +430,7 @@
     "nonSteamOnly": "Этот плагин изменяет только игры вне Steam.",
     "searchIgn": "Искать метаданные в IGN",
     "search": "Искать",
-    "searching": "Поиск...",
+    "searching": "Поиск…",
     "noResults": "Результатов пока нет.",
     "source": "Источник",
     "field": {
@@ -444,8 +444,8 @@
     "compat": {
       "useGlobalDefault": "Использовать глобальное значение по умолчанию",
       "followValve": "Как у Valve",
-      "verified": "Проверено",
-      "playable": "Играбельно",
+      "verified": "Полностью совместима",
+      "playable": "Можно играть",
       "unsupported": "Не поддерживается",
       "unknown": "Неизвестно",
       "followValveUnavailable": "Как у Valve (недоступно — исходный статус Steam)",
@@ -471,12 +471,12 @@
     "shortcutName": "Название ярлыка",
     "shortcut": {
       "current": "Текущее: {{name}}",
-      "missingName": "Steam не предоставил название собственного ярлыка",
+      "missingName": "Steam не предоставил штатное название ярлыка",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Загрузка названия Steam...",
+      "loadingSteamName": "Загрузка названия Steam…",
       "noOfficialName": "Steam не вернул официальное название",
       "managementUnavailable": "Управление названиями ярлыков недоступно",
-      "apiUnavailable": "Собственный API названий ярлыков Steam недоступен",
+      "apiUnavailable": "Штатный API названий ярлыков Steam недоступен",
       "notFound": "Ярлык Steam не найден",
       "derivedId": "У этого ярлыка производный ID, его нельзя безопасно переименовать",
       "alreadyMatches": "Название ярлыка уже совпадает со Steam",
@@ -522,22 +522,25 @@
       "nameHistoryForgottenTitle": "Сохранённая история названий удалена",
       "nameHistoryForgottenBody": "Steam не изменил название ярлыка.",
       "nameHistoryNotClearedTitle": "Сохранённая история названий не удалена"
-    }
+    },
+    "steamTextLanguage": "Язык текста Steam: {{language}}",
+    "fetchSteamText": "Загрузить текст Steam ({{language}})",
+    "steamTextUnavailable": "Steam не вернул текст для этой игры."
   },
   "matchPicker": {
     "title": "Найти совпадение в Steam",
-    "help": "Найдите игру в Steam, выберите результат, чтобы проверить сведения, затем выберите «Использовать это совпадение Steam». Просмотр не меняет вашу игру.",
+    "help": "Найдите игру в Steam, выберите результат для проверки сведений, затем нажмите «Использовать это совпадение Steam». Просмотр не меняет вашу игру.",
     "currentAppId": "Текущий Steam App ID: {{appId}}",
     "searchAriaLabel": "Поиск игры в Steam",
     "search": "Искать в Steam",
-    "searching": "Поиск в Steam...",
+    "searching": "Поиск в Steam…",
     "idle": "Введите название игры, чтобы найти совпадения в Steam.",
     "empty": "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · текущее совпадение",
     "appIdSelected": "Steam App ID: {{appId}} · выбрано",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · текущее совпадение · выбрано",
-    "loadingDetails": "Загрузка сведений Steam...",
+    "loadingDetails": "Загрузка сведений Steam…",
     "artworkAlt": "Арт Steam для {{title}}",
     "developer": "Разработчик: {{names}}",
     "developerUnavailable": "Разработчик недоступен",
@@ -549,13 +552,13 @@
     "cancel": "Отменить выбор"
   },
   "categories": {
-    "singlePlayer": "Один игрок",
-    "multiPlayer": "Мультиплеер",
+    "singlePlayer": "Для одного игрока",
+    "multiPlayer": "Для нескольких игроков",
     "coOp": "Кооператив",
-    "onlineMultiPlayer": "Сетевой мультиплеер",
-    "onlineCoOp": "Сетевой кооператив",
-    "localMultiPlayer": "Локальный мультиплеер",
-    "localCoOp": "Локальный кооператив",
+    "onlineMultiPlayer": "Для нескольких игроков (по сети)",
+    "onlineCoOp": "Кооператив (по сети)",
+    "localMultiPlayer": "Для нескольких игроков (локально)",
+    "localCoOp": "Кооператив (локально)",
     "splitScreen": "Разделённый экран",
     "fullController": "Полная поддержка контроллера",
     "mmo": "MMO",
