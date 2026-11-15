@@ -12,6 +12,11 @@ All notable changes to this project are documented here in Keep a Changelog form
   Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image,
   the times stay on the image and Play does not move, so the bar keeps its
   artwork background. It is off by default. (#39)
+- **Plugin text in 25 languages.** The panel, the metadata editor, messages,
+  and the plugin's text on game and Store pages now follow your Steam language,
+  in the same 25 languages as Decky Loader. Numbers, dates, and hours use your
+  language's format. The non-English text is an unreviewed machine translation.
+  Game details and news stay in English.
 
 ### Changed
 

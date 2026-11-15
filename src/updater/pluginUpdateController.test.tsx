@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as ReactModule from "react";
 
 let hookIndex = 0;
 let hooks: any[] = [];
 let setters: any[] = [];
 const effects: Array<() => void | (() => void)> = [];
 
-vi.mock("react", () => ({
+vi.mock("react", async (importOriginal) => ({
+  // Keep React's other exports for the i18n module chain; the hooks below stay stubbed.
+  ...await importOriginal<typeof ReactModule>(),
   useReducer: (reducer: any, initial: any) => {
     const index = hookIndex++;
     if (hooks.length <= index) {

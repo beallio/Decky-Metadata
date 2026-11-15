@@ -25,6 +25,11 @@ vi.mock("../../updater/pluginUpdateController", () => ({
 vi.mock("../../updater/deckyInstaller", () => ({
   isDeckyInstallerAvailable: vi.fn(() => true),
 }));
+// Components are invoked as plain functions here, so the i18n hook is replaced by non-React `t`.
+vi.mock("../../i18n", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, useT: () => actual.t };
+});
 
 import { isDeckyInstallerAvailable } from "../../updater/deckyInstaller";
 import { PluginUpdateSection } from "./PluginUpdateSection";

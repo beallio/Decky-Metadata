@@ -8,7 +8,7 @@ def test_community_feed_passthrough_rewrites_shortcut_appid_to_matched_steam_app
     script = textwrap.dedent(
         """
         import assert from "node:assert/strict";
-        import { rewriteCommunityFeedUrlForSteamApp } from "./src/communityFeed.ts";
+        import { rewriteCommunityFeedUrlForSteamApp } from "./src/communityFeedUrl.ts";
 
         assert.equal(
           rewriteCommunityFeedUrlForSteamApp(

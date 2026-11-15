@@ -1,6 +1,7 @@
 // Layout and appearance adapted from HLTB for Deck (MIT).
 import { findClassModule, Focusable, Navigation } from "@decky/ui";
 import type { CSSProperties } from "react";
+import { formatHours, useT } from "../i18n";
 import type { HltbSettings } from "./settings";
 
 type HltbStatsProps = {
@@ -51,6 +52,7 @@ const css = `
 `;
 
 export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps) {
+  const t = useT();
   if (!stats || launching || Object.values(stats).every(value => value <= 0)) return null;
   const { appearance, style } = settings;
   const vars: Record<string, string> = {};
@@ -61,10 +63,10 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
     if (!appearance.border) vars["--hltb-border-width"] = "0";
   }
   const items = [
-    [settings.showMain, stats.main, "Main Story"],
-    [settings.showMainPlus, stats.plus, "Main + Extras"],
-    [settings.showComplete, stats.complete, "Completionist"],
-    [settings.showAllStyles, stats.all, "All Styles"],
+    [settings.showMain, stats.main, t("hltb.stats.mainStory")],
+    [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
+    [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
+    [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
   ] as const;
   const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
   const classes = [
@@ -80,15 +82,15 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
     <div className="decky-metadata-hltb-info">
       <ul>
         {items.map(([show, seconds, label]) => show && <li key={label}>
-          <p className="decky-metadata-hltb-gametime">{seconds > 0 ? (seconds / 3600).toFixed(1) : "--"} hours</p>
+          <p className="decky-metadata-hltb-gametime">{seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours")}</p>
           <p className="decky-metadata-hltb-label">{label}</p>
         </li>)}
         {hltbId && !settings.hideViewDetails ? <li className="decky-metadata-hltb-details-item">
           {style === "default"
             ? <Focusable className={`${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`} focusClassName={detailsClasses.Focused}>
-              <Focusable className={detailsClasses.Details} noFocusRing={false} onActivate={openDetails}>Details</Focusable>
+              <Focusable className={detailsClasses.Details} noFocusRing={false} onActivate={openDetails}>{t("hltb.details")}</Focusable>
             </Focusable>
-            : <Focusable className={`${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`} onActivate={openDetails}>Details</Focusable>}
+            : <Focusable className={`${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`} onActivate={openDetails}>{t("hltb.details")}</Focusable>}
         </li> : null}
       </ul>
     </div>

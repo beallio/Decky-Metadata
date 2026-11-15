@@ -21,6 +21,7 @@ export interface UpdateState {
   candidate: PluginUpdateCandidate | null;
   checkResult: UpdateCheckResult | null;
   errorMessage: string | null;
+  checkTimedOut: boolean;
   installedReleasePublishedAt: string | null;
   installedOverride: InstalledOverride | null;
   pendingInstallVersion: string | null;
@@ -31,6 +32,7 @@ export const initialUpdateState: UpdateState = {
   candidate: null,
   checkResult: null,
   errorMessage: null,
+  checkTimedOut: false,
   installedReleasePublishedAt: null,
   installedOverride: null,
   pendingInstallVersion: null,
@@ -75,6 +77,7 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         ...state,
         phase: "checking",
         errorMessage: null,
+        checkTimedOut: false,
       };
 
     case "CHECK_TIMEOUT":
@@ -82,6 +85,7 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         ...state,
         phase: "failed",
         errorMessage: action.message,
+        checkTimedOut: true,
         checkResult: {
           status: "failed",
           checked_at: new Date().toISOString(),
@@ -94,6 +98,7 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         ...state,
         phase: "failed",
         errorMessage: action.message,
+        checkTimedOut: false,
         checkResult: action.result || {
           status: "failed",
           checked_at: new Date().toISOString(),
@@ -122,6 +127,7 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         ...state,
         phase: "installing",
         errorMessage: null,
+        checkTimedOut: false,
       };
 
     case "INSTALL_HANDOFF_PENDING":
@@ -154,6 +160,7 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         ...state,
         phase: "failed",
         errorMessage: action.message,
+        checkTimedOut: false,
         installedOverride: null,
         pendingInstallVersion: null,
       };

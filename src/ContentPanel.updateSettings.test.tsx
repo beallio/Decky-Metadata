@@ -155,6 +155,35 @@ vi.mock("./hltb/gameView", () => ({
 }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
+// The harness replaces React, so react-i18next cannot load; resolve English
+// straight from the en-US catalog instead. `vi.mock` factories run before
+// top-level imports, so the catalog must be imported dynamically here.
+vi.mock("./i18n", async () => {
+  const sources = new Map<string, string>();
+  const walk = (value: Record<string, unknown>, prefix: string) => {
+    for (const [key, child] of Object.entries(value)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (typeof child === "string") sources.set(path, child);
+      else if (child && typeof child === "object") walk(child as Record<string, unknown>, path);
+    }
+  };
+  walk((await import("./locales/en-US.json")).default, "");
+  const t = (key: string, options: Record<string, unknown> = {}) =>
+    (sources.get(key) ?? key).replace(/{{\s*(\w+)\s*}}/g, (_match, name: string) =>
+      String(options[name] ?? ""));
+  return {
+    t,
+    useT: () => t,
+    refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
+    translateBackendError: (error: unknown) =>
+      error instanceof Error ? error.message : String(error),
+    translateProgress: (progress: { message?: string } | null | undefined) =>
+      progress?.message ?? "",
+    formatNumber: (value: number) => new Intl.NumberFormat("en-US").format(value),
+    formatDate: (value: Date | number) =>
+      new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(value),
+  };
+});
 vi.mock("./useNonSteamGames", () => ({
   useNonSteamGames: () => ({ games: [], loadGames: games.loadGames }),
 }));

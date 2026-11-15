@@ -2,6 +2,7 @@ import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "
 import { FaPlayCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
+import { useT } from "../../i18n";
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
 import { fontSize } from "../../tokens";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
@@ -9,14 +10,6 @@ import type { TrailerQuality } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
 
 const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
-
-const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
-  { data: "auto", label: "Auto — match display" },
-  { data: 720, label: "720p" },
-  { data: 1080, label: "1080p" },
-  { data: 1440, label: "1440p" },
-  { data: 2160, label: "2160p" },
-];
 
 type GameTrailersSectionProps = {
   initiallyExpanded?: boolean;
@@ -47,19 +40,27 @@ export function GameTrailersSection({
   onQualityMenuWillOpen,
   onQualityControlRef,
 }: GameTrailersSectionProps) {
+  const t = useT();
+  const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
+    { data: "auto", label: t("qam.trailers.qualityAuto") },
+    { data: 720, label: "720p" },
+    { data: 1080, label: "1080p" },
+    { data: 1440, label: "1440p" },
+    { data: 2160, label: "2160p" },
+  ];
   const disabled = !state.settingsLoaded || state.busy;
   const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
-  const conflictNotice = featureConflictNotice(state.conflict, "game trailers", state.settings.enabled);
+  const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
   const display = state.displayWidth && state.displayHeight
-    ? `${state.displayWidth} × ${state.displayHeight} pixels`
-    : "Unavailable";
+    ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
+    : t("qam.trailers.displayUnavailable");
 
   return (
-    <CollapsibleSection title="Game trailers" icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
+    <CollapsibleSection title={t("qam.trailers.title")} icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <ToggleField
-          label="Enable trailers"
-          description="Main switch for Detail and Home trailers. Turning it off keeps your choices for each view."
+          label={t("qam.trailers.enableLabel")}
+          description={t("qam.trailers.enableDescription")}
           checked={state.settings.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -73,12 +74,12 @@ export function GameTrailersSection({
         </PanelSectionRow>
       ) : null}
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>Detail view</div>
+        <div style={viewHeadingStyle}>{t("qam.trailers.detailHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Detail view trailers"
-          description="Play a trailer over the artwork on a game's main Library page."
+          label={t("qam.trailers.detailLabel")}
+          description={t("qam.trailers.detailDescription")}
           checked={state.settings.detailEnabled}
           disabled={disabled}
           onChange={onDetailEnabledChange}
@@ -86,8 +87,8 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <SliderField
-          label="Detail fade-in delay"
-          description="Wait from opening the game page before showing a ready trailer."
+          label={t("qam.trailers.detailDelayLabel")}
+          description={t("qam.trailers.detailDelayDescription")}
           value={state.settings.detailFadeInDelaySeconds}
           min={0}
           max={10}
@@ -100,8 +101,8 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Detail trailer audio"
-          description="Fade in audio when a Detail trailer appears. Home trailers always stay muted."
+          label={t("qam.trailers.audioLabel")}
+          description={t("qam.trailers.audioDescription")}
           checked={state.settings.audioEnabled}
           disabled={disabled}
           onChange={onAudioChange}
@@ -109,20 +110,20 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Hide game logo during Detail trailers"
-          description="Hide the game page logo while a trailer is visible. The logo returns when playback stops."
+          label={t("qam.trailers.hideLogoLabel")}
+          description={t("qam.trailers.hideLogoDescription")}
           checked={state.settings.hideLogoDuringTrailer}
           disabled={disabled}
           onChange={onHideLogoChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>Home view</div>
+        <div style={viewHeadingStyle}>{t("qam.trailers.homeHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Home view trailers"
-          description="Play a muted trailer over the Home background for the selected or hovered game."
+          label={t("qam.trailers.homeLabel")}
+          description={t("qam.trailers.homeDescription")}
           checked={state.settings.homeEnabled}
           disabled={disabled}
           onChange={onHomeEnabledChange}
@@ -130,8 +131,8 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <SliderField
-          label="Home fade-in delay"
-          description="Wait before looking for a trailer. Moving to another game restarts this delay."
+          label={t("qam.trailers.homeDelayLabel")}
+          description={t("qam.trailers.homeDelayDescription")}
           value={state.settings.homeFadeInDelaySeconds}
           min={0}
           max={10}
@@ -145,7 +146,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <div ref={onQualityControlRef}>
           <DropdownItem
-            label="Video quality"
+            label={t("qam.trailers.qualityLabel")}
             layout="below"
             childrenContainerWidth="max"
             rgOptions={qualityOptions}
@@ -163,7 +164,7 @@ export function GameTrailersSection({
       </PanelSectionRow>
       <PanelSectionRow>
         <Field
-          label="Big Picture display"
+          label={t("qam.trailers.displayLabel")}
           childrenLayout="below"
           description={state.status}
           padding="standard"
@@ -172,7 +173,7 @@ export function GameTrailersSection({
           highlightOnFocus={true}
         >
           <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            {display} · target {state.targetHeight}p
+            {t("qam.trailers.displayTarget", { display, height: state.targetHeight })}
           </div>
         </Field>
       </PanelSectionRow>
@@ -184,7 +185,7 @@ export function GameTrailersSection({
           bottomSeparator="none"
         >
           <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            Steam artwork stays visible until a playable trailer is ready. Trailers stream from Steam or IGN and are not saved for offline playback.
+            {t("qam.trailers.footnote")}
           </div>
           {state.settingsError && (
             <div style={inlineStatusStyle("error")}>{state.settingsError}</div>

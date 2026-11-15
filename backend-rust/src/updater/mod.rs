@@ -252,7 +252,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(now),
-                "message": "Update check skipped due to rate-limit cooldown",
+                "message": "rate_limit_cooldown_skipped",
                 "retry_after": isoformat_utc(until.to_owned())
             }));
         }
@@ -273,7 +273,7 @@ impl Updater {
                 .body
                 .get("message")
                 .map(py_string)
-                .unwrap_or_else(|| "Rate limit exceeded".to_owned());
+                .unwrap_or_else(|| "rate_limited".to_owned());
             crate::logging::event(
                 "update",
                 "GitHub release discovery was rate limited",
@@ -288,7 +288,7 @@ impl Updater {
             }));
         }
         if response.status != 200 || !response.body.is_array() {
-            let mut message = "Failed to check for updates".to_owned();
+            let mut message = "update_check_failed".to_owned();
             let body = response.body.as_object();
             let raw_message = body.and_then(|body| {
                 body.get("message")
@@ -299,8 +299,7 @@ impl Updater {
                 message = raw_message;
             }
             if response.status == 404 {
-                message = "Releases are not accessible — the repository may be private or missing."
-                    .to_owned();
+                message = "releases_not_accessible".to_owned();
             }
             crate::logging::event(
                 "update",
@@ -343,7 +342,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": checked_at,
-                    "message": "Rate limit exceeded",
+                    "message": "rate_limited",
                     "retry_after": isoformat_utc(until)
                 }));
             }
@@ -358,7 +357,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": checked_at,
-                    "message": "Failed to download the release manifest"
+                    "message": "manifest_download_failed"
                 }));
             }
             if let Some(candidate) =
@@ -414,7 +413,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": isoformat_utc(now),
-                    "message": "Rate limit cooldown active",
+                    "message": "rate_limit_cooldown",
                     "retry_after": isoformat_utc(until)
                 }));
             }
@@ -426,7 +425,7 @@ impl Updater {
             .filter(|tag| !tag.is_empty());
         let Some(tag) = tag else {
             return Ok(
-                json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "Candidate missing tag"}),
+                json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "candidate_missing_tag"}),
             );
         };
         let response = self.client.get_release(tag).await;
@@ -438,7 +437,7 @@ impl Updater {
                 .body
                 .get("message")
                 .map(py_string)
-                .unwrap_or_else(|| "Rate limit exceeded".to_owned());
+                .unwrap_or_else(|| "rate_limited".to_owned());
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
@@ -447,17 +446,23 @@ impl Updater {
             }));
         }
         if response.status != 200 || !response.body.is_object() {
+            crate::logging::event(
+                "update",
+                "Revalidation release fetch failed",
+                json!({"status": response.status, "tag": tag}),
+                Level::Error,
+            );
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": format!("Failed to fetch release for tag {tag}: {}", response.status)
+                "message": "release_fetch_failed"
             }));
         }
         let Some(prevalidated) = prevalidate_release_candidate(&response.body) else {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Release validation failed during revalidation"
+                "message": "revalidation_failed"
             }));
         };
         let manifest_response = self.client.get_manifest(&manifest_url(&prevalidated)).await;
@@ -470,7 +475,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Release validation failed during revalidation"
+                "message": "revalidation_failed"
             }));
         };
 
@@ -485,7 +490,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "SHA-256 mismatch during revalidation"
+                "message": "revalidation_sha_mismatch"
             }));
         }
         if candidate_record.get("artifact_url").and_then(Value::as_str)
@@ -494,7 +499,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Artifact URL mismatch during revalidation"
+                "message": "revalidation_url_mismatch"
             }));
         }
         if candidate_record.get("version").and_then(Value::as_str)
@@ -503,7 +508,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Version mismatch during revalidation"
+                "message": "revalidation_version_mismatch"
             }));
         }
         let action = candidate_record
@@ -947,7 +952,7 @@ mod tests {
                 .check_for_update(&json!("0.3.1"), true)
                 .await
                 .unwrap()["message"],
-            "Update check skipped due to rate-limit cooldown"
+            "rate_limit_cooldown_skipped"
         );
         updater.test_now = Some(now() + Duration::seconds(61));
         assert_eq!(
@@ -966,17 +971,17 @@ mod tests {
             (
                 "sha256",
                 json!("b".repeat(64)),
-                "SHA-256 mismatch during revalidation",
+                "revalidation_sha_mismatch",
             ),
             (
                 "artifact_url",
                 json!("https://example.test/other.zip"),
-                "Artifact URL mismatch during revalidation",
+                "revalidation_url_mismatch",
             ),
             (
                 "version",
                 json!("0.4.1"),
-                "Version mismatch during revalidation",
+                "revalidation_version_mismatch",
             ),
         ] {
             let mut candidate = json!({
@@ -1025,13 +1030,13 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         assert_eq!(
             updater.revalidate(&json!({})).await.unwrap()["message"],
-            "Candidate missing tag"
+            "candidate_missing_tag"
         );
         let result = updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap();
         assert_eq!(result["status"], "failed");
         assert_eq!(
             updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap()["message"],
-            "Rate limit cooldown active"
+            "rate_limit_cooldown"
         );
         fixture_http.assert_drained();
     }
@@ -1046,6 +1051,7 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
         assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "manifest_download_failed");
         // An unknown release must not be cached as "current" for a day.
         assert!(updater.cache.get("last_result").is_none());
         fixture_http.assert_drained();
@@ -1058,11 +1064,12 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
         assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "rate_limited");
         assert!(result["retry_after"].is_string());
         // The cooldown also blocks the next network check.
         assert_eq!(
             updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["message"],
-            "Update check skipped due to rate-limit cooldown"
+            "rate_limit_cooldown_skipped"
         );
         fixture_http.assert_drained();
 
@@ -1079,7 +1086,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result["status"], "failed");
-        assert!(result["message"].as_str().unwrap().contains("private"));
+        assert_eq!(result["message"], "releases_not_accessible");
         fixture_http.assert_drained();
     }
 

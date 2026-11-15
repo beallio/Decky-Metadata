@@ -2,6 +2,8 @@ import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
 import { FaFileAlt } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
+import { useT } from "../../i18n";
+
 type LogsSectionProps = {
   logsBusy: boolean;
   debugLogging: boolean;
@@ -17,8 +19,10 @@ export function LogsSection({
   onViewLogs,
   onToggleDebugLogging,
 }: LogsSectionProps) {
+  const t = useT();
+
   return (
-    <CollapsibleSection title="Logs" icon={<FaFileAlt size={16} />}>
+    <CollapsibleSection title={t("qam.logs.title")} icon={<FaFileAlt size={16} />}>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -26,13 +30,13 @@ export function LogsSection({
           disabled={logsBusy}
           onClick={onViewLogs}
         >
-          {logsBusy ? "Loading..." : "View Logs"}
+          {logsBusy ? t("qam.logs.loading") : t("qam.logs.view")}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
-          label="Debug Logging"
-          description="Enables verbose logging for troubleshooting."
+          label={t("qam.logs.debugLogging")}
+          description={t("qam.logs.debugLoggingDescription")}
           bottomSeparator="none"
           checked={debugLogging}
           disabled={debugLoggingBusy}

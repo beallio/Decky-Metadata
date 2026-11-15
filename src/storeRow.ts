@@ -2,6 +2,7 @@ import { executeInTab, fetchNoCors } from "@decky/api";
 import { Router } from "@decky/ui";
 import { hltbController } from "./hltb/gameView";
 import { hltbStore, type HltbInputs } from "./hltb/store";
+import { formatHoursShort, t } from "./i18n";
 import { protonDbBadgeController } from "./protondb/controller";
 import { PROTONDB_COLORS, protonDbTierLabel } from "./protondb/Icon";
 import { getNativeOverview } from "./steam/core";
@@ -130,11 +131,16 @@ const storeRowScript = (payload: StoreInfoRowPayload | null, revision: number | 
   const serializedPayload = JSON.stringify(scriptPayload);
   const serializedSignature = JSON.stringify(signatureOf(scriptPayload));
   const serializedRevision = JSON.stringify(revision);
+  // Injected scripts cannot import i18n, so their labels are resolved here and embedded as data.
+  const serializedHltbAriaLabel = JSON.stringify(t("storeRow.hltbAriaLabel"));
+  const serializedProtonDbRatingAriaLabel = JSON.stringify(t("storeRow.protondbRating", { tier: "__TIER__" }));
   return `(function () {
   "use strict";
   const requestedPayload = ${serializedPayload};
   const requestedSignature = ${serializedSignature};
   const requestedRevision = ${serializedRevision};
+  const hltbAriaLabel = ${serializedHltbAriaLabel};
+  const protonDbRatingAriaLabelTemplate = ${serializedProtonDbRatingAriaLabel};
   const ownerKey = "__deckyMetadataStoreInfoRowV1";
   const revisionKey = "__deckyMetadataStoreInfoRowRevisionV1";
   const rowId = "${ROW_ID}";
@@ -348,7 +354,7 @@ const storeRowScript = (payload: StoreInfoRowPayload | null, revision: number | 
     const card = document.createElement(data.hltbId === null ? "div" : "a");
     card.className = cardClass;
     card.setAttribute("data-card", "hltb");
-    card.setAttribute("aria-label", "HowLongToBeat times");
+    card.setAttribute("aria-label", hltbAriaLabel);
     if (data.hltbId !== null) {
       card.href = "https://howlongtobeat.com/game/" + data.hltbId;
       card.target = "_blank";
@@ -381,7 +387,7 @@ const storeRowScript = (payload: StoreInfoRowPayload | null, revision: number | 
     const card = document.createElement("a");
     card.className = cardClass;
     card.setAttribute("data-card", "protondb");
-    card.setAttribute("aria-label", "ProtonDB rating: " + data.label);
+    card.setAttribute("aria-label", protonDbRatingAriaLabelTemplate.split("__TIER__").join(data.label));
     card.href = "https://www.protondb.com/app/" + payload.steamAppId;
     card.target = "_blank";
     card.rel = "noopener noreferrer";
@@ -675,15 +681,15 @@ export const installStoreInfoRow = (): (() => void) => {
     const entry = view.entry;
     if (!entry || entry.status !== "matched") return null;
     const rows = [
-      { show: settings.showMain, seconds: entry.stats?.main ?? 0, label: "Main Story" },
-      { show: settings.showMainPlus, seconds: entry.stats?.plus ?? 0, label: "Main + Extras" },
-      { show: settings.showComplete, seconds: entry.stats?.complete ?? 0, label: "Completionist" },
-      { show: settings.showAllStyles, seconds: entry.stats?.all ?? 0, label: "All Styles" },
+      { show: settings.showMain, seconds: entry.stats?.main ?? 0, label: t("storeRow.statMain") },
+      { show: settings.showMainPlus, seconds: entry.stats?.plus ?? 0, label: t("storeRow.statMainPlus") },
+      { show: settings.showComplete, seconds: entry.stats?.complete ?? 0, label: t("storeRow.statComplete") },
+      { show: settings.showAllStyles, seconds: entry.stats?.all ?? 0, label: t("storeRow.statAllStyles") },
     ];
     if (!rows.some((row) => row.seconds > 0)) return null;
     const items = rows
       .filter((row) => row.show)
-      .map((row) => ({ value: row.seconds > 0 ? `${(row.seconds / 3600).toFixed(1)} h` : "--", label: row.label }));
+      .map((row) => ({ value: row.seconds > 0 ? formatHoursShort(row.seconds / 3600) : "--", label: row.label }));
     const hltbId = settings.hideViewDetails ? null : (isSteamAppId(entry.hltb_id) ? entry.hltb_id : null);
     if (items.length === 0 && hltbId === null) return null;
     return { hltbId, items };

@@ -1,6 +1,7 @@
 import { Navigation } from "@decky/ui";
 import { useEffect, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
+import { useT } from "../i18n";
 import { getNativeOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { protonDbBadgeController } from "./controller";
 import { getResolvedProtonDbAppId, resolveProtonDbAppId, savedProtonDbAppId } from "./identity";
@@ -67,12 +68,13 @@ export function ProtonDbGameButton({ displayedAppId, overview, Button, className
   Button: ComponentType<NativeProtonDbButtonProps>;
   className: string;
 }) {
+  const t = useT();
   const snapshot = useBadgeSnapshot(displayedAppId);
   const active = snapshot.effectiveEnabled && snapshot.settings.gameView;
   const sourceAppId = useSourceAppId(displayedAppId, overview, active);
   const tier = useBadgeTier(sourceAppId, active);
   if (!tier || sourceAppId === null) return null;
-  const label = `ProtonDB: ${protonDbTierLabel(tier)}`;
+  const label = t("protondb.badge", { tier: protonDbTierLabel(tier) });
   return (
     <Button className={className} direction="bottom" bNavStop onClick={() => {
       Navigation.NavigateToExternalWeb(`https://www.protondb.com/app/${sourceAppId}`);

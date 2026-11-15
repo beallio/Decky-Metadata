@@ -65,7 +65,7 @@ describe("shortcut name Steam boundary", () => {
   it("rejects official apps, missing APIs, races, and empty targets without a native write", async () => {
     const setShortcutName = vi.fn();
     installNativeStore({ appid: APP_ID, display_name: "Official" }, setShortcutName);
-    await expect(setShortcutNameAndWait(APP_ID, "Official", "Steam")).rejects.toThrow("native shortcut");
+    await expect(setShortcutNameAndWait(APP_ID, "Official", "Steam")).rejects.toThrow("native_shortcut");
     installNativeStore(shortcut("Current"), undefined);
     await expect(setShortcutNameAndWait(APP_ID, "Current", "Steam")).rejects.toThrow("unavailable");
     installNativeStore(shortcut("Changed"), setShortcutName);

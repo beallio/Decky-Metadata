@@ -1,4 +1,5 @@
 import { clearHltbCache, getHltbSettings, setHltbSettings, type ProviderCacheSnapshot } from "../backend";
+import { t } from "../i18n";
 import * as log from "../log";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import { loadProviderCache } from "../providerCache";
@@ -63,7 +64,7 @@ export class HltbController {
       (error: unknown) => {
         if (!this.isCurrent(generation)) return;
         log.warn("bridge", "HLTB settings load failed", error);
-        this.publish({ busy: false, settingsError: "HLTB settings could not be loaded. Reload the plugin to retry." });
+        this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
       },
     );
   }
@@ -93,7 +94,7 @@ export class HltbController {
     } catch (error) {
       if (!this.isCurrent(generation)) return false;
       log.warn("bridge", "HLTB settings save failed", error);
-      this.publish({ busy: false, settingsError: "HLTB settings could not be saved." });
+      this.publish({ busy: false, settingsError: t("hltb.settingsError.saveFailed") });
       return false;
     }
   }
@@ -150,7 +151,7 @@ export class HltbController {
       }
     } catch (error) {
       log.error("patch", "HLTB runtime transition failed", error);
-      this.snapshot = Object.freeze({ ...this.snapshot, settingsError: "HLTB times could not be applied. Reload the plugin." });
+      this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
     }
   }
 }

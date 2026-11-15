@@ -11,6 +11,7 @@ import {
 } from "../../styles";
 import { space } from "../../tokens";
 import type { StatusKind } from "../../tokens";
+import { useT } from "../../i18n";
 
 const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md } as const;
 
@@ -45,8 +46,10 @@ export function MetadataSection({
   onClearCache,
   onRefreshDelisted,
 }: MetadataSectionProps) {
+  const t = useT();
+
   return (
-    <CollapsibleSection title="Metadata" icon={<FaTags size={16} />}>
+    <CollapsibleSection title={t("qam.metadata.title")} icon={<FaTags size={16} />}>
       <PanelSectionRow>
         <Field
           focusable={false}
@@ -56,13 +59,13 @@ export function MetadataSection({
         >
           <div style={rowStackStyle}>
             <div>
-              <b>{"Detected non-Steam games"}:</b> {detectedCount}
+              <b>{t("qam.metadata.detectedGames")}</b> {detectedCount}
             </div>
             <div>
-              <b>{"Metadata saved"}:</b> {savedCount}
+              <b>{t("qam.metadata.saved")}</b> {savedCount}
             </div>
             <div>
-              <b>{"Missing metadata"}:</b> {missingCount}
+              <b>{t("qam.metadata.missing")}</b> {missingCount}
             </div>
           </div>
         </Field>
@@ -75,14 +78,14 @@ export function MetadataSection({
           onClick={onRefreshMetadata}
         >
           {scanBusy ? (
-            <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
+            <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel>
           ) : (
-            "Refresh metadata"
+            t("qam.metadata.refresh")
           )}
         </ButtonItem>
         {scanBusy || scanMessage ? (
           <div style={inlineStatusStyle(scanStatusKind)}>
-            {scanMessage || "Refreshing metadata..."}
+            {scanMessage || t("qam.metadata.refreshingStatus")}
           </div>
         ) : null}
       </PanelSectionRow>
@@ -94,12 +97,12 @@ export function MetadataSection({
           bottomSeparator="standard"
         >
           <div style={subsectionDescriptionStyle}>
-            Find and save metadata for detected non-Steam games that do not have a match yet.
+            {t("qam.metadata.refreshDescription")}
           </div>
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>Metadata cache</div>
+        <div style={sectionHeadingStyle}>{t("qam.metadata.cacheHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
@@ -109,9 +112,9 @@ export function MetadataSection({
           onClick={onClearCache}
         >
           {cacheBusy ? (
-            <ButtonLabel busy={true}>{"Clearing..."}</ButtonLabel>
+            <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel>
           ) : (
-            "Clear cache"
+            t("qam.metadata.clearCache")
           )}
         </ButtonItem>
       </PanelSectionRow>
@@ -123,12 +126,12 @@ export function MetadataSection({
           bottomSeparator="standard"
         >
           <div style={subsectionDescriptionStyle}>
-            Clear saved matches and metadata so games can be matched again.
+            {t("qam.metadata.clearCacheDescription")}
           </div>
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={sectionHeadingStyle}>Delisted Steam games</div>
+        <div style={sectionHeadingStyle}>{t("qam.metadata.delistedHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
@@ -138,9 +141,9 @@ export function MetadataSection({
           onClick={onRefreshDelisted}
         >
           {delistedBusy ? (
-            <ButtonLabel busy={true}>{"Refreshing..."}</ButtonLabel>
+            <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel>
           ) : (
-            "Refresh delisted games"
+            t("qam.metadata.refreshDelisted")
           )}
         </ButtonItem>
       </PanelSectionRow>

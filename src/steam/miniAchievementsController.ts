@@ -1,4 +1,5 @@
 import { getMiniAchievementsEnabled, setMiniAchievementsEnabled } from "../backend";
+import { t, translateBackendError } from "../i18n";
 import * as log from "../log";
 import { installMiniAchievementsPatch } from "./miniAchievements";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
@@ -61,7 +62,7 @@ export class MiniAchievementsController {
       if (!this.isCurrent(generation)) return;
       this.snapshot = {
         ...this.snapshot,
-        settingsError: `Mini achievements could not be loaded. Reload the plugin to retry: ${String(error)}`,
+        settingsError: t("miniAchievements.errors.loadFailed", { error: translateBackendError(error) }),
       };
       log.warn("bridge", "mini-achievements setting load failed", error);
       this.emit();
@@ -105,7 +106,7 @@ export class MiniAchievementsController {
       this.snapshot = {
         ...this.snapshot,
         busy: false,
-        settingsError: `Mini achievements could not be saved: ${String(error)}`,
+        settingsError: t("miniAchievements.errors.saveFailed", { error: translateBackendError(error) }),
       };
       log.warn("bridge", "mini-achievements setting save failed", error);
       this.emit();
@@ -135,7 +136,7 @@ export class MiniAchievementsController {
     } catch (error) {
       this.snapshot = {
         ...this.snapshot,
-        settingsError: `Mini achievements could not be applied. Reload the plugin: ${String(error)}`,
+        settingsError: t("miniAchievements.errors.applyFailed", { error: translateBackendError(error) }),
       };
       log.error("patch", "mini-achievements runtime transition failed", error);
       return false;

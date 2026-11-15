@@ -1,41 +1,17 @@
 import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
 import { SiSteamdeck } from "react-icons/si";
 
+import { translateBackendError, useT } from "../../i18n";
 import { compactTextStyle, inlineStatusStyle } from "../../styles";
 import { space } from "../../tokens";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 import { CollapsibleSection } from "./CollapsibleSection";
 
-const compatibilityDefaultOptions: Array<{
-  data: DeckCompatibilityCategory | null;
-  label: string;
-}> = [
-  { data: null, label: "Automatic — use matched Steam status" },
-  { data: 3, label: "Verified" },
-  { data: 2, label: "Playable" },
-  { data: 1, label: "Unsupported" },
-  { data: 0, label: "Unknown" },
-];
-
-const compatibilityDefaultScopeOptions: Array<{
-  data: CompatibilityDefaultScope;
-  label: string;
-}> = [
-  { data: "steam", label: "Steam-matched games" },
-  { data: "no-steam", label: "Saved games without a Steam ID" },
-  { data: "metadata", label: "All games with saved metadata" },
-  { data: "all", label: "All non-Steam games" },
-];
+const compatibilityDefaultData: ReadonlyArray<DeckCompatibilityCategory | null> = [null, 3, 2, 1, 0];
+const compatibilityDefaultScopeData: ReadonlyArray<CompatibilityDefaultScope> = ["steam", "no-steam", "metadata", "all"];
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
 const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm } as const;
-
-const scopeDescriptions: Record<CompatibilityDefaultScope, string> = {
-  steam: "Applies to saved records with a valid Steam App ID.",
-  "no-steam": "Applies to saved records without a Steam ID, including manual and provider records.",
-  metadata: "Applies to every saved metadata record, with or without a Steam ID.",
-  all: "Applies to every native non-Steam shortcut, including shortcuts without a record.",
-};
 
 type CompatibilitySectionProps = {
   initiallyExpanded?: boolean;
@@ -66,12 +42,64 @@ export function CompatibilitySection({
   onCompatibilityDefaultControlRef,
   onCompatibilityDefaultScopeControlRef,
 }: CompatibilitySectionProps) {
+  const t = useT();
+
+  const categoryLabel = (category: DeckCompatibilityCategory | null) => {
+    switch (category) {
+      case null:
+        return t("qam.compat.categoryAutomatic");
+      case 3:
+        return t("qam.compat.categoryVerified");
+      case 2:
+        return t("qam.compat.categoryPlayable");
+      case 1:
+        return t("qam.compat.categoryUnsupported");
+      case 0:
+        return t("qam.compat.categoryUnknown");
+    }
+  };
+
+  const scopeLabel = (scope: CompatibilityDefaultScope) => {
+    switch (scope) {
+      case "steam":
+        return t("qam.compat.scopeSteam");
+      case "no-steam":
+        return t("qam.compat.scopeNoSteam");
+      case "metadata":
+        return t("qam.compat.scopeMetadata");
+      case "all":
+        return t("qam.compat.scopeAll");
+    }
+  };
+
+  const scopeDescription = (scope: CompatibilityDefaultScope) => {
+    switch (scope) {
+      case "steam":
+        return t("qam.compat.scopeDescription.steam");
+      case "no-steam":
+        return t("qam.compat.scopeDescription.noSteam");
+      case "metadata":
+        return t("qam.compat.scopeDescription.metadata");
+      case "all":
+        return t("qam.compat.scopeDescription.all");
+    }
+  };
+
+  const compatibilityDefaultOptions = compatibilityDefaultData.map((data) => ({
+    data,
+    label: categoryLabel(data),
+  }));
+  const compatibilityDefaultScopeOptions = compatibilityDefaultScopeData.map((data) => ({
+    data,
+    label: scopeLabel(data),
+  }));
+
   return (
-    <CollapsibleSection title="Compatibility status" icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
+    <CollapsibleSection title={t("qam.compat.title")} icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultControlRef}>
           <DropdownItem
-            label="Default compatibility status"
+            label={t("qam.compat.defaultStatus")}
             layout="below"
             childrenContainerWidth="max"
             rgOptions={compatibilityDefaultOptions}
@@ -92,7 +120,7 @@ export function CompatibilitySection({
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultScopeControlRef}>
           <DropdownItem
-            label="Apply default to"
+            label={t("qam.compat.applyDefaultTo")}
             layout="below"
             childrenContainerWidth="max"
             bottomSeparator="none"
@@ -122,13 +150,13 @@ export function CompatibilitySection({
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            {`${scopeDescriptions[compatibilityDefaultScope]} Per-game choices take priority.`}
+            {scopeDescription(compatibilityDefaultScope)}
           </div>
           <div style={secondaryHelpStyle}>
-            {"Follow Valve is a per-game choice. Manual and default categories are your choices, not Valve certification."}
+            {t("qam.compat.perGameNote")}
           </div>
           {compatibilityDefaultError ? (
-            <div style={inlineStatusStyle("error")}>{compatibilityDefaultError}</div>
+            <div style={inlineStatusStyle("error")}>{translateBackendError(compatibilityDefaultError)}</div>
           ) : null}
         </Field>
       </PanelSectionRow>

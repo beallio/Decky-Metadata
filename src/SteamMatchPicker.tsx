@@ -12,6 +12,7 @@ import {
   editorSteamMatchPreviewStyle,
 } from "./metadataEditorStyles";
 import { compactTextStyle, fieldStyle, FocusableButton, rowStackStyle } from "./styles";
+import { translateBackendError, useT } from "./i18n";
 import type { SteamMatchCandidate, SteamMatchPreview } from "./types";
 
 type SteamMatchPickerProps = {
@@ -24,7 +25,29 @@ type SteamMatchPickerProps = {
 type SearchStatus = "idle" | "loading" | "results" | "empty" | "error";
 const EMPTY_MATCHES: SteamMatchCandidate[] = [];
 
+// The ID line carries up to two independent markers; each combination is one sentence.
+const candidateTitleLine = (
+  candidate: SteamMatchCandidate,
+  matchedSteamAppId: number | null,
+  selected: SteamMatchCandidate | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string => {
+  const isCurrentMatch = candidate.steam_appid === matchedSteamAppId;
+  const isSelected = candidate.steam_appid === selected?.steam_appid;
+  if (isCurrentMatch && isSelected) {
+    return t("matchPicker.appIdCurrentSelected", { appId: candidate.steam_appid });
+  }
+  if (isCurrentMatch) {
+    return t("matchPicker.appIdCurrent", { appId: candidate.steam_appid });
+  }
+  if (isSelected) {
+    return t("matchPicker.appIdSelected", { appId: candidate.steam_appid });
+  }
+  return t("matchPicker.appId", { appId: candidate.steam_appid });
+};
+
 export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }: SteamMatchPickerProps) => {
+  const t = useT();
   const [query, setQuery] = useState(initialQuery);
   const [items, setItems] = useState<SteamMatchCandidate[]>(EMPTY_MATCHES);
   const [status, setStatus] = useState<SearchStatus>("idle");
@@ -115,7 +138,7 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
       }
     } catch {
       if (!isCurrent()) return;
-      setSearchError("Steam search is unavailable. Try again.");
+      setSearchError("steam_search_unavailable");
       setStatus("error");
     } finally {
       if (isCurrent()) pendingQueryRef.current = null;
@@ -140,7 +163,7 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
       setPreviewError(response.error);
     } catch {
       if (!isCurrent()) return;
-      setPreviewError("Steam details are unavailable. You can still use this match.");
+      setPreviewError("steam_preview_unavailable");
     } finally {
       if (isCurrent()) setPreviewLoading(false);
     }
@@ -156,16 +179,16 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
   };
 
   return (
-    <PanelSection title="Find a Steam match">
+    <PanelSection title={t("matchPicker.title")}>
       <PanelSectionRow>
         <div style={compactTextStyle}>
-          {"Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game."}
+          {t("matchPicker.help")}
         </div>
-        {matchedSteamAppId ? <div style={compactTextStyle}>{`Current Steam App ID: ${matchedSteamAppId}`}</div> : null}
+        {matchedSteamAppId ? <div style={compactTextStyle}>{t("matchPicker.currentAppId", { appId: matchedSteamAppId })}</div> : null}
         <div style={{ ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }}>
           <TextField
             className={editorFocusTargetClassName}
-            aria-label="Steam game search"
+            aria-label={t("matchPicker.searchAriaLabel")}
             value={query}
             disabled={disabled}
             onChange={(event) => changeQuery(event.target.value)}
@@ -177,17 +200,17 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
             onClick={() => void search()}
             style={editorSearchButtonStyle}
           >
-            {status === "loading" ? "Searching Steam..." : "Search Steam"}
+            {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
           </FocusableButton>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
           <div aria-live="polite" style={compactTextStyle}>
-            {status === "idle" ? "Enter a game name to find Steam matches." : null}
-            {status === "loading" ? "Searching Steam..." : null}
-            {status === "empty" ? "No Steam matches found. Try another name or use the Steam App ID field below." : null}
-            {status === "error" ? searchError : null}
+            {status === "idle" ? t("matchPicker.idle") : null}
+            {status === "loading" ? t("matchPicker.searching") : null}
+            {status === "empty" ? t("matchPicker.empty") : null}
+            {status === "error" && searchError ? translateBackendError(searchError) : null}
           </div>
           {items.map((candidate) => (
             <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid} style={rowStackStyle}>
@@ -202,38 +225,36 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
                 <div style={{ minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }}>
                   <b>{candidate.title}</b>
                   <div style={compactTextStyle}>
-                    {`Steam App ID: ${candidate.steam_appid}`}
-                    {candidate.steam_appid === matchedSteamAppId ? " · Current match" : null}
-                    {candidate.steam_appid === selected?.steam_appid ? " · Selected" : null}
+                    {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
                   </div>
                 </div>
               </FocusableButton>
               {selected?.steam_appid === candidate.steam_appid ? (
                 <div style={editorSteamMatchPreviewStyle}>
-                  {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{"Loading Steam details..."}</div> : null}
-                  {previewError ? <div role="status" style={compactTextStyle}>{previewError}</div> : null}
+                  {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
+                  {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
                   {preview ? (
                     <>
-                      {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={`${preview.title} Steam artwork`} style={editorSteamMatchImageStyle} /> : null}
-                      <div style={compactTextStyle}>{preview.developers.length ? `Developer: ${preview.developers.join(", ")}` : "Developer unavailable"}</div>
-                      <div style={compactTextStyle}>{preview.release_date_label ? `Release: ${preview.release_date_label}` : "Release date unavailable"}</div>
-                      {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{`Steam type: ${preview.app_type}. Check that this is the game or edition you want.`}</div> : null}
+                      {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={t("matchPicker.artworkAlt", { title: preview.title })} style={editorSteamMatchImageStyle} /> : null}
+                      <div style={compactTextStyle}>{preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable")}</div>
+                      <div style={compactTextStyle}>{preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable")}</div>
+                      {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{t("matchPicker.steamType", { type: preview.app_type })}</div> : null}
                     </>
                   ) : null}
-                  <div style={compactTextStyle}>{"Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork."}</div>
+                  <div style={compactTextStyle}>{t("matchPicker.applyHelp")}</div>
                   <FocusableButton
                     className={`DialogButton ${editorFocusTargetClassName}`}
                     disabled={disabled || previewLoading}
                     onClick={() => void apply()}
                   >
-                    {"Use this Steam match"}
+                    {t("matchPicker.apply")}
                   </FocusableButton>
                   <FocusableButton
                     className={`DialogButton ${editorFocusTargetClassName}`}
                     disabled={disabled}
                     onClick={cancelSelection}
                   >
-                    {"Cancel selection"}
+                    {t("matchPicker.cancel")}
                   </FocusableButton>
                 </div>
               ) : null}

@@ -1,4 +1,5 @@
 import { findModuleChild } from "@decky/ui";
+import { t } from "../i18n";
 import type { QuickLinkResources } from "./quickLinkPolicy";
 
 type SteamUrlBuilder = {
@@ -44,6 +45,16 @@ const steamUrlBuilder = (): SteamUrlBuilder | null => {
   return cachedSteamUrlBuilder;
 };
 
+// Plugin-owned English fallbacks for the Steam tokens the quick links add.
+const fallbackLabel = (token: string, fallback: string): string => {
+  switch (token) {
+    case "#AppDetails_Links_DLC": return t("quickLinks.dlc");
+    case "#AppDetails_Links_PointsShop": return t("quickLinks.pointsShop");
+    // shortcut: only these two labels are added today; add a key before reusing another fallback.
+    default: return fallback;
+  }
+};
+
 const localizeSteamToken = (token: string, fallback: string): string => {
   try {
     const manager = (globalThis as any)?.LocalizationManager;
@@ -54,7 +65,7 @@ const localizeSteamToken = (token: string, fallback: string): string => {
   } catch (_error) {
     // Deterministic English labels remain valid when localization is unavailable.
   }
-  return fallback;
+  return fallbackLabel(token, fallback);
 };
 
 export const resolveQuickLinkResources = (): QuickLinkResources => {

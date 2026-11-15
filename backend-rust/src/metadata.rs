@@ -189,7 +189,7 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         && (!value["release_date"].is_string()
             || value["release_date"].as_str() != release.as_deref())
     {
-        return Err("release_date must be a YYYY-MM-DD calendar date or null".into());
+        return Err("invalid_release_date".into());
     }
     let category = integer(&value["deck_compat_category"]).filter(|n| (0..=3).contains(n));
     let compat_override = if value["deck_compat_override"] == "valve" {

@@ -70,8 +70,17 @@ fn new_progress(status: &str) -> Value {
         "failed": 0,
         "current": "",
         "message": "",
+        "message_code": Value::Null,
+        "message_args": json!({}),
         "error": "",
     })
+}
+
+/// The English message stays for logs and older frontends; the code and its args let the UI translate it.
+fn set_message(progress: &mut Value, code: &str, message: String, title: &str) {
+    progress["message"] = json!(message);
+    progress["message_code"] = json!(code);
+    progress["message_args"] = json!({"title": title});
 }
 
 async fn start(state: Arc<AppState>, games: &Value, pipeline: Pipeline) -> Result<Value, String> {
@@ -376,9 +385,15 @@ async fn run_targets(state: Arc<AppState>, pipeline: Pipeline, targets: Vec<Targ
         } else {
             format!("{position}/{total} - {}", target.title)
         };
-        let initial_message = match pipeline {
-            Pipeline::Metadata => format!("Matching metadata for {}", target.title),
-            Pipeline::Activity => format!("Refreshing Steam Activity for {}", target.title),
+        let (initial_code, initial_message) = match pipeline {
+            Pipeline::Metadata => (
+                "matching_metadata",
+                format!("Matching metadata for {}", target.title),
+            ),
+            Pipeline::Activity => (
+                "refreshing_activity",
+                format!("Refreshing Steam Activity for {}", target.title),
+            ),
         };
         {
             let mut job = pipeline_job(&state, pipeline).lock().await;
@@ -386,7 +401,7 @@ async fn run_targets(state: Arc<AppState>, pipeline: Pipeline, targets: Vec<Targ
                 return;
             }
             job.progress["current"] = json!(current);
-            job.progress["message"] = json!(initial_message);
+            set_message(&mut job.progress, initial_code, initial_message, &target.title);
         }
 
         let snapshot = target.metadata.take().unwrap_or(Value::Null);
@@ -466,7 +481,12 @@ async fn finish_target(
     if let Some(error) = error {
         let failed = job.progress["failed"].as_i64().unwrap_or(0) + 1;
         job.progress["failed"] = json!(failed);
-        job.progress["message"] = json!(format!("Failed: {}", target.title));
+        set_message(
+            &mut job.progress,
+            "failed",
+            format!("Failed: {}", target.title),
+            &target.title,
+        );
         job.progress["error"] = json!(error);
     } else if let Some(result) = result {
         let key = if result.status == ResultStatus::Matched {
@@ -476,7 +496,8 @@ async fn finish_target(
         };
         let count = job.progress[key].as_i64().unwrap_or(0) + 1;
         job.progress[key] = json!(count);
-        job.progress["message"] = json!(result.message(&target.title, pipeline));
+        let (code, message) = result.message(&target.title, pipeline);
+        set_message(&mut job.progress, code, message, &target.title);
     }
     let completed = job.progress["completed"].as_i64().unwrap_or(0) + 1;
     job.progress["completed"] = json!(completed);
@@ -524,31 +545,35 @@ impl ScanResult {
         }
     }
 
-    fn message(&self, title: &str, pipeline: Pipeline) -> String {
+    fn message(&self, title: &str, pipeline: Pipeline) -> (&'static str, String) {
         match (pipeline, self.status, self.source) {
-            (_, ResultStatus::Miss, "stale") => {
-                format!("Skipped {title}: metadata changed during refresh")
-            }
+            (_, ResultStatus::Miss, "stale") => (
+                "skipped_changed",
+                format!("Skipped {title}: metadata changed during refresh"),
+            ),
             (Pipeline::Metadata, ResultStatus::Matched, "steam") => {
-                format!("Matched Steam for {title}")
+                ("matched_steam", format!("Matched Steam for {title}"))
             }
-            (Pipeline::Metadata, ResultStatus::Matched, "delisted") => {
-                format!("Matched delisted Steam app for {title}")
-            }
+            (Pipeline::Metadata, ResultStatus::Matched, "delisted") => (
+                "matched_delisted",
+                format!("Matched delisted Steam app for {title}"),
+            ),
             (Pipeline::Metadata, ResultStatus::Matched, "ign") => {
-                format!("Saved metadata for {title}")
+                ("saved_metadata", format!("Saved metadata for {title}"))
             }
             (Pipeline::Metadata, ResultStatus::Miss, _) => {
-                format!("No metadata match for {title}")
+                ("no_match", format!("No metadata match for {title}"))
             }
-            (Pipeline::Activity, ResultStatus::Matched, _) => {
-                format!("Updated Steam Activity for {title}")
-            }
-            (Pipeline::Activity, ResultStatus::Miss, _) => {
-                format!("No Steam Activity found for {title}")
-            }
+            (Pipeline::Activity, ResultStatus::Matched, _) => (
+                "updated_activity",
+                format!("Updated Steam Activity for {title}"),
+            ),
+            (Pipeline::Activity, ResultStatus::Miss, _) => (
+                "no_activity",
+                format!("No Steam Activity found for {title}"),
+            ),
             (Pipeline::Metadata, ResultStatus::Matched, _) => {
-                format!("Saved metadata for {title}")
+                ("saved_metadata", format!("Saved metadata for {title}"))
             }
         }
     }
@@ -991,6 +1016,8 @@ mod tests {
             progress["assigned"].as_i64().unwrap() + progress["failed"].as_i64().unwrap()
         );
         assert_eq!(progress["message"], "No metadata match for Partial Save");
+        assert_eq!(progress["message_code"], "no_match");
+        assert_eq!(progress["message_args"], json!({"title": "Partial Save"}));
         let storage = state.store().await.unwrap();
         assert_eq!(storage.data()["metadata"]["1"]["steam_appid"], 100);
         assert_eq!(
@@ -1054,6 +1081,8 @@ mod tests {
         assert_eq!(progress["assigned"], 1);
         assert_eq!(progress["failed"], 1);
         assert_eq!(progress["message"], "Matched Steam for Good Scan");
+        assert_eq!(progress["message_code"], "matched_steam");
+        assert_eq!(progress["message_args"], json!({"title": "Good Scan"}));
         assert!(!progress["error"].as_str().unwrap().is_empty());
         let storage = state.store().await.unwrap();
         assert!(storage.data()["metadata"].get("1").is_none());
@@ -1465,6 +1494,8 @@ mod tests {
             assert_eq!(progress["failed"], 0);
             assert_eq!(progress["current"], "");
             assert_eq!(progress["message"], "");
+            assert_eq!(progress["message_code"], Value::Null);
+            assert_eq!(progress["message_args"], json!({}));
             assert_eq!(progress["error"], "");
         }
         state.http.assert_drained();

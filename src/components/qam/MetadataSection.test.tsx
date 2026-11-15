@@ -14,6 +14,11 @@ vi.mock("../../styles", () => ({
   sectionHeadingStyle: {},
 }));
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
+// Components are invoked as plain functions here, so the i18n hook is replaced by non-React `t`.
+vi.mock("../../i18n", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return { ...actual, useT: () => actual.t };
+});
 
 import { MetadataSection } from "./MetadataSection";
 
