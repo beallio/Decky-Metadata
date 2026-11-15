@@ -188,6 +188,21 @@ Steam game. Your own layouts and Steam's templates remain available. See
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=202610011846)
 
+## Languages
+
+The plugin's own text follows your Steam language. It is available in Albanian,
+Arabic, Bulgarian, Chinese (Simplified and Traditional), Czech, Dutch, English,
+Finnish, French, Georgian, German, Greek, Italian, Japanese, Korean, Polish,
+Portuguese (Brazil and Portugal), Romanian, Russian, Spanish, Swedish, Turkish,
+and Ukrainian. If your Steam language is not on this list, the plugin uses
+English. Steam has no Albanian or Georgian setting. The plugin uses those only
+when the system language is Albanian or Georgian and the Steam language has no
+plugin translation.
+
+The non-English text is a machine translation that no native speaker has
+reviewed yet. Corrections are welcome. Game details, news, and HowLongToBeat
+data still come from their sources in English.
+
 ## Updates and help
 
 Check for updates in the Decky Metadata panel. If something does not work,
