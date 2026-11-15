@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB-tijden",
+      "conflictFeature": "HLTB-tijden",
       "showTimesLabel": "HowLongToBeat-tijden tonen",
       "showTimesDescription": "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
       "storeLabel": "Winkel",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "ProtonDB-badges",
+      "conflictFeature": "ProtonDB-badges",
       "enableLabel": "ProtonDB-badges inschakelen",
       "enableDescription": "Toont ProtonDB-niveaus van de community op Steam-oppervlakken voor games. Dit staat los van de compatibiliteitsstatus van Valve.",
       "homeLabel": "Gamecovers in Home",

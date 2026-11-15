@@ -109,6 +109,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB の時間",
+      "conflictFeature": "HLTB の時間",
       "showTimesLabel": "HowLongToBeat の時間を表示",
       "showTimesDescription": "Steam ゲームと Steam 以外のゲームのページに HowLongToBeat の時間を表示します。",
       "storeLabel": "ストア",
@@ -185,6 +186,7 @@
     },
     "protondb": {
       "title": "ProtonDB バッジ",
+      "conflictFeature": "ProtonDB バッジ",
       "enableLabel": "ProtonDB バッジを有効化",
       "enableDescription": "Steam のゲーム画面にコミュニティの ProtonDB ティアを表示します。Valve の互換性ステータスとは別です。",
       "homeLabel": "ホームのゲームカバー",

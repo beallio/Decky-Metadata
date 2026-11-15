@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "Kohët e HLTB",
+      "conflictFeature": "kohët e HLTB",
       "showTimesLabel": "Shfaq kohët e HowLongToBeat",
       "showTimesDescription": "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
       "storeLabel": "Dyqani",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "Distinktivët ProtonDB",
+      "conflictFeature": "distinktivët ProtonDB",
       "enableLabel": "Aktivizo distinktivët ProtonDB",
       "enableDescription": "Shfaq nivelet e lojërave nga komuniteti i ProtonDB në sipërfaqet e Steam. Kjo është e ndarë nga gjendja e përputhshmërisë së Valve.",
       "homeLabel": "Kopertinat e lojërave në Kre",

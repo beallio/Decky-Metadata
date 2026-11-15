@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB-ის დროები",
+      "conflictFeature": "HLTB-ის დროები",
       "showTimesLabel": "HowLongToBeat-ის დროების ჩვენება",
       "showTimesDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
       "storeLabel": "მაღაზია",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "ProtonDB-ის ნიშნები",
+      "conflictFeature": "ProtonDB-ის ნიშნები",
       "enableLabel": "ProtonDB-ის ნიშნების ჩართვა",
       "enableDescription": "აჩვენებს საზოგადოების ProtonDB-ის დონეებს Steam-ის თამაშის ეკრანებზე. ეს განსხვავდება Valve-ის თავსებადობის სტატუსისგან.",
       "homeLabel": "მთავარი გვერდის თამაშის ყდები",

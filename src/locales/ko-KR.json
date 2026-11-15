@@ -109,6 +109,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB 시간",
+      "conflictFeature": "HLTB 시간",
       "showTimesLabel": "HowLongToBeat 시간 표시",
       "showTimesDescription": "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
       "storeLabel": "상점",
@@ -185,6 +186,7 @@
     },
     "protondb": {
       "title": "ProtonDB 배지",
+      "conflictFeature": "ProtonDB 배지",
       "enableLabel": "ProtonDB 배지 사용",
       "enableDescription": "Steam 게임 화면에 커뮤니티 ProtonDB 등급을 표시합니다. Valve의 호환성 상태와는 별개입니다.",
       "homeLabel": "홈 게임 커버",

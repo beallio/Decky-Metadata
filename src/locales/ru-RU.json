@@ -112,6 +112,7 @@
   "qam": {
     "hltb": {
       "title": "Время HLTB",
+      "conflictFeature": "время HLTB",
       "showTimesLabel": "Показывать время HowLongToBeat",
       "showTimesDescription": "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
       "storeLabel": "Магазин",
@@ -188,6 +189,7 @@
     },
     "protondb": {
       "title": "Значки ProtonDB",
+      "conflictFeature": "значки ProtonDB",
       "enableLabel": "Включить значки ProtonDB",
       "enableDescription": "Показывать уровни ProtonDB от сообщества на страницах игр Steam. Это отдельно от статуса совместимости Valve.",
       "homeLabel": "Обложки на главном экране",

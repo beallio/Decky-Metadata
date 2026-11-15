@@ -22,6 +22,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 - **Context menu label.** The game context menu entry is now **Change Metadata...**
   instead of **Decky metadata...**, to match Steam's other menu items. (#41)
+- **Better French text.** The French text uses more natural wording, the "…"
+  ellipsis, and **Boutique** for the Steam Store. The notice that another plugin
+  controls HLTB times or ProtonDB badges now names the feature in a sentence form
+  in every language.
 
 ### Fixed
 
