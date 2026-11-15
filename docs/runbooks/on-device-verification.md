@@ -208,8 +208,17 @@ before testing, and restore them after the checks.
    **"Clean" Default** with it on, the times must sit below the header image in
    their own row and Play must move down by the row's height; then confirm on
    the controller that D-pad down from the times reaches the Play button. The
-   toggle is hidden for the two **"Clean"** styles. Restore the original trailer
-   preference and all other test changes.
+   toggle is hidden for the two **"Clean"** styles.
+5. Make a save status bar sit at the bottom of the header image: a Steam Cloud
+   row, or the SDH-Ludusavi **Status** row. With **Push Play button down** on,
+   the times must overlay the bottom of the header image and Play must stay in
+   place. The trailer or artwork must still reach the bottom of the status bar,
+   with no seam above it.
+6. Show the status bar after the page has loaded, for example by toggling the
+   SDH-Ludusavi **Status** row. The layout must switch once to the overlay and
+   must not flicker. Hide the bar again and confirm that the times return to
+   their own row and Play moves down. Restore the original trailer preference
+   and all other test changes.
 
 The frontend surface regression covers preference, theme-update and cleanup
 behavior without writing native styles. It does not replace these rendering
