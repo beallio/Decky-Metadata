@@ -522,7 +522,10 @@
       "nameHistoryForgottenTitle": "Збережену історію назв забуто",
       "nameHistoryForgottenBody": "Steam не змінив назву ярлика.",
       "nameHistoryNotClearedTitle": "Збережену історію назв не очищено"
-    }
+    },
+    "steamTextLanguage": "Мова тексту Steam: {{language}}",
+    "fetchSteamText": "Отримати текст Steam мовою {{language}}",
+    "steamTextUnavailable": "Steam не повернув текст для цієї гри."
   },
   "matchPicker": {
     "title": "Знайти збіг у Steam",

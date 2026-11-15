@@ -200,8 +200,18 @@ when the system language is Albanian or Georgian and the Steam language has no
 plugin translation.
 
 The non-English text is a machine translation that no native speaker has
-reviewed yet. Corrections are welcome. Game details, news, and HowLongToBeat
-data still come from their sources in English.
+reviewed yet. Corrections are welcome. HowLongToBeat data and IGN details stay
+in English.
+
+For a non-Steam game matched to a Steam store page, Steam news follows your
+Steam language. Steam sends the news in your language when the publisher wrote
+a translation, and in English when not. The description and genres follow your
+Steam language when the plugin first gets the game's Steam details. Names,
+developers, publishers, and release dates stay in English. If you change your
+Steam language later, the plugin does not replace a description by itself,
+because you may have edited it. Open the game's metadata editor and select
+**Fetch Steam text in** *your language* to get the description again. Steam
+gives English text when the store page has no text in your language.
 
 ## Updates and help
 

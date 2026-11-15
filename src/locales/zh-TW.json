@@ -519,7 +519,10 @@
       "nameHistoryForgottenTitle": "已忘記儲存的名稱歷史記錄",
       "nameHistoryForgottenBody": "Steam 未變更捷徑名稱。",
       "nameHistoryNotClearedTitle": "未清除已儲存的名稱歷史記錄"
-    }
+    },
+    "steamTextLanguage": "Steam 文字語言：{{language}}",
+    "fetchSteamText": "取得{{language}} Steam 文字",
+    "steamTextUnavailable": "Steam 未傳回此遊戲的文字。"
   },
   "matchPicker": {
     "title": "尋找 Steam 比對",

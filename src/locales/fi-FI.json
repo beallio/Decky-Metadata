@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Tallennettu nimihistoria unohdettu",
       "nameHistoryForgottenBody": "Steam ei muuttanut pikakuvakkeen nimeä.",
       "nameHistoryNotClearedTitle": "Tallennettua nimihistoriaa ei tyhjennetty"
-    }
+    },
+    "steamTextLanguage": "Steamin tekstin kieli: {{language}}",
+    "fetchSteamText": "Hae Steamin teksti kielellä {{language}}",
+    "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille."
   },
   "matchPicker": {
     "title": "Etsi Steam-vastaavuus",

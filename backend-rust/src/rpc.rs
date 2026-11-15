@@ -514,9 +514,17 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             Ok(result)
         }
         "enrich_steam_app" => {
-            arity(&args, 2, 2)?;
+            arity(&args, 2, 3)?;
             let mode = args[1].as_str().ok_or("Invalid Steam enrichment mode")?;
-            Ok(json!(metadata::enrich_steam(&state, &args[0], mode).await?))
+            Ok(json!(
+                metadata::enrich_steam(
+                    &state,
+                    &args[0],
+                    mode,
+                    steam::steam_language(args.get(2)),
+                )
+                .await?
+            ))
         }
         "refresh_delisted_index" => {
             arity(&args, 0, 0)?;
@@ -531,8 +539,13 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             Ok(state.delisted_status().await)
         }
         "start_scan_missing" => {
-            arity(&args, 1, 1)?;
-            crate::scan_runner::start_scan_missing(Arc::clone(&state), &args[0]).await
+            arity(&args, 1, 2)?;
+            crate::scan_runner::start_scan_missing(
+                Arc::clone(&state),
+                &args[0],
+                steam::steam_language(args.get(1)),
+            )
+            .await
         }
         "get_scan_progress" => {
             arity(&args, 0, 0)?;
@@ -545,13 +558,23 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             ))
         }
         "start_refresh_steam_activities" => {
-            arity(&args, 1, 1)?;
-            crate::scan_runner::start_refresh_steam_activities(Arc::clone(&state), &args[0]).await
+            arity(&args, 1, 2)?;
+            crate::scan_runner::start_refresh_steam_activities(
+                Arc::clone(&state),
+                &args[0],
+                steam::steam_language(args.get(1)),
+            )
+            .await
         }
         "refresh_steam_activity_for_app" => {
-            arity(&args, 1, 1)?;
+            arity(&args, 1, 2)?;
             Ok(json!(
-                crate::scan_runner::refresh_steam_activity_for_app(&state, &args[0]).await?
+                crate::scan_runner::refresh_steam_activity_for_app(
+                    &state,
+                    &args[0],
+                    steam::steam_language(args.get(1)),
+                )
+                .await?
             ))
         }
         "get_activity_refresh_progress" => {
@@ -695,6 +718,51 @@ mod tests {
         let full = read("get_metadata", vec![json!(1)]).await;
         assert_eq!(full["steam_news"][0]["id"], "n1");
         assert_eq!(state.store().await.unwrap().data()["metadata"]["1"], full);
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_language_arguments_are_optional_and_unknown_values_fall_back() {
+        let (root, state) = test_state(None).await;
+        // Old one- and two-argument callers still dispatch.
+        for (method, args) in [
+            ("enrich_steam_app", vec![json!(1), json!("metadata")]),
+            ("start_scan_missing", vec![json!([])]),
+            ("start_refresh_steam_activities", vec![json!([])]),
+            ("refresh_steam_activity_for_app", vec![json!(1)]),
+        ] {
+            dispatch(Arc::clone(&state), method, args).await.unwrap();
+        }
+        state.jobs.drain().await;
+        // An unknown language is accepted and normalized instead of rejecting the call.
+        for (method, args) in [
+            (
+                "enrich_steam_app",
+                vec![json!(1), json!("metadata"), json!("klingon")],
+            ),
+            ("start_scan_missing", vec![json!([]), json!("klingon")]),
+            (
+                "start_refresh_steam_activities",
+                vec![json!([]), json!("klingon")],
+            ),
+            (
+                "refresh_steam_activity_for_app",
+                vec![json!(1), json!("klingon")],
+            ),
+        ] {
+            dispatch(Arc::clone(&state), method, args).await.unwrap();
+        }
+        state.jobs.drain().await;
+        assert!(
+            dispatch(
+                Arc::clone(&state),
+                "enrich_steam_app",
+                vec![json!(1), json!("metadata"), json!("english"), json!("extra")],
+            )
+            .await
+            .is_err()
+        );
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

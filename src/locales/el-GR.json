@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Το αποθηκευμένο ιστορικό ονομάτων διαγράφηκε",
       "nameHistoryForgottenBody": "Το Steam δεν άλλαξε το όνομα της συντόμευσης.",
       "nameHistoryNotClearedTitle": "Το αποθηκευμένο ιστορικό ονομάτων δεν εκκαθαρίστηκε"
-    }
+    },
+    "steamTextLanguage": "Γλώσσα κειμένου Steam: {{language}}",
+    "fetchSteamText": "Λήψη κειμένου Steam στα {{language}}",
+    "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
   },
   "matchPicker": {
     "title": "Εύρεση αντιστοίχισης Steam",

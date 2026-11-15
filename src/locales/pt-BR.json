@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Histórico de nomes salvo esquecido",
       "nameHistoryForgottenBody": "A Steam não alterou o nome do atalho.",
       "nameHistoryNotClearedTitle": "O histórico de nomes salvo não foi limpo"
-    }
+    },
+    "steamTextLanguage": "Idioma do texto da Steam: {{language}}",
+    "fetchSteamText": "Buscar texto da Steam em {{language}}",
+    "steamTextUnavailable": "A Steam não retornou texto para este jogo."
   },
   "matchPicker": {
     "title": "Encontrar correspondência na Steam",

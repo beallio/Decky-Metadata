@@ -522,7 +522,10 @@
       "nameHistoryForgottenTitle": "Сохранённая история названий удалена",
       "nameHistoryForgottenBody": "Steam не изменил название ярлыка.",
       "nameHistoryNotClearedTitle": "Сохранённая история названий не удалена"
-    }
+    },
+    "steamTextLanguage": "Язык текста Steam: {{language}}",
+    "fetchSteamText": "Загрузить текст Steam на языке {{language}}",
+    "steamTextUnavailable": "Steam не вернул текст для этой игры."
   },
   "matchPicker": {
     "title": "Найти совпадение в Steam",

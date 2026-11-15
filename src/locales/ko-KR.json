@@ -519,7 +519,10 @@
       "nameHistoryForgottenTitle": "저장된 이름 기록을 잊었습니다",
       "nameHistoryForgottenBody": "Steam은 바로가기 이름을 변경하지 않았습니다.",
       "nameHistoryNotClearedTitle": "저장된 이름 기록이 지워지지 않았습니다"
-    }
+    },
+    "steamTextLanguage": "Steam 텍스트 언어: {{language}}",
+    "fetchSteamText": "{{language}}로 Steam 텍스트 가져오기",
+    "steamTextUnavailable": "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
   },
   "matchPicker": {
     "title": "Steam 일치 항목 찾기",

@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "შენახული სახელის ისტორია დავიწყებულია",
       "nameHistoryForgottenBody": "Steam-მა მალსახმობის სახელი არ შეცვალა.",
       "nameHistoryNotClearedTitle": "შენახული სახელის ისტორია არ გასუფთავდა"
-    }
+    },
+    "steamTextLanguage": "Steam-ის ტექსტის ენა: {{language}}",
+    "fetchSteamText": "Steam-ის ტექსტის მიღება ენაზე {{language}}",
+    "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
   },
   "matchPicker": {
     "title": "Steam-ის შესატყვისის ძებნა",

@@ -6,6 +6,9 @@ import type { HltbEntry } from "./backend";
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
 const textarea = vi.hoisted(() => ({ component: null as any }));
+const i18nLanguage = vi.hoisted(() => ({
+  currentSteamLanguage: vi.fn(() => Promise.resolve("english")),
+}));
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
@@ -98,7 +101,11 @@ vi.mock("./toast", () => toast);
 // module-level translator instead of react-i18next's hook.
 vi.mock("./i18n", async (importOriginal) => {
   const actual = await importOriginal<typeof I18n>();
-  return { ...actual, useT: () => actual.t };
+  return {
+    ...actual,
+    useT: () => actual.t,
+    currentSteamLanguage: i18nLanguage.currentSteamLanguage,
+  };
 });
 vi.mock("./hltb/gameView", () => ({
   useHltbSnapshot: () => ({ effectiveEnabled: true }),
@@ -235,6 +242,8 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks = [];
     Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
     vi.clearAllMocks();
+    i18nLanguage.currentSteamLanguage.mockReset();
+    i18nLanguage.currentSteamLanguage.mockResolvedValue("english");
     steam.appName.mockReturnValue("Shortcut");
     steam.cleanTitle.mockImplementation((value: string) => value.trim());
     steam.getOverview.mockReturnValue({ app_type: 1073741824, BIsShortcut: () => true });
@@ -1200,6 +1209,95 @@ describe("MetadataPage compatibility status", () => {
   });
 });
 
+
+describe("Steam text language", () => {
+  beforeEach(() => {
+    state.values = [];
+    state.cursor = 0;
+    refs.values = [];
+    refs.cursor = 0;
+    effects.enabled = false;
+    effects.callbacks = [];
+    route.appid = "100";
+    vi.clearAllMocks();
+    i18nLanguage.currentSteamLanguage.mockReset();
+    i18nLanguage.currentSteamLanguage.mockResolvedValue("english");
+    Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
+    steam.isNonSteamApp.mockReturnValue(true);
+  });
+
+  const show = (metadata: Record<string, unknown>, language: string) => {
+    state.values[0] = makeMetadata(metadata);
+    state.values[14] = 0;
+    state.values[18] = language;
+    return renderPage();
+  };
+
+  it("offers the manual refetch only while the stored language differs", () => {
+    const mismatch = show({ steam_appid: 15100, metadata_language: "english" }, "french");
+    expect(text(mismatch)).toContain("Steam text language: English");
+    expect(action(mismatch, "Fetch Steam text in French")).toBeDefined();
+
+    const matching = show({ steam_appid: 15100, metadata_language: "french" }, "french");
+    expect(action(matching, "Fetch Steam text in French")).toBeUndefined();
+
+    // Records without the field were fetched in English.
+    const legacy = show({ steam_appid: 15100 }, "french");
+    expect(action(legacy, "Fetch Steam text in French")).toBeDefined();
+
+    const unmatched = show({ steam_appid: null, metadata_language: "english" }, "french");
+    expect(action(unmatched, "Fetch Steam text in French")).toBeUndefined();
+  });
+
+  it("reads the Steam language when the editor opens", async () => {
+    effects.enabled = true;
+    i18nLanguage.currentSteamLanguage.mockResolvedValue("french");
+    state.values[0] = makeMetadata({ steam_appid: 15100, metadata_language: "english" });
+    state.values[14] = 0;
+    renderPage();
+    effects.callbacks[5]();
+    await flushAsyncWork();
+    expect(action(renderPage(), "Fetch Steam text in French")).toBeDefined();
+  });
+
+  it("fetches Steam text in the current language and reloads the record", async () => {
+    const page = show({
+      steam_appid: 15100,
+      metadata_language: "english",
+      description: "Old",
+      short_description: "Old",
+    }, "french");
+    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+      steam_appid: 15100,
+      metadata_language: "french",
+      description: "Nouveau",
+      short_description: "Nouveau",
+    }));
+
+    await action(page, "Fetch Steam text in French").props.onClick();
+    await flushAsyncWork();
+
+    expect(backend.enrichSteamApp).toHaveBeenCalledWith(100, "metadata", "french");
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+      metadata_language: "french",
+      description: "Nouveau",
+    }));
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
+    expect(action(renderPage(), "Fetch Steam text in French")).toBeUndefined();
+  });
+
+  it("reports a failed fetch without applying a record", async () => {
+    const page = show({ steam_appid: 15100, metadata_language: "english" }, "french");
+    backend.enrichSteamApp.mockRejectedValue(new Error("offline"));
+
+    await action(page, "Fetch Steam text in French").props.onClick();
+    await flushAsyncWork();
+
+    expect(toast.toastError).toHaveBeenCalledWith("Fetch failed", expect.stringContaining("offline"));
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+  });
+});
 
 describe("metadata summary and date persistence", () => {
   beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });

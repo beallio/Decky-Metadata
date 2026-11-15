@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Sparad namnhistorik har glömts bort",
       "nameHistoryForgottenBody": "Steam ändrade inte genvägens namn.",
       "nameHistoryNotClearedTitle": "Sparad namnhistorik rensades inte"
-    }
+    },
+    "steamTextLanguage": "Språk för Steam-text: {{language}}",
+    "fetchSteamText": "Hämta Steam-text på {{language}}",
+    "steamTextUnavailable": "Steam returnerade ingen text för det här spelet."
   },
   "matchPicker": {
     "title": "Hitta en Steam-matchning",

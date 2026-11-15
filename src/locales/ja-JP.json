@@ -519,7 +519,10 @@
       "nameHistoryForgottenTitle": "保存された名前履歴を忘れました",
       "nameHistoryForgottenBody": "Steam はショートカット名を変更していません。",
       "nameHistoryNotClearedTitle": "保存された名前履歴は消去されませんでした"
-    }
+    },
+    "steamTextLanguage": "Steam テキストの言語: {{language}}",
+    "fetchSteamText": "{{language}}で Steam テキストを取得",
+    "steamTextUnavailable": "Steam はこのゲームのテキストを返しませんでした。"
   },
   "matchPicker": {
     "title": "Steam の一致を検索",

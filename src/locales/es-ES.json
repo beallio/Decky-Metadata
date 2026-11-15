@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Historial de nombres guardado olvidado",
       "nameHistoryForgottenBody": "Steam no cambió el nombre del acceso directo.",
       "nameHistoryNotClearedTitle": "No se borró el historial de nombres guardado"
-    }
+    },
+    "steamTextLanguage": "Idioma del texto de Steam: {{language}}",
+    "fetchSteamText": "Obtener el texto de Steam en {{language}}",
+    "steamTextUnavailable": "Steam no devolvió texto para este juego."
   },
   "matchPicker": {
     "title": "Buscar una coincidencia en Steam",

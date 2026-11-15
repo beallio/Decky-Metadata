@@ -43,6 +43,9 @@ const steam = vi.hoisted(() => ({
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
+const i18n = vi.hoisted(() => ({
+  currentSteamLanguage: vi.fn(() => Promise.resolve("english")),
+}));
 const ui = vi.hoisted(() => ({
   getFocusNavController: vi.fn(),
   getGamepadNavigationTrees: vi.fn(),
@@ -175,6 +178,7 @@ vi.mock("./i18n", async () => {
     t,
     useT: () => t,
     refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
+    currentSteamLanguage: i18n.currentSteamLanguage,
     translateBackendError: (error: unknown) =>
       error instanceof Error ? error.message : String(error),
     translateProgress: (progress: { message?: string } | null | undefined) =>
@@ -467,6 +471,7 @@ describe("Content update settings", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    i18n.currentSteamLanguage.mockResolvedValue("english");
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
@@ -1115,5 +1120,14 @@ describe("Content update settings", () => {
     }
   });
 
+  it("passes the current Steam language to a metadata scan", async () => {
+    backend.startScanMissing.mockRejectedValue(new Error("scan unavailable"));
+    i18n.currentSteamLanguage.mockResolvedValueOnce("french");
 
+    render();
+    children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
+    await flushPromises();
+
+    expect(backend.startScanMissing).toHaveBeenCalledWith([], "french");
+  });
 });

@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Historia e ruajtur e emrave u harrua",
       "nameHistoryForgottenBody": "Steam nuk e ndryshoi emrin e shkurtorej.",
       "nameHistoryNotClearedTitle": "Historia e ruajtur e emrave nuk u pastrua"
-    }
+    },
+    "steamTextLanguage": "Gjuha e tekstit të Steam: {{language}}",
+    "fetchSteamText": "Merr tekstin e Steam në {{language}}",
+    "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë."
   },
   "matchPicker": {
     "title": "Gjej një përputhje në Steam",

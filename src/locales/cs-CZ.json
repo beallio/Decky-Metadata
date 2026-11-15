@@ -522,7 +522,10 @@
       "nameHistoryForgottenTitle": "Uložená historie názvů zapomenuta",
       "nameHistoryForgottenBody": "Steam název zkratky nezměnil.",
       "nameHistoryNotClearedTitle": "Uložená historie názvů nebyla vymazána"
-    }
+    },
+    "steamTextLanguage": "Jazyk textu ve Steamu: {{language}}",
+    "fetchSteamText": "Načíst text ze Steamu v jazyce {{language}}",
+    "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
   },
   "matchPicker": {
     "title": "Najít shodu Steam",

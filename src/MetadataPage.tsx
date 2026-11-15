@@ -57,7 +57,7 @@ import {
   MetadataSearchResult,
   ShortcutNameManagement,
 } from "./types";
-import { refreshLanguage, translateBackendError, useT } from "./i18n";
+import { currentLocale, currentSteamLanguage, refreshLanguage, translateBackendError, useT } from "./i18n";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
@@ -119,6 +119,58 @@ const descriptionTextareaStyle: CSSProperties = {
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** Steam's raw language values to BCP-47 tags, for `Intl.DisplayNames`. */
+const STEAM_LANGUAGE_TAGS: Record<string, string> = {
+  english: "en",
+  german: "de",
+  french: "fr",
+  italian: "it",
+  koreana: "ko",
+  spanish: "es",
+  schinese: "zh-CN",
+  tchinese: "zh-TW",
+  russian: "ru",
+  thai: "th",
+  japanese: "ja",
+  portuguese: "pt",
+  polish: "pl",
+  danish: "da",
+  dutch: "nl",
+  finnish: "fi",
+  norwegian: "no",
+  swedish: "sv",
+  hungarian: "hu",
+  czech: "cs",
+  romanian: "ro",
+  turkish: "tr",
+  brazilian: "pt-BR",
+  bulgarian: "bg",
+  greek: "el",
+  ukrainian: "uk",
+  latam: "es-419",
+  vietnamese: "vi",
+  indonesian: "id",
+  malay: "ms",
+};
+
+// Intl.DisplayNames exists at runtime but not in this project's ES2020 Intl typings.
+type DisplayNamesConstructor = new (
+  locales: string[],
+  options: { type: "language" },
+) => { of: (code: string) => string | undefined };
+const intlWithDisplayNames = Intl as unknown as { DisplayNames?: DisplayNamesConstructor };
+
+const steamLanguageName = (language: string): string => {
+  const tag = STEAM_LANGUAGE_TAGS[language] ?? language;
+  try {
+    const DisplayNames = intlWithDisplayNames.DisplayNames;
+    const name = DisplayNames && new DisplayNames([currentLocale()], { type: "language" }).of(tag);
+    return name || language;
+  } catch {
+    return language;
+  }
+};
 
 const compatibilityStatusOptions: DeckCompatibilityOverride[] = [null, "valve", 3, 2, 1, 0];
 
@@ -539,7 +591,8 @@ export const MetadataPage = () => {
     };
     setSteamNameLoading(true);
     setSteamNameUnavailable(false);
-    void enrichSteamApp(appId, "steam-name")
+    void currentSteamLanguage()
+      .then((language) => enrichSteamApp(appId, "steam-name", language))
       .then((enriched) => {
         const current = metadataRef.current;
         if (
@@ -613,9 +666,10 @@ export const MetadataPage = () => {
     });
   }, []);
 
-  // Steam only exposes its language when the editor opens, so sync it on mount.
+  // Steam only exposes its language when the editor opens, so sync the UI locale and text language on mount.
   useEffect(() => {
     void refreshLanguage();
+    void currentSteamLanguage().then(setSteamLanguage);
   }, []);
 
   const normalizedMetadata = useMemo<MetadataData>(
@@ -633,6 +687,8 @@ export const MetadataPage = () => {
   // Unsaved HLTB field text; null shows the saved choice. Declared after the
   // other hooks so their order is unchanged.
   const [hltbIdDraft, setHltbIdDraft] = useState<string | null>(null);
+  // The Steam client language for Steam-sourced text; null until the mount probe resolves.
+  const [steamLanguage, setSteamLanguage] = useState<string | null>(null);
   // The HLTB game the game page shows, chosen or found automatically.
   const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
   const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
@@ -658,6 +714,52 @@ export const MetadataPage = () => {
     }
     return { id, name: found.game_name };
   };
+
+  /** Explicit user action: fetch Steam's description/genres in the Steam client language. */
+  const refetchSteamText = async () => {
+    if (!nonSteam) {
+      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
+      return;
+    }
+    const requestedEntry = editorEntryToken;
+    if (metadataHydratedEntry !== requestedEntry) {
+      toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
+      return;
+    }
+    if (!steamLanguage || !beginBusy(requestedEntry)) return;
+    const baselineMetadata = metadataRef.current;
+    const baselineText: FormTextSnapshot = {
+      developerText: developerTextRef.current,
+      publisherText: publisherTextRef.current,
+      releaseText: releaseTextRef.current,
+      ratingText: ratingTextRef.current,
+      steamAppIdText: steamAppIdTextRef.current,
+    };
+    const requestedSteamAppId = normalizedSteamAppId(baselineMetadata.steam_appid);
+    try {
+      const enriched = await enrichSteamApp(appId, "metadata", steamLanguage);
+      if (
+        !isCurrentEditorEntry(requestedEntry) ||
+        normalizedSteamAppId(metadataRef.current.steam_appid) !== requestedSteamAppId
+      ) {
+        return;
+      }
+      if (!enriched) {
+        toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
+        return;
+      }
+      const reconciled = reconcileMetadataResponse(enriched, baselineMetadata, baselineText);
+      setMetadataCacheEntry(appId, reconciled);
+      applyMetadata(appId, { publishCompatibility: false });
+      refreshCompatibilitySurfaces();
+      toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
+    } catch (error) {
+      toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
+    } finally {
+      endBusy(requestedEntry);
+    }
+  };
+
   const saveCurrent = async () => {
     if (!nonSteam) {
       toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
@@ -764,7 +866,7 @@ export const MetadataPage = () => {
         // Keep edits that happened before this enrichment started too.
         ...saveBaselineText,
       };
-      const enriched = await enrichSteamApp(appId, "metadata");
+      const enriched = await enrichSteamApp(appId, "metadata", await currentSteamLanguage());
       if (
         !isCurrentEditorEntry(requestedEntry) ||
         normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed
@@ -905,6 +1007,18 @@ export const MetadataPage = () => {
 
   const steamAppId = Number(metadata.steam_appid);
   const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
+  const storedSteamLanguage = metadata.metadata_language ?? "english";
+  const steamLanguageMismatch = Boolean(
+    hasSteamMatch &&
+    steamLanguage &&
+    storedSteamLanguage !== steamLanguage,
+  );
+  const storedSteamLanguageLabel = steamLanguageMismatch
+    ? steamLanguageName(storedSteamLanguage)
+    : "";
+  const currentSteamLanguageLabel = steamLanguageMismatch
+    ? steamLanguageName(steamLanguage ?? "english")
+    : "";
   const steamStoreName = typeof metadata.steam_store_name === "string"
     ? metadata.steam_store_name
     : "";
@@ -1454,6 +1568,23 @@ export const MetadataPage = () => {
               </div>
             </div>
           </PanelSectionRow>
+          {steamLanguageMismatch ? (
+            <PanelSectionRow>
+              <div style={rowStackStyle}>
+                <div style={compactTextStyle}>
+                  {t("editor.steamTextLanguage", { language: storedSteamLanguageLabel })}
+                </div>
+                <FocusableButton
+                  className={`DialogButton ${editorFocusTargetClassName}`}
+                  disabled={entryBusy}
+                  onClick={refetchSteamText}
+                  style={editorAppIdButtonStyle}
+                >
+                  {t("editor.fetchSteamText", { language: currentSteamLanguageLabel })}
+                </FocusableButton>
+              </div>
+            </PanelSectionRow>
+          ) : null}
         </PanelSection>
 
         <PanelSection title={t("editor.shortcutName")}>

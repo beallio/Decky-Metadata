@@ -83,7 +83,12 @@ fn set_message(progress: &mut Value, code: &str, message: String, title: &str) {
     progress["message_args"] = json!({"title": title});
 }
 
-async fn start(state: Arc<AppState>, games: &Value, pipeline: Pipeline) -> Result<Value, String> {
+async fn start(
+    state: Arc<AppState>,
+    games: &Value,
+    pipeline: Pipeline,
+    language: &'static str,
+) -> Result<Value, String> {
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
     }
@@ -105,7 +110,7 @@ async fn start(state: Arc<AppState>, games: &Value, pipeline: Pipeline) -> Resul
     let state = Arc::clone(&state);
     job.task = Some(tokio::spawn(async move {
         let finished_state = Arc::clone(&state);
-        run_targets(state, pipeline, targets).await;
+        run_targets(state, pipeline, targets, language).await;
         finish_if_running(&finished_state, pipeline).await;
     }));
     Ok(progress)
@@ -120,8 +125,12 @@ async fn finish_if_running(state: &AppState, pipeline: Pipeline) {
     }
 }
 
-pub async fn start_scan_missing(state: Arc<AppState>, games: &Value) -> Result<Value, String> {
-    start(state, games, Pipeline::Metadata).await
+pub async fn start_scan_missing(
+    state: Arc<AppState>,
+    games: &Value,
+    language: &'static str,
+) -> Result<Value, String> {
+    start(state, games, Pipeline::Metadata, language).await
 }
 
 pub async fn get_scan_progress(state: &AppState) -> Value {
@@ -161,8 +170,9 @@ pub async fn get_missing_metadata_count(state: &AppState, games: &Value) -> Resu
 pub async fn start_refresh_steam_activities(
     state: Arc<AppState>,
     games: &Value,
+    language: &'static str,
 ) -> Result<Value, String> {
-    start(state, games, Pipeline::Activity).await
+    start(state, games, Pipeline::Activity, language).await
 }
 
 pub async fn get_activity_refresh_progress(state: &AppState) -> Value {
@@ -176,6 +186,7 @@ pub async fn get_activity_refresh_progress(state: &AppState) -> Value {
 pub async fn refresh_steam_activity_for_app(
     state: &AppState,
     app_id: &Value,
+    language: &'static str,
 ) -> Result<Option<Value>, String> {
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
@@ -203,7 +214,7 @@ pub async fn refresh_steam_activity_for_app(
         String::new()
     };
     let title = matching::clean_game_title(&raw_title);
-    let result = activity_match(state, value.clone(), &title).await?;
+    let result = activity_match(state, value.clone(), &title, language).await?;
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
     }
@@ -361,7 +372,12 @@ async fn activity_targets(state: &AppState, games: &[GameInput]) -> Result<Vec<T
         .collect())
 }
 
-async fn run_targets(state: Arc<AppState>, pipeline: Pipeline, targets: Vec<Target>) {
+async fn run_targets(
+    state: Arc<AppState>,
+    pipeline: Pipeline,
+    targets: Vec<Target>,
+    language: &'static str,
+) {
     if state.cancel.is_cancelled() {
         return;
     }
@@ -406,8 +422,12 @@ async fn run_targets(state: Arc<AppState>, pipeline: Pipeline, targets: Vec<Targ
 
         let snapshot = target.metadata.take().unwrap_or(Value::Null);
         let result = match pipeline {
-            Pipeline::Metadata => metadata_match(&state, &target, &mut delisted_refreshed).await,
-            Pipeline::Activity => activity_match(&state, snapshot.clone(), &target.title).await,
+            Pipeline::Metadata => {
+                metadata_match(&state, &target, &mut delisted_refreshed, language).await
+            }
+            Pipeline::Activity => {
+                activity_match(&state, snapshot.clone(), &target.title, language).await
+            }
         };
         let mut result = match result {
             Ok(result) => result,
@@ -583,10 +603,11 @@ async fn metadata_match(
     state: &AppState,
     target: &Target,
     delisted_refreshed: &mut bool,
+    language: &'static str,
 ) -> Result<ScanResult, String> {
     let title = &target.title;
     let steam_shell = json!({"title": title, "source": "Manual", "id": title});
-    let steam = metadata::with_steam_news(state, steam_shell, title, 10, true).await?;
+    let steam = metadata::with_steam_news(state, steam_shell, title, 10, true, language).await?;
     if metadata::complete(&steam) {
         return Ok(ScanResult::matched(steam, "steam"));
     }
@@ -622,7 +643,7 @@ async fn metadata_match(
             "steam_appid": delisted_app_id,
             "steam_store_state": "delisted",
         });
-        let delisted = metadata::with_steam_news(state, pinned, title, 10, true).await?;
+        let delisted = metadata::with_steam_news(state, pinned, title, 10, true, language).await?;
         if metadata::complete(&delisted) {
             return Ok(ScanResult::matched(delisted, "delisted"));
         }
@@ -658,7 +679,7 @@ async fn metadata_match(
                     }
                 }
             }
-            let enriched = metadata::with_steam_news(state, partial, title, 10, true).await?;
+            let enriched = metadata::with_steam_news(state, partial, title, 10, true, language).await?;
             if metadata::complete(&enriched) {
                 return Ok(ScanResult::matched(enriched, "ign"));
             }
@@ -673,12 +694,17 @@ async fn metadata_match(
     else {
         return Ok(ScanResult::miss(None, "ign"));
     };
-    let enriched = metadata::with_steam_news(state, fetched, title, 10, true).await?;
+    let enriched = metadata::with_steam_news(state, fetched, title, 10, true, language).await?;
     Ok(ScanResult::matched(enriched, "ign"))
 }
 
-async fn activity_match(state: &AppState, value: Value, title: &str) -> Result<ScanResult, String> {
-    let refreshed = metadata::with_steam_news(state, value.clone(), title, 10, false).await?;
+async fn activity_match(
+    state: &AppState,
+    value: Value,
+    title: &str,
+    language: &'static str,
+) -> Result<ScanResult, String> {
+    let refreshed = metadata::with_steam_news(state, value.clone(), title, 10, false, language).await?;
     if !matching::py_truthy(&refreshed) {
         return Ok(ScanResult::miss(None, "steam_activity"));
     }
@@ -814,12 +840,16 @@ mod tests {
     }
 
     fn steam_events(app_id: i64, events: Value) -> Fixture {
+        steam_events_in(app_id, events, "english")
+    }
+
+    fn steam_events_in(app_id: i64, events: Value, language: &str) -> Fixture {
         let mut url = Url::parse(steam::STEAM_EVENTS_URL).unwrap();
         url.query_pairs_mut()
             .append_pair("appid", &app_id.to_string())
             .append_pair("offset", "0")
             .append_pair("count", "30")
-            .append_pair("l", "english")
+            .append_pair("l", language)
             .append_pair("origin", "https://store.steampowered.com");
         Fixture::json(url.to_string(), json!({"events": events}))
     }
@@ -1001,6 +1031,7 @@ mod tests {
                 {"appid": 2, "name": "Backfill Match"},
                 {"appid": 3, "name": "Partial Save"},
             ]),
+            "english",
         )
         .await
         .unwrap();
@@ -1025,6 +1056,10 @@ mod tests {
             "valve"
         );
         assert_eq!(storage.data()["metadata"]["1"]["deck_compat_category"], 3);
+        assert_eq!(
+            storage.data()["metadata"]["1"]["metadata_language"],
+            "english"
+        );
         assert_eq!(storage.data()["metadata"]["2"]["steam_appid"], 600);
         assert_eq!(storage.data()["metadata"]["2"]["source"], "IGN");
         assert_eq!(
@@ -1070,6 +1105,7 @@ mod tests {
                 {"appid": 1, "name": "Broken Scan"},
                 {"appid": 2, "name": "Good Scan"},
             ]),
+            "english",
         )
         .await
         .unwrap();
@@ -1098,7 +1134,7 @@ mod tests {
         let (_directory, mut state) = test_state(fixtures).await;
         let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
         let games = json!([{"appid": 1, "name": "Single Flight"}]);
-        start_scan_missing(Arc::clone(&state), &games)
+        start_scan_missing(Arc::clone(&state), &games, "english")
             .await
             .unwrap();
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
@@ -1108,6 +1144,7 @@ mod tests {
         let repeated = start_scan_missing(
             Arc::clone(&state),
             &json!([{"appid": 2, "name": "Must Not Start"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1138,6 +1175,7 @@ mod tests {
         start_scan_missing(
             Arc::clone(&state),
             &json!([{"appid": 7, "name": "Cancelled Scan"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1171,6 +1209,7 @@ mod tests {
         start_refresh_steam_activities(
             Arc::clone(&state),
             &json!([{"appid": 1, "name": "Activity Game"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1180,6 +1219,7 @@ mod tests {
         start_scan_missing(
             Arc::clone(&state),
             &json!([{"appid": 8, "name": "Independent Scan"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1214,6 +1254,7 @@ mod tests {
         start_refresh_steam_activities(
             Arc::clone(&state),
             &json!([{"appid": 1, "name": "Activity Game"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1221,7 +1262,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            refresh_steam_activity_for_app(&state, &json!(1))
+            refresh_steam_activity_for_app(&state, &json!(1), "english")
                 .await
                 .unwrap(),
             None
@@ -1262,6 +1303,7 @@ mod tests {
                 {"appid":1,"name":"News Game"},
                 {"appid":2,"name":"Quiet Game"},
             ]),
+            "english",
         )
         .await
         .unwrap();
@@ -1309,18 +1351,18 @@ mod tests {
         .await;
 
         assert_eq!(
-            refresh_steam_activity_for_app(&state, &json!(999))
+            refresh_steam_activity_for_app(&state, &json!(999), "english")
                 .await
                 .unwrap(),
             None
         );
-        let refreshed = refresh_steam_activity_for_app(&state, &json!(101))
+        let refreshed = refresh_steam_activity_for_app(&state, &json!(101), "english")
             .await
             .unwrap()
             .unwrap();
         assert_eq!(refreshed["steam_news"][0]["title"], "Update 400");
         assert_eq!(
-            refresh_steam_activity_for_app(&state, &json!(202))
+            refresh_steam_activity_for_app(&state, &json!(202), "english")
                 .await
                 .unwrap(),
             None
@@ -1341,6 +1383,49 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn activity_refresh_follows_the_language_without_touching_steam_text() {
+        let fixtures = vec![steam_events_in(
+            400,
+            json!([{
+                "event_type": 28, "gid": "event-400", "rtime_created": 1_700_000_000,
+                "announcement_body": {
+                    "gid": "announcement-400", "headline": "更新 400", "body": "更新内容",
+                },
+            }]),
+            "schinese",
+        )];
+        let (_directory, state) = test_state(fixtures).await;
+        set_record(
+            &state,
+            101,
+            json!({
+                "title":"Space Marine","source":"Steam","steam_appid":400,
+                "description":"中文简介","short_description":"中文简介",
+                "genres":["角色扮演"],"metadata_language":"schinese","steam_news":[],
+            }),
+        )
+        .await;
+
+        start_refresh_steam_activities(
+            Arc::clone(&state),
+            &json!([{"appid": 101, "name": "Space Marine"}]),
+            "schinese",
+        )
+        .await
+        .unwrap();
+        state.jobs.drain().await;
+        let record = state.store().await.unwrap().data()["metadata"]["101"].clone();
+        assert_eq!(record["description"], "中文简介");
+        assert_eq!(record["short_description"], "中文简介");
+        assert_eq!(record["genres"], json!(["角色扮演"]));
+        assert_eq!(record["metadata_language"], "schinese");
+        assert_eq!(record["steam_news"][0]["title"], "更新 400");
+        assert_eq!(get_activity_refresh_progress(&state).await["assigned"], 1);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn activity_refresh_that_finds_nothing_new_leaves_the_record_unchanged() {
         let fixtures = vec![
             steam_events(456, json!([])),
@@ -1355,11 +1440,11 @@ mod tests {
             json!({"title":"No News Game","source":"IGN","steam_appid":456,"steam_news":[],"updated_at":7}),
         )
         .await;
-        refresh_steam_activity_for_app(&state, &json!(202)).await.unwrap();
+        refresh_steam_activity_for_app(&state, &json!(202), "english").await.unwrap();
         let first = state.store().await.unwrap().data()["metadata"]["202"].clone();
         // The first refresh fills in defaults, so the record changed and carries a fresh stamp.
         assert!(first["updated_at"].as_i64().is_some_and(|stamp| stamp > 7));
-        refresh_steam_activity_for_app(&state, &json!(202)).await.unwrap();
+        refresh_steam_activity_for_app(&state, &json!(202), "english").await.unwrap();
         // A screenshot fill-in that snapshotted `first` must still find it unchanged.
         assert_eq!(state.store().await.unwrap().data()["metadata"]["202"], first);
         state.http.assert_drained();
@@ -1395,6 +1480,7 @@ mod tests {
                 {"appid":false,"name":null},
                 {"appid":"3","name":"Already Complete"},
             ]),
+            "english",
         )
         .await
         .unwrap();
@@ -1432,6 +1518,7 @@ mod tests {
         start_scan_missing(
             Arc::clone(&state),
             &json!([{"appid":"٤٣","name":""},{"appid":absent,"name":""}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1454,7 +1541,7 @@ mod tests {
             0
         );
         assert!(
-            start_scan_missing(Arc::clone(&state), &json!(7))
+            start_scan_missing(Arc::clone(&state), &json!(7), "english")
                 .await
                 .is_err()
         );
@@ -1462,20 +1549,21 @@ mod tests {
             start_scan_missing(
                 Arc::clone(&state),
                 &json!([{"appid": "bad", "name": "Bad ID"}]),
+                "english",
             )
             .await
             .is_err()
         );
         assert_eq!(get_scan_progress(&state).await["status"], "idle");
         assert!(
-            start_scan_missing(Arc::clone(&state), &Value::Null)
+            start_scan_missing(Arc::clone(&state), &Value::Null, "english")
                 .await
                 .unwrap()["running"]
                 .as_bool()
                 .unwrap()
         );
         assert!(
-            start_refresh_steam_activities(Arc::clone(&state), &Value::Null)
+            start_refresh_steam_activities(Arc::clone(&state), &Value::Null, "english")
                 .await
                 .unwrap()["running"]
                 .as_bool()
@@ -1518,8 +1606,8 @@ mod tests {
         read_only(0o500);
 
         let games = json!([{"appid":1,"name":"No cached metadata"}]);
-        let scan = start_scan_missing(Arc::clone(&state), &games).await;
-        let activity = start_refresh_steam_activities(Arc::clone(&state), &games).await;
+        let scan = start_scan_missing(Arc::clone(&state), &games, "english").await;
+        let activity = start_refresh_steam_activities(Arc::clone(&state), &games, "english").await;
         state.jobs.drain().await;
         read_only(0o700);
 
@@ -1541,7 +1629,7 @@ mod tests {
         let title = "Edited Mid Scan";
         let (_directory, mut state) = test_state(complete_steam_fixtures(title, 100)).await;
         let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
-        start_scan_missing(Arc::clone(&state), &json!([{"appid": 1, "name": title}]))
+        start_scan_missing(Arc::clone(&state), &json!([{"appid": 1, "name": title}]), "english")
             .await
             .unwrap();
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
@@ -1578,7 +1666,7 @@ mod tests {
         let (_directory, mut state) = test_state(complete_steam_fixtures(title, 100)).await;
         let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
         // No record yet, so the scan's snapshot is absent and stays absent after Remove.
-        start_scan_missing(Arc::clone(&state), &json!([{"appid": 1, "name": title}]))
+        start_scan_missing(Arc::clone(&state), &json!([{"appid": 1, "name": title}]), "english")
             .await
             .unwrap();
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
@@ -1610,7 +1698,7 @@ mod tests {
         let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
         let refreshing = Arc::clone(&state);
         let task =
-            tokio::spawn(async move { refresh_steam_activity_for_app(&refreshing, &json!(101)).await });
+            tokio::spawn(async move { refresh_steam_activity_for_app(&refreshing, &json!(101), "english").await });
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
             .await
             .unwrap();
@@ -1635,11 +1723,11 @@ mod tests {
         let template = metadata::save(&state, &json!(101), template, false, None).await.unwrap();
         let games = json!([{"appid": 101, "name": "Dolphin"}]);
 
-        assert_eq!(refresh_steam_activity_for_app(&state, &json!(101)).await.unwrap(), None);
+        assert_eq!(refresh_steam_activity_for_app(&state, &json!(101), "english").await.unwrap(), None);
         assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 0);
-        start_scan_missing(Arc::clone(&state), &games).await.unwrap();
+        start_scan_missing(Arc::clone(&state), &games, "english").await.unwrap();
         state.jobs.drain().await;
-        start_refresh_steam_activities(Arc::clone(&state), &games).await.unwrap();
+        start_refresh_steam_activities(Arc::clone(&state), &games, "english").await.unwrap();
         state.jobs.drain().await;
         assert_eq!(get_scan_progress(&state).await["total"], 0);
         assert_eq!(get_activity_refresh_progress(&state).await["total"], 0);
@@ -1651,7 +1739,7 @@ mod tests {
         let matched = json!({"title":"Dolphin","source":"Manual","steam_appid":400,"steam_news":[]});
         metadata::save(&state, &json!(101), matched, false, None).await.unwrap();
         assert!(!metadata::removed_by_user(state.store().await.unwrap().data(), "101"));
-        let refreshed = refresh_steam_activity_for_app(&state, &json!(101)).await.unwrap().unwrap();
+        let refreshed = refresh_steam_activity_for_app(&state, &json!(101), "english").await.unwrap().unwrap();
         assert_eq!(refreshed["steam_appid"], 400);
         assert_eq!(refreshed["steam_news"].as_array().unwrap().len(), 1);
         state.http.assert_drained();
@@ -1671,6 +1759,7 @@ mod tests {
         start_refresh_steam_activities(
             Arc::clone(&state),
             &json!([{"appid": 101, "name": "Space Marine"}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1711,6 +1800,7 @@ mod tests {
         start_scan_missing(
             Arc::clone(&state),
             &json!([{"appid": 1, "name": titles[0]}, {"appid": 2, "name": titles[1]}]),
+            "english",
         )
         .await
         .unwrap();
@@ -1738,14 +1828,14 @@ mod tests {
         for games in inputs {
             assert_eq!(get_missing_metadata_count(&state, &games).await.unwrap(), 0);
             assert!(
-                start_scan_missing(Arc::clone(&state), &games)
+                start_scan_missing(Arc::clone(&state), &games, "english")
                     .await
                     .unwrap()["running"]
                     .as_bool()
                     .unwrap()
             );
             assert!(
-                start_refresh_steam_activities(Arc::clone(&state), &games)
+                start_refresh_steam_activities(Arc::clone(&state), &games, "english")
                     .await
                     .unwrap()["running"]
                     .as_bool()
@@ -1796,7 +1886,8 @@ mod tests {
             metadata: None,
         };
         let scanning = Arc::clone(&state);
-        let task = tokio::spawn(async move { metadata_match(&scanning, &target, &mut false).await });
+        let task =
+            tokio::spawn(async move { metadata_match(&scanning, &target, &mut false, "english").await });
         tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
             .await
             .unwrap();

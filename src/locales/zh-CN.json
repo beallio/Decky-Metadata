@@ -519,7 +519,10 @@
       "nameHistoryForgottenTitle": "已忘记保存的名称历史记录",
       "nameHistoryForgottenBody": "Steam 未更改快捷方式名称。",
       "nameHistoryNotClearedTitle": "未清除保存的名称历史记录"
-    }
+    },
+    "steamTextLanguage": "Steam 文本语言：{{language}}",
+    "fetchSteamText": "获取{{language}} Steam 文本",
+    "steamTextUnavailable": "Steam 未返回此游戏的文本。"
   },
   "matchPicker": {
     "title": "查找 Steam 匹配",

@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Запазената история на имената е забравена",
       "nameHistoryForgottenBody": "Steam не промени името на прекия път.",
       "nameHistoryNotClearedTitle": "Запазената история на имената не беше изчистена"
-    }
+    },
+    "steamTextLanguage": "Език на текста в Steam: {{language}}",
+    "fetchSteamText": "Изтегляне на текст от Steam на {{language}}",
+    "steamTextUnavailable": "Steam не върна текст за тази игра."
   },
   "matchPicker": {
     "title": "Намиране на съвпадение в Steam",

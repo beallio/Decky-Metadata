@@ -2,10 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MetadataData } from "../types";
 
 const mocks = vi.hoisted(() => ({
+  currentSteamLanguage: vi.fn(async () => "english"),
   refreshSteamActivityForApp: vi.fn(),
 }));
 
 vi.mock("@decky/ui", () => ({ findModuleChild: vi.fn() }));
+vi.mock("../i18n", () => ({
+  currentSteamLanguage: mocks.currentSteamLanguage,
+  t: (key: string) => key,
+}));
 vi.mock("../backend", () => ({
   frontendLog: vi.fn(() => Promise.resolve()),
   getCommunityFallbackPage: vi.fn(),
@@ -60,6 +65,10 @@ const makeNewsMetadata = (title: string, gid: string): MetadataData => ({
 
 const activityNewsTitle = (activity: any) => activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GetNameWithFallback?.();
 
+type RepaintActivity = {
+  appActivityByDay?: Array<{ events?: Array<{ preview?: { strSummary?: string } }> }>;
+};
+
 const installShortcut = (appId: number) => {
   const overview = {
     appid: appId,
@@ -80,6 +89,8 @@ afterEach(() => {
   metadataState.compatibilityLifecycleGeneration = 0;
   patchInstallStatus.activity = "pending";
   mocks.refreshSteamActivityForApp.mockReset();
+  mocks.currentSteamLanguage.mockReset();
+  mocks.currentSteamLanguage.mockResolvedValue("english");
   configureActivityMetadataLoader(async () => undefined, () => false);
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appActivityStore;
@@ -113,12 +124,45 @@ describe("activity compatibility refresh", () => {
 
     await steamActivityPayloadForApp(appId);
     await vi.waitFor(() => {
-      expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId);
+      expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english");
       expect(metadataCache[String(appId)]).toBe(refreshed);
     });
 
     expect(applyMetadata).not.toHaveBeenCalled();
     expect(compatibilityRevisionSnapshot()).toBe(0);
+  });
+
+  it("rebuilds native Activity when only the news body language changed", async () => {
+    const appId = 9609;
+    const gid = "12345678901234567";
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Unchanged headline", gid);
+    const translated = makeNewsMetadata("Unchanged headline", gid);
+    translated.steam_news![0] = {
+      ...translated.steam_news![0],
+      summary: "Corps traduit",
+      body: "Corps traduit",
+      raw_body: "Corps traduit",
+    };
+    mocks.refreshSteamActivityForApp.mockResolvedValue(translated);
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => {
+      const activity = deckyNativeActivityCache().get(appId) as RepaintActivity | undefined;
+      expect(activity?.appActivityByDay?.[0]?.events?.[0]?.preview?.strSummary).toBe("Corps traduit");
+    });
+  });
+
+  it("passes the current Steam language to the news refresh", async () => {
+    const appId = 9610;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeMetadata(null, null);
+    mocks.currentSteamLanguage.mockResolvedValue("french");
+    mocks.refreshSteamActivityForApp.mockResolvedValue(makeMetadata(null, null));
+
+    await steamActivityPayloadForApp(appId);
+
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "french"));
   });
 
   it("keeps a late activity refresh inert after the plugin lifecycle ends", async () => {
@@ -136,7 +180,7 @@ describe("activity compatibility refresh", () => {
     }));
 
     await steamActivityPayloadForApp(appId);
-    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english"));
     metadataState.compatibilityLifecycleGeneration += 1;
     resolveRefresh(refreshed);
     await Promise.resolve();
@@ -165,7 +209,7 @@ describe("activity compatibility refresh", () => {
     }));
 
     await steamActivityPayloadForApp(appId);
-    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english"));
     removeMetadataCacheEntry(appId);
     resolveRefresh(makeNewsMetadata("Fresh news", "22345678901234567"));
     for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
@@ -264,6 +308,48 @@ describe("deckyNativePartnerEventDiscussionUrl", () => {
 
   it("returns an empty string like native when nothing is known", () => {
     expect(deckyNativePartnerEventDiscussionUrl(0, "", "")).toBe("");
+  });
+});
+
+describe("mounted Activity repaint", () => {
+  it("reads the observable Activity map for the requested shortcut only", async () => {
+    const appId = 9612;
+    const nativeAppId = 9613;
+    (globalThis as Record<string, unknown>).appStore = {
+      GetAppOverviewByAppID: (candidate: number) =>
+        candidate === appId
+          ? { appid: appId, app_type: 1073741824, BIsShortcut: () => true, BIsModOrShortcut: () => true }
+          : candidate === nativeAppId
+            ? { appid: nativeAppId, app_type: 0, BIsShortcut: () => false, BIsModOrShortcut: () => false }
+            : null,
+    };
+    const reads: number[] = [];
+    const store = {
+      m_mapAppActivity: {
+        get: (candidate: number) => {
+          reads.push(candidate);
+          return undefined;
+        },
+        set: () => undefined,
+        has: () => false,
+        delete: () => undefined,
+      },
+      GetAppActivity: vi.fn((_appId: number) => ({ nativeSteamActivity: true })),
+    };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    metadataCache[String(appId)] = makeNewsMetadata("Repaint card", "12345678901234567");
+    await refreshDeckyNativeActivityForApp(appId, store);
+
+    const unpatchers: Array<() => void> = [];
+    installNativeActivityStorePatch(unpatchers);
+
+    expect(store.GetAppActivity(appId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(reads).toEqual([appId]);
+
+    expect(store.GetAppActivity(nativeAppId)).toEqual({ nativeSteamActivity: true });
+    expect(reads).toEqual([appId]);
+
+    unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
   });
 });
 

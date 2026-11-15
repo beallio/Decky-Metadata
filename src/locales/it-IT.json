@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Cronologia dei nomi salvata dimenticata",
       "nameHistoryForgottenBody": "Steam non ha cambiato il nome della scorciatoia.",
       "nameHistoryNotClearedTitle": "La cronologia dei nomi salvata non è stata cancellata"
-    }
+    },
+    "steamTextLanguage": "Lingua del testo Steam: {{language}}",
+    "fetchSteamText": "Recupera il testo Steam in {{language}}",
+    "steamTextUnavailable": "Steam non ha restituito testo per questo gioco."
   },
   "matchPicker": {
     "title": "Trova una corrispondenza Steam",

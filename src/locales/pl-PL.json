@@ -522,7 +522,10 @@
       "nameHistoryForgottenTitle": "Zapomniano zapisaną historię nazw",
       "nameHistoryForgottenBody": "Steam nie zmienił nazwy skrótu.",
       "nameHistoryNotClearedTitle": "Nie wyczyszczono zapisanej historii nazw"
-    }
+    },
+    "steamTextLanguage": "Język tekstu Steam: {{language}}",
+    "fetchSteamText": "Pobierz tekst Steam w języku {{language}}",
+    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
   },
   "matchPicker": {
     "title": "Znajdź dopasowanie Steam",

@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Kaydedilmiş ad geçmişi unutuldu",
       "nameHistoryForgottenBody": "Steam kısayol adını değiştirmedi.",
       "nameHistoryNotClearedTitle": "Kaydedilmiş ad geçmişi temizlenmedi"
-    }
+    },
+    "steamTextLanguage": "Steam metin dili: {{language}}",
+    "fetchSteamText": "Steam metnini {{language}} dilinde getir",
+    "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
   },
   "matchPicker": {
     "title": "Steam eşleşmesi bul",

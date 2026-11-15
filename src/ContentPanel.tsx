@@ -38,6 +38,7 @@ import { HltbSection } from "./components/qam/HltbSection";
 import { hltbController } from "./hltb/gameView";
 import { hltbStore } from "./hltb/store";
 import {
+  currentSteamLanguage,
   formatDate,
   formatNumber,
   refreshLanguage,
@@ -838,7 +839,7 @@ export const Content = () => {
       toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
     };
     try {
-      await startScanMissing(games);
+      await startScanMissing(games, await currentSteamLanguage());
     } catch (error) {
       failScan(error);
       return;
@@ -881,7 +882,7 @@ export const Content = () => {
       hltbStore.reset();
       await refreshMetadataCache();
       if (games.length) {
-        void startScanMissing(games).catch((error) => {
+        void startScanMissing(games, await currentSteamLanguage()).catch((error) => {
           log.warn("bridge", "metadata scan start after clear cache failed", error);
         });
       }

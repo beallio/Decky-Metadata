@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Historique des noms oublié",
       "nameHistoryForgottenBody": "Steam n'a pas modifié le nom du raccourci.",
       "nameHistoryNotClearedTitle": "L'historique des noms n'a pas été effacé"
-    }
+    },
+    "steamTextLanguage": "Langue du texte Steam : {{language}}",
+    "fetchSteamText": "Récupérer le texte Steam en {{language}}",
+    "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu."
   },
   "matchPicker": {
     "title": "Trouver une correspondance Steam",

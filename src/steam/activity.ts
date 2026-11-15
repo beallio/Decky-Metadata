@@ -4,7 +4,7 @@ import { requestedCommunityPage, resolveCommunityRequest } from "../communityFee
 import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeedUrl";
 import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
-import { t } from "../i18n";
+import { currentSteamLanguage, t } from "../i18n";
 import { createActivityRefreshGate } from "./activityRefreshGate";
 import {
   DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY,
@@ -86,11 +86,20 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
     try {
       const previous = metadataCache[String(appId)];
       const removals = metadataRemovalSnapshot(appId);
-      const refreshed = await refreshSteamActivityForApp(appId);
+      const refreshed = await refreshSteamActivityForApp(appId, await currentSteamLanguage());
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       if (!refreshed || metadataRemovalSnapshot(appId) !== removals) return;
+      // Steam often translates only the body while the headline stays English.
       const newsKey = (metadata?: MetadataData | null) =>
-        JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
+        JSON.stringify((metadata?.steam_news || []).map((item) => [
+          item.id,
+          item.gid,
+          item.title,
+          item.date,
+          item.summary,
+          item.body,
+          item.raw_body,
+        ]));
       const changed = newsKey(previous) !== newsKey(refreshed);
       const compatibilityChanged =
         previous?.deck_compat_override !== refreshed.deck_compat_override ||
@@ -974,7 +983,13 @@ export const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
         patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
           const appId = Number(args[0]);
           const native = getDeckyNativeActivityForApp(appId);
-          if (native) return native;
+          if (native) {
+            // The Activity feed is a MobX observer. This read subscribes it to the shallow
+            // observable entry that refreshDeckyNativeActivityForApp replaces, so a mounted
+            // list repaints in place instead of keeping the object it received at mount.
+            store.m_mapAppActivity?.get?.(appId);
+            return native;
+          }
           if (appId && isNonSteamApp(getOverview(appId))) {
             void refreshDeckyNativeActivityForApp(appId, store);
           }

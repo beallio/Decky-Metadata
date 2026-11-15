@@ -524,7 +524,10 @@
       "nameHistoryForgottenTitle": "تم نسيان سجل الأسماء المحفوظ",
       "nameHistoryForgottenBody": "لم يغيّر Steam اسم الاختصار.",
       "nameHistoryNotClearedTitle": "لم يُمسح سجل الأسماء المحفوظ"
-    }
+    },
+    "steamTextLanguage": "لغة نص Steam: {{language}}",
+    "fetchSteamText": "جلب نص Steam باللغة {{language}}",
+    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
   },
   "matchPicker": {
     "title": "العثور على مطابقة في Steam",

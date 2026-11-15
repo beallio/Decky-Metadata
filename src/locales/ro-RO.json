@@ -521,7 +521,10 @@
       "nameHistoryForgottenTitle": "Istoricul numelor salvat a fost uitat",
       "nameHistoryForgottenBody": "Steam nu a schimbat numele scurtăturii.",
       "nameHistoryNotClearedTitle": "Istoricul numelor salvat nu a fost șters"
-    }
+    },
+    "steamTextLanguage": "Limba textului Steam: {{language}}",
+    "fetchSteamText": "Obține textul Steam în {{language}}",
+    "steamTextUnavailable": "Steam nu a returnat text pentru acest joc."
   },
   "matchPicker": {
     "title": "Găsește o potrivire Steam",

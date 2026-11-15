@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Saved name history forgotten",
       "nameHistoryForgottenBody": "Steam did not change the shortcut name.",
       "nameHistoryNotClearedTitle": "Saved name history was not cleared"
-    }
+    },
+    "steamTextLanguage": "Steam text language: {{language}}",
+    "fetchSteamText": "Fetch Steam text in {{language}}",
+    "steamTextUnavailable": "Steam did not return text for this game."
   },
   "matchPicker": {
     "title": "Find a Steam match",

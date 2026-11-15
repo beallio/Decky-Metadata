@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Gespeicherter Namensverlauf vergessen",
       "nameHistoryForgottenBody": "Steam hat den Verknüpfungsnamen nicht geändert.",
       "nameHistoryNotClearedTitle": "Gespeicherter Namensverlauf wurde nicht gelöscht"
-    }
+    },
+    "steamTextLanguage": "Sprache des Steam-Texts: {{language}}",
+    "fetchSteamText": "Steam-Text auf {{language}} abrufen",
+    "steamTextUnavailable": "Steam hat für dieses Spiel keinen Text zurückgegeben."
   },
   "matchPicker": {
     "title": "Steam-Zuordnung finden",

@@ -520,7 +520,10 @@
       "nameHistoryForgottenTitle": "Opgeslagen naamgeschiedenis vergeten",
       "nameHistoryForgottenBody": "Steam heeft de naam van de snelkoppeling niet gewijzigd.",
       "nameHistoryNotClearedTitle": "Opgeslagen naamgeschiedenis is niet gewist"
-    }
+    },
+    "steamTextLanguage": "Taal van Steam-tekst: {{language}}",
+    "fetchSteamText": "Steam-tekst ophalen in {{language}}",
+    "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd."
   },
   "matchPicker": {
     "title": "Steam-match zoeken",
