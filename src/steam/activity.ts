@@ -541,6 +541,16 @@ export const deckyNativePartnerEventForGid = (value: unknown, cloneForRoute = fa
   return cloneForRoute ? cloneDeckyNativePartnerEventForRoute(event, raw || gid) : event;
 };
 
+// Steam's event overlay (sp.js) calls eventModel.GetDiscussionURL(vanityUrl) and the whole
+// modal render throws when it is missing. Native returns "" or a community URL: the forum
+// topic URL when the event has a forum topic, else the legacy announcement comments URL.
+// Our events have no forum topic, so link the community announcement page that hosts the
+// comments; fall back to the news URL, then to "" like native.
+export const deckyNativePartnerEventDiscussionUrl = (steamAppId: number, gid: string, fallbackUrl: string) =>
+  steamAppId && gid
+    ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${gid}`
+    : fallbackUrl || "";
+
 const makeDeckyNativePartnerEvent = (appId: number, steamAppId: number, item: any, index: number) => {
   const date = Number(item.date || item.posttime || item.published || 0) || Math.floor(Date.now() / 1000) - index * 60;
   const announcementGid = numericSteamNewsGid(item.announcement_gid || item.news_id || item.gid || item.id || item.url);
@@ -735,6 +745,9 @@ const makeDeckyNativePartnerEvent = (appId: number, steamAppId: number, item: an
     GetLastUpdaterSteamIDStr: () => "",
     GetStoreOrCommunityURL: () => announcementUrl,
     GetCommunityDiscussionURL: () => announcementUrl,
+    // Native takes an optional clan vanity URL; only its forum-topic branch uses it and our
+    // events have no forum topic, so the community announcement page is always the answer.
+    GetDiscussionURL: () => deckyNativePartnerEventDiscussionUrl(steamAppId, announcementGid, announcementUrl),
     GetStoreNewsURL: () => steamAppId && (announcementGid || eventGid || gid) ? `https://store.steampowered.com/news/app/${steamAppId}/view/${announcementGid || eventGid || gid}` : announcementUrl,
     url: announcementUrl,
   };

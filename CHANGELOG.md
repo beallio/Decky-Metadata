@@ -34,6 +34,9 @@ All notable changes to this project are documented here in Keep a Changelog form
   compatibility badge in **Game Info** goes back to its original state.
   Before, pressing **Save** after removing saved an empty record, which brought
   the badge back. (#40)
+- **Opening a news item works again.** For a non-Steam game matched to a Steam
+  store page, selecting a news item in **Activity** now opens it. Before, Steam
+  showed "An error occurred while rendering this content" instead.
 
 ## [0.6.3] - 2026-11-13
 
