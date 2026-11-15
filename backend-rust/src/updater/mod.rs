@@ -252,7 +252,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(now),
-                "message": "Update check skipped due to rate-limit cooldown",
+                "message": "rate_limit_cooldown_skipped",
                 "retry_after": isoformat_utc(until.to_owned())
             }));
         }
@@ -273,7 +273,7 @@ impl Updater {
                 .body
                 .get("message")
                 .map(py_string)
-                .unwrap_or_else(|| "Rate limit exceeded".to_owned());
+                .unwrap_or_else(|| "rate_limited".to_owned());
             crate::logging::event(
                 "update",
                 "GitHub release discovery was rate limited",
@@ -288,7 +288,7 @@ impl Updater {
             }));
         }
         if response.status != 200 || !response.body.is_array() {
-            let mut message = "Failed to check for updates".to_owned();
+            let mut message = "update_check_failed".to_owned();
             let body = response.body.as_object();
             let raw_message = body.and_then(|body| {
                 body.get("message")
@@ -343,7 +343,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": checked_at,
-                    "message": "Rate limit exceeded",
+                    "message": "rate_limited",
                     "retry_after": isoformat_utc(until)
                 }));
             }
@@ -358,7 +358,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": checked_at,
-                    "message": "Failed to download the release manifest"
+                    "message": "manifest_download_failed"
                 }));
             }
             if let Some(candidate) =
@@ -414,7 +414,7 @@ impl Updater {
                 return Ok(json!({
                     "status": "failed",
                     "checked_at": isoformat_utc(now),
-                    "message": "Rate limit cooldown active",
+                    "message": "rate_limit_cooldown",
                     "retry_after": isoformat_utc(until)
                 }));
             }
@@ -438,7 +438,7 @@ impl Updater {
                 .body
                 .get("message")
                 .map(py_string)
-                .unwrap_or_else(|| "Rate limit exceeded".to_owned());
+                .unwrap_or_else(|| "rate_limited".to_owned());
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
@@ -947,7 +947,7 @@ mod tests {
                 .check_for_update(&json!("0.3.1"), true)
                 .await
                 .unwrap()["message"],
-            "Update check skipped due to rate-limit cooldown"
+            "rate_limit_cooldown_skipped"
         );
         updater.test_now = Some(now() + Duration::seconds(61));
         assert_eq!(
@@ -1031,7 +1031,7 @@ mod tests {
         assert_eq!(result["status"], "failed");
         assert_eq!(
             updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap()["message"],
-            "Rate limit cooldown active"
+            "rate_limit_cooldown"
         );
         fixture_http.assert_drained();
     }
@@ -1046,6 +1046,7 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
         assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "manifest_download_failed");
         // An unknown release must not be cached as "current" for a day.
         assert!(updater.cache.get("last_result").is_none());
         fixture_http.assert_drained();
@@ -1058,11 +1059,12 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         let result = updater.check_for_update(&json!("0.3.1"), true).await.unwrap();
         assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "rate_limited");
         assert!(result["retry_after"].is_string());
         // The cooldown also blocks the next network check.
         assert_eq!(
             updater.check_for_update(&json!("0.3.1"), true).await.unwrap()["message"],
-            "Update check skipped due to rate-limit cooldown"
+            "rate_limit_cooldown_skipped"
         );
         fixture_http.assert_drained();
 

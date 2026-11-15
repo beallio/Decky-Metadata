@@ -127,7 +127,7 @@ impl Storage {
         if self.loaded {
             Ok(())
         } else {
-            Err("metadata settings file is unreadable; fix or remove it before saving changes".to_owned())
+            Err("settings_unreadable".to_owned())
         }
     }
 

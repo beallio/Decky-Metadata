@@ -715,7 +715,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
         Ok(payload) => payload,
         Err(_) => {
             log_provider_error("match search failed", None, None, Level::Warn);
-            return json!({"items": [], "error": "Steam search is unavailable. Try again."});
+            return json!({"items": [], "error": "steam_search_unavailable"});
         }
     };
     let Some(rows) = payload.get("items").and_then(Value::as_array) else {
@@ -725,7 +725,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
             Some("Invalid Steam search response"),
             Level::Warn,
         );
-        return json!({"items": [], "error": "Steam search is unavailable. Try again."});
+        return json!({"items": [], "error": "steam_search_unavailable"});
     };
     let mut items = Vec::new();
     let mut seen = HashSet::new();
@@ -757,7 +757,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
 
 pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
     let Some(appid) = steam_match_appid(steam_appid) else {
-        return json!({"preview": null, "error": "Select a valid Steam game."});
+        return json!({"preview": null, "error": "invalid_steam_game"});
     };
     let url = query_url(
         STEAM_APP_DETAILS_URL,
@@ -774,18 +774,18 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
             .and_then(|row| row.get("success"))
             .is_some_and(py_truthy)
         {
-            return Err("Steam game details are unavailable".to_owned());
+            return Err("steam_details_unavailable".to_owned());
         }
         let data = row
             .and_then(|row| row.get("data"))
             .filter(|data| data.is_object())
-            .ok_or_else(|| "Steam game details are unavailable".to_owned())?;
+            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
         let raw_title = data["name"]
             .as_str()
-            .ok_or_else(|| "Steam game details are unavailable".to_owned())?;
+            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
         let title = matching::clean_game_title(raw_title);
         if title.is_empty() {
-            return Err("Steam game title is unavailable".to_owned());
+            return Err("steam_title_unavailable".to_owned());
         }
         let developers = data["developers"]
             .as_array()
@@ -825,7 +825,7 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
                 Some(&error),
                 Level::Warn,
             );
-            json!({"preview": null, "error": "Steam details are unavailable. You can still use this match."})
+            json!({"preview": null, "error": "steam_preview_unavailable"})
         }
     }
 }
@@ -1493,14 +1493,14 @@ mod tests {
         );
         assert_eq!(
             steam_match_preview(&invalid, &json!(true)).await,
-            json!({"preview":null,"error":"Select a valid Steam game."})
+            json!({"preview":null,"error":"invalid_steam_game"})
         );
         invalid.assert_drained();
 
         let failure = Http::fixtures(vec![Fixture::failure(SEARCH_URL)]);
         assert_eq!(
             search_steam_matches(&failure, &json!("Portal"), &json!(8)).await,
-            json!({"items":[],"error":"Steam search is unavailable. Try again."})
+            json!({"items":[],"error":"steam_search_unavailable"})
         );
         failure.assert_drained();
     }
@@ -1548,7 +1548,7 @@ mod tests {
         )]);
         assert_eq!(
             steam_match_preview(&failure, &json!(400)).await,
-            json!({"preview":null,"error":"Steam details are unavailable. You can still use this match."})
+            json!({"preview":null,"error":"steam_preview_unavailable"})
         );
         failure.assert_drained();
     }

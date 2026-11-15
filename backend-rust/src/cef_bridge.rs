@@ -61,10 +61,10 @@ impl BigPictureEvaluator {
 
     pub async fn eval_in_big_picture(&self, code: &Value) -> Value {
         let Some(code) = code.as_str() else {
-            return json!({"status":"Steam UI unavailable","error":"Evaluation script is invalid or too large"});
+            return json!({"status":"steam_ui_unavailable","error":"Evaluation script is invalid or too large"});
         };
         if code.len() > MAX_EVALUATION_BYTES {
-            return json!({"status":"Steam UI unavailable","error":"Evaluation script is invalid or too large"});
+            return json!({"status":"steam_ui_unavailable","error":"Evaluation script is invalid or too large"});
         }
         if self.cancel.is_cancelled() {
             return Self::unavailable();
@@ -72,7 +72,7 @@ impl BigPictureEvaluator {
 
         let result = async {
             let Some(target) = self.find_big_picture_target().await? else {
-                return Ok(json!({"status":"Steam UI unavailable","error":"No Big Picture DevTools target found"}));
+                return Ok(json!({"status":"steam_ui_unavailable","error":"No Big Picture DevTools target found"}));
             };
             self.evaluate_target(&target, code, UPGRADE_TIMEOUT, RESPONSE_TIMEOUT).await
         }
@@ -113,19 +113,19 @@ impl BigPictureEvaluator {
     }
 
     fn unavailable() -> Value {
-        json!({"status":"Steam UI unavailable","error":"Plugin is unloading","runtimeMissing":true})
+        json!({"status":"steam_ui_unavailable","error":"Plugin is unloading","runtimeMissing":true})
     }
     fn error_envelope(error: &BridgeError) -> Value {
         match error {
             BridgeError::Cancelled => json!({
-                "status":"Steam UI unavailable",
+                "status":"steam_ui_unavailable",
                 "error":"Plugin is unloading",
                 "runtimeMissing":true
             }),
             BridgeError::Retryable(error) => {
-                json!({"status":"Steam UI unavailable","error":error,"retryable":true})
+                json!({"status":"steam_ui_unavailable","error":error,"retryable":true})
             }
-            BridgeError::Failure(error) => json!({"status":"Steam UI unavailable","error":error}),
+            BridgeError::Failure(error) => json!({"status":"steam_ui_unavailable","error":error}),
         }
     }
 
@@ -925,7 +925,7 @@ mod tests {
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
         assert_eq!(
             evaluator.eval_in_big_picture(&Value::Null).await,
-            json!({"status":"Steam UI unavailable","error":"Evaluation script is invalid or too large"})
+            json!({"status":"steam_ui_unavailable","error":"Evaluation script is invalid or too large"})
         );
         assert_eq!(
             evaluator
@@ -961,15 +961,15 @@ mod tests {
         assert!(evaluator.claim_debugger_warning(now + WARNING_INTERVAL));
         assert_eq!(
             BigPictureEvaluator::error_envelope(&BridgeError::Retryable("socket dropped".into())),
-            json!({"status":"Steam UI unavailable","error":"socket dropped","retryable":true})
+            json!({"status":"steam_ui_unavailable","error":"socket dropped","retryable":true})
         );
         assert_eq!(
             BigPictureEvaluator::error_envelope(&BridgeError::Failure("malformed response".into())),
-            json!({"status":"Steam UI unavailable","error":"malformed response"})
+            json!({"status":"steam_ui_unavailable","error":"malformed response"})
         );
         assert_eq!(
             BigPictureEvaluator::error_envelope(&BridgeError::Cancelled),
-            json!({"status":"Steam UI unavailable","error":"Plugin is unloading","runtimeMissing":true})
+            json!({"status":"steam_ui_unavailable","error":"Plugin is unloading","runtimeMissing":true})
         );
 
         let cancel = CancellationToken::new();
@@ -977,7 +977,7 @@ mod tests {
         let evaluator = BigPictureEvaluator::new(cancel).unwrap();
         assert_eq!(
             evaluator.eval_in_big_picture(&json!("true")).await,
-            json!({"status":"Steam UI unavailable","error":"Plugin is unloading","runtimeMissing":true})
+            json!({"status":"steam_ui_unavailable","error":"Plugin is unloading","runtimeMissing":true})
         );
     }
 }

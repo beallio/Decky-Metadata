@@ -82,7 +82,7 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
     let is_shortcut = is_shortcut.as_bool().ok_or("is_shortcut must be a boolean")?;
     let title = title.as_str().ok_or("title must be a string")?.trim();
     if title.contains('\0') || title.chars().count() > MAX_TITLE_CHARS {
-        return Err("invalid title".into());
+        return Err("invalid_title".into());
     }
     // Remove metadata or Clear cache after this point makes the lookup's result stale.
     let epoch = state.hltb_epoch.load(Ordering::SeqCst);
@@ -177,7 +177,7 @@ pub async fn check_game_id(state: &AppState, id: &Value) -> Result<Value, String
     match state.hltb.game_page(&state.http, id).await {
         Ok(Some(page)) => Ok(json!({"found": true, "game_id": page.game_id, "game_name": page.game_name})),
         Ok(None) => Ok(json!({"found": false})),
-        Err(Error::RateLimited { .. }) => Err("HowLongToBeat is busy. Try again in a minute.".into()),
+        Err(Error::RateLimited { .. }) => Err("hltb_busy".into()),
         Err(Error::Transient(message)) => Err(message),
     }
 }
@@ -186,11 +186,11 @@ pub async fn check_game_id(state: &AppState, id: &Value) -> Result<Value, String
 pub async fn search_games(state: &AppState, query: &Value) -> Result<Value, String> {
     let query = query.as_str().ok_or("query must be a string")?.trim();
     if query.is_empty() || query.contains('\0') || query.chars().count() > MAX_TITLE_CHARS {
-        return Err("invalid search".into());
+        return Err("invalid_search".into());
     }
     let results = match state.hltb.search(&state.http, query).await {
         Ok(results) => results,
-        Err(Error::RateLimited { .. }) => return Err("HowLongToBeat is busy. Try again in a minute.".into()),
+        Err(Error::RateLimited { .. }) => return Err("hltb_busy".into()),
         Err(Error::Transient(message)) => return Err(message),
     };
     Ok(json!(rank_by_title(query, &results).into_iter().map(|result| json!({

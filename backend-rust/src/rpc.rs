@@ -162,16 +162,16 @@ impl Serialize for Summary<'_> {
     }
 }
 
-/// Preference getters reject when the settings file could not be read, like the original backend.
+/// Preference getters reject with a stable code when the settings file could not be read, like the original backend.
 async fn loaded_store<'a>(
     state: &'a AppState,
-    what: &str,
+    code: &str,
 ) -> Result<tokio::sync::MutexGuard<'a, storage::Storage>, String> {
     let storage = state.store().await?;
     if storage.loaded_successfully() {
         Ok(storage)
     } else {
-        Err(format!("{what} could not be loaded"))
+        Err(code.to_owned())
     }
 }
 
@@ -186,7 +186,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_hltb_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_hltb_settings(
-                &loaded_store(&state, "HLTB settings").await?.data()["settings"]["hltb"],
+                &loaded_store(&state, "hltb_settings_unavailable").await?.data()["settings"]["hltb"],
             ))
         }
         "set_hltb_settings" => {
@@ -252,7 +252,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default" => {
             arity(&args, 0, 0)?;
             Ok(json!(storage::compatibility_default(
-                &loaded_store(&state, "compatibility default").await?.data()["settings"]["deck_compat_default"]
+                &loaded_store(&state, "compat_default_unavailable").await?.data()["settings"]["deck_compat_default"]
             )))
         }
         "set_compatibility_default" => {
@@ -267,7 +267,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default_scope" => {
             arity(&args, 0, 0)?;
             Ok(storage::compatibility_default_scope(
-                &loaded_store(&state, "compatibility default scope").await?.data()["settings"]
+                &loaded_store(&state, "compat_scope_unavailable").await?.data()["settings"]
                     ["deck_compat_default_scope"],
             )
             .unwrap_or("all")
@@ -285,7 +285,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_trailer_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_trailer_settings(
-                &loaded_store(&state, "trailer settings").await?.data()["settings"]["game_trailers"],
+                &loaded_store(&state, "trailer_settings_unavailable").await?.data()["settings"]["game_trailers"],
             ))
         }
         "set_trailer_settings" => {
@@ -300,7 +300,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_mini_achievements_enabled" => {
             arity(&args, 0, 0)?;
             Ok(
-                loaded_store(&state, "mini achievements settings").await?.data()["settings"]
+                loaded_store(&state, "mini_achievements_settings_unavailable").await?.data()["settings"]
                     ["mini_achievements_enabled"]
                     .as_bool()
                     .unwrap_or(false)
@@ -319,7 +319,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_protondb_badge_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_protondb_badge_settings(
-                &loaded_store(&state, "ProtonDB badge settings").await?.data()["settings"]
+                &loaded_store(&state, "protondb_settings_unavailable").await?.data()["settings"]
                     ["protondb_badges"],
             ))
         }
