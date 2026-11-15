@@ -119,7 +119,8 @@ styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
 Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
 and the Play bar form one blurred panel. **Background blur** never changes the
 Play bar's blur. **Use Steam button corners** keeps the **Details**
-button's corners as Steam draws them.
+button's corners as Steam draws them. **Push Play button down** moves the Play
+button below the times instead of layering the times over the header image.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam

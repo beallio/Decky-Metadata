@@ -25,6 +25,8 @@ const css = `
 }
 /* Sit on the bottom of the header instead of pushing the Play section down. */
 .decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
+/* "Push Play button down": take layout height below the header so Play moves down. */
+#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
 .decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
 .decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
 .decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
@@ -64,11 +66,13 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
     [settings.showComplete, stats.complete, "Completionist"],
     [settings.showAllStyles, stats.all, "All Styles"],
   ] as const;
+  const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
   const classes = [
     style === "default" ? "decky-metadata-hltb-default" : "",
     style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
     style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
     style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+    flow ? "decky-metadata-hltb-flow" : "",
   ].filter(Boolean).join(" ");
   const openDetails = () => Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
   return <div id="decky-metadata-hltb" className={classes} style={vars as CSSProperties}>

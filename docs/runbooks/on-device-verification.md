@@ -193,9 +193,9 @@ before testing, and restore them after the checks.
    the native Play section and its root: background and opacity must match.
    HLTB never writes the native section's inline styles, and its bounds stay
    the same except in one case: in **"Clean" Default** with a blurred Play bar
-   (Clean Gameview **Blur**) and a blur selection other than **None**, HLTB's
-   own stylesheet extends the Play section's box up behind the times, so one
-   blur covers both rows. The HLTB
+   (Clean Gameview **Blur**), a blur selection other than **None**, and
+   **Push Play button down** off, HLTB's own stylesheet extends the Play
+   section's box up behind the times, so one blur covers both rows. The HLTB
    row then draws no surface, the Play content stays in place, and removing the
    row removes the rule. Confirm on Brotato that the border between the rows
    shows no seam.
@@ -203,8 +203,13 @@ before testing, and restore them after the checks.
    behind HLTB; a tint change or computed `backdrop-filter` alone is not proof.
    Keep Steam's 3D rendering context through both HLTB wrappers: flattening an
    intermediate wrapper can silently stop the filter from sampling the header.
-4. Check all four HLTB layouts. The times must stay visible, and Play must stay
-   in place. Restore the original trailer preference and all other test changes.
+4. Check all four HLTB layouts. The times must stay visible. With **Push Play
+   button down** off (the default), Play must stay in place. For **Default** and
+   **"Clean" Default** with it on, the times must sit below the header image in
+   their own row and Play must move down by the row's height; then confirm on
+   the controller that D-pad down from the times reaches the Play button. The
+   toggle is hidden for the two **"Clean"** styles. Restore the original trailer
+   preference and all other test changes.
 
 The frontend surface regression covers preference, theme-update and cleanup
 behavior without writing native styles. It does not replace these rendering
