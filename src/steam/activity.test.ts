@@ -15,6 +15,7 @@ vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import {
   configureActivityMetadataLoader,
+  deckyNativePartnerEventDiscussionUrl,
   installNativeActivityStorePatch,
   refreshDeckyNativeActivityForApp,
   steamActivityPayloadForApp,
@@ -194,6 +195,75 @@ describe("synthetic native Activity contract", () => {
     expect(events.every((event) => event.BCanRender() === true)).toBe(true);
     expect(events[0].preview.strTitle).toBe("Renderable news");
     expect(events[0].preview.strSummary).toBe("Renderable news summary");
+  });
+});
+
+describe("synthetic native Activity event discussion URL", () => {
+  // The refresh returns the Steam-shaped Activity tree; only the event model is drilled below.
+  type RenderableActivity = { appActivityByDay?: Array<{ events?: Array<{ eventModel?: Record<string, unknown> }> }> };
+  const partnerEvent = async (appId: number, metadata: MetadataData) => {
+    installShortcut(appId);
+    metadataCache[String(appId)] = metadata;
+    const activity = await refreshDeckyNativeActivityForApp(appId) as unknown as RenderableActivity | null;
+    return activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel;
+  };
+
+  // Steam's event overlay (sp.js) reads these from eventModel while rendering the detail
+  // modal. A missing method throws "TypeError: X is not a function" and the whole event
+  // view fails; GetDiscussionURL was missing and crashed the matched-shortcut card.
+  const overlayMethods = [
+    "BEventCanShowBroadcastWidget",
+    "BHasSubTitle",
+    "BHasTag",
+    "BImageNeedScreenshotFallback",
+    "BIsEventActionEnabled",
+    "BIsUnlistedEvent",
+    "GetCategoryAsString",
+    "GetDescriptionWithFallback",
+    "GetDiscussionURL",
+    "GetEndTimeAndDateUnixSeconds",
+    "GetNameWithFallback",
+    "GetPostTimeAndDateUnixSeconds",
+    "GetStartTimeAndDateUnixSeconds",
+    "GetSteamAwardCategory",
+    "GetSteamAwardNomineeCategories",
+    "GetSubTitle",
+  ];
+
+  it("exposes every partner-event method the native overlay calls", async () => {
+    const event = await partnerEvent(9610, makeNewsMetadata("Overlay news", "12345678901234567"));
+
+    const missing = overlayMethods.filter((name) => typeof event?.[name] !== "function");
+
+    expect(missing).toEqual([]);
+  });
+
+  it("answers GetDiscussionURL with the community announcement page", async () => {
+    const event = await partnerEvent(9611, makeNewsMetadata("Discussion news", "12345678901234567"));
+
+    expect(typeof event?.GetDiscussionURL).toBe("function");
+    expect((event?.GetDiscussionURL as () => unknown)()).toBe(
+      "https://steamcommunity.com/games/55150/announcements/detail/12345678901234567",
+    );
+  });
+});
+
+describe("deckyNativePartnerEventDiscussionUrl", () => {
+  const newsUrl = "https://store.steampowered.com/news/app/1942280/view/677389136248701284";
+
+  it("prefers the community announcement page when the Steam appid and gid are known", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(1942280, "677389136248701284", newsUrl)).toBe(
+      "https://steamcommunity.com/games/1942280/announcements/detail/677389136248701284",
+    );
+  });
+
+  it("falls back to the news url when the appid or gid is unknown", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(1942280, "", newsUrl)).toBe(newsUrl);
+    expect(deckyNativePartnerEventDiscussionUrl(0, "677389136248701284", newsUrl)).toBe(newsUrl);
+  });
+
+  it("returns an empty string like native when nothing is known", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(0, "", "")).toBe("");
   });
 });
 

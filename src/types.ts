@@ -475,6 +475,7 @@ export type NativePartnerEvent = {
   GetVisibilityStartTimeAndDateUnixSeconds: () => number;
   BHasForumTopicGID: () => boolean;
   GetForumTopicURL: () => string;
+  GetDiscussionURL: (vanityUrl?: string) => string;
   GetAppIDOrReferenceAppID: () => number;
   GetEventType: () => number;
   BIsVisibleEvent: () => boolean;
