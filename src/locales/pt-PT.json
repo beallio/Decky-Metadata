@@ -24,7 +24,7 @@
     "invalid_search": "pesquisa inválida",
     "steam_search_unavailable": "A pesquisa na Steam está indisponível. Tente novamente.",
     "steam_details_unavailable": "Os detalhes do jogo na Steam estão indisponíveis",
-    "steam_title_unavailable": "O nome do jogo na Steam está indisponível",
+    "steam_title_unavailable": "O título do jogo na Steam está indisponível",
     "invalid_steam_game": "Selecione um jogo da Steam válido.",
     "steam_preview_unavailable": "Os detalhes da Steam estão indisponíveis. Ainda pode usar esta correspondência.",
     "settings_unreadable": "o ficheiro de definições de metadados está ilegível; corrija-o ou remova-o antes de guardar as alterações",
@@ -33,7 +33,7 @@
     "compat_default_unavailable": "não foi possível carregar a compatibilidade predefinida",
     "compat_scope_unavailable": "não foi possível carregar o âmbito da compatibilidade predefinida",
     "trailer_settings_unavailable": "não foi possível carregar as definições de trailers",
-    "mini_achievements_settings_unavailable": "não foi possível carregar as definições de mini conquistas",
+    "mini_achievements_settings_unavailable": "não foi possível carregar as definições de miniconquistas",
     "protondb_settings_unavailable": "não foi possível carregar as definições do selo ProtonDB",
     "steam_ui_unavailable": "Interface da Steam indisponível",
     "update_check_failed": "Falha ao procurar atualizações",
@@ -51,7 +51,7 @@
     "invalid_shortcut_app_id": "Este jogo não é um atalho válido.",
     "shortcut_name_target_empty": "Introduza um nome para o atalho.",
     "native_shortcut_unavailable": "A Steam não tem este atalho.",
-    "shortcut_name_changed": "O nome do atalho mudou antes da mudança de nome.",
+    "shortcut_name_changed": "O nome do atalho mudou antes da renomeação.",
     "shortcut_name_api_unavailable": "A API de nomes de atalhos da Steam está indisponível",
     "shortcut_name_api_failed": "A API de nomes de atalhos da Steam falhou",
     "shortcut_name_timeout": "A Steam não confirmou o novo nome do atalho a tempo."
@@ -96,9 +96,9 @@
   },
   "miniAchievements": {
     "errors": {
-      "loadFailed": "Não foi possível carregar as mini conquistas. Recarregue o plugin para tentar novamente: {{error}}",
-      "saveFailed": "Não foi possível guardar as mini conquistas: {{error}}",
-      "applyFailed": "Não foi possível aplicar as mini conquistas. Recarregue o plugin: {{error}}"
+      "loadFailed": "Não foi possível carregar as miniconquistas. Recarregue o plugin para tentar novamente: {{error}}",
+      "saveFailed": "Não foi possível guardar as miniconquistas: {{error}}",
+      "applyFailed": "Não foi possível aplicar as miniconquistas. Recarregue o plugin: {{error}}"
     }
   },
   "controllerTypes": {
@@ -111,7 +111,7 @@
   "qam": {
     "hltb": {
       "title": "Tempos do HLTB",
-      "conflictFeature": "os tempos do HLTB",
+      "conflictFeature": "tempos do HLTB",
       "showTimesLabel": "Mostrar tempos do HowLongToBeat",
       "showTimesDescription": "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
       "storeLabel": "Loja",
@@ -123,9 +123,9 @@
       "styleCleanLeft": "\"Clean\" à esquerda",
       "styleCleanDefault": "\"Clean\" predefinido",
       "pushPlayLabel": "Empurrar o botão Jogar para baixo",
-      "pushPlayDescription": "Mostra os tempos abaixo da imagem do cabeçalho e desloca o botão Jogar para baixo, como o HLTB for Deck. Enquanto aparece uma barra de estado de gravação na parte inferior da imagem do cabeçalho, os tempos ficam sobre a imagem.",
+      "pushPlayDescription": "Mostra os tempos abaixo da imagem do cabeçalho e desloca o botão Jogar para baixo, como o HLTB for Deck. Enquanto aparece uma barra de estado de jogos guardados na parte inferior da imagem do cabeçalho, os tempos ficam sobre a imagem.",
       "blurLabel": "Desfoque do fundo",
-      "blurDescription": "Por predefinição acompanha a barra Jogar; \"Blur\" também desfoca os tempos sobre a imagem do cabeçalho",
+      "blurDescription": "Por predefinição, acompanha a barra Jogar; \"Desfoque\" também desfoca os tempos sobre a imagem do cabeçalho",
       "blurMatchPlayBar": "Igual à barra Jogar",
       "blurOn": "Desfoque",
       "blurOff": "Nenhum",
@@ -154,7 +154,7 @@
       "textShadowDescription": "Adiciona uma sombra atrás das estatísticas para maior contraste",
       "textSizeLabel": "Tamanho do texto",
       "textSizeDescription": "Escala os números e etiquetas das estatísticas",
-      "bottomBorderLabel": "Limite inferior",
+      "bottomBorderLabel": "Borda inferior",
       "bottomBorderDescription": "Mostra uma linha divisória por baixo da barra do HLTB",
       "resetAppearance": "Repor aspeto",
       "loadingPreferences": "A carregar preferências do HLTB…"
@@ -188,9 +188,9 @@
     },
     "protondb": {
       "title": "Selos do ProtonDB",
-      "conflictFeature": "os selos do ProtonDB",
+      "conflictFeature": "selos do ProtonDB",
       "enableLabel": "Ativar selos do ProtonDB",
-      "enableDescription": "Mostra as classificações da comunidade no ProtonDB nas superfícies de jogos da Steam. Isto é separado do estado de compatibilidade da Valve.",
+      "enableDescription": "Mostra as classificações da comunidade no ProtonDB nas vistas de jogos da Steam. Isto é separado do estado de compatibilidade da Valve.",
       "homeLabel": "Capas no Início",
       "homeDescription": "Mostra um selo de classificação nas capas do Início.",
       "libraryLabel": "Capas na Biblioteca",
@@ -209,9 +209,9 @@
       "footnote": "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
     },
     "miniAchievements": {
-      "title": "Mini conquistas",
-      "conflictFeature": "mini conquistas",
-      "enableLabel": "Ativar mini conquistas",
+      "title": "Miniconquistas",
+      "conflictFeature": "miniconquistas",
+      "enableLabel": "Ativar miniconquistas",
       "enableDescription": "Mostra a pequena barra de progresso de conquistas da Steam ao lado do Tempo de jogo nas páginas de detalhes do jogo. Desativado por predefinição.",
       "footnote": "Isto usa o progresso de conquistas da Steam para jogos da Steam; não adiciona o acompanhamento de conquistas a jogos que não são da Steam."
     },
@@ -238,13 +238,13 @@
     },
     "metadata": {
       "title": "Metadados",
-      "detectedGames": "Jogos não-Steam detetados:",
+      "detectedGames": "Jogos não Steam detetados:",
       "saved": "Metadados guardados:",
       "missing": "Metadados em falta:",
       "refresh": "Atualizar metadados",
       "refreshing": "A atualizar...",
       "refreshingStatus": "A atualizar metadados...",
-      "refreshDescription": "Encontra e guarda metadados para os jogos não-Steam detetados que ainda não têm correspondência.",
+      "refreshDescription": "Encontra e guarda metadados para os jogos não Steam detetados que ainda não têm correspondência.",
       "cacheHeading": "Cache de metadados",
       "clearCache": "Limpar cache",
       "clearing": "A limpar...",
@@ -325,7 +325,7 @@
     "steamTrailerNotPlayable": "O trailer da Steam não pode ser reproduzido",
     "searchIgnTrailer": "A procurar um trailer de jogo da IGN",
     "noGameTrailer": "Nenhum trailer de jogo reproduzível encontrado",
-    "stoppedForLaunch": "Trailer interrompido para o lançamento",
+    "stoppedForLaunch": "Trailer interrompido ao iniciar",
     "trailerActive": "Trailer ativo",
     "trailerLabel": "Trailer: {{name}}",
     "waitingGamePage": "À espera de uma página de jogo ou de uma seleção no Início",
@@ -335,7 +335,7 @@
     "expandTrailer": "Expandir trailer",
     "mediaSourceUnavailable": "O MediaSource não está disponível",
     "steamUiUnavailable": "Interface da Steam indisponível",
-    "runtimeConflict": "Conflito de runtime do trailer de metadados",
+    "runtimeConflict": "Conflito de runtime do trailer do Metadata",
     "runtimeRemoved": "Runtime do trailer removido",
     "otherPluginActive": "Outro plugin de trailers ainda está ativo. Desative-o e recarregue a interface da Steam antes de usar os trailers do Metadata.",
     "loadingSettings": "A carregar definições de trailers",
@@ -363,7 +363,7 @@
       "gold": "Ouro",
       "silver": "Prata",
       "bronze": "Bronze",
-      "borked": "Avariado"
+      "borked": "Não funciona"
     },
     "badge": "ProtonDB: {{tier}}",
     "coverAriaLabel": "ProtonDB {{tier}}",
@@ -419,7 +419,7 @@
   },
   "conflicts": {
     "pluginConflict": "O {{pluginName}} está ativado no Decky Loader. Desative esse plugin para usar {{feature}} aqui.",
-    "pluginConflictSaved": "A sua definição foi guardada; esta funcionalidade volta quando o outro plugin for desativado.",
+    "pluginConflictSaved": "A sua definição foi guardada; esta funcionalidade será retomada quando o outro plugin for desativado.",
     "detectionUnavailable": "Não foi possível verificar plugins em conflito. Use apenas um fornecedor de {{feature}} de cada vez."
   },
   "editor": {
@@ -436,7 +436,7 @@
       "title": "Título",
       "description": "Descrição",
       "developers": "Programadores",
-      "publishers": "Publicadores",
+      "publishers": "Editoras",
       "releaseDate": "Data de lançamento",
       "rating": "Classificação"
     },
@@ -559,12 +559,12 @@
     "localMultiPlayer": "Multijogador local",
     "localCoOp": "Cooperativo local",
     "splitScreen": "Ecrã dividido",
-    "fullController": "Suporte total de comando",
+    "fullController": "Compatibilidade total com comando",
     "mmo": "MMO",
     "achievements": "Conquistas"
   },
   "controllerLayouts": {
     "disabledHeading": "Esquemas de comando desativados",
-    "disabledBody": "A usar a interface padrão de esquemas de comando da Steam até o Decky Metadata ser recarregado."
+    "disabledBody": "A usar a interface predefinida de esquemas de comando da Steam até o Decky Metadata ser recarregado."
   }
 }

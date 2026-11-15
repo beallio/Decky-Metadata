@@ -17,7 +17,7 @@
       "updated_activity": "{{title}} の Steam アクティビティを更新しました",
       "no_activity": "{{title}} の Steam アクティビティが見つかりません"
     },
-    "hltb_busy": "HowLongToBeat が混雑しています。1分ほどで再試行してください。",
+    "hltb_busy": "HowLongToBeat が混雑しています。1分ほど待ってから再試行してください。",
     "invalid_title": "無効なタイトル",
     "invalid_search": "無効な検索",
     "steam_search_unavailable": "Steam 検索を利用できません。再試行してください。",
@@ -80,7 +80,7 @@
     },
     "details": "詳細",
     "search": {
-      "searching": "検索中...",
+      "searching": "検索中…",
       "action": "HLTB を検索",
       "noGames": "HowLongToBeat にゲームが見つかりませんでした。",
       "mainStory": "メインストーリー {{hours}}",
@@ -140,8 +140,8 @@
       "allStylesStatLabel": "「すべてのプレイスタイル」統計の切り替え",
       "allStylesStatDescription": "すべてのプレイスタイル統計のみを表示/非表示にします",
       "clearCacheButton": "HLTB キャッシュを消去",
-      "clearingButton": "消去中...",
-      "cacheClearing": "HLTB キャッシュを消去中...",
+      "clearingButton": "消去中…",
+      "cacheClearing": "HLTB キャッシュを消去中…",
       "cacheCleared": "HLTB キャッシュを消去しました。ゲームを開くと時間が再読み込みされます。",
       "cacheFailed": "HLTB キャッシュを消去できませんでした。",
       "customizeLabel": "外観をカスタマイズ",
@@ -152,7 +152,7 @@
       "textShadowDescription": "コントラストを高めるため、統計の後ろに影を追加します",
       "textSizeLabel": "テキストサイズ",
       "textSizeDescription": "統計の数値とラベルの大きさを調整します",
-      "bottomBorderLabel": "下罫線",
+      "bottomBorderLabel": "下の境界線",
       "bottomBorderDescription": "HLTB バーの下に区切り線を表示します",
       "resetAppearance": "外観をリセット",
       "loadingPreferences": "HLTB の設定を読み込み中…"
@@ -166,7 +166,7 @@
       "detailLabel": "詳細ビューのトレーラー",
       "detailDescription": "ゲームのライブラリのメインページで、アートワークの上にトレーラーを再生します。",
       "detailDelayLabel": "詳細のフェードイン遅延",
-      "detailDelayDescription": "ゲームページを開いてから、準備完了のトレーラーを表示するまでの待ち時間です。",
+      "detailDelayDescription": "ゲームページを開いてから、再生準備ができたトレーラーを表示するまでの待ち時間です。",
       "audioLabel": "詳細トレーラーの音声",
       "audioDescription": "詳細トレーラーが表示されたときに音声をフェードインします。ホームのトレーラーは常にミュートです。",
       "hideLogoLabel": "詳細トレーラー中はゲームロゴを隠す",
@@ -176,7 +176,7 @@
       "homeDescription": "選択またはホバー中のゲームのホーム背景の上に、ミュートしたトレーラーを再生します。",
       "homeDelayLabel": "ホームのフェードイン遅延",
       "homeDelayDescription": "トレーラーを探すまでの待ち時間です。別のゲームに移動するとこの遅延がリセットされます。",
-      "qualityLabel": "動画品質",
+      "qualityLabel": "動画の画質",
       "qualityAuto": "自動 — ディスプレイに合わせる",
       "displayLabel": "Big Picture ディスプレイ",
       "displayPixels": "{{width}} × {{height}} ピクセル",
@@ -204,7 +204,7 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "ProtonDB バッジの設定を読み込み中…",
-      "footnote": "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームは非表示になります。"
+      "footnote": "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
     },
     "miniAchievements": {
       "title": "ミニ実績",
@@ -218,7 +218,7 @@
       "defaultStatus": "既定の互換性ステータス",
       "applyDefaultTo": "既定値の適用先",
       "categoryAutomatic": "自動 — 一致した Steam ステータスを使用",
-      "categoryVerified": "検証済み",
+      "categoryVerified": "確認済み",
       "categoryPlayable": "プレイ可能",
       "categoryUnsupported": "非対応",
       "categoryUnknown": "不明",
@@ -232,7 +232,7 @@
         "metadata": "Steam ID の有無にかかわらず、保存済みのすべてのメタデータレコードに適用されます。ゲームごとの設定が優先されます。",
         "all": "レコードのないショートカットを含む、すべてのネイティブな Steam 以外のショートカットに適用されます。ゲームごとの設定が優先されます。"
       },
-      "perGameNote": "Valve に従うはゲームごとの設定です。手動および既定のカテゴリはユーザーの選択であり、Valve の認定ではありません。"
+      "perGameNote": "「Valve に従う」はゲームごとの選択です。手動および既定のカテゴリはユーザーの選択であり、Valve の認定ではありません。"
     },
     "metadata": {
       "title": "メタデータ",
@@ -240,12 +240,12 @@
       "saved": "保存済みメタデータ:",
       "missing": "メタデータなし:",
       "refresh": "メタデータを更新",
-      "refreshing": "更新中...",
-      "refreshingStatus": "メタデータを更新中...",
+      "refreshing": "更新中…",
+      "refreshingStatus": "メタデータを更新中…",
       "refreshDescription": "まだ一致のない、検出された Steam 以外のゲームのメタデータを検索して保存します。",
       "cacheHeading": "メタデータキャッシュ",
       "clearCache": "キャッシュを消去",
-      "clearing": "消去中...",
+      "clearing": "消去中…",
       "clearCacheDescription": "保存済みの一致とメタデータを消去し、ゲームを再度照合できるようにします。",
       "delistedHeading": "配信終了した Steam ゲーム",
       "refreshDelisted": "配信終了ゲームを更新"
@@ -257,10 +257,10 @@
       "receiveDevelopment": "開発リリースを受け取る",
       "receiveDevelopmentDescription": "テスト用のプレリリースビルドが含まれます。これらのビルドには不具合が含まれる場合があります。",
       "autoCheck": "アップデートを自動的に確認",
-      "autoCheckDescription": "プラグインの読み込み中にバックグラウンドで確認します。",
+      "autoCheckDescription": "プラグインが読み込まれている間、バックグラウンドで確認します。",
       "status": "ステータス",
       "lastChecked": "最終確認: {{date}}",
-      "checking": "確認中...",
+      "checking": "確認中…",
       "checkInterrupted": "{{seconds}} 秒後に確認が中断されました",
       "checkFailed": "確認に失敗しました",
       "upToDate": "最新です",
@@ -272,13 +272,13 @@
       "newVersion": "新バージョン: v{{version}}（{{channel}}）",
       "channelStable": "安定版",
       "channelDevelopment": "開発版",
-      "downgradeWarning": "警告: 安定版への切り戻しはダウングレードです。",
-      "actionMoveToStable": "安定版 v{{version}} に移動",
+      "downgradeWarning": "警告: 安定版に戻すのはダウングレードです。",
+      "actionMoveToStable": "安定版 v{{version}} に移行",
       "actionRevertToStable": "安定版 v{{version}} に戻す",
       "actionInstallDevelopment": "開発ビルド v{{version}} をインストール",
       "actionUpdate": "v{{version}} に更新",
-      "waitingForDecky": "Decky を待機中...",
-      "preparing": "準備中...",
+      "waitingForDecky": "Decky を待機中…",
+      "preparing": "準備中…",
       "localBuildOnlyStable": "ローカルビルドは安定版リリースにのみ自己更新できます。この開発リリースは GitHub Releases から手動でインストールしてください。",
       "manualInstallUnavailable": "この Decky 環境では自動インストールを利用できません。このリリースは GitHub Releases から手動でインストールしてください。",
       "viewReleaseNotes": "リリースノートを表示",
@@ -296,7 +296,7 @@
     },
     "logs": {
       "title": "ログ",
-      "loading": "読み込み中...",
+      "loading": "読み込み中…",
       "view": "ログを表示",
       "debugLogging": "デバッグログ",
       "debugLoggingDescription": "トラブルシューティング用に詳細なログを有効にします。",
@@ -373,7 +373,7 @@
     "update": "アップデート",
     "majorUpdate": "メジャーアップデート",
     "dlc": "ダウンロードコンテンツ",
-    "eventLoot": "イベント: ルート",
+    "eventLoot": "イベント: 戦利品",
     "eventPerks": "イベント: 特典",
     "eventChallenge": "イベント: チャレンジ",
     "news": "ニュース",
@@ -413,7 +413,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "メタデータを変更..."
+    "changeMetadata": "メタデータを変更…"
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} が Decky Loader で有効です。ここで {{feature}} を使用するには、そのプラグインを無効にしてください。",
@@ -427,21 +427,21 @@
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
     "searchIgn": "IGN メタデータを検索",
     "search": "検索",
-    "searching": "検索中...",
+    "searching": "検索中…",
     "noResults": "まだ結果がありません。",
     "source": "ソース",
     "field": {
       "title": "タイトル",
       "description": "説明",
       "developers": "開発元",
-      "publishers": "販売元",
+      "publishers": "パブリッシャー",
       "releaseDate": "リリース日",
       "rating": "レーティング"
     },
     "compat": {
       "useGlobalDefault": "グローバル既定値を使用",
       "followValve": "Valve に従う",
-      "verified": "検証済み",
+      "verified": "確認済み",
       "playable": "プレイ可能",
       "unsupported": "非対応",
       "unknown": "不明",
@@ -451,10 +451,10 @@
       "useGlobalDefaultOutsideScopeOriginal": "グローバル既定値を使用（選択した範囲外 — Steam の元のステータス）",
       "useGlobalDefaultOutsideScopeFromValve": "グローバル既定値を使用（選択した範囲外 — Valve による {{category}}）",
       "useGlobalDefaultAutomatic": "グローバル既定値を使用（自動 — Steam の元のステータス）",
-      "useGlobalDefaultFromValve": "グローバル既定値を使用（{{category}} — Valve より）"
+      "useGlobalDefaultFromValve": "グローバル既定値を使用（{{category}} — Valve 提供）"
     },
     "compatibilityStatus": "互換性ステータス",
-    "compatibilityHelp": "グローバル既定値を使用すると QAM 設定を継承します。Valve に従うはそれを無視し、Valve のデータが利用できない場合は Steam の元のステータスを保持します。",
+    "compatibilityHelp": "「グローバル既定値を使用」は QAM 設定を継承します。「Valve に従う」はそれを無視し、Valve のデータが利用できない場合は Steam の元のステータスを保持します。",
     "compatibilityChoices": "手動および既定のカテゴリはユーザーの選択であり、Valve の認定やエミュレーターのパフォーマンス結果ではありません。",
     "steamInfoFields": "Steam 情報フィールド",
     "hltbGame": "HowLongToBeat ゲーム",
@@ -470,7 +470,7 @@
       "current": "現在: {{name}}",
       "missingName": "Steam がネイティブのショートカット名を公開していません",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Steam 名を読み込み中...",
+      "loadingSteamName": "Steam 名を読み込み中…",
       "noOfficialName": "Steam が正式な名前を返しませんでした",
       "managementUnavailable": "ショートカット名の管理を利用できません",
       "apiUnavailable": "Steam のネイティブなショートカット名 API を利用できません",
@@ -487,7 +487,7 @@
       "forget": "保存された名前履歴を忘れる",
       "forgetAction": "履歴を忘れる",
       "forgetTitle": "保存された名前履歴を忘れますか？",
-      "forgetBody": "これは Decky Metadata の保存済み復元履歴のみを削除します。Steam はショートカット名を変更しません。"
+      "forgetBody": "これは Decky Metadata の保存済み復元履歴のみを削除します。Steam 側のショートカット名は変更されません。"
     },
     "toast": {
       "hltbInvalidTitle": "無効な HLTB ゲーム",
@@ -517,11 +517,11 @@
       "shortcutHistoryNotCleared": "Steam は名前を復元しましたが、保存済み履歴を消去できませんでした: {{error}}",
       "shortcutNameNotRestoredTitle": "ショートカット名は復元されませんでした",
       "nameHistoryForgottenTitle": "保存された名前履歴を忘れました",
-      "nameHistoryForgottenBody": "Steam はショートカット名を変更していません。",
+      "nameHistoryForgottenBody": "Steam 側のショートカット名は変更されていません。",
       "nameHistoryNotClearedTitle": "保存された名前履歴は消去されませんでした"
     },
     "steamTextLanguage": "Steam テキストの言語: {{language}}",
-    "fetchSteamText": "{{language}}で Steam テキストを取得",
+    "fetchSteamText": "{{language}} で Steam テキストを取得",
     "steamTextUnavailable": "Steam はこのゲームのテキストを返しませんでした。"
   },
   "matchPicker": {
@@ -530,14 +530,14 @@
     "currentAppId": "現在の Steam アプリ ID: {{appId}}",
     "searchAriaLabel": "Steam ゲーム検索",
     "search": "Steam を検索",
-    "searching": "Steam を検索中...",
+    "searching": "Steam を検索中…",
     "idle": "ゲーム名を入力して Steam の一致を検索してください。",
     "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
     "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致",
     "appIdSelected": "Steam アプリ ID: {{appId}} · 選択済み",
     "appIdCurrentSelected": "Steam アプリ ID: {{appId}} · 現在の一致 · 選択済み",
-    "loadingDetails": "Steam の詳細を読み込み中...",
+    "loadingDetails": "Steam の詳細を読み込み中…",
     "artworkAlt": "{{title}} の Steam アートワーク",
     "developer": "開発元: {{names}}",
     "developerUnavailable": "開発元を取得できません",
