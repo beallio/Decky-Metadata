@@ -96,7 +96,7 @@ show cover badges only when a game is focused or hovered.
 
 Select the game-page button or the Store box to open that game's ProtonDB
 reports. On a Steam Store game page the rating is in a boxed info row below the
-trailers and screenshots, beside a HowLongToBeat box. The ratings are
+trailers and screenshots, beside a **How Long To Beat** box. The ratings are
 **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
 They describe community experience, not Valve certification or a guarantee
 that your copy will run. Games without a match or rating have no badge.
@@ -111,16 +111,18 @@ Store row requirements, and troubleshooting.
 Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. The same times appear in a
-box on Steam Store game pages. Steam games are matched by
+**How Long To Beat** box on Steam Store game pages. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
 You can choose the HowLongToBeat game for a non-Steam game in its editor. The
 styles and appearance options of HLTB for Deck are included. The **"Clean"**
 styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
 Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
 and the Play bar form one blurred panel. **Background blur** never changes the
-Play bar's blur. **Use Steam button corners** keeps the **Details**
-button's corners as Steam draws them. **Push Play button down** moves the Play
-button below the times instead of layering the times over the header image.
+Play bar's blur. **Use Steam button corners** gives the **"Clean"** styles'
+**Details** button Steam's normal corners instead of the theme's rounded ones.
+**Push Play button down** is available in the **Default** and **"Clean" Default**
+styles. It moves the Play button below the times instead of layering the times
+over the header image.
 While a Steam Cloud or SDH-Ludusavi save status bar sits at the bottom of the
 header image, the times stay on the image and the Play button does not move, so
 the bar keeps its artwork background. With themes that already put Play below
@@ -194,10 +196,11 @@ The plugin's own text follows your Steam language. It is available in Albanian,
 Arabic, Bulgarian, Chinese (Simplified and Traditional), Czech, Dutch, English,
 Finnish, French, Georgian, German, Greek, Italian, Japanese, Korean, Polish,
 Portuguese (Brazil and Portugal), Romanian, Russian, Spanish, Swedish, Turkish,
-and Ukrainian. If your Steam language is not on this list, the plugin uses
+and Ukrainian. If your Steam language has no plugin text, the plugin uses your
+system language when that language has plugin text. Otherwise, the plugin uses
 English. Steam has no Albanian or Georgian setting. The plugin uses those only
-when the system language is Albanian or Georgian and the Steam language has no
-plugin translation.
+when your system language is Albanian or Georgian and the Steam language has no
+plugin text.
 
 The non-English text is a machine translation that no native speaker has
 reviewed yet. Corrections are welcome. HowLongToBeat data and IGN details stay
