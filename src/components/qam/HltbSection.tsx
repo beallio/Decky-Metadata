@@ -57,7 +57,7 @@ export function HltbSection({
   const controlsDisabled = !settingsLoaded || busy;
   const disabled = controlsDisabled || !settings.enabled;
   const appearance = settings.appearance;
-  const notice = featureConflictNotice(conflict, t("qam.hltb.title"), settings.enabled);
+  const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
   const update = <K extends keyof HltbSettings>(key: K, value: HltbSettings[K]) => { void onSettingsChange({ ...settings, [key]: value }); };
   const updateAppearance = <K extends keyof HltbAppearance>(key: K, value: HltbAppearance[K]) => update("appearance", { ...appearance, [key]: value });
   return <CollapsibleSection title={t("qam.hltb.title")} icon={<FaClock size={16} />} defaultExpanded={initiallyExpanded}>

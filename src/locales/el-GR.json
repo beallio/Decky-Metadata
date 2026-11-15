@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "Χρόνοι HLTB",
+      "conflictFeature": "τους χρόνους HLTB",
       "showTimesLabel": "Εμφάνιση χρόνων HowLongToBeat",
       "showTimesDescription": "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και μη Steam.",
       "storeLabel": "Κατάστημα",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "Σήματα ProtonDB",
+      "conflictFeature": "τα σήματα ProtonDB",
       "enableLabel": "Ενεργοποίηση σημάτων ProtonDB",
       "enableDescription": "Εμφάνιση βαθμίδων παιχνιδιών ProtonDB από την κοινότητα στις επιφάνειες Steam. Είναι ξεχωριστό από την κατάσταση συμβατότητας της Valve.",
       "homeLabel": "Εξώφυλλα παιχνιδιών αρχικής",

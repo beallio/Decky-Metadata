@@ -111,6 +111,7 @@
   "qam": {
     "hltb": {
       "title": "Tempos do HLTB",
+      "conflictFeature": "os tempos do HLTB",
       "showTimesLabel": "Mostrar tempos do HowLongToBeat",
       "showTimesDescription": "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
       "storeLabel": "Loja",
@@ -187,6 +188,7 @@
     },
     "protondb": {
       "title": "Selos do ProtonDB",
+      "conflictFeature": "os selos do ProtonDB",
       "enableLabel": "Ativar selos do ProtonDB",
       "enableDescription": "Mostra as classificações da comunidade no ProtonDB nas superfícies de jogos da Steam. Isto é separado do estado de compatibilidade da Valve.",
       "homeLabel": "Capas no Início",

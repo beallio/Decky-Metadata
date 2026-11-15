@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB süreleri",
+      "conflictFeature": "HLTB sürelerini",
       "showTimesLabel": "HowLongToBeat sürelerini göster",
       "showTimesDescription": "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
       "storeLabel": "Mağaza",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "ProtonDB rozetleri",
+      "conflictFeature": "ProtonDB rozetlerini",
       "enableLabel": "ProtonDB rozetlerini etkinleştir",
       "enableDescription": "Steam oyun yüzeylerinde topluluk ProtonDB kademelerini gösterir. Bu, Valve'ın uyumluluk durumundan ayrıdır.",
       "homeLabel": "Ana Sayfa oyun kapakları",

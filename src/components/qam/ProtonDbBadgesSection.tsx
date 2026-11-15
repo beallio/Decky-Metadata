@@ -36,7 +36,7 @@ export function ProtonDbBadgesSection({
   const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
   const dependentControlsDisabled = controlsDisabled || !settings.enabled;
   const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
-  const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.title"), settings.enabled);
+  const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
   const updateSetting = <K extends keyof ProtonDbBadgeSettings>(key: K, value: ProtonDbBadgeSettings[K]) => {
     void onSettingsChange({ ...settings, [key]: value });
   };

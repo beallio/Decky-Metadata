@@ -111,6 +111,7 @@
   "qam": {
     "hltb": {
       "title": "Timpii HLTB",
+      "conflictFeature": "timpii HLTB",
       "showTimesLabel": "Afișează timpii HowLongToBeat",
       "showTimesDescription": "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
       "storeLabel": "Magazin",
@@ -187,6 +188,7 @@
     },
     "protondb": {
       "title": "Insigne ProtonDB",
+      "conflictFeature": "insignele ProtonDB",
       "enableLabel": "Activează insignele ProtonDB",
       "enableDescription": "Afișează nivelurile ProtonDB ale comunității pe suprafețele de joc Steam. Este separat de starea de compatibilitate a Valve.",
       "homeLabel": "Coperțile jocurilor din Acasă",

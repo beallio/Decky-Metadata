@@ -114,6 +114,7 @@
   "qam": {
     "hltb": {
       "title": "أوقات HLTB",
+      "conflictFeature": "أوقات HLTB",
       "showTimesLabel": "إظهار أوقات HowLongToBeat",
       "showTimesDescription": "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
       "storeLabel": "المتجر",
@@ -190,6 +191,7 @@
     },
     "protondb": {
       "title": "شارات ProtonDB",
+      "conflictFeature": "شارات ProtonDB",
       "enableLabel": "تفعيل شارات ProtonDB",
       "enableDescription": "إظهار تصنيفات ProtonDB المجتمعية للألعاب في واجهات Steam. هذا منفصل عن حالة التوافق من Valve.",
       "homeLabel": "أغلفة الألعاب في الرئيسية",

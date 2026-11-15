@@ -109,6 +109,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB 时长",
+      "conflictFeature": "HLTB 时长",
       "showTimesLabel": "显示 HowLongToBeat 时长",
       "showTimesDescription": "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
       "storeLabel": "商店",
@@ -185,6 +186,7 @@
     },
     "protondb": {
       "title": "ProtonDB 徽章",
+      "conflictFeature": "ProtonDB 徽章",
       "enableLabel": "启用 ProtonDB 徽章",
       "enableDescription": "在 Steam 游戏界面上显示 ProtonDB 社区分级。这与 Valve 的兼容性状态相互独立。",
       "homeLabel": "主页游戏封面",

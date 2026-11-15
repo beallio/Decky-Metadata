@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB-tider",
+      "conflictFeature": "HLTB-tider",
       "showTimesLabel": "Visa HowLongToBeat-tider",
       "showTimesDescription": "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
       "storeLabel": "Butik",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "ProtonDB-märken",
+      "conflictFeature": "ProtonDB-märken",
       "enableLabel": "Aktivera ProtonDB-märken",
       "enableDescription": "Visar ProtonDB-nivåer från gemenskapen på Steams spelytor. Detta är separat från Valves kompatibilitetsstatus.",
       "homeLabel": "Spelomslag på Home",

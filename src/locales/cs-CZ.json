@@ -112,6 +112,7 @@
   "qam": {
     "hltb": {
       "title": "Časy HLTB",
+      "conflictFeature": "časy HLTB",
       "showTimesLabel": "Zobrazovat časy HowLongToBeat",
       "showTimesDescription": "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
       "storeLabel": "Obchod",
@@ -188,6 +189,7 @@
     },
     "protondb": {
       "title": "Odznaky ProtonDB",
+      "conflictFeature": "odznaky ProtonDB",
       "enableLabel": "Povolit odznaky ProtonDB",
       "enableDescription": "Zobrazovat komunitní úrovně ProtonDB na stránkách her Steam. Je to oddělené od stavu kompatibility Valve.",
       "homeLabel": "Obaly na domovské obrazovce",

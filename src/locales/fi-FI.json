@@ -110,6 +110,7 @@
   "qam": {
     "hltb": {
       "title": "HLTB-ajat",
+      "conflictFeature": "HLTB-ajat",
       "showTimesLabel": "Näytä HowLongToBeat-ajat",
       "showTimesDescription": "Näytä HowLongToBeat-ajat pelisivuilla Steam- ja muille kuin Steam-peleille.",
       "storeLabel": "Kauppa",
@@ -186,6 +187,7 @@
     },
     "protondb": {
       "title": "ProtonDB-tunnukset",
+      "conflictFeature": "ProtonDB-tunnukset",
       "enableLabel": "Ota ProtonDB-tunnukset käyttöön",
       "enableDescription": "Näyttää yhteisön ProtonDB-tasot Steamin pelinäkymissä. Tämä on erillinen Valven yhteensopivuustilasta.",
       "homeLabel": "Home-pelikannet",

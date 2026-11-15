@@ -3039,6 +3039,7 @@ var quickLinks$o = {
 var qam$o = {
 	hltb: {
 		title: "أوقات HLTB",
+		conflictFeature: "أوقات HLTB",
 		showTimesLabel: "إظهار أوقات HowLongToBeat",
 		showTimesDescription: "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
 		storeLabel: "المتجر",
@@ -3115,6 +3116,7 @@ var qam$o = {
 	},
 	protondb: {
 		title: "شارات ProtonDB",
+		conflictFeature: "شارات ProtonDB",
 		enableLabel: "تفعيل شارات ProtonDB",
 		enableDescription: "إظهار تصنيفات ProtonDB المجتمعية للألعاب في واجهات Steam. هذا منفصل عن حالة التوافق من Valve.",
 		homeLabel: "أغلفة الألعاب في الرئيسية",
@@ -3624,6 +3626,7 @@ var quickLinks$n = {
 var qam$n = {
 	hltb: {
 		title: "Времена от HLTB",
+		conflictFeature: "времената от HLTB",
 		showTimesLabel: "Показване на времената от HowLongToBeat",
 		showTimesDescription: "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
 		storeLabel: "Магазин",
@@ -3700,6 +3703,7 @@ var qam$n = {
 	},
 	protondb: {
 		title: "Значки на ProtonDB",
+		conflictFeature: "значките на ProtonDB",
 		enableLabel: "Активиране на значките на ProtonDB",
 		enableDescription: "Показва общностните нива на ProtonDB в интерфейсите на Steam за игри. Това е отделно от състоянието за съвместимост на Valve.",
 		homeLabel: "Корици на игрите в Начало",
@@ -4211,6 +4215,7 @@ var quickLinks$m = {
 var qam$m = {
 	hltb: {
 		title: "Časy HLTB",
+		conflictFeature: "časy HLTB",
 		showTimesLabel: "Zobrazovat časy HowLongToBeat",
 		showTimesDescription: "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
 		storeLabel: "Obchod",
@@ -4287,6 +4292,7 @@ var qam$m = {
 	},
 	protondb: {
 		title: "Odznaky ProtonDB",
+		conflictFeature: "odznaky ProtonDB",
 		enableLabel: "Povolit odznaky ProtonDB",
 		enableDescription: "Zobrazovat komunitní úrovně ProtonDB na stránkách her Steam. Je to oddělené od stavu kompatibility Valve.",
 		homeLabel: "Obaly na domovské obrazovce",
@@ -4796,6 +4802,7 @@ var quickLinks$l = {
 var qam$l = {
 	hltb: {
 		title: "HLTB-Zeiten",
+		conflictFeature: "HLTB-Zeiten",
 		showTimesLabel: "HowLongToBeat-Zeiten anzeigen",
 		showTimesDescription: "Zeigt HowLongToBeat-Zeiten auf Spielseiten für Steam- und Nicht-Steam-Spiele.",
 		storeLabel: "Shop",
@@ -4872,6 +4879,7 @@ var qam$l = {
 	},
 	protondb: {
 		title: "ProtonDB-Abzeichen",
+		conflictFeature: "ProtonDB-Abzeichen",
 		enableLabel: "ProtonDB-Abzeichen aktivieren",
 		enableDescription: "Zeigt ProtonDB-Stufen aus der Community auf Steam-Oberflächen für Spiele. Dies ist unabhängig von Valves Kompatibilitätsstatus.",
 		homeLabel: "Home-Spielcover",
@@ -5381,6 +5389,7 @@ var quickLinks$k = {
 var qam$k = {
 	hltb: {
 		title: "Χρόνοι HLTB",
+		conflictFeature: "τους χρόνους HLTB",
 		showTimesLabel: "Εμφάνιση χρόνων HowLongToBeat",
 		showTimesDescription: "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και μη Steam.",
 		storeLabel: "Κατάστημα",
@@ -5457,6 +5466,7 @@ var qam$k = {
 	},
 	protondb: {
 		title: "Σήματα ProtonDB",
+		conflictFeature: "τα σήματα ProtonDB",
 		enableLabel: "Ενεργοποίηση σημάτων ProtonDB",
 		enableDescription: "Εμφάνιση βαθμίδων παιχνιδιών ProtonDB από την κοινότητα στις επιφάνειες Steam. Είναι ξεχωριστό από την κατάσταση συμβατότητας της Valve.",
 		homeLabel: "Εξώφυλλα παιχνιδιών αρχικής",
@@ -5966,6 +5976,7 @@ var quickLinks$j = {
 var qam$j = {
 	hltb: {
 		title: "HLTB times",
+		conflictFeature: "HLTB times",
 		showTimesLabel: "Show HowLongToBeat times",
 		showTimesDescription: "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
 		storeLabel: "Store",
@@ -6042,6 +6053,7 @@ var qam$j = {
 	},
 	protondb: {
 		title: "ProtonDB badges",
+		conflictFeature: "ProtonDB badges",
 		enableLabel: "Enable ProtonDB badges",
 		enableDescription: "Show community ProtonDB game tiers on Steam game surfaces. This is separate from Valve's compatibility status.",
 		homeLabel: "Home game covers",
@@ -6552,6 +6564,7 @@ var quickLinks$i = {
 var qam$i = {
 	hltb: {
 		title: "Tiempos de HLTB",
+		conflictFeature: "los tiempos de HLTB",
 		showTimesLabel: "Mostrar tiempos de HowLongToBeat",
 		showTimesDescription: "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
 		storeLabel: "Tienda",
@@ -6628,6 +6641,7 @@ var qam$i = {
 	},
 	protondb: {
 		title: "Insignias de ProtonDB",
+		conflictFeature: "las insignias de ProtonDB",
 		enableLabel: "Activar insignias de ProtonDB",
 		enableDescription: "Muestra los niveles de ProtonDB de la comunidad en las superficies de juego de Steam. Es independiente del estado de compatibilidad de Valve.",
 		homeLabel: "Portadas de juegos en Inicio",
@@ -7137,6 +7151,7 @@ var quickLinks$h = {
 var qam$h = {
 	hltb: {
 		title: "HLTB-ajat",
+		conflictFeature: "HLTB-ajat",
 		showTimesLabel: "Näytä HowLongToBeat-ajat",
 		showTimesDescription: "Näytä HowLongToBeat-ajat pelisivuilla Steam- ja muille kuin Steam-peleille.",
 		storeLabel: "Kauppa",
@@ -7213,6 +7228,7 @@ var qam$h = {
 	},
 	protondb: {
 		title: "ProtonDB-tunnukset",
+		conflictFeature: "ProtonDB-tunnukset",
 		enableLabel: "Ota ProtonDB-tunnukset käyttöön",
 		enableDescription: "Näyttää yhteisön ProtonDB-tasot Steamin pelinäkymissä. Tämä on erillinen Valven yhteensopivuustilasta.",
 		homeLabel: "Home-pelikannet",
@@ -7670,18 +7686,18 @@ var backend$g = {
 };
 var updater$g = {
 	check: {
-		failedTitle: "Échec de la recherche de mise à jour",
+		failedTitle: "Échec de la vérification des mises à jour",
 		failed: "Échec de la recherche de mises à jour",
-		interrupted: "Recherche de mise à jour interrompue. Réessayez."
+		interrupted: "Vérification des mises à jour interrompue. Réessayez."
 	},
 	installation: {
 		startedTitle: "Installation lancée",
-		startedBody: "Installation de la v{{version}} demandée via Decky Loader.",
+		startedBody: "Installation de la version v{{version}} demandée via Decky Loader.",
 		failedTitle: "Échec de l'installation"
 	},
 	install: {
 		revalidationFailed: "Échec de la revalidation",
-		recordFailed: "Échec de l'enregistrement de la demande d'installation"
+		recordFailed: "Impossible d'enregistrer la demande d'installation"
 	}
 };
 var hltb$g = {
@@ -7694,16 +7710,16 @@ var hltb$g = {
 	},
 	details: "Détails",
 	search: {
-		searching: "Recherche...",
+		searching: "Recherche…",
 		action: "Rechercher sur HLTB",
 		noGames: "HowLongToBeat n'a trouvé aucun jeu.",
 		mainStory: "Histoire principale {{hours}}",
-		noMainStory: "Pas encore de durée pour l'histoire principale"
+		noMainStory: "Pas encore de temps pour l'histoire principale"
 	},
 	settingsError: {
 		loadFailed: "Les paramètres HLTB n'ont pas pu être chargés. Rechargez le plugin pour réessayer.",
 		saveFailed: "Les paramètres HLTB n'ont pas pu être enregistrés.",
-		applyFailed: "Les durées HLTB n'ont pas pu être appliquées. Rechargez le plugin."
+		applyFailed: "Les temps HLTB n'ont pas pu être appliqués. Rechargez le plugin."
 	}
 };
 var miniAchievements$g = {
@@ -7722,21 +7738,22 @@ var quickLinks$g = {
 };
 var qam$g = {
 	hltb: {
-		title: "Durées HLTB",
-		showTimesLabel: "Afficher les durées HowLongToBeat",
-		showTimesDescription: "Affiche les durées HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
-		storeLabel: "Magasin",
-		storeDescription: "Affiche les durées HowLongToBeat dans une ligne d'informations sur les pages de jeu du magasin Steam.",
+		title: "Temps HLTB",
+		conflictFeature: "les temps HLTB",
+		showTimesLabel: "Afficher les temps HowLongToBeat",
+		showTimesDescription: "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
+		storeLabel: "Boutique",
+		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
 		styleLabel: "Style HLTB",
 		styleDescription: "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
 		styleDefault: "Par défaut",
 		styleClean: "« Clean »",
-		styleCleanLeft: "« Clean » à gauche",
+		styleCleanLeft: "« Clean » gauche",
 		styleCleanDefault: "« Clean » par défaut",
 		pushPlayLabel: "Décaler le bouton Jouer vers le bas",
-		pushPlayDescription: "Affiche les durées sous l'image d'en-tête et décale le bouton Jouer vers le bas, comme HLTB pour Deck. Tant qu'une barre d'état de sauvegarde s'affiche en bas de l'image d'en-tête, les durées restent sur l'image.",
+		pushPlayDescription: "Affiche les temps sous l'image d'en-tête et décale le bouton Jouer vers le bas, comme HLTB pour Deck. Tant qu'une barre d'état de sauvegarde s'affiche en bas de l'image d'en-tête, les temps restent sur l'image.",
 		blurLabel: "Flou d'arrière-plan",
-		blurDescription: "Reprend la barre Jouer par défaut ; « Flou » floute aussi les durées par-dessus l'image d'en-tête",
+		blurDescription: "Reprend la barre Jouer par défaut ; « Flou » floute aussi les temps par-dessus l'image d'en-tête",
 		blurMatchPlayBar: "Comme la barre Jouer",
 		blurOn: "Flou",
 		blurOff: "Aucun",
@@ -7744,79 +7761,80 @@ var qam$g = {
 		hideDetailsDescription: "Masque le bouton « Détails » des statistiques HLTB",
 		nativeCornersLabel: "Utiliser les angles des boutons Steam",
 		nativeCornersDescription: "Utilise les angles normaux des boutons Steam pour le bouton Détails des styles Clean au lieu des angles arrondis du thème Round",
-		mainStatLabel: "Afficher/masquer la statistique principale",
-		mainStatDescription: "Affiche/masque uniquement la statistique principale",
-		mainPlusStatLabel: "Afficher/masquer la statistique histoire+",
-		mainPlusStatDescription: "Affiche/masque uniquement la statistique histoire+",
-		completionistStatLabel: "Afficher/masquer la statistique complétiste",
-		completionistStatDescription: "Affiche/masque uniquement la statistique complétiste",
-		allStylesStatLabel: "Afficher/masquer la statistique « tous les styles »",
-		allStylesStatDescription: "Affiche/masque uniquement la statistique tous les styles",
+		mainStatLabel: "Afficher/masquer le temps principal",
+		mainStatDescription: "Affiche/masque uniquement le temps principal",
+		mainPlusStatLabel: "Afficher/masquer le temps principal + extras",
+		mainPlusStatDescription: "Affiche/masque uniquement le temps principal + extras",
+		completionistStatLabel: "Afficher/masquer le temps complétiste",
+		completionistStatDescription: "Affiche/masque uniquement le temps complétiste",
+		allStylesStatLabel: "Afficher/masquer le temps tous styles de jeu",
+		allStylesStatDescription: "Affiche/masque uniquement le temps tous styles de jeu",
 		clearCacheButton: "Vider le cache HLTB",
-		clearingButton: "Suppression...",
-		cacheClearing: "Suppression du cache HLTB...",
-		cacheCleared: "Cache HLTB vidé. Les durées se rechargeront à l'ouverture d'un jeu.",
+		clearingButton: "Suppression…",
+		cacheClearing: "Vidage du cache HLTB…",
+		cacheCleared: "Cache HLTB vidé. Les temps se rechargent à l'ouverture d'un jeu.",
 		cacheFailed: "Le cache HLTB n'a pas pu être vidé.",
 		customizeLabel: "Personnaliser l'apparence",
-		customizeDescription: "Activez les couleurs, l'opacité et la taille du texte personnalisées pour la barre HLTB",
-		opacityLabel: "Opacité de l'arrière-plan",
-		opacityDescription: "Assombrit la barre pour que les statistiques restent lisibles sur des illustrations claires",
+		customizeDescription: "Active des couleurs, une opacité et une taille de texte personnalisées pour la barre HLTB",
+		opacityLabel: "Opacité du fond",
+		opacityDescription: "Assombrit la barre pour que les statistiques restent lisibles sur une jaquette claire",
 		textShadowLabel: "Ombre du texte",
 		textShadowDescription: "Ajoute une ombre derrière les statistiques pour plus de contraste",
 		textSizeLabel: "Taille du texte",
-		textSizeDescription: "Met à l'échelle les nombres et les libellés des statistiques",
+		textSizeDescription: "Met à l'échelle les chiffres et libellés des statistiques",
 		bottomBorderLabel: "Bordure inférieure",
 		bottomBorderDescription: "Affiche une ligne de séparation sous la barre HLTB",
 		resetAppearance: "Réinitialiser l'apparence",
 		loadingPreferences: "Chargement des préférences HLTB…"
 	},
 	trailers: {
-		title: "Bandes-annonces de jeu",
-		conflictFeature: "les bandes-annonces de jeu",
+		title: "Bandes-annonces",
+		conflictFeature: "les bandes-annonces de jeux",
 		enableLabel: "Activer les bandes-annonces",
-		enableDescription: "Interrupteur principal des bandes-annonces en vue Détails et Accueil. Le désactiver conserve vos choix pour chaque vue.",
+		enableDescription: "Interrupteur principal pour les bandes-annonces de la page Détails et de l'accueil. Le désactiver conserve vos choix pour chaque vue.",
 		detailHeading: "Vue Détails",
-		detailLabel: "Bandes-annonces en vue Détails",
-		detailDescription: "Lit une bande-annonce par-dessus l'illustration de la page principale du jeu dans la bibliothèque.",
-		detailDelayLabel: "Délai d'apparition en vue Détails",
-		detailDelayDescription: "Temps d'attente après l'ouverture de la page du jeu avant d'afficher une bande-annonce prête.",
-		audioLabel: "Audio des bandes-annonces en vue Détails",
-		audioDescription: "Fait apparaître l'audio en fondu lorsqu'une bande-annonce de la vue Détails s'affiche. Les bandes-annonces de l'accueil restent toujours muettes.",
-		hideLogoLabel: "Masquer le logo du jeu pendant les bandes-annonces en vue Détails",
-		hideLogoDescription: "Masque le logo de la page du jeu tant qu'une bande-annonce est visible. Le logo réapparaît à l'arrêt de la lecture.",
+		detailLabel: "Bandes-annonces de la vue Détails",
+		detailDescription: "Lit une bande-annonce sur la jaquette de la page principale du jeu dans la bibliothèque.",
+		detailDelayLabel: "Délai d'apparition (Détails)",
+		detailDelayDescription: "Attente après l'ouverture de la page du jeu avant d'afficher une bande-annonce prête.",
+		audioLabel: "Audio des bandes-annonces (Détails)",
+		audioDescription: "Active le son en fondu à l'apparition d'une bande-annonce. Les bandes-annonces de l'accueil restent toujours muettes.",
+		hideLogoLabel: "Masquer le logo du jeu pendant les bandes-annonces (Détails)",
+		hideLogoDescription: "Masque le logo de la page du jeu tant qu'une bande-annonce est visible. Le logo revient à l'arrêt de la lecture.",
 		homeHeading: "Vue Accueil",
-		homeLabel: "Bandes-annonces en vue Accueil",
-		homeDescription: "Lit une bande-annonce muette par-dessus l'arrière-plan de l'accueil pour le jeu sélectionné ou survolé.",
-		homeDelayLabel: "Délai d'apparition en vue Accueil",
-		homeDelayDescription: "Temps d'attente avant la recherche d'une bande-annonce. Passer à un autre jeu relance ce délai.",
+		homeLabel: "Bandes-annonces de l'accueil",
+		homeDescription: "Lit une bande-annonce muette sur le fond de l'accueil pour le jeu sélectionné ou survolé.",
+		homeDelayLabel: "Délai d'apparition (Accueil)",
+		homeDelayDescription: "Attente avant de chercher une bande-annonce. Passer à un autre jeu relance ce délai.",
 		qualityLabel: "Qualité vidéo",
 		qualityAuto: "Auto — selon l'écran",
 		displayLabel: "Écran Big Picture",
 		displayPixels: "{{width}} × {{height}} pixels",
 		displayUnavailable: "Indisponible",
 		displayTarget: "{{display}} · cible {{height}}p",
-		footnote: "L'illustration Steam reste visible jusqu'à ce qu'une bande-annonce lisible soit prête. Les bandes-annonces sont diffusées depuis Steam ou IGN et ne sont pas enregistrées pour une lecture hors ligne."
+		footnote: "La jaquette Steam reste visible jusqu'à ce qu'une bande-annonce lisible soit prête. Les bandes-annonces sont diffusées depuis Steam ou IGN et ne sont pas enregistrées pour une lecture hors ligne."
 	},
 	protondb: {
 		title: "Badges ProtonDB",
+		conflictFeature: "les badges ProtonDB",
 		enableLabel: "Activer les badges ProtonDB",
-		enableDescription: "Affiche les niveaux ProtonDB de la communauté sur les surfaces de jeu Steam. Distinct du statut de compatibilité de Valve.",
-		homeLabel: "Vignettes des jeux sur l'accueil",
+		enableDescription: "Affiche les niveaux communautaires ProtonDB sur les surfaces Steam. Indépendant de l'état de compatibilité de Valve.",
+		homeLabel: "Vignettes de l'accueil",
 		homeDescription: "Affiche un badge de niveau sur les vignettes de l'accueil.",
-		libraryLabel: "Vignettes des jeux dans la bibliothèque",
+		libraryLabel: "Vignettes de la bibliothèque",
 		libraryDescription: "Affiche un badge de niveau sur les vignettes de la bibliothèque.",
-		gameViewLabel: "Vue du jeu",
+		gameViewLabel: "Page du jeu",
 		gameViewDescription: "Affiche un bouton de niveau ProtonDB sur la page de détails du jeu.",
-		storeLabel: "Magasin",
-		storeDescription: "Affiche le niveau ProtonDB dans une ligne d'informations sur les pages de jeu du magasin Steam.",
-		focusOnlyLabel: "Vignettes uniquement au focus ou au survol",
-		focusOnlyDescription: "Masque les badges des vignettes de l'accueil et de la bibliothèque jusqu'à ce qu'une vignette soit sélectionnée ou survolée.",
+		storeLabel: "Boutique",
+		storeDescription: "Affiche le niveau ProtonDB dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
+		focusOnlyLabel: "Vignettes uniquement au survol ou à la sélection",
+		focusOnlyDescription: "Masque les badges des vignettes de l'accueil et de la bibliothèque tant qu'une vignette n'est pas sélectionnée ou survolée.",
 		positionLabel: "Position du badge sur la vignette",
 		positionBottomLeft: "En bas à gauche",
 		positionTopLeft: "En haut à gauche",
 		positionTopRight: "En haut à droite",
 		loadingPreferences: "Chargement des préférences de badges ProtonDB…",
-		footnote: "Les évaluations proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux sans correspondance et ceux sans niveau ProtonDB sont masqués."
+		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
 	},
 	miniAchievements: {
 		title: "Mini-succès",
@@ -7826,16 +7844,16 @@ var qam$g = {
 		footnote: "Utilise la progression des succès Steam pour les jeux Steam ; n'ajoute pas le suivi des succès aux jeux non Steam."
 	},
 	compat: {
-		title: "Statut de compatibilité",
-		defaultStatus: "Statut de compatibilité par défaut",
-		applyDefaultTo: "Appliquer la valeur par défaut à",
-		categoryAutomatic: "Automatique — utiliser le statut Steam correspondant",
+		title: "État de compatibilité",
+		defaultStatus: "État de compatibilité par défaut",
+		applyDefaultTo: "Appliquer par défaut à",
+		categoryAutomatic: "Automatique — utilise l'état Steam correspondant",
 		categoryVerified: "Vérifié",
 		categoryPlayable: "Jouable",
 		categoryUnsupported: "Non pris en charge",
 		categoryUnknown: "Inconnu",
 		scopeSteam: "Jeux associés à Steam",
-		scopeNoSteam: "Jeux enregistrés sans ID Steam",
+		scopeNoSteam: "Jeux enregistrés sans identifiant Steam",
 		scopeMetadata: "Tous les jeux avec métadonnées enregistrées",
 		scopeAll: "Tous les jeux non Steam",
 		scopeDescription: {
@@ -7852,35 +7870,35 @@ var qam$g = {
 		saved: "Métadonnées enregistrées :",
 		missing: "Métadonnées manquantes :",
 		refresh: "Actualiser les métadonnées",
-		refreshing: "Actualisation...",
-		refreshingStatus: "Actualisation des métadonnées...",
+		refreshing: "Actualisation…",
+		refreshingStatus: "Actualisation des métadonnées…",
 		refreshDescription: "Recherche et enregistre les métadonnées des jeux non Steam détectés qui n'ont pas encore de correspondance.",
 		cacheHeading: "Cache des métadonnées",
 		clearCache: "Vider le cache",
-		clearing: "Suppression...",
-		clearCacheDescription: "Supprime les correspondances et métadonnées enregistrées afin de pouvoir associer à nouveau les jeux.",
-		delistedHeading: "Jeux Steam retirés",
+		clearing: "Suppression…",
+		clearCacheDescription: "Supprime les correspondances et les métadonnées enregistrées afin que les jeux puissent être associés à nouveau.",
+		delistedHeading: "Jeux Steam retirés de la vente",
 		refreshDelisted: "Actualiser les jeux retirés"
 	},
 	update: {
 		title: "Mises à jour",
 		installedVersion: "Version installée",
-		localBuild: "(Version locale)",
+		localBuild: "(version locale)",
 		receiveDevelopment: "Recevoir les versions de développement",
-		receiveDevelopmentDescription: "Inclut les versions de prépublication destinées aux tests. Ces versions peuvent contenir des régressions.",
+		receiveDevelopmentDescription: "Inclut des versions préliminaires destinées aux tests. Elles peuvent contenir des régressions.",
 		autoCheck: "Rechercher automatiquement les mises à jour",
-		autoCheckDescription: "Recherche en arrière-plan tant que le plugin est chargé.",
-		status: "Statut",
+		autoCheckDescription: "Vérifie en arrière-plan pendant que le plugin est chargé.",
+		status: "État",
 		lastChecked: "Dernière vérification : {{date}}",
-		checking: "Vérification...",
+		checking: "Vérification…",
 		checkInterrupted: "Vérification interrompue après {{seconds}} secondes",
 		checkFailed: "Échec de la vérification",
 		upToDate: "À jour",
 		latestDevelopment: "Dernière version de développement disponible",
 		updateAvailable: "Mise à jour disponible",
 		neverChecked: "Jamais vérifié",
-		tryAgainAfter: "Réessayez après le {{date}}",
-		candidate: "Candidat",
+		tryAgainAfter: "Réessayez après {{date}}",
+		candidate: "Version candidate",
 		newVersion: "Nouvelle version : v{{version}} ({{channel}})",
 		channelStable: "stable",
 		channelDevelopment: "développement",
@@ -7888,11 +7906,11 @@ var qam$g = {
 		actionMoveToStable: "Passer à la version stable v{{version}}",
 		actionRevertToStable: "Revenir à la version stable v{{version}}",
 		actionInstallDevelopment: "Installer la version de développement v{{version}}",
-		actionUpdate: "Mettre à jour vers la v{{version}}",
-		waitingForDecky: "En attente de Decky...",
-		preparing: "Préparation...",
-		localBuildOnlyStable: "Les versions locales ne peuvent se mettre à jour que vers une version stable. Installez cette version de développement manuellement depuis GitHub Releases.",
-		manualInstallUnavailable: "L'installation automatique est indisponible dans cet environnement Decky. Installez cette version manuellement depuis GitHub Releases.",
+		actionUpdate: "Mettre à jour vers v{{version}}",
+		waitingForDecky: "En attente de Decky…",
+		preparing: "Préparation…",
+		localBuildOnlyStable: "Les versions locales ne peuvent se mettre à jour que vers une version stable. Installez cette version de développement manuellement depuis les versions GitHub.",
+		manualInstallUnavailable: "L'installation automatique n'est pas disponible dans cet environnement Decky. Installez cette version manuellement depuis les versions GitHub.",
 		viewReleaseNotes: "Voir les notes de version",
 		checkNow: "Vérifier maintenant",
 		enableDevelopmentTitle: "Activer les versions de développement ?",
@@ -7904,21 +7922,21 @@ var qam$g = {
 		plugin: "Decky Metadata : {{version}}",
 		decky: "Decky : {{version}}",
 		steamos: "SteamOS : {{version}}",
-		controllerTypes: "Types de manette : {{types}}"
+		controllerTypes: "Types de manettes : {{types}}"
 	},
 	logs: {
 		title: "Journaux",
-		loading: "Chargement...",
-		view: "Voir les journaux",
+		loading: "Chargement…",
+		view: "Afficher les journaux",
 		debugLogging: "Journalisation de débogage",
-		debugLoggingDescription: "Active la journalisation détaillée pour le dépannage.",
+		debugLoggingDescription: "Active les journaux détaillés pour le dépannage.",
 		modalTitle: "Journaux du plugin",
 		modalEmpty: "Aucun journal récent",
 		ok: "OK"
 	}
 };
 var storeRow$g = {
-	hltbAriaLabel: "Durées HowLongToBeat",
+	hltbAriaLabel: "Temps HowLongToBeat",
 	protondbRating: "Note ProtonDB : {{tier}}",
 	statMain: "Histoire principale",
 	statMainPlus: "Histoire + extras",
@@ -7955,14 +7973,14 @@ var trailers$g = {
 	detailAndHomeOff: "Les bandes-annonces des vues Détails et Accueil sont désactivées",
 	settingsRestored: "Les paramètres des bandes-annonces ont été restaurés",
 	pausedWhilePlugin: "En pause tant que {{name}} est activé",
-	homeTrailersOff: "Les bandes-annonces de la vue Accueil sont désactivées",
+	homeTrailersOff: "Les bandes-annonces de l'accueil sont désactivées",
 	detailTrailersOff: "Les bandes-annonces de la vue Détails sont désactivées",
 	openGamePage: "Ouvrez la page principale d'un jeu dans la bibliothèque Steam ou sélectionnez un jeu sur l'accueil",
 	gameNotAvailable: "Le jeu Steam n'est pas disponible",
 	notNativeShortcut: "Ce jeu n'est pas un raccourci non Steam natif",
 	matchesUnavailable: "Les correspondances Steam enregistrées ne sont pas disponibles",
 	gameTrailerUnavailable: "La bande-annonce du jeu est indisponible",
-	waitingIgnTrailer: "En attente d'une bande-annonce de jeu IGN",
+	waitingIgnTrailer: "En attente d'une bande-annonce IGN",
 	waitingSteamTrailer: "En attente d'une bande-annonce Steam",
 	settingsLoadError: "Les paramètres des bandes-annonces n'ont pas pu être chargés : {{error}}",
 	settingsSaveError: "Les paramètres des bandes-annonces n'ont pas pu être enregistrés : {{error}}"
@@ -7977,8 +7995,8 @@ var protondb$g = {
 	},
 	badge: "ProtonDB : {{tier}}",
 	coverAriaLabel: "ProtonDB {{tier}}",
-	settingsLoadError: "Impossible de charger les paramètres des badges ProtonDB.",
-	settingsSaveError: "Impossible d'enregistrer les paramètres des badges ProtonDB."
+	settingsLoadError: "Impossible de charger les réglages des badges ProtonDB.",
+	settingsSaveError: "Impossible d'enregistrer les réglages des badges ProtonDB."
 };
 var activity$g = {
 	minorUpdatePatchNotes: "Mise à jour mineure / Notes de version",
@@ -7998,21 +8016,21 @@ var community$g = {
 var panel$g = {
 	refreshComplete: "Actualisation terminée",
 	scanCompleteSaved: "Actualisation terminée : {{assigned}}/{{total}} enregistrés",
-	scanCompleteWithFailures: "Actualisation terminée : {{assigned}}/{{total}} enregistrés, {{failed}} sans correspondance",
-	compatibilityDefaultLoadError: "La compatibilité par défaut n'a pas pu être chargée : {{error}}",
-	compatibilitySaveError: "La compatibilité par défaut n'a pas pu être enregistrée : {{error}}",
-	compatibilityScopeSaveError: "La portée de la compatibilité par défaut n'a pas pu être enregistrée : {{error}}",
-	compatibilitySaved: "Statut de compatibilité par défaut enregistré",
-	compatibilityScopeSaved: "Portée de la compatibilité par défaut enregistrée",
-	updateChannelSaveError: "Le canal de mise à jour n'a pas pu être enregistré",
-	automaticUpdateSaveError: "Le paramètre de mise à jour automatique n'a pas pu être enregistré",
+	scanCompleteWithFailures: "Actualisation terminée : {{assigned}}/{{total}} enregistrés, {{failed}} non associés",
+	compatibilityDefaultLoadError: "Impossible de charger l'état de compatibilité par défaut : {{error}}",
+	compatibilitySaveError: "Impossible d'enregistrer l'état de compatibilité par défaut : {{error}}",
+	compatibilityScopeSaveError: "Impossible d'enregistrer le périmètre par défaut de compatibilité : {{error}}",
+	compatibilitySaved: "État de compatibilité par défaut enregistré",
+	compatibilityScopeSaved: "Périmètre par défaut de compatibilité enregistré",
+	updateChannelSaveError: "Impossible d'enregistrer le canal de mise à jour",
+	automaticUpdateSaveError: "Impossible d'enregistrer le réglage de mise à jour automatique",
 	cacheCleared: "Cache des métadonnées vidé",
-	delistedUpdated: "Jeux Steam retirés mis à jour",
+	delistedUpdated: "Liste des jeux Steam retirés mise à jour",
 	delistedRefreshFailed: "Échec de l'actualisation des jeux Steam retirés",
 	delistedCount: "Jeux retirés : {{value}}",
 	delistedLastUpdated: "Dernière mise à jour : {{date}}",
-	delistedNotDownloaded: "Jeux Steam retirés pas encore téléchargés",
-	logsLoadFailed: "Les journaux du plugin n'ont pas pu être chargés",
+	delistedNotDownloaded: "Liste des jeux Steam retirés pas encore téléchargée",
+	logsLoadFailed: "Impossible de charger les journaux du plugin",
 	toast: {
 		compatibility: "Compatibilité",
 		updates: "Mises à jour",
@@ -8025,11 +8043,11 @@ var panel$g = {
 	}
 };
 var contextMenu$g = {
-	changeMetadata: "Modifier les métadonnées..."
+	changeMetadata: "Modifier les métadonnées…"
 };
 var conflicts$g = {
 	pluginConflict: "{{pluginName}} est activé dans Decky Loader. Désactivez ce plugin pour utiliser {{feature}} ici.",
-	pluginConflictSaved: "Votre paramètre est enregistré ; cette fonctionnalité reprendra lorsque l'autre plugin sera désactivé.",
+	pluginConflictSaved: " Votre réglage est enregistré ; cette fonction reprendra lorsque l'autre plugin sera désactivé.",
 	detectionUnavailable: "Impossible de vérifier les plugins en conflit. N'utilisez qu'un seul fournisseur de {{feature}} à la fois."
 };
 var editor$g = {
@@ -8039,7 +8057,7 @@ var editor$g = {
 	nonSteamOnly: "Ce plugin ne modifie que les jeux non Steam.",
 	searchIgn: "Rechercher des métadonnées IGN",
 	search: "Rechercher",
-	searching: "Recherche...",
+	searching: "Recherche…",
 	noResults: "Aucun résultat pour l'instant.",
 	source: "Source",
 	field: {
@@ -8057,53 +8075,53 @@ var editor$g = {
 		playable: "Jouable",
 		unsupported: "Non pris en charge",
 		unknown: "Inconnu",
-		followValveUnavailable: "Suivre Valve (indisponible — statut Steam d'origine)",
+		followValveUnavailable: "Suivre Valve (indisponible — état Steam d'origine)",
 		followValveWith: "Suivre Valve ({{category}})",
 		useGlobalDefaultWith: "Utiliser la valeur globale par défaut ({{category}})",
-		useGlobalDefaultOutsideScopeOriginal: "Utiliser la valeur globale par défaut (hors de la portée sélectionnée — statut Steam d'origine)",
+		useGlobalDefaultOutsideScopeOriginal: "Utiliser la valeur globale par défaut (hors du périmètre sélectionné — état Steam d'origine)",
 		useGlobalDefaultOutsideScopeFromValve: "Utiliser la valeur globale par défaut (hors de la portée sélectionnée — {{category}} selon Valve)",
-		useGlobalDefaultAutomatic: "Utiliser la valeur globale par défaut (automatique — statut Steam d'origine)",
+		useGlobalDefaultAutomatic: "Utiliser la valeur globale par défaut (Automatique — état Steam d'origine)",
 		useGlobalDefaultFromValve: "Utiliser la valeur globale par défaut ({{category}} — selon Valve)"
 	},
 	compatibilityStatus: "Statut de compatibilité",
-	compatibilityHelp: "Utiliser la valeur globale par défaut hérite du paramètre du menu d'accès rapide. Suivre Valve l'ignore et conserve le statut Steam d'origine lorsque les données Valve sont indisponibles.",
+	compatibilityHelp: "« Utiliser la valeur globale par défaut » hérite du réglage du QAM. « Suivre Valve » l'ignore et conserve l'état Steam d'origine lorsque les données Valve sont indisponibles.",
 	compatibilityChoices: "Les catégories manuelles et par défaut sont vos choix, pas une certification Valve ni un résultat de performance d'émulateur.",
 	steamInfoFields: "Champs d'informations Steam",
 	hltbGame: "Jeu HowLongToBeat",
-	hltbHelp: "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien vers une page de jeu, pour choisir les durées affichées pour ce jeu. Laissez vide pour associer automatiquement.",
+	hltbHelp: "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien de page, pour choisir les temps affichés pour ce jeu. Laissez vide pour associer automatiquement.",
 	hltbCurrentChosen: "Jeu actuel : {{name}} (choisi)",
 	hltbCurrentAutomatic: "Jeu actuel : {{name}} (trouvé automatiquement)",
 	hltbApply: "Appliquer le jeu HLTB",
-	steamAppId: "ID d'application Steam",
-	steamAppIdHelp: "Collez un ID d'application Steam, une URL du magasin, de la communauté ou de SteamDB. Laissez vide pour effacer la correspondance Steam fixée.",
-	steamAppIdApply: "Appliquer l'ID d'application Steam",
+	steamAppId: "App ID Steam",
+	steamAppIdHelp: "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
+	steamAppIdApply: "Appliquer l'App ID Steam",
 	shortcutName: "Nom du raccourci",
 	shortcut: {
 		current: "Actuel : {{name}}",
 		missingName: "Steam n'a pas exposé de nom de raccourci natif",
 		steamName: "Steam : {{name}}",
-		loadingSteamName: "Chargement du nom Steam...",
+		loadingSteamName: "Chargement du nom Steam…",
 		noOfficialName: "Steam n'a pas renvoyé de nom officiel",
 		managementUnavailable: "La gestion du nom du raccourci est indisponible",
-		apiUnavailable: "L'API de nom de raccourci natif de Steam est indisponible",
-		notFound: "Le raccourci Steam est introuvable",
-		derivedId: "Ce raccourci a un ID dérivé et ne peut pas être renommé en toute sécurité",
+		apiUnavailable: "L'API native de nom de raccourci de Steam est indisponible",
+		notFound: "Raccourci Steam introuvable",
+		derivedId: "Ce raccourci a un ID dérivé et ne peut pas être renommé sans risque",
 		alreadyMatches: "Le nom du raccourci correspond déjà à Steam",
-		diverged: "Ce nom de raccourci a changé en dehors de Decky Metadata. Le renommage et la restauration sont désactivés jusqu'à ce que l'historique enregistré soit oublié.",
+		diverged: "Ce nom de raccourci a été modifié en dehors de Decky Metadata. Le renommage et la restauration sont désactivés jusqu'à l'oubli de l'historique enregistré.",
 		useSteamName: "Utiliser le nom Steam",
 		useSteamNameTitle: "Utiliser le nom Steam ?",
 		useSteamNameBody: "Remplacer « {{current}} » par « {{target}} » ?",
 		restore: "Restaurer le nom d'origine",
 		restoreTitle: "Restaurer le nom d'origine du raccourci ?",
-		restoreBody: "Restaurer « {{name}} » ?",
+		restoreBody: "Restaurer « {{name}} » ?",
 		forget: "Oublier l'historique des noms",
 		forgetAction: "Oublier l'historique",
-		forgetTitle: "Oublier l'historique des noms enregistré ?",
+		forgetTitle: "Oublier l'historique des noms ?",
 		forgetBody: "Cela supprime uniquement l'historique de restauration enregistré par Decky Metadata. Steam ne modifiera pas le nom du raccourci."
 	},
 	toast: {
 		hltbInvalidTitle: "Jeu HLTB invalide",
-		hltbInvalidBody: "Saisissez un numéro de jeu HowLongToBeat ou un lien vers une page de jeu.",
+		hltbInvalidBody: "Saisissez un numéro de jeu HowLongToBeat ou un lien vers sa page.",
 		hltbNotFoundTitle: "Introuvable",
 		hltbNotFoundBody: "HowLongToBeat n'a aucun jeu avec ce numéro.",
 		notApplicableTitle: "Non applicable",
@@ -8119,8 +8137,8 @@ var editor$g = {
 		removedBody: "Métadonnées supprimées",
 		removeFailedTitle: "Échec de la suppression",
 		shortcutNameChangedTitle: "Nom du raccourci modifié",
-		changedBeforeRename: "Steam a modifié ce raccourci avant qu'il ne puisse être renommé.",
-		changedBeforeRestore: "Steam a modifié ce raccourci avant qu'il ne puisse être restauré.",
+		changedBeforeRename: "Steam a modifié ce raccourci avant qu'il puisse être renommé.",
+		changedBeforeRestore: "Steam a modifié ce raccourci avant qu'il puisse être restauré.",
 		shortcutNameUpdatedTitle: "Nom du raccourci mis à jour",
 		shortcutNameUpdatedBody: "Steam a confirmé le nouveau nom du raccourci.",
 		shortcutNameNotUpdatedTitle: "Le nom du raccourci n'a pas été mis à jour",
@@ -8130,30 +8148,30 @@ var editor$g = {
 		shortcutNameNotRestoredTitle: "Le nom du raccourci n'a pas été restauré",
 		nameHistoryForgottenTitle: "Historique des noms oublié",
 		nameHistoryForgottenBody: "Steam n'a pas modifié le nom du raccourci.",
-		nameHistoryNotClearedTitle: "L'historique des noms enregistré n'a pas été effacé"
+		nameHistoryNotClearedTitle: "L'historique des noms n'a pas été effacé"
 	}
 };
 var matchPicker$g = {
 	title: "Trouver une correspondance Steam",
-	help: "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez Utiliser cette correspondance Steam. La navigation ne modifie pas votre jeu.",
-	currentAppId: "ID d'application Steam actuel : {{appId}}",
+	help: "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez « Utiliser cette correspondance Steam ». La navigation ne modifie pas votre jeu.",
+	currentAppId: "App ID Steam actuel : {{appId}}",
 	searchAriaLabel: "Recherche de jeu Steam",
 	search: "Rechercher sur Steam",
-	searching: "Recherche sur Steam...",
+	searching: "Recherche sur Steam…",
 	idle: "Saisissez un nom de jeu pour trouver des correspondances Steam.",
-	empty: "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ ID d'application Steam ci-dessous.",
-	appId: "ID d'application Steam : {{appId}}",
+	empty: "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
+	appId: "App ID Steam : {{appId}}",
 	appIdCurrent: "ID d'application Steam : {{appId}} · Correspondance actuelle",
 	appIdSelected: "ID d'application Steam : {{appId}} · Sélectionné",
 	appIdCurrentSelected: "ID d'application Steam : {{appId}} · Correspondance actuelle · Sélectionné",
-	loadingDetails: "Chargement des détails Steam...",
-	artworkAlt: "Illustration Steam de {{title}}",
+	loadingDetails: "Chargement des détails Steam…",
+	artworkAlt: "Jaquette Steam de {{title}}",
 	developer: "Développeur : {{names}}",
 	developerUnavailable: "Développeur indisponible",
 	release: "Sortie : {{date}}",
 	releaseUnavailable: "Date de sortie indisponible",
-	steamType: "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaités.",
-	applyHelp: "Utiliser cette correspondance enregistre l'ID d'application Steam et charge ses métadonnées. Cela ne renomme pas votre raccourci et ne remplace pas votre illustration personnalisée.",
+	steamType: "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
+	applyHelp: "Utiliser cette correspondance enregistre l'App ID Steam et charge ses métadonnées. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
 	apply: "Utiliser cette correspondance Steam",
 	cancel: "Annuler la sélection"
 };
@@ -8309,6 +8327,7 @@ var quickLinks$f = {
 var qam$f = {
 	hltb: {
 		title: "Tempi HLTB",
+		conflictFeature: "i tempi HLTB",
 		showTimesLabel: "Mostra i tempi di HowLongToBeat",
 		showTimesDescription: "Mostra i tempi di HowLongToBeat nelle pagine dei giochi, sia Steam che non Steam.",
 		storeLabel: "Negozio",
@@ -8385,6 +8404,7 @@ var qam$f = {
 	},
 	protondb: {
 		title: "Badge ProtonDB",
+		conflictFeature: "i badge ProtonDB",
 		enableLabel: "Abilita i badge ProtonDB",
 		enableDescription: "Mostra i livelli ProtonDB della community sulle superfici di gioco Steam. È separato dallo stato di compatibilità di Valve.",
 		homeLabel: "Copertine dei giochi nella Home",
@@ -8893,6 +8913,7 @@ var quickLinks$e = {
 var qam$e = {
 	hltb: {
 		title: "HLTB の時間",
+		conflictFeature: "HLTB の時間",
 		showTimesLabel: "HowLongToBeat の時間を表示",
 		showTimesDescription: "Steam ゲームと Steam 以外のゲームのページに HowLongToBeat の時間を表示します。",
 		storeLabel: "ストア",
@@ -8969,6 +8990,7 @@ var qam$e = {
 	},
 	protondb: {
 		title: "ProtonDB バッジ",
+		conflictFeature: "ProtonDB バッジ",
 		enableLabel: "ProtonDB バッジを有効化",
 		enableDescription: "Steam のゲーム画面にコミュニティの ProtonDB ティアを表示します。Valve の互換性ステータスとは別です。",
 		homeLabel: "ホームのゲームカバー",
@@ -9478,6 +9500,7 @@ var quickLinks$d = {
 var qam$d = {
 	hltb: {
 		title: "HLTB-ის დროები",
+		conflictFeature: "HLTB-ის დროები",
 		showTimesLabel: "HowLongToBeat-ის დროების ჩვენება",
 		showTimesDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
 		storeLabel: "მაღაზია",
@@ -9554,6 +9577,7 @@ var qam$d = {
 	},
 	protondb: {
 		title: "ProtonDB-ის ნიშნები",
+		conflictFeature: "ProtonDB-ის ნიშნები",
 		enableLabel: "ProtonDB-ის ნიშნების ჩართვა",
 		enableDescription: "აჩვენებს საზოგადოების ProtonDB-ის დონეებს Steam-ის თამაშის ეკრანებზე. ეს განსხვავდება Valve-ის თავსებადობის სტატუსისგან.",
 		homeLabel: "მთავარი გვერდის თამაშის ყდები",
@@ -10062,6 +10086,7 @@ var quickLinks$c = {
 var qam$c = {
 	hltb: {
 		title: "HLTB 시간",
+		conflictFeature: "HLTB 시간",
 		showTimesLabel: "HowLongToBeat 시간 표시",
 		showTimesDescription: "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
 		storeLabel: "상점",
@@ -10138,6 +10163,7 @@ var qam$c = {
 	},
 	protondb: {
 		title: "ProtonDB 배지",
+		conflictFeature: "ProtonDB 배지",
 		enableLabel: "ProtonDB 배지 사용",
 		enableDescription: "Steam 게임 화면에 커뮤니티 ProtonDB 등급을 표시합니다. Valve의 호환성 상태와는 별개입니다.",
 		homeLabel: "홈 게임 커버",
@@ -10647,6 +10673,7 @@ var quickLinks$b = {
 var qam$b = {
 	hltb: {
 		title: "HLTB-tijden",
+		conflictFeature: "HLTB-tijden",
 		showTimesLabel: "HowLongToBeat-tijden tonen",
 		showTimesDescription: "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
 		storeLabel: "Winkel",
@@ -10723,6 +10750,7 @@ var qam$b = {
 	},
 	protondb: {
 		title: "ProtonDB-badges",
+		conflictFeature: "ProtonDB-badges",
 		enableLabel: "ProtonDB-badges inschakelen",
 		enableDescription: "Toont ProtonDB-niveaus van de community op Steam-oppervlakken voor games. Dit staat los van de compatibiliteitsstatus van Valve.",
 		homeLabel: "Gamecovers in Home",
@@ -11234,6 +11262,7 @@ var quickLinks$a = {
 var qam$a = {
 	hltb: {
 		title: "Czasy HLTB",
+		conflictFeature: "czasów HLTB",
 		showTimesLabel: "Pokazuj czasy HowLongToBeat",
 		showTimesDescription: "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
 		storeLabel: "Sklep",
@@ -11310,6 +11339,7 @@ var qam$a = {
 	},
 	protondb: {
 		title: "Odznaki ProtonDB",
+		conflictFeature: "odznak ProtonDB",
 		enableLabel: "Włącz odznaki ProtonDB",
 		enableDescription: "Pokazuj społecznościowe poziomy ProtonDB na stronach gier Steam. Jest to oddzielne od statusu kompatybilności Valve.",
 		homeLabel: "Okładki na ekranie głównym",
@@ -11820,6 +11850,7 @@ var quickLinks$9 = {
 var qam$9 = {
 	hltb: {
 		title: "Tempos do HLTB",
+		conflictFeature: "os tempos do HLTB",
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
@@ -11896,6 +11927,7 @@ var qam$9 = {
 	},
 	protondb: {
 		title: "Selos do ProtonDB",
+		conflictFeature: "os selos do ProtonDB",
 		enableLabel: "Ativar selos do ProtonDB",
 		enableDescription: "Mostra as classificações da comunidade no ProtonDB nas telas de jogos da Steam. Isso é separado do status de compatibilidade da Valve.",
 		homeLabel: "Capas na Tela inicial",
@@ -12406,6 +12438,7 @@ var quickLinks$8 = {
 var qam$8 = {
 	hltb: {
 		title: "Tempos do HLTB",
+		conflictFeature: "os tempos do HLTB",
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
@@ -12482,6 +12515,7 @@ var qam$8 = {
 	},
 	protondb: {
 		title: "Selos do ProtonDB",
+		conflictFeature: "os selos do ProtonDB",
 		enableLabel: "Ativar selos do ProtonDB",
 		enableDescription: "Mostra as classificações da comunidade no ProtonDB nas superfícies de jogos da Steam. Isto é separado do estado de compatibilidade da Valve.",
 		homeLabel: "Capas no Início",
@@ -12992,6 +13026,7 @@ var quickLinks$7 = {
 var qam$7 = {
 	hltb: {
 		title: "Timpii HLTB",
+		conflictFeature: "timpii HLTB",
 		showTimesLabel: "Afișează timpii HowLongToBeat",
 		showTimesDescription: "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
 		storeLabel: "Magazin",
@@ -13068,6 +13103,7 @@ var qam$7 = {
 	},
 	protondb: {
 		title: "Insigne ProtonDB",
+		conflictFeature: "insignele ProtonDB",
 		enableLabel: "Activează insignele ProtonDB",
 		enableDescription: "Afișează nivelurile ProtonDB ale comunității pe suprafețele de joc Steam. Este separat de starea de compatibilitate a Valve.",
 		homeLabel: "Coperțile jocurilor din Acasă",
@@ -13579,6 +13615,7 @@ var quickLinks$6 = {
 var qam$6 = {
 	hltb: {
 		title: "Время HLTB",
+		conflictFeature: "время HLTB",
 		showTimesLabel: "Показывать время HowLongToBeat",
 		showTimesDescription: "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
 		storeLabel: "Магазин",
@@ -13655,6 +13692,7 @@ var qam$6 = {
 	},
 	protondb: {
 		title: "Значки ProtonDB",
+		conflictFeature: "значки ProtonDB",
 		enableLabel: "Включить значки ProtonDB",
 		enableDescription: "Показывать уровни ProtonDB от сообщества на страницах игр Steam. Это отдельно от статуса совместимости Valve.",
 		homeLabel: "Обложки на главном экране",
@@ -14164,6 +14202,7 @@ var quickLinks$5 = {
 var qam$5 = {
 	hltb: {
 		title: "Kohët e HLTB",
+		conflictFeature: "kohët e HLTB",
 		showTimesLabel: "Shfaq kohët e HowLongToBeat",
 		showTimesDescription: "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
 		storeLabel: "Dyqani",
@@ -14240,6 +14279,7 @@ var qam$5 = {
 	},
 	protondb: {
 		title: "Distinktivët ProtonDB",
+		conflictFeature: "distinktivët ProtonDB",
 		enableLabel: "Aktivizo distinktivët ProtonDB",
 		enableDescription: "Shfaq nivelet e lojërave nga komuniteti i ProtonDB në sipërfaqet e Steam. Kjo është e ndarë nga gjendja e përputhshmërisë së Valve.",
 		homeLabel: "Kopertinat e lojërave në Kre",
@@ -14749,6 +14789,7 @@ var quickLinks$4 = {
 var qam$4 = {
 	hltb: {
 		title: "HLTB-tider",
+		conflictFeature: "HLTB-tider",
 		showTimesLabel: "Visa HowLongToBeat-tider",
 		showTimesDescription: "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
 		storeLabel: "Butik",
@@ -14825,6 +14866,7 @@ var qam$4 = {
 	},
 	protondb: {
 		title: "ProtonDB-märken",
+		conflictFeature: "ProtonDB-märken",
 		enableLabel: "Aktivera ProtonDB-märken",
 		enableDescription: "Visar ProtonDB-nivåer från gemenskapen på Steams spelytor. Detta är separat från Valves kompatibilitetsstatus.",
 		homeLabel: "Spelomslag på Home",
@@ -15334,6 +15376,7 @@ var quickLinks$3 = {
 var qam$3 = {
 	hltb: {
 		title: "HLTB süreleri",
+		conflictFeature: "HLTB sürelerini",
 		showTimesLabel: "HowLongToBeat sürelerini göster",
 		showTimesDescription: "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
 		storeLabel: "Mağaza",
@@ -15410,6 +15453,7 @@ var qam$3 = {
 	},
 	protondb: {
 		title: "ProtonDB rozetleri",
+		conflictFeature: "ProtonDB rozetlerini",
 		enableLabel: "ProtonDB rozetlerini etkinleştir",
 		enableDescription: "Steam oyun yüzeylerinde topluluk ProtonDB kademelerini gösterir. Bu, Valve'ın uyumluluk durumundan ayrıdır.",
 		homeLabel: "Ana Sayfa oyun kapakları",
@@ -15921,6 +15965,7 @@ var quickLinks$2 = {
 var qam$2 = {
 	hltb: {
 		title: "Час HLTB",
+		conflictFeature: "час HLTB",
 		showTimesLabel: "Показувати час HowLongToBeat",
 		showTimesDescription: "Показувати час HowLongToBeat на сторінках ігор Steam і ігор поза Steam.",
 		storeLabel: "Магазин",
@@ -15997,6 +16042,7 @@ var qam$2 = {
 	},
 	protondb: {
 		title: "Значки ProtonDB",
+		conflictFeature: "значки ProtonDB",
 		enableLabel: "Увімкнути значки ProtonDB",
 		enableDescription: "Показувати рівні ProtonDB від спільноти на сторінках ігор Steam. Це окремо від статусу сумісності Valve.",
 		homeLabel: "Обкладинки на головному екрані",
@@ -16505,6 +16551,7 @@ var quickLinks$1 = {
 var qam$1 = {
 	hltb: {
 		title: "HLTB 时长",
+		conflictFeature: "HLTB 时长",
 		showTimesLabel: "显示 HowLongToBeat 时长",
 		showTimesDescription: "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
 		storeLabel: "商店",
@@ -16581,6 +16628,7 @@ var qam$1 = {
 	},
 	protondb: {
 		title: "ProtonDB 徽章",
+		conflictFeature: "ProtonDB 徽章",
 		enableLabel: "启用 ProtonDB 徽章",
 		enableDescription: "在 Steam 游戏界面上显示 ProtonDB 社区分级。这与 Valve 的兼容性状态相互独立。",
 		homeLabel: "主页游戏封面",
@@ -17089,6 +17137,7 @@ var quickLinks = {
 var qam = {
 	hltb: {
 		title: "HLTB 時數",
+		conflictFeature: "HLTB 時數",
 		showTimesLabel: "顯示 HowLongToBeat 時數",
 		showTimesDescription: "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
 		storeLabel: "商店",
@@ -17165,6 +17214,7 @@ var qam = {
 	},
 	protondb: {
 		title: "ProtonDB 徽章",
+		conflictFeature: "ProtonDB 徽章",
 		enableLabel: "啟用 ProtonDB 徽章",
 		enableDescription: "在 Steam 遊戲介面顯示 ProtonDB 社群分級。此功能與 Valve 的相容性狀態各自獨立。",
 		homeLabel: "首頁遊戲封面",
@@ -19091,7 +19141,7 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
-    const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.title"), settings.enabled);
+    const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
     const updateSetting = (key, value) => {
         void onSettingsChange({ ...settings, [key]: value });
     };
@@ -19159,7 +19209,7 @@ function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy
     const controlsDisabled = !settingsLoaded || busy;
     const disabled = controlsDisabled || !settings.enabled;
     const appearance = settings.appearance;
-    const notice = featureConflictNotice(conflict, t("qam.hltb.title"), settings.enabled);
+    const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
     const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
     const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
     return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
