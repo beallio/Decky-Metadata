@@ -41,4 +41,15 @@ describe("HLTB stats", () => {
     expect(text(tree)).toContain("Main + Extras");
     expect(text(tree)).not.toContain("Details");
   });
+  it("takes layout space below the header only for the bottom styles when asked", () => {
+    const className = (style: (typeof DEFAULT_HLTB_SETTINGS)["style"], pushPlayDown: boolean) =>
+      render({ settings: { ...DEFAULT_HLTB_SETTINGS, style, pushPlayDown } })!.props.className as string;
+    for (const style of ["default", "clean-default"] as const) {
+      expect(className(style, true)).toContain("decky-metadata-hltb-flow");
+      expect(className(style, false)).not.toContain("decky-metadata-hltb-flow");
+    }
+    for (const style of ["clean", "clean-left"] as const) {
+      expect(className(style, true)).not.toContain("decky-metadata-hltb-flow");
+    }
+  });
 });

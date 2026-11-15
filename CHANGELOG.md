@@ -4,6 +4,15 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Push Play button down.** A new **HLTB times** switch for the **Default**
+  and **"Clean" Default** styles puts the times in their own row below the
+  header image and moves the Play button down, like HLTB for Deck. While a Steam
+  Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image,
+  the times stay on the image and Play does not move, so the bar keeps its
+  artwork background. It is off by default. (#39)
+
 ### Changed
 
 - **Context menu label.** The game context menu entry is now **Change Metadata...**

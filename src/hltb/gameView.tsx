@@ -7,6 +7,7 @@ import {
   basicAppDetailsSectionStylerClasses,
   createReactTreePatcher,
   findInReactTree,
+  playSectionClasses,
 } from "@decky/ui";
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
@@ -108,6 +109,7 @@ function useNativeCleanSurface(
   enabled: boolean,
   style: HltbSettings["style"],
   blur: HltbBlur,
+  pushPlayDown: boolean,
 ): { joined: boolean; height: number; paddingTop: number } {
   const [surface, setSurface] = useState(NO_SURFACE);
   const padding = useRef(0);
@@ -137,7 +139,7 @@ function useNativeCleanSurface(
       // Layout height, not the rect: Steam animates an ancestor transform on page entry.
       const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
       const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-      const joined = style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+      const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
       row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
       row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
       row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
@@ -166,8 +168,92 @@ function useNativeCleanSurface(
       resize.observer?.disconnect();
       for (const name of names) row.style.removeProperty(name);
     };
-  }, [enabled, style, blur]);
+  }, [enabled, style, blur, pushPlayDown]);
   return surface;
+}
+
+/**
+ * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
+ * the header art: pushing Play down would leave that bar without its backdrop.
+ */
+function useStatusBandOverlay(ref: { current: HTMLDivElement | null }, wanted: boolean): boolean {
+  const [overlay, setOverlay] = useState(false);
+  useEffect(() => {
+    const row = ref.current;
+    const container = row?.parentElement;
+    const document = row?.ownerDocument;
+    const view = document?.defaultView;
+    if (!wanted || !row || !container || !document || !view) {
+      setOverlay(false);
+      return;
+    }
+    const status = playSectionClasses?.CloudStatusRow;
+    const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
+    let frame = 0;
+    const touching = (): boolean => {
+      const art = Array.from(container.children)
+        .find((child) => child.className.includes(appDetailsClasses.Header))
+        ?.querySelector<HTMLElement>(`.${appDetailsHeaderClasses.HeaderBackgroundImage}`);
+      if (!art) return false;
+      const bounds = art.getBoundingClientRect();
+      // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
+      const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll<HTMLElement>("img"), (image) => image.getBoundingClientRect())
+        .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
+        .map((rect) => rect.bottom));
+      // Rect, not layout: Steam scales the page while it animates in.
+      const flow = row.querySelector<HTMLElement>("#decky-metadata-hltb.decky-metadata-hltb-flow");
+      const displacement = flow?.getBoundingClientRect().height ?? 0;
+      for (const bar of Array.from(container.querySelectorAll<HTMLElement>(selector))) {
+        const rect = bar.getBoundingClientRect();
+        if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
+            Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
+            rect.top - bottom > displacement + 1) continue;
+        const own = view.getComputedStyle(bar);
+        if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky") continue;
+        // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
+        const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
+        let visible = true;
+        for (let element: HTMLElement | null = bar; element; element = element.parentElement) {
+          const style = view.getComputedStyle(element);
+          if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+              (!suppressed && Number(style.opacity) <= 0)) {
+            visible = false;
+            break;
+          }
+          if (element === container) break;
+        }
+        if (visible) return true;
+      }
+      return false;
+    };
+    const update = () => {
+      frame = 0;
+      const next = touching();
+      setOverlay((previous) => previous === next ? previous : next);
+    };
+    const schedule = () => {
+      if (!frame) frame = view.requestAnimationFrame(update);
+    };
+    const observer = new view.MutationObserver(schedule);
+    observer.observe(container, {
+      childList: true, subtree: true, attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
+    });
+    // CSS Loader themes restyle the page from the head and the root element alone.
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+    const resize = new view.ResizeObserver(schedule);
+    resize.observe(container);
+    view.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      observer.disconnect();
+      resize.disconnect();
+      view.removeEventListener("resize", schedule);
+      if (frame) view.cancelAnimationFrame(frame);
+    };
+  }, [wanted]);
+  return wanted && overlay;
 }
 
 function HltbGameRow({ appId }: { appId: number }) {
@@ -175,12 +261,16 @@ function HltbGameRow({ appId }: { appId: number }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
-  const surface = useNativeCleanSurface(ref, active, snapshot.settings.style, snapshot.settings.appearance.blur);
+  const { settings } = snapshot;
+  const wanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+  const overlay = useStatusBandOverlay(ref, wanted);
+  const pushPlayDown = settings.pushPlayDown && !overlay;
+  const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
   if (!active) return null;
   return (
     <div ref={ref} className={surface.joined ? JOINED_CLASS : undefined} style={{ position: "relative", transformStyle: "preserve-3d" }}>
       {surface.joined && <style>{joinedRule(surface.height, surface.paddingTop)}</style>}
-      <HltbStats stats={entry?.stats ?? null} hltbId={entry?.hltb_id ?? null} settings={snapshot.settings} launching={launching} />
+      <HltbStats stats={entry?.stats ?? null} hltbId={entry?.hltb_id ?? null} settings={{ ...settings, pushPlayDown }} launching={launching} />
     </div>
   );
 }
