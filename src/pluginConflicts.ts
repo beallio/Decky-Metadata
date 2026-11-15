@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 export type ConflictingFeature = "protondb" | "trailers" | "miniAchievements" | "hltb";
 
 export type FeatureConflict = Readonly<{
@@ -143,11 +145,14 @@ export class PluginConflictMonitor implements PluginConflictSource {
 
 export function featureConflictNotice(conflict: FeatureConflict, feature: string, savedEnabled: boolean): string {
   if (conflict.pluginName) {
-    return `${conflict.pluginName} is enabled in Decky Loader. Disable that plugin to use ${feature} here.` +
-      (savedEnabled ? " Your setting is saved; this feature will resume when the other plugin is disabled." : "");
+    const notice = t("conflicts.pluginConflict", {
+      pluginName: conflict.pluginName,
+      feature,
+    });
+    return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
   }
   return conflict.detectionAvailable ? ""
-    : `Could not check for conflicting plugins. Use only one ${feature} provider at a time.`;
+    : t("conflicts.detectionUnavailable", { feature });
 }
 
 export const pluginConflicts = new PluginConflictMonitor();

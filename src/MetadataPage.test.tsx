@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as I18n from "./i18n";
 import { hltbStore } from "./hltb/store";
 import type { HltbEntry } from "./backend";
 
@@ -93,11 +94,18 @@ vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
+// Pages are rendered by hand here with a partial React mock, so use the
+// module-level translator instead of react-i18next's hook.
+vi.mock("./i18n", async (importOriginal) => {
+  const actual = await importOriginal<typeof I18n>();
+  return { ...actual, useT: () => actual.t };
+});
 vi.mock("./hltb/gameView", () => ({
   useHltbSnapshot: () => ({ effectiveEnabled: true }),
   useHltbMatch: () => ({ active: true, entry: hltbMatch.entry }),
 }));
 vi.mock("react", () => ({
+  createContext: () => ({}),
   useCallback: (callback: any) => callback,
   useEffect: (callback: () => unknown) => {
     if (effects.enabled) effects.callbacks.push(callback);
@@ -567,7 +575,7 @@ describe("MetadataPage compatibility status", () => {
 
     await action(renderPage(), "Remove metadata").props.onClick();
 
-    expect(toast.toastError).toHaveBeenCalledWith("Remove failed", "Error: disk full");
+    expect(toast.toastError).toHaveBeenCalledWith("Remove failed", "disk full");
     expect(Navigation.NavigateBack).not.toHaveBeenCalled();
   });
 
@@ -1344,5 +1352,36 @@ describe("Steam-match picker application", () => {
     await flushAsyncWork();
 
     expect(hltbStore.view(100, inputs).needsFetch).toBe(true);
+  });
+});
+
+describe("Steam information toggles", () => {
+  beforeEach(() => {
+    state.values = [];
+    state.cursor = 0;
+    refs.values = [];
+    refs.cursor = 0;
+    effects.enabled = false;
+    vi.clearAllMocks();
+    steam.isNonSteamApp.mockReturnValue(true);
+  });
+
+  it("labels each toggle, in StoreCategory order", () => {
+    // JS orders numeric keys ascending, so this is the display order too.
+    const labels = walk(renderPage(), (node) => node.type === "ToggleField")
+      .map((node) => node.props.label);
+    expect(labels).toEqual([
+      "Multiplayer",
+      "Single-player",
+      "Co-op",
+      "MMO",
+      "Achievements",
+      "Split screen",
+      "Full controller support",
+      "Online multiplayer",
+      "Local multiplayer",
+      "Online co-op",
+      "Local co-op",
+    ]);
   });
 });

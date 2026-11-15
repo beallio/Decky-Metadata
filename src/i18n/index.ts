@@ -86,7 +86,11 @@ const translate = i18n.t as unknown as (
 /** Translation for non-React code; React components use `useT`. */
 export const t = translate;
 
-export const useT = () => useTranslation().t;
+/** Subscribes the component to language changes; the bound `t` always reads the current language. */
+export const useT = (): typeof t => {
+  useTranslation();
+  return t;
+};
 
 export const currentLocale = (): string => i18n.language || FALLBACK_LOCALE;
 

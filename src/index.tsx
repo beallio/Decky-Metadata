@@ -16,6 +16,7 @@ import { installProtonDbGameView } from "./protondb/gameView";
 import { installStoreInfoRow } from "./storeRow";
 import { startPluginConflicts } from "./pluginConflicts";
 import { hltbController } from "./hltb/gameView";
+import { refreshLanguage } from "./i18n";
 import { releaseProviderCache } from "./providerCache";
 import {
   installSteamPatches,
@@ -60,6 +61,7 @@ const installInPlaceReloadGuard = (onFailedReload: () => void) => {
 };
 
 export default definePlugin(() => {
+  void refreshLanguage();
   const stopPluginConflicts = startPluginConflicts();
   beginCompatibilityLifecycle();
   let retainedReloadBaselines = false;

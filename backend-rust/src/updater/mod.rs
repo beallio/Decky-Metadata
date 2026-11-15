@@ -299,8 +299,7 @@ impl Updater {
                 message = raw_message;
             }
             if response.status == 404 {
-                message = "Releases are not accessible — the repository may be private or missing."
-                    .to_owned();
+                message = "releases_not_accessible".to_owned();
             }
             crate::logging::event(
                 "update",
@@ -426,7 +425,7 @@ impl Updater {
             .filter(|tag| !tag.is_empty());
         let Some(tag) = tag else {
             return Ok(
-                json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "Candidate missing tag"}),
+                json!({"status": "failed", "checked_at": isoformat_utc(self.now()), "message": "candidate_missing_tag"}),
             );
         };
         let response = self.client.get_release(tag).await;
@@ -447,17 +446,23 @@ impl Updater {
             }));
         }
         if response.status != 200 || !response.body.is_object() {
+            crate::logging::event(
+                "update",
+                "Revalidation release fetch failed",
+                json!({"status": response.status, "tag": tag}),
+                Level::Error,
+            );
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": format!("Failed to fetch release for tag {tag}: {}", response.status)
+                "message": "release_fetch_failed"
             }));
         }
         let Some(prevalidated) = prevalidate_release_candidate(&response.body) else {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Release validation failed during revalidation"
+                "message": "revalidation_failed"
             }));
         };
         let manifest_response = self.client.get_manifest(&manifest_url(&prevalidated)).await;
@@ -470,7 +475,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Release validation failed during revalidation"
+                "message": "revalidation_failed"
             }));
         };
 
@@ -485,7 +490,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "SHA-256 mismatch during revalidation"
+                "message": "revalidation_sha_mismatch"
             }));
         }
         if candidate_record.get("artifact_url").and_then(Value::as_str)
@@ -494,7 +499,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Artifact URL mismatch during revalidation"
+                "message": "revalidation_url_mismatch"
             }));
         }
         if candidate_record.get("version").and_then(Value::as_str)
@@ -503,7 +508,7 @@ impl Updater {
             return Ok(json!({
                 "status": "failed",
                 "checked_at": isoformat_utc(self.now()),
-                "message": "Version mismatch during revalidation"
+                "message": "revalidation_version_mismatch"
             }));
         }
         let action = candidate_record
@@ -966,17 +971,17 @@ mod tests {
             (
                 "sha256",
                 json!("b".repeat(64)),
-                "SHA-256 mismatch during revalidation",
+                "revalidation_sha_mismatch",
             ),
             (
                 "artifact_url",
                 json!("https://example.test/other.zip"),
-                "Artifact URL mismatch during revalidation",
+                "revalidation_url_mismatch",
             ),
             (
                 "version",
                 json!("0.4.1"),
-                "Version mismatch during revalidation",
+                "revalidation_version_mismatch",
             ),
         ] {
             let mut candidate = json!({
@@ -1025,7 +1030,7 @@ mod tests {
         let mut updater = make_updater(http, "0.3.1", &json!({}));
         assert_eq!(
             updater.revalidate(&json!({})).await.unwrap()["message"],
-            "Candidate missing tag"
+            "candidate_missing_tag"
         );
         let result = updater.revalidate(&json!({"tag": "v0.4.0"})).await.unwrap();
         assert_eq!(result["status"], "failed");
@@ -1081,7 +1086,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(result["status"], "failed");
-        assert!(result["message"].as_str().unwrap().contains("private"));
+        assert_eq!(result["message"], "releases_not_accessible");
         fixture_http.assert_drained();
     }
 

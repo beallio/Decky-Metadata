@@ -1,5 +1,6 @@
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type * as I18nModule from "../i18n";
 import type { HltbEntry } from "../backend";
 import type { HltbStats } from "./HltbStats";
 import type { HltbBlur, HltbSettings } from "./settings";
@@ -84,6 +85,11 @@ vi.mock("@decky/ui", async () => {
 vi.mock("@decky/api", () => ({ routerHook: router }));
 vi.mock("../backend", () => backend);
 vi.mock("../log", () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
+// Rows render HltbStats by calling it, so its hook must not need a React renderer.
+vi.mock("../i18n", async (importOriginal) => {
+  const actual = await importOriginal<typeof I18nModule>();
+  return { ...actual, useT: () => actual.t };
+});
 vi.mock("../steam/core", () => ({
   GAME_DETAIL_ROUTES: ["/library/app/:appid", "/library/details/:appid", "/library/:collection/app/:appid"],
   getNativeOverview: (appId: number) => appId === 620 ? { appid: 620, display_name: "Portal 2" } : null,
@@ -399,7 +405,7 @@ describe("HLTB game-page native surface", () => {
     const expectHours = (rendered: { props: RowProps }) => {
       const stats = statsOf(rendered);
       const content = text(stats.type(stats.props));
-      for (const hours of ["1.0 hours", "1.5 hours", "2.0 hours", "3.0 hours"]) expect(content).toContain(hours);
+      for (const hours of ["1.0 hour", "1.5 hours", "2.0 hours", "3.0 hours"]) expect(content).toContain(hours);
     };
     const flushFrames = () => {
       const pending = Array.from(frames.values());

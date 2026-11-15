@@ -1,16 +1,20 @@
 import { ConfirmModal } from "@decky/ui";
 
+import { useT } from "../../i18n";
+
 type PluginLogModalProps = {
   logs: string;
   closeModal: () => void;
 };
 
 export function PluginLogModal({ logs, closeModal }: PluginLogModalProps) {
+  const t = useT();
+
   return (
     <ConfirmModal
       bAlertDialog={true}
-      strTitle="Plugin Logs"
-      strOKButtonText="OK"
+      strTitle={t("qam.logs.modalTitle")}
+      strOKButtonText={t("qam.logs.ok")}
       onOK={closeModal}
       onCancel={closeModal}
       onEscKeypress={closeModal}
@@ -30,7 +34,7 @@ export function PluginLogModal({ logs, closeModal }: PluginLogModalProps) {
           userSelect: "text",
         }}
       >
-        {logs || "No recent logs"}
+        {logs || t("qam.logs.modalEmpty")}
       </div>
     </ConfirmModal>
   );

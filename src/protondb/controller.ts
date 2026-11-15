@@ -1,4 +1,5 @@
 import { getProtonDbBadgeSettings, setProtonDbBadgeSettings, type ProviderCacheSnapshot } from "../backend";
+import { t, translateBackendError } from "../i18n";
 import { loadProviderCache } from "../providerCache";
 import type { ProtonDbBadgeSettings } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
@@ -47,7 +48,7 @@ const copySettings = (settings: ProtonDbBadgeSettings): ProtonDbBadgeSettings =>
   });
 
 const errorText = (error: unknown, fallback: string): string =>
-  error instanceof Error && error.message ? error.message : fallback;
+  error instanceof Error && error.message ? translateBackendError(error) : fallback;
 
 export class ProtonDbBadgeController {
   private readonly listeners = new Set<() => void>();
@@ -117,7 +118,7 @@ export class ProtonDbBadgeController {
         this.publish({
           settingsLoaded: false,
           busy: false,
-          settingsError: errorText(error, "Unable to load ProtonDB badge settings."),
+          settingsError: errorText(error, t("protondb.settingsLoadError")),
         });
       },
     );
@@ -157,7 +158,7 @@ export class ProtonDbBadgeController {
       if (!this.isCurrent(lifecycle)) return false;
       this.publish({
         busy: false,
-        settingsError: errorText(error, "Unable to save ProtonDB badge settings."),
+        settingsError: errorText(error, t("protondb.settingsSaveError")),
       });
       return false;
     }

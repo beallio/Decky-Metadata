@@ -2,6 +2,7 @@ import { Field, PanelSectionRow } from "@decky/ui";
 import { FaInfoCircle } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
+import { useT } from "../../i18n";
 import { compactTextStyle } from "../../styles";
 import { formatConnectedControllerTypes } from "../../steam/controllerTypes";
 
@@ -18,8 +19,11 @@ export function VersionsSection({
   steamosVersion,
   controllerTypes,
 }: VersionsSectionProps) {
+  const t = useT();
+  const unknown = t("common.unknown");
+
   return (
-    <CollapsibleSection title="Versions" icon={<FaInfoCircle size={16} />} defaultExpanded={true}>
+    <CollapsibleSection title={t("qam.versions.title")} icon={<FaInfoCircle size={16} />} defaultExpanded={true}>
       <PanelSectionRow>
         <Field
           focusable={true}
@@ -29,10 +33,10 @@ export function VersionsSection({
           bottomSeparator="none"
         >
           <div style={compactTextStyle}>
-            <div>Decky Metadata: {pluginVersion.trim() || "Unknown"}</div>
-            <div>Decky: {deckyVersion.trim() || "Unknown"}</div>
-            <div>SteamOS: {steamosVersion.trim() || "Unknown"}</div>
-            <div>Controller Types: {formatConnectedControllerTypes(controllerTypes)}</div>
+            <div>{t("qam.versions.plugin", { version: pluginVersion.trim() || unknown })}</div>
+            <div>{t("qam.versions.decky", { version: deckyVersion.trim() || unknown })}</div>
+            <div>{t("qam.versions.steamos", { version: steamosVersion.trim() || unknown })}</div>
+            <div>{t("qam.versions.controllerTypes", { types: formatConnectedControllerTypes(controllerTypes) })}</div>
           </div>
         </Field>
       </PanelSectionRow>

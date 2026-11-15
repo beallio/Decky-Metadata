@@ -24,8 +24,3 @@ def source() -> str:
 def test_activity_type_labels_have_no_italian_residue(source: str) -> None:
     for token in ITALIAN_TOKENS:
         assert token not in source, f"found leftover Italian token {token!r} in activity.ts"
-
-
-def test_activity_type_labels_use_english_fallback(source: str) -> None:
-    assert '"News"' in source
-    assert '|| "News"' in source

@@ -49,6 +49,7 @@ import {
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
 import {
   CATEGORY_LABELS,
+  categoryLabel,
   CompatibilityDefaultScope,
   DeckCompatibilityCategory,
   DeckCompatibilityOverride,
@@ -56,6 +57,7 @@ import {
   MetadataSearchResult,
   ShortcutNameManagement,
 } from "./types";
+import { refreshLanguage, translateBackendError, useT } from "./i18n";
 import { toastError, toastSuccess, toastWarn } from "./toast";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
@@ -116,17 +118,9 @@ const descriptionTextareaStyle: CSSProperties = {
   border: "1px solid rgba(255,255,255,0.18)",
 };
 
-const compatibilityStatusOptions: Array<{
-  data: DeckCompatibilityOverride;
-  label: string;
-}> = [
-  { data: null, label: "Use global default" },
-  { data: "valve", label: "Follow Valve" },
-  { data: 3, label: "Verified" },
-  { data: 2, label: "Playable" },
-  { data: 1, label: "Unsupported" },
-  { data: 0, label: "Unknown" },
-];
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+const compatibilityStatusOptions: DeckCompatibilityOverride[] = [null, "valve", 3, 2, 1, 0];
 
 const isCompatibilityCategory = (
   value: unknown
@@ -136,10 +130,27 @@ const isCompatibilityCategory = (
   value >= 0 &&
   value <= 3;
 
-const compatibilityStatusLabel = (category: DeckCompatibilityCategory): string =>
-  ({ 0: "Unknown", 1: "Unsupported", 2: "Playable", 3: "Verified" })[
-    category
-  ];
+const compatibilityStatusLabel = (category: DeckCompatibilityCategory, t: Translate): string => {
+  switch (category) {
+    case 0:
+      return t("editor.compat.unknown");
+    case 1:
+      return t("editor.compat.unsupported");
+    case 2:
+      return t("editor.compat.playable");
+    default:
+      return t("editor.compat.verified");
+  }
+};
+
+const compatibilityStatusOptionLabel = (
+  value: DeckCompatibilityOverride,
+  t: Translate,
+): string => {
+  if (value === null) return t("editor.compat.useGlobalDefault");
+  if (value === "valve") return t("editor.compat.followValve");
+  return compatibilityStatusLabel(value, t);
+};
 
 const compatibilityStatusValue = (value: unknown): DeckCompatibilityOverride =>
   value === "valve" || isCompatibilityCategory(value) ? value : null;
@@ -151,26 +162,35 @@ const compatibilityStatusDisplay = (
   metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid">,
   globalDefault: DeckCompatibilityCategory | null,
   scope: CompatibilityDefaultScope,
+  t: Translate,
 ): string => {
   const override = compatibilityStatusValue(metadata.deck_compat_override);
   const valveCategory = compatibilityCategoryValue(metadata.deck_compat_category);
-  if (isCompatibilityCategory(override)) return compatibilityStatusLabel(override);
+  if (isCompatibilityCategory(override)) return compatibilityStatusLabel(override, t);
   if (override === "valve") {
     return valveCategory === null
-      ? "Follow Valve (unavailable — original Steam status)"
-      : `Follow Valve (${compatibilityStatusLabel(valveCategory)})`;
+      ? t("editor.compat.followValveUnavailable")
+      : t("editor.compat.followValveWith", {
+        category: compatibilityStatusLabel(valveCategory, t),
+      });
   }
   if (globalDefault !== null && isCompatibilityDefaultEligible(metadata, scope)) {
-    return `Use global default (${compatibilityStatusLabel(globalDefault)})`;
+    return t("editor.compat.useGlobalDefaultWith", {
+      category: compatibilityStatusLabel(globalDefault, t),
+    });
   }
   if (globalDefault !== null) {
     return valveCategory === null
-      ? "Use global default (outside selected scope — original Steam status)"
-      : `Use global default (outside selected scope — ${compatibilityStatusLabel(valveCategory)} from Valve)`;
+      ? t("editor.compat.useGlobalDefaultOutsideScopeOriginal")
+      : t("editor.compat.useGlobalDefaultOutsideScopeFromValve", {
+        category: compatibilityStatusLabel(valveCategory, t),
+      });
   }
   return valveCategory === null
-    ? "Use global default (Automatic — original Steam status)"
-    : `Use global default (${compatibilityStatusLabel(valveCategory)} — from Valve)`;
+    ? t("editor.compat.useGlobalDefaultAutomatic")
+    : t("editor.compat.useGlobalDefaultFromValve", {
+      category: compatibilityStatusLabel(valveCategory, t),
+    });
 };
 
 const metadataValuesEqual = (left: unknown, right: unknown): boolean =>
@@ -217,6 +237,7 @@ type FormTextSnapshot = {
 };
 
 export const MetadataPage = () => {
+  const t = useT();
   const editorRootRef = useRef<HTMLDivElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -592,6 +613,11 @@ export const MetadataPage = () => {
     });
   }, []);
 
+  // Steam only exposes its language when the editor opens, so sync it on mount.
+  useEffect(() => {
+    void refreshLanguage();
+  }, []);
+
   const normalizedMetadata = useMemo<MetadataData>(
     () => ({
       ...metadata,
@@ -615,26 +641,32 @@ export const MetadataPage = () => {
     const text = hltbIdText.trim();
     const id = text ? parseHltbGameId(text) : null;
     if (id === 0) {
-      toastWarn("Invalid HLTB game", "Enter a HowLongToBeat game number or game page link.");
+      toastWarn(
+        t("editor.toast.hltbInvalidTitle"),
+        t("editor.toast.hltbInvalidBody"),
+      );
       return undefined;
     }
     if (id === null) return { id, name: "" };
     const found = await checkHltbGameId(id);
     if (!found.found) {
-      toastWarn("Not found", "HowLongToBeat has no game with that number.");
+      toastWarn(
+        t("editor.toast.hltbNotFoundTitle"),
+        t("editor.toast.hltbNotFoundBody"),
+      );
       return undefined;
     }
     return { id, name: found.game_name };
   };
   const saveCurrent = async () => {
     if (!nonSteam) {
-      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
       return;
     }
     const requestedEntry = editorEntryToken;
     // Until this entry's record loads, the form holds defaults that would overwrite it.
     if (metadataHydratedEntry !== requestedEntry) {
-      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return;
     }
     if (!beginBusy(requestedEntry)) return;
@@ -655,9 +687,9 @@ export const MetadataPage = () => {
       if (hltb) setHltbIdDraft(null);
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
-      toastSuccess("Saved", "Metadata saved");
+      toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
     } catch (error) {
-      toastError("Save failed", String(error));
+      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -665,12 +697,12 @@ export const MetadataPage = () => {
 
   const applySteamAppId = async (explicitSteamAppId?: number) => {
     if (!nonSteam) {
-      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
       return;
     }
     const requestedEntry = editorEntryToken;
     if (metadataHydratedEntry !== requestedEntry) {
-      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return;
     }
     if (!beginBusy(requestedEntry)) return;
@@ -723,7 +755,7 @@ export const MetadataPage = () => {
       if (parsed === null) {
         applyMetadata(appId, { publishCompatibility: false });
         refreshCompatibilitySurfaces();
-        toastSuccess("Saved", "Metadata saved");
+        toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
         return;
       }
       const enrichmentBaselineMetadata = metadataRef.current;
@@ -769,9 +801,9 @@ export const MetadataPage = () => {
       }
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
-      toastSuccess("Saved", "Metadata saved");
+      toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
     } catch (error) {
-      toastError("Save failed", String(error));
+      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -780,12 +812,12 @@ export const MetadataPage = () => {
   /** Save the HLTB field, or a game picked from HLTB search, as this game's HLTB game. */
   const applyHltbGameId = async (picked?: { id: number; name: string }) => {
     if (!nonSteam) {
-      toastWarn("Not applicable", "This plugin only changes non-Steam games.");
+      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
       return;
     }
     const requestedEntry = editorEntryToken;
     if (metadataHydratedEntry !== requestedEntry) {
-      toastWarn("Not loaded", "Saved metadata has not loaded yet.");
+      toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return;
     }
     if (!beginBusy(requestedEntry)) return;
@@ -799,9 +831,12 @@ export const MetadataPage = () => {
       setFormMetadata(saved);
       setHltbIdDraft(null);
       applyMetadata(appId, { publishCompatibility: false });
-      toastSuccess("Saved", id === null ? "HLTB game cleared" : `HLTB game: ${name}`);
+      toastSuccess(
+        t("editor.toast.savedTitle"),
+        id === null ? t("editor.toast.hltbCleared") : t("editor.toast.hltbGame", { name }),
+      );
     } catch (error) {
-      toastError("Save failed", String(error));
+      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -813,7 +848,7 @@ export const MetadataPage = () => {
     try {
       setResults(await searchMetadata(query, 8));
     } catch (error) {
-      toastError("Save failed", String(error));
+      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -839,9 +874,9 @@ export const MetadataPage = () => {
       refreshCompatibilitySurfaces();
       setFormMetadata(saved);
       setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
-      toastSuccess("Saved", "Metadata saved");
+      toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
     } catch (error) {
-      toastError("Fetch failed", String(error));
+      toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -858,11 +893,11 @@ export const MetadataPage = () => {
       refreshCompatibilitySurfaces();
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setFormMetadata(metadataTemplate(appName(appId)));
-      toastSuccess("Removed", "Metadata removed");
+      toastSuccess(t("editor.toast.removedTitle"), t("editor.toast.removedBody"));
       // Leave the editor: its reset form would otherwise let Save write an empty Manual record (#40).
       Navigation.NavigateBack();
     } catch (error) {
-      toastError("Remove failed", String(error));
+      toastError(t("editor.toast.removeFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -897,7 +932,10 @@ export const MetadataPage = () => {
     const current = nativeShortcutName(appId);
     if (current !== currentShortcutName) {
       if (isCurrentEditorEntry(requestedEntry)) {
-        toastError("Shortcut name changed", "Steam changed this shortcut before it could be renamed.");
+        toastError(
+          t("editor.toast.shortcutNameChangedTitle"),
+          t("editor.toast.changedBeforeRename"),
+        );
         await loadShortcutManagement();
       }
       return;
@@ -916,10 +954,16 @@ export const MetadataPage = () => {
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setCurrentShortcutName(observed);
       setShortcutManagement({ ...shortcutManagement, state });
-      toastSuccess("Shortcut name updated", "Steam confirmed the new shortcut name.");
+      toastSuccess(
+        t("editor.toast.shortcutNameUpdatedTitle"),
+        t("editor.toast.shortcutNameUpdatedBody"),
+      );
     } catch (error) {
       if (isCurrentEditorEntry(requestedEntry)) {
-        toastError("Shortcut name was not updated", String(error));
+        toastError(
+          t("editor.toast.shortcutNameNotUpdatedTitle"),
+          translateBackendError(error),
+        );
         await loadShortcutManagement();
       }
     } finally {
@@ -935,7 +979,10 @@ export const MetadataPage = () => {
     const current = nativeShortcutName(appId);
     if (current !== state.applied_name) {
       if (isCurrentEditorEntry(requestedEntry)) {
-        toastError("Shortcut name changed", "Steam changed this shortcut before it could be restored.");
+        toastError(
+          t("editor.toast.shortcutNameChangedTitle"),
+          t("editor.toast.changedBeforeRestore"),
+        );
         await loadShortcutManagement();
       }
       return;
@@ -952,15 +999,26 @@ export const MetadataPage = () => {
       } catch (error) {
         if (!isCurrentEditorEntry(requestedEntry)) return;
         await loadShortcutManagement();
-        toastError("Shortcut name restored", `Steam restored the name, but saved history could not be cleared: ${String(error)}`);
+        toastError(
+          t("editor.toast.shortcutNameRestoredTitle"),
+          t("editor.toast.shortcutHistoryNotCleared", {
+            error: translateBackendError(error),
+          }),
+        );
         return;
       }
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setShortcutManagement({ ...shortcutManagement, state: null });
-      toastSuccess("Shortcut name restored", "Steam confirmed the original shortcut name.");
+      toastSuccess(
+        t("editor.toast.shortcutNameRestoredTitle"),
+        t("editor.toast.shortcutNameRestoredBody"),
+      );
     } catch (error) {
       if (isCurrentEditorEntry(requestedEntry)) {
-        toastError("Shortcut name was not restored", String(error));
+        toastError(
+          t("editor.toast.shortcutNameNotRestoredTitle"),
+          translateBackendError(error),
+        );
         await loadShortcutManagement();
       }
     } finally {
@@ -975,10 +1033,16 @@ export const MetadataPage = () => {
       await clearShortcutNameState(appId);
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setShortcutManagement((current) => current ? { ...current, state: null } : current);
-      toastSuccess("Saved name history forgotten", "Steam did not change the shortcut name.");
+      toastSuccess(
+        t("editor.toast.nameHistoryForgottenTitle"),
+        t("editor.toast.nameHistoryForgottenBody"),
+      );
     } catch (error) {
       if (isCurrentEditorEntry(requestedEntry)) {
-        toastError("Saved name history was not cleared", String(error));
+        toastError(
+          t("editor.toast.nameHistoryNotClearedTitle"),
+          translateBackendError(error),
+        );
       }
     } finally {
       endBusy(requestedEntry);
@@ -988,8 +1052,17 @@ export const MetadataPage = () => {
   const showUseSteamNameModal = () => {
     if (!canUseSteamName || !currentShortcutName) return;
     showModal(
-      <ConfirmModal strTitle="Use Steam name?" strOKButtonText="Use Steam name" onOK={() => void useSteamName()}>
-        <div style={compactTextStyle}>{`Change “${currentShortcutName}” to “${steamStoreName}”?`}</div>
+      <ConfirmModal
+        strTitle={t("editor.shortcut.useSteamNameTitle")}
+        strOKButtonText={t("editor.shortcut.useSteamName")}
+        onOK={() => void useSteamName()}
+      >
+        <div style={compactTextStyle}>
+          {t("editor.shortcut.useSteamNameBody", {
+            current: currentShortcutName,
+            target: steamStoreName,
+          })}
+        </div>
       </ConfirmModal>,
     );
   };
@@ -998,8 +1071,14 @@ export const MetadataPage = () => {
     const state = shortcutManagement?.state;
     if (!state || entryBusy || !hasShortcutNameApi()) return;
     showModal(
-      <ConfirmModal strTitle="Restore original shortcut name?" strOKButtonText="Restore original name" onOK={() => void restoreOriginalShortcutName()}>
-        <div style={compactTextStyle}>{`Restore “${state.original_name}”?`}</div>
+      <ConfirmModal
+        strTitle={t("editor.shortcut.restoreTitle")}
+        strOKButtonText={t("editor.shortcut.restore")}
+        onOK={() => void restoreOriginalShortcutName()}
+      >
+        <div style={compactTextStyle}>
+          {t("editor.shortcut.restoreBody", { name: state.original_name })}
+        </div>
       </ConfirmModal>,
     );
   };
@@ -1007,8 +1086,12 @@ export const MetadataPage = () => {
   const showForgetShortcutNameHistoryModal = () => {
     if (entryBusy || (busyRef.current && busyEntryRef.current === editorEntryToken)) return;
     showModal(
-      <ConfirmModal strTitle="Forget saved name history?" strOKButtonText="Forget history" onOK={() => void forgetShortcutNameHistory()}>
-        <div style={compactTextStyle}>{"This only removes Decky Metadata's saved restore history. Steam will not change the shortcut name."}</div>
+      <ConfirmModal
+        strTitle={t("editor.shortcut.forgetTitle")}
+        strOKButtonText={t("editor.shortcut.forgetAction")}
+        onOK={() => void forgetShortcutNameHistory()}
+      >
+        <div style={compactTextStyle}>{t("editor.shortcut.forgetBody")}</div>
       </ConfirmModal>,
     );
   };
@@ -1040,28 +1123,28 @@ export const MetadataPage = () => {
             onClick={saveCurrent}
             style={editorSaveButtonStyle}
           >
-            {"Save"}
+            {t("editor.save")}
           </FocusableButton>
           <FocusableButton
             className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`}
             onClick={removeCurrent}
             style={editorRemoveButtonStyle}
           >
-            {"Remove metadata"}
+            {t("editor.removeMetadata")}
           </FocusableButton>
           <FocusableButton
             className={`DialogButton ${editorFocusTargetClassName}`}
             onClick={() => Navigation.NavigateBack()}
             style={editorActionButtonStyle}
           >
-            {"Done"}
+            {t("editor.done")}
           </FocusableButton>
         </div>
         {!nonSteam ? (
           <PanelSection>
             <PanelSectionRow>
               <div style={compactTextStyle}>
-                {"This plugin only changes non-Steam games."}
+                {t("editor.nonSteamOnly")}
               </div>
             </PanelSectionRow>
           </PanelSection>
@@ -1078,7 +1161,7 @@ export const MetadataPage = () => {
           }}
         />
 
-        <PanelSection title={"Search IGN metadata"}>
+        <PanelSection title={t("editor.searchIgn")}>
           <PanelSectionRow>
             <div
               style={{
@@ -1098,7 +1181,7 @@ export const MetadataPage = () => {
                 onClick={search}
                 style={editorSearchButtonStyle}
               >
-                {entryBusy ? "Searching..." : "Search"}
+                {entryBusy ? t("editor.searching") : t("editor.search")}
               </FocusableButton>
             </div>
           </PanelSectionRow>
@@ -1110,10 +1193,10 @@ export const MetadataPage = () => {
               }}
             >
               {entryBusy ? (
-                <div style={compactTextStyle}>{"Searching..."}</div>
+                <div style={compactTextStyle}>{t("editor.searching")}</div>
               ) : null}
               {!entryBusy && !results.length ? (
-                <div style={compactTextStyle}>{"No results yet."}</div>
+                <div style={compactTextStyle}>{t("editor.noResults")}</div>
               ) : null}
               {results.map((result) => (
                 <FocusableButton
@@ -1132,11 +1215,11 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title={"Source"}>
+        <PanelSection title={t("editor.source")}>
           <PanelSectionRow>
             <div style={editorSourceStackStyle}>
               <div style={editorSourceFieldStyle}>
-                <label style={editorLabelStyle}>{"Title"}</label>
+                <label style={editorLabelStyle}>{t("editor.field.title")}</label>
                 <TextField
                   className={editorFocusTargetClassName}
                   value={metadata.title}
@@ -1147,7 +1230,7 @@ export const MetadataPage = () => {
                 />
               </div>
               <div style={editorDescriptionFieldStyle}>
-                <label style={editorLabelStyle}>{"Description"}</label>
+                <label style={editorLabelStyle}>{t("editor.field.description")}</label>
                 {GamepadTextArea ? (
                   <GamepadTextArea
                     className={editorFocusTargetClassName}
@@ -1185,7 +1268,7 @@ export const MetadataPage = () => {
                 )}
               </div>
               <div style={editorSourceGroupStyle}>
-                <label style={editorLabelStyle}>{"Developers"}</label>
+                <label style={editorLabelStyle}>{t("editor.field.developers")}</label>
                 <TextField
                   className={editorFocusTargetClassName}
                   value={developerText}
@@ -1198,7 +1281,7 @@ export const MetadataPage = () => {
                 />
               </div>
               <div style={editorSourceGroupStyle}>
-                <label style={editorLabelStyle}>{"Publishers"}</label>
+                <label style={editorLabelStyle}>{t("editor.field.publishers")}</label>
                 <TextField
                   className={editorFocusTargetClassName}
                   value={publisherText}
@@ -1212,7 +1295,7 @@ export const MetadataPage = () => {
               </div>
               <div style={editorReleaseRatingRowStyle}>
                 <div style={{ minWidth: 0 }}>
-                  <label style={editorLabelStyle}>{"Release date"}</label>
+                  <label style={editorLabelStyle}>{t("editor.field.releaseDate")}</label>
                   <TextField
                     className={editorFocusTargetClassName}
                     value={releaseText}
@@ -1225,7 +1308,7 @@ export const MetadataPage = () => {
                   />
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <label style={editorLabelStyle}>{"Rating"}</label>
+                  <label style={editorLabelStyle}>{t("editor.field.rating")}</label>
                   <TextField
                     className={editorFocusTargetClassName}
                     value={ratingText}
@@ -1243,11 +1326,14 @@ export const MetadataPage = () => {
         </PanelSection>
 
         {nonSteam ? (
-          <PanelSection title={"Compatibility status"}>
+          <PanelSection title={t("editor.compatibilityStatus")}>
             <PanelSectionRow>
               <DropdownItem
-                label={"Compatibility status"}
-                rgOptions={compatibilityStatusOptions}
+                label={t("editor.compatibilityStatus")}
+                rgOptions={compatibilityStatusOptions.map((data) => ({
+                  data,
+                  label: compatibilityStatusOptionLabel(data, t),
+                }))}
                 selectedOption={compatibilityStatusValue(
                   metadata.deck_compat_override
                 )}
@@ -1262,6 +1348,7 @@ export const MetadataPage = () => {
                     metadata,
                     compatibilityDefault,
                     compatibilityDefaultScope,
+                    t,
                   )
                 }
               />
@@ -1272,28 +1359,28 @@ export const MetadataPage = () => {
                 bottomSeparator="none"
               >
                 <div style={compactTextStyle}>
-                  {"Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable."}
+                  {t("editor.compatibilityHelp")}
                 </div>
                 <div style={compactTextStyle}>
-                  {"Manual and default categories are your choices, not Valve certification or an emulator performance result."}
+                  {t("editor.compatibilityChoices")}
                 </div>
               </Field>
             </PanelSectionRow>
           </PanelSection>
         ) : null}
 
-        <PanelSection title={"Steam info fields"}>
+        <PanelSection title={t("editor.steamInfoFields")}>
           <PanelSectionRow>
             <div
               className="decky-metadata-editor__category-grid"
               style={editorCategoryGridStyle}
             >
-              {Object.entries(CATEGORY_LABELS).map(([category, label]) => (
+              {Object.keys(CATEGORY_LABELS).map((category) => (
                 <ToggleField
                   key={category}
                   highlightOnFocus={false}
                   bottomSeparator="none"
-                  label={label}
+                  label={categoryLabel(Number(category), t)}
                   checked={(metadata.store_categories || []).includes(Number(category))}
                   onChange={(checked) => toggleCategory(Number(category), checked)}
                 />
@@ -1304,13 +1391,15 @@ export const MetadataPage = () => {
 
 
         {nonSteam ? (
-          <PanelSection title={"HowLongToBeat game"}>
+          <PanelSection title={t("editor.hltbGame")}>
             <PanelSectionRow>
               <div style={rowStackStyle}>
-                <div style={compactTextStyle}>{"Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically."}</div>
+                <div style={compactTextStyle}>{t("editor.hltbHelp")}</div>
                 {hltbMatch?.game_name ? (
                   <div style={compactTextStyle}>
-                    <b>{"Current game"}:</b> {hltbMatch.game_name} {hltbMatch.pinned_id_used ? "(chosen)" : "(found automatically)"}
+                    {hltbMatch.pinned_id_used
+                      ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
+                      : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name })}
                   </div>
                 ) : null}
                 <div style={editorAppIdRowStyle}>
@@ -1326,7 +1415,7 @@ export const MetadataPage = () => {
                     onClick={() => applyHltbGameId()}
                     style={editorAppIdButtonStyle}
                   >
-                    {"Apply HLTB game"}
+                    {t("editor.hltbApply")}
                   </FocusableButton>
                 </div>
               </div>
@@ -1340,10 +1429,10 @@ export const MetadataPage = () => {
           </PanelSection>
         ) : null}
 
-        <PanelSection title={"Steam App ID"}>
+        <PanelSection title={t("editor.steamAppId")}>
           <PanelSectionRow>
             <div style={rowStackStyle}>
-              <div style={compactTextStyle}>{"Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match."}</div>
+              <div style={compactTextStyle}>{t("editor.steamAppIdHelp")}</div>
               <div style={editorAppIdRowStyle}>
                 <TextField
                   className={editorFocusTargetClassName}
@@ -1360,14 +1449,14 @@ export const MetadataPage = () => {
                   onClick={() => applySteamAppId()}
                   style={editorAppIdButtonStyle}
                 >
-                  {"Apply Steam App ID"}
+                  {t("editor.steamAppIdApply")}
                 </FocusableButton>
               </div>
             </div>
           </PanelSectionRow>
         </PanelSection>
 
-        <PanelSection title="Shortcut name">
+        <PanelSection title={t("editor.shortcutName")}>
           <PanelSectionRow>
             <div style={rowStackStyle}>
               <Field
@@ -1379,32 +1468,36 @@ export const MetadataPage = () => {
                 bottomSeparator="none"
               >
                 <div style={rowStackStyle}>
-                  <div style={compactTextStyle}>{`Current: ${currentShortcutName ?? "Steam did not expose a native shortcut name"}`}</div>
-                  {steamStoreName ? <div style={compactTextStyle}>{`Steam: ${steamStoreName}`}</div> : null}
-                  {steamNameLoading ? <div style={compactTextStyle}>{"Loading Steam name..."}</div> : null}
-                  {steamNameUnavailable ? <div style={compactTextStyle}>{"Steam did not return an official name"}</div> : null}
-                  {shortcutManagementError ? <div style={compactTextStyle}>{"Shortcut-name management is unavailable"}</div> : null}
-                  {!shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? <div style={compactTextStyle}>{"Steam's native shortcut-name API is unavailable"}</div> : null}
-                  {!shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? <div style={compactTextStyle}>{"Steam shortcut was not found"}</div> : null}
-                  {!shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? <div style={compactTextStyle}>{"This shortcut has a derived ID and cannot be renamed safely"}</div> : null}
-                  {!shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? <div style={compactTextStyle}>{"Shortcut name already matches Steam"}</div> : null}
-                  {shortcutStatus === "diverged" ? <div style={compactTextStyle}>{"This shortcut name changed outside Decky Metadata. Rename and restore are disabled until saved history is forgotten."}</div> : null}
-                  {!steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? <div style={compactTextStyle}>{"Steam did not return an official name"}</div> : null}
+                  <div style={compactTextStyle}>
+                    {t("editor.shortcut.current", {
+                      name: currentShortcutName ?? t("editor.shortcut.missingName"),
+                    })}
+                  </div>
+                  {steamStoreName ? <div style={compactTextStyle}>{t("editor.shortcut.steamName", { name: steamStoreName })}</div> : null}
+                  {steamNameLoading ? <div style={compactTextStyle}>{t("editor.shortcut.loadingSteamName")}</div> : null}
+                  {steamNameUnavailable ? <div style={compactTextStyle}>{t("editor.shortcut.noOfficialName")}</div> : null}
+                  {shortcutManagementError ? <div style={compactTextStyle}>{t("editor.shortcut.managementUnavailable")}</div> : null}
+                  {!shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? <div style={compactTextStyle}>{t("editor.shortcut.apiUnavailable")}</div> : null}
+                  {!shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? <div style={compactTextStyle}>{t("editor.shortcut.notFound")}</div> : null}
+                  {!shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? <div style={compactTextStyle}>{t("editor.shortcut.derivedId")}</div> : null}
+                  {!shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? <div style={compactTextStyle}>{t("editor.shortcut.alreadyMatches")}</div> : null}
+                  {shortcutStatus === "diverged" ? <div style={compactTextStyle}>{t("editor.shortcut.diverged")}</div> : null}
+                  {!steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? <div style={compactTextStyle}>{t("editor.shortcut.noOfficialName")}</div> : null}
                 </div>
               </Field>
               {canUseSteamName ? (
                 <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy} onClick={showUseSteamNameModal} style={editorAppIdButtonStyle}>
-                  {"Use Steam name"}
+                  {t("editor.shortcut.useSteamName")}
                 </FocusableButton>
               ) : null}
               {shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (
                 <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy || !hasShortcutNameApi()} onClick={showRestoreShortcutNameModal} style={editorAppIdButtonStyle}>
-                  {"Restore original name"}
+                  {t("editor.shortcut.restore")}
                 </FocusableButton>
               ) : null}
               {shortcutManagement?.eligible && shortcutStatus === "diverged" ? (
                 <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy} onClick={showForgetShortcutNameHistoryModal} style={editorAppIdButtonStyle}>
-                  {"Forget saved name history"}
+                  {t("editor.shortcut.forget")}
                 </FocusableButton>
               ) : null}
             </div>

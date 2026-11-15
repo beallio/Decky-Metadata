@@ -41,6 +41,13 @@ describe("plugin update reducer", () => {
     expect(updateReducer(initialUpdateState, action).phase).toBe(phase);
   });
 
+  it("flags a check timeout so the UI never matches on the message text", () => {
+    const timedOut = updateReducer(initialUpdateState, { type: "CHECK_TIMEOUT", message: "interrupted" });
+    expect(timedOut.checkTimedOut).toBe(true);
+    expect(updateReducer(timedOut, { type: "CHECK_START" }).checkTimedOut).toBe(false);
+    expect(updateReducer(initialUpdateState, { type: "CHECK_FAILED", message: "offline" }).checkTimedOut).toBe(false);
+  });
+
   it("hydrates a pending install and clears the installed override", () => {
     const hydrated = updateReducer(initialUpdateState, {
       type: "HYDRATION_COMPLETE",

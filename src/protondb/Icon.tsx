@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { t } from "../i18n";
 import type { ProtonDbTier } from "../types";
 
 export const PROTONDB_COLORS: Record<ProtonDbTier, string> = {
@@ -9,8 +10,16 @@ export const PROTONDB_COLORS: Record<ProtonDbTier, string> = {
   borked: "#ff0000",
 };
 
-export const protonDbTierLabel = (tier: ProtonDbTier): string =>
-  tier.charAt(0).toUpperCase() + tier.slice(1);
+/** Tiers are enum values, so each label needs its own literal key. */
+export const protonDbTierLabel = (tier: ProtonDbTier): string => {
+  switch (tier) {
+    case "platinum": return t("protondb.tier.platinum");
+    case "gold": return t("protondb.tier.gold");
+    case "silver": return t("protondb.tier.silver");
+    case "bronze": return t("protondb.tier.bronze");
+    case "borked": return t("protondb.tier.borked");
+  }
+};
 
 export function ProtonDbIcon({ tier, size }: { tier?: ProtonDbTier; size?: number }) {
   const style: CSSProperties | undefined = tier ? { color: PROTONDB_COLORS[tier] } : undefined;

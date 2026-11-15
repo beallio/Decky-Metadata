@@ -25,7 +25,13 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
     const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
-    const translations = injectedTranslations || { en: {} };
+    // Shared on window so a reused runtime picks up the strings of the latest install.
+    const translationsKey = `${runtimeKey}Translations`;
+    if (injectedTranslations) window[translationsKey] = injectedTranslations;
+    const rt = (key, vars = {}) => {
+        const template = window[translationsKey]?.[key] ?? key;
+        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
+    };
     let nativeStatusRowClass;
     let nativeBackgroundClass;
     const isStatusBand = (element) => {
@@ -190,7 +196,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     let activeIgnFallback = normalizeIgnFallback(nextIgnFallback);
     const ownerRecord = findOwnerRecord();
     if (activeOwnerId && (!ownerRecord || ownerRecord.ownerId !== activeOwnerId || ownerRecord.active !== true)) {
-        return { status: "Steam UI unavailable", runtimeMissing: true };
+        return { status: rt("steamUiUnavailable"), runtimeMissing: true };
     }
     if (ownerRecord && ownerRecord.ownerId === activeOwnerId && Number.isSafeInteger(ownerRecord.settingsRevision) && ownerRecord.settingsRevision > activeRevision) {
         activeRevision = ownerRecord.settingsRevision;
@@ -198,10 +204,6 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         activeIdentity = normalizeIdentity(ownerRecord.identity);
         activeIgnFallback = normalizeIgnFallback(ownerRecord.ignFallback);
     }
-    const rt = (key, vars = {}) => {
-        const template = translations.en?.[key] ?? key;
-        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
-    };
     const isLikelyNonSteamShortcutAppId = (appId) => Number.isInteger(appId) && appId >= 2147483648;
     const coerceAppId = (value) => {
         if (typeof value !== "number" && (typeof value !== "string" || !/^\d{1,10}$/.test(value))) return undefined;
@@ -1401,7 +1403,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 document.getElementById("decky-trailerhero-style") ||
                 document.querySelector(".decky-trailerhero-video")) {
                 this.cleanupVideo(true);
-                this.status = "Another trailer plugin is still active. Disable it and reload Steam UI before using Metadata trailers.";
+                this.status = rt("otherPluginActive");
                 return;
             }
             if (this.launchHeld) {
@@ -2182,7 +2184,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const existing = window[runtimeKey];
     if (existing) {
         if (existing.product !== "decky-metadata-trailer") {
-            return { status: "Metadata trailer runtime conflict", runtimeMissing: true };
+            return { status: rt("runtimeConflict"), runtimeMissing: true };
         }
         if (existing.ownerId === activeOwnerId && existing.version === runtimeVersion) {
             return existing.update(settings, activeRevision, activeIdentity, activeIgnFallback);

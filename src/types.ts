@@ -506,6 +506,8 @@ export type ScanProgress = {
   failed: number;
   current: string;
   message: string;
+  message_code?: string | null;
+  message_args?: Record<string, unknown> | null;
   error?: string;
 };
 
@@ -523,16 +525,46 @@ export enum StoreCategory {
   LocalCoOp = 392,
 }
 
+/** Steam information toggles in display order, mapped to their label keys. */
 export const CATEGORY_LABELS: Record<number, string> = {
-  [StoreCategory.SinglePlayer]: "Single-player",
-  [StoreCategory.MultiPlayer]: "Multiplayer",
-  [StoreCategory.CoOp]: "Co-op",
-  [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
-  [StoreCategory.OnlineCoOp]: "Online co-op",
-  [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
-  [StoreCategory.LocalCoOp]: "Local co-op",
-  [StoreCategory.SplitScreen]: "Split screen",
-  [StoreCategory.FullController]: "Full controller support",
-  [StoreCategory.MMO]: "MMO",
-  [StoreCategory.Achievements]: "Achievements",
+  [StoreCategory.SinglePlayer]: "categories.singlePlayer",
+  [StoreCategory.MultiPlayer]: "categories.multiPlayer",
+  [StoreCategory.CoOp]: "categories.coOp",
+  [StoreCategory.OnlineMultiPlayer]: "categories.onlineMultiPlayer",
+  [StoreCategory.OnlineCoOp]: "categories.onlineCoOp",
+  [StoreCategory.LocalMultiPlayer]: "categories.localMultiPlayer",
+  [StoreCategory.LocalCoOp]: "categories.localCoOp",
+  [StoreCategory.SplitScreen]: "categories.splitScreen",
+  [StoreCategory.FullController]: "categories.fullController",
+  [StoreCategory.MMO]: "categories.mmo",
+  [StoreCategory.Achievements]: "categories.achievements",
+};
+
+export const categoryLabel = (category: number, t: (key: string) => string): string => {
+  switch (category) {
+    case StoreCategory.SinglePlayer:
+      return t("categories.singlePlayer");
+    case StoreCategory.MultiPlayer:
+      return t("categories.multiPlayer");
+    case StoreCategory.CoOp:
+      return t("categories.coOp");
+    case StoreCategory.OnlineMultiPlayer:
+      return t("categories.onlineMultiPlayer");
+    case StoreCategory.OnlineCoOp:
+      return t("categories.onlineCoOp");
+    case StoreCategory.LocalMultiPlayer:
+      return t("categories.localMultiPlayer");
+    case StoreCategory.LocalCoOp:
+      return t("categories.localCoOp");
+    case StoreCategory.SplitScreen:
+      return t("categories.splitScreen");
+    case StoreCategory.FullController:
+      return t("categories.fullController");
+    case StoreCategory.MMO:
+      return t("categories.mmo");
+    case StoreCategory.Achievements:
+      return t("categories.achievements");
+    default:
+      return "";
+  }
 };
