@@ -1,0 +1,46 @@
+{
+  "common": {
+    "hoursShort": "{{value}} h",
+    "unknown": "Unknown",
+    "hours_one": "{{value}} hour",
+    "hours_few": "{{value}} hours",
+    "hours_many": "{{value}} hours",
+    "hours_other": "{{value}} hours"
+  },
+  "backend": {
+    "progress": {
+      "matching_metadata": "Matching metadata for {{title}}",
+      "refreshing_activity": "Refreshing Steam Activity for {{title}}",
+      "failed": "Failed: {{title}}",
+      "skipped_changed": "Skipped {{title}}: metadata changed during refresh",
+      "matched_steam": "Matched Steam for {{title}}",
+      "matched_delisted": "Matched delisted Steam app for {{title}}",
+      "saved_metadata": "Saved metadata for {{title}}",
+      "no_match": "No metadata match for {{title}}",
+      "updated_activity": "Updated Steam Activity for {{title}}",
+      "no_activity": "No Steam Activity found for {{title}}"
+    },
+    "hltb_busy": "HowLongToBeat is busy. Try again in a minute.",
+    "invalid_title": "invalid title",
+    "invalid_search": "invalid search",
+    "steam_search_unavailable": "Steam search is unavailable. Try again.",
+    "steam_details_unavailable": "Steam game details are unavailable",
+    "steam_title_unavailable": "Steam game title is unavailable",
+    "invalid_steam_game": "Select a valid Steam game.",
+    "steam_preview_unavailable": "Steam details are unavailable. You can still use this match.",
+    "settings_unreadable": "metadata settings file is unreadable; fix or remove it before saving changes",
+    "invalid_release_date": "release_date must be a YYYY-MM-DD calendar date or null",
+    "hltb_settings_unavailable": "HLTB settings could not be loaded",
+    "compat_default_unavailable": "compatibility default could not be loaded",
+    "compat_scope_unavailable": "compatibility default scope could not be loaded",
+    "trailer_settings_unavailable": "trailer settings could not be loaded",
+    "mini_achievements_settings_unavailable": "mini achievements settings could not be loaded",
+    "protondb_settings_unavailable": "ProtonDB badge settings could not be loaded",
+    "steam_ui_unavailable": "Steam UI unavailable",
+    "update_check_failed": "Failed to check for updates",
+    "rate_limited": "Rate limit exceeded",
+    "rate_limit_cooldown": "Rate limit cooldown active",
+    "rate_limit_cooldown_skipped": "Update check skipped due to rate-limit cooldown",
+    "manifest_download_failed": "Failed to download the release manifest"
+  }
+}
