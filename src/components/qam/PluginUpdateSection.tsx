@@ -248,7 +248,10 @@ export function PluginUpdateSection({
             highlightOnFocus={true}
           >
             <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            <div>{t("qam.update.newVersion", { version: candidate.version, channel: candidate.channel })}</div>
+            <div>{t("qam.update.newVersion", {
+              version: candidate.version,
+              channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+            })}</div>
             {candidate.action === "downgrade_to_stable" && (
               <div style={{ color: "#f87171", fontSize: "12px", marginTop: "4px" }}>
                 {t("qam.update.downgradeWarning")}

@@ -269,6 +269,8 @@
       "tryAgainAfter": "Try again after {{date}}",
       "candidate": "Candidate",
       "newVersion": "New version: v{{version}} ({{channel}})",
+      "channelStable": "stable",
+      "channelDevelopment": "development",
       "downgradeWarning": "Warning: Reverting to stable is a downgrade.",
       "actionMoveToStable": "Move to Stable v{{version}}",
       "actionRevertToStable": "Revert to Stable v{{version}}",
