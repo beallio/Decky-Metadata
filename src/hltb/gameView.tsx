@@ -2,6 +2,7 @@
 import { routerHook } from "@decky/api";
 import {
   afterPatch,
+  appActionButtonClasses,
   appDetailsClasses,
   appDetailsHeaderClasses,
   basicAppDetailsSectionStylerClasses,
@@ -266,7 +267,7 @@ function layoutTop(element: HTMLElement): number {
 }
 
 /**
- * How far Play can move down before it would go under Big Picture's bottom bar.
+ * How far Play can move down before its button would go under Big Picture's footer.
  * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
  */
 function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): PushRoom | null {
@@ -282,7 +283,6 @@ function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): 
     }
     let frame = 0;
     let footer: HTMLElement | null = null;
-    let footerLabels: HTMLElement | null = null;
     const resize = new view.ResizeObserver(() => schedule());
     const footerResize = new view.ResizeObserver(() => schedule());
     const measure = (): PushRoom | null => {
@@ -303,32 +303,33 @@ function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): 
       }
       if (!scroller || scroller.clientHeight <= 0) return null;
       const nextFooter = document.querySelector<HTMLElement>("#Footer");
-      const nextLabels = document.querySelector<HTMLElement>("#Footer > div");
-      // Re-bound every pass: either can arrive or be replaced after the page has loaded.
-      if (nextFooter !== footer || nextLabels !== footerLabels) {
+      // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+      if (nextFooter !== footer) {
         footerResize.disconnect();
         footer = nextFooter;
-        footerLabels = nextLabels;
         if (footer) footerResize.observe(footer);
-        if (footerLabels) footerResize.observe(footerLabels);
       }
       const header = Array.from(container.children)
         .find((child) => child.className.includes(appDetailsClasses.Header)) as HTMLElement | undefined;
       if (!header) return null;
       // Layout, not rects: Steam scales and translates the page while it animates in,
       // and a rect read mid-animation would stick until something else moved.
-      const artBottom = layoutTop(header) - layoutTop(scroller) + header.offsetHeight;
-      let barHeight = 0;
-      if (footer && footer.offsetHeight > 0) {
-        // Same layout space: Steam scales the scroller's rect but not the footer outside it.
-        const labelsTop = layoutTop(footer) + Math.min(0, footerLabels?.offsetTop ?? 0);
-        const labelsRect = footerLabels?.getBoundingClientRect();
-        // The footer is outside the animated page, so a positive-size rect is layout space.
-        const paintedTop = labelsRect && labelsRect.width > 0 && labelsRect.height > 0 ? Math.min(labelsTop, labelsRect.top) : labelsTop;
-        barHeight = Math.max(0, layoutTop(scroller) + scroller.clientHeight - paintedTop);
-      }
+      // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+      const artBottom = layoutTop(header) + header.offsetHeight;
+      // The visible bar's border box; the labels may overhang it but Play clears the bar.
+      const footerTop = footer && footer.offsetHeight > 0
+        ? layoutTop(footer)
+        : layoutTop(scroller) + scroller.clientHeight;
       const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-      const free = scroller.clientHeight - barHeight - artBottom - (section.offsetHeight - lift);
+      const playButton = appActionButtonClasses?.PlayButton;
+      // The button face; the wrapper's AppActionButton class is the fallback.
+      const button = (playButton ? section.querySelector<HTMLElement>(`.${playButton}`) : null) ??
+        section.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.AppActionButton}`);
+      // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+      const buttonBottom = button
+        ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+        : section.offsetHeight - lift;
+      const free = footerTop - 4 - artBottom - buttonBottom;
       return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
     };
     const update = () => {
