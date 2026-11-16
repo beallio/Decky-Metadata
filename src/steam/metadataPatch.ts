@@ -216,9 +216,11 @@ export const effectiveCompatibilityCategory = (
 
 /**
  * Packed bits 0-9 for the effective policy, else null to keep Steam's value.
- * A Valve number wins, an explicit null means Valve has no rating so Steam's
- * own bits stay, and a legacy record without the key uses the mapped Deck
- * category. A user choice applies that one category to every Deck-style field.
+ * A Valve number wins. An explicit null means Valve has no rating, so Steam's
+ * own bits stay. A legacy record without the SteamOS key uses the mapped Deck
+ * category, but a missing Steam Machine or Frame key keeps Steam's own bits:
+ * Valve can rate those devices below Deck, so inferring Deck claims a false
+ * Verified. A user choice applies that one category to every Deck-style field.
  */
 const effectiveCompatibilityPacked = (
   metadata: CompatibilityMetadata | undefined,
@@ -235,22 +237,20 @@ const effectiveCompatibilityPacked = (
     value: unknown,
     shift: number,
     valid: (candidate: unknown) => boolean,
-    legacy: number,
   ): number =>
-    value === undefined
-      ? legacy << shift
-      : typeof value === "number" && valid(value)
-        ? value << shift
-        // Explicit null or an unreadable value: keep Steam's own bits here.
-        : baselinePacked & (3 << shift);
-  const steamos = resolved.fromValve
-    ? valveBits(metadata?.steamos_compat_category, 4, isSteamOsCompatibilityCategory, legacySteamos)
-    : legacySteamos << 4;
+    typeof value === "number" && valid(value)
+      ? value << shift
+      // Explicit null, an unreadable value or an absent Machine/Frame key:
+      // keep Steam's own bits here.
+      : baselinePacked & (3 << shift);
+  const steamos = !resolved.fromValve || metadata?.steamos_compat_category === undefined
+    ? legacySteamos << 4
+    : valveBits(metadata.steamos_compat_category, 4, isSteamOsCompatibilityCategory);
   const machine = resolved.fromValve
-    ? valveBits(metadata?.steam_machine_compat_category, 6, isCompatibilityCategory, deck)
+    ? valveBits(metadata?.steam_machine_compat_category, 6, isCompatibilityCategory)
     : deck << 6;
   const frame = resolved.fromValve
-    ? valveBits(metadata?.steam_frame_compat_category, 8, isCompatibilityCategory, deck)
+    ? valveBits(metadata?.steam_frame_compat_category, 8, isCompatibilityCategory)
     : deck << 8;
   return deck | (deck << 2) | steamos | machine | frame;
 };

@@ -172,8 +172,9 @@ the matched category, the Deck row is `deck_compat_category`. Each other device
 row uses its own category when it is a number. When it is an explicit null,
 Valve has no rating for that device, so the row keeps the shortcut's original
 native bits from the baseline. When the key is absent, the record predates
-these fields, so the SteamOS row falls back to map(Deck) and the Steam Machine
-and Steam Frame rows fall back to the Deck category. When the effective Deck category is a user choice,
+these fields: the SteamOS row falls back to map(Deck), and the Steam Machine
+and Steam Frame rows keep their native bits, because Valve rates those devices
+independently of the Deck. When the effective Deck category is a user choice,
 meaning a fixed per-game category or a numeric global default, the Deck, Steam
 Machine, and Steam Frame rows are that category and the SteamOS row is
 map(Deck). The map is 3 to 2, 2 to 2, 1 to 1, and 0 to 0. A null effective
