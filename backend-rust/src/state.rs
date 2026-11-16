@@ -260,6 +260,7 @@ impl AppState {
             logging::event("load", "provider cache save failed", json!({"error": error}), log::Level::Warn);
         }
         self.cancel.cancel();
+        self.cef.close().await;
         // A replacement already in progress must finish its atomic section.
         tokio::time::timeout(Duration::from_secs(4), async {
             self.jobs.drain().await;

@@ -40,6 +40,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Less background work for game trailers.** With game trailers on, the plugin
   no longer checks Steam every 2 seconds when no trailer can play, and it checks
   less often while a trailer plays and nothing changes. (#44, #45)
+- **One Steam debugger connection for trailers.** The plugin now keeps one
+  connection to Steam's Big Picture page and uses it again for each trailer
+  check, instead of opening and closing a new connection every time. This
+  causes less connection churn for other tools that use Steam's debugger, such
+  as CSS Loader. (#46)
 
 ### Fixed
 
