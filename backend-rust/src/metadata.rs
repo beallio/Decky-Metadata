@@ -154,6 +154,15 @@ pub fn is_delisted(index: &Value, appid: i64) -> bool {
     })
 }
 
+/// Provider-owned compatibility fields, with the highest value each platform defines.
+/// SteamOS has no Verified level: its highest value is 2.
+const COMPAT_FIELDS: [(&str, i64); 4] = [
+    ("deck_compat_category", 3),
+    ("steamos_compat_category", 2),
+    ("steam_machine_compat_category", 3),
+    ("steam_frame_compat_category", 3),
+];
+
 pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
     if !value.is_object() {
         return Err("metadata must be an object".into());
@@ -192,10 +201,6 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         return Err("invalid_release_date".into());
     }
     let category = integer(&value["deck_compat_category"]).filter(|n| (0..=3).contains(n));
-    // SteamOS reports no Verified level: its highest valid value is 2.
-    let steamos = integer(&value["steamos_compat_category"]).filter(|n| (0..=2).contains(n));
-    let machine = integer(&value["steam_machine_compat_category"]).filter(|n| (0..=3).contains(n));
-    let frame = integer(&value["steam_frame_compat_category"]).filter(|n| (0..=3).contains(n));
     let compat_override = if value["deck_compat_override"] == "valve" {
         json!("valve")
     } else {
@@ -228,8 +233,6 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         "short_description":if short.is_empty() {description} else {short},
         "developers":people(&value["developers"]),"publishers":people(&value["publishers"]),
         "rating":rating,"deck_compat_category":category,"deck_compat_override":compat_override,
-        "steamos_compat_category":steamos,"steam_machine_compat_category":machine,
-        "steam_frame_compat_category":frame,
         "store_categories":categories,"genres":names(&value["genres"])?,"features":names(&value["features"])?,
         "screenshots":screenshots(&value["screenshots"])?,"steam_appid":appid,
         "steam_store_name":name,"steam_dlc_appids":dlc,"has_points_shop":has_points_shop,
@@ -237,6 +240,13 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         "steam_news":sanitize_news(&value["steam_news"])?,
         "steam_news_enriched_at":number_integer(&value["steam_news_enriched_at"],0.0)?
     });
+    // Valve's per-device categories: absent when the record never had a lookup, an explicit
+    // null when Valve has no rating. `deck_compat_category` above is always written.
+    for &(field, max) in COMPAT_FIELDS.iter().skip(1) {
+        if let Some(raw) = value.get(field) {
+            result[field] = json!(integer(raw).filter(|n| (0..=max).contains(n)));
+        }
+    }
     // A record without this field is English; an unknown value is dropped, never coerced.
     if let Some(language) = value["metadata_language"]
         .as_str()
@@ -325,26 +335,26 @@ pub fn prepare_save(
     let previous = safe_int(&existing["steam_appid"]);
     let next = safe_int(&value["steam_appid"]);
     let trusted = trusted_appid.is_some_and(|id| id > 0 && Some(id) == next);
-    // Provider-owned: only a Steam fetch writes them, so a save keeps the stored values.
-    // The match change below still clears them.
+    // Provider-owned: only a Steam fetch writes them, so a save keeps the stored values and
+    // their absence (a legacy record stays without the per-device keys). The match change
+    // below still clears them.
     if !trusted {
-        for key in [
-            "deck_compat_category",
-            "steamos_compat_category",
-            "steam_machine_compat_category",
-            "steam_frame_compat_category",
-        ] {
-            value[key] = existing.get(key).cloned().unwrap_or(Value::Null);
+        for &(field, _) in &COMPAT_FIELDS {
+            match existing.get(field) {
+                Some(stored) => value[field] = stored.clone(),
+                None => {
+                    if let Some(object) = value.as_object_mut() {
+                        object.remove(field);
+                    }
+                }
+            }
         }
     }
     if previous.is_some_and(|id| id != 0) && previous != next && !trusted {
-        for key in [
-            "deck_compat_category",
-            "steamos_compat_category",
-            "steam_machine_compat_category",
-            "steam_frame_compat_category",
-        ] {
-            value[key] = Value::Null;
+        // Explicit null, not absence: the new match was never looked up, so the record must
+        // not fall back to the old match's categories.
+        for &(field, _) in &COMPAT_FIELDS {
+            value[field] = Value::Null;
         }
         // Data fetched for the old Steam app must not describe the new match. The store
         // URL and name stay: the editor sends them for the new ID and enrichment refills them.
@@ -651,14 +661,6 @@ pub async fn apply_auto_fetched(
     save_fetched(state, app_id, fetched, false).await
 }
 
-/// Provider-owned compatibility fields, with the highest value each platform defines.
-const COMPAT_FIELDS: [(&str, i64); 4] = [
-    ("deck_compat_category", 3),
-    ("steamos_compat_category", 2),
-    ("steam_machine_compat_category", 3),
-    ("steam_frame_compat_category", 3),
-];
-
 pub async fn with_steam_news(
     state: &crate::state::AppState,
     mut value: Value,
@@ -705,17 +707,21 @@ pub async fn with_steam_news(
             lookup.frame_category,
         ];
         for ((field, max), found) in COMPAT_FIELDS.iter().zip(found) {
-            let previous = safe_int(&value[*field]);
-            value[*field] = match status {
-                "available" => json!(found),
-                "unavailable" => Value::Null,
-                _ if previous_id == Some(id)
-                    && previous.is_some_and(|category| (0..=*max).contains(&category)) =>
-                {
-                    json!(previous)
+            match status {
+                // An available report writes every field: a platform Valve did not rate
+                // becomes an explicit null, never a borrowed value.
+                "available" => value[*field] = json!(found),
+                "unavailable" => value[*field] = Value::Null,
+                // A failed lookup keeps the stored value, and its absence, unchanged.
+                _ => {
+                    let previous = safe_int(&value[*field]);
+                    if previous_id == Some(id)
+                        && previous.is_some_and(|category| (0..=*max).contains(&category))
+                    {
+                        value[*field] = json!(previous);
+                    }
                 }
-                _ => Value::Null,
-            };
+            }
         }
         if include_details {
             if let Some(mut details) = steam::steam_appdetails_for_appid(&state.http, id).await {
@@ -876,6 +882,24 @@ mod tests {
         assert_eq!(valid["steamos_compat_category"], 2);
         assert_eq!(valid["steam_machine_compat_category"], 3);
         assert_eq!(valid["steam_frame_compat_category"], 0);
+        // An explicit null is a platform Valve never rated; absence means no lookup yet.
+        let unrated = sanitize(
+            &json!({"title":"Game","steamos_compat_category":null,
+                "steam_machine_compat_category":null,"steam_frame_compat_category":null}),
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(unrated.get(field), Some(&Value::Null), "{field}");
+            assert!(sanitize(&json!({"title":"Game"}), &Value::Null)
+                .unwrap()
+                .get(field)
+                .is_none());
+        }
         let stored = json!({"title":"Game","steam_appid":10,"deck_compat_category":3,
             "steamos_compat_category":2,"steam_machine_compat_category":3,"steam_frame_compat_category":1});
         // A user save never writes them, even when it echoes other values.
@@ -895,7 +919,8 @@ mod tests {
             merge_fetched(&stored, json!({"title":"Fetched"}))["steam_frame_compat_category"],
             1
         );
-        // Without a stored value, out-of-range junk never reaches the record.
+        // Without a stored value an untrusted save creates no key, so forged junk never
+        // reaches the record.
         let forged = prepare_save(
             &json!({"title":"Game","steam_appid":10}),
             json!({"title":"Game","steam_appid":10,"steamos_compat_category":3,
@@ -910,9 +935,34 @@ mod tests {
             "steam_machine_compat_category",
             "steam_frame_compat_category",
         ] {
-            assert_eq!(forged[field], Value::Null, "{field}");
+            assert!(forged.get(field).is_none(), "{field}");
         }
-        // A changed Steam match drops every category of the old app.
+        // A fetched record keeps its explicit nulls through the same save.
+        let fetched = json!({"title":"Game","steam_appid":10,
+            "steamos_compat_category":null,"steam_machine_compat_category":null,
+            "steam_frame_compat_category":null});
+        let resent = prepare_save(
+            &fetched,
+            json!({"title":"Renamed","steam_appid":10,"steam_frame_compat_category":3}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(resent.get(field), Some(&Value::Null), "{field}");
+        }
+        // An IGN fetch of a legacy match must not invent the keys either.
+        let merged = merge_fetched(
+            &json!({"title":"Game","steam_appid":10}),
+            json!({"title":"Fetched","source":"IGN"}),
+        );
+        assert!(merged.get("steam_frame_compat_category").is_none());
+        // A changed Steam match clears every category of the old app with an explicit null.
         let mut rematch = stored.clone();
         rematch["steam_appid"] = json!(11);
         let cleared = prepare_save(&stored, rematch, false, None, &Value::Null).unwrap();
@@ -922,7 +972,7 @@ mod tests {
             "steam_machine_compat_category",
             "steam_frame_compat_category",
         ] {
-            assert_eq!(cleared[field], Value::Null, "{field}");
+            assert_eq!(cleared.get(field), Some(&Value::Null), "{field}");
         }
     }
 

@@ -580,7 +580,7 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0x2a5);
   });
 
-  it("falls back to the mapped deck category when Valve omits or invents per-device values", () => {
+  it("falls back to the mapped deck category for a legacy record or an unreadable value", () => {
     const missingAppId = 9006;
     const missing = installCompatibilityOverview(missingAppId, 0xa0);
     metadataCache[String(missingAppId)] = compatibilityMetadata(3, "valve") as any;
@@ -605,6 +605,62 @@ describe("compatibility metadata application", () => {
     } as any;
     applyMetadata(partialAppId);
     expect(partial.steam_hw_compat_category_packed).toBe(0x29a);
+  });
+
+  it("keeps Steam's own bits for a device Valve has no rating for", () => {
+    // Wobbly Life: Valve rates Deck, SteamOS and Steam Machine, but the Frame is null.
+    const appId = 1211020;
+    const overview = installCompatibilityOverview(appId, 0);
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: 2,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: null,
+    };
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xef);
+  });
+
+  it("keeps native SteamOS bits when Valve returns an explicit null", () => {
+    const nativeAppId = 9014;
+    const native = installCompatibilityOverview(nativeAppId, 0x20);
+    metadataCache[String(nativeAppId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: 3,
+    };
+    applyMetadata(nativeAppId);
+    expect(native.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    const unknownAppId = 9015;
+    const unknown = installCompatibilityOverview(unknownAppId, 0);
+    metadataCache[String(unknownAppId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: 3,
+    };
+    applyMetadata(unknownAppId);
+    expect(unknown.steam_hw_compat_category_packed).toBe(0x3cf);
+  });
+
+  it("uses the stored baseline for an explicit null after a previous write", () => {
+    const appId = 9016;
+    const overview = installCompatibilityOverview(appId, 0x2a5);
+    metadataCache[String(appId)] = compatibilityMetadata(null, 3);
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: null,
+    };
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2ef);
   });
 
   it("applies a user choice to every field even when Valve data disagrees", () => {

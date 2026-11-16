@@ -216,29 +216,43 @@ export const effectiveCompatibilityCategory = (
 
 /**
  * Packed bits 0-9 for the effective policy, else null to keep Steam's value.
- * Valve's per-device data can differ from the Deck category. A user choice
- * applies that one category to every Deck-style field.
+ * A Valve number wins, an explicit null means Valve has no rating so Steam's
+ * own bits stay, and a legacy record without the key uses the mapped Deck
+ * category. A user choice applies that one category to every Deck-style field.
  */
 const effectiveCompatibilityPacked = (
   metadata: CompatibilityMetadata | undefined,
   globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
   scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
+  baselinePacked = 0,
 ): number | null => {
   const resolved = resolvedCompatibilityCategory(metadata, globalDefault, scope);
   if (!resolved) return null;
   const deck = resolved.category;
-  const fromValve = resolved.fromValve;
-  const steamos = fromValve && isSteamOsCompatibilityCategory(metadata?.steamos_compat_category)
-    ? metadata.steamos_compat_category
-    // SteamOS has no Verified value; Valve maps Deck Playable and Verified to Compatible.
-    : deck >= 2 ? 2 : deck;
-  const machine = fromValve && isCompatibilityCategory(metadata?.steam_machine_compat_category)
-    ? metadata.steam_machine_compat_category
-    : deck;
-  const frame = fromValve && isCompatibilityCategory(metadata?.steam_frame_compat_category)
-    ? metadata.steam_frame_compat_category
-    : deck;
-  return deck | (deck << 2) | (steamos << 4) | (machine << 6) | (frame << 8);
+  // SteamOS has no Verified value; Valve maps Deck Playable and Verified to Compatible.
+  const legacySteamos = deck >= 2 ? 2 : deck;
+  const valveBits = (
+    value: unknown,
+    shift: number,
+    valid: (candidate: unknown) => boolean,
+    legacy: number,
+  ): number =>
+    value === undefined
+      ? legacy << shift
+      : typeof value === "number" && valid(value)
+        ? value << shift
+        // Explicit null or an unreadable value: keep Steam's own bits here.
+        : baselinePacked & (3 << shift);
+  const steamos = resolved.fromValve
+    ? valveBits(metadata?.steamos_compat_category, 4, isSteamOsCompatibilityCategory, legacySteamos)
+    : legacySteamos << 4;
+  const machine = resolved.fromValve
+    ? valveBits(metadata?.steam_machine_compat_category, 6, isCompatibilityCategory, deck)
+    : deck << 6;
+  const frame = resolved.fromValve
+    ? valveBits(metadata?.steam_frame_compat_category, 8, isCompatibilityCategory, deck)
+    : deck << 8;
+  return deck | (deck << 2) | steamos | machine | frame;
 };
 
 /** Packed compatibility fields live in bits 0-9; Steam owns every higher bit. */
@@ -404,7 +418,15 @@ const applyCompatibilityToOverview = (
   }
   upgradeLegacyCompatibilityBits();
   upgradeLegacyCompatibilityEntry(appId, packedCompatibilityValue(overview));
-  const packed = effectiveCompatibilityPacked(metadataCache[String(appId)]);
+  // Steam's own bits 0-9, from before this plugin's first write, so an explicit
+  // Valve null keeps them instead of inventing a rating.
+  const packed = effectiveCompatibilityPacked(
+    metadataCache[String(appId)],
+    metadataState.compatibilityDefault,
+    metadataState.compatibilityDefaultScope,
+    metadataState.compatibilityBaselines[String(appId)]
+      ?? (packedCompatibilityValue(overview) & COMPATIBILITY_BITS_MASK),
+  );
   if (isCurrentGameInfoRoute(routeContext, appId)) {
     const currentPacked = packedCompatibilityValue(overview);
     const currentHeld = currentPacked & COMPATIBILITY_BITS_MASK;
@@ -784,10 +806,6 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   if (!isIncomingShortcut && !isNativeNonSteamShortcut(current)) return false;
 
   upgradeLegacyCompatibilityBits();
-  const desiredPacked = effectiveCompatibilityPacked(
-    metadataCache[String(appId)],
-    metadataState.compatibilityDefault,
-  );
   const packed = Number(overview?.steam_hw_compat_category_packed?.());
   if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
     return false;
@@ -795,6 +813,15 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   // The incoming protobuf still carries Steam's native bits 4-9, so it is the
   // first trustworthy overview for a legacy entry whose app had none.
   upgradeLegacyCompatibilityEntry(appId, packed);
+  const desiredPacked = effectiveCompatibilityPacked(
+    metadataCache[String(appId)],
+    metadataState.compatibilityDefault,
+    metadataState.compatibilityDefaultScope,
+    metadataState.compatibilityBaselines[String(appId)]
+      ?? (current
+        ? packedCompatibilityValue(current) & COMPATIBILITY_BITS_MASK
+        : packed & COMPATIBILITY_BITS_MASK),
+  );
   if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
     const heldPacked = current
       ? packedCompatibilityValue(current) & COMPATIBILITY_BITS_MASK

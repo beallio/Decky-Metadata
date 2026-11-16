@@ -152,23 +152,28 @@ Automatic. `deck_compat_category` stays provider-owned and is numeric-or-null;
 the setting and `"valve"` are never written there.
 
 `steamos_compat_category`, `steam_machine_compat_category`, and
-`steam_frame_compat_category` are provider-owned and numeric-or-null, with the
-same lifecycle as `deck_compat_category`: the same Valve lookup sets them, a
-failed or malformed lookup for an unchanged Steam match keeps the last-known
-values, an authoritative response without that category clears it to null, and
-a changed or removed Steam App ID clears them. They never carry across matches,
-and a user Save never writes them. Valid values are 0, 1, or 2 for SteamOS,
-which has no Verified level, and 0, 1, 2, or 3 for Steam Machine and Steam
-Frame. `metadata::sanitize` drops any other value.
+`steam_frame_compat_category` are provider-owned. Each key is absent on a
+record that no lookup with these fields has reached yet, and a number or an
+explicit null after one. The same Valve lookup as for `deck_compat_category`
+writes all three keys: a number when Valve rates that device, null when Valve
+returns no rating for it or the response is authoritative without a category.
+A failed or malformed lookup changes nothing, including absence. A changed or
+removed Steam App ID sets all three to explicit null. They never carry across
+matches, and a user Save never writes or creates them. Valid values are 0, 1,
+or 2 for SteamOS, which has no Verified level, and 0, 1, 2, or 3 for Steam
+Machine and Steam Frame. `metadata::sanitize` turns any other value of a
+present key into null and keeps an absent key absent.
 
 The frontend resolves one effective Deck category per shortcut from the fixed
 per-game category, the numeric global default within scope, or the matched
 `deck_compat_category`. It then derives each device row. When the effective
 Deck category comes from Valve, meaning Follow Valve or an inherit that uses
-the matched category, the Deck row is `deck_compat_category`, the SteamOS row
-is `steamos_compat_category` when numeric and otherwise map(Deck), and the
-Steam Machine and Steam Frame rows are their own category when numeric and
-otherwise the Deck category. When the effective Deck category is a user choice,
+the matched category, the Deck row is `deck_compat_category`. Each other device
+row uses its own category when it is a number. When it is an explicit null,
+Valve has no rating for that device, so the row keeps the shortcut's original
+native bits from the baseline. When the key is absent, the record predates
+these fields, so the SteamOS row falls back to map(Deck) and the Steam Machine
+and Steam Frame rows fall back to the Deck category. When the effective Deck category is a user choice,
 meaning a fixed per-game category or a numeric global default, the Deck, Steam
 Machine, and Steam Frame rows are that category and the SteamOS row is
 map(Deck). The map is 3 to 2, 2 to 2, 1 to 1, and 0 to 0. A null effective

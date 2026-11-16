@@ -1537,6 +1537,69 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn activity_refresh_writes_an_explicit_null_for_a_platform_valve_did_not_rate() {
+        // Valve rates the Deck but returns `frame_resolved_category: null`.
+        let categories = json!({"success":1,"results":{"resolved_category":3,
+            "steamos_resolved_category":2,"machine_resolved_category":3,
+            "frame_resolved_category":null}});
+        let (_directory, state) = test_state(vec![
+            steam_events(400, json!([event(400)])),
+            steam_compatibility(400, Ok(categories)),
+        ])
+        .await;
+        set_record(
+            &state,
+            101,
+            json!({"title":"Wobbly Life","source":"Steam","steam_appid":400,
+                "description":"Steam text","short_description":"Steam text","genres":["Action"],
+                "metadata_language":"english","steam_news":[]}),
+        )
+        .await;
+        let filled = refresh_steam_activity_for_app(&state, &json!(101), "english")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(filled["steamos_compat_category"], 2);
+        assert_eq!(filled["steam_machine_compat_category"], 3);
+        // The key is present and null, so the UI never borrows the Deck rating for it.
+        assert!(filled.get("steam_frame_compat_category").is_some());
+        assert_eq!(filled["steam_frame_compat_category"], Value::Null);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn a_failed_lookup_keeps_the_platform_categories_absent_on_a_legacy_record() {
+        let (_directory, state) = test_state(vec![
+            steam_events(400, json!([event(400)])),
+            steam_compatibility(400, Err(())),
+        ])
+        .await;
+        set_record(
+            &state,
+            101,
+            json!({"title":"Legacy","source":"Steam","steam_appid":400,
+                "description":"Steam text","short_description":"Steam text","genres":["Action"],
+                "metadata_language":"english","steam_news":[]}),
+        )
+        .await;
+        let refreshed = refresh_steam_activity_for_app(&state, &json!(101), "english")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(refreshed["steam_news"][0]["title"], "Update 400");
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert!(refreshed.get(field).is_none(), "{field}");
+        }
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn scan_counters_reconcile_empty_titles_and_ignore_invalid_count_ids() {
         let (_directory, state) = test_state(Vec::new()).await;
         set_record(
