@@ -76,6 +76,10 @@ All notable changes to this project are documented here in Keep a Changelog form
   Steam Cloud save status bar, the header image grew about a second after the
   page opened, which made it zoom and move. This happened only when SDH-Ludusavi
   was off. The image now gets its final size when the page opens. (#47)
+- **Panel switches no longer flash.** Changing a switch in **HLTB times** or
+  **ProtonDB badges** briefly dimmed every control in the section while the
+  setting was saved. The controls now stay as they are, and two quick changes
+  in a row are both saved. (#49)
 
 ## [0.6.3] - 2026-11-13
 

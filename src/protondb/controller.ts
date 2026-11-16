@@ -56,6 +56,11 @@ export class ProtonDbBadgeController {
   private mounted = false;
   private unsubscribeConflicts: (() => void) | undefined;
   private snapshot: ProtonDbBadgeSnapshot;
+  /** Last settings the backend confirmed; a failed save shows these again. */
+  private confirmed: ProtonDbBadgeSettings | undefined;
+  /** Latest requested settings waiting for the in-flight save, plus their callers. */
+  private queued: { settings: ProtonDbBadgeSettings; settles: Array<(saved: boolean) => void> } | undefined;
+  private saving = false;
 
   constructor(
     private readonly settingsStore: ProtonDbBadgeSettingsStore = backendSettingsStore,
@@ -111,6 +116,7 @@ export class ProtonDbBadgeController {
       (settings) => {
         if (!this.isCurrent(lifecycle)) return;
         const saved = copySettings(settings);
+        this.confirmed = saved;
         this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
       },
       (error: unknown) => {
@@ -127,6 +133,9 @@ export class ProtonDbBadgeController {
   stop(): void {
     this.mounted = false;
     this.lifecycle += 1;
+    this.queued?.settles.forEach((settle) => settle(false));
+    this.queued = undefined;
+    this.saving = false;
     this.unsubscribeConflicts?.();
     this.unsubscribeConflicts = undefined;
     this.ratings.setResultListener(undefined);
@@ -142,26 +151,56 @@ export class ProtonDbBadgeController {
   }
 
   async setSettings(settings: ProtonDbBadgeSettings): Promise<boolean> {
-    if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy) return false;
-    if (settings.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName) return false;
-
-    const lifecycle = this.lifecycle;
+    if (!this.mounted || !this.snapshot.settingsLoaded) return false;
     const requested = copySettings(settings);
-    this.publish({ busy: true, settingsError: "" });
+    if (requested.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName) return false;
+    // Publish optimistically: the section builds its next change from the snapshot,
+    // and controls must not dim while a save is in flight.
+    this.publish({ settings: requested, busy: true, settingsError: "" });
+    return new Promise<boolean>((resolve) => {
+      if (this.queued) {
+        // Latest wins; earlier callers settle with this newer value's save.
+        this.queued.settings = requested;
+        this.queued.settles.push(resolve);
+      } else {
+        this.queued = { settings: requested, settles: [resolve] };
+      }
+      if (this.saving) return;
+      this.saving = true;
+      void this.drainSaves();
+    });
+  }
 
-    try {
-      const saved = copySettings(await this.settingsStore.set(requested));
-      if (!this.isCurrent(lifecycle)) return false;
-      this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
-      return true;
-    } catch (error) {
-      if (!this.isCurrent(lifecycle)) return false;
-      this.publish({
-        busy: false,
-        settingsError: errorText(error, t("protondb.settingsSaveError")),
-      });
-      return false;
+  /** Saves one request at a time so a toggle pressed during a save is not lost. */
+  private async drainSaves(): Promise<void> {
+    const lifecycle = this.lifecycle;
+    while (this.queued && this.isCurrent(lifecycle)) {
+      const { settings, settles } = this.queued;
+      this.queued = undefined;
+      let saved = false;
+      try {
+        const confirmed = copySettings(await this.settingsStore.set(settings));
+        if (this.isCurrent(lifecycle)) {
+          this.confirmed = confirmed;
+          saved = true;
+          // A newer request is queued; showing this value first would flash it.
+          if (!this.queued) this.publish({ settings: confirmed, settingsLoaded: true, busy: false, settingsError: "" });
+        }
+      } catch (error) {
+        if (this.isCurrent(lifecycle)) {
+          this.queued?.settles.forEach((settle) => settle(false));
+          this.queued = undefined;
+          this.publish({
+            settings: this.confirmed ?? this.snapshot.settings,
+            busy: false,
+            settingsError: errorText(error, t("protondb.settingsSaveError")),
+          });
+        }
+      }
+      for (const settle of settles) settle(saved);
     }
+    // A remount may already own the save state; only the current generation clears it.
+    if (this.isCurrent(lifecycle)) this.saving = false;
   }
 
   getRating(steamAppId: number): ProtonDbRating {

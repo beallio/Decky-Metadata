@@ -11,7 +11,8 @@ import { CollapsibleSection } from "./CollapsibleSection";
 type ProtonDbBadgesSectionProps = {
   initiallyExpanded?: boolean;
   snapshot: ProtonDbBadgeSnapshot;
-  onSettingsChange: (settings: ProtonDbBadgeSettings) => Promise<boolean>;
+  /** Applies to the latest published settings, so same-task changes do not overwrite each other. */
+  onSettingsChange: (update: (current: ProtonDbBadgeSettings) => ProtonDbBadgeSettings) => void | Promise<unknown>;
   onCoverPositionChange: (position: ProtonDbBadgeSettings["coverPosition"]) => Promise<boolean>;
   onCoverPositionMenuWillOpen: () => void;
   onCoverPositionControlRef: (element: HTMLDivElement | null) => void;
@@ -33,12 +34,12 @@ export function ProtonDbBadgesSection({
     { data: "top-right", label: t("qam.protondb.positionTopRight") },
   ];
   const { settings } = snapshot;
-  const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
+  const controlsDisabled = !snapshot.settingsLoaded;
   const dependentControlsDisabled = controlsDisabled || !settings.enabled;
   const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
   const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
   const updateSetting = <K extends keyof ProtonDbBadgeSettings>(key: K, value: ProtonDbBadgeSettings[K]) => {
-    void onSettingsChange({ ...settings, [key]: value });
+    void onSettingsChange(current => ({ ...current, [key]: value }));
   };
 
   return (
