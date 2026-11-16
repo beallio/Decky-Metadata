@@ -15,7 +15,7 @@ import { withInCallTruth } from "./inCallTruth";
 import { hasMatchedSteamAppId, matchedSteamAppId, reassertMatchedAppData } from "./detailsReassert";
 import { nativeReleaseDate } from "./releaseDate";
 import { refreshNativeReleaseDateView } from "./releaseDateView";
-import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, SteamOverview } from "../types";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, SteamOsCompatibilityCategory, SteamOverview } from "../types";
 import * as log from "../log";
 import {
   NON_STEAM_APP_TYPE,
@@ -162,6 +162,19 @@ const ensureDetailsOverviewSafeFields = (appId: number) => {
 const isCompatibilityCategory = (value: unknown): value is DeckCompatibilityCategory =>
   typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 3;
 
+const isSteamOsCompatibilityCategory = (value: unknown): value is SteamOsCompatibilityCategory =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 2;
+
+type CompatibilityMetadata = Pick<
+  MetadataData,
+  | "deck_compat_override"
+  | "deck_compat_category"
+  | "steam_appid"
+  | "steamos_compat_category"
+  | "steam_machine_compat_category"
+  | "steam_frame_compat_category"
+>;
+
 /** Whether this record inherits a numeric global default for the selected scope. */
 export const isCompatibilityDefaultEligible = (
   metadata: Pick<MetadataData, "steam_appid"> | undefined,
@@ -172,31 +185,107 @@ export const isCompatibilityDefaultEligible = (
   || (scope === "steam" && hasMatchedSteamAppId(metadata))
   || (scope === "no-steam" && metadata !== undefined && !hasMatchedSteamAppId(metadata));
 
-export const effectiveCompatibilityCategory = (
-  metadata: Pick<MetadataData, "deck_compat_override" | "deck_compat_category" | "steam_appid"> | undefined,
-  globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
-  scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
-): DeckCompatibilityCategory | null => {
+const resolvedCompatibilityCategory = (
+  metadata: CompatibilityMetadata | undefined,
+  globalDefault: DeckCompatibilityCategory | null,
+  scope: CompatibilityDefaultScope,
+): { category: DeckCompatibilityCategory; fromValve: boolean } | null => {
   if (isCompatibilityCategory(metadata?.deck_compat_override)) {
-    return metadata.deck_compat_override;
+    return { category: metadata.deck_compat_override, fromValve: false };
   }
   if (metadata?.deck_compat_override === "valve") {
     return isCompatibilityCategory(metadata.deck_compat_category)
-      ? metadata.deck_compat_category
+      ? { category: metadata.deck_compat_category, fromValve: true }
       : null;
   }
   if (isCompatibilityCategory(globalDefault) && isCompatibilityDefaultEligible(metadata, scope)) {
-    return globalDefault;
+    return { category: globalDefault, fromValve: false };
   }
   if (isCompatibilityCategory(metadata?.deck_compat_category)) {
-    return metadata.deck_compat_category;
+    return { category: metadata.deck_compat_category, fromValve: true };
   }
   return null;
 };
 
+export const effectiveCompatibilityCategory = (
+  metadata: CompatibilityMetadata | undefined,
+  globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
+  scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
+): DeckCompatibilityCategory | null =>
+  resolvedCompatibilityCategory(metadata, globalDefault, scope)?.category ?? null;
+
+/**
+ * Packed bits 0-9 for the effective policy, else null to keep Steam's value.
+ * Valve's per-device data can differ from the Deck category. A user choice
+ * applies that one category to every Deck-style field.
+ */
+const effectiveCompatibilityPacked = (
+  metadata: CompatibilityMetadata | undefined,
+  globalDefault: DeckCompatibilityCategory | null = metadataState.compatibilityDefault,
+  scope: CompatibilityDefaultScope = metadataState.compatibilityDefaultScope,
+): number | null => {
+  const resolved = resolvedCompatibilityCategory(metadata, globalDefault, scope);
+  if (!resolved) return null;
+  const deck = resolved.category;
+  const fromValve = resolved.fromValve;
+  const steamos = fromValve && isSteamOsCompatibilityCategory(metadata?.steamos_compat_category)
+    ? metadata.steamos_compat_category
+    // SteamOS has no Verified value; Valve maps Deck Playable and Verified to Compatible.
+    : deck >= 2 ? 2 : deck;
+  const machine = fromValve && isCompatibilityCategory(metadata?.steam_machine_compat_category)
+    ? metadata.steam_machine_compat_category
+    : deck;
+  const frame = fromValve && isCompatibilityCategory(metadata?.steam_frame_compat_category)
+    ? metadata.steam_frame_compat_category
+    : deck;
+  return deck | (deck << 2) | (steamos << 4) | (machine << 6) | (frame << 8);
+};
+
+/** Packed compatibility fields live in bits 0-9; Steam owns every higher bit. */
+const COMPATIBILITY_BITS_MASK = 0x3ff;
+
 const packedCompatibilityValue = (overview: any): number => {
   const packed = Number(overview?.steam_hw_compat_category_packed);
   return Number.isFinite(packed) ? packed : 0;
+};
+
+/** A retiring bundle stored the held visible bits under `heldNibble`. */
+type LegacyCompatibilityUpdate = Partial<DeferredCompatibilityUpdate> & { heldNibble?: number };
+
+/**
+ * An in-place reload can adopt a retiring bundle's runtime, which kept only
+ * bits 0-3. Mark every stored entry for a lazy per-app rebuild: the native
+ * bits 4-9 are known only once an overview for that app exists, so a missing
+ * overview must not drop the entry.
+ */
+const upgradeLegacyCompatibilityBits = () => {
+  if (metadataState.compatibilityBaselineBits === 10) return;
+  const pending = metadataState.compatibilityPendingLegacyBits;
+  Object.keys(metadataState.compatibilityBaselines).forEach((key) => pending.add(Number(key)));
+  metadataState.deferredCompatibilityUpdates.forEach((update) => pending.add(update.appId));
+  metadataState.compatibilityBaselineBits = 10;
+};
+
+/** Rebuild one legacy entry with its app's native bits 4-9. */
+const upgradeLegacyCompatibilityEntry = (appId: number, nativePacked: number) => {
+  const pending = metadataState.compatibilityPendingLegacyBits;
+  if (!pending.has(appId)) return;
+  const key = String(appId);
+  const baseline = metadataState.compatibilityBaselines[key];
+  const update = metadataState.deferredCompatibilityUpdates.get(appId);
+  if (baseline === undefined && !update) {
+    pending.delete(appId);
+    return;
+  }
+  const nativeBits = nativePacked & 0x3f0;
+  if (Number.isInteger(baseline)) {
+    metadataState.compatibilityBaselines[key] = (baseline & 0xf) | nativeBits;
+  }
+  if (update) {
+    const legacy: LegacyCompatibilityUpdate = update;
+    update.heldPacked = ((legacy.heldPacked ?? legacy.heldNibble ?? 0) & 0xf) | nativeBits;
+  }
+  pending.delete(appId);
 };
 
 const restoreCompatibilityBaseline = (appId: number, overview = getNativeOverview(appId)): boolean => {
@@ -207,10 +296,11 @@ const restoreCompatibilityBaseline = (appId: number, overview = getNativeOvervie
   ) {
     return false;
   }
+  upgradeLegacyCompatibilityEntry(appId, packedCompatibilityValue(overview));
   try {
     const packed = packedCompatibilityValue(overview);
     overview.steam_hw_compat_category_packed =
-      (packed & ~0xf) | metadataState.compatibilityBaselines[key];
+      (packed & ~COMPATIBILITY_BITS_MASK) | metadataState.compatibilityBaselines[key];
     delete metadataState.compatibilityBaselines[key];
     return true;
   } catch (_error) {
@@ -219,6 +309,7 @@ const restoreCompatibilityBaseline = (appId: number, overview = getNativeOvervie
 };
 
 export const restoreAllCompatibilityBaselines = () => {
+  upgradeLegacyCompatibilityBits();
   const overviews = new Map<number, any>();
   try {
     Array.from(appStore?.allApps || []).forEach((overview: any) => {
@@ -237,24 +328,24 @@ export const refreshCompatibilitySurfaces = () => {
   return notifyCompatibilityRevision();
 };
 
-const applyCompatibilityCategory = (
+const applyCompatibilityPacked = (
   appId: number,
   overview: any,
-  category: DeckCompatibilityCategory | null
+  bits: number | null
 ) => {
-  if (category === null) {
+  if (bits === null) {
     return restoreCompatibilityBaseline(appId, overview);
   }
   try {
     const key = String(appId);
     const previousPacked = packedCompatibilityValue(overview);
     if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
-      metadataState.compatibilityBaselines[key] = previousPacked & 0xf;
+      metadataState.compatibilityBaselines[key] = previousPacked & COMPATIBILITY_BITS_MASK;
     }
-    // bits 0-1 = steam_deck_compat_category; bits 2-3 = Steam's verified-filter copy.
-    // Keep bits >= 4 from Steam's original packed state.
-    const nextPacked =
-      (previousPacked & ~0xf) | category | (category << 2);
+    // bits 0-1 = steam_deck_compat_category; bits 2-3 duplicate it (no native
+    // reader found); bits 4-5 SteamOS, 6-7 Steam Machine, 8-9 Steam Frame.
+    // Keep bits >= 10 from Steam's original packed state.
+    const nextPacked = (previousPacked & ~COMPATIBILITY_BITS_MASK) | bits;
     if (nextPacked === previousPacked) return false;
     overview.steam_hw_compat_category_packed = nextPacked;
     return packedCompatibilityValue(overview) === nextPacked;
@@ -264,18 +355,16 @@ const applyCompatibilityCategory = (
   }
 };
 
-const desiredCompatibilityNibble = (
+const desiredCompatibilityPacked = (
   appId: number,
-  heldNibble: number,
-  category: DeckCompatibilityCategory | null,
+  heldPacked: number,
+  packed: number | null,
 ) => {
-  if (category === null) {
-    const baseline = metadataState.compatibilityBaselines[String(appId)];
-    return Number.isInteger(baseline) && baseline >= 0 && baseline <= 0xf
-      ? baseline
-      : heldNibble;
-  }
-  return category | (category << 2);
+  if (packed !== null) return packed;
+  const baseline = metadataState.compatibilityBaselines[String(appId)];
+  return Number.isInteger(baseline) && baseline >= 0 && baseline <= COMPATIBILITY_BITS_MASK
+    ? baseline
+    : heldPacked;
 };
 
 /**
@@ -285,18 +374,18 @@ const desiredCompatibilityNibble = (
  */
 const deferActiveCompatibilityUpdate = (
   appId: number,
-  heldNibble: number,
-  category: DeckCompatibilityCategory | null,
+  heldPacked: number,
+  packed: number | null,
 ) => {
   const existing = metadataState.deferredCompatibilityUpdates.get(appId);
-  const held = existing?.heldNibble ?? heldNibble;
-  if (desiredCompatibilityNibble(appId, held, category) === held) {
+  const held = existing?.heldPacked ?? heldPacked;
+  if (desiredCompatibilityPacked(appId, held, packed) === held) {
     // Repeated edits can return to the already visible state. There is then no
     // stale mutation to replay after the user leaves Game Info.
     metadataState.deferredCompatibilityUpdates.delete(appId);
     return false;
   }
-  if (!existing) metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldNibble: held });
+  if (!existing) metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldPacked: held });
   return true;
 };
 
@@ -313,18 +402,19 @@ const applyCompatibilityToOverview = (
   if (Number(overview?.appid) !== Number(appId) || !isNativeNonSteamShortcut(overview)) {
     return false;
   }
-  const metadata = metadataCache[String(appId)];
-  const category = effectiveCompatibilityCategory(metadata, metadataState.compatibilityDefault);
+  upgradeLegacyCompatibilityBits();
+  upgradeLegacyCompatibilityEntry(appId, packedCompatibilityValue(overview));
+  const packed = effectiveCompatibilityPacked(metadataCache[String(appId)]);
   if (isCurrentGameInfoRoute(routeContext, appId)) {
-    const packed = packedCompatibilityValue(overview);
-    const heldNibble = packed & 0xf;
+    const currentPacked = packedCompatibilityValue(overview);
+    const currentHeld = currentPacked & COMPATIBILITY_BITS_MASK;
     // Read the retained held value before deferring. The helper can remove a
     // pending entry when the latest policy returns to that held value, while a
-    // native replacement still needs the held nibble reconciled in place.
-    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
-    deferActiveCompatibilityUpdate(appId, held, category);
-    const heldPacked = (packed & ~0xf) | held;
-    if (heldPacked === packed) return false;
+    // native replacement still needs the held bits reconciled in place.
+    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldPacked ?? currentHeld;
+    deferActiveCompatibilityUpdate(appId, held, packed);
+    const heldPacked = (currentPacked & ~COMPATIBILITY_BITS_MASK) | held;
+    if (heldPacked === currentPacked) return false;
     try {
       // Reload adoption can find a replacement native object after the old
       // hook lifetime ended. Restore only the held view state in place: the
@@ -337,7 +427,7 @@ const applyCompatibilityToOverview = (
     return false;
   }
   metadataState.deferredCompatibilityUpdates.delete(appId);
-  return applyCompatibilityCategory(appId, overview, category);
+  return applyCompatibilityPacked(appId, overview, packed);
 };
 
 type CompatibilityPublication = { appId: number; overview: any };
@@ -368,7 +458,7 @@ const resumeRetainedCompatibilityBaselines = () => {
   if (!retained || typeof retained !== "object") return;
   const state = retained as {
     baselines?: Record<string, unknown>;
-    deferred?: Array<Partial<DeferredCompatibilityUpdate>>;
+    deferred?: LegacyCompatibilityUpdate[];
     editorPublications?: unknown[];
   };
   // Accept the bare baseline record written by the preceding plugin version so
@@ -376,24 +466,34 @@ const resumeRetainedCompatibilityBaselines = () => {
   const baselines = state.baselines && typeof state.baselines === "object"
     ? state.baselines
     : retained as Record<string, unknown>;
+  // A marker-less runtime kept only bits 0-3, so retained values need the
+  // same lazy per-app conversion as its live state.
+  const legacyBits = metadataState.compatibilityBaselineBits !== 10;
   Object.entries(baselines).forEach(([appId, value]) => {
-    if (Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 0xf) {
+    if (Number.isInteger(value) && Number(value) >= 0 && Number(value) <= COMPATIBILITY_BITS_MASK) {
       metadataState.compatibilityBaselines[appId] = Number(value);
+      if (legacyBits) metadataState.compatibilityPendingLegacyBits.add(Number(appId));
     }
   });
   if (Array.isArray(state.deferred)) {
-    state.deferred.forEach(({ appId, heldNibble }) => {
+    state.deferred.forEach((entry) => {
+      const appId = entry.appId;
+      // The retiring bundle stored the same visible bits under heldNibble.
+      const packed = entry.heldPacked ?? entry.heldNibble;
       if (
         Number.isSafeInteger(appId) &&
         Number(appId) > 0 &&
-        Number.isInteger(heldNibble) &&
-        Number(heldNibble) >= 0 &&
-        Number(heldNibble) <= 0xf
+        Number.isInteger(packed) &&
+        Number(packed) >= 0 &&
+        Number(packed) <= COMPATIBILITY_BITS_MASK
       ) {
         metadataState.deferredCompatibilityUpdates.set(Number(appId), {
           appId: Number(appId),
-          heldNibble: Number(heldNibble),
+          heldPacked: Number(packed),
         });
+        if (legacyBits || entry.heldNibble !== undefined) {
+          metadataState.compatibilityPendingLegacyBits.add(Number(appId));
+        }
       }
     });
   }
@@ -452,10 +552,11 @@ const publishCompatibilityReplacements = (updates: Iterable<CompatibilityPublica
       // Another plugin can decorate the observable map setter. This replacement
       // already copies every current native field, so re-entering a foreign
       // decorator can replay its side effects; a decorator that rewrites the
-      // compatibility nibble then makes every publication trigger another one
-      // (issue #35, Unifideck). Publish through an explicitly preserved
-      // `originalSet`, else the map's own prototype setter when the instance
-      // setter was replaced; both still emit the replacement Steam observes.
+      // compatibility category bits then makes every publication trigger
+      // another one (issue #35, Unifideck). Publish through an explicitly
+      // preserved `originalSet`, else the map's own prototype setter when the
+      // instance setter was replaced; both still emit the replacement Steam
+      // observes.
       const nativeSet = typeof overviews.originalSet === "function"
         ? overviews.originalSet
         : Object.getPrototypeOf(overviews)?.set;
@@ -682,7 +783,8 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   const isIncomingShortcut = Number(overview?.app_type?.()) === NON_STEAM_APP_TYPE;
   if (!isIncomingShortcut && !isNativeNonSteamShortcut(current)) return false;
 
-  const category = effectiveCompatibilityCategory(
+  upgradeLegacyCompatibilityBits();
+  const desiredPacked = effectiveCompatibilityPacked(
     metadataCache[String(appId)],
     metadataState.compatibilityDefault,
   );
@@ -690,33 +792,38 @@ const applyCompatibilityToIncomingOverview = (overview: any) => {
   if (!Number.isFinite(packed) || typeof overview?.set_steam_hw_compat_category_packed !== "function") {
     return false;
   }
+  // The incoming protobuf still carries Steam's native bits 4-9, so it is the
+  // first trustworthy overview for a legacy entry whose app had none.
+  upgradeLegacyCompatibilityEntry(appId, packed);
   if (isCurrentGameInfoRoute(currentRoutePath(), appId)) {
-    const heldNibble = current ? packedCompatibilityValue(current) & 0xf : packed & 0xf;
+    const heldPacked = current
+      ? packedCompatibilityValue(current) & COMPATIBILITY_BITS_MASK
+      : packed & COMPATIBILITY_BITS_MASK;
     // Keep the retained Game Info value stable even if the latest policy
     // collapses the queued update and removes its map entry.
-    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldNibble ?? heldNibble;
-    deferActiveCompatibilityUpdate(appId, held, category);
+    const held = metadataState.deferredCompatibilityUpdates.get(appId)?.heldPacked ?? heldPacked;
+    deferActiveCompatibilityUpdate(appId, held, desiredPacked);
     // An unchanged effective policy does not need a deferred exit flush, but
-    // Steam can still send a replacement with its native low nibble. Preserve
-    // the currently held Game Info state on that incoming object either way.
-    const heldPacked = (packed & ~0xf) | held;
-    if (heldPacked === packed) return false;
+    // Steam can still send a replacement with its native bits. Preserve the
+    // currently held Game Info state on that incoming object either way.
+    const nextHeldPacked = (packed & ~COMPATIBILITY_BITS_MASK) | held;
+    if (nextHeldPacked === packed) return false;
     try {
-      overview.set_steam_hw_compat_category_packed(heldPacked);
-      return Number(overview.steam_hw_compat_category_packed()) === heldPacked;
+      overview.set_steam_hw_compat_category_packed(nextHeldPacked);
+      return Number(overview.steam_hw_compat_category_packed()) === nextHeldPacked;
     } catch {
       return false;
     }
   }
   metadataState.deferredCompatibilityUpdates.delete(appId);
-  if (category === null) return false;
+  if (desiredPacked === null) return false;
   const key = String(appId);
   if (!Object.prototype.hasOwnProperty.call(metadataState.compatibilityBaselines, key)) {
     metadataState.compatibilityBaselines[key] = current
-      ? packedCompatibilityValue(current) & 0xf
-      : packed & 0xf;
+      ? packedCompatibilityValue(current) & COMPATIBILITY_BITS_MASK
+      : packed & COMPATIBILITY_BITS_MASK;
   }
-  const nextPacked = (packed & ~0xf) | category | (category << 2);
+  const nextPacked = (packed & ~COMPATIBILITY_BITS_MASK) | desiredPacked;
   if (nextPacked === packed) return false;
   try {
     overview.set_steam_hw_compat_category_packed(nextPacked);

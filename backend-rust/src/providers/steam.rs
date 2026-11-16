@@ -133,6 +133,21 @@ impl DeckCompatibilityStatus {
 pub struct DeckCompatibilityLookup {
     pub status: DeckCompatibilityStatus,
     pub category: Option<i64>,
+    pub steamos_category: Option<i64>,
+    pub machine_category: Option<i64>,
+    pub frame_category: Option<i64>,
+}
+
+impl DeckCompatibilityLookup {
+    fn without_categories(status: DeckCompatibilityStatus) -> Self {
+        Self {
+            status,
+            category: None,
+            steamos_category: None,
+            machine_category: None,
+            frame_category: None,
+        }
+    }
 }
 
 fn query_url(base: &str, parameters: &[(&str, String)]) -> String {
@@ -601,15 +616,18 @@ fn log_provider_error(message: &str, appid: Option<i64>, error: Option<&str>, le
     logging::event("steam", message, Value::Object(fields), level);
 }
 
+/// Reads one optional category: Steam omits or nulls it for unreviewed platforms, and an
+/// out-of-range value is dropped rather than guessed.
+fn lookup_category(results: &Map<String, Value>, key: &str, max: i64) -> Option<i64> {
+    python_int(results.get(key)?).filter(|category| (0..=max).contains(category))
+}
+
 pub async fn steam_deck_compat_lookup_for_appid(
     http: &Http,
     appid: i64,
 ) -> DeckCompatibilityLookup {
     if appid <= 0 {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     }
     let url = query_url(
         STEAM_DECK_COMPAT_URL,
@@ -624,23 +642,26 @@ pub async fn steam_deck_compat_lookup_for_appid(
                 Some(&error),
                 Level::Warn,
             );
-            return DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None,
-            };
+            return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
         }
     };
-    let Some(results) = payload.get("results").and_then(Value::as_object) else {
-        log_provider_error(
-            "deck compat fetch failed",
-            Some(appid),
-            Some("missing deck compatibility results"),
-            Level::Warn,
-        );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+    let results = match payload.get("results") {
+        // Steam reports an unreviewed app as an empty result list, which is authoritative.
+        Some(Value::Array(items)) if items.is_empty() => {
+            return DeckCompatibilityLookup::without_categories(
+                DeckCompatibilityStatus::Unavailable,
+            );
+        }
+        Some(Value::Object(results)) => results,
+        _ => {
+            log_provider_error(
+                "deck compat fetch failed",
+                Some(appid),
+                Some("missing deck compatibility results"),
+                Level::Warn,
+            );
+            return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
+        }
     };
     let Some(raw_category) = results.get("resolved_category") else {
         log_provider_error(
@@ -649,16 +670,10 @@ pub async fn steam_deck_compat_lookup_for_appid(
             Some("missing deck compatibility category"),
             Level::Warn,
         );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     };
     if raw_category.is_null() {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Unavailable,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
     }
     let Some(category) = python_int(raw_category) else {
         log_provider_error(
@@ -667,26 +682,28 @@ pub async fn steam_deck_compat_lookup_for_appid(
             Some("invalid deck compatibility category"),
             Level::Warn,
         );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     };
     if !(0..=3).contains(&category) {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Unavailable,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
     }
+    // SteamOS has no Verified level: its highest value is 2, so 3 is not valid there.
+    let steamos_category = lookup_category(results, "steamos_resolved_category", 2);
+    let machine_category = lookup_category(results, "machine_resolved_category", 3);
+    let frame_category = lookup_category(results, "frame_resolved_category", 3);
     logging::event(
         "steam",
         "deck compat resolved",
-        json!({"steam_appid": appid, "category": category}),
+        json!({"steam_appid":appid,"category":category,"steamos_category":steamos_category,
+            "machine_category":machine_category,"frame_category":frame_category}),
         Level::Debug,
     );
     DeckCompatibilityLookup {
         status: DeckCompatibilityStatus::Available,
         category: Some(category),
+        steamos_category,
+        machine_category,
+        frame_category,
     }
 }
 
@@ -1854,57 +1871,54 @@ mod tests {
             ),
             json_fixture(url, json!({"success":1,"results":{"resolved_category":7}})),
             json_fixture(url, json!({"success":1,"results":{}})),
+            json_fixture(url, json!({"success":1,"results":[]})),
             Fixture::failure(url),
         ]);
+        let available = DeckCompatibilityLookup {
+            status: DeckCompatibilityStatus::Available,
+            category: Some(3),
+            steamos_category: None,
+            machine_category: None,
+            frame_category: None,
+        };
+        let unavailable =
+            DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
+        let failed = DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
+        for _ in 0..3 {
+            assert_eq!(steam_deck_compat_lookup_for_appid(&http, 123).await, available);
+        }
+        for status in [unavailable, unavailable, failed, unavailable, failed] {
+            assert_eq!(steam_deck_compat_lookup_for_appid(&http, 123).await, status);
+        }
+        assert_eq!(steam_deck_compat_lookup_for_appid(&http, 0).await, failed);
+        http.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn steam_compatibility_reports_every_platform_category() {
+        let url = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=1942280&l=english";
+        let payload = json!({"success":1,"results":{"resolved_category":3,
+            "steamos_resolved_category":2,"machine_resolved_category":3,"frame_resolved_category":3}});
+        let http = Http::fixtures(vec![json_fixture(url, payload), json_fixture(url, json!({"success":1,"results":{"resolved_category":3,"steamos_resolved_category":3,"machine_resolved_category":4,"frame_resolved_category":2}}))]);
         assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
+            steam_deck_compat_lookup_for_appid(&http, 1942280).await,
             DeckCompatibilityLookup {
                 status: DeckCompatibilityStatus::Available,
-                category: Some(3)
+                category: Some(3),
+                steamos_category: Some(2),
+                machine_category: Some(3),
+                frame_category: Some(3),
             }
         );
-        for _ in 0..2 {
-            assert_eq!(
-                steam_deck_compat_lookup_for_appid(&http, 123).await,
-                DeckCompatibilityLookup {
-                    status: DeckCompatibilityStatus::Available,
-                    category: Some(3)
-                }
-            );
-        }
+        // SteamOS has no level 3 and no platform goes past 3: out-of-range values are dropped.
         assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
+            steam_deck_compat_lookup_for_appid(&http, 1942280).await,
             DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Unavailable,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Unavailable,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 0).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
+                status: DeckCompatibilityStatus::Available,
+                category: Some(3),
+                steamos_category: None,
+                machine_category: None,
+                frame_category: Some(2),
             }
         );
         http.assert_drained();

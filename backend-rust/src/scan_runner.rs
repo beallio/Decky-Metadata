@@ -1280,8 +1280,13 @@ mod tests {
     async fn activity_batch_reconciles_matched_and_missing_news() {
         let fixtures = vec![
             steam_events(400, json!([event(400)])),
+            steam_compatibility(
+                400,
+                Ok(json!({"success":1,"results":{"resolved_category":3}})),
+            ),
             steam_events(401, json!([])),
             Fixture::failure(steam_news_url(401)),
+            steam_compatibility(401, Err(())),
         ];
         let (_directory, state) = test_state(fixtures).await;
         set_record(
@@ -1333,8 +1338,13 @@ mod tests {
     async fn per_app_activity_refresh_returns_news_and_saves_misses() {
         let fixtures = vec![
             steam_events(400, json!([event(400)])),
+            steam_compatibility(
+                400,
+                Ok(json!({"success":1,"results":{"resolved_category":3}})),
+            ),
             steam_events(456, json!([])),
             Fixture::failure(steam_news_url(456)),
+            steam_compatibility(456, Err(())),
         ];
         let (_directory, state) = test_state(fixtures).await;
         set_record(
@@ -1427,26 +1437,101 @@ mod tests {
 
     #[tokio::test]
     async fn activity_refresh_that_finds_nothing_new_leaves_the_record_unchanged() {
+        let categories = json!({"success":1,"results":{"resolved_category":3,
+            "steamos_resolved_category":2,"machine_resolved_category":2,"frame_resolved_category":1}});
         let fixtures = vec![
             steam_events(456, json!([])),
             Fixture::failure(steam_news_url(456)),
+            steam_compatibility(456, Ok(categories.clone())),
             steam_events(456, json!([])),
             Fixture::failure(steam_news_url(456)),
+            steam_compatibility(456, Ok(categories)),
         ];
         let (_directory, state) = test_state(fixtures).await;
-        set_record(
-            &state,
-            202,
-            json!({"title":"No News Game","source":"IGN","steam_appid":456,"steam_news":[],"updated_at":7}),
+        // A normalized record, so the refresh's only change is the platform categories.
+        let mut seeded = metadata::prepare_save(
+            &json!({}),
+            json!({"title":"No News Game","source":"IGN","steam_appid":456,"steam_news":[],
+                "steam_store_url":"https://store.steampowered.com/app/456/"}),
+            false,
+            None,
+            &Value::Null,
         )
-        .await;
+        .unwrap();
+        seeded["updated_at"] = json!(7);
+        set_record(&state, 202, seeded.clone()).await;
         refresh_steam_activity_for_app(&state, &json!(202), "english").await.unwrap();
         let first = state.store().await.unwrap().data()["metadata"]["202"].clone();
-        // The first refresh fills in defaults, so the record changed and carries a fresh stamp.
+        // The fill-in of the provider categories alone changes and saves the record.
+        let mut expected = seeded;
+        expected["updated_at"] = first["updated_at"].clone();
+        expected["deck_compat_category"] = json!(3);
+        expected["steamos_compat_category"] = json!(2);
+        expected["steam_machine_compat_category"] = json!(2);
+        expected["steam_frame_compat_category"] = json!(1);
         assert!(first["updated_at"].as_i64().is_some_and(|stamp| stamp > 7));
+        assert_eq!(first, expected);
         refresh_steam_activity_for_app(&state, &json!(202), "english").await.unwrap();
         // A screenshot fill-in that snapshotted `first` must still find it unchanged.
         assert_eq!(state.store().await.unwrap().data()["metadata"]["202"], first);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn activity_refresh_fills_platform_categories_without_touching_steam_text() {
+        let categories = json!({"success":1,"results":{"resolved_category":3,
+            "steamos_resolved_category":2,"machine_resolved_category":3,"frame_resolved_category":3}});
+        let (_directory, state) = test_state(vec![
+            steam_events(400, json!([event(400)])),
+            steam_compatibility(400, Ok(categories)),
+            steam_events(400, json!([event(400)])),
+            steam_compatibility(400, Err(())),
+            steam_events(400, json!([event(400)])),
+            steam_compatibility(400, Ok(json!({"success":1,"results":[]}))),
+        ])
+        .await;
+        set_record(
+            &state,
+            101,
+            json!({"title":"Space Marine","source":"Steam","steam_appid":400,
+                "description":"Steam text","short_description":"Steam text","genres":["Action"],
+                "metadata_language":"english","steam_news":[]}),
+        )
+        .await;
+        let filled = refresh_steam_activity_for_app(&state, &json!(101), "english")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(filled["deck_compat_category"], 3);
+        assert_eq!(filled["steamos_compat_category"], 2);
+        assert_eq!(filled["steam_machine_compat_category"], 3);
+        assert_eq!(filled["steam_frame_compat_category"], 3);
+        assert_eq!(filled["description"], "Steam text");
+        assert_eq!(filled["short_description"], "Steam text");
+        assert_eq!(filled["genres"], json!(["Action"]));
+        assert_eq!(filled["metadata_language"], "english");
+        // A failed lookup keeps the last-known values of the unchanged match.
+        let kept = refresh_steam_activity_for_app(&state, &json!(101), "english")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(kept["steamos_compat_category"], 2);
+        assert_eq!(kept["steam_machine_compat_category"], 3);
+        assert_eq!(kept["steam_frame_compat_category"], 3);
+        // An authoritative empty result list clears every platform category.
+        let cleared = refresh_steam_activity_for_app(&state, &json!(101), "english")
+            .await
+            .unwrap()
+            .unwrap();
+        for field in [
+            "deck_compat_category",
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(cleared[field], Value::Null, "{field}");
+        }
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

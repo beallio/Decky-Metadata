@@ -47,6 +47,8 @@ Other eligible games update when you change the default or its scope. If the gam
 
 A status you choose is your label. It does not mean Valve tested or certified the game, guarantee that it will run, or report emulator performance.
 
+On a SteamOS device that is not a Steam Deck, such as the Lenovo Legion Go S, Steam shows a **SteamOS Compatibility** row. Decky Metadata sets that row too. SteamOS has only **Compatible**, **Unsupported**, and **Unknown**, so **Verified** and **Playable** show as **Compatible** there. Steam Machine and Steam Frame devices use their own rows in the same way.
+
 For implementation-level details, see the [compatibility status technical reference](../specs/compatibility-status.md).
 
 [Help home](README.md)

@@ -8,7 +8,8 @@ export type Unpatch = () => void;
 
 export type DeferredCompatibilityUpdate = {
   appId: number;
-  heldNibble: number;
+  /** Packed compatibility bits 0-9 currently visible in Game Info. */
+  heldPacked: number;
 };
 
 type CompatibilityInFlightRequest = {
@@ -60,8 +61,15 @@ type CompatibilityMetadataState = {
   loadingMetadata: Set<number>;
   loadingScreenshots: Set<number>;
   appliedMetadataRef: Record<string, MetadataData>;
-  /** Original packed compatibility nibbles for shortcuts changed by this plugin. */
+  /** Original packed compatibility bits 0-9 for shortcuts changed by this plugin. */
   compatibilityBaselines: Record<string, number>;
+  /**
+   * 10 when this runtime creates 10-bit entries; absent from older bundles.
+   * Legacy entries stay correct through compatibilityPendingLegacyBits.
+   */
+  compatibilityBaselineBits?: number;
+  /** Apps whose baseline/held value a marker-less runtime stored in 4 bits. */
+  compatibilityPendingLegacyBits: Set<number>;
   /** Held Game Info work and editor publication both survive an in-place reload. */
   deferredCompatibilityUpdates: Map<number, DeferredCompatibilityUpdate>;
   deferredEditorCompatibilityPublications: Set<number>;
@@ -109,6 +117,8 @@ const newCompatibilityMetadataState = (): CompatibilityMetadataState => ({
   loadingScreenshots: new Set<number>(),
   appliedMetadataRef: {},
   compatibilityBaselines: {},
+  compatibilityBaselineBits: 10,
+  compatibilityPendingLegacyBits: new Set<number>(),
   deferredCompatibilityUpdates: new Map<number, DeferredCompatibilityUpdate>(),
   deferredEditorCompatibilityPublications: new Set<number>(),
   compatibilityDefault: null,
@@ -155,6 +165,9 @@ const compatibilityRuntime = (): CompatibilityRuntime => {
     }
     if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
       state.deferredEditorCompatibilityPublications = new Set<number>();
+    }
+    if (!(state.compatibilityPendingLegacyBits instanceof Set)) {
+      state.compatibilityPendingLegacyBits = new Set<number>();
     }
     if (typeof state.metadataMatchRevision !== "number") state.metadataMatchRevision = 0;
     if (!(existing.matchRevisionListeners instanceof Set)) {

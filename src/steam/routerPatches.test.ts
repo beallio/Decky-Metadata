@@ -133,7 +133,7 @@ describe("router compatibility publication", () => {
       search: "?tab=Activity",
       hash: "#compatibility",
     });
-    expect(overview.steam_hw_compat_category_packed).toBe(0x6f);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
 
     shieldUnpatchers.reverse().forEach((unpatch) => unpatch());
     metadataUnpatchers.reverse().forEach((unpatch) => unpatch());
@@ -266,7 +266,7 @@ describe("router compatibility publication", () => {
       return Map.prototype.set.call(overviews, key, value);
     });
     overviews.originalSet = nativeSet;
-    // The editor is a separate route: an edit there applies the packed nibble
+    // The editor is a separate route: an edit there applies the packed value
     // immediately and only defers the observable-map publication.
     (globalThis as any).window = { location: { pathname: `/decky-metadata/${appId}` } };
     (globalThis as any).appStore = {
@@ -286,7 +286,7 @@ describe("router compatibility publication", () => {
     expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x05);
     expect(nativeSet).not.toHaveBeenCalled();
 
-    // 'Remove metadata' deletes the record, then restores the native nibble.
+    // 'Remove metadata' deletes the record, then restores the native packed value.
     removeMetadataCacheEntry(appId);
     expect(applyMetadata(appId, { publishCompatibility: false })).toBe(true);
     expect(overview.steam_hw_compat_category_packed & 0x0f).toBe(0x0a);
@@ -309,8 +309,9 @@ describe("router compatibility publication", () => {
     mocks.routeHandlers[0](routeProps);
     routeProps.renderFunc();
 
-    // The record is gone, so no shield is armed. The restored nibble is still
-    // non-observable and needs one map publication for Steam to drop the badge.
+    // The record is gone, so no shield is armed. The restored packed value is
+    // still non-observable and needs one map publication for Steam to drop the
+    // badge.
     expect(metadataState.routeShield).toBeNull();
     expect(nativeSet).toHaveBeenCalledTimes(1);
     expect(nativeSet).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
