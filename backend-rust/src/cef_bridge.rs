@@ -1,5 +1,5 @@
 use crate::{logging, matching::py_truthy};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{FutureExt, SinkExt, StreamExt};
 use reqwest::{Client, redirect::Policy};
 use serde_json::{Value, json};
 use std::{
@@ -17,7 +17,7 @@ use tokio::{
     net::TcpStream,
 };
 use tokio_tungstenite::{
-    client_async_with_config,
+    WebSocketStream, client_async_with_config,
     tungstenite::{Error as WebSocketError, Message, protocol::WebSocketConfig},
 };
 use tokio_util::sync::CancellationToken;
@@ -34,8 +34,84 @@ const DISCOVERY_URL: &str = "http://127.0.0.1:8080/json";
 
 pub struct BigPictureEvaluator {
     discovery: Client,
+    discovery_url: String,
     cancel: CancellationToken,
     last_debugger_warning: Mutex<Option<Instant>>,
+    session: tokio::sync::Mutex<Option<Session>>,
+    response_timeout: Duration,
+}
+
+struct Session {
+    target: Value,
+    websocket: WebSocketStream<HandshakeBudgetIo>,
+    next_id: u64,
+}
+
+impl Session {
+    // Only automatic retry: a cached socket that already saw a close/error was never sent the command.
+    fn is_alive(&mut self) -> bool {
+        loop {
+            match self.websocket.next().now_or_never() {
+                None => return true,
+                Some(Some(Ok(Message::Close(_)))) | Some(None) | Some(Some(Err(_))) => return false,
+                Some(Some(Ok(_))) => {}
+            }
+        }
+    }
+
+    async fn request(&mut self, code: &str, timeout: Duration) -> Result<Value, BridgeError> {
+        let id = self.next_id;
+        self.next_id += 1;
+        let payload = json!({
+            "id":id,
+            "method":"Runtime.evaluate",
+            "params":{
+                "expression":code,
+                "returnByValue":true,
+                "awaitPromise":false
+            }
+        });
+        tokio::time::timeout(timeout, self.websocket.send(Message::text(payload.to_string())))
+            .await
+            .map_err(|_| BridgeError::Retryable("DevTools WebSocket write timed out".into()))?
+            .map_err(websocket_error)?;
+        tokio::time::timeout(
+            timeout,
+            async {
+                loop {
+                    let message = self
+                        .websocket
+                        .next()
+                        .await
+                        .ok_or_else(|| {
+                            BridgeError::Retryable("Unexpected socket close".into())
+                        })?
+                        .map_err(websocket_error)?;
+                    let text = match message {
+                        Message::Text(text) => text,
+                        Message::Close(_) => {
+                            return Err(BridgeError::Retryable(
+                                "DevTools WebSocket closed".into(),
+                            ));
+                        }
+                        _ => continue,
+                    };
+                    let response: Value = serde_json::from_str(text.as_str())
+                        .map_err(|error| BridgeError::Failure(error.to_string()))?;
+                    if !response.is_object() {
+                        return Err(BridgeError::Failure(
+                            "Invalid DevTools WebSocket response".into(),
+                        ));
+                    }
+                    if response.get("id").and_then(Value::as_u64) == Some(id) {
+                        return Ok(response);
+                    }
+                }
+            },
+        )
+        .await
+        .map_err(|_| BridgeError::Retryable("DevTools WebSocket read timed out".into()))?
+    }
 }
 
 #[derive(Debug)]
@@ -54,9 +130,22 @@ impl BigPictureEvaluator {
             .map_err(|error| error.to_string())?;
         Ok(Self {
             discovery,
+            discovery_url: DISCOVERY_URL.to_owned(),
             cancel,
             last_debugger_warning: Mutex::new(None),
+            session: tokio::sync::Mutex::new(None),
+            response_timeout: RESPONSE_TIMEOUT,
         })
+    }
+
+    #[cfg(test)]
+    fn with_discovery_url(
+        cancel: CancellationToken,
+        discovery_url: impl Into<String>,
+    ) -> Result<Self, String> {
+        let mut evaluator = Self::new(cancel)?;
+        evaluator.discovery_url = discovery_url.into();
+        Ok(evaluator)
     }
 
     pub async fn eval_in_big_picture(&self, code: &Value) -> Value {
@@ -70,13 +159,7 @@ impl BigPictureEvaluator {
             return Self::unavailable();
         }
 
-        let result = async {
-            let Some(target) = self.find_big_picture_target().await? else {
-                return Ok(json!({"status":"steam_ui_unavailable","error":"No Big Picture DevTools target found"}));
-            };
-            self.evaluate_target(&target, code, UPGRADE_TIMEOUT, RESPONSE_TIMEOUT).await
-        }
-        .await;
+        let result = self.evaluate(code).await;
 
         if self.cancel.is_cancelled() {
             return Self::unavailable();
@@ -138,8 +221,55 @@ impl BigPictureEvaluator {
         true
     }
 
+    pub async fn close(&self) {
+        let Ok(mut cached) =
+            tokio::time::timeout(Duration::from_millis(200), self.session.lock()).await
+        else {
+            return;
+        };
+        let Some(mut session) = cached.take() else {
+            return;
+        };
+        let _ = tokio::time::timeout(
+            Duration::from_millis(500),
+            session.websocket.close(None),
+        )
+        .await;
+    }
+
+    async fn evaluate(&self, code: &str) -> Result<Value, BridgeError> {
+        let operation = async {
+            let mut cached = self.session.lock().await;
+            let mut session = cached.take();
+            if session.as_mut().is_some_and(|session| !session.is_alive()) {
+                session = None;
+            }
+            let mut session = match session {
+                Some(session) => session,
+                None => match self.connect_session().await? {
+                    Some(session) => session,
+                    None => {
+                        return Ok(json!({
+                            "status":"steam_ui_unavailable",
+                            "error":"No Big Picture DevTools target found"
+                        }));
+                    }
+                },
+            };
+            let response = session.request(code, self.response_timeout).await?;
+            let result = evaluation_result(&session.target, response)?;
+            *cached = Some(session);
+            Ok(result)
+        };
+        tokio::select! {
+            biased;
+            _ = self.cancel.cancelled() => Err(BridgeError::Cancelled),
+            result = operation => result,
+        }
+    }
+
     async fn find_big_picture_target(&self) -> Result<Option<Value>, BridgeError> {
-        self.find_big_picture_target_at(DISCOVERY_URL, DISCOVERY_TIMEOUT)
+        self.find_big_picture_target_at(&self.discovery_url, DISCOVERY_TIMEOUT)
             .await
     }
 
@@ -157,122 +287,64 @@ impl BigPictureEvaluator {
         }
     }
 
-    async fn evaluate_target(
+    async fn connect_session(&self) -> Result<Option<Session>, BridgeError> {
+        let Some(target) = self.find_big_picture_target().await? else {
+            return Ok(None);
+        };
+        Ok(Some(self.open_session(&target, UPGRADE_TIMEOUT).await?))
+    }
+
+    async fn open_session(
         &self,
         target: &Value,
-        code: &str,
         handshake_timeout: Duration,
-        response_timeout: Duration,
-    ) -> Result<Value, BridgeError> {
+    ) -> Result<Session, BridgeError> {
         let websocket_url = target
             .get("webSocketDebuggerUrl")
             .and_then(Value::as_str)
             .ok_or_else(|| BridgeError::Failure("Invalid DevTools WebSocket URL".into()))?;
-        let response = self
-            .websocket_json_request(
-                websocket_url,
-                json!({
-                    "id":1,
-                    "method":"Runtime.evaluate",
-                    "params":{
-                        "expression":code,
-                        "returnByValue":true,
-                        "awaitPromise":false
-                    }
-                }),
-                handshake_timeout,
-                response_timeout,
-            )
-            .await?;
-        evaluation_result(target, response)
+        let websocket = self.connect_websocket(websocket_url, handshake_timeout).await?;
+        Ok(Session {
+            target: target.clone(),
+            websocket,
+            next_id: 1,
+        })
     }
 
-    async fn websocket_json_request(
+    async fn connect_websocket(
         &self,
         websocket_url: &str,
-        payload: Value,
         handshake_timeout: Duration,
-        response_timeout: Duration,
-    ) -> Result<Value, BridgeError> {
-        let operation = async {
-            let (url, host, port) = local_websocket_url(websocket_url)?;
-            let stream =
-                tokio::time::timeout(handshake_timeout, TcpStream::connect((host.as_str(), port)))
-                    .await
-                    .map_err(|_| {
-                        BridgeError::Retryable("DevTools WebSocket connect timed out".into())
-                    })?
-                    .map_err(|error| BridgeError::Retryable(error.to_string()))?;
-            let handshake_budget = Arc::new(AtomicUsize::new(MAX_UPGRADE_HEADER_BYTES));
-            let handshake_active = Arc::new(AtomicBool::new(true));
-            let transport = HandshakeBudgetIo {
-                stream,
-                remaining: Arc::clone(&handshake_budget),
-                active: Arc::clone(&handshake_active),
-            };
-            let mut config = WebSocketConfig::default();
-            config.max_frame_size = Some(MAX_RESPONSE_BYTES);
-            config.max_message_size = Some(MAX_RESPONSE_BYTES);
-            let (mut websocket, _) = tokio::time::timeout(
-                handshake_timeout,
-                client_async_with_config(url.as_str(), transport, Some(config)),
-            )
-            .await
-            .map_err(|_| {
-                BridgeError::Retryable("DevTools WebSocket upgrade header timed out".into())
-            })?
-            .map_err(websocket_error)?;
-            handshake_active.store(false, Ordering::Relaxed);
-
-            let command = Message::text(payload.to_string());
-            tokio::time::timeout(response_timeout, websocket.send(command))
+    ) -> Result<WebSocketStream<HandshakeBudgetIo>, BridgeError> {
+        let (url, host, port) = local_websocket_url(websocket_url)?;
+        let stream =
+            tokio::time::timeout(handshake_timeout, TcpStream::connect((host.as_str(), port)))
                 .await
-                .map_err(|_| BridgeError::Retryable("DevTools WebSocket write timed out".into()))?
-                .map_err(websocket_error)?;
-
-            tokio::time::timeout(response_timeout, async {
-                loop {
-                    let message = websocket
-                        .next()
-                        .await
-                        .ok_or_else(|| BridgeError::Retryable("Unexpected socket close".into()))?
-                        .map_err(websocket_error)?;
-                    let text = match message {
-                        Message::Text(text) => text,
-                        Message::Close(_) => {
-                            return Err(BridgeError::Retryable("DevTools WebSocket closed".into()));
-                        }
-                        _ => continue,
-                    };
-                    let response: Value = serde_json::from_str(text.as_str())
-                        .map_err(|error| BridgeError::Failure(error.to_string()))?;
-                    if !response.is_object() {
-                        return Err(BridgeError::Failure(
-                            "Invalid DevTools WebSocket response".into(),
-                        ));
-                    }
-                    if response.get("id").is_some_and(python_id_matches) {
-                        return Ok(response);
-                    }
-                }
-            })
-            .await
-            .map_err(|_| BridgeError::Retryable("DevTools WebSocket read timed out".into()))?
+                .map_err(|_| {
+                    BridgeError::Retryable("DevTools WebSocket connect timed out".into())
+                })?
+                .map_err(|error| BridgeError::Retryable(error.to_string()))?;
+        let handshake_budget = Arc::new(AtomicUsize::new(MAX_UPGRADE_HEADER_BYTES));
+        let handshake_active = Arc::new(AtomicBool::new(true));
+        let transport = HandshakeBudgetIo {
+            stream,
+            remaining: Arc::clone(&handshake_budget),
+            active: Arc::clone(&handshake_active),
         };
-
-        tokio::select! {
-            biased;
-            _ = self.cancel.cancelled() => Err(BridgeError::Cancelled),
-            result = operation => result,
-        }
-    }
-}
-
-fn python_id_matches(id: &Value) -> bool {
-    match id {
-        Value::Bool(value) => *value,
-        Value::Number(value) => value.as_f64() == Some(1.0),
-        _ => false,
+        let mut config = WebSocketConfig::default();
+        config.max_frame_size = Some(MAX_RESPONSE_BYTES);
+        config.max_message_size = Some(MAX_RESPONSE_BYTES);
+        let (websocket, _) = tokio::time::timeout(
+            handshake_timeout,
+            client_async_with_config(url.as_str(), transport, Some(config)),
+        )
+        .await
+        .map_err(|_| {
+            BridgeError::Retryable("DevTools WebSocket upgrade header timed out".into())
+        })?
+        .map_err(websocket_error)?;
+        handshake_active.store(false, Ordering::Relaxed);
+        Ok(websocket)
     }
 }
 
@@ -465,6 +537,7 @@ fn evaluation_result(target: &Value, mut response: Value) -> Result<Value, Bridg
     }))
 }
 
+#[derive(Debug)]
 struct HandshakeBudgetIo {
     stream: TcpStream,
     remaining: Arc<AtomicUsize>,
@@ -600,6 +673,61 @@ mod tests {
         request
     }
 
+    type ServerSocket = tokio_tungstenite::WebSocketStream<TcpStream>;
+
+    async fn read_command(websocket: &mut ServerSocket) -> Value {
+        let Message::Text(text) = websocket.next().await.unwrap().unwrap() else {
+            panic!("expected Runtime.evaluate command")
+        };
+        serde_json::from_str(text.as_str()).unwrap()
+    }
+
+    fn reply_for(id: u64) -> String {
+        json!({
+            "id":id,
+            "result":{"result":{"value":{"status":"playing","appId":570,"tab":"object tab"}}}
+        })
+        .to_string()
+    }
+
+    struct FakeDiscovery {
+        url: String,
+        requests: Arc<AtomicUsize>,
+    }
+
+    async fn fake_discovery(websocket_url: String) -> FakeDiscovery {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let requests = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&requests);
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut socket, _)) = listener.accept().await else {
+                    return;
+                };
+                counter.fetch_add(1, Ordering::SeqCst);
+                let _ = read_http_headers(&mut socket).await;
+                let body = json!([{
+                    "type":"page",
+                    "title":"Steam Big Picture Mode",
+                    "url":"http://steamloopback.host/bigpicture",
+                    "webSocketDebuggerUrl":websocket_url.clone()
+                }])
+                .to_string();
+                let response = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = socket.write_all(response.as_bytes()).await;
+            }
+        });
+        FakeDiscovery {
+            url: format!("http://{address}/json"),
+            requests,
+        }
+    }
+
     #[tokio::test]
     async fn discovery_selects_big_picture_and_excludes_non_default_world_targets() {
         let LocalHttp {
@@ -713,10 +841,7 @@ mod tests {
         tokio::spawn(async move {
             let (stream, _) = listener.accept().await.unwrap();
             let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
-            let Message::Text(text) = websocket.next().await.unwrap().unwrap() else {
-                panic!("expected Runtime.evaluate command")
-            };
-            let command: Value = serde_json::from_str(text.as_str()).unwrap();
+            let command = read_command(&mut websocket).await;
             let _ = command_tx.send(command.clone());
             let reply = json!({
                 "id":command["id"],
@@ -729,15 +854,15 @@ mod tests {
         });
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
         let target = target_for(&format!("ws://{address}/devtools/page/fixture"));
-        let result = evaluator
-            .evaluate_target(
-                &target,
-                "({status:'playing',appId:570})",
-                UPGRADE_TIMEOUT,
-                RESPONSE_TIMEOUT,
-            )
+        let mut session = evaluator
+            .open_session(&target, UPGRADE_TIMEOUT)
             .await
             .unwrap();
+        let response = session
+            .request("({status:'playing',appId:570})", RESPONSE_TIMEOUT)
+            .await
+            .unwrap();
+        let result = evaluation_result(&session.target, response).unwrap();
         let command = command_rx.await.unwrap();
         assert_eq!(command["method"], "Runtime.evaluate");
         assert_eq!(
@@ -757,7 +882,7 @@ mod tests {
     async fn websocket_rejects_non_loopback_and_malformed_handshakes() {
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
         assert!(matches!(
-            evaluator.websocket_json_request("ws://example.com/devtools", json!({"id":1}), UPGRADE_TIMEOUT, RESPONSE_TIMEOUT).await,
+            evaluator.connect_websocket("ws://example.com/devtools", UPGRADE_TIMEOUT).await,
             Err(BridgeError::Retryable(message)) if message.contains("not local")
         ));
 
@@ -772,11 +897,9 @@ mod tests {
                 .unwrap();
         });
         let error = evaluator
-            .websocket_json_request(
+            .connect_websocket(
                 &format!("ws://{address}/devtools/page/fixture"),
-                json!({"id":1}),
                 UPGRADE_TIMEOUT,
-                RESPONSE_TIMEOUT,
             )
             .await
             .unwrap_err();
@@ -798,11 +921,9 @@ mod tests {
         });
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
         let too_large = evaluator
-            .websocket_json_request(
+            .connect_websocket(
                 &format!("ws://{address}/devtools/page/fixture"),
-                json!({"id":1}),
                 UPGRADE_TIMEOUT,
-                RESPONSE_TIMEOUT,
             )
             .await
             .unwrap_err();
@@ -816,11 +937,9 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(200)).await;
         });
         let timeout = evaluator
-            .websocket_json_request(
+            .connect_websocket(
                 &format!("ws://{address}/devtools/page/fixture"),
-                json!({"id":1}),
                 Duration::from_millis(40),
-                RESPONSE_TIMEOUT,
             )
             .await
             .unwrap_err();
@@ -836,17 +955,17 @@ mod tests {
         tokio::spawn(async move {
             let (stream, _) = listener.accept().await.unwrap();
             let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
-            let _ = websocket.next().await.unwrap().unwrap();
+            let _ = read_command(&mut websocket).await;
             tokio::time::sleep(Duration::from_millis(200)).await;
         });
         let evaluator = BigPictureEvaluator::new(CancellationToken::new()).unwrap();
-        let timeout = evaluator
-            .websocket_json_request(
-                &format!("ws://{address}/devtools/page/fixture"),
-                json!({"id":1}),
-                UPGRADE_TIMEOUT,
-                Duration::from_millis(40),
-            )
+        let target = target_for(&format!("ws://{address}/devtools/page/fixture"));
+        let mut session = evaluator
+            .open_session(&target, UPGRADE_TIMEOUT)
+            .await
+            .unwrap();
+        let timeout = session
+            .request("1+1", Duration::from_millis(40))
             .await
             .unwrap_err();
         assert!(
@@ -868,24 +987,25 @@ mod tests {
             )
             .await
             .unwrap();
-            let _ = websocket.next().await.unwrap().unwrap();
+            let command = read_command(&mut websocket).await;
             let large = "x".repeat(MAX_RESPONSE_BYTES + 1);
-            let response = Message::text(json!({"id":1,"result":large}).to_string());
+            let response = Message::text(
+                json!({"id":command["id"],"result":large}).to_string(),
+            );
             let _ = websocket.send(response).await;
         });
-        let oversized = evaluator
-            .websocket_json_request(
-                &format!("ws://{address}/devtools/page/fixture"),
-                json!({"id":1}),
-                UPGRADE_TIMEOUT,
-                RESPONSE_TIMEOUT,
-            )
+        let target = target_for(&format!("ws://{address}/devtools/page/fixture"));
+        let mut session = evaluator
+            .open_session(&target, UPGRADE_TIMEOUT)
+            .await
+            .unwrap();
+        let oversized = session
+            .request("1+1", RESPONSE_TIMEOUT)
             .await
             .unwrap_err();
         assert!(matches!(oversized, BridgeError::Failure(_)));
 
         let cancel = CancellationToken::new();
-        let evaluator = BigPictureEvaluator::new(cancel.clone()).unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
         let (connected_tx, connected_rx) = oneshot::channel();
@@ -893,7 +1013,7 @@ mod tests {
         tokio::spawn(async move {
             let (stream, _) = listener.accept().await.unwrap();
             let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
-            let _ = websocket.next().await.unwrap().unwrap();
+            let _ = read_command(&mut websocket).await;
             let _ = connected_tx.send(());
             let disconnected = websocket
                 .next()
@@ -901,22 +1021,279 @@ mod tests {
                 .map_or(true, |message| message.is_err());
             let _ = closed_tx.send(disconnected);
         });
-        let evaluator_task = tokio::spawn(async move {
-            evaluator
-                .websocket_json_request(
-                    &format!("ws://{address}/devtools/page/fixture"),
-                    json!({"id":1}),
-                    UPGRADE_TIMEOUT,
-                    RESPONSE_TIMEOUT,
-                )
-                .await
-        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(cancel.clone(), discovery.url.clone()).unwrap();
+        let evaluator_task = tokio::spawn(async move { evaluator.evaluate("1+1").await });
         connected_rx.await.unwrap();
         cancel.cancel();
         assert!(matches!(
             evaluator_task.await.unwrap(),
             Err(BridgeError::Cancelled)
         ));
+        assert!(closed_rx.await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn session_is_reused_across_calls_with_incrementing_ids() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = Arc::new(AtomicUsize::new(0));
+        let ids = Arc::new(Mutex::new(Vec::new()));
+        let server_accepts = Arc::clone(&accepts);
+        let server_ids = Arc::clone(&ids);
+        tokio::spawn(async move {
+            loop {
+                let Ok((stream, _)) = listener.accept().await else {
+                    return;
+                };
+                server_accepts.fetch_add(1, Ordering::SeqCst);
+                let ids = Arc::clone(&server_ids);
+                tokio::spawn(async move {
+                    let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+                    while let Some(Ok(Message::Text(text))) = websocket.next().await {
+                        let command: Value = serde_json::from_str(text.as_str()).unwrap();
+                        let id = command["id"].as_u64().unwrap();
+                        ids.lock().unwrap().push(id);
+                        websocket.send(Message::text(reply_for(id))).await.unwrap();
+                    }
+                });
+            }
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        for _ in 0..3 {
+            let result = evaluator.eval_in_big_picture(&json!("1+1")).await;
+            assert_eq!(result["status"], "playing");
+            assert_eq!(result["tab"], "Steam Big Picture Mode");
+        }
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 1);
+        assert_eq!(accepts.load(Ordering::SeqCst), 1);
+        assert_eq!(*ids.lock().unwrap(), vec![1, 2, 3]);
+    }
+
+    #[tokio::test]
+    async fn unrelated_messages_and_stale_ids_are_skipped() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            websocket
+                .send(Message::text(
+                    json!({"method":"Page.loadEventFired","params":{}}).to_string(),
+                ))
+                .await
+                .unwrap();
+            websocket
+                .send(Message::text(
+                    json!({"id":id + 100,"result":{"result":{"value":{"status":"wrong"}}}})
+                        .to_string(),
+                ))
+                .await
+                .unwrap();
+            websocket
+                .send(Message::text(reply_for(id)))
+                .await
+                .unwrap();
+            let _ = websocket.next().await;
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        let result = evaluator.eval_in_big_picture(&json!("1+1")).await;
+        assert_eq!(result["status"], "playing");
+        assert_eq!(result["appId"], 570);
+    }
+
+    #[tokio::test]
+    async fn response_timeout_drops_session_without_resending() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = Arc::new(AtomicUsize::new(0));
+        let first_commands = Arc::new(Mutex::new(Vec::new()));
+        let second_commands = Arc::new(Mutex::new(Vec::new()));
+        let (first_closed_tx, first_closed_rx) = oneshot::channel();
+        let server_accepts = Arc::clone(&accepts);
+        let server_first = Arc::clone(&first_commands);
+        let server_second = Arc::clone(&second_commands);
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            server_first.lock().unwrap().push(command);
+            while let Some(message) = websocket.next().await {
+                match message {
+                    Ok(Message::Text(text)) => server_first
+                        .lock()
+                        .unwrap()
+                        .push(serde_json::from_str(text.as_str()).unwrap()),
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+            // The timed-out session is gone, so a late reply cannot reach the evaluator.
+            let _ = websocket.send(Message::text(reply_for(1))).await;
+            let _ = first_closed_tx.send(());
+            let (stream, _) = listener.accept().await.unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            server_second.lock().unwrap().push(command);
+            websocket.send(Message::text(reply_for(id))).await.unwrap();
+            let _ = websocket.next().await;
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let mut evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        evaluator.response_timeout = Duration::from_millis(40);
+        let error = evaluator.eval_in_big_picture(&json!("cleanup()")).await;
+        assert_eq!(error["status"], "steam_ui_unavailable");
+        assert_eq!(error["retryable"], true);
+        assert!(error["error"].as_str().unwrap().contains("read timed out"));
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 1);
+        assert_eq!(accepts.load(Ordering::SeqCst), 1);
+        first_closed_rx.await.unwrap();
+        assert_eq!(first_commands.lock().unwrap().len(), 1);
+        let result = evaluator.eval_in_big_picture(&json!("cleanup()")).await;
+        assert_eq!(result["status"], "playing");
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 2);
+        assert_eq!(accepts.load(Ordering::SeqCst), 2);
+        assert_eq!(second_commands.lock().unwrap().len(), 1);
+        assert_eq!(second_commands.lock().unwrap()[0]["id"], 1);
+    }
+
+    #[tokio::test]
+    async fn reply_lost_after_send_is_not_resent() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = Arc::new(AtomicUsize::new(0));
+        let commands = Arc::new(Mutex::new(Vec::new()));
+        let server_accepts = Arc::clone(&accepts);
+        let server_commands = Arc::clone(&commands);
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            server_commands.lock().unwrap().push(command);
+            let _ = websocket.close(None).await;
+            drop(websocket);
+            let (stream, _) = listener.accept().await.unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            server_commands.lock().unwrap().push(command);
+            websocket.send(Message::text(reply_for(id))).await.unwrap();
+            let _ = websocket.next().await;
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        let error = evaluator.eval_in_big_picture(&json!("install()")).await;
+        assert_eq!(error["status"], "steam_ui_unavailable");
+        assert_eq!(commands.lock().unwrap().len(), 1);
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 1);
+        assert_eq!(accepts.load(Ordering::SeqCst), 1);
+        let result = evaluator.eval_in_big_picture(&json!("install()")).await;
+        assert_eq!(result["status"], "playing");
+        assert_eq!(commands.lock().unwrap().len(), 2);
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 2);
+        assert_eq!(accepts.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn dead_cached_session_is_replaced_before_sending() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let accepts = Arc::new(AtomicUsize::new(0));
+        let first_commands = Arc::new(Mutex::new(Vec::new()));
+        let second_commands = Arc::new(Mutex::new(Vec::new()));
+        let (first_closed_tx, first_closed_rx) = oneshot::channel();
+        let server_accepts = Arc::clone(&accepts);
+        let server_first = Arc::clone(&first_commands);
+        let server_second = Arc::clone(&second_commands);
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            // Without nodelay, Nagle holds the Close frame behind the reply until the client's delayed ACK (~40 ms).
+            stream.set_nodelay(true).unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            server_first.lock().unwrap().push(command);
+            websocket.send(Message::text(reply_for(id))).await.unwrap();
+            websocket.send(Message::Close(None)).await.unwrap();
+            let _ = first_closed_tx.send(());
+            while let Some(message) = websocket.next().await {
+                match message {
+                    Ok(Message::Text(text)) => server_first
+                        .lock()
+                        .unwrap()
+                        .push(serde_json::from_str(text.as_str()).unwrap()),
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+            let (stream, _) = listener.accept().await.unwrap();
+            server_accepts.fetch_add(1, Ordering::SeqCst);
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            server_second.lock().unwrap().push(command);
+            websocket.send(Message::text(reply_for(id))).await.unwrap();
+            let _ = websocket.next().await;
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        let result = evaluator.eval_in_big_picture(&json!("1+1")).await;
+        assert_eq!(result["status"], "playing");
+        first_closed_rx.await.unwrap();
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        let result = evaluator.eval_in_big_picture(&json!("1+1")).await;
+        assert_eq!(result["status"], "playing", "{result}");
+        assert_eq!(discovery.requests.load(Ordering::SeqCst), 2);
+        assert_eq!(accepts.load(Ordering::SeqCst), 2);
+        assert_eq!(first_commands.lock().unwrap().len(), 1);
+        assert_eq!(second_commands.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn close_sends_close_frame_for_cached_session() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (closed_tx, closed_rx) = oneshot::channel();
+        tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut websocket = tokio_tungstenite::accept_async(stream).await.unwrap();
+            let command = read_command(&mut websocket).await;
+            let id = command["id"].as_u64().unwrap();
+            websocket.send(Message::text(reply_for(id))).await.unwrap();
+            let closed = matches!(
+                websocket.next().await,
+                Some(Ok(Message::Close(_))) | None | Some(Err(_))
+            );
+            let _ = closed_tx.send(closed);
+        });
+        let discovery = fake_discovery(format!("ws://{address}/devtools/page/fixture")).await;
+        let evaluator =
+            BigPictureEvaluator::with_discovery_url(CancellationToken::new(), discovery.url.clone())
+                .unwrap();
+        let result = evaluator.eval_in_big_picture(&json!("1+1")).await;
+        assert_eq!(result["status"], "playing");
+        evaluator.close().await;
         assert!(closed_rx.await.unwrap());
     }
 
