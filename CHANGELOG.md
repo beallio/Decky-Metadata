@@ -39,8 +39,7 @@ All notable changes to this project are documented here in Keep a Changelog form
   speaker has reviewed it yet.
 - **Less background work for game trailers.** With game trailers on, the plugin
   no longer checks Steam every 2 seconds when no trailer can play, and it checks
-  less often while a trailer plays and nothing changes. A trailer on a newly
-  opened game page still starts as fast as before. (#44, #45)
+  less often while a trailer plays and nothing changes. (#44, #45)
 
 ### Fixed
 
