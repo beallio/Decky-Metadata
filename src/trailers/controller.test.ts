@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const backend = vi.hoisted(() => ({
-  evalInBigPicture: vi.fn(async (_code: string) => ({ status: "Steam UI unavailable", runtimeMissing: true })),
+  evalInBigPicture: vi.fn(async (_code: string): Promise<Record<string, unknown>> => ({
+    status: "Steam UI unavailable", runtimeMissing: true,
+  })),
   getTrailerSettings: vi.fn(async (): Promise<Partial<TrailerSettings>> => ({ enabled: false, audioEnabled: false, quality: "auto" })),
   setTrailerSettings: vi.fn(async (settings: unknown) => settings),
   findIgnTrailer: vi.fn(async () => null as unknown),
@@ -58,6 +60,44 @@ const mountController = (settings: Partial<TrailerSettings> = { enabled: true },
   };
   controller.publishOwner();
   return controller as any;
+};
+
+const mountBridgeOnlyController = (settings: Partial<TrailerSettings> = { enabled: true }) => {
+  const controller = mountController(settings);
+  // Bridge-only: no runtime is reachable from the controller's own documents.
+  delete (window as any).__deckyMetadataTrailerRuntime;
+  return controller;
+};
+
+// Fake only the clock; polls are driven by hand and bridge timeouts stay real.
+const usePollClock = () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(0);
+};
+
+const advancePoll = async (controller: any, stepMs = 2000) => {
+  vi.setSystemTime(Date.now() + stepMs);
+  await controller.poll();
+  await flush();
+};
+
+const bridgeCalls = () => backend.evalInBigPicture.mock.calls.map(([code]) => code);
+const installCalls = () => bridgeCalls().filter((code) => code.includes("const factory ="));
+const checkCalls = () => bridgeCalls().filter((code) => !code.includes("const factory ="));
+
+const openGamePage = async (controller: any) => {
+  steam.overview.set(570, { appid: 570, app_type: 1, display_name: "Portal 2" });
+  await controller.refreshPageIdentity();
+  await flush();
+  backend.evalInBigPicture.mockReset();
+};
+
+// Drive the remote check up to its 16 s ceiling with unchanged, settled snapshots.
+const settleRemoteChecks = async (controller: any) => {
+  backend.evalInBigPicture.mockResolvedValue({ status: "Trailer: Steam movie", pending: false });
+  for (let index = 0; index < 8 && controller.remoteIntervalMs < 16000; index += 1) await advancePoll(controller);
+  expect(controller.remoteIntervalMs).toBe(16000);
+  expect(controller.nextRemoteAt).toBeGreaterThan(Date.now());
 };
 
 describe("TrailerController behavior", () => {
@@ -501,6 +541,198 @@ describe("TrailerController behavior", () => {
       enabled: false, detailEnabled: false, homeEnabled: true, homeFadeInDelaySeconds: 10,
     });
     expect(vi.getTimerCount()).toBe(0);
+    controller.stop();
+  });
+
+  it("skips the remote check while no game page is open and Home trailers are off", async () => {
+    usePollClock();
+    steam.route = "/routes/library/home";
+    const controller = mountBridgeOnlyController();
+    backend.evalInBigPicture.mockResolvedValue({ status: "Waiting for a Steam game page", runtimeMissing: true });
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(1);
+
+    backend.evalInBigPicture.mockClear();
+    for (let index = 0; index < 12; index += 1) await advancePoll(controller);
+    expect(backend.evalInBigPicture).not.toHaveBeenCalled();
+
+    steam.route = "/routes/library/app/570";
+    steam.overview.set(570, { appid: 570, app_type: 1, display_name: "Portal 2" });
+    await advancePoll(controller);
+    expect(installCalls()).toHaveLength(1);
+    controller.stop();
+  });
+
+  it("installs the Home runtime once per revision instead of on every tick", async () => {
+    usePollClock();
+    steam.route = "/routes/library/home";
+    const controller = mountBridgeOnlyController({ enabled: true, detailEnabled: false, homeEnabled: true });
+    backend.evalInBigPicture.mockResolvedValue({ status: "Waiting for a Home game", pending: false });
+    await advancePoll(controller);
+    expect(installCalls()).toHaveLength(1);
+    await advancePoll(controller);
+    await advancePoll(controller);
+    expect(installCalls()).toHaveLength(1);
+    expect(checkCalls().length).toBeGreaterThanOrEqual(2);
+
+    backend.evalInBigPicture.mockResolvedValueOnce({ status: "Steam UI unavailable", runtimeMissing: true });
+    await advancePoll(controller, 4000);
+    expect(installCalls()).toHaveLength(2);
+    await advancePoll(controller);
+    expect(installCalls()).toHaveLength(2);
+
+    controller.settingsRevision += 1;
+    await advancePoll(controller, 4000);
+    expect(installCalls()).toHaveLength(3);
+    await advancePoll(controller);
+    expect(installCalls()).toHaveLength(3);
+    controller.stop();
+  });
+
+  it("backs the remote snapshot check off to 16 s while the trailer stays settled", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    backend.evalInBigPicture.mockResolvedValue({ status: "Trailer: Steam movie", pending: false });
+    const callTimes: number[] = [];
+    for (let index = 0; index < 24; index += 1) {
+      await advancePoll(controller);
+      if (checkCalls().length > callTimes.length) callTimes.push(Date.now());
+    }
+    expect(callTimes).toEqual([2000, 4000, 8000, 16000, 32000, 48000]);
+    expect(callTimes.slice(1).map((time, index) => (time - callTimes[index]) / 1000)).toEqual([2, 4, 8, 16, 16]);
+    controller.stop();
+  });
+
+  it("keeps the remote check at 2 s while the runtime reports a pending trailer", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    backend.evalInBigPicture.mockResolvedValue({ status: "Loading Steam trailer", pending: true });
+    const callTimes: number[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      await advancePoll(controller);
+      if (checkCalls().length > callTimes.length) callTimes.push(Date.now());
+    }
+    expect(callTimes).toEqual([2000, 4000, 6000, 8000, 10000]);
+    controller.stop();
+  });
+
+  it("keeps the remote check at 2 s for an older runtime without pending", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    backend.evalInBigPicture.mockResolvedValue({ status: "Trailer: Steam movie" });
+    const callTimes: number[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      await advancePoll(controller);
+      if (checkCalls().length > callTimes.length) callTimes.push(Date.now());
+    }
+    expect(callTimes).toEqual([2000, 4000, 6000, 8000, 10000]);
+    controller.stop();
+  });
+
+  it("keeps checking every 2 s through a delayed Steam failure and finds IGN within one tick", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    let failed = false;
+    backend.evalInBigPicture.mockImplementation(async () => failed
+      ? { status: "Trailer: IGN fallback", pending: true, needsIgnFallback: true }
+      : { status: "Loading Steam trailer", pending: true });
+    let flagAt = 0;
+    let ignAt = 0;
+    for (let index = 0; index < 12; index += 1) {
+      await advancePoll(controller);
+      if (!failed && Date.now() >= 9000) {
+        failed = true;
+        flagAt = Date.now();
+      }
+      if (flagAt !== 0 && ignAt === 0 && backend.findIgnTrailer.mock.calls.length > 0) ignAt = Date.now();
+    }
+    expect(checkCalls()).toHaveLength(12);
+    expect(ignAt - flagAt).toBeLessThanOrEqual(2000);
+    expect(backend.findIgnTrailer).toHaveBeenCalledWith("Portal 2", null);
+    controller.stop();
+  });
+
+  it("resets the remote backoff when the snapshot changes", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    await settleRemoteChecks(controller);
+    backend.evalInBigPicture.mockClear();
+    backend.evalInBigPicture.mockResolvedValue({ status: "Trailer: second movie", pending: false });
+    await advancePoll(controller, 16000);
+    expect(checkCalls()).toHaveLength(1);
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(2);
+    controller.stop();
+  });
+
+  it("resets the remote backoff when the game page changes", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    await settleRemoteChecks(controller);
+    backend.evalInBigPicture.mockClear();
+    steam.route = "/routes/library/home";
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(1);
+    controller.stop();
+  });
+
+  it("resets the remote backoff when settings change", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    await settleRemoteChecks(controller);
+    await controller.setAudioEnabled(true);
+    await flush();
+    backend.evalInBigPicture.mockClear();
+    await advancePoll(controller);
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(1);
+    controller.stop();
+  });
+
+  it("resets the remote backoff after a completed install", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    await settleRemoteChecks(controller);
+    backend.evalInBigPicture.mockClear();
+    await controller.installOrUpdate();
+    expect(installCalls()).toHaveLength(1);
+    backend.evalInBigPicture.mockClear();
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(1);
+    controller.stop();
+  });
+
+  it("keeps checking every 2 s while the QAM panel is visible", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    await settleRemoteChecks(controller);
+    backend.evalInBigPicture.mockClear();
+    controller.setPanelVisible(true);
+    await advancePoll(controller);
+    await advancePoll(controller);
+    await advancePoll(controller);
+    expect(checkCalls()).toHaveLength(3);
+    controller.stop();
+  });
+
+  it("requests IGN from the first remote snapshot that asks for the fallback", async () => {
+    usePollClock();
+    const controller = mountBridgeOnlyController();
+    await openGamePage(controller);
+    backend.evalInBigPicture.mockResolvedValue({
+      status: "Finding IGN trailer", pending: true, needsIgnFallback: true,
+    });
+    await advancePoll(controller);
+    expect(backend.findIgnTrailer).toHaveBeenCalledWith("Portal 2", null);
     controller.stop();
   });
 });

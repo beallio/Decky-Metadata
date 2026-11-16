@@ -1143,6 +1143,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             return true;
         }
         snapshot() {
+            const video = this.currentVideo;
             return {
                 appId: this.currentAppId,
                 sourceAppId: this.identity?.sourceAppId,
@@ -1154,7 +1155,11 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 displayWidth: this.displaySize?.width ?? null,
                 displayHeight: this.displaySize?.height ?? null,
                 targetHeight: this.targetHeight,
-                needsIgnFallback: this.needsIgnFallback
+                needsIgnFallback: this.needsIgnFallback,
+                // Still resolving or starting a source; bridge-only polling continues until this clears.
+                pending: this.pendingRequestToken !== undefined ||
+                    Boolean(video?.isConnected && !video.classList?.contains(visibleClass) &&
+                        !this.failedVisit && !this.needsIgnFallback)
             };
         }
         destroy() {

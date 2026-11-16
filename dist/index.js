@@ -30076,6 +30076,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             return true;
         }
         snapshot() {
+            const video = this.currentVideo;
             return {
                 appId: this.currentAppId,
                 sourceAppId: this.identity?.sourceAppId,
@@ -30087,7 +30088,11 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 displayWidth: this.displaySize?.width ?? null,
                 displayHeight: this.displaySize?.height ?? null,
                 targetHeight: this.targetHeight,
-                needsIgnFallback: this.needsIgnFallback
+                needsIgnFallback: this.needsIgnFallback,
+                // Still resolving or starting a source; bridge-only polling continues until this clears.
+                pending: this.pendingRequestToken !== undefined ||
+                    Boolean(video?.isConnected && !video.classList?.contains(visibleClass) &&
+                        !this.failedVisit && !this.needsIgnFallback)
             };
         }
         destroy() {
@@ -31285,6 +31290,8 @@ const DEFAULT_TRAILER_SETTINGS = {
     homeFadeInDelaySeconds: 3,
 };
 const POLL_INTERVAL_MS = 2000;
+// The 15 s target cap quantizes to the 2 s tick, so 8 ticks.
+const REMOTE_BACKOFF_MAX_MS = 16000;
 const BRIDGE_TIMEOUT_MS = 24000;
 const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
 const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
@@ -31538,6 +31545,42 @@ class TrailerController {
             writable: true,
             value: false
         });
+        Object.defineProperty(this, "remoteIntervalMs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: POLL_INTERVAL_MS
+        });
+        Object.defineProperty(this, "nextRemoteAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "lastRemoteKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "remoteRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: -1
+        });
+        Object.defineProperty(this, "installedRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: -1
+        });
+        Object.defineProperty(this, "panelVisible", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         Object.defineProperty(this, "settingsSaveQueue", {
             enumerable: true,
             configurable: true,
@@ -31654,6 +31697,12 @@ class TrailerController {
         this.conflict = conflicts.getConflict("trailers");
         this.snapshot = this.buildSnapshot();
     }
+    /** QAM stays mounted while hidden, so only its own document reports visibility. */
+    setPanelVisible(visible) {
+        if (visible && !this.panelVisible)
+            this.resetRemoteBackoff();
+        this.panelVisible = visible;
+    }
     mount() {
         if (this.mounted)
             return;
@@ -31664,6 +31713,10 @@ class TrailerController {
         this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
         this.pendingSettingsWrites = 0;
         this.settingsBusy = false;
+        this.resetRemoteBackoff();
+        this.remoteRevision = -1;
+        this.installedRevision = -1;
+        this.lastRemoteKey = "";
         this.destroyOlderRuntimes();
         this.publishOwner();
         this.refreshAudioListeners();
@@ -31774,6 +31827,10 @@ class TrailerController {
             this.statusTimer = undefined;
             this.cancelHomeDelay();
         }
+    }
+    resetRemoteBackoff() {
+        this.remoteIntervalMs = POLL_INTERVAL_MS;
+        this.nextRemoteAt = 0;
     }
     cancelHomeDelay() {
         if (this.homeDelayTimer !== undefined)
@@ -32224,9 +32281,15 @@ class TrailerController {
                 this.pendingInstall = false;
                 if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled))
                     return;
+                const revision = this.settingsRevision;
                 const result = await this.runInSteamTab(this.buildInstallScript());
                 if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId)
                     return;
+                if (result?.runtimeMissing !== true && isRuntimeSnapshot(result)) {
+                    this.installedRevision = revision;
+                    this.remoteRevision = revision;
+                }
+                this.resetRemoteBackoff();
                 this.applyRemoteResult(result);
                 this.refreshAudioListeners();
             } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
@@ -32241,6 +32304,7 @@ class TrailerController {
         if (!result)
             return;
         if (result.runtimeMissing === true) {
+            this.installedRevision = -1;
             this.status = String(result.status || t("trailers.steamUiUnavailable"));
             this.runtimeSnapshot = undefined;
             this.emit();
@@ -32253,6 +32317,22 @@ class TrailerController {
         this.emit();
         if (result.needsIgnFallback)
             void this.loadIgnFallback();
+    }
+    /** Only an unchanged, idle snapshot earns remote backoff; older runtimes omit `pending`. */
+    noteRemoteResult(result) {
+        let snapshot;
+        if (result?.runtimeMissing !== true && isRuntimeSnapshot(result))
+            snapshot = result;
+        const key = snapshot ? JSON.stringify([
+            snapshot.appId, snapshot.sourceAppId, snapshot.status, snapshot.trailerName,
+            snapshot.trailerAudioEnabled, snapshot.displayWidth, snapshot.displayHeight,
+            snapshot.targetHeight, snapshot.needsIgnFallback, snapshot.pending,
+        ]) : "";
+        const settled = snapshot !== undefined && snapshot.pending === false && !snapshot.needsIgnFallback &&
+            key === this.lastRemoteKey && !this.panelVisible;
+        this.remoteIntervalMs = settled ? Math.min(this.remoteIntervalMs * 2, REMOTE_BACKOFF_MAX_MS) : POLL_INTERVAL_MS;
+        this.lastRemoteKey = key;
+        this.nextRemoteAt = Date.now() + this.remoteIntervalMs;
     }
     async loadIgnFallback() {
         if (!this.isEffectivelyEnabled() || !this.identity || this.ignRequested)
@@ -32288,26 +32368,33 @@ class TrailerController {
             if (!this.isEffectivelyEnabled() || this.installInFlight)
                 return;
             if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
-                await this.installOrUpdate();
-                return;
+                // The full runtime is installed once per revision; later ticks use the cheap check.
+                if (this.installedRevision !== this.settingsRevision) {
+                    await this.installOrUpdate();
+                    return;
+                }
             }
-            if (this.readReachableRuntime()) {
+            else if (this.readReachableRuntime()) {
                 this.emit();
                 if (this.runtimeSnapshot?.needsIgnFallback)
                     void this.loadIgnFallback();
                 return;
             }
+            // No game page and Home trailers off: the runtime follows its own route.
+            if (!this.identity && !this.settings.homeEnabled && this.remoteRevision === this.settingsRevision)
+                return;
+            if (this.settingsRevision !== this.remoteRevision)
+                this.resetRemoteBackoff();
+            if (!this.panelVisible && Date.now() < this.nextRemoteAt)
+                return;
+            this.remoteRevision = this.settingsRevision;
             const result = await this.runInSteamTab(runtimeMissingScript());
             if (!this.mounted)
                 return;
-            if (result?.runtimeMissing === true) {
-                this.applyRemoteResult(result);
-                if (this.isEffectivelyEnabled() && this.identity)
-                    await this.installOrUpdate();
-            }
-            else {
-                this.applyRemoteResult(result);
-            }
+            this.applyRemoteResult(result);
+            if (result?.runtimeMissing === true && this.isEffectivelyEnabled())
+                await this.installOrUpdate();
+            this.noteRemoteResult(result);
         }
         finally {
             this.pollInFlight = false;
@@ -33712,6 +33799,7 @@ const Content = () => {
         : null;
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
+    const panelVisibilityCleanup = SP_REACT.useRef(null);
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [missing, setMissing] = SP_REACT.useState(0);
@@ -33833,6 +33921,22 @@ const Content = () => {
         return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
     }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbBlurControl]);
     const focusPanel = SP_REACT.useCallback((element) => {
+        // QAM keeps this tree mounted while closed, so only its document reports visibility.
+        panelVisibilityCleanup.current?.();
+        panelVisibilityCleanup.current = null;
+        if (element) {
+            const panelDocument = element.ownerDocument;
+            const syncPanelVisibility = () => trailerController.setPanelVisible(panelDocument.visibilityState === "visible");
+            panelDocument.addEventListener("visibilitychange", syncPanelVisibility);
+            syncPanelVisibility();
+            panelVisibilityCleanup.current = () => {
+                panelDocument.removeEventListener("visibilitychange", syncPanelVisibility);
+                trailerController.setPanelVisible(false);
+            };
+        }
+        else {
+            trailerController.setPanelVisible(false);
+        }
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
             focusFrame.current = null;
