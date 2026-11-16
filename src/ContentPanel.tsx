@@ -1000,7 +1000,7 @@ export const Content = () => {
       <ProtonDbBadgesSection
         initiallyExpanded={returningDropdown === "protondb-cover-position"}
         snapshot={protonDbSnapshot}
-        onSettingsChange={(settings) => protonDbBadgeController.setSettings(settings)}
+        onSettingsChange={(update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings))}
         onCoverPositionChange={async (coverPosition) => {
           requestCompatibilityDropdownReturn("protondb-cover-position");
           noteCompatibilityDropdownControlUnmounted();
@@ -1024,11 +1024,10 @@ export const Content = () => {
         initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-blur"}
         settings={hltbSnapshot.settings}
         settingsLoaded={hltbSnapshot.settingsLoaded}
-        busy={hltbSnapshot.busy}
         conflict={hltbSnapshot.conflict}
         settingsError={hltbSnapshot.settingsError}
         cacheStatus={hltbSnapshot.cacheStatus}
-        onSettingsChange={(settings) => hltbController.setSettings(settings)}
+        onSettingsChange={(update) => hltbController.setSettings(update(hltbController.getSnapshot().settings))}
         onClearCache={() => hltbController.clearCache()}
         onStyleChange={async (style) => {
           requestCompatibilityDropdownReturn("hltb-style");

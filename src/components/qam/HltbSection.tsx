@@ -14,11 +14,11 @@ type HltbSectionProps = {
   initiallyExpanded?: boolean;
   settings: HltbSettings;
   settingsLoaded: boolean;
-  busy: boolean;
   conflict: FeatureConflict;
   settingsError?: string;
   cacheStatus?: HltbSnapshot["cacheStatus"];
-  onSettingsChange: (settings: HltbSettings) => void | Promise<unknown>;
+  /** Applies to the latest published settings, so same-task changes do not overwrite each other. */
+  onSettingsChange: (update: (current: HltbSettings) => HltbSettings) => void | Promise<unknown>;
   onClearCache: () => void | Promise<unknown>;
   /** Native dropdowns remount QAM; these let the panel return focus to them. */
   onStyleChange?: (style: HltbSettings["style"]) => void | Promise<unknown>;
@@ -30,7 +30,7 @@ type HltbSectionProps = {
 };
 
 export function HltbSection({
-  initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
+  initiallyExpanded = false, settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
   onStyleChange, onStyleMenuWillOpen, onStyleControlRef,
   onBlurChange, onBlurMenuWillOpen, onBlurControlRef,
 }: HltbSectionProps) {
@@ -54,12 +54,14 @@ export function HltbSection({
     failed: ["error", t("qam.hltb.cacheFailed")],
   } as const;
 
-  const controlsDisabled = !settingsLoaded || busy;
+  const controlsDisabled = !settingsLoaded;
   const disabled = controlsDisabled || !settings.enabled;
   const appearance = settings.appearance;
   const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
-  const update = <K extends keyof HltbSettings>(key: K, value: HltbSettings[K]) => { void onSettingsChange({ ...settings, [key]: value }); };
-  const updateAppearance = <K extends keyof HltbAppearance>(key: K, value: HltbAppearance[K]) => update("appearance", { ...appearance, [key]: value });
+  const update = <K extends keyof HltbSettings>(key: K, value: HltbSettings[K]) => { void onSettingsChange(current => ({ ...current, [key]: value })); };
+  const updateAppearance = <K extends keyof HltbAppearance>(key: K, value: HltbAppearance[K]) => {
+    void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
+  };
   return <CollapsibleSection title={t("qam.hltb.title")} icon={<FaClock size={16} />} defaultExpanded={initiallyExpanded}>
     <PanelSectionRow><ToggleField label={t("qam.hltb.showTimesLabel")} description={t("qam.hltb.showTimesDescription")} checked={settings.enabled} disabled={controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled)} onChange={value => update("enabled", value)} /></PanelSectionRow>
     <PanelSectionRow><ToggleField label={t("qam.hltb.storeLabel")} description={t("qam.hltb.storeDescription")} checked={settings.store} disabled={disabled} onChange={value => update("store", value)} /></PanelSectionRow>

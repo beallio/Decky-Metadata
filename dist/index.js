@@ -19309,12 +19309,12 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
         { data: "top-right", label: t("qam.protondb.positionTopRight") },
     ];
     const { settings } = snapshot;
-    const controlsDisabled = !snapshot.settingsLoaded || snapshot.busy;
+    const controlsDisabled = !snapshot.settingsLoaded;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
     const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
     const updateSetting = (key, value) => {
-        void onSettingsChange({ ...settings, [key]: value });
+        void onSettingsChange(current => ({ ...current, [key]: value }));
     };
     return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.protondb.title"), icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: t("qam.protondb.enableDescription"), checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.loadingPreferences") })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.footnote") }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
 }
@@ -19358,7 +19358,7 @@ function normalizeHltbSettings(value) {
     };
 }
 
-function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onStyleMenuWillOpen, onStyleControlRef, onBlurChange, onBlurMenuWillOpen, onBlurControlRef, }) {
+function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onStyleMenuWillOpen, onStyleControlRef, onBlurChange, onBlurMenuWillOpen, onBlurControlRef, }) {
     const t = useT();
     const styles = [
         { data: "default", label: t("qam.hltb.styleDefault") }, { data: "clean", label: t("qam.hltb.styleClean") },
@@ -19378,12 +19378,14 @@ function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, busy
         cleared: ["success", t("qam.hltb.cacheCleared")],
         failed: ["error", t("qam.hltb.cacheFailed")],
     };
-    const controlsDisabled = !settingsLoaded || busy;
+    const controlsDisabled = !settingsLoaded;
     const disabled = controlsDisabled || !settings.enabled;
     const appearance = settings.appearance;
     const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
-    const update = (key, value) => { void onSettingsChange({ ...settings, [key]: value }); };
-    const updateAppearance = (key, value) => update("appearance", { ...appearance, [key]: value });
+    const update = (key, value) => { void onSettingsChange(current => ({ ...current, [key]: value })); };
+    const updateAppearance = (key, value) => {
+        void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
+    };
     return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
@@ -20450,6 +20452,26 @@ class HltbController {
             writable: true,
             value: new Set()
         });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         Object.defineProperty(this, "getSnapshot", {
             enumerable: true,
             configurable: true,
@@ -20479,8 +20501,11 @@ class HltbController {
         void this.loadCache().then((cache) => { if (this.isCurrent(generation))
             this.store.seed(cache.hltb.entries); }, () => undefined);
         void this.settingsStore.get().then((settings) => {
-            if (this.isCurrent(generation))
-                this.publish({ settings: normalizeHltbSettings(settings), settingsLoaded: true, busy: false });
+            if (!this.isCurrent(generation))
+                return;
+            const saved = normalizeHltbSettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false });
         }, (error) => {
             if (!this.isCurrent(generation))
                 return;
@@ -20493,6 +20518,9 @@ class HltbController {
             return;
         this.mounted = false;
         this.generation += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
         this.unsubscribeConflicts?.();
         this.unsubscribeConflicts = undefined;
         this.publish({ settingsLoaded: false, busy: false });
@@ -20501,26 +20529,64 @@ class HltbController {
     }
     async setSettings(next) {
         const current = this.snapshot;
-        if (!this.mounted || !current.settingsLoaded || current.busy)
+        if (!this.mounted || !current.settingsLoaded)
             return false;
-        if (next.enabled && !current.settings.enabled && current.conflict.pluginName)
+        const requested = normalizeHltbSettings(next);
+        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
             return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
         const generation = this.generation;
-        this.publish({ busy: true, settingsError: "" });
-        try {
-            const saved = normalizeHltbSettings(await this.settingsStore.set(normalizeHltbSettings(next)));
-            if (!this.isCurrent(generation))
-                return false;
-            this.publish({ settings: saved, busy: false });
-            return true;
+        while (this.queued && this.isCurrent(generation)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(generation)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, busy: false });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(generation)) {
+                    warn("bridge", "HLTB settings save failed", error);
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: t("hltb.settingsError.saveFailed"),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
         }
-        catch (error) {
-            if (!this.isCurrent(generation))
-                return false;
-            warn("bridge", "HLTB settings save failed", error);
-            this.publish({ busy: false, settingsError: t("hltb.settingsError.saveFailed") });
-            return false;
-        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(generation))
+            this.saving = false;
     }
     async clearCache() {
         if (!this.mounted)
@@ -33743,6 +33809,26 @@ class ProtonDbBadgeController {
             writable: true,
             value: void 0
         });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         this.snapshot = Object.freeze({
             settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
             settingsLoaded: false,
@@ -33785,6 +33871,7 @@ class ProtonDbBadgeController {
             if (!this.isCurrent(lifecycle))
                 return;
             const saved = copySettings(settings);
+            this.confirmed = saved;
             this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
         }, (error) => {
             if (!this.isCurrent(lifecycle))
@@ -33799,6 +33886,9 @@ class ProtonDbBadgeController {
     stop() {
         this.mounted = false;
         this.lifecycle += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
         this.unsubscribeConflicts?.();
         this.unsubscribeConflicts = undefined;
         this.ratings.setResultListener(undefined);
@@ -33813,29 +33903,63 @@ class ProtonDbBadgeController {
         this.listeners.clear();
     }
     async setSettings(settings) {
-        if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
+        if (!this.mounted || !this.snapshot.settingsLoaded)
             return false;
-        if (settings.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName)
-            return false;
-        const lifecycle = this.lifecycle;
         const requested = copySettings(settings);
-        this.publish({ busy: true, settingsError: "" });
-        try {
-            const saved = copySettings(await this.settingsStore.set(requested));
-            if (!this.isCurrent(lifecycle))
-                return false;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
-            return true;
-        }
-        catch (error) {
-            if (!this.isCurrent(lifecycle))
-                return false;
-            this.publish({
-                busy: false,
-                settingsError: errorText(error, t("protondb.settingsSaveError")),
-            });
+        if (requested.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName)
             return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const lifecycle = this.lifecycle;
+        while (this.queued && this.isCurrent(lifecycle)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = copySettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(lifecycle)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, settingsLoaded: true, busy: false, settingsError: "" });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(lifecycle)) {
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: errorText(error, t("protondb.settingsSaveError")),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
         }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(lifecycle))
+            this.saving = false;
     }
     getRating(steamAppId) {
         return this.ratings.getRating(steamAppId);
@@ -34680,7 +34804,7 @@ const Content = () => {
     const returningDropdown = hasCompatibilityDropdownReturn()
         ? compatibilityDropdownReturnOrigin()
         : null;
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (settings) => protonDbBadgeController.setSettings(settings), onCoverPositionChange: async (coverPosition) => {
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -34696,7 +34820,7 @@ const Content = () => {
                 }, onCoverPositionMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-blur", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, busy: hltbSnapshot.busy, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (settings) => hltbController.setSettings(settings), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
+                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-blur", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
                     requestCompatibilityDropdownReturn("hltb-style");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
