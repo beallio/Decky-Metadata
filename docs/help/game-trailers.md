@@ -46,7 +46,7 @@ The main **Enable trailers** switch stays at the top. Plain **Detail view** and 
 
 Both delay sliders default to three seconds and can be set independently from 0 to 10 seconds. At 0, a trailer appears as soon as it is ready. The delay is separate from the fade animation.
 
-If Steam or SDH-Ludusavi shows a save-status bar below the game artwork, the trailer can show through its transparent background without moving the bar. It follows the bar's actual height, including when a theme makes the bar taller. A hidden, compact, or moved indicator does not add full-width trailer space. When you leave the game page, the artwork returns to its usual size. This does not change the trailer's fit, position, or playback.
+If Steam or SDH-Ludusavi shows a save-status bar below the game artwork, the artwork fills that space and the trailer can show through its transparent background without moving the bar. This applies before a trailer loads and when no trailer is available. It follows the bar's actual height, including when a theme makes the bar taller. A hidden, compact, or moved indicator does not add full-width trailer space. When you leave the game page, the artwork returns to its usual size. This does not change the trailer's fit, position, or playback.
 
 The artwork and trailer keep the same height as Steam opens or closes the page, including when you turn the status theme off and on before opening it. Steam's normal page animation still plays; switching to the trailer does not add another size change.
 

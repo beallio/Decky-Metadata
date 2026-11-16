@@ -66,6 +66,10 @@ All notable changes to this project are documented here in Keep a Changelog form
   metadata editor straight to another game's editor, **Search IGN metadata**
   still showed the first game's search text and results. It now starts with the
   current game's name and no results. (#43)
+- **Header image no longer jumps with game trailers.** On a game page with a
+  Steam Cloud save status bar, the header image grew about a second after the
+  page opened, which made it zoom and move. This happened only when SDH-Ludusavi
+  was off. The image now gets its final size when the page opens. (#47)
 
 ## [0.6.3] - 2026-11-13
 
