@@ -53,7 +53,7 @@ games](docs/help/editing-games.md) for the full steps.
 
 ![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=202610011846)
 
-![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=202610011846)
+![Decky Metadata editor for Wobbly Life, a non-Steam game, with the Find a Steam match section](assets/decky-metadata-editor.png?cacheBuster=20261115)
 
 ## What you can see
 
@@ -72,9 +72,9 @@ Older saved timestamps are converted once, keeping their local calendar day.
 Correct an already-wrong date in the editor or import that game's metadata again.
 See [editing games](docs/help/editing-games.md).
 
-![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=202610011846)
+![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=20261115)
 
-![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202610011846)
+![Game Info buttons for Wobbly Life](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20261115)
 
 ### Compatibility status
 
@@ -105,6 +105,8 @@ See the [ProtonDB guide](docs/help/protondb-badges.md) for controls, matching,
 Store row requirements, and troubleshooting.
 
 ![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
+
+![Store info row with How Long To Beat times and the ProtonDB rating for Brotato](assets/decky-metadata-store-row.png?cacheBuster=20261115)
 
 ### HowLongToBeat times
 
