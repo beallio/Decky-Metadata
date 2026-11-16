@@ -21,6 +21,15 @@ without a compatibility badge. All manual and default categories are choices
 made by the user. They do not mean Valve certified the shortcut, and they do
 not describe emulator performance.
 
+Steam shows more than one compatibility row. On a SteamOS device that is not a
+Steam Deck, such as a Lenovo Legion Go S, **Game Info** shows a **SteamOS
+Compatibility** row. Steam Machine and Steam Frame devices show their own
+rows. Decky Metadata sets each row from the same choice. SteamOS has only
+**Compatible**, **Unsupported**, and **Unknown**, with no Verified level, so
+**Verified** and **Playable** appear as **Compatible** there. When the choice
+follows Valve, each row uses the matched Steam game's own rating for that
+device when Steam has one.
+
 Saving a default saves it immediately. Eligible shortcuts other than the game
 currently open on the **Game Info** tab update immediately. The active Game
 Info game keeps its applied value and rich content until the user leaves that
@@ -84,7 +93,7 @@ same active-Game-Info deferral as any other default change.
 | S29 | Any | Steam game or official-ID alias | No mutation, badge, or filter change. |
 | S30 | Any | Global or per-game save fails/cancels | Last confirmed setting remains active; show failures. |
 | S31 | Any | Old load completes after successful save | New confirmed choice stays active. |
-| S32 | Automatic / Follow Valve | Nonzero Original and no Valve data | Preserve Original and high packed bits. |
+| S32 | Automatic / Follow Valve | Nonzero Original and no Valve data | Preserve Original and bits 10 and above. |
 | S33 | Automatic -> Verified | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
 | S34 | Several global changes | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
 | S35 | Changed global default | Close QAM or cancel a context-menu overlay | Do not release the pending update while Game Info remains selected. |
@@ -101,6 +110,9 @@ same active-Game-Info deferral as any other default change.
 | S46 | Verified | Scope changes while a Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
 | S47 | Verified, Steam-matched games | An inheriting record loses its Steam ID | Valve category or Original; it leaves the scope. |
 | S48 | Verified, saved games without a Steam ID | A record gains a valid Steam ID | Valve category or Original; it leaves the scope. |
+| S49 | Automatic | Follow Valve on a non-Deck SteamOS device; Valve SteamOS Compatible | SteamOS row shows Compatible; Deck row shows the Valve Deck category. |
+| S50 | Verified | Fixed Verified on a SteamOS device | SteamOS row shows Compatible; Deck, Machine, and Frame rows show Verified. |
+| S51 | Unsupported | Fixed Unsupported on a SteamOS device | Every row shows Unsupported. |
 
 ## Technical contract
 
@@ -139,6 +151,50 @@ so they retain their prior visible behavior while the global setting remains
 Automatic. `deck_compat_category` stays provider-owned and is numeric-or-null;
 the setting and `"valve"` are never written there.
 
+`steamos_compat_category`, `steam_machine_compat_category`, and
+`steam_frame_compat_category` are provider-owned. Each key is absent on a
+record that no lookup with these fields has reached yet, and a number or an
+explicit null after one. The same Valve lookup as for `deck_compat_category`
+writes all three keys: a number when Valve rates that device, null when Valve
+returns no rating for it or the response is authoritative without a category.
+A failed or malformed lookup changes nothing, including absence. A changed or
+removed Steam App ID sets all three to explicit null. They never carry across
+matches, and a user Save never writes or creates them. Valid values are 0, 1,
+or 2 for SteamOS, which has no Verified level, and 0, 1, 2, or 3 for Steam
+Machine and Steam Frame. `metadata::sanitize` turns any other value of a
+present key into null and keeps an absent key absent.
+
+The frontend resolves one effective Deck category per shortcut from the fixed
+per-game category, the numeric global default within scope, or the matched
+`deck_compat_category`. It then derives each device row. When the effective
+Deck category comes from Valve, meaning Follow Valve or an inherit that uses
+the matched category, the Deck row is `deck_compat_category`. Each other device
+row uses its own category when it is a number. When it is an explicit null,
+Valve has no rating for that device, so the row keeps the shortcut's original
+native bits from the baseline. When the key is absent, the record predates
+these fields: the SteamOS row falls back to map(Deck), and the Steam Machine
+and Steam Frame rows keep their native bits, because Valve rates those devices
+independently of the Deck. When the effective Deck category is a user choice,
+meaning a fixed per-game category or a numeric global default, the Deck, Steam
+Machine, and Steam Frame rows are that category and the SteamOS row is
+map(Deck). The map is 3 to 2, 2 to 2, 1 to 1, and 0 to 0. A null effective
+category restores the original baseline.
+
+The packed field uses bits 0-1 for Deck, bits 2-3 for a Deck copy with no
+native reader found, bits 4-5 for SteamOS, bits 6-7 for Steam Machine, and bits
+8-9 for Steam Frame. Every bit from 10 up stays as Steam gave it. Before the
+first mutation, the plugin captures the original bits 0-9, mask 0x3ff, and
+restores exactly those bits.
+
+The Valve lookup runs on Steam enrichment, metadata scans, and the automatic
+Activity news refresh. The news refresh updates only the four categories; it
+never changes descriptions, genres, or `metadata_language`. For an unchanged
+Steam match, a failed or malformed Valve lookup keeps valid last-known provider
+categories, including Unknown (0). An authoritative Valve response with no
+category clears that category; `{"results":[]}` is authoritative and clears all
+four. The plugin never carries cached categories through a changed or removed
+Steam App ID.
+
 Metadata saves preserve an omitted override. Explicit null resets it to
 inheritance. A provider scan preserves the latest saved override under the data
 lock, even when its sanitized provider shell contains null. Refresh,
@@ -151,17 +207,12 @@ For scope classification, a Steam App ID is a positive safe integer. Numeric
 strings are normalized first. Booleans, fractions, non-finite values, zero,
 negative values, and malformed strings are not Steam IDs.
 
-For an unchanged Steam match, a failed or malformed Valve lookup keeps a valid
-last-known provider category, including Unknown (0). An authoritative Valve
-response with no category clears it. The plugin never carries a cached category
-through a changed or removed Steam App ID.
-
 The frontend loads one confirmed setting at startup. A requested value is not
 published until the backend save succeeds. A shared mount generation makes old
 setting saves, setting loads, metadata loads, and bootstrap callbacks inert
 after dismount. Policy application makes one linear pass over exact native
-shortcut overviews, retains high packed bits, captures native low-nibble
-baselines before mutation, and publishes one shared revision after a changed
+shortcut overviews, retains bits 10 and above, captures the native 10-bit
+baseline before mutation, and publishes one shared revision after a changed
 batch. Metadata refresh uses one native-entry batch for metadata records; it
 does not rescan the full library once per global-only baseline. Availability
 changes publish a revision even when the packed value already matches, so
@@ -172,7 +223,7 @@ It never writes through a matched official-AppID alias or a regular Steam game.
 While the exact main-window Game Info tab is active, the plugin keeps a small
 in-memory record keyed by the native shortcut App ID and does not mutate that
 shortcut's packed compatibility field. An incoming replacement receives the
-held low nibble. On a real history exit, the plugin resolves the current
+held 10-bit value. On a real history exit, the plugin resolves the current
 overview and current policy in one bounded batch, then publishes the changed
 native entries. The history callback's new location is authoritative during
 navigation. In-place reload retains this pending intent with compatibility

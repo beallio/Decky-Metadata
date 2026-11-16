@@ -40,6 +40,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
+- **SteamOS compatibility on other devices.** On SteamOS devices that are not
+  a Steam Deck, such as the Lenovo Legion Go S, a matched non-Steam game's
+  **SteamOS Compatibility** row showed Unknown. It now shows the matched game's
+  SteamOS rating, or your chosen status (Verified and Playable show as
+  Compatible, because SteamOS has no Verified level). Steam Machine and Steam
+  Frame rows work the same way.
 - **Removing metadata clears the compatibility badge.** **Remove metadata** now
   closes the editor and returns to the game page, where the game's Steam Deck
   compatibility badge in **Game Info** goes back to its original state.

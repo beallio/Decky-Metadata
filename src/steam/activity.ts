@@ -103,7 +103,10 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
       const changed = newsKey(previous) !== newsKey(refreshed);
       const compatibilityChanged =
         previous?.deck_compat_override !== refreshed.deck_compat_override ||
-        previous?.deck_compat_category !== refreshed.deck_compat_category;
+        previous?.deck_compat_category !== refreshed.deck_compat_category ||
+        previous?.steamos_compat_category !== refreshed.steamos_compat_category ||
+        previous?.steam_machine_compat_category !== refreshed.steam_machine_compat_category ||
+        previous?.steam_frame_compat_category !== refreshed.steam_frame_compat_category;
       setMetadataCacheEntry(appId, refreshed);
       if (compatibilityChanged) {
         applyMetadataFn(appId);

@@ -37,6 +37,8 @@ import {
 const makeMetadata = (
   compatibilityOverride: number | null,
   compatibilityCategory: number | null,
+  perDevice: Partial<Pick<MetadataData,
+    "steamos_compat_category" | "steam_machine_compat_category" | "steam_frame_compat_category">> = {},
 ): MetadataData => ({
   title: "Example",
   id: "example",
@@ -48,6 +50,7 @@ const makeMetadata = (
   steam_news_enriched_at: 0,
   deck_compat_override: compatibilityOverride,
   deck_compat_category: compatibilityCategory,
+  ...perDevice,
 } as MetadataData);
 
 const makeNewsMetadata = (title: string, gid: string): MetadataData => ({
@@ -130,6 +133,22 @@ describe("activity compatibility refresh", () => {
 
     expect(applyMetadata).not.toHaveBeenCalled();
     expect(compatibilityRevisionSnapshot()).toBe(0);
+  });
+
+  it("applies and publishes a change limited to a per-device category", async () => {
+    const appId = 9613;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeMetadata(null, 1, { steamos_compat_category: 2 });
+    const refreshed = makeMetadata(null, 1, { steamos_compat_category: 1 });
+    mocks.refreshSteamActivityForApp.mockResolvedValue(refreshed);
+    const applyMetadata = vi.fn(() => true);
+    configureActivityMetadataLoader(async () => undefined, applyMetadata);
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => expect(applyMetadata).toHaveBeenCalledWith(appId));
+
+    expect(metadataCache[String(appId)]).toBe(refreshed);
+    expect(compatibilityRevisionSnapshot()).toBe(1);
   });
 
   it("rebuilds native Activity when only the news body language changed", async () => {

@@ -120,6 +120,9 @@ export type UpdateRpcResult<T> = T | UpdateRpcStatus;
 /** Steam's packed Deck compatibility category values. */
 export type DeckCompatibilityCategory = 0 | 1 | 2 | 3;
 
+/** Steam's SteamOS compatibility categories. Valve maps Verified to Compatible. */
+export type SteamOsCompatibilityCategory = 0 | 1 | 2;
+
 /** Which native non-Steam shortcuts inherit a numeric global default. */
 export type CompatibilityDefaultScope = "steam" | "no-steam" | "metadata" | "all";
 
@@ -152,6 +155,9 @@ export type MetadataData = {
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: DeckCompatibilityCategory | null;
+  steamos_compat_category?: SteamOsCompatibilityCategory | null;
+  steam_machine_compat_category?: DeckCompatibilityCategory | null;
+  steam_frame_compat_category?: DeckCompatibilityCategory | null;
   /** A user-selected status. Null inherits the global default; "valve" bypasses it. */
   deck_compat_override?: DeckCompatibilityOverride;
   steam_store_url?: string;
