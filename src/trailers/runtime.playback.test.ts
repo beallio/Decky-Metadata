@@ -2281,3 +2281,66 @@ test('Home tracking can resume a selected controller card when enabled from a po
   assert.equal(h.runtime.homeAppId, 570);
   h.runtime.destroy();
 });
+
+function pendingHeroHarness(fetchReply) {
+  const h = setup({ fetchReply });
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = 'url(https://steam.test/steam/apps/570/library_hero.jpg)';
+      this.classList = { add() {}, remove() {}, contains: () => false };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  const hero = new Hero();
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  return { ...h, hero };
+}
+
+test('snapshot pending is true while the Steam movie request is in flight', async () => {
+  const { promise, resolve } = Promise.withResolvers();
+  const h = pendingHeroHarness(() => promise);
+  h.runtime.attachVideo = () => {};
+  const scanning = h.runtime.scan();
+  assert.equal(h.runtime.snapshot().pending, true, 'an unresolved Steam lookup is pending');
+  resolve(responseBody(JSON.stringify({ 570: { data: { movies: [] } } })));
+  await scanning;
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.runtime.snapshot().pending, false, 'waiting for the controller IGN fallback is not pending');
+});
+
+test('snapshot pending covers attach-to-reveal and clears once the trailer is visible', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  assert.equal(h.runtime.snapshot().pending, true, 'an attached but unrevealed video is pending');
+  assert.equal(h.video.paused, false);
+  assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), false);
+  clock.advance(3000);
+  assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(h.runtime.snapshot().pending, false, 'a visible playing trailer is not pending');
+});
+
+test('snapshot pending clears after a terminal no-trailer failure', async () => {
+  const h = pendingHeroHarness(async () => {
+    throw new Error('Steam lookup failed');
+  });
+  h.runtime.ignFallback = null;
+  await h.runtime.scan();
+  assert.ok(h.runtime.failedVisit);
+  assert.equal(h.runtime.currentVideo, undefined);
+  assert.equal(h.runtime.snapshot().pending, false);
+});
+
+test('snapshot pending is false while waiting for a game page', async () => {
+  const h = pendingHeroHarness(async () => responseBody(JSON.stringify({ 570: { data: { movies: [movie] } } })));
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.runtime.snapshot().status, 'waitingGamePage');
+  assert.equal(h.runtime.snapshot().pending, false);
+});

@@ -37,6 +37,10 @@ All notable changes to this project are documented here in Keep a Changelog form
   24 non-English languages. The text now uses more of Steam's own words in each
   language, such as its names for Achievements, Home, and Play. No native
   speaker has reviewed it yet.
+- **Less background work for game trailers.** With game trailers on, the plugin
+  no longer checks Steam every 2 seconds when no trailer can play, and it checks
+  less often while a trailer plays and nothing changes. A trailer on a newly
+  opened game page still starts as fast as before. (#44, #45)
 
 ### Fixed
 
