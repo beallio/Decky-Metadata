@@ -565,6 +565,9 @@ export const MetadataPage = () => {
     setSteamNameLoading(false);
     setSteamNameUnavailable(false);
     setMetadataHydratedEntry(null);
+    // The editor stays mounted across games, so its search belongs to one entry (#43).
+    setQuery(appName(appId));
+    setResults([]);
   }, [appId]);
 
   useEffect(() => {
@@ -948,7 +951,9 @@ export const MetadataPage = () => {
     const requestedEntry = editorEntryToken;
     if (!beginBusy(requestedEntry)) return;
     try {
-      setResults(await searchMetadata(query, 8));
+      const found = await searchMetadata(query, 8);
+      if (!isCurrentEditorEntry(requestedEntry)) return;
+      setResults(found);
     } catch (error) {
       toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
     } finally {

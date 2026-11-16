@@ -27,7 +27,7 @@ const backend = vi.hoisted(() => ({
 }));
 
 const steam = vi.hoisted(() => ({
-  appName: vi.fn(() => "Shortcut"),
+  appName: vi.fn((_appId?: number) => "Shortcut"),
   applyMetadata: vi.fn(),
   cleanTitle: vi.fn((value: string) => value.trim()),
   compatibilityDefaultSnapshot: vi.fn(() => null),
@@ -201,6 +201,15 @@ const deferred = <T,>() => {
   });
   return { promise, resolve, reject };
 };
+
+const ignSearchSection = (page: any) =>
+  walk(page, (node) => node.type === "PanelSection" && node.props?.title === "Search IGN metadata")[0];
+
+const ignSearchInput = (page: any) =>
+  walk(ignSearchSection(page), (node) => node.type === "TextField")[0];
+
+const ignSearchButton = (page: any) =>
+  walk(ignSearchSection(page), (node) => typeof node.props?.onClick === "function")[0];
 
 const shortcutState = (overrides: Record<string, unknown> = {}) => ({
   eligible: true,
@@ -797,6 +806,55 @@ describe("MetadataPage compatibility status", () => {
 
     expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({ title: "New editor", steam_store_name: "" }));
+  });
+
+  it("resets the IGN search query and results when the editor moves to another game", async () => {
+    effects.enabled = true;
+    configureShortcutPanel();
+    steam.appName.mockImplementation((appId?: number) => (appId === 200 ? "Second Game" : "Shortcut"));
+    backend.searchMetadata.mockResolvedValue([
+      { title: "Old game result", description: "Old game", slug: "old-game", url: "https://www.ign.com/games/old-game" },
+    ]);
+
+    ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
+    await ignSearchButton(renderPage()).props.onClick();
+    expect(backend.searchMetadata).toHaveBeenCalledWith("Old game query", 8);
+    expect(text(renderPage())).toContain("Old game result");
+
+    route.appid = "200";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+
+    const switched = renderPage();
+    expect(ignSearchInput(switched).props.value).toBe("Second Game");
+    expect(text(switched)).not.toContain("Old game result");
+    expect(text(switched)).toContain("No results yet.");
+  });
+
+  it("drops an IGN search reply that resolves after the editor moved to another game", async () => {
+    effects.enabled = true;
+    configureShortcutPanel();
+    steam.appName.mockImplementation((appId?: number) => (appId === 200 ? "Second Game" : "Shortcut"));
+    const pendingSearch = deferred<any>();
+    backend.searchMetadata.mockReturnValue(pendingSearch.promise);
+
+    ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
+    const searching = ignSearchButton(renderPage()).props.onClick();
+
+    route.appid = "200";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    pendingSearch.resolve([
+      { title: "Old game result", description: "Old game", slug: "old-game", url: "https://www.ign.com/games/old-game" },
+    ]);
+    await searching;
+    await flushAsyncWork();
+
+    const switched = renderPage();
+    expect(text(switched)).not.toContain("Old game result");
+    expect(ignSearchInput(switched).props.value).toBe("Second Game");
   });
 
   it("hydrates untouched fields without discarding an edit made before metadata loads", async () => {

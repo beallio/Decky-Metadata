@@ -57,6 +57,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Opening a news item works again.** For a non-Steam game matched to a Steam
   store page, selecting a news item in **Activity** now opens it. Before, Steam
   showed "An error occurred while rendering this content" instead.
+- **IGN search starts fresh for each game.** When you went from one game's
+  metadata editor straight to another game's editor, **Search IGN metadata**
+  still showed the first game's search text and results. It now starts with the
+  current game's name and no results. (#43)
 
 ## [0.6.3] - 2026-11-13
 
