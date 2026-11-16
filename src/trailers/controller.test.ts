@@ -544,13 +544,15 @@ describe("TrailerController behavior", () => {
     controller.stop();
   });
 
-  it("skips the remote check while no game page is open and Home trailers are off", async () => {
+  it("installs the Detail runtime before the first identity and then idles without bridge calls", async () => {
     usePollClock();
     steam.route = "/routes/library/home";
     const controller = mountBridgeOnlyController();
     backend.evalInBigPicture.mockResolvedValue({ status: "Waiting for a Steam game page", runtimeMissing: true });
     await advancePoll(controller);
     expect(checkCalls()).toHaveLength(1);
+    expect(installCalls()).toHaveLength(1);
+    expect(installCalls()[0]).not.toContain('"identity": {');
 
     backend.evalInBigPicture.mockClear();
     for (let index = 0; index < 12; index += 1) await advancePoll(controller);
@@ -560,6 +562,19 @@ describe("TrailerController behavior", () => {
     steam.overview.set(570, { appid: 570, app_type: 1, display_name: "Portal 2" });
     await advancePoll(controller);
     expect(installCalls()).toHaveLength(1);
+    expect(installCalls()[0]).toContain('"pageAppId":570');
+    controller.stop();
+  });
+
+  it("never installs a runtime while Detail and Home trailers are both off", async () => {
+    usePollClock();
+    steam.route = "/routes/library/home";
+    const controller = mountBridgeOnlyController({ enabled: true, detailEnabled: false, homeEnabled: false });
+    backend.evalInBigPicture.mockResolvedValue({ status: "Waiting for a Steam game page", runtimeMissing: true });
+    await advancePoll(controller);
+    await controller.installOrUpdate();
+    expect(installCalls()).toHaveLength(0);
+    expect(backend.evalInBigPicture).not.toHaveBeenCalled();
     controller.stop();
   });
 
@@ -586,6 +601,14 @@ describe("TrailerController behavior", () => {
     expect(installCalls()).toHaveLength(3);
     await advancePoll(controller);
     expect(installCalls()).toHaveLength(3);
+    controller.stop();
+  });
+
+  it("installs the Detail runtime at mount time without a game page open", async () => {
+    const controller = await startHomeController({ detailEnabled: true, homeEnabled: false });
+    expect(window.__deckyMetadataTrailerOwner?.identity).toBeNull();
+    expect(installCalls()).toHaveLength(1);
+    expect(installCalls()[0]).not.toContain('"identity": {');
     controller.stop();
   });
 

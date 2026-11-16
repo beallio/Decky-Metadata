@@ -690,9 +690,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => {
                 if (this.destroyed || !this.settings.enabled) return;
-                if (this.currentTarget) {
+                const target = this.currentTarget ?? this.statusBackdrop?.target;
+                if (target) {
                     this.restoreStatusBackdrop();
-                    this.syncStatusBackdrop(this.currentTarget);
+                    this.syncStatusBackdrop(target);
                 }
                 this.queueScan();
             };
@@ -1008,6 +1009,25 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             // Extend the clipped artwork and trailer, not Steam's play-section layout.
             target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
         }
+        syncDetailBackdrop(target) {
+            if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
+        }
+        // The current detail route's hero; nothing when this runtime does not paint that route.
+        routeHero() {
+            if (!this.settings.enabled || !this.settings.detailEnabled || this.isHomeRoute()) return undefined;
+            const appId = detectLocationAppId();
+            const hero = appId ? findHeroCandidate(appId) : undefined;
+            return hero && hero.appId === appId ? hero : undefined;
+        }
+        // cleanupVideo restores the inline height, so a band kept for this hero is detached and re-attached around it.
+        // Route-derived: playback still needs identity, but the band must not wait for it, and a repeat scan writes nothing.
+        syncRouteBackdrop(hero = this.routeHero()) {
+            const keep = hero && this.statusBackdrop?.target === hero.element ? this.statusBackdrop : undefined;
+            if (keep) this.statusBackdrop = undefined;
+            this.cleanupVideo(true);
+            if (keep) this.statusBackdrop = keep;
+            if (hero) this.syncStatusBackdrop(hero.element);
+        }
         mount() {
             this.mounted = true;
             this.installStyle();
@@ -1079,14 +1099,14 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.needsIgnFallback = false;
                 this.failedVisit = undefined;
                 this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
-                this.cleanupVideo(true);
+                this.syncRouteBackdrop();
             }
             if (fallbackChanged && !identityChanged) {
                 this.failedVisit = undefined;
                 this.needsIgnFallback = false;
                 if (this.ignFallback === undefined) {
                     this.steamUnavailable = false;
-                    this.cleanupVideo(true);
+                    this.syncRouteBackdrop();
                 }
             }
             if (previous.audioEnabled !== this.settings.audioEnabled) this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
@@ -1417,7 +1437,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 return;
             }
             const home = this.isHomeRoute() && this.settings.homeEnabled;
-            if (!document.body || (!home && (!this.settings.detailEnabled || !isProbablyGameDetailsPage()))) {
+            // Route-derived, not identity-derived: the status band must not wait for the identity poll.
+            if (!document.body || (!home && (!this.settings.detailEnabled || !detectLocationAppId()))) {
                 this.failedVisit = undefined;
                 this.currentAppId = undefined;
                 this.currentGameTitle = undefined;
@@ -1434,7 +1455,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.needsIgnFallback = false;
                 this.currentAppId = undefined;
                 this.failedVisit = undefined;
-                this.cleanupVideo(true);
+                // Identity can arrive a poll interval late; the art takes its band height now instead of after it.
+                this.syncRouteBackdrop(!home && hero?.appId === appId ? hero : undefined);
                 this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
                 return;
             }
@@ -1460,6 +1482,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pageEnteredAt = home ? this.identity.enteredAt
                 : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
             this.currentTarget = hero.element;
+            // After cleanupVideo, so the art already has its final height when the page paints.
+            this.syncDetailBackdrop(hero.element);
             this.pendingAppId = appId;
             this.pendingTarget = hero.element;
             this.pendingRequestToken = token;
@@ -1496,6 +1520,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pendingTarget = undefined;
             this.pendingRequestToken = undefined;
             if (!trailer.ok || !trailer.candidates?.length) {
+                // The art keeps its status-band height without a trailer; leaving the page restores it.
                 this.failedVisit = { appId, hero: hero.element };
                 this.releaseThemeBand();
                 this.status = trailer.error || rt("noGameTrailer");
@@ -1531,6 +1556,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!candidate.isCurrent()) return;
                 this.failedVisit = { appId, hero };
                 this.cleanupVideo(true);
+                this.syncDetailBackdrop(hero);
                 this.releaseThemeBand();
                 this.status = rt("autoplayBlocked");
             });
@@ -1639,7 +1665,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         attachVideo(target, appId, candidates, token, options = {}) {
             let index = 0;
             target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
-            if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
+            this.syncDetailBackdrop(target);
             this.currentTarget = target;
             this.currentAppId = appId;
             this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
@@ -1690,12 +1716,14 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                             this.needsIgnFallback = true;
                             this.failedVisit = { appId, hero: target };
                             this.cleanupVideo();
+                            this.syncDetailBackdrop(target);
                             this.status = rt("searchIgnTrailer");
                             return;
                         }
                     }
                     this.failedVisit = { appId, hero: target };
                     this.cleanupVideo();
+                    this.syncDetailBackdrop(target);
                     this.releaseThemeBand();
                     this.status = rt("noGameTrailer");
                     return;

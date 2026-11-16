@@ -804,7 +804,8 @@ export class TrailerController {
   }
 
   private async installOrUpdate() {
-    if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
+    // Either trailer feature may need the runtime before the first identity poll.
+    if (!this.isEffectivelyEnabled()) return;
     if (this.installInFlight) {
       this.pendingInstall = true;
       return;
@@ -814,7 +815,7 @@ export class TrailerController {
     try {
       do {
         this.pendingInstall = false;
-        if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
+        if (!this.isEffectivelyEnabled()) return;
         const revision = this.settingsRevision;
         const result = await this.runInSteamTab(this.buildInstallScript());
         if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId) return;
