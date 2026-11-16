@@ -56,6 +56,29 @@ describe("HLTB controls", () => {
       expect(change).toHaveBeenLastCalledWith({ ...DEFAULT_HLTB_SETTINGS, enabled: true, style, pushPlayDown: true });
     }
   });
+  it("offers keeping Play above the bottom bar only while pushing Play down", () => {
+    const change = vi.fn();
+    const tree = (settings: Partial<typeof DEFAULT_HLTB_SETTINGS> = {}) => nodes(HltbSection({
+      settings: { ...DEFAULT_HLTB_SETTINGS, enabled: true, ...settings }, settingsLoaded: true, busy: false,
+      conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn(),
+    }));
+    const label = "Keep Play above the bottom bar";
+    for (const style of ["clean", "clean-left"] as const) {
+      expect(tree({ style }).some(node => node.props.label === label)).toBe(false);
+    }
+    for (const style of ["default", "clean-default"] as const) {
+      expect(tree({ style }).find(node => node.props.label === label)!.props.disabled).toBe(true);
+    }
+    const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, pushPlayDown: true, style: "default" as const };
+    const toggle = nodes(HltbSection({
+      settings, settingsLoaded: true, busy: false, conflict: { pluginName: null, detectionAvailable: true },
+      onSettingsChange: change, onClearCache: vi.fn(),
+    })).find(node => node.props.label === label)!;
+    expect(toggle.props.checked).toBe(true);
+    expect(toggle.props.disabled).toBe(false);
+    toggle.props.onChange(false);
+    expect(change).toHaveBeenLastCalledWith({ ...settings, respectMenuBar: false });
+  });
   it("updates appearance, resets it, and clears the cache", () => {
     const change = vi.fn(), clear = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };

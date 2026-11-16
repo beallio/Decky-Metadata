@@ -124,6 +124,8 @@
       "styleCleanDefault": "«Clean» predeterminado",
       "pushPlayLabel": "Bajar el botón Jugar",
       "pushPlayDescription": "Muestra los tiempos debajo de la imagen de cabecera y baja el botón Jugar, como HLTB for Deck. Mientras se muestra una barra de estado de guardado en la parte inferior de la imagen de cabecera, los tiempos permanecen sobre la imagen.",
+      "respectMenuBarLabel": "Mantener Jugar sobre la barra inferior",
+      "respectMenuBarDescription": "Baja el botón Jugar solo lo que quepa sobre la barra inferior. Sigue los cambios de tamaño de la barra inferior de los temas.",
       "blurLabel": "Desenfoque de fondo",
       "blurDescription": "Coincide con la barra Jugar de forma predeterminada; «Desenfoque» también desenfoca los tiempos sobre la imagen de cabecera",
       "blurMatchPlayBar": "Igual que la barra Jugar",

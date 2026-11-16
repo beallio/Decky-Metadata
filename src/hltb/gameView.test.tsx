@@ -10,13 +10,13 @@ type EffectSlot = {
   deps?: unknown[];
   cleanup?: () => void;
 };
-type RowProps = { className?: string; children: React.ReactNode };
+type RowProps = { className?: string; style?: React.CSSProperties; children: React.ReactNode };
 type InsertedRow = {
   props: { appId: number };
   type: (props: { appId: number }) => { ref: { current: unknown }; props: RowProps };
 };
 type HltbStatsElement = React.ReactElement<React.ComponentProps<typeof HltbStats>, typeof HltbStats>;
-type SurfaceObserver = { connected: boolean; callback: () => void };
+type SurfaceObserver = { connected: boolean; callback: () => void; targets?: unknown[] };
 type Observation = { target: unknown; options?: MutationObserverInit };
 
 const hooks = vi.hoisted(() => ({
@@ -139,7 +139,7 @@ describe("HLTB game-page native surface", () => {
 
   /** Renders the inserted row against a fake game page with one theme and one Play surface. */
   async function setup(options: {
-    style?: HltbSettings["style"]; blur?: HltbBlur; backdrop?: string; pushPlayDown?: boolean;
+    style?: HltbSettings["style"]; blur?: HltbBlur; backdrop?: string; pushPlayDown?: boolean; respectMenuBar?: boolean;
   } = {}) {
     vi.clearAllMocks();
     hooks.index = 0;
@@ -152,6 +152,7 @@ describe("HLTB game-page native surface", () => {
     backend.getHltbSettings.mockResolvedValue({
       ...DEFAULT_HLTB_SETTINGS, enabled: true, style: options.style ?? "clean-default",
       pushPlayDown: options.pushPlayDown ?? false,
+      respectMenuBar: options.respectMenuBar ?? true,
       appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, blur: options.blur ?? "match" },
     });
     backend.setHltbSettings.mockImplementation(async (settings: HltbSettings) => settings);
@@ -206,12 +207,15 @@ describe("HLTB game-page native surface", () => {
     const resizers: SizeObserver[] = [];
     class SizeObserver {
       connected = false;
-      observe = vi.fn(() => { this.connected = true; });
-      disconnect = vi.fn(() => { this.connected = false; });
+      targets: unknown[] = [];
+      observe = vi.fn((target: unknown) => { this.connected = true; this.targets.push(target); });
+      disconnect = vi.fn(() => { this.connected = false; this.targets = []; });
       constructor(readonly callback: () => void) { resizers.push(this); }
     }
-    const notify = (list: SurfaceObserver[]) => {
-      for (const observer of list) if (observer.connected) observer.callback();
+    const notify = (list: SurfaceObserver[], target?: unknown) => {
+      for (const observer of list) {
+        if (observer.connected && (!target || observer.targets?.includes(target))) observer.callback();
+      }
     };
     const playSurface = {
       background: "rgba(20, 30, 40, 0.4)", opacity: "0.7",
@@ -225,6 +229,40 @@ describe("HLTB game-page native surface", () => {
     // Fake InnerContainer: the header (with its art) plus any save status bars.
     // Bars sit after Play, so their rects move with the flow layout.
     const artRect = { top: 100, bottom: 400, width: 800 };
+    const headerRect = { top: 100, bottom: 400 };
+    let headerLayoutBottom = headerRect.bottom;
+    let footerTop = 750;
+    let footerHeight = 50;
+    let footerChildTop = footerTop;
+    let footerChildBottom = 800;
+    let footerChildWidth = 1280;
+    let footerChildOffsetTop = 0;
+    const footerChild = {
+      get offsetTop() { return footerChildOffsetTop; },
+      getBoundingClientRect: () => ({
+        top: footerChildTop, bottom: footerChildBottom, width: footerChildWidth,
+        height: footerChildBottom - footerChildTop,
+      }),
+    };
+    const footer = {
+      get offsetHeight() { return footerHeight; },
+      get offsetTop() { return footerTop; },
+      offsetParent: null,
+      getBoundingClientRect: () => ({ top: footerTop, bottom: footerTop + footerHeight, height: footerHeight, width: 1280 }),
+    };
+    let scrollerScale = 1;
+    const scroller = {
+      clientHeight: 800,
+      scrollHeight: 1600,
+      scrollTop: 0,
+      offsetTop: 0,
+      offsetParent: null,
+      // Scaled by Steam's page-entry transform in the away/back case; only rect reads see it.
+      getBoundingClientRect: () => ({
+        top: 0, bottom: 800 * scrollerScale, height: 800 * scrollerScale, width: 1280 * scrollerScale,
+      }),
+      parentElement: null,
+    };
     const flowHeight = 45;
     const artImages: Array<{ getBoundingClientRect: () => { bottom: number; width: number } }> = [];
     const frames = new Map<number, () => void>();
@@ -239,6 +277,7 @@ describe("HLTB game-page native surface", () => {
     };
     const bars: StatusBar[] = [];
     const computedStyles = new WeakMap<object, Record<string, string>>();
+    const documentListeners = new Map<string, Array<() => void>>();
     const visibleStyle = { display: "block", visibility: "visible", opacity: "1", position: "static" };
     const art = {
       getBoundingClientRect: () => artRect,
@@ -247,14 +286,21 @@ describe("HLTB game-page native surface", () => {
     const header = {
       className: classes.Header,
       children: [],
+      offsetTop: 0,
+      get offsetHeight() { return headerLayoutBottom - headerRect.top; },
+      get offsetParent() { return container; },
+      getBoundingClientRect: () => ({ ...headerRect, height: headerRect.bottom - headerRect.top }),
       querySelector: (selector: string) => selector === `.${classes.HeaderBackgroundImage}` ? art : null,
     };
     const container = {
       children: [header],
       querySelectorAll: () => bars,
-      parentElement: null,
+      parentElement: scroller,
+      offsetTop: headerRect.top,
+      offsetParent: scroller,
     };
     computedStyles.set(container, visibleStyle);
+    computedStyles.set(scroller, { ...visibleStyle, overflowY: "auto" });
     const statusBar = (options: {
       top: number; height?: number; width?: number; text?: string;
       style?: Record<string, string>; attributes?: Record<string, string>;
@@ -286,8 +332,13 @@ describe("HLTB game-page native surface", () => {
     const section = {
       style: nativeStyle("Play section"),
       closest: (selector: string) => selector === `.${classes.AppDetailsRoot}` ? root : null,
+      get offsetHeight() { return 80 + (rowClasses.has("decky-metadata-hltb-joined") ? barHeight : 0); },
     };
-    const bar = {};
+    const bar = { get offsetHeight() { return barHeight; } };
+    // The row's own wrapper: the measured box that displaces Play in flow mode.
+    let surfaceHeight: number | null = null;
+    const surface = { get offsetHeight() { return surfaceHeight ?? barHeight; } };
+    const surfaceStyle = { marginTop: "0px", marginBottom: "0px" };
     const properties = new Map([["--unrelated-sentinel", "keep"]]);
     const head = {};
     const documentElement = {};
@@ -301,6 +352,7 @@ describe("HLTB game-page native surface", () => {
       contains: () => false,
       querySelector: (selector: string) => {
         if (selector === ".decky-metadata-hltb-info") return hasBar ? bar : null;
+        if (selector === "#decky-metadata-hltb") return surface;
         if (selector === "#decky-metadata-hltb.decky-metadata-hltb-flow") return flowShown ? flowBar : null;
         return null;
       },
@@ -309,7 +361,14 @@ describe("HLTB game-page native surface", () => {
         querySelector: (selector: string) => hasPlay && selector === `.${classes.PlaySection}` ? section : null,
       },
       ownerDocument: {
-        head, documentElement,
+        head, documentElement, body: {},
+        addEventListener: (type: string, listener: () => void) => {
+          documentListeners.set(type, [...(documentListeners.get(type) ?? []), listener]);
+        },
+        removeEventListener: (type: string, listener: () => void) => {
+          documentListeners.set(type, (documentListeners.get(type) ?? []).filter((candidate) => candidate !== listener));
+        },
+        querySelector: (selector: string) => selector === "#Footer" ? footer : selector === "#Footer > div" ? footerChild : null,
         defaultView: {
           MutationObserver: ThemeObserver,
           ResizeObserver: SizeObserver,
@@ -326,6 +385,7 @@ describe("HLTB game-page native surface", () => {
             if (element === section) return playSurface;
             if (element === root) return rootSurface;
             if (element === bar) return { height: `${barHeight}px` };
+            if (element === surface) return surfaceStyle;
             throw new Error("Unexpected computed-style target");
           },
         },
@@ -414,12 +474,23 @@ describe("HLTB game-page native surface", () => {
     };
     return {
       observers, resizers, properties, settle, setBlur, setStyle, setPushPlayDown,
-      artRect, statusBar, dropBar, flushFrames,
+      artRect, statusBar, dropBar, flushFrames, footerLabels: footerChild,
       extendArt: (bottom: number, width = artRect.width) => { artImages.push({ getBoundingClientRect: () => ({ bottom, width }) }); },
       notifyTheme,
       notifyMutation: () => notifyMutation(),
-      notifyResize: () => notify(resizers),
+      notifyResize: (target?: unknown) => notify(resizers, target),
+      notifyEnd: (type: string) => { for (const listener of Array.from(documentListeners.get(type) ?? [])) listener(); },
       setBarHeight: (height: number) => { barHeight = height; },
+      setSurfaceHeight: (height: number | null) => { surfaceHeight = height; },
+      setHeaderBottom: (bottom: number) => { headerRect.bottom = bottom; headerLayoutBottom = bottom; },
+      setHeaderRectBottom: (bottom: number) => { headerRect.bottom = bottom; },
+      setScrollerScale: (scale: number) => { scrollerScale = scale; },
+      setFooterHeight: (height: number) => { footerHeight = height; },
+      setFooterChildTop: (top: number) => { footerChildTop = top; },
+      setFooterChildOffsetTop: (top: number) => { footerChildOffsetTop = top; },
+      setFooterChildRect: (top: number, bottom: number, width: number) => {
+        footerChildTop = top; footerChildBottom = bottom; footerChildWidth = width;
+      },
       setBackdrop: (backdrop: string) => { playSurface.backdropFilter = backdrop; },
       setContainsRow: (value: boolean) => { containsRow = value; },
       setHasPlay: (value: boolean) => { hasPlay = value; },
@@ -461,6 +532,158 @@ describe("HLTB game-page native surface", () => {
     page.expectHours(rendered);
   });
 
+  it("pushes Play down by the full row when it fits above the bottom bar", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBeUndefined();
+  });
+
+  it("pushes Play down only as far as the room above the bottom bar", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBe(-28);
+  });
+
+  it("counts footer labels that paint above the bottom bar box", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    page.setFooterChildTop(740);
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-38);
+  });
+
+  it("ignores a zero-size footer child instead of treating the viewport as footer", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    page.setFooterChildRect(0, 0, 0);
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBe(-28);
+  });
+
+  it("uses the labels' layout offset once they exist, even without a footer resize", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    // Mount pass: the labels child is there but not laid out yet.
+    page.setFooterChildRect(0, 0, 0);
+    expect(page.settle().props.style?.marginTop).toBe(-28);
+
+    // The labels settle 12px above the bar without resizing the footer itself.
+    page.setFooterChildRect(738, 788, 1280);
+    page.setFooterChildOffsetTop(-12);
+    page.notifyResize(page.footerLabels);
+    page.flushFrames();
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-40);
+  });
+
+  it("measures the art from layout while Steam's page-entry rect animates", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    // Mid page-entry the header's rect is scaled/translated; its layout box is not.
+    page.setHeaderRectBottom(600);
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-28);
+  });
+
+  it("keeps the bar height in layout while the scroller's rect is scaled", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    // The scroller's rect shrinks with the animated page; the footer outside it does not.
+    page.setScrollerScale(0.95);
+    page.setHeaderRectBottom(617.5);
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-28);
+  });
+
+  it("re-measures when a page-entry transition ends", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    page.setFooterChildRect(0, 0, 0);
+    expect(page.settle().props.style?.marginTop).toBe(-28);
+
+    // The labels land without resizing or mutating anything the observers watch.
+    page.setFooterChildRect(738, 788, 1280);
+    page.setFooterChildOffsetTop(-12);
+    page.notifyEnd("transitionend");
+    page.flushFrames();
+    expect(page.settle().props.style?.marginTop).toBe(-40);
+  });
+
+  it("keeps the higher top when a theme transform shifts the labels' rect", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    // Laid out 12px up, painted 7px lower by a transform: stay conservative.
+    page.setFooterChildOffsetTop(-12);
+    page.setFooterChildRect(745, 795, 1280);
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-40);
+  });
+
+  it("moves Play by the row's real outer height, not the info bar box", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    // A border or theme margin outside the info bar: the surface is 64 tall, the bar 48.
+    page.setSurfaceHeight(64);
+    const rendered = page.settle();
+    const marginTop = rendered.props.style?.marginTop as number;
+    expect(marginTop).toBe(-44);
+    // Play starts under the 650 art and is 80 tall; the negative margin cancels the overhang.
+    expect(650 + 80 + 64 + marginTop).toBeLessThanOrEqual(750);
+  });
+
+  it("falls back to the joined overlay when no room is left above the bottom bar", async () => {
+    const page = await setup({ pushPlayDown: true });
+    page.setHeaderBottom(700);
+    page.settle();
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).not.toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.className).toBe("decky-metadata-hltb-joined");
+    expect(rendered.props.style?.marginTop).toBeUndefined();
+    page.expectJoinedSurface();
+  });
+
+  it("pushes Play down fully when the setting is off, even with no room", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true, respectMenuBar: false });
+    page.setHeaderBottom(700);
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBeUndefined();
+  });
+
+  it("does not oscillate on repeated settle passes", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    page.settle();
+    let rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-28);
+    for (let index = 0; index < 3; index += 1) {
+      page.notifyTheme();
+      page.notifyResize();
+      page.flushFrames();
+      rendered = page.settle();
+      expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+      expect(rendered.props.style?.marginTop).toBe(-28);
+    }
+  });
+
+  it("grows the push back when the bottom bar gets shorter", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(650);
+    page.settle();
+    expect(page.settle().props.style?.marginTop).toBe(-28);
+
+    page.setFooterHeight(0);
+    page.notifyResize();
+    page.flushFrames();
+    const rendered = page.settle();
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBeUndefined();
+  });
+
   it("keeps the times in their own row when no save status bar touches the art", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
     page.settle();
@@ -479,6 +702,7 @@ describe("HLTB game-page native surface", () => {
     // The overlay fallback joins the Play blur again, as with the setting off.
     expect(rendered.props.className).toBe("decky-metadata-hltb-joined");
     page.expectJoinedSurface();
+    expect(rendered.props.style?.marginTop).toBeUndefined();
   });
 
   it("moves to the overlay when a status bar appears after the page loaded", async () => {

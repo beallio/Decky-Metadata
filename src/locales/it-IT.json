@@ -124,6 +124,8 @@
       "styleCleanDefault": "“Clean” predefinito",
       "pushPlayLabel": "Sposta in basso il pulsante Gioca",
       "pushPlayDescription": "Mostra i tempi sotto l'immagine dell'intestazione e sposta in basso il pulsante Gioca, come HLTB per Deck. Finché in fondo all'immagine dell'intestazione compare una barra di stato del salvataggio, i tempi restano sull'immagine.",
+      "respectMenuBarLabel": "Mantieni Gioca sopra la barra inferiore",
+      "respectMenuBarDescription": "Sposta Gioca verso il basso solo quanto basta per restare sopra la barra inferiore. Segue le modifiche delle dimensioni della barra inferiore dei temi.",
       "blurLabel": "Sfocatura dello sfondo",
       "blurDescription": "Per impostazione predefinita corrisponde alla barra Gioca; “Sfocatura” sfoca anche i tempi sopra l'immagine dell'intestazione",
       "blurMatchPlayBar": "Come la barra Gioca",

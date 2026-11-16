@@ -123,6 +123,8 @@
       "styleCleanDefault": "\"Clean\" oletus",
       "pushPlayLabel": "Siirrä Pelaa-painiketta alaspäin",
       "pushPlayDescription": "Näyttää ajat otsikkokuvan alla ja siirtää Pelaa-painiketta alaspäin, kuten HLTB for Deckissä. Kun otsikkokuvan alareunassa näkyy tallennuksen tilapalkki, ajat pysyvät kuvassa.",
+      "respectMenuBarLabel": "Pidä Pelaa alaosan palkin yläpuolella",
+      "respectMenuBarDescription": "Siirtää Pelaa-painiketta alaspäin vain sen verran kuin se mahtuu alaosan palkin yläpuolelle. Seuraa teemojen muutoksia alaosan palkin kokoon.",
       "blurLabel": "Taustan sumennus",
       "blurDescription": "Vastaa oletuksena Pelaa-palkkia; \"Sumennus\" sumentaa myös ajat otsikkokuvan päällä",
       "blurMatchPlayBar": "Kuten Pelaa-palkki",

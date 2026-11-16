@@ -123,6 +123,8 @@
       "styleCleanDefault": "„Clean“ parazgjedhur",
       "pushPlayLabel": "Shtyje butonin Luaj poshtë",
       "pushPlayDescription": "Shfaq kohët nën imazhin e kokës dhe e lëviz butonin Luaj poshtë, si HLTB për Deck. Ndërsa në fund të imazhit të kokës shfaqet një shirit statusi ruajtjeje, kohët qëndrojnë mbi imazh.",
+      "respectMenuBarLabel": "Mbaje Luaj mbi shiritin e poshtëm",
+      "respectMenuBarDescription": "E shtyn butonin Luaj poshtë vetëm aq sa përshtatet mbi shiritin e poshtëm. Ndiq ndryshimet e madhësisë së shiritit të poshtëm nga temat.",
       "blurLabel": "Mjegullim i sfondit",
       "blurDescription": "Përputhet me shiritin Luaj si parazgjedhje; „Mjegullim“ mjegullon edhe kohët mbi imazhin e kokës",
       "blurMatchPlayBar": "Njësoj si shiriti Luaj",
