@@ -38,6 +38,8 @@ const classes = vi.hoisted(() => ({
   Header: "details-header",
   HeaderBackgroundImage: "header-background",
   PlaySection: "play-section",
+  PlayButton: "play-button",
+  AppActionButton: "app-action-button",
   AppDetailsRoot: "details-root",
 }));
 
@@ -76,6 +78,7 @@ vi.mock("@decky/ui", async () => {
     appDetailsClasses: classes,
     appDetailsHeaderClasses: { TopCapsule: "top-capsule", HeaderBackgroundImage: classes.HeaderBackgroundImage },
     basicAppDetailsSectionStylerClasses: classes,
+    appActionButtonClasses: { PlayButton: classes.PlayButton, PlayButtonContainer: "play-button-container" },
     playSectionClasses: { CloudStatusRow: "cloud-status-row" },
     findClassModule: () => undefined,
     Focusable: "div",
@@ -225,16 +228,18 @@ describe("HLTB game-page native surface", () => {
     let barHeight = 48;
     let containsRow = false;
     let hasPlay = true;
+    let hasButton = true;
     let hasBar = true;
     // Fake InnerContainer: the header (with its art) plus any save status bars.
     // Bars sit after Play, so their rects move with the flow layout.
-    const artRect = { top: 100, bottom: 400, width: 800 };
-    const headerRect = { top: 100, bottom: 400 };
+    // steamdeck-vm with Clean Gameview and Art Hero's Smaller Footer, in CSS px.
+    const artRect = { top: 100, bottom: 414, width: 800 };
+    const headerRect = { top: 100, bottom: 414 };
     let headerLayoutBottom = headerRect.bottom;
-    let footerTop = 750;
-    let footerHeight = 50;
+    let footerTop = 519;
+    let footerHeight = 15;
     let footerChildTop = footerTop;
-    let footerChildBottom = 800;
+    let footerChildBottom = 534;
     let footerChildWidth = 1280;
     let footerChildOffsetTop = 0;
     const footerChild = {
@@ -251,15 +256,16 @@ describe("HLTB game-page native surface", () => {
       getBoundingClientRect: () => ({ top: footerTop, bottom: footerTop + footerHeight, height: footerHeight, width: 1280 }),
     };
     let scrollerScale = 1;
+    let scrollerTop = 0;
     const scroller = {
-      clientHeight: 800,
+      clientHeight: 534,
       scrollHeight: 1600,
       scrollTop: 0,
-      offsetTop: 0,
+      get offsetTop() { return scrollerTop; },
       offsetParent: null,
       // Scaled by Steam's page-entry transform in the away/back case; only rect reads see it.
       getBoundingClientRect: () => ({
-        top: 0, bottom: 800 * scrollerScale, height: 800 * scrollerScale, width: 1280 * scrollerScale,
+        top: 0, bottom: 534 * scrollerScale, height: 534 * scrollerScale, width: 1280 * scrollerScale,
       }),
       parentElement: null,
     };
@@ -332,7 +338,17 @@ describe("HLTB game-page native surface", () => {
     const section = {
       style: nativeStyle("Play section"),
       closest: (selector: string) => selector === `.${classes.AppDetailsRoot}` ? root : null,
+      offsetTop: 300,
+      offsetParent: container,
+      querySelector: (selector: string) => hasButton &&
+        (selector === `.${classes.PlayButton}` || selector === `.${classes.AppActionButton}`) ? button : null,
       get offsetHeight() { return 80 + (rowClasses.has("decky-metadata-hltb-joined") ? barHeight : 0); },
+    };
+    // The button face, 16px into the section; the joined rule adds its height as section padding.
+    const button = {
+      get offsetTop() { return 16 + (rowClasses.has("decky-metadata-hltb-joined") ? barHeight : 0); },
+      offsetHeight: 48,
+      offsetParent: section,
     };
     const bar = { get offsetHeight() { return barHeight; } };
     // The row's own wrapper: the measured box that displaces Play in flow mode.
@@ -474,7 +490,7 @@ describe("HLTB game-page native surface", () => {
     };
     return {
       observers, resizers, properties, settle, setBlur, setStyle, setPushPlayDown,
-      artRect, statusBar, dropBar, flushFrames, footerLabels: footerChild,
+      artRect, statusBar, dropBar, flushFrames,
       extendArt: (bottom: number, width = artRect.width) => { artImages.push({ getBoundingClientRect: () => ({ bottom, width }) }); },
       notifyTheme,
       notifyMutation: () => notifyMutation(),
@@ -485,8 +501,9 @@ describe("HLTB game-page native surface", () => {
       setHeaderBottom: (bottom: number) => { headerRect.bottom = bottom; headerLayoutBottom = bottom; },
       setHeaderRectBottom: (bottom: number) => { headerRect.bottom = bottom; },
       setScrollerScale: (scale: number) => { scrollerScale = scale; },
+      setScrollerTop: (top: number) => { scrollerTop = top; },
       setFooterHeight: (height: number) => { footerHeight = height; },
-      setFooterChildTop: (top: number) => { footerChildTop = top; },
+      setFooterTop: (top: number) => { footerTop = top; },
       setFooterChildOffsetTop: (top: number) => { footerChildOffsetTop = top; },
       setFooterChildRect: (top: number, bottom: number, width: number) => {
         footerChildTop = top; footerChildBottom = bottom; footerChildWidth = width;
@@ -494,6 +511,7 @@ describe("HLTB game-page native surface", () => {
       setBackdrop: (backdrop: string) => { playSurface.backdropFilter = backdrop; },
       setContainsRow: (value: boolean) => { containsRow = value; },
       setHasPlay: (value: boolean) => { hasPlay = value; },
+      setHasButton: (value: boolean) => { hasButton = value; },
       expectSurface, expectJoinedSurface, expectHours,
     };
   }
@@ -532,110 +550,119 @@ describe("HLTB game-page native surface", () => {
     page.expectHours(rendered);
   });
 
-  it("pushes Play down by the full row when it fits above the bottom bar", async () => {
+  it("pushes Play down by the full row when it fits above the footer", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(400);
     const rendered = page.settle();
     expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
     expect(rendered.props.style?.marginTop).toBeUndefined();
   });
 
-  it("pushes Play down only as far as the room above the bottom bar", async () => {
+  it("keeps the Play button 4px above the footer bar", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     const rendered = page.settle();
+    // Footer top 519, art 414, button bottom 64 in the section: push 37 of the 48px row.
     expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
-    expect(rendered.props.style?.marginTop).toBe(-28);
+    expect(rendered.props.style?.marginTop).toBe(-11);
+    expect(414 + 37 + 64).toBe(519 - 4);
   });
 
-  it("counts footer labels that paint above the bottom bar box", async () => {
+  it("ignores footer labels that overhang above the footer bar", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
-    page.setFooterChildTop(740);
-    const rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-38);
-  });
-
-  it("ignores a zero-size footer child instead of treating the viewport as footer", async () => {
-    const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
-    page.setFooterChildRect(0, 0, 0);
-    const rendered = page.settle();
-    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
-    expect(rendered.props.style?.marginTop).toBe(-28);
-  });
-
-  it("uses the labels' layout offset once they exist, even without a footer resize", async () => {
-    const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
-    // Mount pass: the labels child is there but not laid out yet.
-    page.setFooterChildRect(0, 0, 0);
-    expect(page.settle().props.style?.marginTop).toBe(-28);
-
-    // The labels settle 12px above the bar without resizing the footer itself.
-    page.setFooterChildRect(738, 788, 1280);
     page.setFooterChildOffsetTop(-12);
-    page.notifyResize(page.footerLabels);
+    page.setFooterChildRect(507, 557, 1280);
+    const rendered = page.settle();
+    expect(rendered.props.style?.marginTop).toBe(-11);
+  });
+
+  it("uses the visible page bottom when the footer is hidden", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHeaderBottom(450);
+    // The visible bar leaves one pixel of room: floor(519 - 4 - 450 - 64) = 1.
+    expect(page.settle().props.style?.marginTop).toBe(-47);
+
+    page.setFooterHeight(0);
+    page.notifyResize();
     page.flushFrames();
     const rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-40);
+    // Page bottom 534: floor(534 - 4 - 450 - 64) = 16, so 32px of the row is clipped.
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBe(-32);
   });
 
   it("measures the art from layout while Steam's page-entry rect animates", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     // Mid page-entry the header's rect is scaled/translated; its layout box is not.
-    page.setHeaderRectBottom(600);
+    page.setHeaderRectBottom(370);
     const rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-28);
+    expect(rendered.props.style?.marginTop).toBe(-11);
   });
 
-  it("keeps the bar height in layout while the scroller's rect is scaled", async () => {
+  it("keeps the footer and art in layout while the scroller's rect is scaled", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     // The scroller's rect shrinks with the animated page; the footer outside it does not.
     page.setScrollerScale(0.95);
-    page.setHeaderRectBottom(617.5);
+    page.setHeaderRectBottom(393.3);
     const rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-28);
+    expect(rendered.props.style?.marginTop).toBe(-11);
+  });
+
+  it("keeps the footer and art in the same layout space when the scroller is offset", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setScrollerTop(40);
+    page.setFooterTop(560);
+    const rendered = page.settle();
+    // Art bottom 454 (140 + 314), footer top 560: floor(560 - 4 - 454 - 64) = 38.
+    expect(rendered.props.style?.marginTop).toBe(-10);
   });
 
   it("re-measures when a page-entry transition ends", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
-    page.setFooterChildRect(0, 0, 0);
-    expect(page.settle().props.style?.marginTop).toBe(-28);
+    expect(page.settle().props.style?.marginTop).toBe(-11);
 
-    // The labels land without resizing or mutating anything the observers watch.
-    page.setFooterChildRect(738, 788, 1280);
-    page.setFooterChildOffsetTop(-12);
+    // The footer moves down without resizing or mutating anything the observers watch.
+    page.setFooterTop(560);
     page.notifyEnd("transitionend");
     page.flushFrames();
-    expect(page.settle().props.style?.marginTop).toBe(-40);
-  });
-
-  it("keeps the higher top when a theme transform shifts the labels' rect", async () => {
-    const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
-    // Laid out 12px up, painted 7px lower by a transform: stay conservative.
-    page.setFooterChildOffsetTop(-12);
-    page.setFooterChildRect(745, 795, 1280);
-    const rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-40);
+    expect(page.settle().props.style?.marginTop).toBeUndefined();
   });
 
   it("moves Play by the row's real outer height, not the info bar box", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     // A border or theme margin outside the info bar: the surface is 64 tall, the bar 48.
     page.setSurfaceHeight(64);
     const rendered = page.settle();
     const marginTop = rendered.props.style?.marginTop as number;
-    expect(marginTop).toBe(-44);
-    // Play starts under the 650 art and is 80 tall; the negative margin cancels the overhang.
-    expect(650 + 80 + 64 + marginTop).toBeLessThanOrEqual(750);
+    expect(marginTop).toBe(-27);
+    // The row's 64px push is clipped to 37px, leaving Play's button 4px above the footer.
+    expect(414 + (64 + marginTop) + 64).toBe(519 - 4);
   });
 
-  it("falls back to the joined overlay when no room is left above the bottom bar", async () => {
+  it("falls back to the section bottom when the Play button cannot be found", async () => {
+    const page = await setup({ style: "default", pushPlayDown: true });
+    page.setHasButton(false);
+    const rendered = page.settle();
+    // Section bottom 80: floor(519 - 4 - 414 - 80) = 21, so 27px of the row is clipped.
+    expect(rendered.props.style?.marginTop).toBe(-27);
+  });
+
+  it("measures the same room with the joined Play bar's extra padding", async () => {
+    const page = await setup({ pushPlayDown: true });
+    page.setHeaderBottom(700);
+    page.settle();
+    expect(page.settle().props.className).toBe("decky-metadata-hltb-joined");
+
+    // The art moves up while joined: the section's added padding must not count as button height.
+    page.setHeaderBottom(400);
+    page.notifyMutation();
+    page.flushFrames();
+    const rendered = page.settle();
+    expect(rendered.props.className ?? "").not.toContain("decky-metadata-hltb-joined");
+    expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
+    expect(rendered.props.style?.marginTop).toBeUndefined();
+  });
+
+  it("falls back to the joined overlay when no room is left above the footer", async () => {
     const page = await setup({ pushPlayDown: true });
     page.setHeaderBottom(700);
     page.settle();
@@ -656,25 +683,23 @@ describe("HLTB game-page native surface", () => {
 
   it("does not oscillate on repeated settle passes", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     page.settle();
     let rendered = page.settle();
-    expect(rendered.props.style?.marginTop).toBe(-28);
+    expect(rendered.props.style?.marginTop).toBe(-11);
     for (let index = 0; index < 3; index += 1) {
       page.notifyTheme();
       page.notifyResize();
       page.flushFrames();
       rendered = page.settle();
       expect(statsClassOf(rendered)).toContain("decky-metadata-hltb-flow");
-      expect(rendered.props.style?.marginTop).toBe(-28);
+      expect(rendered.props.style?.marginTop).toBe(-11);
     }
   });
 
-  it("grows the push back when the bottom bar gets shorter", async () => {
+  it("grows the push back when the footer gets shorter", async () => {
     const page = await setup({ style: "default", pushPlayDown: true });
-    page.setHeaderBottom(650);
     page.settle();
-    expect(page.settle().props.style?.marginTop).toBe(-28);
+    expect(page.settle().props.style?.marginTop).toBe(-11);
 
     page.setFooterHeight(0);
     page.notifyResize();

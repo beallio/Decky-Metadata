@@ -207,16 +207,16 @@ before testing, and restore them after the checks.
    button down** off (the default), Play must stay in place. For **Default** and
    **"Clean" Default** with it on, the times must sit below the header image in
    their own row and Play must move down by at most the row's height, only as
-   far as the free space above the bottom bar allows. With plenty of room it
-   moves by the full row; with less room it moves less; with no room the times
-   stay on the header image and Play does not move. With a theme that changes
-   the bottom bar (Clean Gameview's footer options, Art Hero's **No Footer**),
-   make the bar shorter or hidden and confirm the push grows back, then make it
-   taller and confirm the push shrinks. Turn **Keep Play above the bottom bar**
-   off and confirm Play moves by the full row again, even when that would put it
-   behind the bar. Then confirm on the controller that D-pad down from the times
-   reaches the Play button. Both push-down toggles are hidden for the two
-   **"Clean"** styles.
+   far as needed for the Play button to end a few pixels above the footer bar.
+   With plenty of room it moves by the full row; with less room it moves less;
+   with no room the times stay on the header image and Play does not move. With
+   a theme that changes the footer (Clean Gameview's footer options, Art Hero's
+   **No Footer**), make the footer shorter or hidden and confirm the push grows
+   back, then make it taller and confirm the push shrinks. Turn **Keep Play
+   above the footer** off and confirm Play moves by the full row again, even
+   when that would put it behind the footer. Then confirm on the controller
+   that D-pad down from the times reaches the Play button. Both push-down
+   toggles are hidden for the two **"Clean"** styles.
 5. Make a save status bar sit at the bottom of the header image: a Steam Cloud
    row, or the SDH-Ludusavi **Status** row. With **Push Play button down** on,
    the times must overlay the bottom of the header image and Play must stay in

@@ -56,13 +56,13 @@ describe("HLTB controls", () => {
       expect(change).toHaveBeenLastCalledWith({ ...DEFAULT_HLTB_SETTINGS, enabled: true, style, pushPlayDown: true });
     }
   });
-  it("offers keeping Play above the bottom bar only while pushing Play down", () => {
+  it("offers keeping Play above the footer only while pushing Play down", () => {
     const change = vi.fn();
     const tree = (settings: Partial<typeof DEFAULT_HLTB_SETTINGS> = {}) => nodes(HltbSection({
       settings: { ...DEFAULT_HLTB_SETTINGS, enabled: true, ...settings }, settingsLoaded: true, busy: false,
       conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn(),
     }));
-    const label = "Keep Play above the bottom bar";
+    const label = "Keep Play above the footer";
     for (const style of ["clean", "clean-left"] as const) {
       expect(tree({ style }).some(node => node.props.label === label)).toBe(false);
     }

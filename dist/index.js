@@ -3052,8 +3052,8 @@ var qam$o = {
 		styleCleanDefault: "«Clean» افتراضي",
 		pushPlayLabel: "إنزال زر «لعب» للأسفل",
 		pushPlayDescription: "يعرض الأوقات أسفل صورة الرأس وينقل زر «لعب» للأسفل، مثل HLTB لـ Deck. بينما يظهر شريط حالة الحفظ أسفل صورة الرأس، تبقى الأوقات على الصورة.",
-		respectMenuBarLabel: "إبقاء زر «لعب» فوق الشريط السفلي",
-		respectMenuBarDescription: "ينزل زر «لعب» فقط بالقدر الذي يتسع فوق الشريط السفلي. يتبع تغييرات حجم الشريط السفلي من السمات.",
+		respectMenuBarLabel: "إبقاء زر «لعب» فوق التذييل",
+		respectMenuBarDescription: "ينزل زر «لعب» فقط بالقدر الذي يتسع فوق التذييل. يتبع تغييرات حجم التذييل من السمات.",
 		blurLabel: "تمويه الخلفية",
 		blurDescription: "يطابق شريط «لعب» افتراضيًا؛ «تمويه» يموّه أيضًا الأوقات فوق صورة الرأس",
 		blurMatchPlayBar: "مطابق لشريط «لعب»",
@@ -3644,8 +3644,8 @@ var qam$n = {
 		styleCleanDefault: "„Clean“ по подразбиране",
 		pushPlayLabel: "Изместване на бутона „Пускане“ надолу",
 		pushPlayDescription: "Показва времената под заглавното изображение и премества бутона „Пускане“ надолу, както HLTB за Deck. Докато в долната част на заглавното изображение се показва лента за състоянието на записа, времената остават върху изображението.",
-		respectMenuBarLabel: "Запазване на „Пускане“ над долната лента",
-		respectMenuBarDescription: "Измества бутона „Пускане“ надолу само доколкото се побира над долната лента. Следва промените в размера на долната лента от темите.",
+		respectMenuBarLabel: "Запазване на „Пускане“ над долния колонтитул",
+		respectMenuBarDescription: "Измества бутона „Пускане“ надолу само доколкото се побира над долния колонтитул. Следва промените в размера на долния колонтитул от темите.",
 		blurLabel: "Замъгляване на фона",
 		blurDescription: "По подразбиране съответства на лентата „Пускане“; „Замъгляване“ замъглява и времената върху заглавното изображение",
 		blurMatchPlayBar: "Като лентата „Пускане“",
@@ -4238,8 +4238,8 @@ var qam$m = {
 		styleCleanDefault: "„Clean“ výchozí",
 		pushPlayLabel: "Posunout tlačítko Hrát dolů",
 		pushPlayDescription: "Zobrazí časy pod obrázkem záhlaví a posune tlačítko Hrát dolů, podobně jako HLTB for Deck. Dokud je ve spodní části obrázku záhlaví stavový pruh ukládání, časy zůstávají na obrázku.",
-		respectMenuBarLabel: "Ponechat Hrát nad spodní lištou",
-		respectMenuBarDescription: "Posune tlačítko Hrát dolů jen tak, aby se vešlo nad spodní lištu. Sleduje změny velikosti spodní lišty z témat.",
+		respectMenuBarLabel: "Ponechat Hrát nad zápatím",
+		respectMenuBarDescription: "Posune tlačítko Hrát dolů jen tak, aby se vešlo nad zápatí. Sleduje změny velikosti zápatí z témat.",
 		blurLabel: "Rozmazání pozadí",
 		blurDescription: "Ve výchozím nastavení odpovídá pruhu Hrát; „Rozmazání“ rozmazává i časy přes obrázek záhlaví",
 		blurMatchPlayBar: "Jako pruh Hrát",
@@ -4830,8 +4830,8 @@ var qam$l = {
 		styleCleanDefault: "„Clean“ Standard",
 		pushPlayLabel: "„Spielen“-Schaltfläche nach unten verschieben",
 		pushPlayDescription: "Zeigt die Zeiten unter dem Kopfbild und verschiebt die „Spielen“-Schaltfläche nach unten, wie bei HLTB for Deck. Während unten im Kopfbild eine Speicherstatusleiste erscheint, bleiben die Zeiten auf dem Bild.",
-		respectMenuBarLabel: "„Spielen“ über der unteren Leiste halten",
-		respectMenuBarDescription: "Verschiebt „Spielen“ nur so weit nach unten, wie es über der unteren Leiste Platz hat. Folgt Größenänderungen der unteren Leiste durch Themes.",
+		respectMenuBarLabel: "„Spielen“ über der Fußzeile halten",
+		respectMenuBarDescription: "Verschiebt „Spielen“ nur so weit nach unten, wie es über der Fußzeile Platz hat. Folgt Größenänderungen der Fußzeile durch Themes.",
 		blurLabel: "Hintergrundunschärfe",
 		blurDescription: "Entspricht standardmäßig der „Spielen“-Leiste; „Unschärfe“ zeichnet auch die Zeiten über dem Kopfbild weich",
 		blurMatchPlayBar: "Wie „Spielen“-Leiste",
@@ -5422,8 +5422,8 @@ var qam$k = {
 		styleCleanDefault: "«Clean» προεπιλογή",
 		pushPlayLabel: "Μετακίνηση του κουμπιού Εκκίνηση προς τα κάτω",
 		pushPlayDescription: "Εμφανίζει τους χρόνους κάτω από την εικόνα κεφαλίδας και μετακινεί το κουμπί Εκκίνηση προς τα κάτω, όπως το HLTB for Deck. Όσο εμφανίζεται γραμμή κατάστασης αποθήκευσης στο κάτω μέρος της εικόνας κεφαλίδας, οι χρόνοι παραμένουν πάνω στην εικόνα.",
-		respectMenuBarLabel: "Διατήρηση του Εκκίνηση πάνω από την κάτω γραμμή",
-		respectMenuBarDescription: "Μετακινεί το κουμπί Εκκίνηση προς τα κάτω μόνο όσο χωράει πάνω από την κάτω γραμμή. Ακολουθεί τις αλλαγές μεγέθους της κάτω γραμμής από θέματα.",
+		respectMenuBarLabel: "Διατήρηση του Εκκίνηση πάνω από το υποσέλιδο",
+		respectMenuBarDescription: "Μετακινεί το κουμπί Εκκίνηση προς τα κάτω μόνο όσο χωράει πάνω από το υποσέλιδο. Ακολουθεί τις αλλαγές μεγέθους του υποσέλιδου από θέματα.",
 		blurLabel: "Θόλωση φόντου",
 		blurDescription: "Αντιστοιχεί με τη γραμμή Εκκίνησης από προεπιλογή· η «Θόλωση» θολώνει και τους χρόνους πάνω από την εικόνα κεφαλίδας",
 		blurMatchPlayBar: "Ίδιο με τη γραμμή Εκκίνησης",
@@ -6014,8 +6014,8 @@ var qam$j = {
 		styleCleanDefault: "\"Clean\" Default",
 		pushPlayLabel: "Push Play button down",
 		pushPlayDescription: "Shows the times below the header image and moves the Play button down, like HLTB for Deck. While a save status bar shows at the bottom of the header image, the times stay on the image.",
-		respectMenuBarLabel: "Keep Play above the bottom bar",
-		respectMenuBarDescription: "Push Play down only as far as it fits above the bottom bar. Follows bottom bar size changes from themes.",
+		respectMenuBarLabel: "Keep Play above the footer",
+		respectMenuBarDescription: "Push Play down only as far as it fits above the footer. Follows footer size changes from themes.",
 		blurLabel: "Background blur",
 		blurDescription: "Matches the Play bar by default; \"Blur\" also blurs the times over the header image",
 		blurMatchPlayBar: "Match Play bar",
@@ -6607,8 +6607,8 @@ var qam$i = {
 		styleCleanDefault: "«Clean» predeterminado",
 		pushPlayLabel: "Bajar el botón Jugar",
 		pushPlayDescription: "Muestra los tiempos debajo de la imagen de cabecera y baja el botón Jugar, como HLTB for Deck. Mientras se muestra una barra de estado de guardado en la parte inferior de la imagen de cabecera, los tiempos permanecen sobre la imagen.",
-		respectMenuBarLabel: "Mantener Jugar sobre la barra inferior",
-		respectMenuBarDescription: "Baja el botón Jugar solo lo que quepa sobre la barra inferior. Sigue los cambios de tamaño de la barra inferior de los temas.",
+		respectMenuBarLabel: "Mantener Jugar sobre el pie de página",
+		respectMenuBarDescription: "Baja el botón Jugar solo lo que quepa sobre el pie de página. Sigue los cambios de tamaño del pie de página de los temas.",
 		blurLabel: "Desenfoque de fondo",
 		blurDescription: "Coincide con la barra Jugar de forma predeterminada; «Desenfoque» también desenfoca los tiempos sobre la imagen de cabecera",
 		blurMatchPlayBar: "Igual que la barra Jugar",
@@ -7199,8 +7199,8 @@ var qam$h = {
 		styleCleanDefault: "\"Clean\" oletus",
 		pushPlayLabel: "Siirrä Pelaa-painiketta alaspäin",
 		pushPlayDescription: "Näyttää ajat otsikkokuvan alla ja siirtää Pelaa-painiketta alaspäin, kuten HLTB for Deckissä. Kun otsikkokuvan alareunassa näkyy tallennuksen tilapalkki, ajat pysyvät kuvassa.",
-		respectMenuBarLabel: "Pidä Pelaa alaosan palkin yläpuolella",
-		respectMenuBarDescription: "Siirtää Pelaa-painiketta alaspäin vain sen verran kuin se mahtuu alaosan palkin yläpuolelle. Seuraa teemojen muutoksia alaosan palkin kokoon.",
+		respectMenuBarLabel: "Pidä Pelaa alatunnisteen yläpuolella",
+		respectMenuBarDescription: "Siirtää Pelaa-painiketta alaspäin vain sen verran kuin se mahtuu alatunnisteen yläpuolelle. Seuraa teemojen muutoksia alatunnisteen kokoon.",
 		blurLabel: "Taustan sumennus",
 		blurDescription: "Vastaa oletuksena Pelaa-palkkia; \"Sumennus\" sumentaa myös ajat otsikkokuvan päällä",
 		blurMatchPlayBar: "Kuten Pelaa-palkki",
@@ -7792,8 +7792,8 @@ var qam$g = {
 		styleCleanDefault: "« Clean » par défaut",
 		pushPlayLabel: "Décaler le bouton Jouer vers le bas",
 		pushPlayDescription: "Affiche les temps sous l'image d'en-tête et décale le bouton Jouer vers le bas, comme HLTB pour Deck. Tant qu'une barre d'état de sauvegarde s'affiche en bas de l'image d'en-tête, les temps restent sur l'image.",
-		respectMenuBarLabel: "Garder Jouer au-dessus de la barre inférieure",
-		respectMenuBarDescription: "Ne décale le bouton Jouer vers le bas que dans la limite de la place au-dessus de la barre inférieure. Suit les changements de taille de la barre inférieure des thèmes.",
+		respectMenuBarLabel: "Garder Jouer au-dessus du pied de page",
+		respectMenuBarDescription: "Ne décale le bouton Jouer vers le bas que dans la limite de la place au-dessus du pied de page. Suit les changements de taille du pied de page des thèmes.",
 		blurLabel: "Flou d'arrière-plan",
 		blurDescription: "Reprend la barre Jouer par défaut ; « Flou » floute aussi les temps par-dessus l'image d'en-tête",
 		blurMatchPlayBar: "Comme la barre Jouer",
@@ -8385,8 +8385,8 @@ var qam$f = {
 		styleCleanDefault: "“Clean” predefinito",
 		pushPlayLabel: "Sposta in basso il pulsante Gioca",
 		pushPlayDescription: "Mostra i tempi sotto l'immagine dell'intestazione e sposta in basso il pulsante Gioca, come HLTB per Deck. Finché in fondo all'immagine dell'intestazione compare una barra di stato del salvataggio, i tempi restano sull'immagine.",
-		respectMenuBarLabel: "Mantieni Gioca sopra la barra inferiore",
-		respectMenuBarDescription: "Sposta Gioca verso il basso solo quanto basta per restare sopra la barra inferiore. Segue le modifiche delle dimensioni della barra inferiore dei temi.",
+		respectMenuBarLabel: "Mantieni Gioca sopra il piè di pagina",
+		respectMenuBarDescription: "Sposta Gioca verso il basso solo quanto basta per restare sopra il piè di pagina. Segue le modifiche delle dimensioni del piè di pagina dei temi.",
 		blurLabel: "Sfocatura dello sfondo",
 		blurDescription: "Per impostazione predefinita corrisponde alla barra Gioca; “Sfocatura” sfoca anche i tempi sopra l'immagine dell'intestazione",
 		blurMatchPlayBar: "Come la barra Gioca",
@@ -8976,8 +8976,8 @@ var qam$e = {
 		styleCleanDefault: "「Clean」既定",
 		pushPlayLabel: "プレイボタンを下げる",
 		pushPlayDescription: "ヘッダー画像の下に時間を表示し、プレイボタンを下に移動します（HLTB for Deck と同様）。ヘッダー画像の下部にセーブ状況バーが表示されている間は、時間は画像の上に残ります。",
-		respectMenuBarLabel: "プレイを下部バーの上に保つ",
-		respectMenuBarDescription: "下部バーの上に収まる分だけプレイボタンを下げます。テーマによる下部バーのサイズ変更に追従します。",
+		respectMenuBarLabel: "フッターの上にプレイを保つ",
+		respectMenuBarDescription: "フッターの上に収まる分だけプレイボタンを下げます。テーマによるフッターのサイズ変更に追従します。",
 		blurLabel: "背景のぼかし",
 		blurDescription: "既定ではプレイバーに合わせます。「ぼかし」ではヘッダー画像上の時間もぼかします",
 		blurMatchPlayBar: "プレイバーに合わせる",
@@ -9568,8 +9568,8 @@ var qam$d = {
 		styleCleanDefault: "„Clean“ ნაგულისხმევი",
 		pushPlayLabel: "Play ღილაკის ქვემოთ ჩამოწევა",
 		pushPlayDescription: "აჩვენებს დროებს სათაურის სურათის ქვემოთ და Play ღილაკს ქვემოთ სწევს, როგორც HLTB for Deck-ში. სანამ სათაურის სურათის ბოლოში შენახვის სტატუსის ზოლი ჩანს, დროები სურათზე რჩება.",
-		respectMenuBarLabel: "Play ღილაკის ქვედა ზოლის ზემოთ შენარჩუნება",
-		respectMenuBarDescription: "Play ღილაკს ქვემოთ სწევს მხოლოდ იმდენად, რამდენადაც ქვედა ზოლის ზემოთ ეტევა. მიჰყვება თემების მიერ ქვედა ზოლის ზომის ცვლილებებს.",
+		respectMenuBarLabel: "Play ღილაკის ქვედა კოლონტიტულის ზემოთ შენარჩუნება",
+		respectMenuBarDescription: "Play ღილაკს ქვემოთ სწევს მხოლოდ იმდენად, რამდენადაც ქვედა კოლონტიტულის ზემოთ ეტევა. მიჰყვება თემების მიერ ქვედა კოლონტიტულის ზომის ცვლილებებს.",
 		blurLabel: "ფონის დაბინდვა",
 		blurDescription: "ნაგულისხმევად ემთხვევა Play ზოლს; „დაბინდვა“ ასევე ბინდავს სათაურის სურათზე ნაჩვენებ დროებს",
 		blurMatchPlayBar: "Play ზოლთან შესაბამისობა",
@@ -10159,8 +10159,8 @@ var qam$c = {
 		styleCleanDefault: "\"Clean\" 기본",
 		pushPlayLabel: "플레이 버튼 아래로 내리기",
 		pushPlayDescription: "헤더 이미지 아래에 시간을 표시하고 플레이 버튼을 아래로 옮깁니다. HLTB for Deck과 비슷합니다. 헤더 이미지 하단에 저장 상태 표시줄이 표시되는 동안에는 시간이 이미지 위에 남습니다.",
-		respectMenuBarLabel: "플레이를 하단 바 위에 유지",
-		respectMenuBarDescription: "하단 바 위에 들어가는 만큼만 플레이 버튼을 아래로 내립니다. 테마의 하단 바 크기 변경을 따릅니다.",
+		respectMenuBarLabel: "플레이를 바닥글 위에 유지",
+		respectMenuBarDescription: "바닥글 위에 들어가는 만큼만 플레이 버튼을 아래로 내립니다. 테마의 바닥글 크기 변경을 따릅니다.",
 		blurLabel: "배경 흐림",
 		blurDescription: "기본적으로 플레이 바와 일치합니다. \"흐림\"을 선택하면 헤더 이미지 위의 시간에도 흐림 효과를 적용합니다",
 		blurMatchPlayBar: "플레이 바와 일치",
@@ -10751,8 +10751,8 @@ var qam$b = {
 		styleCleanDefault: "\"Clean\" standaard",
 		pushPlayLabel: "Spelen-knop omlaag schuiven",
 		pushPlayDescription: "Toont de tijden onder de headerafbeelding en schuift de Spelen-knop omlaag, zoals HLTB for Deck. Zolang onderaan de headerafbeelding een opslagstatusbalk verschijnt, blijven de tijden op de afbeelding.",
-		respectMenuBarLabel: "Spelen boven de onderbalk houden",
-		respectMenuBarDescription: "Schuift de Spelen-knop alleen zo ver omlaag als past boven de onderbalk. Volgt groottewijzigingen van de onderbalk door thema's.",
+		respectMenuBarLabel: "Spelen boven de voettekst houden",
+		respectMenuBarDescription: "Schuift de Spelen-knop alleen zo ver omlaag als past boven de voettekst. Volgt groottewijzigingen van de voettekst door thema's.",
 		blurLabel: "Achtergrondvervaging",
 		blurDescription: "Komt standaard overeen met de Spelen-balk; \"Vervaging\" vervaagt ook de tijden over de headerafbeelding",
 		blurMatchPlayBar: "Gelijk aan Spelen-balk",
@@ -11345,8 +11345,8 @@ var qam$a = {
 		styleCleanDefault: "„Clean” domyślny",
 		pushPlayLabel: "Przesuń przycisk Graj w dół",
 		pushPlayDescription: "Pokazuje czasy pod obrazem nagłówka i przesuwa przycisk Graj w dół, jak HLTB for Deck. Gdy na dole obrazu nagłówka widoczny jest pasek stanu zapisu, czasy pozostają na obrazie.",
-		respectMenuBarLabel: "Utrzymaj Graj nad dolnym paskiem",
-		respectMenuBarDescription: "Przesuwa przycisk Graj w dół tylko na tyle, ile mieści się nad dolnym paskiem. Śledzi zmiany rozmiaru dolnego paska wprowadzane przez motywy.",
+		respectMenuBarLabel: "Utrzymaj Graj nad stopką",
+		respectMenuBarDescription: "Przesuwa przycisk Graj w dół tylko na tyle, ile mieści się nad stopką. Śledzi zmiany rozmiaru stopki wprowadzane przez motywy.",
 		blurLabel: "Rozmycie tła",
 		blurDescription: "Domyślnie dopasowane do paska Graj; „Rozmycie” rozmywa także czasy na obrazie nagłówka",
 		blurMatchPlayBar: "Jak pasek Graj",
@@ -11938,8 +11938,8 @@ var qam$9 = {
 		styleCleanDefault: "\"Clean\" padrão",
 		pushPlayLabel: "Empurrar o botão Jogar para baixo",
 		pushPlayDescription: "Mostra os tempos abaixo da imagem do cabeçalho e move o botão Jogar para baixo, como o HLTB for Deck. Enquanto uma barra de status de salvamento aparece na parte inferior da imagem do cabeçalho, os tempos permanecem sobre a imagem.",
-		respectMenuBarLabel: "Manter Jogar acima da barra inferior",
-		respectMenuBarDescription: "Move o botão Jogar para baixo apenas o suficiente para caber acima da barra inferior. Acompanha mudanças no tamanho da barra inferior feitas por temas.",
+		respectMenuBarLabel: "Manter Jogar acima do rodapé",
+		respectMenuBarDescription: "Move o botão Jogar para baixo apenas o suficiente para caber acima do rodapé. Acompanha mudanças no tamanho do rodapé feitas por temas.",
 		blurLabel: "Desfoque do plano de fundo",
 		blurDescription: "Por padrão, acompanha a barra Jogar; \"Desfoque\" também desfoca os tempos sobre a imagem do cabeçalho",
 		blurMatchPlayBar: "Igual à barra Jogar",
@@ -12531,8 +12531,8 @@ var qam$8 = {
 		styleCleanDefault: "\"Clean\" predefinido",
 		pushPlayLabel: "Empurrar o botão Jogar para baixo",
 		pushPlayDescription: "Mostra os tempos abaixo da imagem do cabeçalho e desloca o botão Jogar para baixo, como o HLTB for Deck. Enquanto aparece uma barra de estado de jogos guardados na parte inferior da imagem do cabeçalho, os tempos ficam sobre a imagem.",
-		respectMenuBarLabel: "Manter Jogar acima da barra inferior",
-		respectMenuBarDescription: "Desloca o botão Jogar para baixo apenas o necessário para caber acima da barra inferior. Acompanha alterações ao tamanho da barra inferior feitas por temas.",
+		respectMenuBarLabel: "Manter Jogar acima do rodapé",
+		respectMenuBarDescription: "Desloca o botão Jogar para baixo apenas o necessário para caber acima do rodapé. Acompanha alterações ao tamanho do rodapé feitas por temas.",
 		blurLabel: "Desfoque do fundo",
 		blurDescription: "Por predefinição, acompanha a barra Jogar; \"Desfoque\" também desfoca os tempos sobre a imagem do cabeçalho",
 		blurMatchPlayBar: "Igual à barra Jogar",
@@ -13124,8 +13124,8 @@ var qam$7 = {
 		styleCleanDefault: "„Clean” implicit",
 		pushPlayLabel: "Coboară butonul Joacă",
 		pushPlayDescription: "Afișează timpii sub imaginea antetului și coboară butonul Joacă, ca HLTB pentru Deck. Cât timp o bară de stare a salvării apare în partea de jos a imaginii antetului, timpii rămân pe imagine.",
-		respectMenuBarLabel: "Păstrează Joacă deasupra barei de jos",
-		respectMenuBarDescription: "Coboară butonul Joacă doar cât încape deasupra barei de jos. Urmează modificările de dimensiune ale barei de jos făcute de teme.",
+		respectMenuBarLabel: "Păstrează Joacă deasupra subsolului",
+		respectMenuBarDescription: "Coboară butonul Joacă doar cât încape deasupra subsolului. Urmează modificările de dimensiune ale subsolului făcute de teme.",
 		blurLabel: "Estompare fundal",
 		blurDescription: "Se potrivește implicit cu bara Joacă; „Estompare” estompează și timpii de deasupra imaginii antetului",
 		blurMatchPlayBar: "La fel ca bara Joacă",
@@ -13718,8 +13718,8 @@ var qam$6 = {
 		styleCleanDefault: "«Clean» по умолчанию",
 		pushPlayLabel: "Сдвинуть кнопку «Играть» вниз",
 		pushPlayDescription: "Показывает время под изображением заголовка и сдвигает кнопку «Играть» вниз, как HLTB for Deck. Пока внизу изображения заголовка отображается панель статуса сохранения, время остаётся на изображении.",
-		respectMenuBarLabel: "Держать «Играть» над нижней панелью",
-		respectMenuBarDescription: "Сдвигает кнопку «Играть» вниз только настолько, насколько она помещается над нижней панелью. Учитывает изменения размера нижней панели из тем.",
+		respectMenuBarLabel: "Держать «Играть» над нижним колонтитулом",
+		respectMenuBarDescription: "Сдвигает кнопку «Играть» вниз только настолько, насколько она помещается над нижним колонтитулом. Учитывает изменения размера нижнего колонтитула из тем.",
 		blurLabel: "Размытие фона",
 		blurDescription: "По умолчанию совпадает с панелью «Играть»; «Размытие» также размывает время поверх изображения заголовка",
 		blurMatchPlayBar: "Как панель «Играть»",
@@ -14310,8 +14310,8 @@ var qam$5 = {
 		styleCleanDefault: "„Clean“ parazgjedhur",
 		pushPlayLabel: "Shtyje butonin Luaj poshtë",
 		pushPlayDescription: "Shfaq kohët nën imazhin e kokës dhe e lëviz butonin Luaj poshtë, si HLTB për Deck. Ndërsa në fund të imazhit të kokës shfaqet një shirit statusi ruajtjeje, kohët qëndrojnë mbi imazh.",
-		respectMenuBarLabel: "Mbaje Luaj mbi shiritin e poshtëm",
-		respectMenuBarDescription: "E shtyn butonin Luaj poshtë vetëm aq sa përshtatet mbi shiritin e poshtëm. Ndiq ndryshimet e madhësisë së shiritit të poshtëm nga temat.",
+		respectMenuBarLabel: "Mbaje Luaj mbi fundfaqen",
+		respectMenuBarDescription: "E shtyn butonin Luaj poshtë vetëm aq sa përshtatet mbi fundfaqen. Ndiq ndryshimet e madhësisë së fundfaqes nga temat.",
 		blurLabel: "Mjegullim i sfondit",
 		blurDescription: "Përputhet me shiritin Luaj si parazgjedhje; „Mjegullim“ mjegullon edhe kohët mbi imazhin e kokës",
 		blurMatchPlayBar: "Njësoj si shiriti Luaj",
@@ -14902,8 +14902,8 @@ var qam$4 = {
 		styleCleanDefault: "”Clean” standard",
 		pushPlayLabel: "Flytta ned Spela-knappen",
 		pushPlayDescription: "Visar tiderna under rubrikbilden och flyttar ned Spela-knappen, som HLTB for Deck. Medan en statusrad för sparning visas längst ned i rubrikbilden ligger tiderna kvar på bilden.",
-		respectMenuBarLabel: "Håll Spela ovanför nedre listen",
-		respectMenuBarDescription: "Flyttar ned Spela-knappen bara så långt det får plats ovanför nedre listen. Följer temans ändringar av nedre lisens storlek.",
+		respectMenuBarLabel: "Håll Spela ovanför sidfoten",
+		respectMenuBarDescription: "Flyttar ned Spela-knappen bara så långt det får plats ovanför sidfoten. Följer temans ändringar av sidfotens storlek.",
 		blurLabel: "Bakgrundsoskärpa",
 		blurDescription: "Matchar Spela-raden som standard; ”Oskärpa” suddar även tiderna över rubrikbilden",
 		blurMatchPlayBar: "Som Spela-raden",
@@ -15494,8 +15494,8 @@ var qam$3 = {
 		styleCleanDefault: "\"Clean\" Varsayılan",
 		pushPlayLabel: "Oyna düğmesini aşağı kaydır",
 		pushPlayDescription: "Süreleri HLTB for Deck'teki gibi başlık görselinin altında gösterir ve Oyna düğmesini aşağı taşır. Başlık görselinin altında kayıt durumu çubuğu görünürken süreler görselin üzerinde kalır.",
-		respectMenuBarLabel: "Oyna'yı alt çubuğun üzerinde tut",
-		respectMenuBarDescription: "Oyna düğmesini yalnızca alt çubuğun üzerinde sığdığı kadar aşağı kaydırır. Temaların alt çubuk boyutu değişikliklerini izler.",
+		respectMenuBarLabel: "Oyna'yı alt bilginin üzerinde tut",
+		respectMenuBarDescription: "Oyna düğmesini yalnızca alt bilginin üzerinde kalacak kadar aşağı kaydırır. Temaların alt bilgi boyutundaki değişiklikleri izler.",
 		blurLabel: "Arka plan bulanıklığı",
 		blurDescription: "Varsayılan olarak Oyna çubuğuyla eşleşir; \"Bulanık\" ayrıca başlık görselinin üzerindeki süreleri de bulanıklaştırır",
 		blurMatchPlayBar: "Oyna çubuğuyla eşleştir",
@@ -16088,8 +16088,8 @@ var qam$2 = {
 		styleCleanDefault: "«Clean» за замовчуванням",
 		pushPlayLabel: "Зсунути кнопку «Грати» вниз",
 		pushPlayDescription: "Показує час під зображенням заголовка та зсуває кнопку «Грати» вниз, як HLTB for Deck. Поки внизу зображення заголовка відображається панель стану збереження, час залишається на зображенні.",
-		respectMenuBarLabel: "Тримати «Грати» над нижньою панеллю",
-		respectMenuBarDescription: "Зсуває кнопку «Грати» вниз лише настільки, наскільки вона вміщується над нижньою панеллю. Враховує зміни розміру нижньої панелі з тем.",
+		respectMenuBarLabel: "Тримати «Грати» над нижнім колонтитулом",
+		respectMenuBarDescription: "Зсуває кнопку «Грати» вниз лише настільки, наскільки вона вміщується над нижнім колонтитулом. Враховує зміни розміру нижнього колонтитула з тем.",
 		blurLabel: "Розмиття фону",
 		blurDescription: "За замовчуванням збігається з панеллю «Грати»; «Розмиття» також розмиває час поверх зображення заголовка",
 		blurMatchPlayBar: "Як панель «Грати»",
@@ -16679,8 +16679,8 @@ var qam$1 = {
 		styleCleanDefault: "“Clean” 默认",
 		pushPlayLabel: "下移开始游戏按钮",
 		pushPlayDescription: "在页头图片下方显示时长并将开始游戏按钮下移，类似 HLTB for Deck。当页头图片底部显示存档状态栏时，时长仍保留在图片上。",
-		respectMenuBarLabel: "让开始游戏按钮保持在底栏上方",
-		respectMenuBarDescription: "仅将开始游戏按钮下移到底栏上方能容纳的距离。跟随主题对底栏尺寸的调整。",
+		respectMenuBarLabel: "让开始游戏按钮保持在页脚上方",
+		respectMenuBarDescription: "仅将开始游戏按钮下移到页脚上方能容纳的距离。跟随主题对页脚尺寸的调整。",
 		blurLabel: "背景模糊",
 		blurDescription: "默认与开始游戏栏一致；“模糊”还会模糊页头图片上的时长",
 		blurMatchPlayBar: "与开始游戏栏一致",
@@ -17270,8 +17270,8 @@ var qam = {
 		styleCleanDefault: "「Clean」預設",
 		pushPlayLabel: "將開始遊戲按鈕下移",
 		pushPlayDescription: "在頁首圖片下方顯示時數並將開始遊戲按鈕下移，類似 HLTB for Deck。當頁首圖片底部顯示存檔狀態列時，時數仍會留在圖片上。",
-		respectMenuBarLabel: "讓開始遊戲按鈕保持在底部列上方",
-		respectMenuBarDescription: "僅將開始遊戲按鈕下移到底部列上方能容納的距離。跟隨主題對底部列尺寸的調整。",
+		respectMenuBarLabel: "讓開始遊戲按鈕保持在頁尾上方",
+		respectMenuBarDescription: "僅將開始遊戲按鈕下移到頁尾上方能容納的距離。跟隨主題對頁尾尺寸的調整。",
 		blurLabel: "背景模糊",
 		blurDescription: "預設與開始遊戲列一致；「模糊」也會模糊頁首圖片上的時數",
 		blurMatchPlayBar: "與開始遊戲列一致",
@@ -20898,7 +20898,7 @@ function layoutTop(element) {
     return top;
 }
 /**
- * How far Play can move down before it would go under Big Picture's bottom bar.
+ * How far Play can move down before its button would go under Big Picture's footer.
  * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
  */
 function usePushRoom(ref, wanted) {
@@ -20914,7 +20914,6 @@ function usePushRoom(ref, wanted) {
         }
         let frame = 0;
         let footer = null;
-        let footerLabels = null;
         const resize = new view.ResizeObserver(() => schedule());
         const footerResize = new view.ResizeObserver(() => schedule());
         const measure = () => {
@@ -20938,16 +20937,12 @@ function usePushRoom(ref, wanted) {
             if (!scroller || scroller.clientHeight <= 0)
                 return null;
             const nextFooter = document.querySelector("#Footer");
-            const nextLabels = document.querySelector("#Footer > div");
-            // Re-bound every pass: either can arrive or be replaced after the page has loaded.
-            if (nextFooter !== footer || nextLabels !== footerLabels) {
+            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+            if (nextFooter !== footer) {
                 footerResize.disconnect();
                 footer = nextFooter;
-                footerLabels = nextLabels;
                 if (footer)
                     footerResize.observe(footer);
-                if (footerLabels)
-                    footerResize.observe(footerLabels);
             }
             const header = Array.from(container.children)
                 .find((child) => child.className.includes(DFL.appDetailsClasses.Header));
@@ -20955,18 +20950,22 @@ function usePushRoom(ref, wanted) {
                 return null;
             // Layout, not rects: Steam scales and translates the page while it animates in,
             // and a rect read mid-animation would stick until something else moved.
-            const artBottom = layoutTop(header) - layoutTop(scroller) + header.offsetHeight;
-            let barHeight = 0;
-            if (footer && footer.offsetHeight > 0) {
-                // Same layout space: Steam scales the scroller's rect but not the footer outside it.
-                const labelsTop = layoutTop(footer) + Math.min(0, footerLabels?.offsetTop ?? 0);
-                const labelsRect = footerLabels?.getBoundingClientRect();
-                // The footer is outside the animated page, so a positive-size rect is layout space.
-                const paintedTop = labelsRect && labelsRect.width > 0 && labelsRect.height > 0 ? Math.min(labelsTop, labelsRect.top) : labelsTop;
-                barHeight = Math.max(0, layoutTop(scroller) + scroller.clientHeight - paintedTop);
-            }
+            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+            const artBottom = layoutTop(header) + header.offsetHeight;
+            // The visible bar's border box; the labels may overhang it but Play clears the bar.
+            const footerTop = footer && footer.offsetHeight > 0
+                ? layoutTop(footer)
+                : layoutTop(scroller) + scroller.clientHeight;
             const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const free = scroller.clientHeight - barHeight - artBottom - (section.offsetHeight - lift);
+            const playButton = DFL.appActionButtonClasses?.PlayButton;
+            // The button face; the wrapper's AppActionButton class is the fallback.
+            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
+                section.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.AppActionButton}`);
+            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+            const buttonBottom = button
+                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+                : section.offsetHeight - lift;
+            const free = footerTop - 4 - artBottom - buttonBottom;
             return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
         };
         const update = () => {

@@ -124,15 +124,16 @@ Play bar's blur. **Use Steam button corners** gives the **"Clean"** styles'
 **Details** button Steam's normal corners instead of the theme's rounded ones.
 **Push Play button down** is available in the **Default** and **"Clean" Default**
 styles. It moves the Play button below the times instead of layering the times
-over the header image. **Keep Play above the bottom bar**, on by default, moves
-Play down only as far as it fits above Big Picture's bottom bar (Menu, Options,
-Select, Back), including bottom bars that themes make larger or smaller. When
-there is no room, the times stay on the image and Play does not move. Turn it
-off to always move Play down by the full height of the times.
+over the header image. **Keep Play above the footer**, on by default, moves
+Play down only as far as its button stays a few pixels above Big Picture's
+footer (Menu, Options, Select, Back), including footers that themes make taller,
+shorter, or hide. When there is no room, the times stay on the image and Play
+does not move. Turn it off to always move Play down by the full height of the
+times.
 While a Steam Cloud or SDH-Ludusavi save status bar sits at the bottom of the
 header image, the times stay on the image and the Play button does not move, so
 the bar keeps its artwork background. With themes that already put Play below
-the image, the times get their own row when it fits above the bottom bar.
+the image, the times get their own row when it fits above the footer.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam
