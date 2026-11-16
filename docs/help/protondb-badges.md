@@ -24,7 +24,7 @@ Closing the section or Quick Access Menu does not turn badges off. Turning the m
 | **Game view** | As a Steam-styled button before the controller button on the game's details page. |
 | **Store** | In a box in the info row on the Steam Store page, below the trailers and screenshots. |
 
-The four switches are independent. For example, you can keep game-page ratings on while hiding cover badges. On a Store page the ProtonDB box shares one row with the HowLongToBeat box. If only one of them has data, its box fills the row.
+The four switches are independent. For example, you can keep game-page ratings on while hiding cover badges. On a Store page the ProtonDB box shares one row with the **How Long To Beat** box. If only one of them has data, its box fills the row.
 
 **Cover badge position** offers **Bottom left**, **Top left**, and **Top right**. **Covers only on focus or hover** limits Home and Library badges to the cover selected with your controller or under the pointer. It does not limit game-page badges or the Store row.
 
@@ -59,6 +59,8 @@ The Store row needs Steam's remote browser debugging to be enabled:
 3. Return to the Store page and allow the row to appear.
 
 CEF is Steam's built-in browser. This debugging setting allows unauthenticated browser access from other devices on your network, so use it only on a trusted network. Follow any reload prompt from Decky; finish a running game before restarting Steam.
+
+The same setting also lets Metadata show the **How Long To Beat** box, when **Show HowLongToBeat times** is on and the **HLTB times** section's **Store** switch is on.
 
 ## Use one badge plugin
 

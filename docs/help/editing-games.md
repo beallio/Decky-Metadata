@@ -41,6 +41,13 @@ rating for the shortcut. Correcting or clearing the match updates badges that
 are already on screen. If no valid ID is saved, badge matching can use the
 shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
 
+When a matched game's saved Steam text is not in your Steam language, **Steam
+App ID** shows **Steam text language:** with the language of the saved text.
+Select **Fetch Steam text in** *your language* to get the description and genres
+again in your Steam language and save them with the game's other details. Decky
+Metadata does not replace a description by itself, because you may have edited
+it. Steam gives English text when the store page has no text in your language.
+
 ## Change or fill in details
 
 Use **Search IGN metadata** to find source information by the game's name, or
@@ -54,10 +61,13 @@ Description edits, including clearing the field, stay in place while an applied
 Steam match finishes loading. Other fields can still receive the new source data.
 
 The description field and Game Info use the saved short summary when available,
-then the saved longer description. Imports keep the source's wording. If a source
-has no usable summary, its longer text supplies the description. Empty or
-image-only list items do not block this fallback. Paragraphs and list items keep
-their spacing in Game Info.
+then the saved longer description. Imports keep the source's wording. A Steam
+import uses your Steam language for the description and genres; names,
+developers, publishers, and release dates stay in English. Steam gives English
+text when the store page has no text in your language. IGN details stay in
+English. If a source has no usable summary, its longer text supplies the
+description. Empty or image-only list items do not block this fallback.
+Paragraphs and list items keep their spacing in Game Info.
 
 You can replace the description with your own text, including line breaks and
 literal text such as `<pilot>`, or clear it. Save applies your description edit.

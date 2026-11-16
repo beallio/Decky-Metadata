@@ -7,13 +7,13 @@ setup steps.
 ## Set up and choose games
 
 - [Install Decky Metadata](installation.md) — install the latest release and open the plugin.
-- [Match and edit games](editing-games.md) — choose the right Steam game, change details, or restore a shortcut name.
+- [Match and edit games](editing-games.md) — choose the right Steam game, change details, refresh Steam text in your language, or restore a shortcut name.
 
 ## Choose what appears
 
 - [Choose a compatibility status](compatibility-status.md) — set a default for your library or a label for one game.
 - [Show ProtonDB ratings](protondb-badges.md) — choose badges for covers, game pages, and the Steam Store.
-- [Show HowLongToBeat times](hltb.md) — show how long games take to finish, for Steam and non-Steam games.
+- [Show HowLongToBeat times](hltb.md) — show how long games take to finish, on game pages and on Steam Store pages.
 - [Watch game trailers](game-trailers.md) — turn trailers on and set sound, video quality, and controls.
 - [Mini achievements](updates-and-troubleshooting.md#mini-achievements) — show an achievement progress row and avoid conflicts with Decky UI Restored.
 - [See community posts and news](community-and-news.md) — find posts, screenshots, and Activity news.

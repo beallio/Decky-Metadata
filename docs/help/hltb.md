@@ -17,15 +17,16 @@ When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times
 
 On a Steam Store game page, Decky Metadata shows an info row directly below the
 trailers and screenshots. It is boxed like Steam's own rows, such as
-**Reviews**. The **HowLongToBeat** box shows the same four times as the game
+**Reviews**. The **How Long To Beat** box shows the same four times as the game
 page, and the **Toggle … stat** switches also hide or show them here. It works
 for games you do not own. Select the box to open the game on HowLongToBeat,
 unless **Hide "Details"** is on.
 
-The **Store** switch in the **HLTB times** section turns the HowLongToBeat box
-on. It is on by default. The row also holds a ProtonDB box, which the ProtonDB
-**Store** switch controls. If only one box has data, it fills the row. If both
-switches are off, no row appears.
+The **Store** switch in the **HLTB times** section turns the
+**How Long To Beat** box on. It is on by default, and you can change it only
+while **Show HowLongToBeat times** is on. The row also holds a ProtonDB box,
+which the ProtonDB **Store** switch controls. If only one box has data, it
+fills the row. If both switches are off, no row appears.
 
 The row needs Steam's remote browser debugging. See [Enable the Store
 row](protondb-badges.md#enable-the-store-row).
@@ -34,11 +35,11 @@ row](protondb-badges.md#enable-the-store-row).
 
 | Setting | What it does |
 | --- | --- |
-| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
+| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. **"Clean" Left** puts the times on the left side of the header image instead of the right. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
 | **Push Play button down** | **Default** and **"Clean" Default** styles only. Puts the times in their own row below the header image and moves the Play button down, like HLTB for Deck. While a Steam Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image, the times stay on the image and the Play button does not move, so the status bar keeps its artwork background. The times return to their own row when that bar goes away. With themes where the Play button already sits below the header image, the times always get their own row. Off by default, so the times stay at the bottom of the header image just above Play. |
 | **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the HLTB background. **None** removes its blur. In **"Clean" Default**, when the Play bar is blurred and this setting is not **None**, the times sit on the Play bar's own blur, so both rows look like one panel unless **Push Play button down** is on. This setting never changes the Play bar's blur. |
-| **Use Steam button corners** | **"Clean"** styles only. Keeps the corners of the **Details** button as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
-| **Hide "Details"** | Removes the button that opens the HowLongToBeat page. |
+| **Use Steam button corners** | The switch shows in every style, but changes only the **"Clean"** styles' **Details** button. Keeps its corners as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
+| **Hide "Details"** | Removes the button that opens the HowLongToBeat page. It also removes the link from the **How Long To Beat** box on Store pages. |
 | **Toggle … stat** | Show or hide each of the four times. |
 | **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. Background opacity and the bottom border apply to the **Default** style only, because the **"Clean"** styles match the Play bar. **Reset appearance** returns these to their defaults. |
 | **Clear HLTB cache** | Forgets saved times. Each game looks up its times again the next time you open it. |
