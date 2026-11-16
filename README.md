@@ -72,9 +72,9 @@ Older saved timestamps are converted once, keeping their local calendar day.
 Correct an already-wrong date in the editor or import that game's metadata again.
 See [editing games](docs/help/editing-games.md).
 
-![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=20261115)
+![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=202611151912)
 
-![Game Info buttons for Wobbly Life](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=20261115)
+![Game Info buttons and SteamOS compatibility for Wobbly Life](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202611151912)
 
 ### Compatibility status
 
