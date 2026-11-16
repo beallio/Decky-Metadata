@@ -122,6 +122,8 @@
       "styleCleanDefault": "\"Clean\" 기본",
       "pushPlayLabel": "플레이 버튼 아래로 내리기",
       "pushPlayDescription": "헤더 이미지 아래에 시간을 표시하고 플레이 버튼을 아래로 옮깁니다. HLTB for Deck과 비슷합니다. 헤더 이미지 하단에 저장 상태 표시줄이 표시되는 동안에는 시간이 이미지 위에 남습니다.",
+      "respectMenuBarLabel": "플레이를 하단 바 위에 유지",
+      "respectMenuBarDescription": "하단 바 위에 들어가는 만큼만 플레이 버튼을 아래로 내립니다. 테마의 하단 바 크기 변경을 따릅니다.",
       "blurLabel": "배경 흐림",
       "blurDescription": "기본적으로 플레이 바와 일치합니다. \"흐림\"을 선택하면 헤더 이미지 위의 시간에도 흐림 효과를 적용합니다",
       "blurMatchPlayBar": "플레이 바와 일치",

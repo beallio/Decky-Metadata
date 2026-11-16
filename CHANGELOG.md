@@ -12,6 +12,12 @@ All notable changes to this project are documented here in Keep a Changelog form
   Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image,
   the times stay on the image and Play does not move, so the bar keeps its
   artwork background. It is off by default. (#39)
+- **Keep Play above the bottom bar.** With **Push Play button down** on, a new
+  **Keep Play above the bottom bar** switch moves Play down only as far as it
+  fits above Big Picture's bottom bar (Menu, Options, Select, Back). It follows
+  bottom bar sizes that themes such as Art Hero or Clean Gameview set. When
+  there is no room, the times stay on the header image and Play does not move.
+  It is on by default. (#48)
 - **Plugin text in 25 languages.** The panel, the metadata editor, messages,
   and the plugin's text on game and Store pages now follow your Steam language,
   in the same 25 languages as Decky Loader. Numbers, dates, and hours use your

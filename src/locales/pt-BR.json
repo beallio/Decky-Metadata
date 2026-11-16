@@ -124,6 +124,8 @@
       "styleCleanDefault": "\"Clean\" padrão",
       "pushPlayLabel": "Empurrar o botão Jogar para baixo",
       "pushPlayDescription": "Mostra os tempos abaixo da imagem do cabeçalho e move o botão Jogar para baixo, como o HLTB for Deck. Enquanto uma barra de status de salvamento aparece na parte inferior da imagem do cabeçalho, os tempos permanecem sobre a imagem.",
+      "respectMenuBarLabel": "Manter Jogar acima da barra inferior",
+      "respectMenuBarDescription": "Move o botão Jogar para baixo apenas o suficiente para caber acima da barra inferior. Acompanha mudanças no tamanho da barra inferior feitas por temas.",
       "blurLabel": "Desfoque do plano de fundo",
       "blurDescription": "Por padrão, acompanha a barra Jogar; \"Desfoque\" também desfoca os tempos sobre a imagem do cabeçalho",
       "blurMatchPlayBar": "Igual à barra Jogar",

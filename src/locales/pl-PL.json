@@ -125,6 +125,8 @@
       "styleCleanDefault": "„Clean” domyślny",
       "pushPlayLabel": "Przesuń przycisk Graj w dół",
       "pushPlayDescription": "Pokazuje czasy pod obrazem nagłówka i przesuwa przycisk Graj w dół, jak HLTB for Deck. Gdy na dole obrazu nagłówka widoczny jest pasek stanu zapisu, czasy pozostają na obrazie.",
+      "respectMenuBarLabel": "Utrzymaj Graj nad dolnym paskiem",
+      "respectMenuBarDescription": "Przesuwa przycisk Graj w dół tylko na tyle, ile mieści się nad dolnym paskiem. Śledzi zmiany rozmiaru dolnego paska wprowadzane przez motywy.",
       "blurLabel": "Rozmycie tła",
       "blurDescription": "Domyślnie dopasowane do paska Graj; „Rozmycie” rozmywa także czasy na obrazie nagłówka",
       "blurMatchPlayBar": "Jak pasek Graj",

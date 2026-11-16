@@ -256,19 +256,129 @@ function useStatusBandOverlay(ref: { current: HTMLDivElement | null }, wanted: b
   return wanted && overlay;
 }
 
+type PushRoom = { push: number; rowHeight: number };
+
+/** A border box's layout top: unaffected by transforms and scroll position. */
+function layoutTop(element: HTMLElement): number {
+  let top = 0;
+  for (let node: HTMLElement | null = element; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+  return top;
+}
+
+/**
+ * How far Play can move down before it would go under Big Picture's bottom bar.
+ * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
+ */
+function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): PushRoom | null {
+  const [room, setRoom] = useState<PushRoom | null>(null);
+  useEffect(() => {
+    const row = ref.current;
+    const container = row?.parentElement;
+    const document = row?.ownerDocument;
+    const view = document?.defaultView;
+    if (!wanted || !row || !container || !document || !view) {
+      setRoom((previous) => previous === null ? previous : null);
+      return;
+    }
+    let frame = 0;
+    let footer: HTMLElement | null = null;
+    let footerLabels: HTMLElement | null = null;
+    const resize = new view.ResizeObserver(() => schedule());
+    const footerResize = new view.ResizeObserver(() => schedule());
+    const measure = (): PushRoom | null => {
+      // The whole surface that moves Play down in flow mode, margins included. Never
+      // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
+      const surface = row.querySelector<HTMLElement>("#decky-metadata-hltb");
+      const surfaceStyle = surface && view.getComputedStyle(surface);
+      const rowHeight = surface
+        ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
+        : 0;
+      const section = row.nextElementSibling?.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      if (!rowHeight || !section) return null;
+      let scroller = container.parentElement;
+      while (scroller) {
+        const style = view.getComputedStyle(scroller);
+        if (/(auto|scroll)/.test(style.overflowY)) break;
+        scroller = scroller.parentElement;
+      }
+      if (!scroller || scroller.clientHeight <= 0) return null;
+      const nextFooter = document.querySelector<HTMLElement>("#Footer");
+      const nextLabels = document.querySelector<HTMLElement>("#Footer > div");
+      // Re-bound every pass: either can arrive or be replaced after the page has loaded.
+      if (nextFooter !== footer || nextLabels !== footerLabels) {
+        footerResize.disconnect();
+        footer = nextFooter;
+        footerLabels = nextLabels;
+        if (footer) footerResize.observe(footer);
+        if (footerLabels) footerResize.observe(footerLabels);
+      }
+      const header = Array.from(container.children)
+        .find((child) => child.className.includes(appDetailsClasses.Header)) as HTMLElement | undefined;
+      if (!header) return null;
+      // Layout, not rects: Steam scales and translates the page while it animates in,
+      // and a rect read mid-animation would stick until something else moved.
+      const artBottom = layoutTop(header) - layoutTop(scroller) + header.offsetHeight;
+      let barHeight = 0;
+      if (footer && footer.offsetHeight > 0) {
+        // Same layout space: Steam scales the scroller's rect but not the footer outside it.
+        const labelsTop = layoutTop(footer) + Math.min(0, footerLabels?.offsetTop ?? 0);
+        const labelsRect = footerLabels?.getBoundingClientRect();
+        // The footer is outside the animated page, so a positive-size rect is layout space.
+        const paintedTop = labelsRect && labelsRect.width > 0 && labelsRect.height > 0 ? Math.min(labelsTop, labelsRect.top) : labelsTop;
+        barHeight = Math.max(0, layoutTop(scroller) + scroller.clientHeight - paintedTop);
+      }
+      const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
+      const free = scroller.clientHeight - barHeight - artBottom - (section.offsetHeight - lift);
+      return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
+    };
+    const update = () => {
+      frame = 0;
+      const next = measure();
+      setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
+    };
+    const schedule = () => {
+      if (!frame) frame = view.requestAnimationFrame(update);
+    };
+    const observer = new view.MutationObserver(schedule);
+    observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+    // Themes restyle the page and the footer from the head and the root element.
+    observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+    resize.observe(container);
+    view.addEventListener("resize", schedule);
+    // Steam animates the page in without any resize or mutation: re-measure when it ends.
+    document.addEventListener("transitionend", schedule, true);
+    document.addEventListener("animationend", schedule, true);
+    update();
+    return () => {
+      observer.disconnect();
+      resize.disconnect();
+      footerResize.disconnect();
+      view.removeEventListener("resize", schedule);
+      document.removeEventListener("transitionend", schedule, true);
+      document.removeEventListener("animationend", schedule, true);
+      if (frame) view.cancelAnimationFrame(frame);
+    };
+  }, [wanted]);
+  return wanted ? room : null;
+}
+
 function HltbGameRow({ appId }: { appId: number }) {
   const snapshot = useHltbSnapshot();
   const ref = useRef<HTMLDivElement | null>(null);
   const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
   const launching = useLaunching(ref, active);
   const { settings } = snapshot;
-  const wanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
-  const overlay = useStatusBandOverlay(ref, wanted);
-  const pushPlayDown = settings.pushPlayDown && !overlay;
+  const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+  const overlay = useStatusBandOverlay(ref, pushWanted);
+  const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
+  const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
   const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
+  const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
   if (!active) return null;
   return (
-    <div ref={ref} className={surface.joined ? JOINED_CLASS : undefined} style={{ position: "relative", transformStyle: "preserve-3d" }}>
+    <div ref={ref} className={surface.joined ? JOINED_CLASS : undefined} style={{ position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }}>
       {surface.joined && <style>{joinedRule(surface.height, surface.paddingTop)}</style>}
       <HltbStats stats={entry?.stats ?? null} hltbId={entry?.hltb_id ?? null} settings={{ ...settings, pushPlayDown }} launching={launching} />
     </div>

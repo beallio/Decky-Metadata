@@ -123,6 +123,8 @@
       "styleCleanDefault": "\"Clean\" standaard",
       "pushPlayLabel": "Spelen-knop omlaag schuiven",
       "pushPlayDescription": "Toont de tijden onder de headerafbeelding en schuift de Spelen-knop omlaag, zoals HLTB for Deck. Zolang onderaan de headerafbeelding een opslagstatusbalk verschijnt, blijven de tijden op de afbeelding.",
+      "respectMenuBarLabel": "Spelen boven de onderbalk houden",
+      "respectMenuBarDescription": "Schuift de Spelen-knop alleen zo ver omlaag als past boven de onderbalk. Volgt groottewijzigingen van de onderbalk door thema's.",
       "blurLabel": "Achtergrondvervaging",
       "blurDescription": "Komt standaard overeen met de Spelen-balk; \"Vervaging\" vervaagt ook de tijden over de headerafbeelding",
       "blurMatchPlayBar": "Gelijk aan Spelen-balk",

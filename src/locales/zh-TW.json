@@ -122,6 +122,8 @@
       "styleCleanDefault": "「Clean」預設",
       "pushPlayLabel": "將開始遊戲按鈕下移",
       "pushPlayDescription": "在頁首圖片下方顯示時數並將開始遊戲按鈕下移，類似 HLTB for Deck。當頁首圖片底部顯示存檔狀態列時，時數仍會留在圖片上。",
+      "respectMenuBarLabel": "讓開始遊戲按鈕保持在底部列上方",
+      "respectMenuBarDescription": "僅將開始遊戲按鈕下移到底部列上方能容納的距離。跟隨主題對底部列尺寸的調整。",
       "blurLabel": "背景模糊",
       "blurDescription": "預設與開始遊戲列一致；「模糊」也會模糊頁首圖片上的時數",
       "blurMatchPlayBar": "與開始遊戲列一致",
