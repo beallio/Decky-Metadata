@@ -30,6 +30,14 @@ All notable changes to this project are documented here in Keep a Changelog form
   language*, which gets the description again; the plugin never replaces a description
   by itself. Steam gives English text when the store page has no text in your
   language. IGN details stay in English.
+- **Save, Done, and a ⋯ menu in the metadata editor.** The editor's top row now
+  has **Save**, which shows the number of changes, for example **Save (3)**, and
+  is unavailable when nothing changed; **Done**; and a **⋯** menu with
+  **Refresh from Steam** and **Remove metadata**. The controller **X** button
+  also saves.
+- **Change markers in the metadata editor.** A changed field is marked
+  **Edited**, and Steam details loaded into the form but not saved yet are
+  marked **From Steam, not saved**.
 
 ### Changed
 
@@ -51,6 +59,18 @@ All notable changes to this project are documented here in Keep a Changelog form
   check, instead of opening and closing a new connection every time. This
   causes less connection churn for other tools that use Steam's debugger, such
   as CSS Loader. (#46)
+- **The metadata editor uses a draft model.** Apply-style actions no longer
+  save; they load details into the form, and **Save** stores them. **Use this
+  Steam match**, **Apply Steam App ID**, an IGN search result, **Apply HLTB
+  game**, the Steam text language button, and **Refresh from Steam** only fill
+  the form. If you change the Steam App ID text without selecting **Apply Steam
+  App ID**, **Save** asks you to apply it first.
+- **Unsaved changes are confirmed.** Leaving the editor with **Done** or the
+  controller **B** button while changes are unsaved asks **Save**, **Discard**,
+  or **Cancel**. Leaving with the Steam or Home button does not ask, and the
+  changes are lost.
+- **Remove metadata asks first.** The editor now asks you to confirm before
+  **Remove metadata** deletes the game's saved metadata.
 
 ### Fixed
 
@@ -81,6 +101,14 @@ All notable changes to this project are documented here in Keep a Changelog form
   **ProtonDB badges** briefly dimmed every control in the section while the
   setting was saved. The controls now stay as they are, and two quick changes
   in a row are both saved. (#49)
+- **Invalid Steam App ID text no longer clears the match.** Text that is not a
+  valid Steam App ID or a Steam or SteamDB URL now shows a warning and changes
+  nothing. Before, it cleared the saved match.
+- **An HLTB number no longer carries over between games.** An HLTB number typed
+  for one game could appear when another game was opened in the same editor. The
+  field now starts from the current game.
+- **An HLTB number typed during a save is kept.** A number typed while a save
+  was running could be lost; it is now kept.
 
 ## [0.6.3] - 2026-11-13
 

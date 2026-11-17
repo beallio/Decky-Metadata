@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Ruaj",
+    "saveCount": "Ruaj ({{count}})",
     "removeMetadata": "Hiq metadata",
     "done": "U krye",
+    "moreOptions": "Më shumë opsione",
+    "moreMenuTitle": "Metadata",
+    "refreshFromSteam": "Përditëso nga Steam",
+    "fieldEdited": "Ndryshuar",
+    "fieldFromSteam": "Nga Steam, nuk është ruajtur",
+    "steamDataChanged": "Të dhënat e Steam që nuk shfaqen në formular (pamje ekrani, lajme, përputhshmëri) ndryshuan dhe nuk janë ruajtur.",
+    "unsaved": {
+      "title": "Të ruhen ndryshimet?",
+      "body": "Ke ndryshime të pa ruajtura në metadatat e kësaj loje.",
+      "discard": "Hidh poshtë",
+      "cancel": "Anulo"
+    },
+    "removeConfirm": {
+      "title": "Të hiqet metadata?",
+      "body": "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
+      "cancel": "Anulo"
+    },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
     "searchIgn": "Kërko metadata në IGN",
     "search": "Kërko",
@@ -439,7 +457,9 @@
       "developers": "Zhvilluesit",
       "publishers": "Botuesit",
       "releaseDate": "Data e publikimit",
-      "rating": "Vlerësimi"
+      "rating": "Vlerësimi",
+      "categories": "Kategoritë",
+      "steamData": "Të dhënat e Steam që nuk shfaqen në formular"
     },
     "compat": {
       "useGlobalDefault": "Përdor parazgjedhjen globale",
@@ -495,6 +515,14 @@
     "toast": {
       "hltbInvalidTitle": "Lojë HLTB e pavlefshme",
       "hltbInvalidBody": "Shkruaj një numër loje në HowLongToBeat ose një lidhje faqeje loje.",
+      "steamAppIdInvalidTitle": "Steam App ID i pavlefshëm",
+      "steamAppIdInvalidBody": "Shkruaj një Steam App ID, URL dyqani, URL komuniteti ose URL SteamDB. Lëre fushën bosh për të hequr përputhjen.",
+      "hltbDraftBody": "Ruajtja e ruan këtë zgjedhje.",
+      "detailsLoadedTitle": "Detajet u ngarkuan",
+      "steamPreviewBody": "Detajet e Steam u ngarkuan në këtë formular. Ruajtja i ruan ato.",
+      "ignPreviewBody": "Detajet e IGN u ngarkuan në këtë formular. Ruajtja i ruan ato.",
+      "steamAppIdNotAppliedTitle": "Steam App ID nuk u zbatua",
+      "steamAppIdNotAppliedBody": "Zgjidh «Zbato Steam App ID» për të ngarkuar përputhjen e re përpara se të ruash.",
       "hltbNotFoundTitle": "Nuk u gjet",
       "hltbNotFoundBody": "HowLongToBeat nuk ka lojë me atë numër.",
       "notApplicableTitle": "Nuk zbatohet",
@@ -547,7 +575,7 @@
     "release": "Publikimi: {{date}}",
     "releaseUnavailable": "Data e publikimit e padisponueshme",
     "steamType": "Lloji në Steam: {{type}}. Kontrollo që kjo është loja ose botimi që dëshiron.",
-    "applyHelp": "Përdorimi i kësaj përputhjeje ruan Steam App ID dhe ngarkon metadatat e tij. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
+    "applyHelp": "Përdorimi i kësaj përputhjeje ngarkon Steam App ID dhe detajet e tij në këtë formular. Ruajtja i ruan ato. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
     "apply": "Përdor këtë përputhje në Steam",
     "cancel": "Anulo zgjedhjen"
   },

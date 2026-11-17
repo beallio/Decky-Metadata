@@ -427,8 +427,26 @@
   },
   "editor": {
     "save": "Зберегти",
+    "saveCount": "Зберегти ({{count}})",
     "removeMetadata": "Видалити метадані",
     "done": "Готово",
+    "moreOptions": "Більше параметрів",
+    "moreMenuTitle": "Метадані",
+    "refreshFromSteam": "Оновити зі Steam",
+    "fieldEdited": "Змінено",
+    "fieldFromSteam": "Зі Steam, не збережено",
+    "steamDataChanged": "Дані Steam, не показані у формі (скриншоти, новини, сумісність), змінилися й не збережені.",
+    "unsaved": {
+      "title": "Зберегти зміни?",
+      "body": "У вас є незбережені зміни метаданих цієї гри.",
+      "discard": "Відхилити",
+      "cancel": "Скасувати"
+    },
+    "removeConfirm": {
+      "title": "Видалити метадані?",
+      "body": "Це видалить усі збережені метадані для {{name}}. Скасувати цю дію неможливо.",
+      "cancel": "Скасувати"
+    },
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
     "searchIgn": "Шукати метадані в IGN",
     "search": "Шукати",
@@ -441,7 +459,9 @@
       "developers": "Розробники",
       "publishers": "Видавці",
       "releaseDate": "Дата виходу",
-      "rating": "Рейтинг"
+      "rating": "Рейтинг",
+      "categories": "Категорії",
+      "steamData": "Дані Steam, не показані у формі"
     },
     "compat": {
       "useGlobalDefault": "Використовувати глобальне значення за замовчуванням",
@@ -497,6 +517,14 @@
     "toast": {
       "hltbInvalidTitle": "Неприпустима гра HLTB",
       "hltbInvalidBody": "Введіть номер гри HowLongToBeat або посилання на сторінку гри.",
+      "steamAppIdInvalidTitle": "Неприпустимий Steam App ID",
+      "steamAppIdInvalidBody": "Введіть Steam App ID, посилання на магазин, спільноту або SteamDB. Залиште поле порожнім, щоб зняти збіг.",
+      "hltbDraftBody": "Натисніть «Зберегти», щоб запам'ятати цей вибір.",
+      "detailsLoadedTitle": "Відомості завантажено",
+      "steamPreviewBody": "Відомості Steam завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
+      "ignPreviewBody": "Відомості IGN завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
+      "steamAppIdNotAppliedTitle": "Steam App ID не застосовано",
+      "steamAppIdNotAppliedBody": "Виберіть «Застосувати Steam App ID», щоб завантажити новий збіг перед збереженням.",
       "hltbNotFoundTitle": "Не знайдено",
       "hltbNotFoundBody": "У HowLongToBeat немає гри з таким номером.",
       "notApplicableTitle": "Не застосовно",
@@ -549,7 +577,7 @@
     "release": "Дата виходу: {{date}}",
     "releaseUnavailable": "Дата виходу недоступна",
     "steamType": "Тип Steam: {{type}}. Переконайтеся, що це потрібна гра або видання.",
-    "applyHelp": "Використання цього збігу зберігає Steam App ID і завантажує його метадані. Воно не перейменовує ярлик і не замінює ваш арт.",
+    "applyHelp": "Використання цього збігу завантажує його Steam App ID і відомості в цю форму. Натисніть «Зберегти», щоб їх записати. Воно не перейменовує ярлик і не замінює ваш арт.",
     "apply": "Використати цей збіг Steam",
     "cancel": "Скасувати вибір"
   },

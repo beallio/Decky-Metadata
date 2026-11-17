@@ -87,6 +87,7 @@ function FaTags (props) {
 const getAllMetadata = callable("get_all_metadata");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
+const savePreviewedMetadata = callable("save_previewed_metadata");
 /** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
 const saveMetadataIfUnchanged = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
@@ -102,9 +103,11 @@ const searchSteamMatches = callable("search_steam_matches");
 const getSteamMatchPreview = callable("get_steam_match_preview");
 const fetchMetadata = callable("fetch_metadata");
 const applyFetchedMetadata = callable("apply_fetched_metadata");
+const previewFetchedMetadata = callable("preview_fetched_metadata");
 const getCommunityFallbackPage = callable("get_community_fallback_page");
 const autoFetchMetadata = callable("auto_fetch_metadata");
 const enrichSteamApp = callable("enrich_steam_app");
+const previewSteamMetadata = callable("preview_steam_metadata");
 const startScanMissing = callable("start_scan_missing");
 const getMissingMetadataCount = callable("get_missing_metadata_count");
 const getScanProgress = callable("get_scan_progress");
@@ -187,6 +190,8 @@ var backend$p = /*#__PURE__*/Object.freeze({
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
+    previewFetchedMetadata: previewFetchedMetadata,
+    previewSteamMetadata: previewSteamMetadata,
     putProtonDbCache: putProtonDbCache,
     recordUpdateInstallRequested: recordUpdateInstallRequested,
     refreshDelistedIndex: refreshDelistedIndex,
@@ -195,6 +200,7 @@ var backend$p = /*#__PURE__*/Object.freeze({
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
     saveMetadataIfUnchanged: saveMetadataIfUnchanged,
+    savePreviewedMetadata: savePreviewedMetadata,
     saveShortcutNameState: saveShortcutNameState,
     searchHltbGames: searchHltbGames,
     searchMetadata: searchMetadata,
@@ -3354,8 +3360,26 @@ var conflicts$o = {
 };
 var editor$o = {
 	save: "حفظ",
+	saveCount: "حفظ ({{count}})",
 	removeMetadata: "إزالة البيانات الوصفية",
 	done: "تم",
+	moreOptions: "خيارات إضافية",
+	moreMenuTitle: "البيانات الوصفية",
+	refreshFromSteam: "التحديث من Steam",
+	fieldEdited: "معدّل",
+	fieldFromSteam: "من Steam، غير محفوظ",
+	steamDataChanged: "تغيّرت بيانات Steam غير المعروضة في النموذج (لقطات الشاشة والأخبار والتوافق) ولم تُحفظ.",
+	unsaved: {
+		title: "حفظ التغييرات؟",
+		body: "لديك تغييرات غير محفوظة لبيانات هذا اللعبة الوصفية.",
+		discard: "تجاهل",
+		cancel: "إلغاء"
+	},
+	removeConfirm: {
+		title: "إزالة البيانات الوصفية؟",
+		body: "سيؤدي هذا إلى حذف جميع البيانات الوصفية المحفوظة لـ {{name}}. لا يمكن التراجع عن ذلك.",
+		cancel: "إلغاء"
+	},
 	nonSteamOnly: "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
 	searchIgn: "البحث في بيانات IGN الوصفية",
 	search: "بحث",
@@ -3368,7 +3392,9 @@ var editor$o = {
 		developers: "المطوّرون",
 		publishers: "الناشرون",
 		releaseDate: "تاريخ الإصدار",
-		rating: "التقييم"
+		rating: "التقييم",
+		categories: "الفئات",
+		steamData: "بيانات Steam غير المعروضة في النموذج"
 	},
 	compat: {
 		useGlobalDefault: "استخدام الافتراضي العام",
@@ -3424,6 +3450,14 @@ var editor$o = {
 	toast: {
 		hltbInvalidTitle: "لعبة HLTB غير صالحة",
 		hltbInvalidBody: "أدخل رقم لعبة في HowLongToBeat أو رابط صفحة لعبة.",
+		steamAppIdInvalidTitle: "معرّف Steam App ID غير صالح",
+		steamAppIdInvalidBody: "أدخل معرّف تطبيق Steam أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اترك الحقل فارغًا لإزالة المطابقة.",
+		hltbDraftBody: "يحفظ زر «حفظ» هذا الاختيار.",
+		detailsLoadedTitle: "تم تحميل التفاصيل",
+		steamPreviewBody: "تم تحميل تفاصيل Steam في هذا النموذج. يحفظها زر «حفظ».",
+		ignPreviewBody: "تم تحميل تفاصيل IGN في هذا النموذج. يحفظها زر «حفظ».",
+		steamAppIdNotAppliedTitle: "لم يتم تطبيق Steam App ID",
+		steamAppIdNotAppliedBody: "اختر «تطبيق Steam App ID» لتحميل المطابقة الجديدة قبل الحفظ.",
 		hltbNotFoundTitle: "لم يُعثر عليها",
 		hltbNotFoundBody: "لا توجد في HowLongToBeat لعبة بهذا الرقم.",
 		notApplicableTitle: "غير قابل للتطبيق",
@@ -3476,7 +3510,7 @@ var matchPicker$o = {
 	release: "الإصدار: {{date}}",
 	releaseUnavailable: "تاريخ الإصدار غير متاح",
 	steamType: "نوع Steam: {{type}}. تحقق من أن هذه هي اللعبة أو الإصدار الذي تريده.",
-	applyHelp: "استخدام هذه المطابقة يحفظ Steam App ID ويحمّل بياناته الوصفية. لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
+	applyHelp: "استخدام هذه المطابقة يحمّل Steam App ID الخاص بها وتفاصيلها في هذا النموذج. يحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
 	apply: "استخدام مطابقة Steam هذه",
 	cancel: "إلغاء التحديد"
 };
@@ -3946,8 +3980,26 @@ var conflicts$n = {
 };
 var editor$n = {
 	save: "Запазване",
+	saveCount: "Запазване ({{count}})",
 	removeMetadata: "Премахване на метаданните",
 	done: "Готово",
+	moreOptions: "Още опции",
+	moreMenuTitle: "Метаданни",
+	refreshFromSteam: "Обновяване от Steam",
+	fieldEdited: "Редактирано",
+	fieldFromSteam: "От Steam, незапазено",
+	steamDataChanged: "Данните от Steam, които не се показват във формуляра (екранни снимки, новини, съвместимост), са се променили и не са запазени.",
+	unsaved: {
+		title: "Да се запазят ли промените?",
+		body: "Имате незапазени промени в метаданните на тази игра.",
+		discard: "Отхвърляне",
+		cancel: "Отказ"
+	},
+	removeConfirm: {
+		title: "Да се премахнат ли метаданните?",
+		body: "Това изтрива всички запазени метаданни за {{name}}. Действието не може да бъде отменено.",
+		cancel: "Отказ"
+	},
 	nonSteamOnly: "Тази приставка променя само не-Steam игри.",
 	searchIgn: "Търсене на метаданни в IGN",
 	search: "Търсене",
@@ -3960,7 +4012,9 @@ var editor$n = {
 		developers: "Разработчици",
 		publishers: "Издатели",
 		releaseDate: "Дата на излизане",
-		rating: "Оценка"
+		rating: "Оценка",
+		categories: "Категории",
+		steamData: "Данни от Steam, които не се показват във формуляра"
 	},
 	compat: {
 		useGlobalDefault: "Използване на глобалната стойност по подразбиране",
@@ -4016,6 +4070,14 @@ var editor$n = {
 	toast: {
 		hltbInvalidTitle: "Невалидна игра в HLTB",
 		hltbInvalidBody: "Въведете номер на игра в HowLongToBeat или връзка към страница на игра.",
+		steamAppIdInvalidTitle: "Невалиден Steam App ID",
+		steamAppIdInvalidBody: "Въведете Steam App ID, URL на магазина, URL на общността или URL на SteamDB. Оставете полето празно, за да премахнете съвпадението.",
+		hltbDraftBody: "Натиснете „Запази“, за да запомните този избор.",
+		detailsLoadedTitle: "Подробностите са заредени",
+		steamPreviewBody: "Подробностите от Steam са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
+		ignPreviewBody: "Подробностите от IGN са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
+		steamAppIdNotAppliedTitle: "Steam App ID не е приложен",
+		steamAppIdNotAppliedBody: "Преди запазване изберете „Прилагане на Steam App ID“, за да заредите новото съвпадение.",
 		hltbNotFoundTitle: "Не е намерено",
 		hltbNotFoundBody: "HowLongToBeat няма игра с този номер.",
 		notApplicableTitle: "Не е приложимо",
@@ -4068,7 +4130,7 @@ var matchPicker$n = {
 	release: "Издаване: {{date}}",
 	releaseUnavailable: "Датата на излизане не е достъпна",
 	steamType: "Тип в Steam: {{type}}. Проверете дали това е играта или изданието, което искате.",
-	applyHelp: "Използването на това съвпадение запазва Steam App ID и зарежда метаданните му. То не преименува прекия път и не заменя персонализираното ви изображение.",
+	applyHelp: "Използването на това съвпадение зарежда неговия Steam App ID и подробностите му в този формуляр. Натиснете „Запази“, за да ги запазите. То не преименува прекия път и не заменя персонализираното ви изображение.",
 	apply: "Използване на това съвпадение в Steam",
 	cancel: "Отказ от избора"
 };
@@ -4540,8 +4602,26 @@ var conflicts$m = {
 };
 var editor$m = {
 	save: "Uložit",
+	saveCount: "Uložit ({{count}})",
 	removeMetadata: "Odstranit metadata",
 	done: "Hotovo",
+	moreOptions: "Další možnosti",
+	moreMenuTitle: "Metadata",
+	refreshFromSteam: "Obnovit ze Steamu",
+	fieldEdited: "Upraveno",
+	fieldFromSteam: "Ze Steamu, neuloženo",
+	steamDataChanged: "Data ze Steamu nezobrazená ve formuláři (snímky obrazovky, novinky, kompatibilita) se změnila a nejsou uložena.",
+	unsaved: {
+		title: "Uložit změny?",
+		body: "Máte neuložené změny metadat této hry.",
+		discard: "Zahodit",
+		cancel: "Zrušit"
+	},
+	removeConfirm: {
+		title: "Odstranit metadata?",
+		body: "Tímto se smažou všechna uložená metadata pro {{name}}. Akci nelze vrátit zpět.",
+		cancel: "Zrušit"
+	},
 	nonSteamOnly: "Tento plugin mění pouze hry mimo Steam.",
 	searchIgn: "Hledat metadata na IGN",
 	search: "Hledat",
@@ -4554,7 +4634,9 @@ var editor$m = {
 		developers: "Vývojáři",
 		publishers: "Vydavatelé",
 		releaseDate: "Datum vydání",
-		rating: "Hodnocení"
+		rating: "Hodnocení",
+		categories: "Kategorie",
+		steamData: "Data ze Steamu nezobrazená ve formuláři"
 	},
 	compat: {
 		useGlobalDefault: "Použít globální výchozí",
@@ -4610,6 +4692,14 @@ var editor$m = {
 	toast: {
 		hltbInvalidTitle: "Neplatná hra HLTB",
 		hltbInvalidBody: "Zadejte číslo hry HowLongToBeat nebo odkaz na stránku hry.",
+		steamAppIdInvalidTitle: "Neplatné Steam App ID",
+		steamAppIdInvalidBody: "Zadejte Steam App ID, URL obchodu, URL komunity nebo URL SteamDB. Nechte pole prázdné pro zrušení shody.",
+		hltbDraftBody: "Tuto volbu uložíte tlačítkem „Uložit“.",
+		detailsLoadedTitle: "Podrobnosti načteny",
+		steamPreviewBody: "Podrobnosti Steam jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
+		ignPreviewBody: "Podrobnosti IGN jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
+		steamAppIdNotAppliedTitle: "Steam App ID nebylo použito",
+		steamAppIdNotAppliedBody: "Před uložením vyberte „Použít Steam App ID“, abyste načetli novou shodu.",
 		hltbNotFoundTitle: "Nenalezeno",
 		hltbNotFoundBody: "HowLongToBeat nemá hru s tímto číslem.",
 		notApplicableTitle: "Nelze použít",
@@ -4662,7 +4752,7 @@ var matchPicker$m = {
 	release: "Vydání: {{date}}",
 	releaseUnavailable: "Datum vydání není dostupné",
 	steamType: "Typ Steam: {{type}}. Zkontrolujte, zda je to hra nebo edice, kterou chcete.",
-	applyHelp: "Použitím této shody se uloží Steam App ID a načtou se jeho metadata. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
+	applyHelp: "Použitím této shody se do tohoto formuláře načte její Steam App ID a podrobnosti. Uložíte je tlačítkem „Uložit“. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
 	apply: "Použít tuto shodu Steam",
 	cancel: "Zrušit výběr"
 };
@@ -5132,8 +5222,26 @@ var conflicts$l = {
 };
 var editor$l = {
 	save: "Speichern",
+	saveCount: "Speichern ({{count}})",
 	removeMetadata: "Metadaten entfernen",
 	done: "Fertig",
+	moreOptions: "Weitere Optionen",
+	moreMenuTitle: "Metadaten",
+	refreshFromSteam: "Von Steam aktualisieren",
+	fieldEdited: "Bearbeitet",
+	fieldFromSteam: "Von Steam, nicht gespeichert",
+	steamDataChanged: "Nicht im Formular angezeigte Steam-Daten (Screenshots, News, Kompatibilität) wurden geändert und sind nicht gespeichert.",
+	unsaved: {
+		title: "Änderungen speichern?",
+		body: "Du hast ungespeicherte Änderungen an den Metadaten dieses Spiels.",
+		discard: "Verwerfen",
+		cancel: "Abbrechen"
+	},
+	removeConfirm: {
+		title: "Metadaten entfernen?",
+		body: "Dies löscht alle gespeicherten Metadaten für {{name}}. Dies kann nicht rückgängig gemacht werden.",
+		cancel: "Abbrechen"
+	},
 	nonSteamOnly: "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
 	searchIgn: "IGN-Metadaten durchsuchen",
 	search: "Suchen",
@@ -5146,7 +5254,9 @@ var editor$l = {
 		developers: "Entwickler",
 		publishers: "Publisher",
 		releaseDate: "Veröffentlichungsdatum",
-		rating: "Bewertung"
+		rating: "Bewertung",
+		categories: "Kategorien",
+		steamData: "Nicht im Formular angezeigte Steam-Daten"
 	},
 	compat: {
 		useGlobalDefault: "Globale Voreinstellung verwenden",
@@ -5202,6 +5312,14 @@ var editor$l = {
 	toast: {
 		hltbInvalidTitle: "Ungültiges HLTB-Spiel",
 		hltbInvalidBody: "Gib eine HowLongToBeat-Spielnummer oder einen Spielelink ein.",
+		steamAppIdInvalidTitle: "Ungültige Steam-App-ID",
+		steamAppIdInvalidBody: "Gib eine Steam-App-ID, Store-URL, Community-URL oder SteamDB-URL ein. Lass das Feld leer, um die Zuordnung zu entfernen.",
+		hltbDraftBody: "Speichern übernimmt diese Auswahl.",
+		detailsLoadedTitle: "Details geladen",
+		steamPreviewBody: "Steam-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
+		ignPreviewBody: "IGN-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
+		steamAppIdNotAppliedTitle: "Steam-App-ID nicht angewendet",
+		steamAppIdNotAppliedBody: "Wähle „Steam-App-ID anwenden“, um die neue Zuordnung vor dem Speichern zu laden.",
 		hltbNotFoundTitle: "Nicht gefunden",
 		hltbNotFoundBody: "HowLongToBeat hat kein Spiel mit dieser Nummer.",
 		notApplicableTitle: "Nicht zutreffend",
@@ -5254,7 +5372,7 @@ var matchPicker$l = {
 	release: "Veröffentlichung: {{date}}",
 	releaseUnavailable: "Veröffentlichungsdatum nicht verfügbar",
 	steamType: "Steam-Typ: {{type}}. Prüfe, ob dies das gewünschte Spiel bzw. die gewünschte Edition ist.",
-	applyHelp: "Die Verwendung dieser Zuordnung speichert die Steam-App-ID und lädt ihre Metadaten. Sie benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
+	applyHelp: "Diese Zuordnung lädt ihre Steam-App-ID und Details in dieses Formular. Speichern übernimmt sie. Sie benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
 	apply: "Diese Steam-Zuordnung verwenden",
 	cancel: "Auswahl abbrechen"
 };
@@ -5724,8 +5842,26 @@ var conflicts$k = {
 };
 var editor$k = {
 	save: "Αποθήκευση",
+	saveCount: "Αποθήκευση ({{count}})",
 	removeMetadata: "Αφαίρεση μεταδεδομένων",
 	done: "Τέλος",
+	moreOptions: "Περισσότερες επιλογές",
+	moreMenuTitle: "Μεταδεδομένα",
+	refreshFromSteam: "Ανανέωση από το Steam",
+	fieldEdited: "Τροποποιήθηκε",
+	fieldFromSteam: "Από το Steam, μη αποθηκευμένο",
+	steamDataChanged: "Τα δεδομένα Steam που δεν εμφανίζονται στη φόρμα (στιγμιότυπα οθόνης, νέα, συμβατότητα) άλλαξαν και δεν έχουν αποθηκευτεί.",
+	unsaved: {
+		title: "Αποθήκευση αλλαγών;",
+		body: "Έχετε μη αποθηκευμένες αλλαγές στα μεταδεδομένα αυτού του παιχνιδιού.",
+		discard: "Απόρριψη",
+		cancel: "Ακύρωση"
+	},
+	removeConfirm: {
+		title: "Αφαίρεση μεταδεδομένων;",
+		body: "Αυτό διαγράφει όλα τα αποθηκευμένα μεταδεδομένα για το {{name}}. Δεν μπορείτε να το αναιρέσετε.",
+		cancel: "Ακύρωση"
+	},
 	nonSteamOnly: "Αυτό το πρόσθετο αλλάζει μόνο παιχνίδια εκτός Steam.",
 	searchIgn: "Αναζήτηση μεταδεδομένων IGN",
 	search: "Αναζήτηση",
@@ -5738,7 +5874,9 @@ var editor$k = {
 		developers: "Δημιουργοί",
 		publishers: "Εκδότες",
 		releaseDate: "Ημερομηνία κυκλοφορίας",
-		rating: "Αξιολόγηση"
+		rating: "Αξιολόγηση",
+		categories: "Κατηγορίες",
+		steamData: "Δεδομένα Steam που δεν εμφανίζονται στη φόρμα"
 	},
 	compat: {
 		useGlobalDefault: "Χρήση καθολικής προεπιλογής",
@@ -5794,6 +5932,14 @@ var editor$k = {
 	toast: {
 		hltbInvalidTitle: "Μη έγκυρο παιχνίδι HLTB",
 		hltbInvalidBody: "Εισαγάγετε αριθμό παιχνιδιού HowLongToBeat ή σύνδεσμο σελίδας παιχνιδιού.",
+		steamAppIdInvalidTitle: "Μη έγκυρο Steam App ID",
+		steamAppIdInvalidBody: "Εισαγάγετε Steam App ID, URL καταστήματος, URL κοινότητας ή URL SteamDB. Αφήστε το πεδίο κενό για να αφαιρέσετε την αντιστοίχιση.",
+		hltbDraftBody: "Η αποθήκευση διατηρεί αυτήν την επιλογή.",
+		detailsLoadedTitle: "Τα στοιχεία φορτώθηκαν",
+		steamPreviewBody: "Τα στοιχεία Steam έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
+		ignPreviewBody: "Τα στοιχεία IGN έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
+		steamAppIdNotAppliedTitle: "Το Steam App ID δεν εφαρμόστηκε",
+		steamAppIdNotAppliedBody: "Επιλέξτε «Εφαρμογή Steam App ID» για να φορτώσετε τη νέα αντιστοίχιση πριν από την αποθήκευση.",
 		hltbNotFoundTitle: "Δεν βρέθηκε",
 		hltbNotFoundBody: "Το HowLongToBeat δεν έχει παιχνίδι με αυτόν τον αριθμό.",
 		notApplicableTitle: "Δεν εφαρμόζεται",
@@ -5846,7 +5992,7 @@ var matchPicker$k = {
 	release: "Κυκλοφορία: {{date}}",
 	releaseUnavailable: "Η ημερομηνία κυκλοφορίας δεν είναι διαθέσιμη",
 	steamType: "Τύπος Steam: {{type}}. Βεβαιωθείτε ότι αυτό είναι το παιχνίδι ή η έκδοση που θέλετε.",
-	applyHelp: "Η χρήση αυτής της αντιστοίχισης αποθηκεύει το Steam App ID και φορτώνει τα μεταδεδομένα του. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
+	applyHelp: "Η χρήση αυτής της αντιστοίχισης φορτώνει το Steam App ID και τα στοιχεία της σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
 	apply: "Χρήση αυτής της αντιστοίχισης Steam",
 	cancel: "Ακύρωση επιλογής"
 };
@@ -6316,8 +6462,26 @@ var conflicts$j = {
 };
 var editor$j = {
 	save: "Save",
+	saveCount: "Save ({{count}})",
 	removeMetadata: "Remove metadata",
 	done: "Done",
+	moreOptions: "More options",
+	moreMenuTitle: "Metadata",
+	refreshFromSteam: "Refresh from Steam",
+	fieldEdited: "Edited",
+	fieldFromSteam: "From Steam, not saved",
+	steamDataChanged: "Steam data not shown in the form (screenshots, news, compatibility) changed and is not saved.",
+	unsaved: {
+		title: "Save changes?",
+		body: "You have unsaved changes to this game's metadata.",
+		discard: "Discard",
+		cancel: "Cancel"
+	},
+	removeConfirm: {
+		title: "Remove metadata?",
+		body: "This deletes all saved metadata for {{name}}. You cannot undo this.",
+		cancel: "Cancel"
+	},
 	nonSteamOnly: "This plugin only changes non-Steam games.",
 	searchIgn: "Search IGN metadata",
 	search: "Search",
@@ -6330,7 +6494,9 @@ var editor$j = {
 		developers: "Developers",
 		publishers: "Publishers",
 		releaseDate: "Release date",
-		rating: "Rating"
+		rating: "Rating",
+		categories: "Categories",
+		steamData: "Steam data not shown in the form"
 	},
 	compat: {
 		useGlobalDefault: "Use global default",
@@ -6386,6 +6552,8 @@ var editor$j = {
 	toast: {
 		hltbInvalidTitle: "Invalid HLTB game",
 		hltbInvalidBody: "Enter a HowLongToBeat game number or game page link.",
+		steamAppIdInvalidTitle: "Invalid Steam App ID",
+		steamAppIdInvalidBody: "Enter a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave the field empty to clear the match.",
 		hltbNotFoundTitle: "Not found",
 		hltbNotFoundBody: "HowLongToBeat has no game with that number.",
 		notApplicableTitle: "Not applicable",
@@ -6396,6 +6564,12 @@ var editor$j = {
 		saveFailedTitle: "Save failed",
 		hltbCleared: "HLTB game cleared",
 		hltbGame: "HLTB game: {{name}}",
+		hltbDraftBody: "Save stores this choice.",
+		detailsLoadedTitle: "Details loaded",
+		steamPreviewBody: "Steam details are loaded into this form. Save stores them.",
+		ignPreviewBody: "IGN details are loaded into this form. Save stores them.",
+		steamAppIdNotAppliedTitle: "Steam App ID not applied",
+		steamAppIdNotAppliedBody: "Select Apply Steam App ID to load the new match before saving.",
 		fetchFailedTitle: "Fetch failed",
 		removedTitle: "Removed",
 		removedBody: "Metadata removed",
@@ -6438,7 +6612,7 @@ var matchPicker$j = {
 	release: "Release: {{date}}",
 	releaseUnavailable: "Release date unavailable",
 	steamType: "Steam type: {{type}}. Check that this is the game or edition you want.",
-	applyHelp: "Using this match saves the Steam App ID and loads its metadata. It does not rename your shortcut or replace your custom artwork.",
+	applyHelp: "Using this match loads its Steam App ID and details into this form. Save stores them. It does not rename your shortcut or replace your custom artwork.",
 	apply: "Use this Steam match",
 	cancel: "Cancel selection"
 };
@@ -6909,8 +7083,26 @@ var conflicts$i = {
 };
 var editor$i = {
 	save: "Guardar",
+	saveCount: "Guardar ({{count}})",
 	removeMetadata: "Eliminar metadatos",
 	done: "Hecho",
+	moreOptions: "Más opciones",
+	moreMenuTitle: "Metadatos",
+	refreshFromSteam: "Actualizar desde Steam",
+	fieldEdited: "Editado",
+	fieldFromSteam: "De Steam, sin guardar",
+	steamDataChanged: "Los datos de Steam que no se muestran en el formulario (capturas, noticias, compatibilidad) han cambiado y no se han guardado.",
+	unsaved: {
+		title: "¿Guardar cambios?",
+		body: "Tienes cambios sin guardar en los metadatos de este juego.",
+		discard: "Descartar",
+		cancel: "Cancelar"
+	},
+	removeConfirm: {
+		title: "¿Eliminar metadatos?",
+		body: "Esto elimina todos los metadatos guardados de {{name}}. No se puede deshacer.",
+		cancel: "Cancelar"
+	},
 	nonSteamOnly: "Este plugin solo modifica juegos que no son de Steam.",
 	searchIgn: "Buscar metadatos de IGN",
 	search: "Buscar",
@@ -6923,7 +7115,9 @@ var editor$i = {
 		developers: "Desarrolladores",
 		publishers: "Distribuidoras",
 		releaseDate: "Fecha de lanzamiento",
-		rating: "Clasificación"
+		rating: "Clasificación",
+		categories: "Categorías",
+		steamData: "Datos de Steam no mostrados en el formulario"
 	},
 	compat: {
 		useGlobalDefault: "Usar valor predeterminado global",
@@ -6979,6 +7173,14 @@ var editor$i = {
 	toast: {
 		hltbInvalidTitle: "Juego de HLTB no válido",
 		hltbInvalidBody: "Introduce un número de juego de HowLongToBeat o un enlace a su página.",
+		steamAppIdInvalidTitle: "ID de aplicación de Steam no válido",
+		steamAppIdInvalidBody: "Introduce un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB. Deja el campo vacío para quitar la coincidencia.",
+		hltbDraftBody: "Guardar conserva esta elección.",
+		detailsLoadedTitle: "Detalles cargados",
+		steamPreviewBody: "Los detalles de Steam están cargados en este formulario. Guardar los conserva.",
+		ignPreviewBody: "Los detalles de IGN están cargados en este formulario. Guardar los conserva.",
+		steamAppIdNotAppliedTitle: "ID de aplicación de Steam no aplicado",
+		steamAppIdNotAppliedBody: "Selecciona Aplicar ID de aplicación de Steam para cargar la nueva coincidencia antes de guardar.",
 		hltbNotFoundTitle: "No encontrado",
 		hltbNotFoundBody: "HowLongToBeat no tiene ningún juego con ese número.",
 		notApplicableTitle: "No aplicable",
@@ -7031,7 +7233,7 @@ var matchPicker$i = {
 	release: "Lanzamiento: {{date}}",
 	releaseUnavailable: "Fecha de lanzamiento no disponible",
 	steamType: "Tipo de Steam: {{type}}. Comprueba que sea el juego o la edición que quieres.",
-	applyHelp: "Usar esta coincidencia guarda el ID de aplicación de Steam y carga sus metadatos. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
+	applyHelp: "Usar esta coincidencia carga el ID de aplicación de Steam y sus detalles en este formulario. Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
 	apply: "Usar esta coincidencia de Steam",
 	cancel: "Cancelar selección"
 };
@@ -7501,8 +7703,26 @@ var conflicts$h = {
 };
 var editor$h = {
 	save: "Tallenna",
+	saveCount: "Tallenna ({{count}})",
 	removeMetadata: "Poista metatiedot",
 	done: "Valmis",
+	moreOptions: "Lisää vaihtoehtoja",
+	moreMenuTitle: "Metatiedot",
+	refreshFromSteam: "Päivitä Steamistä",
+	fieldEdited: "Muokattu",
+	fieldFromSteam: "Steamistä, ei tallennettu",
+	steamDataChanged: "Lomakkeessa näyttämättömät Steam-tiedot (kuvakaappaukset, uutiset, yhteensopivuus) ovat muuttuneet, eikä niitä ole tallennettu.",
+	unsaved: {
+		title: "Tallennetaanko muutokset?",
+		body: "Tämän pelin metatiedoissa on tallentamattomia muutoksia.",
+		discard: "Hylkää",
+		cancel: "Peruuta"
+	},
+	removeConfirm: {
+		title: "Poistetaanko metatiedot?",
+		body: "Tämä poistaa kaikki pelin {{name}} tallennetut metatiedot. Toimintoa ei voi kumota.",
+		cancel: "Peruuta"
+	},
 	nonSteamOnly: "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
 	searchIgn: "Hae IGN-metatietoja",
 	search: "Hae",
@@ -7515,7 +7735,9 @@ var editor$h = {
 		developers: "Kehittäjät",
 		publishers: "Julkaisijat",
 		releaseDate: "Julkaisupäivä",
-		rating: "Arvosana"
+		rating: "Arvosana",
+		categories: "Luokat",
+		steamData: "Steam-tiedot, joita ei näytetä lomakkeessa"
 	},
 	compat: {
 		useGlobalDefault: "Käytä yleistä oletusta",
@@ -7571,6 +7793,14 @@ var editor$h = {
 	toast: {
 		hltbInvalidTitle: "Virheellinen HLTB-peli",
 		hltbInvalidBody: "Anna HowLongToBeat-pelinumero tai pelisivun linkki.",
+		steamAppIdInvalidTitle: "Virheellinen Steam-sovellustunnus",
+		steamAppIdInvalidBody: "Anna Steam-sovellustunnus, kauppasivun URL, yhteisösivun URL tai SteamDB-URL. Jätä kenttä tyhjäksi poistaaksesi vastaavuuden.",
+		hltbDraftBody: "Tallenna tallentaa tämän valinnan.",
+		detailsLoadedTitle: "Tiedot ladattu",
+		steamPreviewBody: "Steamin tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
+		ignPreviewBody: "IGN:n tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
+		steamAppIdNotAppliedTitle: "Steam-sovellustunnusta ei otettu käyttöön",
+		steamAppIdNotAppliedBody: "Valitse ”Ota Steam-sovellustunnus käyttöön” ladataksesi uuden vastaavuuden ennen tallentamista.",
 		hltbNotFoundTitle: "Ei löytynyt",
 		hltbNotFoundBody: "HowLongToBeatissa ei ole peliä kyseisellä numerolla.",
 		notApplicableTitle: "Ei sovellu",
@@ -7623,7 +7853,7 @@ var matchPicker$h = {
 	release: "Julkaisu: {{date}}",
 	releaseUnavailable: "Julkaisupäivä ei ole käytettävissä",
 	steamType: "Steam-tyyppi: {{type}}. Varmista, että tämä on haluamasi peli tai versio.",
-	applyHelp: "Tämän vastaavuuden käyttäminen tallentaa Steam-sovellustunnuksen ja lataa sen metatiedot. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
+	applyHelp: "Tämän vastaavuuden käyttäminen lataa sen Steam-sovellustunnuksen ja tiedot tähän lomakkeeseen. Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
 	apply: "Käytä tätä Steam-vastaavuutta",
 	cancel: "Peruuta valinta"
 };
@@ -8094,8 +8324,26 @@ var conflicts$g = {
 };
 var editor$g = {
 	save: "Enregistrer",
+	saveCount: "Enregistrer ({{count}})",
 	removeMetadata: "Supprimer les métadonnées",
 	done: "Terminé",
+	moreOptions: "Plus d'options",
+	moreMenuTitle: "Métadonnées",
+	refreshFromSteam: "Actualiser depuis Steam",
+	fieldEdited: "Modifié",
+	fieldFromSteam: "Depuis Steam, non enregistré",
+	steamDataChanged: "Les données Steam non affichées dans le formulaire (captures d'écran, actualités, compatibilité) ont changé et ne sont pas enregistrées.",
+	unsaved: {
+		title: "Enregistrer les modifications ?",
+		body: "Vous avez des modifications non enregistrées pour les métadonnées de ce jeu.",
+		discard: "Abandonner",
+		cancel: "Annuler"
+	},
+	removeConfirm: {
+		title: "Supprimer les métadonnées ?",
+		body: "Cela supprime toutes les métadonnées enregistrées pour {{name}}. Cette action est irréversible.",
+		cancel: "Annuler"
+	},
 	nonSteamOnly: "Ce plugin ne modifie que les jeux non Steam.",
 	searchIgn: "Rechercher des métadonnées IGN",
 	search: "Rechercher",
@@ -8108,7 +8356,9 @@ var editor$g = {
 		developers: "Développeurs",
 		publishers: "Éditeurs",
 		releaseDate: "Date de sortie",
-		rating: "Classification"
+		rating: "Classification",
+		categories: "Catégories",
+		steamData: "Données Steam non affichées dans le formulaire"
 	},
 	compat: {
 		useGlobalDefault: "Utiliser la valeur globale par défaut",
@@ -8164,6 +8414,14 @@ var editor$g = {
 	toast: {
 		hltbInvalidTitle: "Jeu HLTB invalide",
 		hltbInvalidBody: "Saisissez un numéro de jeu HowLongToBeat ou un lien vers sa page.",
+		steamAppIdInvalidTitle: "ID d'application Steam invalide",
+		steamAppIdInvalidBody: "Saisissez un ID d'application Steam, une URL de la boutique, de la communauté ou de SteamDB. Laissez le champ vide pour supprimer la correspondance.",
+		hltbDraftBody: "Enregistrer conserve ce choix.",
+		detailsLoadedTitle: "Détails chargés",
+		steamPreviewBody: "Les détails Steam sont chargés dans ce formulaire. Enregistrer les conserve.",
+		ignPreviewBody: "Les détails IGN sont chargés dans ce formulaire. Enregistrer les conserve.",
+		steamAppIdNotAppliedTitle: "App ID Steam non appliqué",
+		steamAppIdNotAppliedBody: "Sélectionnez Appliquer l'App ID Steam pour charger la nouvelle correspondance avant d'enregistrer.",
 		hltbNotFoundTitle: "Introuvable",
 		hltbNotFoundBody: "HowLongToBeat n'a aucun jeu avec ce numéro.",
 		notApplicableTitle: "Non applicable",
@@ -8216,7 +8474,7 @@ var matchPicker$g = {
 	release: "Sortie : {{date}}",
 	releaseUnavailable: "Date de sortie indisponible",
 	steamType: "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
-	applyHelp: "Utiliser cette correspondance enregistre l'App ID Steam et charge ses métadonnées. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
+	applyHelp: "Utiliser cette correspondance charge l'App ID Steam et ses détails dans ce formulaire. Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
 	apply: "Utiliser cette correspondance Steam",
 	cancel: "Annuler la sélection"
 };
@@ -8687,8 +8945,26 @@ var conflicts$f = {
 };
 var editor$f = {
 	save: "Salva",
+	saveCount: "Salva ({{count}})",
 	removeMetadata: "Rimuovi i metadati",
 	done: "Fatto",
+	moreOptions: "Altre opzioni",
+	moreMenuTitle: "Metadati",
+	refreshFromSteam: "Aggiorna da Steam",
+	fieldEdited: "Modificato",
+	fieldFromSteam: "Da Steam, non salvato",
+	steamDataChanged: "I dati Steam non mostrati nel modulo (screenshot, notizie, compatibilità) sono cambiati e non sono stati salvati.",
+	unsaved: {
+		title: "Salvare le modifiche?",
+		body: "Hai modifiche non salvate ai metadati di questo gioco.",
+		discard: "Scarta",
+		cancel: "Annulla"
+	},
+	removeConfirm: {
+		title: "Rimuovere i metadati?",
+		body: "Questo elimina tutti i metadati salvati per {{name}}. L'operazione non può essere annullata.",
+		cancel: "Annulla"
+	},
 	nonSteamOnly: "Questo plugin modifica solo i giochi non Steam.",
 	searchIgn: "Cerca i metadati su IGN",
 	search: "Cerca",
@@ -8701,7 +8977,9 @@ var editor$f = {
 		developers: "Sviluppatori",
 		publishers: "Editori",
 		releaseDate: "Data di uscita",
-		rating: "Classificazione"
+		rating: "Classificazione",
+		categories: "Categorie",
+		steamData: "Dati Steam non mostrati nel modulo"
 	},
 	compat: {
 		useGlobalDefault: "Usa il valore predefinito globale",
@@ -8757,6 +9035,14 @@ var editor$f = {
 	toast: {
 		hltbInvalidTitle: "Gioco HLTB non valido",
 		hltbInvalidBody: "Inserisci un numero di gioco HowLongToBeat o un link a una pagina di gioco.",
+		steamAppIdInvalidTitle: "ID applicazione Steam non valido",
+		steamAppIdInvalidBody: "Inserisci un ID applicazione Steam, un URL del negozio, della community o di SteamDB. Lascia il campo vuoto per rimuovere la corrispondenza.",
+		hltbDraftBody: "Salva conserva questa scelta.",
+		detailsLoadedTitle: "Dettagli caricati",
+		steamPreviewBody: "I dettagli Steam sono caricati in questo modulo. Salva per conservarli.",
+		ignPreviewBody: "I dettagli IGN sono caricati in questo modulo. Salva per conservarli.",
+		steamAppIdNotAppliedTitle: "ID app Steam non applicato",
+		steamAppIdNotAppliedBody: "Seleziona Applica l'ID app Steam per caricare la nuova corrispondenza prima di salvare.",
 		hltbNotFoundTitle: "Non trovato",
 		hltbNotFoundBody: "HowLongToBeat non ha nessun gioco con quel numero.",
 		notApplicableTitle: "Non applicabile",
@@ -8809,7 +9095,7 @@ var matchPicker$f = {
 	release: "Uscita: {{date}}",
 	releaseUnavailable: "Data di uscita non disponibile",
 	steamType: "Tipo Steam: {{type}}. Verifica che sia il gioco o l'edizione che vuoi.",
-	applyHelp: "Usare questa corrispondenza salva l'ID app Steam e ne carica i metadati. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
+	applyHelp: "Usare questa corrispondenza carica l'ID app Steam e i relativi dettagli in questo modulo. Salva per conservarli. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
 	apply: "Usa questa corrispondenza Steam",
 	cancel: "Annulla la selezione"
 };
@@ -9278,8 +9564,26 @@ var conflicts$e = {
 };
 var editor$e = {
 	save: "保存",
+	saveCount: "保存 ({{count}})",
 	removeMetadata: "メタデータを削除",
 	done: "完了",
+	moreOptions: "その他のオプション",
+	moreMenuTitle: "メタデータ",
+	refreshFromSteam: "Steam から再取得",
+	fieldEdited: "編集済み",
+	fieldFromSteam: "Steam から取得、未保存",
+	steamDataChanged: "フォームに表示されない Steam データ（スクリーンショット、ニュース、互換性）が変更され、保存されていません。",
+	unsaved: {
+		title: "変更を保存しますか？",
+		body: "このゲームのメタデータに未保存の変更があります。",
+		discard: "破棄",
+		cancel: "キャンセル"
+	},
+	removeConfirm: {
+		title: "メタデータを削除しますか？",
+		body: "{{name}} の保存済みメタデータをすべて削除します。元に戻せません。",
+		cancel: "キャンセル"
+	},
 	nonSteamOnly: "このプラグインは Steam 以外のゲームのみを変更します。",
 	searchIgn: "IGN メタデータを検索",
 	search: "検索",
@@ -9292,7 +9596,9 @@ var editor$e = {
 		developers: "開発元",
 		publishers: "パブリッシャー",
 		releaseDate: "リリース日",
-		rating: "レーティング"
+		rating: "レーティング",
+		categories: "カテゴリ",
+		steamData: "フォームに表示されない Steam データ"
 	},
 	compat: {
 		useGlobalDefault: "グローバル既定値を使用",
@@ -9348,6 +9654,14 @@ var editor$e = {
 	toast: {
 		hltbInvalidTitle: "無効な HLTB ゲーム",
 		hltbInvalidBody: "HowLongToBeat のゲーム番号またはゲームページのリンクを入力してください。",
+		steamAppIdInvalidTitle: "無効な Steam アプリ ID",
+		steamAppIdInvalidBody: "Steam アプリ ID、ストア URL、コミュニティ URL、SteamDB URL のいずれかを入力してください。空欄にすると一致を解除します。",
+		hltbDraftBody: "「保存」を押すとこの選択が保存されます。",
+		detailsLoadedTitle: "詳細を読み込みました",
+		steamPreviewBody: "Steam の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
+		ignPreviewBody: "IGN の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
+		steamAppIdNotAppliedTitle: "Steam アプリ ID が適用されていません",
+		steamAppIdNotAppliedBody: "新しい一致を読み込むには、保存する前に「Steam アプリ ID を適用」を選択してください。",
 		hltbNotFoundTitle: "見つかりません",
 		hltbNotFoundBody: "その番号のゲームは HowLongToBeat にありません。",
 		notApplicableTitle: "該当なし",
@@ -9400,7 +9714,7 @@ var matchPicker$e = {
 	release: "リリース: {{date}}",
 	releaseUnavailable: "リリース日を取得できません",
 	steamType: "Steam タイプ: {{type}}。目的のゲームまたはエディションか確認してください。",
-	applyHelp: "この一致を使用すると Steam アプリ ID が保存され、そのメタデータが読み込まれます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
+	applyHelp: "この一致を使用すると、その Steam アプリ ID と詳細がこのフォームに読み込まれます。「保存」を押すと保存されます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
 	apply: "この Steam 一致を使用",
 	cancel: "選択をキャンセル"
 };
@@ -9870,8 +10184,26 @@ var conflicts$d = {
 };
 var editor$d = {
 	save: "შენახვა",
+	saveCount: "შენახვა ({{count}})",
 	removeMetadata: "მეტამონაცემების წაშლა",
 	done: "მზადაა",
+	moreOptions: "დამატებითი პარამეტრები",
+	moreMenuTitle: "მეტამონაცემები",
+	refreshFromSteam: "Steam-იდან განახლება",
+	fieldEdited: "შეცვლილია",
+	fieldFromSteam: "Steam-იდან, შეუნახავი",
+	steamDataChanged: "ფორმაში არ ნაჩვენები Steam-ის მონაცემები (სკრინშოტები, სიახლეები, თავსებადობა) შეიცვალა და არ არის შენახული.",
+	unsaved: {
+		title: "ცვლილებების შენახვა?",
+		body: "ამ თამაშის მეტამონაცემებში არ შენახული ცვლილებები გაქვთ.",
+		discard: "უარყოფა",
+		cancel: "გაუქმება"
+	},
+	removeConfirm: {
+		title: "მეტამონაცემების წაშლა?",
+		body: "ეს წაშლის {{name}}-ის ყველა შენახულ მეტამონაცემს. ამის გაუქმება შეუძლებელია.",
+		cancel: "გაუქმება"
+	},
 	nonSteamOnly: "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
 	searchIgn: "IGN-ის მეტამონაცემებში ძებნა",
 	search: "ძებნა",
@@ -9884,7 +10216,9 @@ var editor$d = {
 		developers: "შემქმნელები",
 		publishers: "გამომცემლები",
 		releaseDate: "გამოშვების თარიღი",
-		rating: "შეფასება"
+		rating: "შეფასება",
+		categories: "კატეგორიები",
+		steamData: "ფორმაში არ ნაჩვენები Steam-ის მონაცემები"
 	},
 	compat: {
 		useGlobalDefault: "გლობალური ნაგულისხმევის გამოყენება",
@@ -9940,6 +10274,14 @@ var editor$d = {
 	toast: {
 		hltbInvalidTitle: "არასწორი HLTB თამაში",
 		hltbInvalidBody: "შეიყვანეთ HowLongToBeat-ის თამაშის ნომერი ან თამაშის გვერდის ბმული.",
+		steamAppIdInvalidTitle: "არასწორი Steam App ID",
+		steamAppIdInvalidBody: "შეიყვანეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ველი ცარიელი შესაბამისობის მოსაშორებლად.",
+		hltbDraftBody: "შენახვა ინახავს ამ არჩევანს.",
+		detailsLoadedTitle: "დეტალები ჩატვირთულია",
+		steamPreviewBody: "Steam-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
+		ignPreviewBody: "IGN-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
+		steamAppIdNotAppliedTitle: "Steam App ID არ არის გამოყენებული",
+		steamAppIdNotAppliedBody: "ახალი შესატყვისის ჩასატვირთად შენახვამდე აირჩიეთ „Steam App ID-ის გამოყენება“.",
 		hltbNotFoundTitle: "ვერ მოიძებნა",
 		hltbNotFoundBody: "HowLongToBeat-ში ამ ნომრის თამაში არ არის.",
 		notApplicableTitle: "არ ვრცელდება",
@@ -9992,7 +10334,7 @@ var matchPicker$d = {
 	release: "გამოშვება: {{date}}",
 	releaseUnavailable: "გამოშვების თარიღი მიუწვდომელია",
 	steamType: "Steam-ის ტიპი: {{type}}. შეამოწმეთ, რომ ეს არის სასურველი თამაში ან გამოცემა.",
-	applyHelp: "ამ შესატყვისის გამოყენება ინახავს Steam App ID-ს და ტვირთავს მის მეტამონაცემებს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
+	applyHelp: "ამ შესატყვისის გამოყენება ტვირთავს მის Steam App ID-სა და დეტალებს ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
 	apply: "Steam-ის ამ შესატყვისის გამოყენება",
 	cancel: "არჩევანის გაუქმება"
 };
@@ -10461,8 +10803,26 @@ var conflicts$c = {
 };
 var editor$c = {
 	save: "저장",
+	saveCount: "저장 ({{count}})",
 	removeMetadata: "메타데이터 제거",
 	done: "완료",
+	moreOptions: "추가 옵션",
+	moreMenuTitle: "메타데이터",
+	refreshFromSteam: "Steam에서 새로 고침",
+	fieldEdited: "수정됨",
+	fieldFromSteam: "Steam에서 가져옴, 저장 안 됨",
+	steamDataChanged: "양식에 표시되지 않는 Steam 데이터(스크린샷, 뉴스, 호환성)가 변경되었으며 저장되지 않았습니다.",
+	unsaved: {
+		title: "변경 사항을 저장할까요?",
+		body: "이 게임의 메타데이터에 저장하지 않은 변경 사항이 있습니다.",
+		discard: "버리기",
+		cancel: "취소"
+	},
+	removeConfirm: {
+		title: "메타데이터를 제거할까요?",
+		body: "{{name}}의 저장된 메타데이터를 모두 삭제합니다. 되돌릴 수 없습니다.",
+		cancel: "취소"
+	},
 	nonSteamOnly: "이 플러그인은 비Steam 게임만 변경합니다.",
 	searchIgn: "IGN 메타데이터 검색",
 	search: "검색",
@@ -10475,7 +10835,9 @@ var editor$c = {
 		developers: "개발자",
 		publishers: "배급사",
 		releaseDate: "출시일",
-		rating: "등급"
+		rating: "등급",
+		categories: "카테고리",
+		steamData: "양식에 표시되지 않는 Steam 데이터"
 	},
 	compat: {
 		useGlobalDefault: "전역 기본값 사용",
@@ -10531,6 +10893,14 @@ var editor$c = {
 	toast: {
 		hltbInvalidTitle: "잘못된 HLTB 게임",
 		hltbInvalidBody: "HowLongToBeat 게임 번호 또는 게임 페이지 링크를 입력하세요.",
+		steamAppIdInvalidTitle: "잘못된 Steam 앱 ID",
+		steamAppIdInvalidBody: "Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 입력하세요. 필드를 비워 두면 일치를 해제합니다.",
+		hltbDraftBody: "'저장'을 누르면 이 선택이 저장됩니다.",
+		detailsLoadedTitle: "세부 정보 로드됨",
+		steamPreviewBody: "Steam 세부 정보가 이 양식에 로드되었습니다. '저장'을 누르면 저장됩니다.",
+		ignPreviewBody: "IGN 세부 정보가 이 양식에 로드되었습니다. '저장'을 누르면 저장됩니다.",
+		steamAppIdNotAppliedTitle: "Steam 앱 ID가 적용되지 않음",
+		steamAppIdNotAppliedBody: "저장하기 전에 새 일치 항목을 로드하려면 'Steam 앱 ID 적용'을 선택하세요.",
 		hltbNotFoundTitle: "찾을 수 없음",
 		hltbNotFoundBody: "HowLongToBeat에 해당 번호의 게임이 없습니다.",
 		notApplicableTitle: "해당 없음",
@@ -10583,7 +10953,7 @@ var matchPicker$c = {
 	release: "출시: {{date}}",
 	releaseUnavailable: "출시일 정보 없음",
 	steamType: "Steam 유형: {{type}}. 원하는 게임 또는 에디션인지 확인하세요.",
-	applyHelp: "이 일치 항목을 사용하면 Steam 앱 ID가 저장되고 해당 메타데이터가 로드됩니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
+	applyHelp: "이 일치 항목을 사용하면 해당 Steam 앱 ID와 세부 정보가 이 양식에 로드됩니다. '저장'을 누르면 저장됩니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
 	apply: "이 Steam 일치 항목 사용",
 	cancel: "선택 취소"
 };
@@ -11053,8 +11423,26 @@ var conflicts$b = {
 };
 var editor$b = {
 	save: "Opslaan",
+	saveCount: "Opslaan ({{count}})",
 	removeMetadata: "Metadata verwijderen",
 	done: "Klaar",
+	moreOptions: "Meer opties",
+	moreMenuTitle: "Metadata",
+	refreshFromSteam: "Vernieuwen vanuit Steam",
+	fieldEdited: "Bewerkt",
+	fieldFromSteam: "Van Steam, niet opgeslagen",
+	steamDataChanged: "Steam-gegevens die niet in het formulier worden getoond (screenshots, nieuws, compatibiliteit) zijn gewijzigd en niet opgeslagen.",
+	unsaved: {
+		title: "Wijzigingen opslaan?",
+		body: "Je hebt niet-opgeslagen wijzigingen aan de metadata van deze game.",
+		discard: "Verwerpen",
+		cancel: "Annuleren"
+	},
+	removeConfirm: {
+		title: "Metadata verwijderen?",
+		body: "Dit verwijdert alle opgeslagen metadata voor {{name}}. Je kunt dit niet ongedaan maken.",
+		cancel: "Annuleren"
+	},
 	nonSteamOnly: "Deze plug-in wijzigt alleen niet-Steam-games.",
 	searchIgn: "IGN-metadata doorzoeken",
 	search: "Zoeken",
@@ -11067,7 +11455,9 @@ var editor$b = {
 		developers: "Ontwikkelaars",
 		publishers: "Uitgevers",
 		releaseDate: "Releasedatum",
-		rating: "Beoordeling"
+		rating: "Beoordeling",
+		categories: "Categorieën",
+		steamData: "Steam-gegevens niet in het formulier"
 	},
 	compat: {
 		useGlobalDefault: "Globale standaard gebruiken",
@@ -11123,6 +11513,14 @@ var editor$b = {
 	toast: {
 		hltbInvalidTitle: "Ongeldige HLTB-game",
 		hltbInvalidBody: "Voer een HowLongToBeat-gamenummer of link naar de spelpagina in.",
+		steamAppIdInvalidTitle: "Ongeldige Steam-app-ID",
+		steamAppIdInvalidBody: "Voer een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL in. Laat het veld leeg om de koppeling te verwijderen.",
+		hltbDraftBody: "Opslaan bewaart deze keuze.",
+		detailsLoadedTitle: "Details geladen",
+		steamPreviewBody: "Steam-details zijn in dit formulier geladen. Opslaan bewaart ze.",
+		ignPreviewBody: "IGN-details zijn in dit formulier geladen. Opslaan bewaart ze.",
+		steamAppIdNotAppliedTitle: "Steam-app-ID niet toegepast",
+		steamAppIdNotAppliedBody: "Selecteer ’Steam-app-ID toepassen’ om de nieuwe match te laden voordat je opslaat.",
 		hltbNotFoundTitle: "Niet gevonden",
 		hltbNotFoundBody: "HowLongToBeat heeft geen game met dat nummer.",
 		notApplicableTitle: "Niet van toepassing",
@@ -11175,7 +11573,7 @@ var matchPicker$b = {
 	release: "Release: {{date}}",
 	releaseUnavailable: "Releasedatum niet beschikbaar",
 	steamType: "Steam-type: {{type}}. Controleer of dit de game of editie is die je wilt.",
-	applyHelp: "Als je deze match gebruikt, wordt de Steam-app-ID opgeslagen en de metadata geladen. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
+	applyHelp: "Als je deze match gebruikt, worden de Steam-app-ID en details in dit formulier geladen. Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
 	apply: "Deze Steam-match gebruiken",
 	cancel: "Selectie annuleren"
 };
@@ -11647,8 +12045,26 @@ var conflicts$a = {
 };
 var editor$a = {
 	save: "Zapisz",
+	saveCount: "Zapisz ({{count}})",
 	removeMetadata: "Usuń metadane",
 	done: "Gotowe",
+	moreOptions: "Więcej opcji",
+	moreMenuTitle: "Metadane",
+	refreshFromSteam: "Odśwież ze Steam",
+	fieldEdited: "Edytowano",
+	fieldFromSteam: "Ze Steam, niezapisane",
+	steamDataChanged: "Dane ze Steam niewyświetlane w formularzu (zrzuty ekranu, aktualności, kompatybilność) zmieniły się i nie zostały zapisane.",
+	unsaved: {
+		title: "Zapisać zmiany?",
+		body: "Masz niezapisane zmiany metadanych tej gry.",
+		discard: "Odrzuć",
+		cancel: "Anuluj"
+	},
+	removeConfirm: {
+		title: "Usunąć metadane?",
+		body: "Spowoduje to usunięcie wszystkich zapisanych metadanych dla {{name}}. Tej czynności nie można cofnąć.",
+		cancel: "Anuluj"
+	},
 	nonSteamOnly: "Ta wtyczka zmienia tylko gry spoza Steam.",
 	searchIgn: "Szukaj metadanych w IGN",
 	search: "Szukaj",
@@ -11661,7 +12077,9 @@ var editor$a = {
 		developers: "Producenci",
 		publishers: "Wydawcy",
 		releaseDate: "Data wydania",
-		rating: "Ocena"
+		rating: "Ocena",
+		categories: "Kategorie",
+		steamData: "Dane ze Steam niewyświetlane w formularzu"
 	},
 	compat: {
 		useGlobalDefault: "Użyj ustawienia globalnego",
@@ -11717,6 +12135,14 @@ var editor$a = {
 	toast: {
 		hltbInvalidTitle: "Nieprawidłowa gra HLTB",
 		hltbInvalidBody: "Wpisz numer gry HowLongToBeat lub link do strony gry.",
+		steamAppIdInvalidTitle: "Nieprawidłowy identyfikator aplikacji Steam",
+		steamAppIdInvalidBody: "Wpisz identyfikator aplikacji Steam, adres URL sklepu, społeczności lub SteamDB. Pozostaw pole puste, aby usunąć dopasowanie.",
+		hltbDraftBody: "Ten wybór zapiszesz przyciskiem „Zapisz”.",
+		detailsLoadedTitle: "Szczegóły wczytane",
+		steamPreviewBody: "Szczegóły Steam zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
+		ignPreviewBody: "Szczegóły IGN zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
+		steamAppIdNotAppliedTitle: "Nie zastosowano Steam App ID",
+		steamAppIdNotAppliedBody: "Przed zapisaniem wybierz „Zastosuj Steam App ID”, aby wczytać nowe dopasowanie.",
 		hltbNotFoundTitle: "Nie znaleziono",
 		hltbNotFoundBody: "HowLongToBeat nie ma gry o tym numerze.",
 		notApplicableTitle: "Nie dotyczy",
@@ -11769,7 +12195,7 @@ var matchPicker$a = {
 	release: "Wydanie: {{date}}",
 	releaseUnavailable: "Data wydania niedostępna",
 	steamType: "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
-	applyHelp: "Użycie tego dopasowania zapisuje Steam App ID i wczytuje jego metadane. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
+	applyHelp: "Użycie tego dopasowania wczytuje jego Steam App ID i szczegóły do tego formularza. Zapiszesz je przyciskiem „Zapisz”. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
 	apply: "Użyj tego dopasowania Steam",
 	cancel: "Anuluj wybór"
 };
@@ -12240,8 +12666,26 @@ var conflicts$9 = {
 };
 var editor$9 = {
 	save: "Salvar",
+	saveCount: "Salvar ({{count}})",
 	removeMetadata: "Remover metadados",
 	done: "Concluído",
+	moreOptions: "Mais opções",
+	moreMenuTitle: "Metadados",
+	refreshFromSteam: "Atualizar da Steam",
+	fieldEdited: "Editado",
+	fieldFromSteam: "Da Steam, não salvo",
+	steamDataChanged: "Os dados da Steam não exibidos no formulário (capturas de tela, notícias, compatibilidade) mudaram e não foram salvos.",
+	unsaved: {
+		title: "Salvar alterações?",
+		body: "Você tem alterações não salvas nos metadados deste jogo.",
+		discard: "Descartar",
+		cancel: "Cancelar"
+	},
+	removeConfirm: {
+		title: "Remover metadados?",
+		body: "Isso exclui todos os metadados salvos de {{name}}. Não é possível desfazer.",
+		cancel: "Cancelar"
+	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
 	searchIgn: "Pesquisar metadados na IGN",
 	search: "Pesquisar",
@@ -12254,7 +12698,9 @@ var editor$9 = {
 		developers: "Desenvolvedoras",
 		publishers: "Distribuidoras",
 		releaseDate: "Data de lançamento",
-		rating: "Classificação"
+		rating: "Classificação",
+		categories: "Categorias",
+		steamData: "Dados da Steam não exibidos no formulário"
 	},
 	compat: {
 		useGlobalDefault: "Usar padrão global",
@@ -12310,6 +12756,14 @@ var editor$9 = {
 	toast: {
 		hltbInvalidTitle: "Jogo do HLTB inválido",
 		hltbInvalidBody: "Informe o número ou o link da página do jogo no HowLongToBeat.",
+		steamAppIdInvalidTitle: "ID de aplicativo Steam inválido",
+		steamAppIdInvalidBody: "Informe um ID de aplicativo Steam, URL da loja, da comunidade ou do SteamDB. Deixe o campo vazio para remover a correspondência.",
+		hltbDraftBody: "Salvar armazena esta escolha.",
+		detailsLoadedTitle: "Detalhes carregados",
+		steamPreviewBody: "Os detalhes da Steam foram carregados neste formulário. Salve para armazená-los.",
+		ignPreviewBody: "Os detalhes do IGN foram carregados neste formulário. Salve para armazená-los.",
+		steamAppIdNotAppliedTitle: "App ID da Steam não aplicado",
+		steamAppIdNotAppliedBody: "Selecione Aplicar App ID da Steam para carregar a nova correspondência antes de salvar.",
 		hltbNotFoundTitle: "Não encontrado",
 		hltbNotFoundBody: "O HowLongToBeat não tem nenhum jogo com esse número.",
 		notApplicableTitle: "Não aplicável",
@@ -12362,7 +12816,7 @@ var matchPicker$9 = {
 	release: "Lançamento: {{date}}",
 	releaseUnavailable: "Data de lançamento indisponível",
 	steamType: "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que você quer.",
-	applyHelp: "Usar esta correspondência salva o App ID da Steam e carrega seus metadados. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
+	applyHelp: "Usar esta correspondência carrega o App ID da Steam e seus detalhes neste formulário. Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
 	apply: "Usar esta correspondência da Steam",
 	cancel: "Cancelar seleção"
 };
@@ -12833,8 +13287,26 @@ var conflicts$8 = {
 };
 var editor$8 = {
 	save: "Guardar",
+	saveCount: "Guardar ({{count}})",
 	removeMetadata: "Remover metadados",
 	done: "Concluído",
+	moreOptions: "Mais opções",
+	moreMenuTitle: "Metadados",
+	refreshFromSteam: "Atualizar a partir da Steam",
+	fieldEdited: "Editado",
+	fieldFromSteam: "Da Steam, não guardado",
+	steamDataChanged: "Os dados da Steam não apresentados no formulário (capturas de ecrã, notícias, compatibilidade) foram alterados e não estão guardados.",
+	unsaved: {
+		title: "Guardar alterações?",
+		body: "Tem alterações não guardadas nos metadados deste jogo.",
+		discard: "Descartar",
+		cancel: "Cancelar"
+	},
+	removeConfirm: {
+		title: "Remover metadados?",
+		body: "Isto elimina todos os metadados guardados de {{name}}. Não pode ser anulado.",
+		cancel: "Cancelar"
+	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
 	searchIgn: "Pesquisar metadados na IGN",
 	search: "Pesquisar",
@@ -12847,7 +13319,9 @@ var editor$8 = {
 		developers: "Programadores",
 		publishers: "Editoras",
 		releaseDate: "Data de lançamento",
-		rating: "Classificação"
+		rating: "Classificação",
+		categories: "Categorias",
+		steamData: "Dados da Steam não apresentados no formulário"
 	},
 	compat: {
 		useGlobalDefault: "Usar predefinição global",
@@ -12903,6 +13377,14 @@ var editor$8 = {
 	toast: {
 		hltbInvalidTitle: "Jogo do HLTB inválido",
 		hltbInvalidBody: "Introduza o número ou a ligação da página do jogo no HowLongToBeat.",
+		steamAppIdInvalidTitle: "ID de aplicação Steam inválido",
+		steamAppIdInvalidBody: "Introduza um ID de aplicação Steam, URL da loja, da comunidade ou do SteamDB. Deixe o campo vazio para remover a correspondência.",
+		hltbDraftBody: "Guardar mantém esta escolha.",
+		detailsLoadedTitle: "Detalhes carregados",
+		steamPreviewBody: "Os detalhes da Steam foram carregados neste formulário. Guarde para os manter.",
+		ignPreviewBody: "Os detalhes da IGN foram carregados neste formulário. Guarde para os manter.",
+		steamAppIdNotAppliedTitle: "App ID da Steam não aplicado",
+		steamAppIdNotAppliedBody: "Selecione Aplicar App ID da Steam para carregar a nova correspondência antes de guardar.",
 		hltbNotFoundTitle: "Não encontrado",
 		hltbNotFoundBody: "O HowLongToBeat não tem nenhum jogo com esse número.",
 		notApplicableTitle: "Não aplicável",
@@ -12955,7 +13437,7 @@ var matchPicker$8 = {
 	release: "Lançamento: {{date}}",
 	releaseUnavailable: "Data de lançamento indisponível",
 	steamType: "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que quer.",
-	applyHelp: "Usar esta correspondência guarda o App ID da Steam e carrega os respetivos metadados. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
+	applyHelp: "Usar esta correspondência carrega o App ID da Steam e os respetivos detalhes neste formulário. Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
 	apply: "Usar esta correspondência da Steam",
 	cancel: "Cancelar seleção"
 };
@@ -13426,8 +13908,26 @@ var conflicts$7 = {
 };
 var editor$7 = {
 	save: "Salvează",
+	saveCount: "Salvează ({{count}})",
 	removeMetadata: "Elimină metadatele",
 	done: "Gata",
+	moreOptions: "Mai multe opțiuni",
+	moreMenuTitle: "Metadate",
+	refreshFromSteam: "Reîmprospătează din Steam",
+	fieldEdited: "Editat",
+	fieldFromSteam: "Din Steam, nesalvat",
+	steamDataChanged: "Datele Steam care nu sunt afișate în formular (capturi de ecran, știri, compatibilitate) s-au schimbat și nu sunt salvate.",
+	unsaved: {
+		title: "Salvezi modificările?",
+		body: "Ai modificări nesalvate la metadatele acestui joc.",
+		discard: "Renunță",
+		cancel: "Anulează"
+	},
+	removeConfirm: {
+		title: "Elimini metadatele?",
+		body: "Aceasta șterge toate metadatele salvate pentru {{name}}. Nu poți anula această acțiune.",
+		cancel: "Anulează"
+	},
 	nonSteamOnly: "Acest plugin modifică doar jocurile non-Steam.",
 	searchIgn: "Caută metadate IGN",
 	search: "Caută",
@@ -13440,7 +13940,9 @@ var editor$7 = {
 		developers: "Dezvoltatori",
 		publishers: "Editori",
 		releaseDate: "Data lansării",
-		rating: "Clasificare"
+		rating: "Clasificare",
+		categories: "Categorii",
+		steamData: "Date Steam care nu sunt afișate în formular"
 	},
 	compat: {
 		useGlobalDefault: "Folosește valoarea implicită globală",
@@ -13496,6 +13998,14 @@ var editor$7 = {
 	toast: {
 		hltbInvalidTitle: "Joc HLTB nevalid",
 		hltbInvalidBody: "Introdu un număr de joc HowLongToBeat sau un link către pagina jocului.",
+		steamAppIdInvalidTitle: "ID de aplicație Steam nevalid",
+		steamAppIdInvalidBody: "Introdu un ID de aplicație Steam, un URL de magazin, de comunitate sau SteamDB. Lasă câmpul gol pentru a elimina potrivirea.",
+		hltbDraftBody: "Salvarea păstrează această alegere.",
+		detailsLoadedTitle: "Detalii încărcate",
+		steamPreviewBody: "Detaliile Steam sunt încărcate în acest formular. Salvează pentru a le păstra.",
+		ignPreviewBody: "Detaliile IGN sunt încărcate în acest formular. Salvează pentru a le păstra.",
+		steamAppIdNotAppliedTitle: "ID-ul de aplicație Steam nu a fost aplicat",
+		steamAppIdNotAppliedBody: "Selectează Aplică ID-ul de aplicație Steam pentru a încărca noua potrivire înainte de a salva.",
 		hltbNotFoundTitle: "Nu a fost găsit",
 		hltbNotFoundBody: "HowLongToBeat nu are niciun joc cu acel număr.",
 		notApplicableTitle: "Nu se aplică",
@@ -13548,7 +14058,7 @@ var matchPicker$7 = {
 	release: "Lansare: {{date}}",
 	releaseUnavailable: "Data lansării indisponibilă",
 	steamType: "Tip Steam: {{type}}. Verifică dacă acesta este jocul sau ediția dorită.",
-	applyHelp: "Folosirea acestei potriviri salvează ID-ul aplicației Steam și îi încarcă metadatele. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
+	applyHelp: "Folosirea acestei potriviri încarcă ID-ul aplicației Steam și detaliile sale în acest formular. Salvarea le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
 	apply: "Folosește această potrivire Steam",
 	cancel: "Anulează selecția"
 };
@@ -14020,8 +14530,26 @@ var conflicts$6 = {
 };
 var editor$6 = {
 	save: "Сохранить",
+	saveCount: "Сохранить ({{count}})",
 	removeMetadata: "Удалить метаданные",
 	done: "Готово",
+	moreOptions: "Другие параметры",
+	moreMenuTitle: "Метаданные",
+	refreshFromSteam: "Обновить из Steam",
+	fieldEdited: "Изменено",
+	fieldFromSteam: "Из Steam, не сохранено",
+	steamDataChanged: "Данные Steam, не показанные в форме (скриншоты, новости, совместимость), изменились и не сохранены.",
+	unsaved: {
+		title: "Сохранить изменения?",
+		body: "У вас есть несохранённые изменения метаданных этой игры.",
+		discard: "Отбросить",
+		cancel: "Отмена"
+	},
+	removeConfirm: {
+		title: "Удалить метаданные?",
+		body: "Это удалит все сохранённые метаданные для {{name}}. Отменить это действие нельзя.",
+		cancel: "Отмена"
+	},
 	nonSteamOnly: "Этот плагин изменяет только игры вне Steam.",
 	searchIgn: "Искать метаданные в IGN",
 	search: "Искать",
@@ -14034,7 +14562,9 @@ var editor$6 = {
 		developers: "Разработчики",
 		publishers: "Издатели",
 		releaseDate: "Дата выхода",
-		rating: "Рейтинг"
+		rating: "Рейтинг",
+		categories: "Категории",
+		steamData: "Данные Steam, не показанные в форме"
 	},
 	compat: {
 		useGlobalDefault: "Использовать глобальное значение по умолчанию",
@@ -14090,6 +14620,14 @@ var editor$6 = {
 	toast: {
 		hltbInvalidTitle: "Недопустимая игра HLTB",
 		hltbInvalidBody: "Введите номер игры HowLongToBeat или ссылку на страницу игры.",
+		steamAppIdInvalidTitle: "Неверный Steam App ID",
+		steamAppIdInvalidBody: "Введите Steam App ID, ссылку на магазин, сообщество или SteamDB. Оставьте поле пустым, чтобы снять совпадение.",
+		hltbDraftBody: "Нажмите «Сохранить», чтобы запомнить этот выбор.",
+		detailsLoadedTitle: "Сведения загружены",
+		steamPreviewBody: "Сведения Steam загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
+		ignPreviewBody: "Сведения IGN загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
+		steamAppIdNotAppliedTitle: "Steam App ID не применён",
+		steamAppIdNotAppliedBody: "Выберите «Применить Steam App ID», чтобы загрузить новое совпадение перед сохранением.",
 		hltbNotFoundTitle: "Не найдено",
 		hltbNotFoundBody: "В HowLongToBeat нет игры с таким номером.",
 		notApplicableTitle: "Неприменимо",
@@ -14142,7 +14680,7 @@ var matchPicker$6 = {
 	release: "Дата выхода: {{date}}",
 	releaseUnavailable: "Дата выхода недоступна",
 	steamType: "Тип Steam: {{type}}. Убедитесь, что это нужная игра или издание.",
-	applyHelp: "Использование этого совпадения сохраняет Steam App ID и загружает его метаданные. Оно не переименовывает ярлык и не заменяет ваш арт.",
+	applyHelp: "Использование этого совпадения загружает его Steam App ID и сведения в эту форму. Нажмите «Сохранить», чтобы их записать. Оно не переименовывает ярлык и не заменяет ваш арт.",
 	apply: "Использовать это совпадение Steam",
 	cancel: "Отменить выбор"
 };
@@ -14612,8 +15150,26 @@ var conflicts$5 = {
 };
 var editor$5 = {
 	save: "Ruaj",
+	saveCount: "Ruaj ({{count}})",
 	removeMetadata: "Hiq metadata",
 	done: "U krye",
+	moreOptions: "Më shumë opsione",
+	moreMenuTitle: "Metadata",
+	refreshFromSteam: "Përditëso nga Steam",
+	fieldEdited: "Ndryshuar",
+	fieldFromSteam: "Nga Steam, nuk është ruajtur",
+	steamDataChanged: "Të dhënat e Steam që nuk shfaqen në formular (pamje ekrani, lajme, përputhshmëri) ndryshuan dhe nuk janë ruajtur.",
+	unsaved: {
+		title: "Të ruhen ndryshimet?",
+		body: "Ke ndryshime të pa ruajtura në metadatat e kësaj loje.",
+		discard: "Hidh poshtë",
+		cancel: "Anulo"
+	},
+	removeConfirm: {
+		title: "Të hiqet metadata?",
+		body: "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
+		cancel: "Anulo"
+	},
 	nonSteamOnly: "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
 	searchIgn: "Kërko metadata në IGN",
 	search: "Kërko",
@@ -14626,7 +15182,9 @@ var editor$5 = {
 		developers: "Zhvilluesit",
 		publishers: "Botuesit",
 		releaseDate: "Data e publikimit",
-		rating: "Vlerësimi"
+		rating: "Vlerësimi",
+		categories: "Kategoritë",
+		steamData: "Të dhënat e Steam që nuk shfaqen në formular"
 	},
 	compat: {
 		useGlobalDefault: "Përdor parazgjedhjen globale",
@@ -14682,6 +15240,14 @@ var editor$5 = {
 	toast: {
 		hltbInvalidTitle: "Lojë HLTB e pavlefshme",
 		hltbInvalidBody: "Shkruaj një numër loje në HowLongToBeat ose një lidhje faqeje loje.",
+		steamAppIdInvalidTitle: "Steam App ID i pavlefshëm",
+		steamAppIdInvalidBody: "Shkruaj një Steam App ID, URL dyqani, URL komuniteti ose URL SteamDB. Lëre fushën bosh për të hequr përputhjen.",
+		hltbDraftBody: "Ruajtja e ruan këtë zgjedhje.",
+		detailsLoadedTitle: "Detajet u ngarkuan",
+		steamPreviewBody: "Detajet e Steam u ngarkuan në këtë formular. Ruajtja i ruan ato.",
+		ignPreviewBody: "Detajet e IGN u ngarkuan në këtë formular. Ruajtja i ruan ato.",
+		steamAppIdNotAppliedTitle: "Steam App ID nuk u zbatua",
+		steamAppIdNotAppliedBody: "Zgjidh «Zbato Steam App ID» për të ngarkuar përputhjen e re përpara se të ruash.",
 		hltbNotFoundTitle: "Nuk u gjet",
 		hltbNotFoundBody: "HowLongToBeat nuk ka lojë me atë numër.",
 		notApplicableTitle: "Nuk zbatohet",
@@ -14734,7 +15300,7 @@ var matchPicker$5 = {
 	release: "Publikimi: {{date}}",
 	releaseUnavailable: "Data e publikimit e padisponueshme",
 	steamType: "Lloji në Steam: {{type}}. Kontrollo që kjo është loja ose botimi që dëshiron.",
-	applyHelp: "Përdorimi i kësaj përputhjeje ruan Steam App ID dhe ngarkon metadatat e tij. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
+	applyHelp: "Përdorimi i kësaj përputhjeje ngarkon Steam App ID dhe detajet e tij në këtë formular. Ruajtja i ruan ato. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
 	apply: "Përdor këtë përputhje në Steam",
 	cancel: "Anulo zgjedhjen"
 };
@@ -15204,8 +15770,26 @@ var conflicts$4 = {
 };
 var editor$4 = {
 	save: "Spara",
+	saveCount: "Spara ({{count}})",
 	removeMetadata: "Ta bort metadata",
 	done: "Klar",
+	moreOptions: "Fler alternativ",
+	moreMenuTitle: "Metadata",
+	refreshFromSteam: "Uppdatera från Steam",
+	fieldEdited: "Ändrad",
+	fieldFromSteam: "Från Steam, inte sparat",
+	steamDataChanged: "Steam-data som inte visas i formuläret (skärmbilder, nyheter, kompatibilitet) har ändrats och är inte sparad.",
+	unsaved: {
+		title: "Spara ändringar?",
+		body: "Du har osparade ändringar i spelets metadata.",
+		discard: "Släng",
+		cancel: "Avbryt"
+	},
+	removeConfirm: {
+		title: "Ta bort metadata?",
+		body: "Detta tar bort all sparad metadata för {{name}}. Det går inte att ångra.",
+		cancel: "Avbryt"
+	},
 	nonSteamOnly: "Det här plugin-programmet ändrar bara icke-Steam-spel.",
 	searchIgn: "Sök IGN-metadata",
 	search: "Sök",
@@ -15218,7 +15802,9 @@ var editor$4 = {
 		developers: "Utvecklare",
 		publishers: "Utgivare",
 		releaseDate: "Utgivningsdatum",
-		rating: "Betyg"
+		rating: "Betyg",
+		categories: "Kategorier",
+		steamData: "Steam-data som inte visas i formuläret"
 	},
 	compat: {
 		useGlobalDefault: "Använd global standard",
@@ -15274,6 +15860,14 @@ var editor$4 = {
 	toast: {
 		hltbInvalidTitle: "Ogiltigt HLTB-spel",
 		hltbInvalidBody: "Ange ett HowLongToBeat-spelnummer eller en länk till spelsidan.",
+		steamAppIdInvalidTitle: "Ogiltigt Steam-app-ID",
+		steamAppIdInvalidBody: "Ange ett Steam-app-ID, butiks-URL, community-URL eller SteamDB-URL. Lämna fältet tomt för att ta bort matchningen.",
+		hltbDraftBody: "Spara sparar det här valet.",
+		detailsLoadedTitle: "Detaljer inlästa",
+		steamPreviewBody: "Steam-detaljer är inlästa i det här formuläret. Spara sparar dem.",
+		ignPreviewBody: "IGN-detaljer är inlästa i det här formuläret. Spara sparar dem.",
+		steamAppIdNotAppliedTitle: "Steam-app-ID:t tillämpades inte",
+		steamAppIdNotAppliedBody: "Välj ”Tillämpa Steam-app-ID” för att läsa in den nya matchningen innan du sparar.",
 		hltbNotFoundTitle: "Hittades inte",
 		hltbNotFoundBody: "HowLongToBeat har inget spel med det numret.",
 		notApplicableTitle: "Ej tillämpligt",
@@ -15326,7 +15920,7 @@ var matchPicker$4 = {
 	release: "Utgivningsdatum: {{date}}",
 	releaseUnavailable: "Utgivningsdatum inte tillgängligt",
 	steamType: "Steam-typ: {{type}}. Kontrollera att det är spelet eller utgåvan du vill ha.",
-	applyHelp: "Genom att använda den här matchningen sparas Steam-app-ID:t och dess metadata läses in. Det döper inte om din genväg och ersätter inte din egen grafik.",
+	applyHelp: "Om du använder den här matchningen läses Steam-app-ID:t och detaljerna in i det här formuläret. Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
 	apply: "Använd den här Steam-matchningen",
 	cancel: "Avbryt val"
 };
@@ -15796,8 +16390,26 @@ var conflicts$3 = {
 };
 var editor$3 = {
 	save: "Kaydet",
+	saveCount: "Kaydet ({{count}})",
 	removeMetadata: "Meta verileri kaldır",
 	done: "Bitti",
+	moreOptions: "Diğer seçenekler",
+	moreMenuTitle: "Meta veriler",
+	refreshFromSteam: "Steam'den yenile",
+	fieldEdited: "Düzenlendi",
+	fieldFromSteam: "Steam'den, kaydedilmedi",
+	steamDataChanged: "Formda gösterilmeyen Steam verileri (ekran görüntüleri, haberler, uyumluluk) değişti ve kaydedilmedi.",
+	unsaved: {
+		title: "Değişiklikler kaydedilsin mi?",
+		body: "Bu oyunun meta verilerinde kaydedilmemiş değişiklikleriniz var.",
+		discard: "Vazgeç",
+		cancel: "İptal"
+	},
+	removeConfirm: {
+		title: "Meta veriler kaldırılsın mı?",
+		body: "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
+		cancel: "İptal"
+	},
 	nonSteamOnly: "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
 	searchIgn: "IGN meta verilerinde ara",
 	search: "Ara",
@@ -15810,7 +16422,9 @@ var editor$3 = {
 		developers: "Geliştiriciler",
 		publishers: "Yayıncılar",
 		releaseDate: "Çıkış tarihi",
-		rating: "Derecelendirme"
+		rating: "Derecelendirme",
+		categories: "Kategoriler",
+		steamData: "Formda gösterilmeyen Steam verileri"
 	},
 	compat: {
 		useGlobalDefault: "Genel varsayılanı kullan",
@@ -15866,6 +16480,14 @@ var editor$3 = {
 	toast: {
 		hltbInvalidTitle: "Geçersiz HLTB oyunu",
 		hltbInvalidBody: "Bir HowLongToBeat oyun numarası veya oyun sayfası bağlantısı girin.",
+		steamAppIdInvalidTitle: "Geçersiz Steam uygulama kimliği",
+		steamAppIdInvalidBody: "Bir Steam uygulama kimliği, mağaza URL'si, topluluk URL'si veya SteamDB URL'si girin. Eşleşmeyi kaldırmak için alanı boş bırakın.",
+		hltbDraftBody: "Bu seçim, Kaydet düğmesiyle saklanır.",
+		detailsLoadedTitle: "Ayrıntılar yüklendi",
+		steamPreviewBody: "Steam ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
+		ignPreviewBody: "IGN ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
+		steamAppIdNotAppliedTitle: "Steam uygulama ID'si uygulanmadı",
+		steamAppIdNotAppliedBody: "Kaydetmeden önce yeni eşleşmeyi yüklemek için “Steam Uygulama ID'sini uygula” seçeneğini seçin.",
 		hltbNotFoundTitle: "Bulunamadı",
 		hltbNotFoundBody: "HowLongToBeat'te bu numaraya sahip bir oyun yok.",
 		notApplicableTitle: "Uygulanamaz",
@@ -15918,7 +16540,7 @@ var matchPicker$3 = {
 	release: "Çıkış: {{date}}",
 	releaseUnavailable: "Çıkış tarihi kullanılamıyor",
 	steamType: "Steam türü: {{type}}. Bunun istediğiniz oyun veya sürüm olduğunu doğrulayın.",
-	applyHelp: "Bu eşleşmeyi kullanmak Steam Uygulama ID'sini kaydeder ve meta verilerini yükler. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
+	applyHelp: "Bu eşleşmeyi kullanmak, Steam Uygulama ID'sini ve ayrıntılarını bu forma yükler. Kaydet düğmesiyle saklanır. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
 	apply: "Bu Steam eşleşmesini kullan",
 	cancel: "Seçimi iptal et"
 };
@@ -16390,8 +17012,26 @@ var conflicts$2 = {
 };
 var editor$2 = {
 	save: "Зберегти",
+	saveCount: "Зберегти ({{count}})",
 	removeMetadata: "Видалити метадані",
 	done: "Готово",
+	moreOptions: "Більше параметрів",
+	moreMenuTitle: "Метадані",
+	refreshFromSteam: "Оновити зі Steam",
+	fieldEdited: "Змінено",
+	fieldFromSteam: "Зі Steam, не збережено",
+	steamDataChanged: "Дані Steam, не показані у формі (скриншоти, новини, сумісність), змінилися й не збережені.",
+	unsaved: {
+		title: "Зберегти зміни?",
+		body: "У вас є незбережені зміни метаданих цієї гри.",
+		discard: "Відхилити",
+		cancel: "Скасувати"
+	},
+	removeConfirm: {
+		title: "Видалити метадані?",
+		body: "Це видалить усі збережені метадані для {{name}}. Скасувати цю дію неможливо.",
+		cancel: "Скасувати"
+	},
 	nonSteamOnly: "Цей плагін змінює лише ігри поза Steam.",
 	searchIgn: "Шукати метадані в IGN",
 	search: "Шукати",
@@ -16404,7 +17044,9 @@ var editor$2 = {
 		developers: "Розробники",
 		publishers: "Видавці",
 		releaseDate: "Дата виходу",
-		rating: "Рейтинг"
+		rating: "Рейтинг",
+		categories: "Категорії",
+		steamData: "Дані Steam, не показані у формі"
 	},
 	compat: {
 		useGlobalDefault: "Використовувати глобальне значення за замовчуванням",
@@ -16460,6 +17102,14 @@ var editor$2 = {
 	toast: {
 		hltbInvalidTitle: "Неприпустима гра HLTB",
 		hltbInvalidBody: "Введіть номер гри HowLongToBeat або посилання на сторінку гри.",
+		steamAppIdInvalidTitle: "Неприпустимий Steam App ID",
+		steamAppIdInvalidBody: "Введіть Steam App ID, посилання на магазин, спільноту або SteamDB. Залиште поле порожнім, щоб зняти збіг.",
+		hltbDraftBody: "Натисніть «Зберегти», щоб запам'ятати цей вибір.",
+		detailsLoadedTitle: "Відомості завантажено",
+		steamPreviewBody: "Відомості Steam завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
+		ignPreviewBody: "Відомості IGN завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
+		steamAppIdNotAppliedTitle: "Steam App ID не застосовано",
+		steamAppIdNotAppliedBody: "Виберіть «Застосувати Steam App ID», щоб завантажити новий збіг перед збереженням.",
 		hltbNotFoundTitle: "Не знайдено",
 		hltbNotFoundBody: "У HowLongToBeat немає гри з таким номером.",
 		notApplicableTitle: "Не застосовно",
@@ -16512,7 +17162,7 @@ var matchPicker$2 = {
 	release: "Дата виходу: {{date}}",
 	releaseUnavailable: "Дата виходу недоступна",
 	steamType: "Тип Steam: {{type}}. Переконайтеся, що це потрібна гра або видання.",
-	applyHelp: "Використання цього збігу зберігає Steam App ID і завантажує його метадані. Воно не перейменовує ярлик і не замінює ваш арт.",
+	applyHelp: "Використання цього збігу завантажує його Steam App ID і відомості в цю форму. Натисніть «Зберегти», щоб їх записати. Воно не перейменовує ярлик і не замінює ваш арт.",
 	apply: "Використати цей збіг Steam",
 	cancel: "Скасувати вибір"
 };
@@ -16981,8 +17631,26 @@ var conflicts$1 = {
 };
 var editor$1 = {
 	save: "保存",
+	saveCount: "保存 ({{count}})",
 	removeMetadata: "移除元数据",
 	done: "完成",
+	moreOptions: "更多选项",
+	moreMenuTitle: "元数据",
+	refreshFromSteam: "从 Steam 刷新",
+	fieldEdited: "已编辑",
+	fieldFromSteam: "来自 Steam，未保存",
+	steamDataChanged: "表单中未显示的 Steam 数据（截图、新闻、兼容性）已更改且尚未保存。",
+	unsaved: {
+		title: "保存更改？",
+		body: "此游戏的元数据有未保存的更改。",
+		discard: "放弃",
+		cancel: "取消"
+	},
+	removeConfirm: {
+		title: "移除元数据？",
+		body: "这将删除 {{name}} 的所有已保存元数据。此操作无法撤销。",
+		cancel: "取消"
+	},
 	nonSteamOnly: "此插件仅修改非 Steam 游戏。",
 	searchIgn: "搜索 IGN 元数据",
 	search: "搜索",
@@ -16995,7 +17663,9 @@ var editor$1 = {
 		developers: "开发商",
 		publishers: "发行商",
 		releaseDate: "发行日期",
-		rating: "分级"
+		rating: "分级",
+		categories: "分类",
+		steamData: "表单中未显示的 Steam 数据"
 	},
 	compat: {
 		useGlobalDefault: "使用全局默认值",
@@ -17051,6 +17721,14 @@ var editor$1 = {
 	toast: {
 		hltbInvalidTitle: "HLTB 游戏无效",
 		hltbInvalidBody: "请输入 HowLongToBeat 游戏编号或游戏页面链接。",
+		steamAppIdInvalidTitle: "Steam 应用 ID 无效",
+		steamAppIdInvalidBody: "请输入 Steam 应用 ID、商店链接、社区链接或 SteamDB 链接。留空可清除匹配。",
+		hltbDraftBody: "点击保存会存储此选择。",
+		detailsLoadedTitle: "详情已加载",
+		steamPreviewBody: "Steam 详情已加载到此表单中，点击保存后会存储。",
+		ignPreviewBody: "IGN 详情已加载到此表单中，点击保存后会存储。",
+		steamAppIdNotAppliedTitle: "Steam App ID 未应用",
+		steamAppIdNotAppliedBody: "保存前，请选择“应用 Steam App ID”以加载新的匹配。",
 		hltbNotFoundTitle: "未找到",
 		hltbNotFoundBody: "HowLongToBeat 中没有该编号的游戏。",
 		notApplicableTitle: "不适用",
@@ -17103,7 +17781,7 @@ var matchPicker$1 = {
 	release: "发行：{{date}}",
 	releaseUnavailable: "发行日期不可用",
 	steamType: "Steam 类型：{{type}}。请确认这是你想要的游戏或版本。",
-	applyHelp: "使用此匹配会保存 Steam App ID 并加载其元数据。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
+	applyHelp: "使用此匹配会将其 Steam App ID 和详情加载到此表单中，点击保存后才会存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
 	apply: "使用此 Steam 匹配",
 	cancel: "取消选择"
 };
@@ -17572,8 +18250,26 @@ var conflicts = {
 };
 var editor = {
 	save: "儲存",
+	saveCount: "儲存 ({{count}})",
 	removeMetadata: "移除中繼資料",
 	done: "完成",
+	moreOptions: "更多選項",
+	moreMenuTitle: "中繼資料",
+	refreshFromSteam: "從 Steam 重新整理",
+	fieldEdited: "已編輯",
+	fieldFromSteam: "來自 Steam，未儲存",
+	steamDataChanged: "表單中未顯示的 Steam 資料（截圖、新聞、相容性）已變更且尚未儲存。",
+	unsaved: {
+		title: "儲存變更？",
+		body: "此遊戲的中繼資料有未儲存的變更。",
+		discard: "捨棄",
+		cancel: "取消"
+	},
+	removeConfirm: {
+		title: "移除中繼資料？",
+		body: "這會刪除 {{name}} 的所有已儲存中繼資料。此操作無法復原。",
+		cancel: "取消"
+	},
 	nonSteamOnly: "此外掛只會變更非 Steam 遊戲。",
 	searchIgn: "搜尋 IGN 中繼資料",
 	search: "搜尋",
@@ -17586,7 +18282,9 @@ var editor = {
 		developers: "開發人員",
 		publishers: "發行商",
 		releaseDate: "發行日期",
-		rating: "分級"
+		rating: "分級",
+		categories: "分類",
+		steamData: "表單中未顯示的 Steam 資料"
 	},
 	compat: {
 		useGlobalDefault: "使用全域預設值",
@@ -17642,6 +18340,14 @@ var editor = {
 	toast: {
 		hltbInvalidTitle: "HLTB 遊戲無效",
 		hltbInvalidBody: "請輸入 HowLongToBeat 遊戲編號或遊戲頁面連結。",
+		steamAppIdInvalidTitle: "Steam 應用程式 ID 無效",
+		steamAppIdInvalidBody: "請輸入 Steam 應用程式 ID、商店連結、社群連結或 SteamDB 連結。留空可清除符合項。",
+		hltbDraftBody: "按下「儲存」後才會儲存此選擇。",
+		detailsLoadedTitle: "詳細資料已載入",
+		steamPreviewBody: "Steam 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
+		ignPreviewBody: "IGN 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
+		steamAppIdNotAppliedTitle: "Steam App ID 未套用",
+		steamAppIdNotAppliedBody: "儲存前，請選擇「套用 Steam App ID」以載入新的比對。",
 		hltbNotFoundTitle: "找不到",
 		hltbNotFoundBody: "HowLongToBeat 中沒有該編號的遊戲。",
 		notApplicableTitle: "不適用",
@@ -17694,7 +18400,7 @@ var matchPicker = {
 	release: "發行：{{date}}",
 	releaseUnavailable: "發行日期無法使用",
 	steamType: "Steam 類型：{{type}}。請確認這是你想要的遊戲或版本。",
-	applyHelp: "使用此比對會儲存 Steam App ID 並載入其中繼資料。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
+	applyHelp: "使用此比對會將其 Steam App ID 和詳細資料載入此表單中，按下「儲存」後才會儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
 	apply: "使用此 Steam 比對",
 	cancel: "取消選取"
 };
@@ -24589,13 +25295,13 @@ const allNonSteamGames = async () => {
 
 const POLL_INTERVAL_MS$1 = 100;
 const POLL_TIMEOUT_MS = 3000;
-const positiveAppId = (value) => {
+const positiveAppId$1 = (value) => {
     const appId = Number(value);
     return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
 };
 /** Read Steam's native shortcut name without going through the metadata alias or title cleaner. */
 const nativeShortcutName = (appId) => {
-    if (!positiveAppId(appId))
+    if (!positiveAppId$1(appId))
         return null;
     const overview = getNativeOverview(appId);
     if (!overview || !isNativeNonSteamShortcut(overview))
@@ -24618,7 +25324,7 @@ const classifyShortcutNameState = (currentName, state) => {
  * SetShortcutName returns undefined, so it is never proof of success.
  */
 const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
-    const normalizedAppId = positiveAppId(appId);
+    const normalizedAppId = positiveAppId$1(appId);
     const expected = typeof expectedCurrent === "string" ? expectedCurrent : "";
     const requested = typeof target === "string" ? target : "";
     // Rejections are codes; the editor shows them through translateBackendError (backend.<code>).
@@ -35027,16 +35733,6 @@ const editorActionButtonStyle = {
     minWidth: 0,
     whiteSpace: "nowrap",
 };
-const editorSaveButtonStyle = {
-    ...editorActionButtonStyle,
-    color: "white",
-    background: "linear-gradient(180deg, #75b022 0%, #588a1b 100%)",
-};
-const editorRemoveButtonStyle = {
-    ...editorActionButtonStyle,
-    color: "white",
-    background: "linear-gradient(180deg, #d94b43 0%, #a92f2a 100%)",
-};
 const editorSearchRowStyle = {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) minmax(112px, max-content)",
@@ -35145,6 +35841,37 @@ const editorAppIdButtonStyle = {
     paddingRight: 24,
     whiteSpace: "nowrap",
 };
+const editorActionBarNativeStyle = {
+    ...editorActionBarStyle,
+    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 72px",
+};
+const editorMoreButtonStyle = {
+    width: "100%",
+    minWidth: 0,
+};
+const editorFieldMarkerBaseStyle = {
+    borderLeft: "3px solid transparent",
+    paddingLeft: 12,
+};
+const editorFieldEditedStyle = {
+    ...editorFieldMarkerBaseStyle,
+    borderLeftColor: colors.accent,
+};
+const editorFieldPreviewStyle = {
+    ...editorFieldMarkerBaseStyle,
+    borderLeftColor: colors.warning,
+};
+const editorFieldEditedLabelStyle = {
+    color: colors.accent,
+};
+const editorFieldPreviewLabelStyle = {
+    color: colors.warning,
+};
+const editorFieldMarkerTagStyle = {
+    marginLeft: 8,
+    fontSize: 12,
+    fontWeight: 600,
+};
 const editorScopedCss = `
 .decky-metadata-editor .decky-metadata-editor__focus-target,
 .decky-metadata-editor .decky-metadata-editor__category-grid > div,
@@ -35153,38 +35880,7 @@ const editorScopedCss = `
   scroll-margin-bottom: 24px;
 }
 
-.decky-metadata-editor .decky-metadata-editor__action--save:hover {
-  color: white !important;
-  background: #75b022 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--remove:hover {
-  color: white !important;
-  background: #d94b43 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus,
-.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
-  color: white !important;
-  outline: 3px solid white !important;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px #1a9fff !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus {
-  background: #75b022 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
-  background: #d94b43 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:disabled,
-.decky-metadata-editor .decky-metadata-editor__action--remove:disabled {
+.decky-metadata-editor .decky-metadata-editor__action--save:disabled {
   opacity: 0.55;
   filter: saturate(0.45);
 }
@@ -35489,6 +36185,162 @@ const parseRating = (value) => {
     return Math.max(0, Math.min(100, Math.round(number)));
 };
 
+const DRAFT_FIELD_ORDER = [
+    "title",
+    "description",
+    "developers",
+    "publishers",
+    "releaseDate",
+    "rating",
+    "categories",
+    "compatibility",
+    "steamAppId",
+    "hltb",
+    "steamData",
+];
+// Keys the editor shows or derives; everything else is Steam-owned persisted data.
+const HIDDEN_KEYS = {
+    title: true,
+    description: true,
+    short_description: true,
+    developers: true,
+    publishers: true,
+    release_date: true,
+    rating: true,
+    store_categories: true,
+    deck_compat_override: true,
+    steam_appid: true,
+    hltb_game_id: true,
+    updated_at: true,
+};
+const displayedDescription = (metadata) => metadata.short_description?.trim()
+    ? metadata.short_description
+    : metadata.description || "";
+const positiveAppId = (value) => {
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 ? id : null;
+};
+const equalCategories = (a, b) => {
+    const left = new Set(a ?? []);
+    const right = new Set(b ?? []);
+    if (left.size !== right.size)
+        return false;
+    for (const value of left)
+        if (!right.has(value))
+            return false;
+    return true;
+};
+// Missing keys and explicit null/undefined all mean "no value".
+const deepEqual = (a, b) => {
+    if (a === b)
+        return true;
+    if (a == null || b == null)
+        return a == null && b == null;
+    if (typeof a !== "object" || typeof b !== "object")
+        return false;
+    if (Array.isArray(a) || Array.isArray(b)) {
+        return (Array.isArray(a) &&
+            Array.isArray(b) &&
+            a.length === b.length &&
+            a.every((item, index) => deepEqual(item, b[index])));
+    }
+    const left = a;
+    const right = b;
+    return Object.keys({ ...left, ...right }).every((key) => deepEqual(left[key], right[key]));
+};
+const steamDataChanged = (form, saved) => {
+    const left = form;
+    const right = saved;
+    return Object.keys({ ...left, ...right }).some((key) => HIDDEN_KEYS[key] !== true && !deepEqual(left[key], right[key]));
+};
+function changedDraftFields(saved, form) {
+    if (saved === null)
+        return [];
+    const formAppId = positiveAppId(form.metadata.steam_appid);
+    const savedAppId = positiveAppId(saved.steam_appid);
+    // A URL and a bare number for the same app are the same match; unparsable text is a change.
+    const textAppIdText = form.steamAppIdText.trim();
+    const textAppId = textAppIdText ? parseSteamAppId(textAppIdText) || NaN : null;
+    const savedHltbText = saved.hltb_game_id == null ? "" : String(saved.hltb_game_id);
+    const changed = {
+        title: (form.metadata.title ?? "") !== (saved.title ?? ""),
+        description: displayedDescription(form.metadata) !== displayedDescription(saved),
+        developers: form.developerText !== personsToText(saved.developers),
+        publishers: form.publisherText !== personsToText(saved.publishers),
+        releaseDate: form.releaseText !== (saved.release_date ?? ""),
+        rating: form.ratingText !== (saved.rating == null ? "" : String(saved.rating)),
+        categories: !equalCategories(form.metadata.store_categories, saved.store_categories),
+        compatibility: !deepEqual(form.metadata.deck_compat_override, saved.deck_compat_override),
+        steamAppId: formAppId !== savedAppId || textAppId !== savedAppId,
+        hltb: (form.hltbIdDraft !== null &&
+            form.hltbIdDraft.trim() !== savedHltbText) ||
+            (form.metadata.hltb_game_id ?? null) !== (saved.hltb_game_id ?? null),
+        steamData: steamDataChanged(form.metadata, saved),
+    };
+    // The visible fields hide the full description and person URLs; a change there is still a change.
+    changed.steamData || (changed.steamData = (!changed.description &&
+        (!deepEqual(form.metadata.description, saved.description) ||
+            !deepEqual(form.metadata.short_description, saved.short_description))) ||
+        (!changed.developers && !deepEqual(form.metadata.developers, saved.developers)) ||
+        (!changed.publishers && !deepEqual(form.metadata.publishers, saved.publishers)));
+    return DRAFT_FIELD_ORDER.filter((key) => changed[key]);
+}
+/** Visible fields that differ between two form states, e.g. right before and after a preview merge. */
+function changedFormFields(before, after) {
+    const a = before.metadata;
+    const b = after.metadata;
+    const changed = {
+        title: (a.title ?? "") !== (b.title ?? ""),
+        description: displayedDescription(a) !== displayedDescription(b),
+        developers: before.developerText !== after.developerText,
+        publishers: before.publisherText !== after.publisherText,
+        releaseDate: before.releaseText !== after.releaseText,
+        rating: before.ratingText !== after.ratingText,
+        categories: !equalCategories(a.store_categories, b.store_categories),
+        compatibility: !deepEqual(a.deck_compat_override, b.deck_compat_override),
+        steamAppId: positiveAppId(a.steam_appid) !== positiveAppId(b.steam_appid) ||
+            before.steamAppIdText.trim() !== after.steamAppIdText.trim(),
+        hltb: before.hltbIdDraft !== after.hltbIdDraft ||
+            (a.hltb_game_id ?? null) !== (b.hltb_game_id ?? null),
+        steamData: false,
+    };
+    return DRAFT_FIELD_ORDER.filter((key) => changed[key]);
+}
+
+const FIELD_LABEL_KEYS = {
+    title: "editor.field.title",
+    description: "editor.field.description",
+    developers: "editor.field.developers",
+    publishers: "editor.field.publishers",
+    releaseDate: "editor.field.releaseDate",
+    rating: "editor.field.rating",
+    categories: "editor.field.categories",
+    compatibility: "editor.compatibilityStatus",
+    steamAppId: "editor.steamAppId",
+    hltb: "editor.hltbGame",
+    steamData: "editor.field.steamData",
+};
+const changedListStyle = {
+    margin: "8px 0 0",
+    paddingLeft: 20,
+};
+function draftFieldLabel(t, key) {
+    return t(FIELD_LABEL_KEYS[key]);
+}
+function showUnsavedChangesModal(opts) {
+    DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.unsaved.title"), strDescription: t("editor.unsaved.body"), strOKButtonText: t("editor.save"), strMiddleButtonText: t("editor.unsaved.discard"), strCancelButtonText: t("editor.unsaved.cancel"), onOK: opts.onSave, onMiddleButton: opts.onDiscard, onCancel: opts.onCancel, children: opts.changed.length > 0 ? (SP_JSX.jsx("ul", { style: changedListStyle, children: opts.changed.map((key) => (SP_JSX.jsx("li", { children: draftFieldLabel(t, key) }, key))) })) : null }));
+}
+function showRemoveMetadataModal(opts) {
+    DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { bDestructiveWarning: true, strTitle: t("editor.removeConfirm.title"), strDescription: t("editor.removeConfirm.body", { name: opts.gameName }), strOKButtonText: t("editor.removeMetadata"), strCancelButtonText: t("editor.removeConfirm.cancel"), onOK: opts.onConfirm }));
+}
+function showEditorMoreMenu(opts) {
+    DFL.showContextMenu(SP_JSX.jsxs(DFL.Menu, { label: t("editor.moreMenuTitle"), children: [SP_JSX.jsx(DFL.MenuItem, { disabled: !opts.canRefresh, onSelected: () => { if (opts.canRefresh)
+                    opts.onRefresh(); }, children: t("editor.refreshFromSteam") }), SP_JSX.jsx(DFL.MenuItem, { onSelected: opts.onRemove, children: t("editor.removeMetadata") })] }), opts.parent);
+}
+function saveButtonLabel(t, count) {
+    return count > 0 ? t("editor.saveCount", { count }) : t("editor.save");
+}
+
 // Shared look for the multiline Description field, applied to both the
 // gamepad-aware textarea and the plain fallback.
 const descriptionTextareaStyle = {
@@ -35701,6 +36553,12 @@ const MetadataPage = () => {
     const busyRef = SP_REACT.useRef(false);
     const busyEntryRef = SP_REACT.useRef(null);
     const steamAppIdTextRef = SP_REACT.useRef(steamAppIdText);
+    // The stored record this form is a draft of; only backend confirmations set it.
+    const savedRecordRef = SP_REACT.useRef(null);
+    // The Steam match currently previewed into the form but not stored yet.
+    const previewedSteamAppIdRef = SP_REACT.useRef(null);
+    // Fields the last Steam preview filled; a later user edit clears one.
+    const steamPreviewedFieldsRef = SP_REACT.useRef(new Set());
     // A null owner only exists during initial state hydration/tests and remains
     // conservative. A known owner from another editor entry must not block this
     // view or be cleared by its completion callback.
@@ -35735,16 +36593,38 @@ const MetadataPage = () => {
     const markFormEdited = SP_REACT.useCallback(() => {
         formRevisionRef.current += 1;
     }, []);
+    /** A user edit is no longer "from Steam" even if a preview put the value there. */
+    const clearPreviewMarker = SP_REACT.useCallback((key) => {
+        steamPreviewedFieldsRef.current.delete(key);
+    }, []);
     const setSteamAppIdInput = SP_REACT.useCallback((value) => {
         steamAppIdTextRef.current = value;
         setSteamAppIdText(value);
     }, []);
+    const formTextSnapshot = () => ({
+        developerText: developerTextRef.current,
+        publisherText: publisherTextRef.current,
+        releaseText: releaseTextRef.current,
+        ratingText: ratingTextRef.current,
+        steamAppIdText: steamAppIdTextRef.current,
+    });
+    /** The draft as the preview markers compare it, one snapshot at a time. */
+    const draftFormState = () => ({
+        metadata: metadataRef.current,
+        developerText: developerTextRef.current,
+        publisherText: publisherTextRef.current,
+        releaseText: releaseTextRef.current,
+        ratingText: ratingTextRef.current,
+        steamAppIdText: steamAppIdTextRef.current,
+        hltbIdDraft,
+    });
     /**
      * A backend response owns every field that the user did not change while it
      * was pending. Later local edits win, so the form and cache stay aligned
      * with the full enriched record without overwriting active input.
+     * A preview is not stored, so it leaves the release baseline alone.
      */
-    const reconcileMetadataResponse = SP_REACT.useCallback((response, baselineMetadata, baselineText) => {
+    const reconcileMetadataResponse = SP_REACT.useCallback((response, baselineMetadata, baselineText, rebaselineRelease = true) => {
         const reconciled = mergeHydratedMetadata(response, baselineMetadata, metadataRef.current);
         metadataRef.current = reconciled;
         setMetadata(reconciled);
@@ -35758,7 +36638,9 @@ const MetadataPage = () => {
             publisherTextRef.current = value;
             setPublisherText(value);
         }
-        releaseBaselineRef.current = { text: reconciled.release_date ?? "", value: reconciled.release_date };
+        if (rebaselineRelease) {
+            releaseBaselineRef.current = { text: reconciled.release_date ?? "", value: reconciled.release_date };
+        }
         if (releaseTextRef.current === baselineText.releaseText) {
             const value = reconciled.release_date ?? "";
             releaseTextRef.current = value;
@@ -35825,6 +36707,9 @@ const MetadataPage = () => {
             return;
         if (metadataResult.status === "fulfilled") {
             const saved = metadataResult.value || metadataTemplate(appName(appId));
+            savedRecordRef.current = saved;
+            previewedSteamAppIdRef.current = null;
+            steamPreviewedFieldsRef.current.clear();
             if (formRevisionRef.current === requestedRevision) {
                 setFormMetadata(saved);
                 setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
@@ -35889,29 +36774,42 @@ const MetadataPage = () => {
         setSteamNameLoading(false);
         setSteamNameUnavailable(false);
         setMetadataHydratedEntry(null);
+        // A stored snapshot and an unsaved preview belong to one game's editor.
+        savedRecordRef.current = null;
+        previewedSteamAppIdRef.current = null;
+        steamPreviewedFieldsRef.current.clear();
         // The editor stays mounted across games, so its search belongs to one entry (#43).
         setQuery(appName(appId));
         setResults([]);
+        // An unsaved HLTB draft belongs to the game it was typed on.
+        setHltbIdDraft(null);
     }, [appId]);
     SP_REACT.useEffect(() => {
-        const steamAppId = Number(metadata.steam_appid);
+        const steamAppId = normalizedSteamAppId(metadata.steam_appid);
+        const storedRecord = savedRecordRef.current;
+        // This backfill writes to the store, so it may only run for the stored
+        // match: never while the form holds an unsaved preview of another one.
         if (metadataHydratedEntry !== editorEntryToken ||
             steamNameBackfillEntryRef.current === editorEntryToken ||
-            !Number.isInteger(steamAppId) ||
-            steamAppId <= 0 ||
-            Boolean(metadata.steam_store_name)) {
+            steamAppId === null ||
+            Boolean(metadata.steam_store_name) ||
+            storedRecord === null ||
+            normalizedSteamAppId(storedRecord.steam_appid) !== steamAppId ||
+            previewedSteamAppIdRef.current !== null) {
             return;
         }
         steamNameBackfillEntryRef.current = editorEntryToken;
         const requestedEntry = editorEntryToken;
         const requestedSteamAppId = steamAppId;
-        const requestedMetadata = metadataRef.current;
+        // The stored record is the baseline, not the form: an edit made while the
+        // request is pending must not be reverted to its stored value.
+        const requestedMetadata = storedRecord;
         const requestedText = {
-            developerText: developerTextRef.current,
-            publisherText: publisherTextRef.current,
-            releaseText: releaseTextRef.current,
-            ratingText: ratingTextRef.current,
-            steamAppIdText: steamAppIdTextRef.current,
+            developerText: personsToText(storedRecord.developers),
+            publisherText: personsToText(storedRecord.publishers),
+            releaseText: storedRecord.release_date ?? "",
+            ratingText: storedRecord.rating == null ? "" : String(storedRecord.rating),
+            steamAppIdText: storedRecord.steam_appid ? String(storedRecord.steam_appid) : "",
         };
         setSteamNameLoading(true);
         setSteamNameUnavailable(false);
@@ -35928,7 +36826,13 @@ const MetadataPage = () => {
                 return;
             }
             const reconciled = reconcileMetadataResponse(enriched, requestedMetadata, requestedText);
-            setMetadataCacheEntry(appId, reconciled);
+            // Steam persisted the name for the stored match, so the snapshot moves too.
+            savedRecordRef.current = {
+                ...(savedRecordRef.current ?? requestedMetadata),
+                steam_store_name: reconciled.steam_store_name ?? "",
+            };
+            // The cache is what the Game Info page renders; it holds stored data only.
+            setMetadataCacheEntry(appId, enriched);
             if (steamAppIdTextRef.current === requestedText.steamAppIdText) {
                 setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
             }
@@ -36004,7 +36908,59 @@ const MetadataPage = () => {
     const [steamLanguage, setSteamLanguage] = SP_REACT.useState(null);
     // The HLTB game the game page shows, chosen or found automatically.
     const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+    // Declared after the other hooks so their slots stay unchanged.
+    const mountedRef = SP_REACT.useRef(true);
+    // The form revision this entry began with: an edit typed before the record
+    // finished loading is still a draft, even though it cannot be diffed yet.
+    const entryStartRef = SP_REACT.useRef({ entry: editorEntryToken, revision: formRevisionRef.current });
+    if (entryStartRef.current.entry !== editorEntryToken) {
+        entryStartRef.current = { entry: editorEntryToken, revision: formRevisionRef.current };
+    }
+    // The leave prompt outlives its render; it must save the form as it is when Save is chosen.
+    const saveCurrentRef = SP_REACT.useRef(async () => false);
+    SP_REACT.useEffect(() => () => {
+        mountedRef.current = false;
+    }, []);
     const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
+    // The visible fields whose value differs from the stored record.
+    const changed = changedDraftFields(savedRecordRef.current, {
+        metadata,
+        developerText,
+        publisherText,
+        releaseText,
+        ratingText,
+        steamAppIdText,
+        hltbIdDraft,
+    });
+    const fieldMarker = (key) => {
+        const edited = changed.includes(key);
+        const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
+        return {
+            container: !edited
+                ? editorFieldMarkerBaseStyle
+                : fromSteam
+                    ? editorFieldPreviewStyle
+                    : editorFieldEditedStyle,
+            label: !edited
+                ? undefined
+                : fromSteam
+                    ? editorFieldPreviewLabelStyle
+                    : editorFieldEditedLabelStyle,
+            tag: !edited
+                ? null
+                : fromSteam
+                    ? t("editor.fieldFromSteam")
+                    : t("editor.fieldEdited"),
+        };
+    };
+    const markedContainer = (key, base) => ({
+        ...base,
+        ...fieldMarker(key).container,
+    });
+    const markedLabel = (key, labelKey) => {
+        const marker = fieldMarker(key);
+        return (SP_JSX.jsxs("label", { style: { ...editorLabelStyle, ...marker.label }, children: [t(labelKey), marker.tag ? SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: marker.tag }) : null] }));
+    };
     // Undefined means the field is not a usable HLTB game; the user has been told why.
     const checkHltbIdText = async () => {
         const text = hltbIdText.trim();
@@ -36022,46 +36978,71 @@ const MetadataPage = () => {
         }
         return { id, name: found.game_name };
     };
-    /** Explicit user action: fetch Steam's description/genres in the Steam client language. */
-    const refetchSteamText = async () => {
+    // Undefined means the text is not a usable Steam identity; the user has been told why.
+    const checkSteamAppIdText = (text) => {
+        if (!text.trim())
+            return null;
+        const id = parseSteamAppId(text);
+        if (!id) {
+            toastWarn(t("editor.toast.steamAppIdInvalidTitle"), t("editor.toast.steamAppIdInvalidBody"));
+            return undefined;
+        }
+        return id;
+    };
+    /** Preview a Steam match into the form; nothing is stored until Save. */
+    const previewSteamDraft = async (requestedEntry, draft, previewedSteamAppId, language) => {
+        const baselineMetadata = metadataRef.current;
+        const baselineText = formTextSnapshot();
+        try {
+            const previewed = await previewSteamMetadata(draft, language ?? await currentSteamLanguage());
+            if (!isCurrentEditorEntry(requestedEntry))
+                return false;
+            if (!previewed) {
+                toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
+                return false;
+            }
+            const beforeMerge = draftFormState();
+            reconcileMetadataResponse(previewed, baselineMetadata, baselineText);
+            previewedSteamAppIdRef.current = previewedSteamAppId;
+            // Mark every visible field this merge changed; a value the user typed
+            // while the request was pending stays a normal edit.
+            for (const key of changedFormFields(beforeMerge, draftFormState())) {
+                steamPreviewedFieldsRef.current.add(key);
+            }
+            setSteamNameUnavailable(false);
+            toastSuccess(t("editor.toast.detailsLoadedTitle"), t("editor.toast.steamPreviewBody"));
+            return true;
+        }
+        catch (error) {
+            if (isCurrentEditorEntry(requestedEntry)) {
+                toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
+            }
+            return false;
+        }
+    };
+    /**
+     * Reload the Steam details of the match the form currently holds, in the
+     * given language or the Steam client's. Works for an unsaved preview too.
+     */
+    const refreshFromSteam = async (language) => {
         if (!nonSteam) {
             toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return;
+            return false;
         }
         const requestedEntry = editorEntryToken;
         if (metadataHydratedEntry !== requestedEntry) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
-            return;
+            return false;
         }
-        if (!steamLanguage || !beginBusy(requestedEntry))
-            return;
-        const baselineMetadata = metadataRef.current;
-        const baselineText = {
-            developerText: developerTextRef.current,
-            publisherText: publisherTextRef.current,
-            releaseText: releaseTextRef.current,
-            ratingText: ratingTextRef.current,
-            steamAppIdText: steamAppIdTextRef.current,
-        };
-        const requestedSteamAppId = normalizedSteamAppId(baselineMetadata.steam_appid);
+        const steamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
+        if (steamAppId === null) {
+            toastWarn(t("editor.toast.steamAppIdInvalidTitle"), t("editor.toast.steamAppIdInvalidBody"));
+            return false;
+        }
+        if (!beginBusy(requestedEntry))
+            return false;
         try {
-            const enriched = await enrichSteamApp(appId, "metadata", steamLanguage);
-            if (!isCurrentEditorEntry(requestedEntry) ||
-                normalizedSteamAppId(metadataRef.current.steam_appid) !== requestedSteamAppId) {
-                return;
-            }
-            if (!enriched) {
-                toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
-                return;
-            }
-            const reconciled = reconcileMetadataResponse(enriched, baselineMetadata, baselineText);
-            setMetadataCacheEntry(appId, reconciled);
-            applyMetadata(appId, { publishCompatibility: false });
-            refreshCompatibilitySurfaces();
-            toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
-        }
-        catch (error) {
-            toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
+            return await previewSteamDraft(requestedEntry, normalizedMetadata, steamAppId, language);
         }
         finally {
             endBusy(requestedEntry);
@@ -36070,27 +37051,48 @@ const MetadataPage = () => {
     const saveCurrent = async () => {
         if (!nonSteam) {
             toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return;
+            return false;
         }
         const requestedEntry = editorEntryToken;
         // Until this entry's record loads, the form holds defaults that would overwrite it.
-        if (metadataHydratedEntry !== requestedEntry) {
+        // The Steam-name backfill is still writing the stored record, so a save now would race it.
+        if (metadataHydratedEntry !== requestedEntry || steamNameLoading) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
-            return;
+            return false;
+        }
+        // The text field is the requested match; only Apply loads it into the form.
+        const textSteamAppId = checkSteamAppIdText(steamAppIdText);
+        if (textSteamAppId === undefined)
+            return false;
+        if (textSteamAppId !== normalizedSteamAppId(normalizedMetadata.steam_appid)) {
+            toastWarn(t("editor.toast.steamAppIdNotAppliedTitle"), t("editor.toast.steamAppIdNotAppliedBody"));
+            return false;
         }
         if (!beginBusy(requestedEntry))
-            return;
+            return false;
         const requestedRevision = formRevisionRef.current;
         try {
             // Save also keeps an HLTB game typed without pressing Apply HLTB game.
             const hltb = hltbIdDraft === null ? null : await checkHltbIdText();
             if (hltb === undefined)
-                return;
-            const saved = await saveMetadata(appId, hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata);
-            if (!isCurrentEditorEntry(requestedEntry) ||
-                formRevisionRef.current !== requestedRevision) {
-                return;
-            }
+                return false;
+            // A field edited while the check was pending makes this record stale.
+            if (formRevisionRef.current !== requestedRevision)
+                return false;
+            const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
+            const steamAppId = normalizedSteamAppId(record.steam_appid);
+            // Only a trusted save may store the provider fields a preview fetched.
+            const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
+                ? await savePreviewedMetadata(appId, record, steamAppId)
+                : await saveMetadata(appId, record);
+            if (!isCurrentEditorEntry(requestedEntry))
+                return false;
+            savedRecordRef.current = saved;
+            previewedSteamAppIdRef.current = null;
+            // An edit made while the save was pending stays in the form, unsaved.
+            if (formRevisionRef.current !== requestedRevision)
+                return false;
+            steamPreviewedFieldsRef.current.clear();
             setMetadataCacheEntry(appId, saved);
             setFormMetadata(saved);
             if (hltb)
@@ -36098,13 +37100,53 @@ const MetadataPage = () => {
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
+            return true;
         }
         catch (error) {
             toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
+            return false;
         }
         finally {
             endBusy(requestedEntry);
         }
+    };
+    saveCurrentRef.current = saveCurrent;
+    /**
+     * A delayed save may only navigate back while this entry is still the
+     * editor the user sees; Steam or Home may have moved on meanwhile.
+     */
+    const stillOnEditor = (requestedEntry) => {
+        if (!mountedRef.current || !isCurrentEditorEntry(requestedEntry))
+            return false;
+        // currentRoutePath joins every location source it can read.
+        const editorPaths = [`/decky-metadata/${appId}`, `/routes/decky-metadata/${appId}`];
+        return currentRoutePath().split(" ").some((path) => editorPaths.includes(path));
+    };
+    /** Done and B leave the editor; a draft asks before it is dropped. */
+    const requestLeave = () => {
+        const requestedEntry = editorEntryToken;
+        const editedBeforeLoad = metadataHydratedEntry !== requestedEntry &&
+            formRevisionRef.current !== entryStartRef.current.revision;
+        if (changed.length === 0 && !editedBeforeLoad) {
+            DFL.Navigation.NavigateBack();
+            return;
+        }
+        showUnsavedChangesModal({
+            changed,
+            onSave: () => {
+                // A prompt opened for another game or a closed editor must not save this form.
+                if (!stillOnEditor(requestedEntry))
+                    return;
+                void saveCurrentRef.current().then((ok) => {
+                    if (ok && stillOnEditor(requestedEntry))
+                        DFL.Navigation.NavigateBack();
+                });
+            },
+            onDiscard: () => {
+                if (stillOnEditor(requestedEntry))
+                    DFL.Navigation.NavigateBack();
+            },
+        });
     };
     const applySteamAppId = async (explicitSteamAppId) => {
         if (!nonSteam) {
@@ -36116,102 +37158,69 @@ const MetadataPage = () => {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
             return;
         }
+        const steamAppId = explicitSteamAppId === undefined
+            ? checkSteamAppIdText(steamAppIdText)
+            : explicitSteamAppId;
+        if (steamAppId === undefined)
+            return;
+        const parsed = normalizedSteamAppId(steamAppId);
         if (!beginBusy(requestedEntry))
             return;
-        const saveBaselineMetadata = metadataRef.current;
-        const saveBaselineText = {
-            developerText: developerTextRef.current,
-            publisherText: publisherTextRef.current,
-            releaseText: releaseTextRef.current,
-            ratingText: ratingTextRef.current,
-            steamAppIdText: steamAppIdTextRef.current,
-        };
         try {
-            const parsed = normalizedSteamAppId(explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId);
-            const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
-            const steamAppIdChanged = parsed !== savedSteamAppId;
-            const next = {
-                ...normalizedMetadata,
-                steam_appid: parsed || null,
-                // A proposal is valid only for the Steam match that supplied it.
-                // Clear it before enrichment so a failed request cannot reuse stale data.
-                deck_compat_category: steamAppIdChanged ? null : normalizedMetadata.deck_compat_category,
-                steam_store_name: steamAppIdChanged ? "" : normalizedMetadata.steam_store_name,
-                steam_store_url: parsed
-                    ? `https://store.steampowered.com/app/${parsed}/`
-                    : "",
-            };
-            const saved = await saveMetadata(appId, next);
-            if (!isCurrentEditorEntry(requestedEntry)) {
-                return;
-            }
-            // Keep the local values as they existed just before this acknowledgement.
-            // They are the only edits that can predate the enrichment request below.
-            const metadataAtSaveAcknowledgement = metadataRef.current;
-            // A save acknowledgement owns the Steam match. Reconcile all untouched
-            // fields from it while preserving edits made during the request.
-            const reconciled = reconcileMetadataResponse({
-                ...saved,
-                steam_appid: normalizedSteamAppId(saved.steam_appid),
-                steam_store_name: typeof saved.steam_store_name === "string" ? saved.steam_store_name : "",
-                steam_store_url: typeof saved.steam_store_url === "string" ? saved.steam_store_url : "",
-            }, saveBaselineMetadata, saveBaselineText);
-            setMetadataCacheEntry(appId, reconciled);
-            if (steamAppIdTextRef.current === steamAppIdText) {
-                setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
-            }
-            steamNameBackfillEntryRef.current = requestedEntry;
-            setSteamNameUnavailable(false);
             if (parsed === null) {
-                applyMetadata(appId, { publishCompatibility: false });
-                refreshCompatibilitySurfaces();
-                toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
-                return;
-            }
-            const enrichmentBaselineMetadata = metadataRef.current;
-            const enrichmentBaselineText = {
-                // Text fields can be locally edited without changing metadataRef.
-                // Keep edits that happened before this enrichment started too.
-                ...saveBaselineText,
-            };
-            const enriched = await enrichSteamApp(appId, "metadata", await currentSteamLanguage());
-            if (!isCurrentEditorEntry(requestedEntry) ||
-                normalizedSteamAppId(metadataRef.current.steam_appid) !== parsed) {
-                return;
-            }
-            if (enriched) {
-                const normalizedEnriched = {
-                    ...enriched,
-                    steam_appid: normalizedSteamAppId(enriched.steam_appid),
-                    steam_store_name: typeof enriched.steam_store_name === "string" ? enriched.steam_store_name : "",
-                    steam_store_url: typeof enriched.steam_store_url === "string" ? enriched.steam_store_url : "",
+                // Clearing the match is a form edit; Save removes the stored match.
+                previewedSteamAppIdRef.current = null;
+                clearPreviewMarker("steamAppId");
+                setSteamAppIdInput("");
+                // Clear everything fetched for the old match, as a changed match does.
+                const cleared = {
+                    ...normalizedMetadata,
+                    steam_appid: null,
+                    steam_store_name: "",
+                    steam_store_url: "",
+                    deck_compat_category: null,
+                    steamos_compat_category: null,
+                    steam_machine_compat_category: null,
+                    steam_frame_compat_category: null,
+                    steam_news: [],
+                    steam_news_enriched_at: 0,
+                    steam_dlc_appids: [],
+                    has_points_shop: false,
                 };
-                // Edits made while saving predate the enrichment baseline, so restore
-                // them before merging any newer edits from the enrichment interval.
-                const enrichedWithEarlierEdits = mergeHydratedMetadata(normalizedEnriched, saveBaselineMetadata, metadataAtSaveAcknowledgement);
-                const enrichedMetadata = reconcileMetadataResponse(enrichedWithEarlierEdits, enrichmentBaselineMetadata, enrichmentBaselineText);
-                setMetadataCacheEntry(appId, enrichedMetadata);
-                if (steamAppIdTextRef.current === steamAppIdText) {
-                    setSteamAppIdInput(enrichedMetadata.steam_appid ? String(enrichedMetadata.steam_appid) : "");
-                }
+                delete cleared.steam_store_state;
+                reconcileMetadataResponse(cleared, metadataRef.current, formTextSnapshot());
+                return;
             }
-            else {
-                if (steamAppIdTextRef.current === steamAppIdText) {
-                    setSteamAppIdInput(reconciled.steam_appid ? String(reconciled.steam_appid) : "");
-                }
+            const currentSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
+            const changed = currentSteamAppId !== parsed;
+            const draft = {
+                ...normalizedMetadata,
+                steam_appid: parsed,
+                steam_store_url: `https://store.steampowered.com/app/${parsed}/`,
+                // Steam data fetched for one match must never describe another.
+                deck_compat_category: changed ? null : normalizedMetadata.deck_compat_category,
+                steamos_compat_category: changed ? null : normalizedMetadata.steamos_compat_category,
+                steam_machine_compat_category: changed ? null : normalizedMetadata.steam_machine_compat_category,
+                steam_frame_compat_category: changed ? null : normalizedMetadata.steam_frame_compat_category,
+                steam_news: changed ? [] : normalizedMetadata.steam_news,
+                steam_news_enriched_at: changed ? 0 : normalizedMetadata.steam_news_enriched_at,
+                steam_store_name: changed ? "" : normalizedMetadata.steam_store_name,
+                steam_dlc_appids: changed ? [] : normalizedMetadata.steam_dlc_appids,
+                has_points_shop: changed ? false : normalizedMetadata.has_points_shop,
+            };
+            if (changed)
+                delete draft.steam_store_state;
+            const requestedText = steamAppIdTextRef.current;
+            if (await previewSteamDraft(requestedEntry, draft, parsed)) {
+                if (steamAppIdTextRef.current === requestedText)
+                    setSteamAppIdInput(String(parsed));
             }
-            applyMetadata(appId, { publishCompatibility: false });
-            refreshCompatibilitySurfaces();
-            toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
-        }
-        catch (error) {
-            toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
         }
         finally {
             endBusy(requestedEntry);
         }
     };
-    /** Save the HLTB field, or a game picked from HLTB search, as this game's HLTB game. */
+    /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
     const applyHltbGameId = async (picked) => {
         if (!nonSteam) {
             toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
@@ -36224,22 +37233,22 @@ const MetadataPage = () => {
         }
         if (!beginBusy(requestedEntry))
             return;
+        const requestedRevision = formRevisionRef.current;
         try {
             const hltb = picked ?? await checkHltbIdText();
             if (!hltb)
                 return;
-            const { id, name } = hltb;
-            const saved = await saveMetadata(appId, { ...normalizedMetadata, hltb_game_id: id });
-            if (!isCurrentEditorEntry(requestedEntry))
+            // A slow check must not replace newer typing or another game's draft.
+            if (!isCurrentEditorEntry(requestedEntry) || formRevisionRef.current !== requestedRevision)
                 return;
-            setMetadataCacheEntry(appId, saved);
-            setFormMetadata(saved);
-            setHltbIdDraft(null);
-            applyMetadata(appId, { publishCompatibility: false });
-            toastSuccess(t("editor.toast.savedTitle"), id === null ? t("editor.toast.hltbCleared") : t("editor.toast.hltbGame", { name }));
+            const { id, name } = hltb;
+            markFormEdited();
+            clearPreviewMarker("hltb");
+            setHltbIdDraft(id === null ? "" : String(id));
+            toastSuccess(id === null ? t("editor.toast.hltbCleared") : t("editor.toast.hltbGame", { name }), t("editor.toast.hltbDraftBody"));
         }
         catch (error) {
-            toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
+            toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
         }
         finally {
             endBusy(requestedEntry);
@@ -36266,23 +37275,22 @@ const MetadataPage = () => {
         const requestedEntry = editorEntryToken;
         if (!beginBusy(requestedEntry))
             return;
-        const requestedRevision = formRevisionRef.current;
+        const baselineMetadata = metadataRef.current;
+        const baselineText = formTextSnapshot();
         try {
-            const saved = await applyFetchedMetadata(appId, result.slug || result.url);
-            if (!saved)
+            const fetched = await previewFetchedMetadata(normalizedMetadata, result.slug || result.url);
+            if (!fetched || !isCurrentEditorEntry(requestedEntry))
                 return;
-            if (!isCurrentEditorEntry(requestedEntry) ||
-                formRevisionRef.current !== requestedRevision) {
-                return;
+            // An IGN result fills the draft; its release date keeps the stored baseline.
+            const beforeMerge = draftFormState();
+            reconcileMetadataResponse(fetched, baselineMetadata, baselineText, false);
+            // IGN is a normal edit source, so nothing it fills stays marked "From Steam".
+            for (const key of changedFormFields(beforeMerge, draftFormState())) {
+                steamPreviewedFieldsRef.current.delete(key);
             }
-            setMetadataCacheEntry(appId, saved);
             // An explicit pick takes the game off the removed list; ask HLTB again.
             hltbStore.forget(appId);
-            applyMetadata(appId, { publishCompatibility: false });
-            refreshCompatibilitySurfaces();
-            setFormMetadata(saved);
-            setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
-            toastSuccess(t("editor.toast.savedTitle"), t("editor.toast.metadataSaved"));
+            toastSuccess(t("editor.toast.detailsLoadedTitle"), t("editor.toast.ignPreviewBody"));
         }
         catch (error) {
             toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
@@ -36303,7 +37311,11 @@ const MetadataPage = () => {
             refreshCompatibilitySurfaces();
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setFormMetadata(metadataTemplate(appName(appId)));
+            const template = metadataTemplate(appName(appId));
+            savedRecordRef.current = template;
+            previewedSteamAppIdRef.current = null;
+            steamPreviewedFieldsRef.current.clear();
+            setFormMetadata(template);
             toastSuccess(t("editor.toast.removedTitle"), t("editor.toast.removedBody"));
             // Leave the editor: its reset form would otherwise let Save write an empty Manual record (#40).
             DFL.Navigation.NavigateBack();
@@ -36315,8 +37327,8 @@ const MetadataPage = () => {
             endBusy(requestedEntry);
         }
     };
-    const steamAppId = Number(metadata.steam_appid);
-    const hasSteamMatch = Number.isInteger(steamAppId) && steamAppId > 0;
+    const formSteamAppId = normalizedSteamAppId(metadata.steam_appid);
+    const hasSteamMatch = formSteamAppId !== null;
     const storedSteamLanguage = metadata.metadata_language ?? "english";
     const steamLanguageMismatch = Boolean(hasSteamMatch &&
         steamLanguage &&
@@ -36330,22 +37342,34 @@ const MetadataPage = () => {
     const steamStoreName = typeof metadata.steam_store_name === "string"
         ? metadata.steam_store_name
         : "";
-    const hasSteamStoreName = Boolean(steamStoreName.trim());
+    const savedSteamStoreName = typeof savedRecordRef.current?.steam_store_name === "string"
+        ? savedRecordRef.current.steam_store_name
+        : "";
+    const savedSteamAppId = normalizedSteamAppId(savedRecordRef.current?.steam_appid);
+    // Renaming writes Steam state, so it may only use the stored match.
+    const steamMatchIsSaved = Boolean(savedRecordRef.current &&
+        savedSteamAppId !== null &&
+        savedSteamAppId === formSteamAppId &&
+        previewedSteamAppIdRef.current === null);
     const shortcutStatus = classifyShortcutNameState(currentShortcutName, shortcutManagement?.state);
     const canUseSteamName = Boolean(!entryBusy &&
         !shortcutManagementError &&
         shortcutManagement?.eligible &&
         (shortcutStatus === "unmanaged" || shortcutStatus === "restored") &&
         currentShortcutName &&
-        hasSteamMatch &&
-        hasSteamStoreName &&
-        currentShortcutName !== steamStoreName &&
+        steamMatchIsSaved &&
+        savedSteamStoreName.trim() &&
+        currentShortcutName !== savedSteamStoreName &&
         hasShortcutNameApi());
     const useSteamName = async () => {
         const requestedEntry = editorEntryToken;
         if (!isCurrentEditorEntry(requestedEntry))
             return;
-        if (!canUseSteamName || !shortcutManagement || !currentShortcutName || !hasShortcutNameApi())
+        if (!canUseSteamName ||
+            !shortcutManagement ||
+            !currentShortcutName ||
+            !hasShortcutNameApi() ||
+            savedSteamAppId === null)
             return;
         const current = nativeShortcutName(appId);
         if (current !== currentShortcutName) {
@@ -36360,8 +37384,8 @@ const MetadataPage = () => {
         try {
             // State is durable before the native request so the original spelling
             // survives an app crash, timeout, or Steam-side error.
-            const state = await saveShortcutNameState(appId, current, steamStoreName, steamAppId);
-            const observed = await setShortcutNameAndWait(appId, current, steamStoreName);
+            const state = await saveShortcutNameState(appId, current, savedSteamStoreName, savedSteamAppId);
+            const observed = await setShortcutNameAndWait(appId, current, savedSteamStoreName);
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
             setCurrentShortcutName(observed);
@@ -36454,7 +37478,7 @@ const MetadataPage = () => {
             return;
         DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.useSteamNameTitle"), strOKButtonText: t("editor.shortcut.useSteamName"), onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.useSteamNameBody", {
                     current: currentShortcutName,
-                    target: steamStoreName,
+                    target: savedSteamStoreName,
                 }) }) }));
     };
     const showRestoreShortcutNameModal = () => {
@@ -36469,6 +37493,7 @@ const MetadataPage = () => {
         DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.forgetTitle"), strOKButtonText: t("editor.shortcut.forgetAction"), onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.forgetBody") }) }));
     };
     const toggleCategory = (category, checked) => {
+        clearPreviewMarker("categories");
         updateMetadata((prev) => {
             const next = new Set(prev.store_categories || []);
             if (checked)
@@ -36478,7 +37503,18 @@ const MetadataPage = () => {
             return { ...prev, store_categories: Array.from(next) };
         });
     };
-    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs("div", { ref: editorRootRef, className: editorRootClassName, style: pageStyle, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, style: editorSaveButtonStyle, children: t("editor.save") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`, onClick: removeCurrent, style: editorRemoveButtonStyle, children: t("editor.removeMetadata") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => DFL.Navigation.NavigateBack(), style: editorActionButtonStyle, children: t("editor.done") })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(metadata.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
+    return (SP_JSX.jsx(DFL.ScrollPanel, { children: SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, style: pageStyle, onSecondaryButton: () => {
+                if (changed.length && !steamNameLoading)
+                    void saveCurrent();
+            }, onSecondaryActionDescription: t("editor.save"), onCancelButton: requestLeave, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, onActivate: () => { }, style: pageTitleStyle, children: `${"Decky Metadata"} - ${appName(appId)}` }), SP_JSX.jsxs("div", { style: editorActionBarNativeStyle, children: [SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`, onClick: saveCurrent, disabled: changed.length === 0 || steamNameLoading, style: editorActionButtonStyle, children: saveButtonLabel(t, changed.length) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: requestLeave, style: editorActionButtonStyle, children: t("editor.done") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--more`, "aria-label": t("editor.moreOptions"), onClick: (event) => showEditorMoreMenu({
+                                canRefresh: nonSteam && hasSteamMatch && !entryBusy,
+                                onRefresh: () => void refreshFromSteam(),
+                                onRemove: () => showRemoveMetadataModal({
+                                    gameName: appName(appId),
+                                    onConfirm: () => void removeCurrent(),
+                                }),
+                                parent: event.currentTarget,
+                            }), style: editorMoreButtonStyle, children: "⋯" })] }), !nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) }) })) : null, SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: normalizedSteamAppId(savedRecordRef.current?.steam_appid), disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId);
@@ -36488,42 +37524,60 @@ const MetadataPage = () => {
                                 }, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
                                     ...rowStackStyle,
                                     ...editorSearchResultsSpacingStyle,
-                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.source"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: editorSourceFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.title") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => updateMetadata((prev) => ({ ...prev, title: e.target.value })), style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorDescriptionFieldStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.description") }), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
-                                                ...prev,
-                                                description: e.target.value,
-                                                short_description: e.target.value,
-                                            })), style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => updateMetadata((prev) => ({
+                                }, children: [entryBusy ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") })) : null, !entryBusy && !results.length ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") })) : null, results.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, onClick: () => void applyResult(result), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.title }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.description })] }) }, result.slug || result.url)))] }) })] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.source"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: editorSourceStackStyle, children: [SP_JSX.jsxs("div", { style: markedContainer("title", editorSourceFieldStyle), children: [markedLabel("title", "editor.field.title"), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: metadata.title, onChange: (e) => {
+                                                clearPreviewMarker("title");
+                                                updateMetadata((prev) => ({ ...prev, title: e.target.value }));
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: markedContainer("description", editorDescriptionFieldStyle), children: [markedLabel("description", "editor.field.description"), GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                                                clearPreviewMarker("description");
+                                                updateMetadata((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                     short_description: e.target.value,
-                                                })), style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.developers") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
+                                                }));
+                                            }, style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                                                    clearPreviewMarker("description");
+                                                    updateMetadata((prev) => ({
+                                                        ...prev,
+                                                        description: e.target.value,
+                                                        short_description: e.target.value,
+                                                    }));
+                                                }, style: descriptionTextareaStyle }) }))] }), SP_JSX.jsxs("div", { style: markedContainer("developers", editorSourceGroupStyle), children: [markedLabel("developers", "editor.field.developers"), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
                                                 markFormEdited();
+                                                clearPreviewMarker("developers");
                                                 developerTextRef.current = e.target.value;
                                                 setDeveloperText(e.target.value);
-                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorSourceGroupStyle, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.publishers") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: markedContainer("publishers", editorSourceGroupStyle), children: [markedLabel("publishers", "editor.field.publishers"), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
                                                 markFormEdited();
+                                                clearPreviewMarker("publishers");
                                                 publisherTextRef.current = e.target.value;
                                                 setPublisherText(e.target.value);
-                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.releaseDate") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
+                                            }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: editorReleaseRatingRowStyle, children: [SP_JSX.jsxs("div", { style: markedContainer("releaseDate", { minWidth: 0 }), children: [markedLabel("releaseDate", "editor.field.releaseDate"), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
                                                         markFormEdited();
+                                                        clearPreviewMarker("releaseDate");
                                                         releaseTextRef.current = e.target.value;
                                                         setReleaseText(e.target.value);
-                                                    }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: { minWidth: 0 }, children: [SP_JSX.jsx("label", { style: editorLabelStyle, children: t("editor.field.rating") }), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
+                                                    }, style: fieldStyle })] }), SP_JSX.jsxs("div", { style: markedContainer("rating", { minWidth: 0 }), children: [markedLabel("rating", "editor.field.rating"), SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
                                                         markFormEdited();
+                                                        clearPreviewMarker("rating");
                                                         ratingTextRef.current = e.target.value;
                                                         setRatingText(e.target.value);
-                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: t("editor.compatibilityStatus"), children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("editor.compatibilityStatus"), rgOptions: compatibilityStatusOptions.map((data) => ({
-                                    data,
-                                    label: compatibilityStatusOptionLabel(data, t),
-                                })), selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
-                                    ...prev,
-                                    deck_compat_override: compatibilityStatusValue(option.data),
-                                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityHelp") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityChoices") })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("editor.steamInfoFields"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.keys(CATEGORY_LABELS).map((category) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: categoryLabel(Number(category), t), checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.hltbGame"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.hltbHelp") }), hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used
+                                                    }, style: fieldStyle })] })] })] }) }) }), nonSteam ? (SP_JSX.jsx(DFL.PanelSection, { title: t("editor.compatibilityStatus"), children: SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsxs("div", { style: fieldMarker("compatibility").container, children: [fieldMarker("compatibility").tag ? (SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: fieldMarker("compatibility").tag })) : null, SP_JSX.jsx(DFL.DropdownItem, { label: t("editor.compatibilityStatus"), rgOptions: compatibilityStatusOptions.map((data) => ({
+                                            data,
+                                            label: compatibilityStatusOptionLabel(data, t),
+                                        })), selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
+                                            ...prev,
+                                            deck_compat_override: compatibilityStatusValue(option.data),
+                                        })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) })] }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityHelp") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityChoices") })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("editor.steamInfoFields"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: fieldMarker("categories").container, children: [fieldMarker("categories").tag ? (SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: fieldMarker("categories").tag })) : null, SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.keys(CATEGORY_LABELS).map((category) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: categoryLabel(Number(category), t), checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) })] }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.hltbGame"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: markedContainer("hltb", rowStackStyle), children: [fieldMarker("hltb").tag ? (SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: fieldMarker("hltb").tag })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.hltbHelp") }), hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used
                                             ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                                            : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }) })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: t("editor.hltbApply") })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.steamAppId"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                            : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }) })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => {
                                                     markFormEdited();
+                                                    clearPreviewMarker("hltb");
+                                                    setHltbIdDraft(e.target.value);
+                                                }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: t("editor.hltbApply") })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.steamAppId"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: markedContainer("steamAppId", rowStackStyle), children: [fieldMarker("steamAppId").tag ? (SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: fieldMarker("steamAppId").tag })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                                    markFormEdited();
+                                                    clearPreviewMarker("steamAppId");
                                                     setSteamAppIdInput(e.target.value);
-                                                }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: t("editor.steamAppIdApply") })] })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: refetchSteamText, style: editorAppIdButtonStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })] }) })) : null] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.shortcutName"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.current", {
+                                                }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: t("editor.steamAppIdApply") })] }), changed.includes("steamData") ? (SP_JSX.jsx("div", { style: { ...compactTextStyle, color: colors.warning }, children: t("editor.steamDataChanged") })) : null] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorAppIdButtonStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })] }) })) : null] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.shortcutName"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.current", {
                                                     name: currentShortcutName ?? t("editor.shortcut.missingName"),
                                                 }) }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.steamName", { name: steamStoreName }) }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.loadingSteamName") }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.noOfficialName") }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.managementUnavailable") }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.apiUnavailable") }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.notFound") }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.derivedId") }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.alreadyMatches") }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.diverged") }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.noOfficialName") }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.useSteamName") })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.restore") })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.forget") })) : null] }) }) })] }) }));
 };

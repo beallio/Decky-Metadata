@@ -38,7 +38,9 @@ To choose the intended game:
 
 1. Open the non-Steam game's menu and select **Change Metadata...**.
 2. Enter the correct Steam App ID or paste the game's Steam Store URL.
-3. Select **Apply Steam App ID**. This saves the match.
+3. Select **Apply Steam App ID**. This loads the match into the editor
+   without saving it.
+4. Select **Save** to store the match.
 
 Changing or clearing a saved match updates badges that are already on screen. Clearing the ID allows name lookup again; it does not necessarily remove every badge. Use the view switches if you do not want badges on a particular surface. See [matching and editing games](editing-games.md#add-or-correct-a-steam-match).
 

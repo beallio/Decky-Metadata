@@ -426,8 +426,26 @@
   },
   "editor": {
     "save": "Salva",
+    "saveCount": "Salva ({{count}})",
     "removeMetadata": "Rimuovi i metadati",
     "done": "Fatto",
+    "moreOptions": "Altre opzioni",
+    "moreMenuTitle": "Metadati",
+    "refreshFromSteam": "Aggiorna da Steam",
+    "fieldEdited": "Modificato",
+    "fieldFromSteam": "Da Steam, non salvato",
+    "steamDataChanged": "I dati Steam non mostrati nel modulo (screenshot, notizie, compatibilità) sono cambiati e non sono stati salvati.",
+    "unsaved": {
+      "title": "Salvare le modifiche?",
+      "body": "Hai modifiche non salvate ai metadati di questo gioco.",
+      "discard": "Scarta",
+      "cancel": "Annulla"
+    },
+    "removeConfirm": {
+      "title": "Rimuovere i metadati?",
+      "body": "Questo elimina tutti i metadati salvati per {{name}}. L'operazione non può essere annullata.",
+      "cancel": "Annulla"
+    },
     "nonSteamOnly": "Questo plugin modifica solo i giochi non Steam.",
     "searchIgn": "Cerca i metadati su IGN",
     "search": "Cerca",
@@ -440,7 +458,9 @@
       "developers": "Sviluppatori",
       "publishers": "Editori",
       "releaseDate": "Data di uscita",
-      "rating": "Classificazione"
+      "rating": "Classificazione",
+      "categories": "Categorie",
+      "steamData": "Dati Steam non mostrati nel modulo"
     },
     "compat": {
       "useGlobalDefault": "Usa il valore predefinito globale",
@@ -496,6 +516,14 @@
     "toast": {
       "hltbInvalidTitle": "Gioco HLTB non valido",
       "hltbInvalidBody": "Inserisci un numero di gioco HowLongToBeat o un link a una pagina di gioco.",
+      "steamAppIdInvalidTitle": "ID applicazione Steam non valido",
+      "steamAppIdInvalidBody": "Inserisci un ID applicazione Steam, un URL del negozio, della community o di SteamDB. Lascia il campo vuoto per rimuovere la corrispondenza.",
+      "hltbDraftBody": "Salva conserva questa scelta.",
+      "detailsLoadedTitle": "Dettagli caricati",
+      "steamPreviewBody": "I dettagli Steam sono caricati in questo modulo. Salva per conservarli.",
+      "ignPreviewBody": "I dettagli IGN sono caricati in questo modulo. Salva per conservarli.",
+      "steamAppIdNotAppliedTitle": "ID app Steam non applicato",
+      "steamAppIdNotAppliedBody": "Seleziona Applica l'ID app Steam per caricare la nuova corrispondenza prima di salvare.",
       "hltbNotFoundTitle": "Non trovato",
       "hltbNotFoundBody": "HowLongToBeat non ha nessun gioco con quel numero.",
       "notApplicableTitle": "Non applicabile",
@@ -548,7 +576,7 @@
     "release": "Uscita: {{date}}",
     "releaseUnavailable": "Data di uscita non disponibile",
     "steamType": "Tipo Steam: {{type}}. Verifica che sia il gioco o l'edizione che vuoi.",
-    "applyHelp": "Usare questa corrispondenza salva l'ID app Steam e ne carica i metadati. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
+    "applyHelp": "Usare questa corrispondenza carica l'ID app Steam e i relativi dettagli in questo modulo. Salva per conservarli. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
     "apply": "Usa questa corrispondenza Steam",
     "cancel": "Annulla la selezione"
   },

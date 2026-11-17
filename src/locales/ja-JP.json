@@ -424,8 +424,26 @@
   },
   "editor": {
     "save": "保存",
+    "saveCount": "保存 ({{count}})",
     "removeMetadata": "メタデータを削除",
     "done": "完了",
+    "moreOptions": "その他のオプション",
+    "moreMenuTitle": "メタデータ",
+    "refreshFromSteam": "Steam から再取得",
+    "fieldEdited": "編集済み",
+    "fieldFromSteam": "Steam から取得、未保存",
+    "steamDataChanged": "フォームに表示されない Steam データ（スクリーンショット、ニュース、互換性）が変更され、保存されていません。",
+    "unsaved": {
+      "title": "変更を保存しますか？",
+      "body": "このゲームのメタデータに未保存の変更があります。",
+      "discard": "破棄",
+      "cancel": "キャンセル"
+    },
+    "removeConfirm": {
+      "title": "メタデータを削除しますか？",
+      "body": "{{name}} の保存済みメタデータをすべて削除します。元に戻せません。",
+      "cancel": "キャンセル"
+    },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
     "searchIgn": "IGN メタデータを検索",
     "search": "検索",
@@ -438,7 +456,9 @@
       "developers": "開発元",
       "publishers": "パブリッシャー",
       "releaseDate": "リリース日",
-      "rating": "レーティング"
+      "rating": "レーティング",
+      "categories": "カテゴリ",
+      "steamData": "フォームに表示されない Steam データ"
     },
     "compat": {
       "useGlobalDefault": "グローバル既定値を使用",
@@ -494,6 +514,14 @@
     "toast": {
       "hltbInvalidTitle": "無効な HLTB ゲーム",
       "hltbInvalidBody": "HowLongToBeat のゲーム番号またはゲームページのリンクを入力してください。",
+      "steamAppIdInvalidTitle": "無効な Steam アプリ ID",
+      "steamAppIdInvalidBody": "Steam アプリ ID、ストア URL、コミュニティ URL、SteamDB URL のいずれかを入力してください。空欄にすると一致を解除します。",
+      "hltbDraftBody": "「保存」を押すとこの選択が保存されます。",
+      "detailsLoadedTitle": "詳細を読み込みました",
+      "steamPreviewBody": "Steam の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
+      "ignPreviewBody": "IGN の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
+      "steamAppIdNotAppliedTitle": "Steam アプリ ID が適用されていません",
+      "steamAppIdNotAppliedBody": "新しい一致を読み込むには、保存する前に「Steam アプリ ID を適用」を選択してください。",
       "hltbNotFoundTitle": "見つかりません",
       "hltbNotFoundBody": "その番号のゲームは HowLongToBeat にありません。",
       "notApplicableTitle": "該当なし",
@@ -546,7 +574,7 @@
     "release": "リリース: {{date}}",
     "releaseUnavailable": "リリース日を取得できません",
     "steamType": "Steam タイプ: {{type}}。目的のゲームまたはエディションか確認してください。",
-    "applyHelp": "この一致を使用すると Steam アプリ ID が保存され、そのメタデータが読み込まれます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
+    "applyHelp": "この一致を使用すると、その Steam アプリ ID と詳細がこのフォームに読み込まれます。「保存」を押すと保存されます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
     "apply": "この Steam 一致を使用",
     "cancel": "選択をキャンセル"
   },

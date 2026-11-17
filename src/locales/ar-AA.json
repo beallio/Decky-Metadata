@@ -429,8 +429,26 @@
   },
   "editor": {
     "save": "حفظ",
+    "saveCount": "حفظ ({{count}})",
     "removeMetadata": "إزالة البيانات الوصفية",
     "done": "تم",
+    "moreOptions": "خيارات إضافية",
+    "moreMenuTitle": "البيانات الوصفية",
+    "refreshFromSteam": "التحديث من Steam",
+    "fieldEdited": "معدّل",
+    "fieldFromSteam": "من Steam، غير محفوظ",
+    "steamDataChanged": "تغيّرت بيانات Steam غير المعروضة في النموذج (لقطات الشاشة والأخبار والتوافق) ولم تُحفظ.",
+    "unsaved": {
+      "title": "حفظ التغييرات؟",
+      "body": "لديك تغييرات غير محفوظة لبيانات هذا اللعبة الوصفية.",
+      "discard": "تجاهل",
+      "cancel": "إلغاء"
+    },
+    "removeConfirm": {
+      "title": "إزالة البيانات الوصفية؟",
+      "body": "سيؤدي هذا إلى حذف جميع البيانات الوصفية المحفوظة لـ {{name}}. لا يمكن التراجع عن ذلك.",
+      "cancel": "إلغاء"
+    },
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
     "searchIgn": "البحث في بيانات IGN الوصفية",
     "search": "بحث",
@@ -443,7 +461,9 @@
       "developers": "المطوّرون",
       "publishers": "الناشرون",
       "releaseDate": "تاريخ الإصدار",
-      "rating": "التقييم"
+      "rating": "التقييم",
+      "categories": "الفئات",
+      "steamData": "بيانات Steam غير المعروضة في النموذج"
     },
     "compat": {
       "useGlobalDefault": "استخدام الافتراضي العام",
@@ -499,6 +519,14 @@
     "toast": {
       "hltbInvalidTitle": "لعبة HLTB غير صالحة",
       "hltbInvalidBody": "أدخل رقم لعبة في HowLongToBeat أو رابط صفحة لعبة.",
+      "steamAppIdInvalidTitle": "معرّف Steam App ID غير صالح",
+      "steamAppIdInvalidBody": "أدخل معرّف تطبيق Steam أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اترك الحقل فارغًا لإزالة المطابقة.",
+      "hltbDraftBody": "يحفظ زر «حفظ» هذا الاختيار.",
+      "detailsLoadedTitle": "تم تحميل التفاصيل",
+      "steamPreviewBody": "تم تحميل تفاصيل Steam في هذا النموذج. يحفظها زر «حفظ».",
+      "ignPreviewBody": "تم تحميل تفاصيل IGN في هذا النموذج. يحفظها زر «حفظ».",
+      "steamAppIdNotAppliedTitle": "لم يتم تطبيق Steam App ID",
+      "steamAppIdNotAppliedBody": "اختر «تطبيق Steam App ID» لتحميل المطابقة الجديدة قبل الحفظ.",
       "hltbNotFoundTitle": "لم يُعثر عليها",
       "hltbNotFoundBody": "لا توجد في HowLongToBeat لعبة بهذا الرقم.",
       "notApplicableTitle": "غير قابل للتطبيق",
@@ -551,7 +579,7 @@
     "release": "الإصدار: {{date}}",
     "releaseUnavailable": "تاريخ الإصدار غير متاح",
     "steamType": "نوع Steam: {{type}}. تحقق من أن هذه هي اللعبة أو الإصدار الذي تريده.",
-    "applyHelp": "استخدام هذه المطابقة يحفظ Steam App ID ويحمّل بياناته الوصفية. لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
+    "applyHelp": "استخدام هذه المطابقة يحمّل Steam App ID الخاص بها وتفاصيلها في هذا النموذج. يحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
     "apply": "استخدام مطابقة Steam هذه",
     "cancel": "إلغاء التحديد"
   },

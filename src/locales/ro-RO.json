@@ -426,8 +426,26 @@
   },
   "editor": {
     "save": "Salvează",
+    "saveCount": "Salvează ({{count}})",
     "removeMetadata": "Elimină metadatele",
     "done": "Gata",
+    "moreOptions": "Mai multe opțiuni",
+    "moreMenuTitle": "Metadate",
+    "refreshFromSteam": "Reîmprospătează din Steam",
+    "fieldEdited": "Editat",
+    "fieldFromSteam": "Din Steam, nesalvat",
+    "steamDataChanged": "Datele Steam care nu sunt afișate în formular (capturi de ecran, știri, compatibilitate) s-au schimbat și nu sunt salvate.",
+    "unsaved": {
+      "title": "Salvezi modificările?",
+      "body": "Ai modificări nesalvate la metadatele acestui joc.",
+      "discard": "Renunță",
+      "cancel": "Anulează"
+    },
+    "removeConfirm": {
+      "title": "Elimini metadatele?",
+      "body": "Aceasta șterge toate metadatele salvate pentru {{name}}. Nu poți anula această acțiune.",
+      "cancel": "Anulează"
+    },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
     "search": "Caută",
@@ -440,7 +458,9 @@
       "developers": "Dezvoltatori",
       "publishers": "Editori",
       "releaseDate": "Data lansării",
-      "rating": "Clasificare"
+      "rating": "Clasificare",
+      "categories": "Categorii",
+      "steamData": "Date Steam care nu sunt afișate în formular"
     },
     "compat": {
       "useGlobalDefault": "Folosește valoarea implicită globală",
@@ -496,6 +516,14 @@
     "toast": {
       "hltbInvalidTitle": "Joc HLTB nevalid",
       "hltbInvalidBody": "Introdu un număr de joc HowLongToBeat sau un link către pagina jocului.",
+      "steamAppIdInvalidTitle": "ID de aplicație Steam nevalid",
+      "steamAppIdInvalidBody": "Introdu un ID de aplicație Steam, un URL de magazin, de comunitate sau SteamDB. Lasă câmpul gol pentru a elimina potrivirea.",
+      "hltbDraftBody": "Salvarea păstrează această alegere.",
+      "detailsLoadedTitle": "Detalii încărcate",
+      "steamPreviewBody": "Detaliile Steam sunt încărcate în acest formular. Salvează pentru a le păstra.",
+      "ignPreviewBody": "Detaliile IGN sunt încărcate în acest formular. Salvează pentru a le păstra.",
+      "steamAppIdNotAppliedTitle": "ID-ul de aplicație Steam nu a fost aplicat",
+      "steamAppIdNotAppliedBody": "Selectează Aplică ID-ul de aplicație Steam pentru a încărca noua potrivire înainte de a salva.",
       "hltbNotFoundTitle": "Nu a fost găsit",
       "hltbNotFoundBody": "HowLongToBeat nu are niciun joc cu acel număr.",
       "notApplicableTitle": "Nu se aplică",
@@ -548,7 +576,7 @@
     "release": "Lansare: {{date}}",
     "releaseUnavailable": "Data lansării indisponibilă",
     "steamType": "Tip Steam: {{type}}. Verifică dacă acesta este jocul sau ediția dorită.",
-    "applyHelp": "Folosirea acestei potriviri salvează ID-ul aplicației Steam și îi încarcă metadatele. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
+    "applyHelp": "Folosirea acestei potriviri încarcă ID-ul aplicației Steam și detaliile sale în acest formular. Salvarea le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
     "apply": "Folosește această potrivire Steam",
     "cancel": "Anulează selecția"
   },

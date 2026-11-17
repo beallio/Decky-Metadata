@@ -427,8 +427,26 @@
   },
   "editor": {
     "save": "Zapisz",
+    "saveCount": "Zapisz ({{count}})",
     "removeMetadata": "Usuń metadane",
     "done": "Gotowe",
+    "moreOptions": "Więcej opcji",
+    "moreMenuTitle": "Metadane",
+    "refreshFromSteam": "Odśwież ze Steam",
+    "fieldEdited": "Edytowano",
+    "fieldFromSteam": "Ze Steam, niezapisane",
+    "steamDataChanged": "Dane ze Steam niewyświetlane w formularzu (zrzuty ekranu, aktualności, kompatybilność) zmieniły się i nie zostały zapisane.",
+    "unsaved": {
+      "title": "Zapisać zmiany?",
+      "body": "Masz niezapisane zmiany metadanych tej gry.",
+      "discard": "Odrzuć",
+      "cancel": "Anuluj"
+    },
+    "removeConfirm": {
+      "title": "Usunąć metadane?",
+      "body": "Spowoduje to usunięcie wszystkich zapisanych metadanych dla {{name}}. Tej czynności nie można cofnąć.",
+      "cancel": "Anuluj"
+    },
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
     "searchIgn": "Szukaj metadanych w IGN",
     "search": "Szukaj",
@@ -441,7 +459,9 @@
       "developers": "Producenci",
       "publishers": "Wydawcy",
       "releaseDate": "Data wydania",
-      "rating": "Ocena"
+      "rating": "Ocena",
+      "categories": "Kategorie",
+      "steamData": "Dane ze Steam niewyświetlane w formularzu"
     },
     "compat": {
       "useGlobalDefault": "Użyj ustawienia globalnego",
@@ -497,6 +517,14 @@
     "toast": {
       "hltbInvalidTitle": "Nieprawidłowa gra HLTB",
       "hltbInvalidBody": "Wpisz numer gry HowLongToBeat lub link do strony gry.",
+      "steamAppIdInvalidTitle": "Nieprawidłowy identyfikator aplikacji Steam",
+      "steamAppIdInvalidBody": "Wpisz identyfikator aplikacji Steam, adres URL sklepu, społeczności lub SteamDB. Pozostaw pole puste, aby usunąć dopasowanie.",
+      "hltbDraftBody": "Ten wybór zapiszesz przyciskiem „Zapisz”.",
+      "detailsLoadedTitle": "Szczegóły wczytane",
+      "steamPreviewBody": "Szczegóły Steam zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
+      "ignPreviewBody": "Szczegóły IGN zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
+      "steamAppIdNotAppliedTitle": "Nie zastosowano Steam App ID",
+      "steamAppIdNotAppliedBody": "Przed zapisaniem wybierz „Zastosuj Steam App ID”, aby wczytać nowe dopasowanie.",
       "hltbNotFoundTitle": "Nie znaleziono",
       "hltbNotFoundBody": "HowLongToBeat nie ma gry o tym numerze.",
       "notApplicableTitle": "Nie dotyczy",
@@ -549,7 +577,7 @@
     "release": "Wydanie: {{date}}",
     "releaseUnavailable": "Data wydania niedostępna",
     "steamType": "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
-    "applyHelp": "Użycie tego dopasowania zapisuje Steam App ID i wczytuje jego metadane. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
+    "applyHelp": "Użycie tego dopasowania wczytuje jego Steam App ID i szczegóły do tego formularza. Zapiszesz je przyciskiem „Zapisz”. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
     "apply": "Użyj tego dopasowania Steam",
     "cancel": "Anuluj wybór"
   },

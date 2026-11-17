@@ -424,8 +424,26 @@
   },
   "editor": {
     "save": "儲存",
+    "saveCount": "儲存 ({{count}})",
     "removeMetadata": "移除中繼資料",
     "done": "完成",
+    "moreOptions": "更多選項",
+    "moreMenuTitle": "中繼資料",
+    "refreshFromSteam": "從 Steam 重新整理",
+    "fieldEdited": "已編輯",
+    "fieldFromSteam": "來自 Steam，未儲存",
+    "steamDataChanged": "表單中未顯示的 Steam 資料（截圖、新聞、相容性）已變更且尚未儲存。",
+    "unsaved": {
+      "title": "儲存變更？",
+      "body": "此遊戲的中繼資料有未儲存的變更。",
+      "discard": "捨棄",
+      "cancel": "取消"
+    },
+    "removeConfirm": {
+      "title": "移除中繼資料？",
+      "body": "這會刪除 {{name}} 的所有已儲存中繼資料。此操作無法復原。",
+      "cancel": "取消"
+    },
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
     "searchIgn": "搜尋 IGN 中繼資料",
     "search": "搜尋",
@@ -438,7 +456,9 @@
       "developers": "開發人員",
       "publishers": "發行商",
       "releaseDate": "發行日期",
-      "rating": "分級"
+      "rating": "分級",
+      "categories": "分類",
+      "steamData": "表單中未顯示的 Steam 資料"
     },
     "compat": {
       "useGlobalDefault": "使用全域預設值",
@@ -494,6 +514,14 @@
     "toast": {
       "hltbInvalidTitle": "HLTB 遊戲無效",
       "hltbInvalidBody": "請輸入 HowLongToBeat 遊戲編號或遊戲頁面連結。",
+      "steamAppIdInvalidTitle": "Steam 應用程式 ID 無效",
+      "steamAppIdInvalidBody": "請輸入 Steam 應用程式 ID、商店連結、社群連結或 SteamDB 連結。留空可清除符合項。",
+      "hltbDraftBody": "按下「儲存」後才會儲存此選擇。",
+      "detailsLoadedTitle": "詳細資料已載入",
+      "steamPreviewBody": "Steam 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
+      "ignPreviewBody": "IGN 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
+      "steamAppIdNotAppliedTitle": "Steam App ID 未套用",
+      "steamAppIdNotAppliedBody": "儲存前，請選擇「套用 Steam App ID」以載入新的比對。",
       "hltbNotFoundTitle": "找不到",
       "hltbNotFoundBody": "HowLongToBeat 中沒有該編號的遊戲。",
       "notApplicableTitle": "不適用",
@@ -546,7 +574,7 @@
     "release": "發行：{{date}}",
     "releaseUnavailable": "發行日期無法使用",
     "steamType": "Steam 類型：{{type}}。請確認這是你想要的遊戲或版本。",
-    "applyHelp": "使用此比對會儲存 Steam App ID 並載入其中繼資料。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
+    "applyHelp": "使用此比對會將其 Steam App ID 和詳細資料載入此表單中，按下「儲存」後才會儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
     "apply": "使用此 Steam 比對",
     "cancel": "取消選取"
   },
