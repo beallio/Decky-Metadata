@@ -21,13 +21,13 @@ export type GamepadTextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 const resolveGamepadTextArea = (): ComponentType<GamepadTextAreaProps> | null => {
   try {
-    const factory = findModuleExport(
-      (moduleExport: any) =>
-        typeof moduleExport === "function" &&
-        typeof moduleExport.toString === "function" &&
-        moduleExport.toString().includes("virtualKeyboardProps") &&
-        moduleExport.toString().includes("BIsElementValidForInput")
-    );
+    const factory = findModuleExport((moduleExport: unknown) => {
+      if (typeof moduleExport !== "function") return false;
+      const source = String(moduleExport);
+      // Newer clients moved BIsElementValidForInput into a helper; the factory still builds a forwardRef.
+      return source.includes("virtualKeyboardProps") &&
+        (source.includes("BIsElementValidForInput") || source.includes("forwardRef"));
+    });
     if (typeof factory !== "function") return null;
     const component = factory("textarea");
     return typeof component === "function" || (component && typeof component === "object")

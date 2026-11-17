@@ -74,6 +74,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
+- **Description field opens the on-screen keyboard again.** After a Steam
+  client update, selecting **Description** in **Change Metadata...** and
+  pressing A, or using Steam + X, no longer showed the keyboard. The other
+  text fields were not affected. (#52)
 - **SteamOS compatibility on other devices.** On SteamOS devices that are not
   a Steam Deck, such as the Lenovo Legion Go S, a matched non-Steam game's
   **SteamOS Compatibility** row showed Unknown. It now shows the matched game's
