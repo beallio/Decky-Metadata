@@ -642,6 +642,15 @@ test('A page mutation sizes the header art before the queued scan, only while th
   h.window.location = new URL('https://steamloopback.host/routes/library/app/570');
   mutate();
   assert.equal(h.hero.style.height, '452px', 'entering the page again opens a new window');
+
+  h.runtime.restoreStatusBackdrop();
+  h.runtime.launchHeld = true;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'a held launch keeps the art as launch cleanup left it');
+  h.runtime.launchHeld = false;
+  h.document.getElementById = id => id === 'trailerhero-style' ? {} : null;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'TrailerHero owns the art while it is active');
   h.runtime.destroy();
 });
 

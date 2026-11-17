@@ -29376,6 +29376,12 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         return undefined;
     }
+    function otherTrailerPluginActive() {
+        return Boolean(document.getElementById("trailerhero-style") ||
+            document.querySelector(".trailerhero-video") ||
+            document.getElementById("decky-trailerhero-style") ||
+            document.querySelector(".decky-trailerhero-video"));
+    }
     function isProbablyGameDetailsPage() {
         if (!document.body)
             return false;
@@ -30204,6 +30210,9 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.earlyBackdrop = { appId, until: now + earlyBackdropMs };
             if (!appId || now > this.earlyBackdrop.until)
                 return;
+            // The same stops as scan(): a held launch, a hidden page, or TrailerHero owning the art.
+            if (this.launchHeld || document.hidden || otherTrailerPluginActive())
+                return;
             isStatusBand(document.body); // resolves Steam's class names
             // Library Home's background can show the same hero while it leaves; only the game page's header art counts.
             const hero = this.routeHero(nativeBackgroundClass && "." + nativeBackgroundClass);
@@ -30652,10 +30661,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                 this.cleanupVideo(true);
                 return;
             }
-            if (document.getElementById("trailerhero-style") ||
-                document.querySelector(".trailerhero-video") ||
-                document.getElementById("decky-trailerhero-style") ||
-                document.querySelector(".decky-trailerhero-video")) {
+            if (otherTrailerPluginActive()) {
                 this.cleanupVideo(true);
                 this.status = rt("otherPluginActive");
                 return;
