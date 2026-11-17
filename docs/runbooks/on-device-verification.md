@@ -270,8 +270,12 @@ identify that reservation. Steam scales the entering page, so
 original artwork edge into viewport coordinates for hit-testing. Rescans retain
 the original layout height; a change in page scale must not shrink the target,
 add another band, or briefly restore its shorter height. Layout-row discovery
-does not depend on hit-testing: temporary coverage preserves valid layout space
-without claiming a paintable backdrop. A native-window shared reservation record
+does not depend on hit-testing. Cover from an element on the same page preserves
+valid layout space without claiming a paintable backdrop. Steam's outgoing page
+covers the entering one, and the entering page fades in from opacity 0, so
+neither blocks the band: page mutations size the art during the first second of
+entry, before the queued scan, and an ancestor that also holds the art does not
+hide the row by opacity. A native-window shared reservation record
 saves the first genuine inline variable value and restores it only for its current
 owner. Trailer disable or final playback/lookup failure releases that ownership.
 Animated route exit retains it until the header disconnects.
