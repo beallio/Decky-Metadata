@@ -576,6 +576,75 @@ test('Identity arriving through update keeps the band height in the same task an
   assert.equal(h.hero.style.height, '400px', 'leaving the detail route restores the inline height');
 });
 
+// The status row inside one page container, as Steam lays out an entering game page.
+function enteringPageBand(h) {
+  const band = h.document.elementFromPoint(500, 400).parentElement;
+  const rowWrapper = { parentElement: null, contains: node => node === band };
+  const onPage = { parentElement: null };
+  const page = { parentElement: null, contains: node => [h.hero, band, rowWrapper, onPage].includes(node) };
+  band.parentElement = rowWrapper;
+  rowWrapper.parentElement = page;
+  onPage.parentElement = page;
+  const query = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('native-cloud-row') ? [band] : query(selector);
+  const opacity = new Map();
+  const style = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => ({ ...style(element), opacity: opacity.get(element) ?? '1' });
+  return { band, rowWrapper, onPage, page, opacity };
+}
+
+test('Steam\'s outgoing page over the entering one does not stop the band; cover on the same page does', () => {
+  const h = bandHeroHarness();
+  const { onPage, page, rowWrapper, opacity } = enteringPageBand(h);
+  const outgoing = { parentElement: null };
+  opacity.set(page, '0');
+  h.document.elementFromPoint = () => outgoing;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '452px', 'the transparent entering page takes its final art height');
+
+  h.document.elementFromPoint = () => onPage;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '400px', 'an element on the same page still hides the row');
+
+  h.document.elementFromPoint = () => outgoing;
+  opacity.set(rowWrapper, '0');
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '400px', 'a transparent row container without the art still hides the row');
+});
+
+test('A page mutation sizes the header art before the queued scan, only while the page enters', () => {
+  const h = bandHeroHarness();
+  enteringPageBand(h);
+  // Library Home leaves a larger background with the same hero while the game page enters.
+  h.window.DFL.appDetailsHeaderClasses = { HeaderBackgroundImage: 'native-background' };
+  h.hero.closest = selector => selector === '.native-background' ? h.hero : null;
+  const home = Object.assign(new h.hero.constructor(), { closest: () => null });
+  home.getBoundingClientRect = () => ({ width: 1100, height: 700, top: 0, left: 0, right: 1100, bottom: 700 });
+  const query = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [home, h.hero] : query(selector);
+  let now = 1_000_000;
+  h.context.Date = class extends Date { static now() { return now; } };
+  let observe;
+  h.context.MutationObserver = class { constructor(callback) { observe ??= callback; } observe() {} disconnect() {} };
+  h.runtime.mounted = true;
+  h.runtime.startMonitoring();
+  const mutate = () => observe([{ type: 'childList', target: h.document.body }]);
+  mutate();
+  assert.equal(h.hero.style.height, '452px', 'the first mutation extends the art; the scan is still queued');
+
+  h.runtime.restoreStatusBackdrop();
+  now += 1001;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'after the entry window only the queued scan measures the page');
+
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  mutate();
+  h.window.location = new URL('https://steamloopback.host/routes/library/app/570');
+  mutate();
+  assert.equal(h.hero.style.height, '452px', 'entering the page again opens a new window');
+  h.runtime.destroy();
+});
+
 test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
   const clock = fakeClock();
   const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });

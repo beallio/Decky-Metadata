@@ -19,6 +19,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
+    // Steam's page-entry animation ends within about 0.5 s on a Deck.
+    const earlyBackdropMs = 1000;
     const directPlaybackTimeoutMs = 12000;
     const audioFadeDurationMs = 1200;
     const MAX_METADATA_BYTES = 1024 * 1024;
@@ -56,14 +58,15 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
     };
     const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
-    const isPaintedStatusBand = (element) => {
+    const isPaintedStatusBand = (element, target) => {
         if (element.getAttribute?.("aria-hidden") === "true") return false;
         const band = element.getBoundingClientRect();
         for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
             if (ancestor.hidden) return false;
             const style = getComputedStyle(ancestor);
+            // Steam fades the whole entering page in from 0; an ancestor that also holds the art hides both alike.
             if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                (style.opacity !== undefined && Number(style.opacity) <= 0)) return false;
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ancestor.contains?.(target))) return false;
             if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky")) return false;
             if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
                 const bounds = ancestor.getBoundingClientRect();
@@ -285,7 +288,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         const offscreenPenalty = Math.max(0, Math.abs(rect.left) - 4) * 4 + Math.max(0, Math.abs(rect.top) - 8) * 4;
         return areaScore + topBias + heroBias + customHeroBias + backgroundBias - smallMediaPenalty - offscreenPenalty;
     };
-    function findHeroCandidate(preferredAppId = detectLocationAppId()) {
+    function findHeroCandidate(preferredAppId = detectLocationAppId(), within) {
         const selector = [
             "[style*='steam/apps']", "[style*='store_item_assets']", "[style*='/assets/']", "[style*='/customimages/']", "[style*='library_hero']",
             "img[src*='steam/apps']", "img[src*='store_item_assets']", "img[src*='/assets/']", "img[src*='/customimages/']", "img[src*='library_hero']", "a[href*='/app/']"
@@ -297,7 +300,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const appId = extractAppIdFromText(assetText);
             if (!appId || (preferredAppId && appId !== preferredAppId)) continue;
             const target = node.tagName === "IMG" ? node.parentElement : node;
-            if (!(target instanceof HTMLElement)) continue;
+            if (!(target instanceof HTMLElement) || (within && !target.closest?.(within))) continue;
             const score = scoreHeroElement(target, assetText);
             if (score > 0 && (!best || score > best.score)) best = { appId, element: target, score, assetText };
         }
@@ -962,7 +965,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const scaleY = hero.height / layoutHeight;
             const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
             const edge = hero.top + naturalHeight * scaleY;
-            let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            const hit = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            let element = hit;
             let bandHeight = 0;
             let reservationHeight = 0;
             let hasStatusBand = false;
@@ -971,7 +975,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 const height = this.statusBandLayoutHeight(element, hero, edge);
                 if (height) {
                     reservationHeight = height;
-                    if (isPaintedStatusBand(element)) {
+                    if (isPaintedStatusBand(element, target)) {
                         bandHeight = height;
                         break;
                     }
@@ -979,14 +983,19 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 element = element.parentElement;
             }
             if (!reservationHeight) {
-                // Occlusion must not change layout; paint still requires the hit-test above.
+                // Occlusion must not change layout; on-page cover still blocks paint.
                 isStatusBand(target);
                 const selector = '[data-sdh-ludusavi-status-row="true"]' +
                     (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
                 for (const row of document.querySelectorAll(selector)) {
                     hasStatusBand = true;
                     reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
-                    if (reservationHeight) break;
+                    if (!reservationHeight) continue;
+                    // Steam's outgoing page covers the entering one for its first frames; that cover is not occlusion.
+                    let page = row.parentElement;
+                    while (page && !page.contains(target)) page = page.parentElement;
+                    if (hit && page && !page.contains(hit) && isPaintedStatusBand(row, target)) bandHeight = reservationHeight;
+                    break;
                 }
             }
             if (!bandHeight) {
@@ -1013,10 +1022,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
         }
         // The current detail route's hero; nothing when this runtime does not paint that route.
-        routeHero() {
+        routeHero(within) {
             if (!this.settings.enabled || !this.settings.detailEnabled || this.isHomeRoute()) return undefined;
             const appId = detectLocationAppId();
-            const hero = appId ? findHeroCandidate(appId) : undefined;
+            const hero = appId ? findHeroCandidate(appId, within) : undefined;
             return hero && hero.appId === appId ? hero : undefined;
         }
         // cleanupVideo restores the inline height, so a band kept for this hero is detached and re-attached around it.
@@ -1027,6 +1036,17 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.cleanupVideo(true);
             if (keep) this.statusBackdrop = keep;
             if (hero) this.syncStatusBackdrop(hero.element);
+        }
+        // The queued scan lands after Steam's entry animation; size the art while the page is still entering.
+        syncEarlyBackdrop() {
+            const appId = detectLocationAppId();
+            const now = Date.now();
+            if (this.earlyBackdrop?.appId !== appId) this.earlyBackdrop = { appId, until: now + earlyBackdropMs };
+            if (!appId || now > this.earlyBackdrop.until) return;
+            isStatusBand(document.body); // resolves Steam's class names
+            // Library Home's background can show the same hero while it leaves; only the game page's header art counts.
+            const hero = this.routeHero(nativeBackgroundClass && "." + nativeBackgroundClass);
+            if (hero && this.statusBackdrop?.target !== hero.element) this.syncStatusBackdrop(hero.element);
         }
         mount() {
             this.mounted = true;
@@ -1046,7 +1066,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (!isCurrent()) return;
                     if (this.settings.homeEnabled && mutations.some((mutation) =>
                         mutation.type === "childList" || mutation.attributeName === "class")) this.refreshHomeSelection();
-                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
+                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) {
+                        this.queueScan();
+                        this.syncEarlyBackdrop();
+                    }
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
                 if (document.head) {
