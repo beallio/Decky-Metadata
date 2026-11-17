@@ -497,6 +497,8 @@
     "toast": {
       "hltbInvalidTitle": "Neplatná hra HLTB",
       "hltbInvalidBody": "Zadejte číslo hry HowLongToBeat nebo odkaz na stránku hry.",
+      "steamAppIdInvalidTitle": "Neplatné Steam App ID",
+      "steamAppIdInvalidBody": "Zadejte Steam App ID, URL obchodu, URL komunity nebo URL SteamDB. Nechte pole prázdné pro zrušení shody.",
       "hltbNotFoundTitle": "Nenalezeno",
       "hltbNotFoundBody": "HowLongToBeat nemá hru s tímto číslem.",
       "notApplicableTitle": "Nelze použít",

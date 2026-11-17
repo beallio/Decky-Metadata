@@ -495,6 +495,8 @@
     "toast": {
       "hltbInvalidTitle": "Ogiltigt HLTB-spel",
       "hltbInvalidBody": "Ange ett HowLongToBeat-spelnummer eller en länk till spelsidan.",
+      "steamAppIdInvalidTitle": "Ogiltigt Steam-app-ID",
+      "steamAppIdInvalidBody": "Ange ett Steam-app-ID, butiks-URL, community-URL eller SteamDB-URL. Lämna fältet tomt för att ta bort matchningen.",
       "hltbNotFoundTitle": "Hittades inte",
       "hltbNotFoundBody": "HowLongToBeat har inget spel med det numret.",
       "notApplicableTitle": "Ej tillämpligt",

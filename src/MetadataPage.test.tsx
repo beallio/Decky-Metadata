@@ -1155,6 +1155,34 @@ describe("MetadataPage compatibility status", () => {
     expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
   });
 
+  it("refuses unresolvable Steam App ID text and keeps the saved match", async () => {
+    configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[8] = "not a steam id";
+
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(toast.toastWarn).toHaveBeenCalledWith("Invalid Steam App ID", expect.any(String));
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      steam_appid: 15100,
+      steam_store_name: "Old Steam name",
+    }));
+  });
+
+  it("clears the Steam match when the App ID field holds only whitespace", async () => {
+    configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+    state.values[8] = "   ";
+    backend.saveMetadata.mockResolvedValue(makeMetadata({ steam_appid: null, steam_store_name: "" }));
+
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+
+    expect(toast.toastWarn).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(
+      100,
+      expect.objectContaining({ steam_appid: null }),
+    );
+  });
+
   it("does not let an old rename operation overwrite a later A editor entry", async () => {
     const nativeWrite = deferred<string>();
     const firstA = { original_name: "First A", applied_name: "Shared Steam name", steam_appid: 15100, updated_at: 1 };
@@ -1402,6 +1430,48 @@ describe("metadata summary and date persistence", () => {
     hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
+  });
+  it("does not carry an unsaved HLTB draft into another game", () => {
+    effects.enabled = true;
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    const hltbField = () =>
+      walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+
+    hltbField().props.onChange({ target: { value: "6064" } });
+    expect(hltbField().props.value).toBe("6064");
+
+    route.appid = "200";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+
+    expect(hltbField().props.value).toBe("");
+    route.appid = "100";
+  });
+  it("keeps an HLTB draft typed while Save is pending", async () => {
+    const pendingSave = deferred<MetadataData>();
+    const saved = makeMetadata({ hltb_game_id: 6064, title: "Saved title" });
+    route.appid = "100";
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    const current = state.values[0];
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
+    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise);
+    const hltbField = () =>
+      walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+
+    hltbField().props.onChange({ target: { value: "6064" } });
+    const saving = saveButton(renderPage()).props.onClick();
+    await flushAsyncWork();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ hltb_game_id: 6064 }));
+    hltbField().props.onChange({ target: { value: "9999" } });
+    pendingSave.resolve(saved);
+    await saving;
+    await flushAsyncWork();
+
+    expect(hltbField().props.value).toBe("9999");
+    expect(state.values[0]).toBe(current);
   });
   it("shows the automatically found HLTB game without saving it as a choice", async () => {
     state.values[0] = makeMetadata();

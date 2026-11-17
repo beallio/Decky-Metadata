@@ -494,6 +494,8 @@
     "toast": {
       "hltbInvalidTitle": "HLTB 游戏无效",
       "hltbInvalidBody": "请输入 HowLongToBeat 游戏编号或游戏页面链接。",
+      "steamAppIdInvalidTitle": "Steam 应用 ID 无效",
+      "steamAppIdInvalidBody": "请输入 Steam 应用 ID、商店链接、社区链接或 SteamDB 链接。留空可清除匹配。",
       "hltbNotFoundTitle": "未找到",
       "hltbNotFoundBody": "HowLongToBeat 中没有该编号的游戏。",
       "notApplicableTitle": "不适用",

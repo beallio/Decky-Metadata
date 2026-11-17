@@ -495,6 +495,8 @@
     "toast": {
       "hltbInvalidTitle": "Geçersiz HLTB oyunu",
       "hltbInvalidBody": "Bir HowLongToBeat oyun numarası veya oyun sayfası bağlantısı girin.",
+      "steamAppIdInvalidTitle": "Geçersiz Steam uygulama kimliği",
+      "steamAppIdInvalidBody": "Bir Steam uygulama kimliği, mağaza URL'si, topluluk URL'si veya SteamDB URL'si girin. Eşleşmeyi kaldırmak için alanı boş bırakın.",
       "hltbNotFoundTitle": "Bulunamadı",
       "hltbNotFoundBody": "HowLongToBeat'te bu numaraya sahip bir oyun yok.",
       "notApplicableTitle": "Uygulanamaz",

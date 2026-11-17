@@ -495,6 +495,8 @@
     "toast": {
       "hltbInvalidTitle": "Ongeldige HLTB-game",
       "hltbInvalidBody": "Voer een HowLongToBeat-gamenummer of link naar de spelpagina in.",
+      "steamAppIdInvalidTitle": "Ongeldige Steam-app-ID",
+      "steamAppIdInvalidBody": "Voer een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL in. Laat het veld leeg om de koppeling te verwijderen.",
       "hltbNotFoundTitle": "Niet gevonden",
       "hltbNotFoundBody": "HowLongToBeat heeft geen game met dat nummer.",
       "notApplicableTitle": "Niet van toepassing",

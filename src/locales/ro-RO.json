@@ -496,6 +496,8 @@
     "toast": {
       "hltbInvalidTitle": "Joc HLTB nevalid",
       "hltbInvalidBody": "Introdu un număr de joc HowLongToBeat sau un link către pagina jocului.",
+      "steamAppIdInvalidTitle": "ID de aplicație Steam nevalid",
+      "steamAppIdInvalidBody": "Introdu un ID de aplicație Steam, un URL de magazin, de comunitate sau SteamDB. Lasă câmpul gol pentru a elimina potrivirea.",
       "hltbNotFoundTitle": "Nu a fost găsit",
       "hltbNotFoundBody": "HowLongToBeat nu are niciun joc cu acel număr.",
       "notApplicableTitle": "Nu se aplică",

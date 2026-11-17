@@ -494,6 +494,8 @@
     "toast": {
       "hltbInvalidTitle": "無効な HLTB ゲーム",
       "hltbInvalidBody": "HowLongToBeat のゲーム番号またはゲームページのリンクを入力してください。",
+      "steamAppIdInvalidTitle": "無効な Steam アプリ ID",
+      "steamAppIdInvalidBody": "Steam アプリ ID、ストア URL、コミュニティ URL、SteamDB URL のいずれかを入力してください。空欄にすると一致を解除します。",
       "hltbNotFoundTitle": "見つかりません",
       "hltbNotFoundBody": "その番号のゲームは HowLongToBeat にありません。",
       "notApplicableTitle": "該当なし",

@@ -568,6 +568,8 @@ export const MetadataPage = () => {
     // The editor stays mounted across games, so its search belongs to one entry (#43).
     setQuery(appName(appId));
     setResults([]);
+    // An unsaved HLTB draft belongs to the game it was typed on.
+    setHltbIdDraft(null);
   }, [appId]);
 
   useEffect(() => {
@@ -717,6 +719,19 @@ export const MetadataPage = () => {
     }
     return { id, name: found.game_name };
   };
+  // Undefined means the text is not a usable Steam identity; the user has been told why.
+  const checkSteamAppIdText = (text: string): number | null | undefined => {
+    if (!text.trim()) return null;
+    const id = parseSteamAppId(text);
+    if (!id) {
+      toastWarn(
+        t("editor.toast.steamAppIdInvalidTitle"),
+        t("editor.toast.steamAppIdInvalidBody"),
+      );
+      return undefined;
+    }
+    return id;
+  };
 
   /** Explicit user action: fetch Steam's description/genres in the Steam client language. */
   const refetchSteamText = async () => {
@@ -810,6 +825,10 @@ export const MetadataPage = () => {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return;
     }
+    const steamAppId = explicitSteamAppId === undefined
+      ? checkSteamAppIdText(steamAppIdText)
+      : explicitSteamAppId;
+    if (steamAppId === undefined) return;
     if (!beginBusy(requestedEntry)) return;
     const saveBaselineMetadata = metadataRef.current;
     const saveBaselineText: FormTextSnapshot = {
@@ -820,9 +839,7 @@ export const MetadataPage = () => {
       steamAppIdText: steamAppIdTextRef.current,
     };
     try {
-      const parsed = normalizedSteamAppId(
-        explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId,
-      );
+      const parsed = normalizedSteamAppId(steamAppId);
       const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
       const steamAppIdChanged = parsed !== savedSteamAppId;
       const next = {
@@ -1525,7 +1542,10 @@ export const MetadataPage = () => {
                   <TextField
                     className={editorFocusTargetClassName}
                     value={hltbIdText}
-                    onChange={(e) => setHltbIdDraft(e.target.value)}
+                    onChange={(e) => {
+                      markFormEdited();
+                      setHltbIdDraft(e.target.value);
+                    }}
                     style={fieldStyle}
                   />
                   <FocusableButton

@@ -497,6 +497,8 @@
     "toast": {
       "hltbInvalidTitle": "Неприпустима гра HLTB",
       "hltbInvalidBody": "Введіть номер гри HowLongToBeat або посилання на сторінку гри.",
+      "steamAppIdInvalidTitle": "Неприпустимий Steam App ID",
+      "steamAppIdInvalidBody": "Введіть Steam App ID, посилання на магазин, спільноту або SteamDB. Залиште поле порожнім, щоб зняти збіг.",
       "hltbNotFoundTitle": "Не знайдено",
       "hltbNotFoundBody": "У HowLongToBeat немає гри з таким номером.",
       "notApplicableTitle": "Не застосовно",
