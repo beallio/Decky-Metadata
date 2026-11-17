@@ -36,16 +36,21 @@ describe("getGamepadTextArea", () => {
     const { getGamepadTextArea } = await loadFresh();
     getGamepadTextArea();
 
-    // Shaped like Steam's v0 factory: its source names both virtual-keyboard hooks.
-    const factoryLike = () => {
+    // Shaped like Steam's v0 factory in older clients: its source names both virtual-keyboard hooks.
+    const olderFactory = () => {
       "virtualKeyboardProps BIsElementValidForInput";
+    };
+    // Newer clients moved BIsElementValidForInput into a helper; the factory keeps its forwardRef.
+    const newerFactory = () => {
+      "n.forwardRef(function(z,p){const{virtualKeyboardProps:C,props:{refKeyboardHandle:k}}=g(z)})";
     };
     // A different factory (e.g. the non-input element factory) lacks them.
     const otherFactory = () => {
-      "bDOMElementFocusByDefault";
+      "bDOMElementFocusByDefault forwardRef";
     };
 
-    expect(predicate(factoryLike)).toBe(true);
+    expect(predicate(olderFactory)).toBe(true);
+    expect(predicate(newerFactory)).toBe(true);
     expect(predicate(otherFactory)).toBe(false);
     expect(predicate("not-a-function")).toBe(false);
   });

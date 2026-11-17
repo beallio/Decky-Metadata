@@ -35622,10 +35622,14 @@ const Content = () => {
 
 const resolveGamepadTextArea = () => {
     try {
-        const factory = DFL.findModuleExport((moduleExport) => typeof moduleExport === "function" &&
-            typeof moduleExport.toString === "function" &&
-            moduleExport.toString().includes("virtualKeyboardProps") &&
-            moduleExport.toString().includes("BIsElementValidForInput"));
+        const factory = DFL.findModuleExport((moduleExport) => {
+            if (typeof moduleExport !== "function")
+                return false;
+            const source = String(moduleExport);
+            // Newer clients moved BIsElementValidForInput into a helper; the factory still builds a forwardRef.
+            return source.includes("virtualKeyboardProps") &&
+                (source.includes("BIsElementValidForInput") || source.includes("forwardRef"));
+        });
         if (typeof factory !== "function")
             return null;
         const component = factory("textarea");
