@@ -661,6 +661,21 @@ pub async fn apply_auto_fetched(
     save_fetched(state, app_id, fetched, false).await
 }
 
+/// Merges an IGN fetch into the editor's draft without reading or writing the store.
+pub async fn preview_fetched(
+    state: &crate::state::AppState,
+    record: &Value,
+    slug: &str,
+) -> Result<Option<Value>, String> {
+    if !record.is_object() {
+        return Err("Invalid metadata".into());
+    }
+    let Some(fetched) = fetch(state, slug).await? else {
+        return Ok(None);
+    };
+    Ok(Some(merge_fetched(record, fetched)))
+}
+
 pub async fn with_steam_news(
     state: &crate::state::AppState,
     mut value: Value,
@@ -838,6 +853,25 @@ pub async fn enrich_steam(
             Ok(Some(enriched))
         })
         .await
+}
+
+/// Enriches a record the editor holds without reading or writing the store.
+pub async fn preview_steam(
+    state: &crate::state::AppState,
+    record: &Value,
+    language: &str,
+) -> Result<Option<Value>, String> {
+    if !record.is_object() {
+        return Err("Invalid metadata".into());
+    }
+    // Only an explicit match is previewed: with_steam_news would otherwise look the title up
+    // on the network for a record the editor is still drafting.
+    if !safe_int(&record["steam_appid"]).is_some_and(|id| id > 0) {
+        return Ok(None);
+    }
+    let enriched =
+        with_steam_news(state, record.clone(), &text(&record["title"]), 6, true, language).await?;
+    Ok(Some(sanitize_for(state, &enriched).await?))
 }
 
 #[cfg(test)]
@@ -1383,6 +1417,75 @@ mod tests {
         state.shutdown().await.unwrap();
     }
 
+    #[tokio::test]
+    async fn preview_fetched_merges_into_the_draft_without_a_store_write() {
+        use crate::{
+            http::{Fixture, Http},
+            providers::ign::IGN_GRAPHQL_URL,
+            state::AppState,
+        };
+        use reqwest::{Method, header::HeaderMap};
+
+        let payload = json!({"data":{"objectSelectByTypeAndSlug":{
+            "id":"fetched","slug":"fetched","url":"https://www.ign.com/games/fetched",
+            "type":"Game","metadata":{"names":{"name":"Fetched Game","short":"Fetched Game"},
+                "descriptions":{"short":"Description","long":""}},"objectRegions":[]
+        }}});
+        let http = Http::fixtures(vec![Fixture {
+            method: Method::POST,
+            url: IGN_GRAPHQL_URL.to_owned(),
+            result: Ok(crate::http::Response {
+                status: 200,
+                headers: HeaderMap::new(),
+                body: serde_json::to_vec(&payload).unwrap(),
+                url: IGN_GRAPHQL_URL.to_owned(),
+            }),
+        }]);
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        std::sync::Arc::get_mut(&mut state).unwrap().http = http;
+        state.initialize().await.unwrap();
+        let stored = save(
+            &state,
+            &json!(42),
+            json!({"title":"Stored","deck_compat_override":0,"steam_appid":10,
+                "deck_compat_category":1,"steam_news":[]}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+        let news = json!([{"id":"draft-news","title":"Draft news",
+            "url":"https://store.steampowered.com/news/1"}]);
+        let draft = json!({"title":"Draft","deck_compat_override":"valve","hltb_game_id":7,
+            "steam_appid":10,"steam_news":news,"deck_compat_category":3,
+            "steamos_compat_category":2,"steam_machine_compat_category":3,
+            "steam_frame_compat_category":1});
+
+        let preview = preview_fetched(&state, &draft, "fetched")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(preview["title"], "Fetched Game");
+        assert_eq!(preview["steam_appid"], 10, "the draft's match survives");
+        assert_eq!(preview["deck_compat_override"], "valve");
+        assert_eq!(preview["hltb_game_id"], 7);
+        assert_eq!(preview["steam_news"], news);
+        assert_eq!(preview["steamos_compat_category"], 2);
+        assert!(preview["metadata_language"].is_null());
+        // Previewing never writes: the stored record is untouched.
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["42"], stored);
+        state.http.assert_drained();
+        // A fetch with no IGN result previews nothing.
+        assert_eq!(
+            preview_fetched(&state, &json!({"title":"Draft"}), "")
+                .await
+                .unwrap(),
+            None
+        );
+        state.shutdown().await.unwrap();
+    }
+
     fn enrichment_responses(mode: &str) -> Vec<crate::http::Fixture> {
         use crate::http::Fixture;
         let details = Fixture::json(
@@ -1581,5 +1684,69 @@ mod tests {
             state.store().await.unwrap().data()["metadata"]["42"],
             before
         );
+    }
+
+    #[tokio::test]
+    async fn steam_preview_enriches_the_sent_record_without_touching_the_store() {
+        use crate::{http::Http, state::AppState};
+        use std::sync::Arc;
+        let directory = TestDirectory::new();
+        let mut http = Http::fixtures(enrichment_responses("metadata"));
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        let stored = save(
+            &state,
+            &json!(42),
+            json!({"title":"Old","steam_appid":7,"description":"manual"}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+
+        let preview = preview_steam(
+            &state,
+            &json!({"title":"Old","steam_appid":7,"description":"draft"}),
+            "english",
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(preview["steam_store_name"], "Old Steam title");
+        assert_eq!(preview["description"], "old remote description");
+        assert_eq!(preview["steam_news"][0]["title"], "News");
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["42"], stored);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn steam_preview_without_an_explicit_match_stays_offline() {
+        use crate::{http::Http, state::AppState};
+        use std::sync::Arc;
+        let directory = TestDirectory::new();
+        let mut http = Http::fixtures(Vec::new());
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        // A title that would resolve on a network lookup must not be resolved here.
+        for record in [
+            json!({"title":"Old Steam title"}),
+            json!({"title":"Old Steam title","steam_appid":0}),
+            json!({"title":"Old Steam title","steam_appid":"draft"}),
+        ] {
+            assert_eq!(preview_steam(&state, &record, "english").await.unwrap(), None);
+        }
+        assert!(preview_steam(&state, &json!("not a record"), "english")
+            .await
+            .is_err());
+        assert!(state.store().await.unwrap().data()["metadata"].get("42").is_none());
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
     }
 }

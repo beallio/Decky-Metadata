@@ -37,6 +37,10 @@ export const saveMetadata = callable<
   [appId: number, metadata: MetadataData],
   MetadataData
 >("save_metadata");
+export const savePreviewedMetadata = callable<
+  [appId: number, metadata: MetadataData, steamAppId: number],
+  MetadataData
+>("save_previewed_metadata");
 /** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
 export const saveMetadataIfUnchanged = callable<
   [appId: number, metadata: MetadataData, expected: MetadataData | null],
@@ -96,6 +100,10 @@ export const applyFetchedMetadata = callable<
   [appId: number, slugOrUrl: string],
   MetadataData | null
 >("apply_fetched_metadata");
+export const previewFetchedMetadata = callable<
+  [metadata: MetadataData, slugOrUrl: string],
+  MetadataData | null
+>("preview_fetched_metadata");
 export const getCommunityFallbackPage = callable<
   [appId: number, page: number],
   CommunityFallbackPage
@@ -108,6 +116,10 @@ export const enrichSteamApp = callable<
   [appId: number, mode: "metadata" | "steam-name", language?: string],
   MetadataData | null
 >("enrich_steam_app");
+export const previewSteamMetadata = callable<
+  [metadata: MetadataData, language?: string],
+  MetadataData | null
+>("preview_steam_metadata");
 export const startScanMissing = callable<
   [games: GameOption[], language?: string],
   ScanProgress
