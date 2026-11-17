@@ -12,6 +12,9 @@ const i18nLanguage = vi.hoisted(() => ({
 
 const backend = vi.hoisted(() => ({
   applyFetchedMetadata: vi.fn(),
+  previewFetchedMetadata: vi.fn(),
+  previewSteamMetadata: vi.fn(),
+  savePreviewedMetadata: vi.fn(),
   checkHltbGameId: vi.fn(),
   getHltbStats: vi.fn(),
   clearShortcutNameState: vi.fn(),
@@ -226,18 +229,24 @@ const configureShortcutPanel = (overrides: {
   busy?: boolean;
   managementError?: boolean;
 } = {}) => {
-  state.values[0] = makeMetadata({
+  const metadata = makeMetadata({
     steam_appid: 15100,
     steam_store_name: "Steam Name",
     ...overrides.metadata,
   });
+  state.values[0] = metadata;
   state.values[7] = overrides.busy ?? false;
+  state.values[8] = metadata.steam_appid ? String(metadata.steam_appid) : "";
   state.values[9] = shortcutState(overrides.management);
   state.values[10] = overrides.managementError ?? false;
   state.values[11] = overrides.current ?? "Original";
   // These direct-render tests model metadata that has already been hydrated
   // for the initial editor entry. Real editor loads set this after the RPC.
   state.values[14] = 0;
+  // Ref slot 14 is the saved-record snapshot that gates store writes; slot 15
+  // is the pending Steam preview. Both are only set by backend responses.
+  refs.values[14] = { current: metadata };
+  refs.values[15] = { current: null };
   steam.classifyShortcutNameState.mockReturnValue(overrides.status ?? "unmanaged");
 };
 
@@ -513,20 +522,93 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
   });
 
-  it("clears a stale Steam proposal when the manual Steam ID changes, even if enrichment fails", async () => {
-    state.values[0] = makeMetadata({ steam_appid: 15100, steam_store_name: "Old Steam Name" });
-    state.values[14] = 0;
-    state.values[8] = "15100";
-    backend.saveMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15200, steam_store_name: "" }));
-    backend.enrichSteamApp.mockResolvedValue(null);
+  it("previews a changed Steam match without saving and stores its provider fields on Save", async () => {
+    const oldNews = [{ id: "old", title: "Old news", url: "https://example.com/old" }];
+    configureShortcutPanel({
+      metadata: {
+        steam_appid: 15100,
+        steam_store_name: "Old Steam Name",
+        steam_store_url: "https://store.steampowered.com/app/15100/",
+        deck_compat_category: 3,
+        steamos_compat_category: 2,
+        steam_machine_compat_category: 1,
+        steam_frame_compat_category: 0,
+        steam_news: oldNews,
+        steam_news_enriched_at: 7,
+        steam_dlc_appids: [10],
+        has_points_shop: true,
+        steam_store_state: "available",
+      },
+    });
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
+      title: "New title",
+      steam_appid: 15200,
+      steam_store_name: "New Steam Name",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+      steam_news: [],
+      steam_dlc_appids: [],
+      has_points_shop: false,
+      deck_compat_category: null,
+      steamos_compat_category: null,
+      steam_machine_compat_category: null,
+      steam_frame_compat_category: null,
+      steam_store_state: "unknown",
+    }));
 
     const page = renderPage();
     walk(page, (node) => node.type === "TextField" && node.props.value === "15100")[0]
       .props.onChange({ target: { value: "15200" } });
-    action(renderPage(), "Apply Steam App ID").props.onClick();
-    await flushAsyncWork();
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
 
-    expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ steam_appid: 15200, steam_store_name: "" }));
+    const sentDraft = backend.previewSteamMetadata.mock.calls[0][0];
+    expect(sentDraft).toEqual(expect.objectContaining({
+      steam_appid: 15200,
+      steam_store_name: "",
+      steam_store_url: "https://store.steampowered.com/app/15200/",
+      deck_compat_category: null,
+      steamos_compat_category: null,
+      steam_machine_compat_category: null,
+      steam_frame_compat_category: null,
+      steam_news: [],
+      steam_news_enriched_at: 0,
+      steam_dlc_appids: [],
+      has_points_shop: false,
+    }));
+    // Absence means "never looked up" for the per-device categories;
+    // the old match's store state must not survive either.
+    expect(sentDraft.steam_store_state).toBeUndefined();
+    expect(backend.previewSteamMetadata.mock.calls[0][1]).toBe("english");
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.refreshCompatibilitySurfaces).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "New title",
+      steam_appid: 15200,
+      steam_store_name: "New Steam Name",
+      steam_news: [],
+    }));
+    expect(state.values[8]).toBe("15200");
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Details loaded", expect.stringContaining("Save"));
+
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
+    await saveButton(renderPage()).props.onClick();
+
+    const stored = backend.savePreviewedMetadata.mock.calls[0][1];
+    expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.any(Object), 15200);
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    // The trusted save must not carry the old match's news, DLC, points shop or compat.
+    expect(stored.steam_news).toEqual([]);
+    expect(stored.steam_dlc_appids).toEqual([]);
+    expect(stored.has_points_shop).toBe(false);
+    expect(stored.deck_compat_category).toBeNull();
+    expect(stored.steamos_compat_category).toBeNull();
+    expect(stored.steam_machine_compat_category).toBeNull();
+    expect(stored.steam_frame_compat_category).toBeNull();
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
   });
 
   it("keeps normal metadata controls available when management is unavailable and excludes busy actions", async () => {
@@ -566,6 +648,50 @@ describe("MetadataPage compatibility status", () => {
     expect(text(page)).toContain("Steam's native shortcut-name API is unavailable");
     expect(action(page, "Use Steam name")).toBeUndefined();
     expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
+  });
+
+  it("withholds shortcut-name actions until an unsaved Steam match is saved", async () => {
+    configureShortcutPanel();
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
+      steam_appid: 15200,
+      steam_store_name: "New Steam Name",
+    }));
+    state.values[8] = "15200";
+
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    expect(action(renderPage(), "Use Steam name")).toBeUndefined();
+
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
+    await saveButton(renderPage()).props.onClick();
+
+    expect(action(renderPage(), "Use Steam name")).toBeDefined();
+  });
+
+  it("reports whether Save committed and applied the record", async () => {
+    configureShortcutPanel();
+    backend.saveMetadata.mockResolvedValue(makeMetadata({
+      title: "Saved",
+      steam_appid: 15100,
+      steam_store_name: "Steam Name",
+    }));
+
+    expect(await saveButton(renderPage()).props.onClick()).toBe(true);
+
+    backend.saveMetadata.mockRejectedValue(new Error("disk full"));
+    expect(await saveButton(renderPage()).props.onClick()).toBe(false);
+    expect(toast.toastError).toHaveBeenCalledWith("Save failed", expect.stringContaining("disk full"));
+  });
+
+  it("refuses to save while the Steam App ID text holds an unapplied match", async () => {
+    configureShortcutPanel();
+    state.values[8] = "15200";
+
+    expect(await saveButton(renderPage()).props.onClick()).toBe(false);
+
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+    expect(toast.toastWarn).toHaveBeenCalledWith("Steam App ID not applied", expect.any(String));
   });
 
   it("keeps restore available after metadata removal", async () => {
@@ -637,12 +763,40 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
     expect(text(renderPage())).toContain("Steam: Steam Name");
+    // The backfill persists the name, so the stored snapshot now offers it.
+    expect(action(renderPage(), "Use Steam name")).toBeDefined();
 
     effects.callbacks = [];
     renderPage();
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not backfill a Steam name while a preview of another match is pending", async () => {
+    effects.enabled = true;
+    backend.getMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15100, steam_store_name: "" }));
+    backend.getShortcutNameManagement.mockResolvedValue(shortcutState());
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
+      steam_appid: 15200,
+      steam_store_name: "New Steam Name",
+    }));
+
+    renderPage();
+    await effects.callbacks[0]();
+    await flushAsyncWork();
+    effects.callbacks = [];
+    renderPage();
+    state.values[8] = "15200";
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[2]();
+    await flushAsyncWork();
+
+    expect(backend.previewSteamMetadata).toHaveBeenCalledTimes(1);
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
   });
 
   it("does not retry a failed legacy backfill on each render", async () => {
@@ -736,8 +890,9 @@ describe("MetadataPage compatibility status", () => {
       steam_store_name: "Old Steam Name",
     }));
     expect(state.values[1]).toBe("");
+    // The cache is stored data only; the unsaved edit stays in the form.
     expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
-      title: "Unsaved edit",
+      title: "Original",
       description: "Saved long",
       short_description: "Saved summary",
       source: "IGN",
@@ -750,13 +905,39 @@ describe("MetadataPage compatibility status", () => {
     }));
   });
 
-  it("discards a delayed legacy backfill after the user changes Steam ID", async () => {
+  it("keeps an edit made before the backfill starts", async () => {
+    effects.enabled = true;
+    const pendingBackfill = deferred<MetadataData>();
+    configureShortcutPanel({ metadata: { title: "Stored title", steam_store_name: "" } });
+    backend.enrichSteamApp.mockReturnValue(pendingBackfill.promise);
+
+    renderPage();
+    walk(renderPage(), (node) => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "Edit before backfill" } });
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[2]();
+    pendingBackfill.resolve(makeMetadata({
+      title: "Stored title",
+      steam_appid: 15100,
+      steam_store_name: "Steam Name",
+    }));
+    await flushAsyncWork();
+
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "Edit before backfill",
+      steam_store_name: "Steam Name",
+    }));
+    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({ title: "Stored title" }));
+  });
+
+  it("discards a delayed legacy backfill after the user previews another Steam ID", async () => {
     effects.enabled = true;
     const oldResponse = deferred<any>();
-    const newer = makeMetadata({ title: "New match", steam_appid: 15200, steam_store_name: "New Steam Name" });
+    const previewed = makeMetadata({ title: "New match", steam_appid: 15200, steam_store_name: "New Steam Name" });
     configureShortcutPanel({ metadata: { title: "Original", steam_store_name: "" } });
-    backend.enrichSteamApp.mockReturnValueOnce(oldResponse.promise).mockResolvedValueOnce(newer);
-    backend.saveMetadata.mockResolvedValue(makeMetadata({ title: "Original", steam_appid: 15200, steam_store_name: "" }));
+    backend.enrichSteamApp.mockReturnValueOnce(oldResponse.promise);
+    backend.previewSteamMetadata.mockResolvedValue(previewed);
 
     renderPage();
     effects.callbacks[2]();
@@ -767,7 +948,9 @@ describe("MetadataPage compatibility status", () => {
     oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
     await flushAsyncWork();
 
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: 15200, steam_store_name: "New Steam Name" }));
+    expect(steam.metadataCache["100"]).toBeUndefined();
   });
 
   it("discards a delayed legacy backfill after metadata removal", async () => {
@@ -903,6 +1086,7 @@ describe("MetadataPage compatibility status", () => {
     await saveButton(renderPage()).props.onClick();
     await action(renderPage(), "Apply Steam App ID").props.onClick();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(toast.toastWarn).toHaveBeenCalledWith("Not loaded", expect.any(String));
 
     pendingMetadata.resolve(makeMetadata({ title: "Saved title", description: "Saved description" }));
@@ -913,96 +1097,71 @@ describe("MetadataPage compatibility status", () => {
     expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "Saved description" }));
   });
 
-  it("keeps a newer title edit while applying the saved Steam identity", async () => {
-    const pendingSave = deferred<any>();
-    const saved = makeMetadata({ steam_appid: 15200, steam_store_name: "New Steam name" });
+  it("keeps a newer title edit while previewing a changed Steam match", async () => {
+    const pendingPreview = deferred<any>();
     configureShortcutPanel({ metadata: { title: "Old title", steam_appid: 15100, steam_store_name: "Old Steam name" } });
     state.values[8] = "15200";
-    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockResolvedValue(saved);
-    backend.enrichSteamApp.mockResolvedValue(saved);
+    backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
 
-    const apply = action(renderPage(), "Apply Steam App ID").props.onClick();
+    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "New title" } });
-    pendingSave.resolve(saved);
-    await apply;
+    pendingPreview.resolve(makeMetadata({ title: "Steam title", steam_appid: 15200, steam_store_name: "New Steam name" }));
+    await applying;
     await flushAsyncWork();
 
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({
       title: "New title",
       steam_appid: 15200,
       steam_store_name: "New Steam name",
     }));
-    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
-      title: "New title",
-      steam_appid: 15200,
-    }));
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
     await saveButton(renderPage()).props.onClick();
-    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+    expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "New title",
       steam_appid: 15200,
-    }));
+    }), 15200);
   });
 
-  it.each([[null, "save"], ["NativeTextarea", "save"], [null, "enrichment"], ["NativeTextarea", "enrichment"]])("keeps an explicit clear during pending %s/%s", async (component, phase) => {
+  it.each([null, "NativeTextarea"])("keeps an explicit clear during a pending Steam preview (%s)", async (component) => {
     textarea.component = component;
-    const pendingSave = deferred<any>();
-    const pendingEnrichment = deferred<any>();
+    const pendingPreview = deferred<any>();
     configureShortcutPanel({ metadata: { description: "Long", short_description: "" } });
     state.values[8] = "15200";
-    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, value) => value);
-    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
     const description = () => walk(renderPage(), node => node.type === (component || "textarea"))[0];
-    if (phase === "save") description().props.onChange({ target: { value: "" } });
-    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Long", steam_appid: 15200, title: "Acknowledged title" }));
-    await flushAsyncWork();
-    if (phase === "enrichment") description().props.onChange({ target: { value: "" } });
-    expect(description().props.value).toBe("");
-    expect(state.values[0].title).toBe("Acknowledged title");
-    pendingEnrichment.resolve(makeMetadata({ description: "Provider prose", short_description: "Provider summary", steam_appid: 15200, title: "Enriched title", developers: [{ name: "Developer", url: "" }] }));
+    description().props.onChange({ target: { value: "" } });
+    pendingPreview.resolve(makeMetadata({ description: "Provider prose", short_description: "Provider summary", steam_appid: 15200, title: "Enriched title", developers: [{ name: "Developer", url: "" }] }));
     await applying;
     expect(description().props.value).toBe("");
     expect(state.values[0]).toMatchObject({ description: "", short_description: "", title: "Enriched title" });
     expect(state.values[1]).toBe("Developer");
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
     await saveButton(renderPage()).props.onClick();
-    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "", short_description: "", title: "Enriched title" }));
+    expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "", short_description: "", title: "Enriched title" }), 15200);
     textarea.component = null;
   });
 
-  it.each([["save", "2024-11-03"], ["enrichment", "2024-11-03"], ["save", ""], ["enrichment", ""]])("keeps a newer date edit during pending %s with value %s", async (phase, value) => {
-    const pendingSave = deferred<MetadataData>();
-    const pendingEnrichment = deferred<MetadataData>();
+  it.each([["2024-11-03"], [""]])("keeps a newer date edit during a pending Steam preview with value %s", async (value) => {
+    const pendingPreview = deferred<MetadataData>();
     configureShortcutPanel({ metadata: { description: "Long", short_description: "Short", release_date: "2009-04-28" } });
     state.values[3] = "2009-04-28";
     state.values[8] = "15200";
-    backend.saveMetadata.mockReturnValueOnce(pendingSave.promise).mockImplementation(async (_id, metadata) => metadata);
-    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    if (phase === "save") {
-      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
-    }
-    pendingSave.resolve(makeMetadata({ description: "Long", short_description: "Short", release_date: "2009-04-28", steam_appid: 15200 }));
-    await flushAsyncWork();
-    if (phase === "enrichment") {
-      walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
-    }
-    pendingEnrichment.resolve(makeMetadata({ description: "Provider long", short_description: "Provider short", release_date: "2023-11-14", steam_appid: 15200 }));
+    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    pendingPreview.resolve(makeMetadata({ description: "Provider long", short_description: "Provider short", release_date: "2023-11-14", steam_appid: 15200 }));
     await applying;
     expect(state.values[3]).toBe(value);
+    backend.savePreviewedMetadata.mockImplementation(async (_id, metadata) => metadata);
     await saveButton(renderPage()).props.onClick();
-    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ release_date: value || null, steam_appid: 15200 }));
+    expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ release_date: value || null, steam_appid: 15200 }), 15200);
   });
 
-  it("reconciles every untouched field from a successful Steam enrichment", async () => {
-    const pendingEnrichment = deferred<any>();
-    const saved = makeMetadata({
-      title: "Before enrichment",
-      description: "Old description",
-      steam_appid: 15200,
-      steam_store_name: "",
-      steam_store_url: "https://store.steampowered.com/app/15200/",
-    });
+  it("reconciles every untouched field from a successful Steam preview", async () => {
     const enriched = makeMetadata({
       title: "Steam title",
       description: "Steam description",
@@ -1021,14 +1180,18 @@ describe("MetadataPage compatibility status", () => {
     });
     configureShortcutPanel({ metadata: { title: "Before enrichment", description: "Old description" } });
     state.values[8] = "15200";
-    backend.saveMetadata.mockResolvedValueOnce(saved).mockResolvedValueOnce(enriched);
-    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    backend.previewSteamMetadata.mockResolvedValue(enriched);
 
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    await flushAsyncWork();
-    pendingEnrichment.resolve(enriched);
     await applying;
 
+    expect(backend.previewSteamMetadata).toHaveBeenCalledWith(expect.objectContaining({ steam_appid: 15200 }), "english");
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.refreshCompatibilitySurfaces).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({
       title: "Steam title",
       description: "Steam description",
@@ -1046,29 +1209,21 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[2]).toBe("Steam publisher");
     expect(state.values[3]).toBe("2023-11-14");
     expect(state.values[4]).toBe("92");
-    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
-      description: "Steam description",
-      steam_dlc_appids: [10, 20],
-    }));
 
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
     await saveButton(renderPage()).props.onClick();
-    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+    expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "Steam title",
       description: "Steam description",
       steam_dlc_appids: [10, 20],
       deck_compat_category: 3,
-    }));
+    }), 15200);
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
   });
 
-  it("keeps a concurrent title edit while reconciling untouched Steam enrichment fields", async () => {
-    const pendingEnrichment = deferred<any>();
-    const saved = makeMetadata({
-      title: "Before enrichment",
-      description: "Old description",
-      steam_appid: 15200,
-      steam_store_name: "",
-      steam_store_url: "https://store.steampowered.com/app/15200/",
-    });
+  it("keeps a concurrent title edit while reconciling untouched Steam preview fields", async () => {
+    const pendingPreview = deferred<any>();
     const enriched = makeMetadata({
       title: "Steam title",
       description: "Steam description",
@@ -1081,17 +1236,15 @@ describe("MetadataPage compatibility status", () => {
       has_points_shop: true,
       deck_compat_category: 2,
     });
-    const savedUserEdit = { ...enriched, title: "My title" };
     configureShortcutPanel({ metadata: { title: "Before enrichment", description: "Old description" } });
     state.values[8] = "15200";
-    backend.saveMetadata.mockResolvedValueOnce(saved).mockResolvedValueOnce(savedUserEdit);
-    backend.enrichSteamApp.mockReturnValue(pendingEnrichment.promise);
+    backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
 
     const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
     await flushAsyncWork();
     walk(renderPage(), (node) => node.type === "TextField")[1]
       .props.onChange({ target: { value: "My title" } });
-    pendingEnrichment.resolve(enriched);
+    pendingPreview.resolve(enriched);
     await applying;
 
     expect(state.values[0]).toEqual(expect.objectContaining({
@@ -1102,57 +1255,75 @@ describe("MetadataPage compatibility status", () => {
       steam_dlc_appids: [10],
       deck_compat_category: 2,
     }));
-    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
-      title: "My title",
-      description: "Steam description",
-    }));
+    expect(steam.metadataCache["100"]).toBeUndefined();
 
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
     await saveButton(renderPage()).props.onClick();
-    expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
+    expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "My title",
       description: "Steam description",
       steam_dlc_appids: [10],
-    }));
+    }), 15200);
     expect(state.values[0]).toEqual(expect.objectContaining({
       title: "My title",
       description: "Steam description",
     }));
   });
 
-  it("normalizes a cleared Steam ID and completes its consumer-visible refresh", async () => {
-    configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
+  it("clears the Steam match in the form without a backend call and saves it on Save", async () => {
+    configureShortcutPanel({
+      metadata: {
+        title: "User title",
+        steam_appid: 15100,
+        steam_store_name: "Old Steam name",
+        steam_store_url: "https://store.steampowered.com/app/15100/",
+        deck_compat_category: 3,
+        steamos_compat_category: 2,
+        steam_machine_compat_category: 2,
+        steam_frame_compat_category: 1,
+        steam_news: [{ title: "Old news" }],
+        steam_news_enriched_at: 1700000000,
+        steam_dlc_appids: [123],
+        has_points_shop: true,
+        steam_store_state: "available",
+      },
+    });
     state.values[15] = 3;
     state.values[16] = "steam";
     steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
     state.values[8] = "";
-    const cleared = makeMetadata({
-      title: "User title",
-      source: "Steam",
-      steam_appid: null,
-      deck_compat_category: null,
-      steam_store_name: "",
-      steam_store_url: "",
-    });
-    backend.saveMetadata.mockResolvedValue(cleared);
-    backend.enrichSteamApp.mockResolvedValue(null);
 
     await action(renderPage(), "Apply Steam App ID").props.onClick();
 
-    expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      title: "User title",
+      steam_appid: null,
+      deck_compat_category: null,
+      steamos_compat_category: null,
+      steam_machine_compat_category: null,
+      steam_frame_compat_category: null,
+      steam_news: [],
+      steam_news_enriched_at: 0,
+      steam_dlc_appids: [],
+      has_points_shop: false,
+      steam_store_name: "",
+      steam_store_url: "",
+    }));
+    expect(state.values[0].steam_store_state).toBeUndefined();
     expect(state.values[8]).toBe("");
-    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.refreshCompatibilitySurfaces).not.toHaveBeenCalled();
     expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — original Steam status)",
     );
-    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
-      title: "User title",
-      source: "Steam",
-      steam_appid: null,
-      deck_compat_category: null,
-    }));
-    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
-    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
-    expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
+
+    backend.saveMetadata.mockResolvedValue(makeMetadata({ title: "User title", steam_appid: null }));
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ steam_appid: null }));
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
   });
 
   it("refuses unresolvable Steam App ID text and keeps the saved match", async () => {
@@ -1161,6 +1332,7 @@ describe("MetadataPage compatibility status", () => {
 
     await action(renderPage(), "Apply Steam App ID").props.onClick();
 
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(toast.toastWarn).toHaveBeenCalledWith("Invalid Steam App ID", expect.any(String));
     expect(state.values[0]).toEqual(expect.objectContaining({
@@ -1169,18 +1341,16 @@ describe("MetadataPage compatibility status", () => {
     }));
   });
 
-  it("clears the Steam match when the App ID field holds only whitespace", async () => {
+  it("treats a whitespace-only Steam App ID as an empty match", async () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
     state.values[8] = "   ";
-    backend.saveMetadata.mockResolvedValue(makeMetadata({ steam_appid: null, steam_store_name: "" }));
 
     await action(renderPage(), "Apply Steam App ID").props.onClick();
 
     expect(toast.toastWarn).not.toHaveBeenCalled();
-    expect(backend.saveMetadata).toHaveBeenCalledWith(
-      100,
-      expect.objectContaining({ steam_appid: null }),
-    );
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
+    expect(state.values[0]).toEqual(expect.objectContaining({ steam_appid: null, steam_store_name: "" }));
+    expect(state.values[8]).toBe("");
   });
 
   it("does not let an old rename operation overwrite a later A editor entry", async () => {
@@ -1314,6 +1484,7 @@ describe("Steam text language", () => {
 
   const show = (metadata: Record<string, unknown>, language: string) => {
     state.values[0] = makeMetadata(metadata);
+    state.values[8] = metadata.steam_appid ? String(metadata.steam_appid) : "";
     state.values[14] = 0;
     state.values[18] = language;
     return renderPage();
@@ -1346,14 +1517,14 @@ describe("Steam text language", () => {
     expect(action(renderPage(), "Fetch Steam text in French")).toBeDefined();
   });
 
-  it("fetches Steam text in the current language and reloads the record", async () => {
+  it("previews Steam text in the current language without storing it", async () => {
     const page = show({
       steam_appid: 15100,
       metadata_language: "english",
       description: "Old",
       short_description: "Old",
     }, "french");
-    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
       steam_appid: 15100,
       metadata_language: "french",
       description: "Nouveau",
@@ -1363,25 +1534,77 @@ describe("Steam text language", () => {
     await action(page, "Fetch Steam text in French").props.onClick();
     await flushAsyncWork();
 
-    expect(backend.enrichSteamApp).toHaveBeenCalledWith(100, "metadata", "french");
-    expect(steam.metadataCache["100"]).toEqual(expect.objectContaining({
+    expect(backend.previewSteamMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({ steam_appid: 15100 }),
+      "french",
+    );
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.refreshCompatibilitySurfaces).not.toHaveBeenCalled();
+    expect(state.values[0]).toEqual(expect.objectContaining({
       metadata_language: "french",
       description: "Nouveau",
     }));
-    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
-    expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Details loaded", expect.stringContaining("Save"));
     expect(action(renderPage(), "Fetch Steam text in French")).toBeUndefined();
+
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.objectContaining({
+      steam_appid: 15100,
+      description: "Nouveau",
+    }), 15100);
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
   });
 
-  it("reports a failed fetch without applying a record", async () => {
+  it("refreshes the language of an unsaved preview instead of the stored match", async () => {
+    show({ steam_appid: 15100, metadata_language: "english", description: "Old" }, "french");
+    backend.previewSteamMetadata.mockResolvedValueOnce(makeMetadata({
+      steam_appid: 15200,
+      metadata_language: "english",
+      description: "New Steam text",
+      short_description: "New Steam text",
+    }));
+    state.values[8] = "15200";
+
+    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    expect(backend.previewSteamMetadata.mock.calls[0][0]).toEqual(expect.objectContaining({ steam_appid: 15200 }));
+
+    // Still an English draft, so the language button remains for the previewed id.
+    backend.previewSteamMetadata.mockResolvedValueOnce(makeMetadata({
+      steam_appid: 15200,
+      metadata_language: "french",
+      description: "Texte français",
+      short_description: "Texte français",
+    }));
+    await action(renderPage(), "Fetch Steam text in French").props.onClick();
+
+    expect(backend.previewSteamMetadata).toHaveBeenCalledTimes(2);
+    expect(backend.previewSteamMetadata.mock.calls[1][0]).toEqual(expect.objectContaining({ steam_appid: 15200 }));
+    expect(backend.previewSteamMetadata.mock.calls[1][1]).toBe("french");
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toEqual(expect.objectContaining({
+      steam_appid: 15200,
+      description: "Texte français",
+    }));
+  });
+
+  it("reports a failed preview without applying a record", async () => {
     const page = show({ steam_appid: 15100, metadata_language: "english" }, "french");
-    backend.enrichSteamApp.mockRejectedValue(new Error("offline"));
+    backend.previewSteamMetadata.mockRejectedValue(new Error("offline"));
 
     await action(page, "Fetch Steam text in French").props.onClick();
     await flushAsyncWork();
 
     expect(toast.toastError).toHaveBeenCalledWith("Fetch failed", expect.stringContaining("offline"));
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
     expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
   });
 });
 
@@ -1431,6 +1654,66 @@ describe("metadata summary and date persistence", () => {
     await saveButton(renderPage()).props.onClick();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
   });
+  it("checks an applied HLTB game and keeps it as the draft until Save", async () => {
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
+    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+
+    hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
+    await action(renderPage(), "Apply HLTB game").props.onClick();
+
+    expect(backend.checkHltbGameId).toHaveBeenCalledWith(6064);
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(hltbField().props.value).toBe("6064");
+    expect(toast.toastSuccess).toHaveBeenCalledWith("HLTB game: Minecraft", "Save stores this choice.");
+
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
+  });
+  it("drops a delayed HLTB check after the editor moves to another game", async () => {
+    effects.enabled = true;
+    const pending = deferred<{ found: true; game_id: number; game_name: string }>();
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockReturnValue(pending.promise);
+    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+
+    hltbField().props.onChange({ target: { value: "6064" } });
+    const applying = action(renderPage(), "Apply HLTB game").props.onClick();
+
+    route.appid = "200";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    // B has its own draft; the delayed A check must not touch it.
+    state.values[17] = "77";
+    pending.resolve({ found: true, game_id: 6064, game_name: "Minecraft" });
+    await applying;
+    await flushAsyncWork();
+
+    expect(hltbField().props.value).toBe("77");
+    expect(toast.toastSuccess).not.toHaveBeenCalledWith("HLTB game: Minecraft", expect.any(String));
+    route.appid = "100";
+  });
+
+  it("keeps newer HLTB typing while an earlier check is pending", async () => {
+    const pending = deferred<{ found: true; game_id: number; game_name: string }>();
+    state.values[0] = makeMetadata();
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockReturnValue(pending.promise);
+    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+
+    hltbField().props.onChange({ target: { value: "6064" } });
+    const applying = action(renderPage(), "Apply HLTB game").props.onClick();
+    hltbField().props.onChange({ target: { value: "9999" } });
+
+    pending.resolve({ found: true, game_id: 6064, game_name: "Minecraft" });
+    await applying;
+
+    expect(hltbField().props.value).toBe("9999");
+    expect(toast.toastSuccess).not.toHaveBeenCalledWith("HLTB game: Minecraft", expect.any(String));
+  });
   it("does not carry an unsaved HLTB draft into another game", () => {
     effects.enabled = true;
     state.values[0] = makeMetadata();
@@ -1472,6 +1755,24 @@ describe("metadata summary and date persistence", () => {
 
     expect(hltbField().props.value).toBe("9999");
     expect(state.values[0]).toBe(current);
+  });
+  it("aborts a Save whose HLTB check resolves after a newer edit", async () => {
+    const pending = deferred<{ found: true; game_id: number; game_name: string }>();
+    state.values[0] = makeMetadata({ title: "Stored title" });
+    state.values[14] = 0;
+    backend.checkHltbGameId.mockReturnValue(pending.promise);
+
+    walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0]
+      .props.onChange({ target: { value: "6064" } });
+    const saving = saveButton(renderPage()).props.onClick();
+    await flushAsyncWork();
+    walk(renderPage(), node => node.type === "TextField")[1]
+      .props.onChange({ target: { value: "Newer title" } });
+    pending.resolve({ found: true, game_id: 6064, game_name: "Minecraft" });
+    await expect(saving).resolves.toBe(false);
+
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
   });
   it("shows the automatically found HLTB game without saving it as a choice", async () => {
     state.values[0] = makeMetadata();
@@ -1516,32 +1817,60 @@ describe("Steam-match picker application", () => {
 
   const picker = (page: any) => walk(page, (node) => node.type === SteamMatchPicker)[0];
 
-  it("uses the chosen match instead of a conflicting manual ID and preserves edits made during saving", async () => {
-    const saving = deferred<MetadataData>();
+  it("labels the picker with the stored match, not an unsaved preview", async () => {
+    configureShortcutPanel({
+      metadata: { title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" },
+    });
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
+      title: "New match",
+      steam_appid: 15200,
+      steam_store_name: "New Steam Name",
+    }));
+
+    await picker(renderPage()).props.onApply(15200);
+
+    // The preview is in the form, but only Save stores it.
+    expect(state.values[0].steam_appid).toBe(15200);
+    expect(picker(renderPage()).props.matchedSteamAppId).toBe(15100);
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+  });
+
+  it("previews the chosen match instead of a conflicting manual ID and preserves edits made during the request", async () => {
+    const pendingPreview = deferred<MetadataData>();
     configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
     state.values[8] = "620";
-    backend.saveMetadata.mockReturnValueOnce(saving.promise);
-    backend.enrichSteamApp.mockResolvedValue(makeMetadata({
+    backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
+    const applying = picker(renderPage()).props.onApply(400);
+    walk(renderPage(), (node) => node.type === "textarea")[0]
+      .props.onChange({ target: { value: "My edit during the request" } });
+    pendingPreview.resolve(makeMetadata({
       title: "Portal", steam_appid: 400, steam_store_name: "Portal",
       description: "Steam description", short_description: "Steam description",
       developers: [{ name: "Valve", url: "" }], deck_compat_override: "valve",
     }));
-    const applying = picker(renderPage()).props.onApply(400);
-    walk(renderPage(), (node) => node.type === "textarea")[0]
-      .props.onChange({ target: { value: "My edit during the request" } });
-    saving.resolve(makeMetadata({
-      title: "Shortcut", steam_appid: 400, description: "Old description",
-      deck_compat_override: "valve",
-    }));
     await applying;
 
-    expect(backend.saveMetadata.mock.calls[0][1].steam_appid).toBe(400);
-    expect(steam.metadataCache["100"]).toMatchObject({
+    expect(backend.previewSteamMetadata.mock.calls[0][0]).toEqual(expect.objectContaining({
+      steam_appid: 400,
+      steam_store_name: "",
+      deck_compat_category: null,
+    }));
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toMatchObject({
       steam_appid: 400, title: "Portal", description: "My edit during the request",
       short_description: "My edit during the request", deck_compat_override: "valve",
     });
     expect(state.values[8]).toBe("400");
     expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
+
+    backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
+    await saveButton(renderPage()).props.onClick();
+    expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.objectContaining({
+      steam_appid: 400,
+      description: "My edit during the request",
+    }), 400);
   });
 
   it("rejects a retired picker callback after visiting another game and returning", async () => {
@@ -1553,8 +1882,8 @@ describe("Steam-match picker application", () => {
 
     await retired(400);
 
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
-    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
     expect(steam.metadataCache["100"]).toBeUndefined();
   });
 
@@ -1568,7 +1897,13 @@ describe("Steam-match picker application", () => {
     expect(hltbStore.view(100, inputs)).toEqual({ entry: null, needsFetch: false });
 
     state.values[6] = [{ slug: "hades", url: "https://www.ign.com/games/hades", title: "Hades", description: "" }];
-    backend.applyFetchedMetadata.mockResolvedValue(makeMetadata({ title: "Hades", source: "IGN" }));
+    // The backend merges IGN text into the sent draft and keeps its Steam match.
+    backend.previewFetchedMetadata.mockResolvedValue(makeMetadata({
+      title: "Hades",
+      source: "IGN",
+      steam_appid: 15100,
+      steam_store_name: "Steam Name",
+    }));
     // `walk` skips nested arrays such as `results.map(...)`; search them here.
     const find = (node: any): any => Array.isArray(node) ? node.map(find).find(Boolean)
       : node && typeof node === "object" ? (String(node.props?.className ?? "").includes("decky-metadata-editor__result")
@@ -1577,6 +1912,15 @@ describe("Steam-match picker application", () => {
     await result.props.onClick();
     await flushAsyncWork();
 
+    expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Hades" }),
+      "hades",
+    );
+    expect(backend.applyFetchedMetadata).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.applyMetadata).not.toHaveBeenCalled();
+    expect(steam.metadataCache["100"]).toBeUndefined();
+    expect(state.values[0]).toEqual(expect.objectContaining({ title: "Hades", source: "IGN" }));
     expect(hltbStore.view(100, inputs).needsFetch).toBe(true);
   });
 });
