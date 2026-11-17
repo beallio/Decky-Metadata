@@ -43,6 +43,9 @@ const steam = vi.hoisted(() => ({
 }));
 
 const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
+const i18n = vi.hoisted(() => ({
+  currentSteamLanguage: vi.fn(() => Promise.resolve("english")),
+}));
 const ui = vi.hoisted(() => ({
   getFocusNavController: vi.fn(),
   getGamepadNavigationTrees: vi.fn(),
@@ -155,6 +158,36 @@ vi.mock("./hltb/gameView", () => ({
 }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
+// The harness replaces React, so react-i18next cannot load; resolve English
+// straight from the en-US catalog instead. `vi.mock` factories run before
+// top-level imports, so the catalog must be imported dynamically here.
+vi.mock("./i18n", async () => {
+  const sources = new Map<string, string>();
+  const walk = (value: Record<string, unknown>, prefix: string) => {
+    for (const [key, child] of Object.entries(value)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (typeof child === "string") sources.set(path, child);
+      else if (child && typeof child === "object") walk(child as Record<string, unknown>, path);
+    }
+  };
+  walk((await import("./locales/en-US.json")).default, "");
+  const t = (key: string, options: Record<string, unknown> = {}) =>
+    (sources.get(key) ?? key).replace(/{{\s*(\w+)\s*}}/g, (_match, name: string) =>
+      String(options[name] ?? ""));
+  return {
+    t,
+    useT: () => t,
+    refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
+    currentSteamLanguage: i18n.currentSteamLanguage,
+    translateBackendError: (error: unknown) =>
+      error instanceof Error ? error.message : String(error),
+    translateProgress: (progress: { message?: string } | null | undefined) =>
+      progress?.message ?? "",
+    formatNumber: (value: number) => new Intl.NumberFormat("en-US").format(value),
+    formatDate: (value: Date | number) =>
+      new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(value),
+  };
+});
 vi.mock("./useNonSteamGames", () => ({
   useNonSteamGames: () => ({ games: [], loadGames: games.loadGames }),
 }));
@@ -438,6 +471,7 @@ describe("Content update settings", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    i18n.currentSteamLanguage.mockResolvedValue("english");
     harness.hookIndex = 0;
     harness.hooks = [];
     harness.effects = [];
@@ -1086,5 +1120,14 @@ describe("Content update settings", () => {
     }
   });
 
+  it("passes the current Steam language to a metadata scan", async () => {
+    backend.startScanMissing.mockRejectedValue(new Error("scan unavailable"));
+    i18n.currentSteamLanguage.mockResolvedValueOnce("french");
 
+    render();
+    children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
+    await flushPromises();
+
+    expect(backend.startScanMissing).toHaveBeenCalledWith([], "french");
+  });
 });

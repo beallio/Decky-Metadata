@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as I18n from "./i18n";
 
 const backend = vi.hoisted(() => ({ searchSteamMatches: vi.fn(), getSteamMatchPreview: vi.fn() }));
 const hooks = vi.hoisted(() => ({
@@ -11,6 +12,7 @@ vi.mock("@decky/ui", () => ({
   DialogButton: "DialogButton", Spinner: "Spinner",
 }));
 vi.mock("react", () => ({
+  createContext: () => ({}),
   useState: (initial: any) => {
     const slot = hooks.cursor++;
     if (hooks.values[slot] === undefined) hooks.values[slot] = initial;
@@ -25,6 +27,12 @@ vi.mock("react", () => ({
     if (!hooks.setup) { hooks.setup = setup; hooks.cleanup = setup(); }
   },
 }));
+// Components are rendered by hand here with a partial React mock, so use the
+// module-level translator instead of react-i18next's hook.
+vi.mock("./i18n", async (importOriginal) => {
+  const actual = await importOriginal<typeof I18n>();
+  return { ...actual, useT: () => actual.t };
+});
 
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import type { SteamMatchCandidate, SteamMatchPreview } from "./types";

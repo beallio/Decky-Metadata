@@ -1,4 +1,5 @@
 import type { ShortcutNameState } from "../types";
+import * as log from "../log";
 import { getNativeOverview, isNativeNonSteamShortcut, steamInternals } from "./core";
 
 const POLL_INTERVAL_MS = 100;
@@ -45,19 +46,21 @@ export const setShortcutNameAndWait = (
   const normalizedAppId = positiveAppId(appId);
   const expected = typeof expectedCurrent === "string" ? expectedCurrent : "";
   const requested = typeof target === "string" ? target : "";
-  if (!normalizedAppId) return Promise.reject(new Error("invalid shortcut app ID"));
-  if (!requested.trim()) return Promise.reject(new Error("shortcut name target is empty"));
+  // Rejections are codes; the editor shows them through translateBackendError (backend.<code>).
+  if (!normalizedAppId) return Promise.reject(new Error("invalid_shortcut_app_id"));
+  if (!requested.trim()) return Promise.reject(new Error("shortcut_name_target_empty"));
   const current = nativeShortcutName(normalizedAppId);
-  if (current === null) return Promise.reject(new Error("native shortcut is unavailable"));
-  if (current !== expected) return Promise.reject(new Error("shortcut name changed before rename"));
+  if (current === null) return Promise.reject(new Error("native_shortcut_unavailable"));
+  if (current !== expected) return Promise.reject(new Error("shortcut_name_changed"));
   const apps = steamInternals().SteamClient?.Apps;
   if (!apps || typeof apps.SetShortcutName !== "function") {
-    return Promise.reject(new Error("Steam shortcut name API is unavailable"));
+    return Promise.reject(new Error("shortcut_name_api_unavailable"));
   }
   try {
     apps.SetShortcutName.call(apps, normalizedAppId, requested);
   } catch (error) {
-    return Promise.reject(new Error(`Steam shortcut name API failed: ${String(error)}`));
+    log.warn("shortcut", "SetShortcutName failed", error);
+    return Promise.reject(new Error("shortcut_name_api_failed"));
   }
   return new Promise((resolve, reject) => {
     const startedAt = Date.now();
@@ -71,7 +74,7 @@ export const setShortcutNameAndWait = (
         return;
       }
       if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
-        finish(() => reject(new Error("Steam shortcut name update timeout")));
+        finish(() => reject(new Error("shortcut_name_timeout")));
       }
     };
     const interval = setInterval(poll, POLL_INTERVAL_MS);

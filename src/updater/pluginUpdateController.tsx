@@ -19,6 +19,7 @@ import {
   INSTALL_TYPE_DOWNGRADE,
   INSTALL_TYPE_UPDATE,
 } from "./deckyInstaller";
+import { t, translateBackendError } from "../i18n";
 import { updateReducer, initialUpdateState } from "./pluginUpdateReducer";
 
 
@@ -54,6 +55,7 @@ export type PluginUpdateController = {
   candidate: PluginUpdateCandidate | null;
   checkResult: UpdateCheckResult | null;
   errorMessage: string | null;
+  checkTimedOut: boolean;
   isChecking: boolean;
   isInstalling: boolean;
   isHandoffPending: boolean;
@@ -149,7 +151,7 @@ export function usePluginUpdateController({
           if (activeCheckId.current === checkId) {
             activeCheckId.current += 1;
             inFlightCheck.current = null;
-            dispatch({ type: "CHECK_TIMEOUT", message: "Update check interrupted. Check again." });
+            dispatch({ type: "CHECK_TIMEOUT", message: t("updater.check.interrupted") });
             logUpdate(null, "check_timeout", { checkId });
           }
         }, UPDATE_CHECK_UI_TIMEOUT_MS);
@@ -167,12 +169,13 @@ export function usePluginUpdateController({
 
           const elapsed_ms = Math.round(performance.now() - checkStart);
           if (res.status === "failed") {
+            const failureText = res.message ? translateBackendError(res.message) : t("updater.check.failed");
             logUpdate(null, "check_failed", { message: res.message || "unknown", elapsed_ms });
-            dispatch({ type: "CHECK_FAILED", message: res.message || "Failed to check for updates", result: res });
+            dispatch({ type: "CHECK_FAILED", message: failureText, result: res });
             if (opts.notify && opts.force) {
               toaster.toast({
-                title: "Update Check Failed",
-                body: res.message || "Failed to check for updates",
+                title: t("updater.check.failedTitle"),
+                body: failureText,
                 duration: 3000
               });
             }
@@ -204,12 +207,12 @@ export function usePluginUpdateController({
           }
 
           const elapsed_ms = Math.round(performance.now() - checkStart);
-          const msg = err instanceof Error ? err.message : String(err);
+          const msg = translateBackendError(err);
           logUpdate(null, "check_failed", { message: msg, elapsed_ms });
           dispatch({ type: "CHECK_FAILED", message: msg });
           if (opts.notify && opts.force) {
             toaster.toast({
-              title: "Update Check Failed",
+              title: t("updater.check.failedTitle"),
               body: msg,
               duration: 3000
             });
@@ -253,8 +256,8 @@ export function usePluginUpdateController({
       logUpdate(traceId, "handoff_resolved", { status: "success", elapsed_ms: Math.round(performance.now() - handoffStart) });
       onInstallVersionConfirmed?.(version);
       toaster.toast({
-        title: "Installation Initiated",
-        body: `Requested installation of v${version} via Decky Loader.`,
+        title: t("updater.installation.startedTitle"),
+        body: t("updater.installation.startedBody", { version }),
         duration: 3000
       });
     },
@@ -411,7 +414,7 @@ export function usePluginUpdateController({
       ) {
         const msg = "message" in revalRes ? revalRes.message : "unknown";
         logUpdate(updateTraceId, "revalidate_failed", { message: msg, elapsed_ms: revalElapsed });
-        throw new Error(msg || "Revalidation failed");
+        throw new Error(msg || t("updater.install.revalidationFailed"));
       }
       logUpdate(updateTraceId, "revalidate_success", { version: revalRes.version, elapsed_ms: revalElapsed });
 
@@ -426,7 +429,7 @@ export function usePluginUpdateController({
       logUpdate(updateTraceId, "record_install_start", { version: revalRes.version });
       const recordRes = await recordUpdateInstallRequested(payload);
       if ("status" in recordRes && (recordRes.status === "failed" || recordRes.status === "skipped")) {
-        throw new Error(recordRes.message || "Failed to record install request");
+        throw new Error(recordRes.message || t("updater.install.recordFailed"));
       }
       logUpdate(updateTraceId, "record_install_success", { version: revalRes.version, elapsed_ms: Math.round(performance.now() - recordStart) });
 
@@ -467,7 +470,7 @@ export function usePluginUpdateController({
               await installerPromise;
               await handleHandoffSuccess(revalRes.version, revalRes.channel as UpdateChannel, updateTraceId, handoffStart);
             } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
+              const msg = translateBackendError(err);
               logUpdate(updateTraceId, "handoff_rejected", { message: msg, elapsed_ms: Math.round(performance.now() - handoffStart) });
               try {
                 const clearRes = await clearPendingUpdateInstall(revalRes.version);
@@ -481,7 +484,7 @@ export function usePluginUpdateController({
               void checkForUpdates({ force: false, notify: false, source: "automatic" });
               dispatch({ type: "INSTALL_FAILED", message: msg });
               toaster.toast({
-                title: "Installation Failed",
+                title: t("updater.installation.failedTitle"),
                 body: msg,
                 duration: 4000
               });
@@ -492,7 +495,7 @@ export function usePluginUpdateController({
         await handleHandoffSuccess(revalRes.version, revalRes.channel as UpdateChannel, updateTraceId, handoffStart);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = translateBackendError(err);
       try {
         const clearRes = await clearPendingUpdateInstall(targetCandidate.version);
         if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
@@ -505,7 +508,7 @@ export function usePluginUpdateController({
       void checkForUpdates({ force: false, notify: false, source: "automatic" });
       dispatch({ type: "INSTALL_FAILED", message: msg });
       toaster.toast({
-        title: "Installation Failed",
+        title: t("updater.installation.failedTitle"),
         body: msg,
         duration: 4000
       });
@@ -517,6 +520,7 @@ export function usePluginUpdateController({
     candidate: state.candidate,
     checkResult: state.checkResult,
     errorMessage: state.errorMessage,
+    checkTimedOut: state.checkTimedOut,
     isChecking: state.phase === "checking",
     isInstalling: state.phase === "installing",
     isHandoffPending: state.phase === "handoff_pending",

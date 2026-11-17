@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Regression test for the stale-closure bug where opening the library
- * context menu for game A and then game B injected a "Decky metadata..."
+ * context menu for game A and then game B injected a "Change Metadata..."
  * entry that always navigated to game A.
  *
  * Steam reuses a single context-menu instance and installs the inner (menu
@@ -187,6 +187,7 @@ describe("contextMenuPatch", () => {
 
     expect(firstKeys.filter((key: string) => key === ENTRY_KEY)).toHaveLength(1);
     expect(firstKeys.indexOf(ENTRY_KEY)).toBeLessThan(firstKeys.indexOf("properties"));
+    expect(firstItems.find((item: any) => item?.key === ENTRY_KEY)?.props.children).toBe("Change Metadata...");
 
     const secondItems = new MenuBody().render().props.children[0];
     expect(secondItems.filter((item: any) => item?.key === ENTRY_KEY)).toHaveLength(1);

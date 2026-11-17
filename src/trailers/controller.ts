@@ -1,4 +1,5 @@
 import { evalInBigPicture, findIgnTrailer, getTrailerSettings, setTrailerSettings } from "../backend";
+import { onLanguageChange, t, translateBackendError } from "../i18n";
 import type { IgnTrailerResult, TrailerQuality, TrailerSettings, TrailerStatus } from "../types";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import {
@@ -27,34 +28,39 @@ export const DEFAULT_TRAILER_SETTINGS: TrailerSettings = {
 };
 
 const POLL_INTERVAL_MS = 2000;
+// The 15 s target cap quantizes to the 2 s tick, so 8 ticks.
+const REMOTE_BACKOFF_MAX_MS = 16000;
 const BRIDGE_TIMEOUT_MS = 24000;
 const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
 const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
 const OWNER_KEY = "__deckyMetadataTrailerOwner";
 const RUNTIME_KEY = "__deckyMetadataTrailerRuntime";
 
-const TRANSLATIONS = {
-  en: {
-    audio: "Trailer audio",
-    autoplayBlocked: "Autoplay is blocked by Steam",
-    disabled: "Disabled",
-    noSteamTrailer: "No Steam trailer found",
-    searchTrailerForApp: "Finding Steam trailer for app {appId}",
-    steamTrailer: "Steam trailer",
-    steamTrailerNotPlayable: "Steam trailer is not playable",
-    searchIgnTrailer: "Finding an IGN game trailer",
-    noGameTrailer: "No playable game trailer found",
-    stoppedForLaunch: "Trailer stopped for launch",
-    trailerActive: "Trailer active",
-    trailerLabel: "Trailer: {name}",
-    waitingGamePage: "Waiting for a game page or Home selection",
-    waitingHomeSelection: "Select or hover over a game on Home",
-    waitingHomeDelay: "Waiting to show the Home trailer",
-    muteTrailer: "Mute trailer",
-    expandTrailer: "Expand trailer",
-    mediaSourceUnavailable: "MediaSource is not available",
-  },
-};
+/** The serialized runtime cannot import i18n, so its whole table is resolved here at install time. */
+const runtimeTranslations = (): Record<string, string> => ({
+  audio: t("trailers.audio"),
+  autoplayBlocked: t("trailers.autoplayBlocked"),
+  disabled: t("trailers.disabled"),
+  noSteamTrailer: t("trailers.noSteamTrailer"),
+  // The runtime substitutes its own `{var}` placeholders from this table.
+  searchTrailerForApp: t("trailers.searchTrailerForApp", { appId: "{appId}" }),
+  steamTrailer: t("trailers.steamTrailer"),
+  steamTrailerNotPlayable: t("trailers.steamTrailerNotPlayable"),
+  searchIgnTrailer: t("trailers.searchIgnTrailer"),
+  noGameTrailer: t("trailers.noGameTrailer"),
+  stoppedForLaunch: t("trailers.stoppedForLaunch"),
+  trailerActive: t("trailers.trailerActive"),
+  trailerLabel: t("trailers.trailerLabel", { name: "{name}" }),
+  waitingGamePage: t("trailers.waitingGamePage"),
+  waitingHomeSelection: t("trailers.waitingHomeSelection"),
+  waitingHomeDelay: t("trailers.waitingHomeDelay"),
+  muteTrailer: t("trailers.muteTrailer"),
+  expandTrailer: t("trailers.expandTrailer"),
+  mediaSourceUnavailable: t("trailers.mediaSourceUnavailable"),
+  steamUiUnavailable: t("trailers.steamUiUnavailable"),
+  runtimeConflict: t("trailers.runtimeConflict"),
+  otherPluginActive: t("trailers.otherPluginActive"),
+});
 
 type TrailerIdentity = {
   view: "detail" | "home";
@@ -77,6 +83,7 @@ type RuntimeSnapshot = {
   displayHeight?: number | null;
   targetHeight?: number;
   needsIgnFallback?: boolean;
+  pending?: boolean;
 };
 
 export type TrailerControllerSnapshot = TrailerStatus & {
@@ -152,11 +159,11 @@ const isRuntimeSnapshot = (value: unknown): value is RuntimeSnapshot =>
   value !== null && typeof value === "object" && "status" in value && typeof value.status === "string";
 
 
-const runtimeMissingScript = `(() => {
+const runtimeMissingScript = (): string => `(() => {
   const runtime = window.${RUNTIME_KEY};
   const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
   if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
-    return { status: 'Steam UI unavailable', runtimeMissing: true };
+    return { status: ${JSON.stringify(t("trailers.steamUiUnavailable"))}, runtimeMissing: true };
   }
   // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
   if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
@@ -173,7 +180,7 @@ export class TrailerController {
   private pendingSettingsWrites = 0;
   private settingsTransactionId = 0;
   private settingsError = "";
-  private status = "Loading trailer settings";
+  private status = "";
   private runtimeSnapshot: RuntimeSnapshot | undefined;
   private listeners = new Set<() => void>();
   private mounted = false;
@@ -195,9 +202,16 @@ export class TrailerController {
   private pollInFlight = false;
   private installInFlight = false;
   private pendingInstall = false;
+  private remoteIntervalMs = POLL_INTERVAL_MS;
+  private nextRemoteAt = 0;
+  private lastRemoteKey = "";
+  private remoteRevision = -1;
+  private installedRevision = -1;
+  private panelVisible = false;
   private settingsSaveQueue: Promise<void> = Promise.resolve();
   private audioWindows = new Map<Window, EventListener>();
   private unsubscribeMatchChanges: (() => void) | undefined;
+  private unsubscribeLanguage: (() => void) | undefined;
   private snapshot: TrailerControllerSnapshot;
   private conflict: FeatureConflict;
   private unsubscribeConflicts: (() => void) | undefined;
@@ -237,7 +251,7 @@ export class TrailerController {
     this.resetPlaybackIdentity();
     this.settingsRevision += 1;
     this.publishOwner();
-    if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript);
+    if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript());
     if (this.homeSelection) this.scheduleHomeIdentity();
     this.emit();
   };
@@ -254,14 +268,25 @@ export class TrailerController {
 
   getSnapshot = () => this.snapshot;
 
+  /** QAM stays mounted while hidden, so only its own document reports visibility. */
+  setPanelVisible(visible: boolean) {
+    if (visible && !this.panelVisible) this.resetRemoteBackoff();
+    this.panelVisible = visible;
+  }
+
   mount() {
     if (this.mounted) return;
     this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
     this.mounted = true;
+    this.status = t("trailers.loadingSettings");
     this.conflict = this.conflicts.getConflict("trailers");
     this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
     this.pendingSettingsWrites = 0;
     this.settingsBusy = false;
+    this.resetRemoteBackoff();
+    this.remoteRevision = -1;
+    this.installedRevision = -1;
+    this.lastRemoteKey = "";
     this.destroyOlderRuntimes();
     this.publishOwner();
     this.refreshAudioListeners();
@@ -271,6 +296,7 @@ export class TrailerController {
       if (appId === this.pageAppId) void this.refreshPageIdentity();
       else this.emit();
     });
+    this.unsubscribeLanguage = onLanguageChange(() => void this.installOrUpdate());
     void this.loadSettings();
     this.emit();
   }
@@ -293,6 +319,8 @@ export class TrailerController {
     this.statusTimer = undefined;
     this.unsubscribeMatchChanges?.();
     this.unsubscribeMatchChanges = undefined;
+    this.unsubscribeLanguage?.();
+    this.unsubscribeLanguage = undefined;
     const owner = window[OWNER_KEY];
     if (owner?.ownerId === this.ownerId) owner.active = false;
     for (const [target, listener] of this.audioWindows) {
@@ -310,7 +338,7 @@ export class TrailerController {
     }
     if (window[OWNER_KEY]?.ownerId === this.ownerId) delete window[OWNER_KEY];
     const ownerId = JSON.stringify(this.ownerId);
-    const cleanup = `(() => { const runtime=window.${RUNTIME_KEY}; if(runtime?.ownerId!==${ownerId}) return {status:'Steam UI unavailable',runtimeMissing:true}; runtime.destroy?.(); if(window.${RUNTIME_KEY}===runtime) delete window.${RUNTIME_KEY}; return {status:'Trailer runtime removed'}; })()`;
+    const cleanup = `(() => { const runtime=window.${RUNTIME_KEY}; if(runtime?.ownerId!==${ownerId}) return {status:${JSON.stringify(t("trailers.steamUiUnavailable"))},runtimeMissing:true}; runtime.destroy?.(); if(window.${RUNTIME_KEY}===runtime) delete window.${RUNTIME_KEY}; return {status:${JSON.stringify(t("trailers.runtimeRemoved"))}}; })()`;
     void evalInBigPicture(cleanup).catch(() => undefined);
     this.listeners.clear();
   }
@@ -368,6 +396,11 @@ export class TrailerController {
     }
   }
 
+  private resetRemoteBackoff() {
+    this.remoteIntervalMs = POLL_INTERVAL_MS;
+    this.nextRemoteAt = 0;
+  }
+
   private cancelHomeDelay() {
     if (this.homeDelayTimer !== undefined) window.clearTimeout(this.homeDelayTimer);
     this.homeDelayTimer = undefined;
@@ -378,7 +411,7 @@ export class TrailerController {
     const selection = this.homeSelection;
     if (!selection || !this.isEffectivelyEnabled() || !this.settings.homeEnabled) return;
     const delay = Math.max(0, this.settings.homeFadeInDelaySeconds * 1000 - (Date.now() - selection.enteredAt));
-    this.status = "Waiting to show the Home trailer";
+    this.status = t("trailers.waitingHomeDelay");
     this.homeDelayTimer = window.setTimeout(() => {
       this.homeDelayTimer = undefined;
       if (this.homeSelection !== selection || !isTrailerHomeRoute(currentRoutePath())) return;
@@ -439,7 +472,7 @@ export class TrailerController {
       appId: remote?.appId,
       sourceAppId: remote?.sourceAppId ?? this.identity?.sourceAppId,
       status: this.conflict.pluginName && this.settings.enabled
-        ? `Paused while ${this.conflict.pluginName} is enabled` : this.status,
+        ? t("trailers.pausedWhilePlugin", { name: this.conflict.pluginName }) : this.status,
       trailerName: remote?.trailerName,
       gameTitle: remote?.gameTitle,
       displayWidth: remote?.displayWidth ?? null,
@@ -472,13 +505,13 @@ export class TrailerController {
       this.settingsRevision += 1;
       this.publishOwner();
       this.syncPolling();
-      this.status = loaded.enabled ? "Waiting for a Steam game page" : "Disabled";
+      this.status = loaded.enabled ? t("trailers.waitingSteamGamePage") : t("trailers.disabled");
       this.emit();
       await this.poll();
     } catch (error) {
       if (!this.mounted) return;
-      this.settingsError = `Trailer settings could not be loaded: ${String(error)}`;
-      this.status = "Trailer settings unavailable";
+      this.settingsError = t("trailers.settingsLoadError", { error: translateBackendError(error) });
+      this.status = t("trailers.settingsUnavailable");
       this.emit();
     }
   }
@@ -516,10 +549,10 @@ export class TrailerController {
     this.settingsRevision += 1;
     this.publishOwner();
     const direct = this.updateReachableRuntimes();
-    this.status = !next.enabled ? "Disabled" : next.detailEnabled || next.homeEnabled
-      ? "Checking the current game" : "Detail and Home trailers are off";
+    this.status = !next.enabled ? t("trailers.disabled") : next.detailEnabled || next.homeEnabled
+      ? t("trailers.checkingCurrentGame") : t("trailers.detailAndHomeOff");
     this.emit();
-    if (!direct) void this.runInSteamTab(runtimeMissingScript);
+    if (!direct) void this.runInSteamTab(runtimeMissingScript());
     if (!direct && this.isEffectivelyEnabled()) void this.poll();
 
     let succeeded = true;
@@ -552,9 +585,9 @@ export class TrailerController {
         }
         this.settingsRevision += 1;
         this.publishOwner();
-        if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript);
-        this.settingsError = `Trailer settings could not be saved: ${String(error)}`;
-        this.status = "Trailer settings were restored";
+        if (!this.updateReachableRuntimes()) void this.runInSteamTab(runtimeMissingScript());
+        this.settingsError = t("trailers.settingsSaveError", { error: translateBackendError(error) });
+        this.status = t("trailers.settingsRestored");
       }
     } finally {
       if (this.ownsMount(ownerId)) {
@@ -619,20 +652,20 @@ export class TrailerController {
 
   private async resolveCurrentIdentity(): Promise<{ identity: TrailerIdentity; status: string; ignLookup?: IgnLookup }> {
     const route = currentRoutePath();
-    if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
+    if (!this.isEffectivelyEnabled()) return { identity: null, status: t("trailers.disabled") };
     const home = isTrailerHomeRoute(route);
     const selection = home ? this.homeSelection : null;
-    if (home && !this.settings.homeEnabled) return { identity: null, status: "Home view trailers are off" };
+    if (home && !this.settings.homeEnabled) return { identity: null, status: t("trailers.homeTrailersOff") };
     if (home && !selection) {
-      return { identity: null, status: "Select or hover over a game on Home" };
+      return { identity: null, status: t("trailers.waitingHomeSelection") };
     }
     if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
       if (this.homeDelayTimer === undefined) this.scheduleHomeIdentity();
-      return { identity: null, status: "Waiting to show the Home trailer" };
+      return { identity: null, status: t("trailers.waitingHomeDelay") };
     }
-    if (!home && !this.settings.detailEnabled) return { identity: null, status: "Detail view trailers are off" };
+    if (!home && !this.settings.detailEnabled) return { identity: null, status: t("trailers.detailTrailersOff") };
     const pageAppId = home ? selection!.appId : parseTrailerRootRoute(route);
-    if (!pageAppId) return { identity: null, status: "Open a game's main Steam Library page or select a game on Home" };
+    if (!pageAppId) return { identity: null, status: t("trailers.openGamePage") };
     if (pageAppId !== this.pageAppId) {
       this.pageAppId = pageAppId;
       this.pageOverview = null;
@@ -643,15 +676,15 @@ export class TrailerController {
     }
     if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
         !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
-      return { identity: null, status: "Steam game is not available" };
+      return { identity: null, status: t("trailers.gameNotAvailable") };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-      return { identity: null, status: "This game is not a native non-Steam shortcut" };
+      return { identity: null, status: t("trailers.notNativeShortcut") };
     }
     if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
       try { await ensureMetadataCache(); }
-      catch { return { identity: null, status: "Saved Steam matches are not available" }; }
-      if (!this.isEffectivelyEnabled()) return { identity: null, status: "Disabled" };
+      catch { return { identity: null, status: t("trailers.matchesUnavailable") }; }
+      if (!this.isEffectivelyEnabled()) return { identity: null, status: t("trailers.disabled") };
     }
     const metadata = metadataCache[String(pageAppId)] ?? null;
     const context = {
@@ -661,7 +694,7 @@ export class TrailerController {
     const resolved = home
       ? resolveTrailerAppSource({ ...context, appId: pageAppId })
       : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
-    if (!resolved) return { identity: null, status: "Game trailer is unavailable" };
+    if (!resolved) return { identity: null, status: t("trailers.gameTrailerUnavailable") };
     const gameUrl = ignGameUrl(metadata);
     const title = nativeTrailerGameTitle(this.pageOverview) ||
       (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
@@ -673,7 +706,7 @@ export class TrailerController {
         ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
       },
       ignLookup: title ? { title, gameUrl } : null,
-      status: resolved.sourceAppId === null ? "Waiting for an IGN game trailer" : "Waiting for a Steam trailer",
+      status: resolved.sourceAppId === null ? t("trailers.waitingIgnTrailer") : t("trailers.waitingSteamTrailer"),
     };
   }
 
@@ -688,7 +721,7 @@ export class TrailerController {
     if (!this.isEffectivelyEnabled()) {
       next.identity = null;
       next.ignLookup = null;
-      next.status = "Disabled";
+      next.status = t("trailers.disabled");
     }
     const lookup = next.ignLookup ?? null;
     if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup))) return;
@@ -745,7 +778,7 @@ export class TrailerController {
       const settingsRevision = ${this.settingsRevision};
       const identity = ${JSON.stringify(this.identity)};
       const ignFallback = ${JSON.stringify(this.ignFallback) ?? "undefined"};
-      const translations = ${JSON.stringify(TRANSLATIONS)};
+      const translations = ${JSON.stringify(runtimeTranslations())};
       const factory = ${deckyMetadataTrailerRuntimeFactory.toString()};
       return factory(settings, ownerId, settingsRevision, translations, identity, ignFallback);
     })()`;
@@ -764,14 +797,15 @@ export class TrailerController {
       return result && typeof result === "object" ? result as Record<string, unknown> : undefined;
     } catch {
       this.runtimeSnapshot = undefined;
-      this.status = "Steam UI unavailable";
+      this.status = t("trailers.steamUiUnavailable");
       this.emit();
       return undefined;
     }
   }
 
   private async installOrUpdate() {
-    if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
+    // Either trailer feature may need the runtime before the first identity poll.
+    if (!this.isEffectivelyEnabled()) return;
     if (this.installInFlight) {
       this.pendingInstall = true;
       return;
@@ -781,9 +815,15 @@ export class TrailerController {
     try {
       do {
         this.pendingInstall = false;
-        if (!this.isEffectivelyEnabled() || (!this.identity && !this.settings.homeEnabled)) return;
+        if (!this.isEffectivelyEnabled()) return;
+        const revision = this.settingsRevision;
         const result = await this.runInSteamTab(this.buildInstallScript());
         if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId) return;
+        if (result?.runtimeMissing !== true && isRuntimeSnapshot(result)) {
+          this.installedRevision = revision;
+          this.remoteRevision = revision;
+        }
+        this.resetRemoteBackoff();
         this.applyRemoteResult(result);
         this.refreshAudioListeners();
       } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
@@ -796,7 +836,8 @@ export class TrailerController {
   private applyRemoteResult(result: Record<string, unknown> | undefined) {
     if (!result) return;
     if (result.runtimeMissing === true) {
-      this.status = String(result.status || "Steam UI unavailable");
+      this.installedRevision = -1;
+      this.status = String(result.status || t("trailers.steamUiUnavailable"));
       this.runtimeSnapshot = undefined;
       this.emit();
       return;
@@ -806,6 +847,22 @@ export class TrailerController {
     this.status = result.status;
     this.emit();
     if (result.needsIgnFallback) void this.loadIgnFallback();
+  }
+
+  /** Only an unchanged, idle snapshot earns remote backoff; older runtimes omit `pending`. */
+  private noteRemoteResult(result: Record<string, unknown> | undefined) {
+    let snapshot: RuntimeSnapshot | undefined;
+    if (result?.runtimeMissing !== true && isRuntimeSnapshot(result)) snapshot = result;
+    const key = snapshot ? JSON.stringify([
+      snapshot.appId, snapshot.sourceAppId, snapshot.status, snapshot.trailerName,
+      snapshot.trailerAudioEnabled, snapshot.displayWidth, snapshot.displayHeight,
+      snapshot.targetHeight, snapshot.needsIgnFallback, snapshot.pending,
+    ]) : "";
+    const settled = snapshot !== undefined && snapshot.pending === false && !snapshot.needsIgnFallback &&
+      key === this.lastRemoteKey && !this.panelVisible;
+    this.remoteIntervalMs = settled ? Math.min(this.remoteIntervalMs * 2, REMOTE_BACKOFF_MAX_MS) : POLL_INTERVAL_MS;
+    this.lastRemoteKey = key;
+    this.nextRemoteAt = Date.now() + this.remoteIntervalMs;
   }
 
   private async loadIgnFallback() {
@@ -837,22 +894,26 @@ export class TrailerController {
       this.syncPolling();
       if (!this.isEffectivelyEnabled() || this.installInFlight) return;
       if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
-        await this.installOrUpdate();
-        return;
-      }
-      if (this.readReachableRuntime()) {
+        // The full runtime is installed once per revision; later ticks use the cheap check.
+        if (this.installedRevision !== this.settingsRevision) {
+          await this.installOrUpdate();
+          return;
+        }
+      } else if (this.readReachableRuntime()) {
         this.emit();
         if (this.runtimeSnapshot?.needsIgnFallback) void this.loadIgnFallback();
         return;
       }
-      const result = await this.runInSteamTab(runtimeMissingScript);
+      // No game page and Home trailers off: the runtime follows its own route.
+      if (!this.identity && !this.settings.homeEnabled && this.remoteRevision === this.settingsRevision) return;
+      if (this.settingsRevision !== this.remoteRevision) this.resetRemoteBackoff();
+      if (!this.panelVisible && Date.now() < this.nextRemoteAt) return;
+      this.remoteRevision = this.settingsRevision;
+      const result = await this.runInSteamTab(runtimeMissingScript());
       if (!this.mounted) return;
-      if (result?.runtimeMissing === true) {
-        this.applyRemoteResult(result);
-        if (this.isEffectivelyEnabled() && this.identity) await this.installOrUpdate();
-      } else {
-        this.applyRemoteResult(result);
-      }
+      this.applyRemoteResult(result);
+      if (result?.runtimeMissing === true && this.isEffectivelyEnabled()) await this.installOrUpdate();
+      this.noteRemoteResult(result);
     } finally {
       this.pollInFlight = false;
     }

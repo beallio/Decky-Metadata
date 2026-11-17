@@ -42,6 +42,7 @@ import {
 } from "./steam/core";
 import * as log from "./log";
 import { frontendLog } from "./backend";
+import { t } from "./i18n";
 
 // The edit key is inserted for shortcuts. Keep the legacy keys in the removal
 // set because Steam can reuse menu arrays created by older builds.
@@ -178,7 +179,7 @@ const insertOurEntry = (items: any[], appId: number): boolean => {
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
-      {"Decky metadata..."}
+      {t("contextMenu.changeMetadata")}
     </MenuItem>
   );
 

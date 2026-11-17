@@ -323,6 +323,8 @@ const hltbSnapshot = (
     enabled: true,
     store: true,
     style: "default",
+    pushPlayDown: false,
+    respectMenuBar: true,
     hideViewDetails: false,
     showMain: true,
     showMainPlus: true,

@@ -4,6 +4,120 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-11-17
+
+Add 25 plugin languages, editor Save and Done, and Push Play button down
+
+### Added
+
+- **Push Play button down.** A new **HLTB times** switch for the **Default**
+  and **"Clean" Default** styles puts the times in their own row below the
+  header image and moves the Play button down, like HLTB for Deck. While a Steam
+  Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image,
+  the times stay on the image and Play does not move, so the bar keeps its
+  artwork background. It is off by default. (#39)
+- **Keep Play above the footer.** With **Push Play button down** on, a new
+  **Keep Play above the footer** switch moves Play down only as far as the
+  Play button still ends a few pixels above Big Picture's footer (Menu, Options,
+  Select, Back). It follows footer sizes that themes such as Art Hero or Clean
+  Gameview set. When there is no room, the times stay on the header image and
+  Play does not move. It is on by default. (#48, #50)
+- **Plugin text in 25 languages.** The panel, the metadata editor, messages,
+  and the plugin's text on game and Store pages now follow your Steam language,
+  in the same 25 languages as Decky Loader. Numbers, dates, and hours use your
+  language's format. The non-English text is an unreviewed machine translation.
+- **Steam details in your language.** For a non-Steam game matched to a Steam
+  store page, Steam news follows your Steam language, and the description and
+  genres follow it when the plugin gets the game's Steam details. Names,
+  developers, publishers, and release dates stay in English. If you change your
+  Steam language later, the editor shows **Fetch Steam text in** *your
+  language*, which gets the description again; the plugin never replaces a description
+  by itself. Steam gives English text when the store page has no text in your
+  language. IGN details stay in English.
+- **Save, Done, and a ⋯ menu in the metadata editor.** The editor's top row now
+  has **Save**, which shows the number of changes, for example **Save (3)**, and
+  is unavailable when nothing changed; **Done**; and a **⋯** menu with
+  **Refresh from Steam** and **Remove metadata**. The controller **X** button
+  also saves.
+- **Change markers in the metadata editor.** A changed field is marked
+  **Edited**, and Steam details loaded into the form but not saved yet are
+  marked **From Steam, not saved**.
+
+### Changed
+
+- **Context menu label.** The game context menu entry is now **Change Metadata...**
+  instead of **Decky metadata...**, to match Steam's other menu items. (#41)
+- **Better French text.** The French text uses more natural wording, the "…"
+  ellipsis, and **Boutique** for the Steam Store. The notice that another plugin
+  controls HLTB times or ProtonDB badges now names the feature in a sentence form
+  in every language.
+- **Better translations.** A second machine review improved the wording in all
+  24 non-English languages. The text now uses more of Steam's own words in each
+  language, such as its names for Achievements, Home, and Play. No native
+  speaker has reviewed it yet.
+- **Less background work for game trailers.** With game trailers on, the plugin
+  no longer checks Steam every 2 seconds when no trailer can play, and it checks
+  less often while a trailer plays and nothing changes. (#44, #45)
+- **One Steam debugger connection for trailers.** The plugin now keeps one
+  connection to Steam's Big Picture page and uses it again for each trailer
+  check, instead of opening and closing a new connection every time. This
+  causes less connection churn for other tools that use Steam's debugger, such
+  as CSS Loader. (#46)
+- **The metadata editor uses a draft model.** Apply-style actions no longer
+  save; they load details into the form, and **Save** stores them. **Use this
+  Steam match**, **Apply Steam App ID**, an IGN search result, **Apply HLTB
+  game**, the Steam text language button, and **Refresh from Steam** only fill
+  the form. If you change the Steam App ID text without selecting **Apply Steam
+  App ID**, **Save** asks you to apply it first.
+- **Unsaved changes are confirmed.** Leaving the editor with **Done** or the
+  controller **B** button while changes are unsaved asks **Save**, **Discard**,
+  or **Cancel**. Leaving with the Steam or Home button does not ask, and the
+  changes are lost.
+- **Remove metadata asks first.** The editor now asks you to confirm before
+  **Remove metadata** deletes the game's saved metadata.
+
+### Fixed
+
+- **Description field opens the on-screen keyboard again.** After a Steam
+  client update, selecting **Description** in **Change Metadata...** and
+  pressing A, or using Steam + X, no longer showed the keyboard. The other
+  text fields were not affected. (#52)
+- **SteamOS compatibility on other devices.** On SteamOS devices that are not
+  a Steam Deck, such as the Lenovo Legion Go S, a matched non-Steam game's
+  **SteamOS Compatibility** row showed Unknown. It now shows the matched game's
+  SteamOS rating, or your chosen status (Verified and Playable show as
+  Compatible, because SteamOS has no Verified level). Steam Machine and Steam
+  Frame rows work the same way.
+- **Removing metadata clears the compatibility badge.** **Remove metadata** now
+  closes the editor and returns to the game page, where the game's Steam Deck
+  compatibility badge in **Game Info** goes back to its original state.
+  Before, pressing **Save** after removing saved an empty record, which brought
+  the badge back. (#40)
+- **Opening a news item works again.** For a non-Steam game matched to a Steam
+  store page, selecting a news item in **Activity** now opens it. Before, Steam
+  showed "An error occurred while rendering this content" instead.
+- **IGN search starts fresh for each game.** When you went from one game's
+  metadata editor straight to another game's editor, **Search IGN metadata**
+  still showed the first game's search text and results. It now starts with the
+  current game's name and no results. (#43)
+- **Header image no longer jumps with game trailers.** On a game page with a
+  Steam Cloud save status bar, the header image grew about a second after the
+  page opened, which made it zoom and move. This happened only when SDH-Ludusavi
+  was off. The image now gets its final size before the page fades in, also on
+  a Steam Deck. (#47)
+- **Panel switches no longer flash.** Changing a switch in **HLTB times** or
+  **ProtonDB badges** briefly dimmed every control in the section while the
+  setting was saved. The controls now stay as they are, and two quick changes
+  in a row are both saved. (#49)
+- **Invalid Steam App ID text no longer clears the match.** Text that is not a
+  valid Steam App ID or a Steam or SteamDB URL now shows a warning and changes
+  nothing. Before, it cleared the saved match.
+- **An HLTB number no longer carries over between games.** An HLTB number typed
+  for one game could appear when another game was opened in the same editor. The
+  field now starts from the current game.
+- **An HLTB number typed during a save is kept.** A number typed while a save
+  was running could be lost; it is now kept.
+
 ## [0.6.3] - 2026-11-13
 
 Fix game page freezes with Unifideck 0.8.0 and add a Store info row with HowLongToBeat and ProtonDB

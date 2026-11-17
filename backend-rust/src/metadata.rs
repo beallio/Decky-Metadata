@@ -154,6 +154,15 @@ pub fn is_delisted(index: &Value, appid: i64) -> bool {
     })
 }
 
+/// Provider-owned compatibility fields, with the highest value each platform defines.
+/// SteamOS has no Verified level: its highest value is 2.
+const COMPAT_FIELDS: [(&str, i64); 4] = [
+    ("deck_compat_category", 3),
+    ("steamos_compat_category", 2),
+    ("steam_machine_compat_category", 3),
+    ("steam_frame_compat_category", 3),
+];
+
 pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
     if !value.is_object() {
         return Err("metadata must be an object".into());
@@ -189,7 +198,7 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         && (!value["release_date"].is_string()
             || value["release_date"].as_str() != release.as_deref())
     {
-        return Err("release_date must be a YYYY-MM-DD calendar date or null".into());
+        return Err("invalid_release_date".into());
     }
     let category = integer(&value["deck_compat_category"]).filter(|n| (0..=3).contains(n));
     let compat_override = if value["deck_compat_override"] == "valve" {
@@ -231,6 +240,20 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
         "steam_news":sanitize_news(&value["steam_news"])?,
         "steam_news_enriched_at":number_integer(&value["steam_news_enriched_at"],0.0)?
     });
+    // Valve's per-device categories: absent when the record never had a lookup, an explicit
+    // null when Valve has no rating. `deck_compat_category` above is always written.
+    for &(field, max) in COMPAT_FIELDS.iter().skip(1) {
+        if let Some(raw) = value.get(field) {
+            result[field] = json!(integer(raw).filter(|n| (0..=max).contains(n)));
+        }
+    }
+    // A record without this field is English; an unknown value is dropped, never coerced.
+    if let Some(language) = value["metadata_language"]
+        .as_str()
+        .and_then(crate::providers::steam::known_steam_language)
+    {
+        result["metadata_language"] = json!(language);
+    }
     if value.get("release_date").is_some() {
         result["release_date"] = json!(release);
     }
@@ -257,6 +280,9 @@ pub fn complete(value: &Value) -> bool {
 
 pub fn merge_fetched(existing: &Value, fetched: Value) -> Value {
     let mut merged = fetched;
+    // IGN text is English and describes no Steam language; an explicit null also stops
+    // `prepare_save` from restoring the stored value.
+    merged["metadata_language"] = Value::Null;
     if let Some(choice) = existing.get("deck_compat_override") {
         merged["deck_compat_override"] = choice.clone();
     }
@@ -270,6 +296,9 @@ pub fn merge_fetched(existing: &Value, fetched: Value) -> Value {
             "steam_store_url",
             "steam_store_state",
             "deck_compat_category",
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
             "steam_news",
             "steam_news_enriched_at",
         ] {
@@ -296,11 +325,37 @@ pub fn prepare_save(
             value["deck_compat_override"] = choice.clone();
         }
     }
+    // Only a Steam fetch that writes text sends this field (or an IGN fetch sends null).
+    // A user save keeps the stored value that describes the text.
+    if value.get("metadata_language").is_none() {
+        if let Some(language) = existing.get("metadata_language") {
+            value["metadata_language"] = language.clone();
+        }
+    }
     let previous = safe_int(&existing["steam_appid"]);
     let next = safe_int(&value["steam_appid"]);
     let trusted = trusted_appid.is_some_and(|id| id > 0 && Some(id) == next);
+    // Provider-owned: only a Steam fetch writes them, so a save keeps the stored values and
+    // their absence (a legacy record stays without the per-device keys). The match change
+    // below still clears them.
+    if !trusted {
+        for &(field, _) in &COMPAT_FIELDS {
+            match existing.get(field) {
+                Some(stored) => value[field] = stored.clone(),
+                None => {
+                    if let Some(object) = value.as_object_mut() {
+                        object.remove(field);
+                    }
+                }
+            }
+        }
+    }
     if previous.is_some_and(|id| id != 0) && previous != next && !trusted {
-        value["deck_compat_category"] = Value::Null;
+        // Explicit null, not absence: the new match was never looked up, so the record must
+        // not fall back to the old match's categories.
+        for &(field, _) in &COMPAT_FIELDS {
+            value[field] = Value::Null;
+        }
         // Data fetched for the old Steam app must not describe the new match. The store
         // URL and name stay: the editor sends them for the new ID and enrichment refills them.
         if let Some(object) = value.as_object_mut() {
@@ -606,14 +661,31 @@ pub async fn apply_auto_fetched(
     save_fetched(state, app_id, fetched, false).await
 }
 
+/// Merges an IGN fetch into the editor's draft without reading or writing the store.
+pub async fn preview_fetched(
+    state: &crate::state::AppState,
+    record: &Value,
+    slug: &str,
+) -> Result<Option<Value>, String> {
+    if !record.is_object() {
+        return Err("Invalid metadata".into());
+    }
+    let Some(fetched) = fetch(state, slug).await? else {
+        return Ok(None);
+    };
+    Ok(Some(merge_fetched(record, fetched)))
+}
+
 pub async fn with_steam_news(
     state: &crate::state::AppState,
     mut value: Value,
     title: &str,
     limit: i64,
     include_details: bool,
+    language: &str,
 ) -> Result<Value, String> {
     use crate::providers::steam;
+    let language = steam::known_steam_language(language).unwrap_or("english");
     if !value.is_object() {
         return Ok(value);
     }
@@ -632,27 +704,60 @@ pub async fn with_steam_news(
             steam::resolve_steam_appid_for_title(&state.http, &clean_title, Some(&value)).await;
     }
     let news = if let Some(id) = appid {
-        steam::steam_news_for_appid(&state.http, id, &clean_title, limit).await?
+        steam::steam_news_for_appid(&state.http, id, &clean_title, limit, language).await?
     } else {
         Vec::new()
     };
     if let Some(id) = appid {
         let previous_id = safe_int(&value["steam_appid"]);
-        let previous_category = safe_int(&value["deck_compat_category"]);
         value["steam_appid"] = id.into();
-        if include_details {
-            let lookup = steam::steam_deck_compat_lookup_for_appid(&state.http, id).await;
-            value["deck_compat_category"] = match lookup.status.as_str() {
-                "available" => json!(lookup.category),
-                "unavailable" => Value::Null,
-                _ if previous_id == Some(id)
-                    && previous_category.is_some_and(|category| (0..=3).contains(&category)) =>
-                {
-                    json!(previous_category)
+        // The activity refresh also reads this lookup so older records gain the other
+        // platforms' categories, but it must not touch the Steam text.
+        let lookup = steam::steam_deck_compat_lookup_for_appid(&state.http, id).await;
+        let status = lookup.status.as_str();
+        let found = [
+            lookup.category,
+            lookup.steamos_category,
+            lookup.machine_category,
+            lookup.frame_category,
+        ];
+        for ((field, max), found) in COMPAT_FIELDS.iter().zip(found) {
+            match status {
+                // An available report writes every field: a platform Valve did not rate
+                // becomes an explicit null, never a borrowed value.
+                "available" => value[*field] = json!(found),
+                "unavailable" => value[*field] = Value::Null,
+                // A failed lookup keeps the stored value, and its absence, unchanged.
+                _ => {
+                    let previous = safe_int(&value[*field]);
+                    if previous_id == Some(id)
+                        && previous.is_some_and(|category| (0..=*max).contains(&category))
+                    {
+                        value[*field] = json!(previous);
+                    }
                 }
-                _ => Value::Null,
-            };
+            }
+        }
+        if include_details {
             if let Some(mut details) = steam::steam_appdetails_for_appid(&state.http, id).await {
+                let mut description_language = "english";
+                if language != "english" {
+                    if let Some(localized) =
+                        steam::steam_localized_details_for_appid(&state.http, id, language).await
+                    {
+                        if localized.get("description").is_some() {
+                            description_language = language;
+                        }
+                        if let Some(object) = details.as_object_mut() {
+                            for key in ["description", "short_description", "genres"] {
+                                if py_truthy(&localized[key]) {
+                                    object.insert(key.into(), localized[key].clone());
+                                }
+                            }
+                        }
+                    }
+                }
+                let writes_description = details.get("description").is_some();
                 if let Some(object) = details.as_object_mut() {
                     let shots = screenshots(&object.remove("screenshots").unwrap_or(Value::Null))?;
                     if !shots.is_empty() {
@@ -664,6 +769,9 @@ pub async fn with_steam_news(
                             value[key.as_str()] = field.clone();
                         }
                     }
+                }
+                if writes_description {
+                    value["metadata_language"] = json!(description_language);
                 }
                 value["source"] = "Steam".into();
                 if text(&value["steam_store_state"]).trim().to_lowercase() != "delisted" {
@@ -692,6 +800,7 @@ pub async fn enrich_steam(
     state: &crate::state::AppState,
     app_id: &Value,
     mode: &str,
+    language: &str,
 ) -> Result<Option<Value>, String> {
     use crate::providers::steam;
     if mode != "metadata" && mode != "steam-name" {
@@ -717,8 +826,15 @@ pub async fn enrich_steam(
         value["steam_store_name"] = name.into();
         value
     } else {
-        let enriched =
-            with_steam_news(state, snapshot.clone(), &text(&snapshot["title"]), 6, true).await?;
+        let enriched = with_steam_news(
+            state,
+            snapshot.clone(),
+            &text(&snapshot["title"]),
+            6,
+            true,
+            language,
+        )
+        .await?;
         sanitize_for(state, &enriched).await?
     };
     let enriched = stamp_updated(&snapshot, enriched);
@@ -737,6 +853,25 @@ pub async fn enrich_steam(
             Ok(Some(enriched))
         })
         .await
+}
+
+/// Enriches a record the editor holds without reading or writing the store.
+pub async fn preview_steam(
+    state: &crate::state::AppState,
+    record: &Value,
+    language: &str,
+) -> Result<Option<Value>, String> {
+    if !record.is_object() {
+        return Err("Invalid metadata".into());
+    }
+    // Only an explicit match is previewed: with_steam_news would otherwise look the title up
+    // on the network for a record the editor is still drafting.
+    if !safe_int(&record["steam_appid"]).is_some_and(|id| id > 0) {
+        return Ok(None);
+    }
+    let enriched =
+        with_steam_news(state, record.clone(), &text(&record["title"]), 6, true, language).await?;
+    Ok(Some(sanitize_for(state, &enriched).await?))
 }
 
 #[cfg(test)]
@@ -770,6 +905,167 @@ mod tests {
             vec!["first"]
         );
     }
+    #[test]
+    fn platform_categories_keep_only_valid_values_and_clear_with_the_match() {
+        let valid = sanitize(
+            &json!({"title":"Game","steamos_compat_category":2,
+                "steam_machine_compat_category":3,"steam_frame_compat_category":0}),
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(valid["steamos_compat_category"], 2);
+        assert_eq!(valid["steam_machine_compat_category"], 3);
+        assert_eq!(valid["steam_frame_compat_category"], 0);
+        // An explicit null is a platform Valve never rated; absence means no lookup yet.
+        let unrated = sanitize(
+            &json!({"title":"Game","steamos_compat_category":null,
+                "steam_machine_compat_category":null,"steam_frame_compat_category":null}),
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(unrated.get(field), Some(&Value::Null), "{field}");
+            assert!(sanitize(&json!({"title":"Game"}), &Value::Null)
+                .unwrap()
+                .get(field)
+                .is_none());
+        }
+        let stored = json!({"title":"Game","steam_appid":10,"deck_compat_category":3,
+            "steamos_compat_category":2,"steam_machine_compat_category":3,"steam_frame_compat_category":1});
+        // A user save never writes them, even when it echoes other values.
+        let saved = prepare_save(
+            &stored,
+            json!({"title":"Renamed","steam_appid":10,"steamos_compat_category":1,
+                "steam_machine_compat_category":0,"steam_frame_compat_category":3}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(saved["steamos_compat_category"], 2);
+        assert_eq!(saved["steam_machine_compat_category"], 3);
+        assert_eq!(saved["steam_frame_compat_category"], 1);
+        assert_eq!(
+            merge_fetched(&stored, json!({"title":"Fetched"}))["steam_frame_compat_category"],
+            1
+        );
+        // Without a stored value an untrusted save creates no key, so forged junk never
+        // reaches the record.
+        let forged = prepare_save(
+            &json!({"title":"Game","steam_appid":10}),
+            json!({"title":"Game","steam_appid":10,"steamos_compat_category":3,
+                "steam_machine_compat_category":4,"steam_frame_compat_category":-1}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert!(forged.get(field).is_none(), "{field}");
+        }
+        // A fetched record keeps its explicit nulls through the same save.
+        let fetched = json!({"title":"Game","steam_appid":10,
+            "steamos_compat_category":null,"steam_machine_compat_category":null,
+            "steam_frame_compat_category":null});
+        let resent = prepare_save(
+            &fetched,
+            json!({"title":"Renamed","steam_appid":10,"steam_frame_compat_category":3}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(resent.get(field), Some(&Value::Null), "{field}");
+        }
+        // An IGN fetch of a legacy match must not invent the keys either.
+        let merged = merge_fetched(
+            &json!({"title":"Game","steam_appid":10}),
+            json!({"title":"Fetched","source":"IGN"}),
+        );
+        assert!(merged.get("steam_frame_compat_category").is_none());
+        // A changed Steam match clears every category of the old app with an explicit null.
+        let mut rematch = stored.clone();
+        rematch["steam_appid"] = json!(11);
+        let cleared = prepare_save(&stored, rematch, false, None, &Value::Null).unwrap();
+        for field in [
+            "deck_compat_category",
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(cleared.get(field), Some(&Value::Null), "{field}");
+        }
+    }
+
+    #[test]
+    fn untrusted_save_keeps_fresh_compatibility_categories() {
+        let stored = json!({"title":"Game","steam_appid":10,"deck_compat_category":3,
+            "steamos_compat_category":2,"steam_machine_compat_category":3,
+            "steam_frame_compat_category":3});
+        // An editor that loaded the record before the Activity refresh echoes stale values.
+        let kept = prepare_save(
+            &stored,
+            json!({"title":"Game","steam_appid":10,"deck_compat_category":1,
+                "steamos_compat_category":1,"steam_machine_compat_category":1,
+                "steam_frame_compat_category":1}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(kept["deck_compat_category"], 3);
+        assert_eq!(kept["steamos_compat_category"], 2);
+        assert_eq!(kept["steam_machine_compat_category"], 3);
+        assert_eq!(kept["steam_frame_compat_category"], 3);
+        // A trusted provider write still lands.
+        let fetched = prepare_save(
+            &stored,
+            json!({"title":"Game","steam_appid":10,"deck_compat_category":2,
+                "steamos_compat_category":2,"steam_machine_compat_category":2,
+                "steam_frame_compat_category":2}),
+            false,
+            Some(10),
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(fetched["deck_compat_category"], 2);
+        assert_eq!(fetched["steamos_compat_category"], 2);
+        assert_eq!(fetched["steam_machine_compat_category"], 2);
+        assert_eq!(fetched["steam_frame_compat_category"], 2);
+        // A changed match still drops every category of the old app.
+        let cleared = prepare_save(
+            &stored,
+            json!({"title":"Game","steam_appid":11,"deck_compat_category":1,
+                "steamos_compat_category":1,"steam_machine_compat_category":1,
+                "steam_frame_compat_category":1}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        for field in [
+            "deck_compat_category",
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert_eq!(cleared[field], Value::Null, "{field}");
+        }
+    }
+
     #[test]
     fn resaving_identical_data_keeps_the_stored_record_and_timestamp() {
         let input = json!({"title":"Same","source":"Manual","description":"Text"});
@@ -854,6 +1150,52 @@ mod tests {
         assert_eq!(merged["steam_news"], json!([]));
         assert_eq!(merged["deck_compat_override"], "valve");
     }
+    #[test]
+    fn metadata_language_tracks_steam_text_and_is_validated() {
+        use crate::providers::steam;
+        for language in steam::STEAM_LANGUAGES {
+            let saved = sanitize(
+                &json!({"title":"Game","metadata_language":language}),
+                &Value::Null,
+            )
+            .unwrap();
+            assert_eq!(saved["metadata_language"], language);
+        }
+        for invalid in [
+            json!(""),
+            json!("English"),
+            json!("klingon"),
+            json!(1),
+            Value::Null,
+        ] {
+            let saved = sanitize(
+                &json!({"title":"Game","metadata_language":invalid}),
+                &Value::Null,
+            )
+            .unwrap();
+            assert!(saved.get("metadata_language").is_none());
+        }
+        // A user save keeps the stored language that describes the kept text.
+        let existing = json!({"title":"Game","metadata_language":"schinese"});
+        let kept = prepare_save(
+            &existing,
+            json!({"title":"Game","description":"User edit"}),
+            false,
+            None,
+            &Value::Null,
+        )
+        .unwrap();
+        assert_eq!(kept["metadata_language"], "schinese");
+        // An IGN fetch replaces the text, so it drops the Steam language (absent = english).
+        let fetched = merge_fetched(
+            &existing,
+            json!({"title":"Game","source":"IGN","description":"IGN text"}),
+        );
+        let saved = prepare_save(&existing, fetched, false, None, &Value::Null).unwrap();
+        assert!(saved.get("metadata_language").is_none());
+        assert_eq!(saved["description"], "IGN text");
+    }
+
     #[test]
     fn sanitizer_matches_original_python_records() {
         let cases: Vec<Value> =
@@ -1075,6 +1417,75 @@ mod tests {
         state.shutdown().await.unwrap();
     }
 
+    #[tokio::test]
+    async fn preview_fetched_merges_into_the_draft_without_a_store_write() {
+        use crate::{
+            http::{Fixture, Http},
+            providers::ign::IGN_GRAPHQL_URL,
+            state::AppState,
+        };
+        use reqwest::{Method, header::HeaderMap};
+
+        let payload = json!({"data":{"objectSelectByTypeAndSlug":{
+            "id":"fetched","slug":"fetched","url":"https://www.ign.com/games/fetched",
+            "type":"Game","metadata":{"names":{"name":"Fetched Game","short":"Fetched Game"},
+                "descriptions":{"short":"Description","long":""}},"objectRegions":[]
+        }}});
+        let http = Http::fixtures(vec![Fixture {
+            method: Method::POST,
+            url: IGN_GRAPHQL_URL.to_owned(),
+            result: Ok(crate::http::Response {
+                status: 200,
+                headers: HeaderMap::new(),
+                body: serde_json::to_vec(&payload).unwrap(),
+                url: IGN_GRAPHQL_URL.to_owned(),
+            }),
+        }]);
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        std::sync::Arc::get_mut(&mut state).unwrap().http = http;
+        state.initialize().await.unwrap();
+        let stored = save(
+            &state,
+            &json!(42),
+            json!({"title":"Stored","deck_compat_override":0,"steam_appid":10,
+                "deck_compat_category":1,"steam_news":[]}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+        let news = json!([{"id":"draft-news","title":"Draft news",
+            "url":"https://store.steampowered.com/news/1"}]);
+        let draft = json!({"title":"Draft","deck_compat_override":"valve","hltb_game_id":7,
+            "steam_appid":10,"steam_news":news,"deck_compat_category":3,
+            "steamos_compat_category":2,"steam_machine_compat_category":3,
+            "steam_frame_compat_category":1});
+
+        let preview = preview_fetched(&state, &draft, "fetched")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(preview["title"], "Fetched Game");
+        assert_eq!(preview["steam_appid"], 10, "the draft's match survives");
+        assert_eq!(preview["deck_compat_override"], "valve");
+        assert_eq!(preview["hltb_game_id"], 7);
+        assert_eq!(preview["steam_news"], news);
+        assert_eq!(preview["steamos_compat_category"], 2);
+        assert!(preview["metadata_language"].is_null());
+        // Previewing never writes: the stored record is untouched.
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["42"], stored);
+        state.http.assert_drained();
+        // A fetch with no IGN result previews nothing.
+        assert_eq!(
+            preview_fetched(&state, &json!({"title":"Draft"}), "")
+                .await
+                .unwrap(),
+            None
+        );
+        state.shutdown().await.unwrap();
+    }
+
     fn enrichment_responses(mode: &str) -> Vec<crate::http::Fixture> {
         use crate::http::Fixture;
         let details = Fixture::json(
@@ -1122,7 +1533,7 @@ mod tests {
                 .unwrap();
                 let pending = Arc::clone(&state);
                 let task =
-                    tokio::spawn(async move { enrich_steam(&pending, &json!(42), mode).await });
+                    tokio::spawn(async move { enrich_steam(&pending, &json!(42), mode, "english").await });
                 tokio::time::timeout(std::time::Duration::from_secs(2), gate.started.notified())
                     .await
                     .unwrap();
@@ -1159,6 +1570,89 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn localized_steam_refetch_keeps_english_identity_fields() {
+        use crate::{
+            http::{Fixture, Http},
+            state::AppState,
+        };
+        use std::sync::Arc;
+        let events = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/?appid=1091500&offset=0&count=30&l=schinese&origin=https%3A%2F%2Fstore.steampowered.com";
+        let http = Http::fixtures(vec![
+            Fixture::json(
+                events,
+                json!({"events": [{
+                    "gid": "event-cn", "event_type": 28,
+                    "announcement_body": {
+                        "gid": "announcement-cn", "headline": "中文新闻",
+                        "body": "更新内容", "posttime": 1
+                    }
+                }]}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=1091500&l=english",
+                json!({"results": {"resolved_category": 3}}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/api/appdetails?appids=1091500&l=english",
+                json!({"1091500": {"success": true, "data": {
+                    "name": "Cyberpunk 2077", "release_date": {"date": "Dec 9, 2020"},
+                    "developers": ["CD PROJEKT RED"], "publishers": ["CD PROJEKT RED"],
+                    "genres": [{"description": "RPG"}], "short_description": "English short",
+                    "about_the_game": "<p>English about</p>", "categories": [{"id": 2}],
+                }}}),
+            ),
+            Fixture::json(
+                "https://store.steampowered.com/api/appdetails?appids=1091500&l=schinese&filters=basic,genres",
+                json!({"1091500": {"success": true, "data": {
+                    "name": "赛博朋克 2077", "release_date": {"date": "2020 年 12 月 9 日"},
+                    "developers": ["本地开发商"], "publishers": ["本地发行商"],
+                    "genres": [{"description": "角色扮演"}], "short_description": "中文简介",
+                    "about_the_game": "<p>中文详情</p>", "categories": [{"id": 999}],
+                }}}),
+            ),
+        ]);
+        let directory = TestDirectory::new();
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        save(
+            &state,
+            &json!(42),
+            json!({"title":"Cyberpunk","steam_appid":1091500}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+
+        let record = enrich_steam(&state, &json!(42), "metadata", "schinese")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(record["title"], "Cyberpunk 2077");
+        assert_eq!(record["steam_store_name"], "Cyberpunk 2077");
+        assert_eq!(record["release_date"], "2020-12-09");
+        assert_eq!(
+            record["developers"],
+            json!([{"name":"CD PROJEKT RED","url":""}])
+        );
+        assert_eq!(
+            record["publishers"],
+            json!([{"name":"CD PROJEKT RED","url":""}])
+        );
+        assert_eq!(record["store_categories"], json!([2]));
+        assert_eq!(record["description"], "中文简介");
+        assert_eq!(record["short_description"], "中文简介");
+        assert_eq!(record["genres"], json!(["角色扮演"]));
+        assert_eq!(record["metadata_language"], "schinese");
+        assert_eq!(record["steam_news"][0]["title"], "中文新闻");
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn cancelled_enrichment_cannot_publish_after_unload() {
         use crate::{http::Http, state::AppState};
         use std::sync::Arc;
@@ -1181,7 +1675,7 @@ mod tests {
         .unwrap();
         let pending = Arc::clone(&state);
         let task =
-            tokio::spawn(async move { enrich_steam(&pending, &json!(42), "steam-name").await });
+            tokio::spawn(async move { enrich_steam(&pending, &json!(42), "steam-name", "english").await });
         gate.started.notified().await;
         state.shutdown().await.unwrap();
         gate.resume.notify_one();
@@ -1190,5 +1684,69 @@ mod tests {
             state.store().await.unwrap().data()["metadata"]["42"],
             before
         );
+    }
+
+    #[tokio::test]
+    async fn steam_preview_enriches_the_sent_record_without_touching_the_store() {
+        use crate::{http::Http, state::AppState};
+        use std::sync::Arc;
+        let directory = TestDirectory::new();
+        let mut http = Http::fixtures(enrichment_responses("metadata"));
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        let stored = save(
+            &state,
+            &json!(42),
+            json!({"title":"Old","steam_appid":7,"description":"manual"}),
+            false,
+            None,
+        )
+        .await
+        .unwrap();
+
+        let preview = preview_steam(
+            &state,
+            &json!({"title":"Old","steam_appid":7,"description":"draft"}),
+            "english",
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(preview["steam_store_name"], "Old Steam title");
+        assert_eq!(preview["description"], "old remote description");
+        assert_eq!(preview["steam_news"][0]["title"], "News");
+        assert_eq!(state.store().await.unwrap().data()["metadata"]["42"], stored);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn steam_preview_without_an_explicit_match_stays_offline() {
+        use crate::{http::Http, state::AppState};
+        use std::sync::Arc;
+        let directory = TestDirectory::new();
+        let mut http = Http::fixtures(Vec::new());
+        let mut state = AppState::new(directory.env()).unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = http.cancel.clone();
+        inner.http = http;
+        state.initialize().await.unwrap();
+        // A title that would resolve on a network lookup must not be resolved here.
+        for record in [
+            json!({"title":"Old Steam title"}),
+            json!({"title":"Old Steam title","steam_appid":0}),
+            json!({"title":"Old Steam title","steam_appid":"draft"}),
+        ] {
+            assert_eq!(preview_steam(&state, &record, "english").await.unwrap(), None);
+        }
+        assert!(preview_steam(&state, &json!("not a record"), "english")
+            .await
+            .is_err());
+        assert!(state.store().await.unwrap().data()["metadata"].get("42").is_none());
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
     }
 }

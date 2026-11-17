@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import type {
   SteamControllerRecord,
   SteamControllerStoreBoundary,
@@ -125,14 +126,14 @@ const KNOWN_CONTROLLER_TYPES = new Map<number, string>([
 export const formatConnectedControllerTypes = (
   types: readonly number[] | undefined | null,
 ): string => {
-  if (!Array.isArray(types)) return "Unknown";
+  if (!Array.isArray(types)) return t("common.unknown");
   const sorted = Array.from(new Set(types.filter(validControllerType)))
     .sort((left, right) => left - right);
-  if (sorted.length === 0) return "Unknown";
+  if (sorted.length === 0) return t("common.unknown");
   const labels: string[] = [];
   for (const type of sorted) {
     const label = KNOWN_CONTROLLER_TYPES.get(type);
-    labels.push(label === undefined ? `Type ${type}` : `${label} (${type})`);
+    labels.push(label === undefined ? t("controllerTypes.type", { type }) : `${label} (${type})`);
   }
   return labels.join(", ");
 };

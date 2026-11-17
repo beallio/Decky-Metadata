@@ -127,7 +127,7 @@ impl Storage {
         if self.loaded {
             Ok(())
         } else {
-            Err("metadata settings file is unreadable; fix or remove it before saving changes".to_owned())
+            Err("settings_unreadable".to_owned())
         }
     }
 
@@ -587,6 +587,8 @@ const HLTB_BLURS: [&str; 3] = ["match", "blur", "none"];
 pub fn default_hltb_settings() -> Value {
     json!({
         "enabled": false, "store": true, "style": "default", "hideViewDetails": false,
+        "pushPlayDown": false,
+        "respectMenuBar": true,
         "nativeDetailsCorners": false,
         "showMain": true, "showMainPlus": true, "showComplete": true, "showAllStyles": true,
         "appearance": {"custom": false, "barAlpha": 25,
@@ -602,7 +604,7 @@ fn hltb_step(value: Option<&Value>, min: i64, max: i64) -> Option<i64> {
 pub fn normalize_hltb_settings(value: &Value) -> Value {
     let mut normalized = default_hltb_settings();
     let Some(source) = value.as_object() else { return normalized };
-    for key in ["enabled", "store", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
+    for key in ["enabled", "store", "hideViewDetails", "pushPlayDown", "respectMenuBar", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"] {
         if let Some(flag) = source.get(key).and_then(Value::as_bool) {
             normalized[key] = Value::Bool(flag);
         }
@@ -640,7 +642,7 @@ pub fn validate_hltb_settings(value: &Value) -> Result<Value, String> {
         actual.len() == expected.len() && expected.keys().all(|key| actual.contains_key(key))
     };
     let appearance = source.get("appearance").and_then(Value::as_object).ok_or_else(invalid)?;
-    let flags_valid = ["enabled", "store", "hideViewDetails", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
+    let flags_valid = ["enabled", "store", "hideViewDetails", "pushPlayDown", "respectMenuBar", "nativeDetailsCorners", "showMain", "showMainPlus", "showComplete", "showAllStyles"]
         .iter()
         .all(|key| source.get(*key).is_some_and(Value::is_boolean))
         && ["custom", "textShadow", "border"].iter().all(|key| appearance.get(*key).is_some_and(Value::is_boolean));
@@ -1367,13 +1369,24 @@ mod tests {
     #[test]
     fn hltb_settings_accept_exact_values_and_repair_saved_ones() {
         let defaults = default_hltb_settings();
+        assert_eq!(defaults["respectMenuBar"], true);
         assert_eq!(validate_hltb_settings(&defaults).unwrap(), defaults);
         let mut changed = defaults.clone();
         changed["style"] = json!("clean-left");
         changed["nativeDetailsCorners"] = json!(true);
+        changed["pushPlayDown"] = json!(true);
+        changed["respectMenuBar"] = json!(false);
         changed["appearance"]["barAlpha"] = json!(55);
         changed["appearance"]["blur"] = json!("blur");
         assert_eq!(validate_hltb_settings(&changed).unwrap(), changed);
+        let mut legacy_push = defaults.clone();
+        legacy_push.as_object_mut().unwrap().remove("pushPlayDown");
+        assert_eq!(normalize_hltb_settings(&legacy_push)["pushPlayDown"], false);
+        assert!(validate_hltb_settings(&legacy_push).is_err(), "missing pushPlayDown");
+        let mut legacy_menu_bar = defaults.clone();
+        legacy_menu_bar.as_object_mut().unwrap().remove("respectMenuBar");
+        assert_eq!(normalize_hltb_settings(&legacy_menu_bar)["respectMenuBar"], true);
+        assert!(validate_hltb_settings(&legacy_menu_bar).is_err(), "missing respectMenuBar");
         let mut legacy = defaults.clone();
         legacy.as_object_mut().unwrap().remove("nativeDetailsCorners");
         assert_eq!(normalize_hltb_settings(&legacy)["nativeDetailsCorners"], false);
@@ -1384,7 +1397,7 @@ mod tests {
         assert!(validate_hltb_settings(&no_store).is_err(), "missing store");
         for (path, bad) in [
             ("style", json!("fancy")), ("enabled", json!("yes")), ("store", json!("yes")), ("nativeDetailsCorners", json!("yes")),
-            ("hiddenAppIds", json!([620])), ("extra", json!(true)),
+            ("pushPlayDown", json!("yes")), ("respectMenuBar", json!("yes")), ("hiddenAppIds", json!([620])), ("extra", json!(true)),
         ] {
             let mut value = defaults.clone();
             value[path] = bad;

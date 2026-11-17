@@ -21,6 +21,30 @@ pub const STEAM_STORE_APP_URL: &str = "https://store.steampowered.com/app/{appid
 const STEAM_NEWS_FEEDS: &str = "steam_community_announcements,steam_community_announcements_koreana,steam_community_announcements_japanese,steam_community_announcements_schinese,steam_community_announcements_tchinese,steam_community_announcements_french,steam_community_announcements_german,steam_community_announcements_spanish,steam_community_announcements_italian,steam_community_announcements_polish,steam_community_announcements_portuguese,steam_community_announcements_russian";
 const STEAM_ACTIVITY_EVENT_TYPES: [i64; 9] = [12, 13, 14, 15, 23, 24, 25, 28, 35];
 
+/// `SteamClient.Settings.GetCurrentLanguage()` values. Steam silently serves English for any
+/// other string, so only these exact values may leave the backend.
+pub const STEAM_LANGUAGES: [&str; 30] = [
+    "english", "german", "french", "italian", "koreana", "spanish", "schinese", "tchinese",
+    "russian", "thai", "japanese", "portuguese", "polish", "danish", "dutch", "finnish",
+    "norwegian", "swedish", "hungarian", "czech", "romanian", "turkish", "brazilian",
+    "bulgarian", "greek", "ukrainian", "latam", "vietnamese", "indonesian", "malay",
+];
+
+pub fn known_steam_language(language: &str) -> Option<&'static str> {
+    STEAM_LANGUAGES
+        .iter()
+        .find(|known| **known == language)
+        .copied()
+}
+
+/// A raw RPC or settings value; anything missing or unknown becomes `english`.
+pub fn steam_language(value: Option<&Value>) -> &'static str {
+    value
+        .and_then(Value::as_str)
+        .and_then(known_steam_language)
+        .unwrap_or("english")
+}
+
 static RX_CLAN_IMAGE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\A\{STEAM_CLAN(?:_[A-Z]+)*_?IMAGE\}/(\d+)/([^\s<>\)\]\[]+)")
         .expect("fixed Steam clan-image regex")
@@ -109,6 +133,21 @@ impl DeckCompatibilityStatus {
 pub struct DeckCompatibilityLookup {
     pub status: DeckCompatibilityStatus,
     pub category: Option<i64>,
+    pub steamos_category: Option<i64>,
+    pub machine_category: Option<i64>,
+    pub frame_category: Option<i64>,
+}
+
+impl DeckCompatibilityLookup {
+    fn without_categories(status: DeckCompatibilityStatus) -> Self {
+        Self {
+            status,
+            category: None,
+            steamos_category: None,
+            machine_category: None,
+            frame_category: None,
+        }
+    }
 }
 
 fn query_url(base: &str, parameters: &[(&str, String)]) -> String {
@@ -577,15 +616,18 @@ fn log_provider_error(message: &str, appid: Option<i64>, error: Option<&str>, le
     logging::event("steam", message, Value::Object(fields), level);
 }
 
+/// Reads one optional category: Steam omits or nulls it for unreviewed platforms, and an
+/// out-of-range value is dropped rather than guessed.
+fn lookup_category(results: &Map<String, Value>, key: &str, max: i64) -> Option<i64> {
+    python_int(results.get(key)?).filter(|category| (0..=max).contains(category))
+}
+
 pub async fn steam_deck_compat_lookup_for_appid(
     http: &Http,
     appid: i64,
 ) -> DeckCompatibilityLookup {
     if appid <= 0 {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     }
     let url = query_url(
         STEAM_DECK_COMPAT_URL,
@@ -600,23 +642,26 @@ pub async fn steam_deck_compat_lookup_for_appid(
                 Some(&error),
                 Level::Warn,
             );
-            return DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None,
-            };
+            return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
         }
     };
-    let Some(results) = payload.get("results").and_then(Value::as_object) else {
-        log_provider_error(
-            "deck compat fetch failed",
-            Some(appid),
-            Some("missing deck compatibility results"),
-            Level::Warn,
-        );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+    let results = match payload.get("results") {
+        // Steam reports an unreviewed app as an empty result list, which is authoritative.
+        Some(Value::Array(items)) if items.is_empty() => {
+            return DeckCompatibilityLookup::without_categories(
+                DeckCompatibilityStatus::Unavailable,
+            );
+        }
+        Some(Value::Object(results)) => results,
+        _ => {
+            log_provider_error(
+                "deck compat fetch failed",
+                Some(appid),
+                Some("missing deck compatibility results"),
+                Level::Warn,
+            );
+            return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
+        }
     };
     let Some(raw_category) = results.get("resolved_category") else {
         log_provider_error(
@@ -625,16 +670,10 @@ pub async fn steam_deck_compat_lookup_for_appid(
             Some("missing deck compatibility category"),
             Level::Warn,
         );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     };
     if raw_category.is_null() {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Unavailable,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
     }
     let Some(category) = python_int(raw_category) else {
         log_provider_error(
@@ -643,26 +682,28 @@ pub async fn steam_deck_compat_lookup_for_appid(
             Some("invalid deck compatibility category"),
             Level::Warn,
         );
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Failed,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
     };
     if !(0..=3).contains(&category) {
-        return DeckCompatibilityLookup {
-            status: DeckCompatibilityStatus::Unavailable,
-            category: None,
-        };
+        return DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
     }
+    // SteamOS has no Verified level: its highest value is 2, so 3 is not valid there.
+    let steamos_category = lookup_category(results, "steamos_resolved_category", 2);
+    let machine_category = lookup_category(results, "machine_resolved_category", 3);
+    let frame_category = lookup_category(results, "frame_resolved_category", 3);
     logging::event(
         "steam",
         "deck compat resolved",
-        json!({"steam_appid": appid, "category": category}),
+        json!({"steam_appid":appid,"category":category,"steamos_category":steamos_category,
+            "machine_category":machine_category,"frame_category":frame_category}),
         Level::Debug,
     );
     DeckCompatibilityLookup {
         status: DeckCompatibilityStatus::Available,
         category: Some(category),
+        steamos_category,
+        machine_category,
+        frame_category,
     }
 }
 
@@ -715,7 +756,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
         Ok(payload) => payload,
         Err(_) => {
             log_provider_error("match search failed", None, None, Level::Warn);
-            return json!({"items": [], "error": "Steam search is unavailable. Try again."});
+            return json!({"items": [], "error": "steam_search_unavailable"});
         }
     };
     let Some(rows) = payload.get("items").and_then(Value::as_array) else {
@@ -725,7 +766,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
             Some("Invalid Steam search response"),
             Level::Warn,
         );
-        return json!({"items": [], "error": "Steam search is unavailable. Try again."});
+        return json!({"items": [], "error": "steam_search_unavailable"});
     };
     let mut items = Vec::new();
     let mut seen = HashSet::new();
@@ -757,7 +798,7 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
 
 pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
     let Some(appid) = steam_match_appid(steam_appid) else {
-        return json!({"preview": null, "error": "Select a valid Steam game."});
+        return json!({"preview": null, "error": "invalid_steam_game"});
     };
     let url = query_url(
         STEAM_APP_DETAILS_URL,
@@ -774,18 +815,18 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
             .and_then(|row| row.get("success"))
             .is_some_and(py_truthy)
         {
-            return Err("Steam game details are unavailable".to_owned());
+            return Err("steam_details_unavailable".to_owned());
         }
         let data = row
             .and_then(|row| row.get("data"))
             .filter(|data| data.is_object())
-            .ok_or_else(|| "Steam game details are unavailable".to_owned())?;
+            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
         let raw_title = data["name"]
             .as_str()
-            .ok_or_else(|| "Steam game details are unavailable".to_owned())?;
+            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
         let title = matching::clean_game_title(raw_title);
         if title.is_empty() {
-            return Err("Steam game title is unavailable".to_owned());
+            return Err("steam_title_unavailable".to_owned());
         }
         let developers = data["developers"]
             .as_array()
@@ -825,9 +866,42 @@ pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
                 Some(&error),
                 Level::Warn,
             );
-            json!({"preview": null, "error": "Steam details are unavailable. You can still use this match."})
+            json!({"preview": null, "error": "steam_preview_unavailable"})
         }
     }
+}
+
+fn appdetails_descriptions(data: &Value) -> (String, String) {
+    let descriptions = [
+        "short_description",
+        "about_the_game",
+        "detailed_description",
+    ]
+    .map(|key| matching::description_html_to_text(&python_or_string(&data[key])));
+    let short = descriptions[0].clone();
+    let description = descriptions
+        .iter()
+        .find(|description| !description.is_empty())
+        .cloned()
+        .unwrap_or_default();
+    let short = if short.is_empty() {
+        description.clone()
+    } else {
+        short
+    };
+    (description, short)
+}
+
+fn appdetails_genres(data: &Value) -> Vec<String> {
+    data["genres"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|genre| genre.get("description"))
+        .map(python_or_string)
+        .map(|description| description.trim().to_owned())
+        .filter(|description| !description.is_empty())
+        .collect()
 }
 
 pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value> {
@@ -873,28 +947,10 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
         }
     }
 
-    let descriptions = [
-        "short_description",
-        "about_the_game",
-        "detailed_description",
-    ]
-    .map(|key| matching::description_html_to_text(&python_or_string(&data[key])));
-    let short_description = descriptions[0].clone();
-    let description = descriptions
-        .iter()
-        .find(|description| !description.is_empty())
-        .cloned()
-        .unwrap_or_default();
+    let (description, short_description) = appdetails_descriptions(data);
     if !description.is_empty() {
         details.insert("description".into(), json!(description));
-        details.insert(
-            "short_description".into(),
-            json!(if short_description.is_empty() {
-                &description
-            } else {
-                &short_description
-            }),
-        );
+        details.insert("short_description".into(), json!(short_description));
     }
 
     for (source, target) in [("developers", "developers"), ("publishers", "publishers")] {
@@ -910,17 +966,9 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
             }
         }
     }
-    if let Some(genres) = data["genres"].as_array() {
-        let genres = genres
-            .iter()
-            .filter_map(|genre| genre.get("description"))
-            .map(python_or_string)
-            .map(|description| description.trim().to_owned())
-            .filter(|description| !description.is_empty())
-            .collect::<Vec<_>>();
-        if !genres.is_empty() {
-            details.insert("genres".into(), json!(genres));
-        }
+    let genres = appdetails_genres(data);
+    if !genres.is_empty() {
+        details.insert("genres".into(), json!(genres));
     }
     if let Some(date) = matching::normalize_release_date(&data["release_date"]["date"]) {
         details.insert("release_date".into(), json!(date));
@@ -984,7 +1032,54 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
     Some(Value::Object(details))
 }
 
-pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64) -> Vec<Value> {
+/// Steam localizes descriptions through `basic`; field-specific filters silently return no data.
+/// Returns only the language-sensitive fields, so identity fields always stay on the English call.
+pub async fn steam_localized_details_for_appid(
+    http: &Http,
+    appid: i64,
+    language: &str,
+) -> Option<Value> {
+    let language = known_steam_language(language)?;
+    if appid <= 0 || language == "english" {
+        return None;
+    }
+    let url = query_url(
+        STEAM_APP_DETAILS_URL,
+        &[
+            ("appids", appid.to_string()),
+            ("l", language.into()),
+            ("filters", "basic,genres".into()),
+        ],
+    );
+    let payload = http
+        .json(&url, Duration::from_secs(12), usize::MAX)
+        .await
+        .ok()?;
+    let data = payload
+        .get(appid.to_string())
+        .filter(|value| value.get("success").is_some_and(py_truthy))
+        .and_then(|value| value.get("data"))
+        .filter(|value| value.is_object())?;
+    let (description, short_description) = appdetails_descriptions(data);
+    let mut details = Map::new();
+    if !description.is_empty() {
+        details.insert("description".into(), json!(description));
+        details.insert("short_description".into(), json!(short_description));
+    }
+    let genres = appdetails_genres(data);
+    if !genres.is_empty() {
+        details.insert("genres".into(), json!(genres));
+    }
+    (!details.is_empty()).then(|| Value::Object(details))
+}
+
+pub async fn steam_partner_events_for_appid(
+    http: &Http,
+    appid: i64,
+    limit: i64,
+    language: &str,
+) -> Vec<Value> {
+    let language = known_steam_language(language).unwrap_or("english");
     let requested_limit = if limit == 0 { 10 } else { limit };
     let count = requested_limit.saturating_mul(3).clamp(10, 50);
     let url = query_url(
@@ -993,7 +1088,7 @@ pub async fn steam_partner_events_for_appid(http: &Http, appid: i64, limit: i64)
             ("appid", appid.to_string()),
             ("offset", "0".into()),
             ("count", count.to_string()),
-            ("l", "english".into()),
+            ("l", language.into()),
             ("origin", "https://store.steampowered.com".into()),
         ],
     );
@@ -1121,9 +1216,10 @@ pub async fn steam_news_for_appid(
     appid: i64,
     _title: &str,
     limit: i64,
+    language: &str,
 ) -> Result<Vec<Value>, String> {
     let partner_limit = if limit == 0 { 6 } else { limit }.max(10);
-    let partner_events = steam_partner_events_for_appid(http, appid, partner_limit).await;
+    let partner_events = steam_partner_events_for_appid(http, appid, partner_limit, language).await;
     if !partner_events.is_empty() {
         return Ok(partner_events);
     }
@@ -1448,6 +1544,115 @@ mod tests {
         http.assert_drained();
     }
 
+    #[test]
+    fn steam_language_accepts_only_the_thirty_client_languages() {
+        for language in STEAM_LANGUAGES {
+            assert_eq!(steam_language(Some(&json!(language))), language);
+        }
+        for value in [
+            Value::Null,
+            json!(""),
+            json!("English"),
+            json!("klingon"),
+            json!(7),
+        ] {
+            assert_eq!(steam_language(Some(&value)), "english");
+        }
+        assert_eq!(steam_language(None), "english");
+    }
+
+    #[tokio::test]
+    async fn localized_appdetails_replace_only_description_and_genres() {
+        let english = json!({"15100": {"success": true, "data": {
+            "name": "Cyberpunk 2077", "release_date": {"date": "Dec 9, 2020"},
+            "developers": ["CD PROJEKT RED"], "publishers": ["CD PROJEKT RED"],
+            "genres": [{"description": "RPG"}], "short_description": "English short",
+        }}});
+        let localized_url = "https://store.steampowered.com/api/appdetails?appids=15100&l=schinese&filters=basic,genres";
+        let http = Http::fixtures(vec![
+            json_fixture(APP_DETAILS_URL, english.clone()),
+            json_fixture(
+                localized_url,
+                json!({"15100": {"success": true, "data": {
+                    "name": "赛博朋克 2077", "release_date": {"date": "2020 年 12 月 9 日"},
+                    "developers": ["本地开发商"], "publishers": ["本地发行商"],
+                    "genres": [{"description": "角色扮演"}], "short_description": "中文简介",
+                    "about_the_game": "<p>中文详情</p>", "categories": [{"id": 999}],
+                }}}),
+            ),
+        ]);
+        assert_eq!(
+            steam_appdetails_for_appid(&http, 15100).await.unwrap()["title"],
+            "Cyberpunk 2077"
+        );
+        let localized = steam_localized_details_for_appid(&http, 15100, "schinese")
+            .await
+            .unwrap();
+        assert_eq!(localized["description"], "中文简介");
+        assert_eq!(localized["short_description"], "中文简介");
+        assert_eq!(localized["genres"], json!(["角色扮演"]));
+        let object = localized.as_object().unwrap();
+        assert_eq!(object.len(), 3);
+        assert!(object.get("title").is_none());
+        assert!(object.get("developers").is_none());
+        http.assert_drained();
+
+        // English and unknown languages never make the second request.
+        for language in ["english", "klingon"] {
+            let http = Http::fixtures(vec![json_fixture(APP_DETAILS_URL, english.clone())]);
+            assert_eq!(
+                steam_appdetails_for_appid(&http, 15100).await.unwrap()["release_date"],
+                "2020-12-09"
+            );
+            assert_eq!(
+                steam_localized_details_for_appid(&http, 15100, language).await,
+                None
+            );
+            http.assert_drained();
+        }
+        // A failed or empty localized response keeps the English values.
+        let failure = Http::fixtures(vec![Fixture::failure(localized_url)]);
+        assert_eq!(
+            steam_localized_details_for_appid(&failure, 15100, "schinese").await,
+            None
+        );
+        failure.assert_drained();
+        let empty = Http::fixtures(vec![json_fixture(
+            localized_url,
+            json!({"15100": {"success": true, "data": {
+                "name": "赛博朋克 2077", "short_description": "", "genres": [],
+            }}}),
+        )]);
+        assert_eq!(
+            steam_localized_details_for_appid(&empty, 15100, "schinese").await,
+            None
+        );
+        empty.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn steam_matching_and_compatibility_stay_english() {
+        let http = Http::fixtures(vec![
+            json_fixture(
+                SEARCH_URL,
+                json!({"items": [{"id": 400, "name": "Portal"}]}),
+            ),
+            json_fixture(
+                "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=400&l=english",
+                json!({"success": 1, "results": {"resolved_category": 3}}),
+            ),
+        ]);
+        let (appid, _) = resolve_steam_appid_for_title(&http, "Portal", None).await;
+        assert_eq!(appid, Some(400));
+        assert_eq!(
+            steam_deck_compat_lookup_for_appid(&http, 400)
+                .await
+                .category,
+            Some(3)
+        );
+        http.assert_drained();
+    }
+
     #[tokio::test]
     async fn steam_manual_picker_preserves_type_boundaries_limits_and_errors() {
         let rows = (1..=13)
@@ -1493,14 +1698,14 @@ mod tests {
         );
         assert_eq!(
             steam_match_preview(&invalid, &json!(true)).await,
-            json!({"preview":null,"error":"Select a valid Steam game."})
+            json!({"preview":null,"error":"invalid_steam_game"})
         );
         invalid.assert_drained();
 
         let failure = Http::fixtures(vec![Fixture::failure(SEARCH_URL)]);
         assert_eq!(
             search_steam_matches(&failure, &json!("Portal"), &json!(8)).await,
-            json!({"items":[],"error":"Steam search is unavailable. Try again."})
+            json!({"items":[],"error":"steam_search_unavailable"})
         );
         failure.assert_drained();
     }
@@ -1548,7 +1753,7 @@ mod tests {
         )]);
         assert_eq!(
             steam_match_preview(&failure, &json!(400)).await,
-            json!({"preview":null,"error":"Steam details are unavailable. You can still use this match."})
+            json!({"preview":null,"error":"steam_preview_unavailable"})
         );
         failure.assert_drained();
     }
@@ -1666,57 +1871,54 @@ mod tests {
             ),
             json_fixture(url, json!({"success":1,"results":{"resolved_category":7}})),
             json_fixture(url, json!({"success":1,"results":{}})),
+            json_fixture(url, json!({"success":1,"results":[]})),
             Fixture::failure(url),
         ]);
+        let available = DeckCompatibilityLookup {
+            status: DeckCompatibilityStatus::Available,
+            category: Some(3),
+            steamos_category: None,
+            machine_category: None,
+            frame_category: None,
+        };
+        let unavailable =
+            DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Unavailable);
+        let failed = DeckCompatibilityLookup::without_categories(DeckCompatibilityStatus::Failed);
+        for _ in 0..3 {
+            assert_eq!(steam_deck_compat_lookup_for_appid(&http, 123).await, available);
+        }
+        for status in [unavailable, unavailable, failed, unavailable, failed] {
+            assert_eq!(steam_deck_compat_lookup_for_appid(&http, 123).await, status);
+        }
+        assert_eq!(steam_deck_compat_lookup_for_appid(&http, 0).await, failed);
+        http.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn steam_compatibility_reports_every_platform_category() {
+        let url = "https://store.steampowered.com/saleaction/ajaxgetdeckappcompatibilityreport?nAppID=1942280&l=english";
+        let payload = json!({"success":1,"results":{"resolved_category":3,
+            "steamos_resolved_category":2,"machine_resolved_category":3,"frame_resolved_category":3}});
+        let http = Http::fixtures(vec![json_fixture(url, payload), json_fixture(url, json!({"success":1,"results":{"resolved_category":3,"steamos_resolved_category":3,"machine_resolved_category":4,"frame_resolved_category":2}}))]);
         assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
+            steam_deck_compat_lookup_for_appid(&http, 1942280).await,
             DeckCompatibilityLookup {
                 status: DeckCompatibilityStatus::Available,
-                category: Some(3)
+                category: Some(3),
+                steamos_category: Some(2),
+                machine_category: Some(3),
+                frame_category: Some(3),
             }
         );
-        for _ in 0..2 {
-            assert_eq!(
-                steam_deck_compat_lookup_for_appid(&http, 123).await,
-                DeckCompatibilityLookup {
-                    status: DeckCompatibilityStatus::Available,
-                    category: Some(3)
-                }
-            );
-        }
+        // SteamOS has no level 3 and no platform goes past 3: out-of-range values are dropped.
         assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
+            steam_deck_compat_lookup_for_appid(&http, 1942280).await,
             DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Unavailable,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Unavailable,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 123).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
-            }
-        );
-        assert_eq!(
-            steam_deck_compat_lookup_for_appid(&http, 0).await,
-            DeckCompatibilityLookup {
-                status: DeckCompatibilityStatus::Failed,
-                category: None
+                status: DeckCompatibilityStatus::Available,
+                category: Some(3),
+                steamos_category: None,
+                machine_category: None,
+                frame_category: Some(2),
             }
         );
         http.assert_drained();
@@ -1745,7 +1947,7 @@ mod tests {
                 supported[4].clone(),supported[5].clone(),supported[6].clone(),supported[7].clone(),supported[8].clone()
             ]}),
         )]);
-        let rows = steam_partner_events_for_appid(&events, 400, 10).await;
+        let rows = steam_partner_events_for_appid(&events, 400, 10, "english").await;
         assert_eq!(rows.len(), 10);
         assert_eq!(rows[0]["title"], "Localized title");
         assert_eq!(
@@ -1764,6 +1966,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn steam_partner_events_request_the_matched_language() {
+        let url = "https://store.steampowered.com/events/ajaxgetpartnereventspageable/?appid=400&offset=0&count=30&l=schinese&origin=https%3A%2F%2Fstore.steampowered.com";
+        let http = Http::fixtures(vec![json_fixture(
+            url,
+            json!({"events": [{
+                "gid": "event-cn", "event_type": 28, "event_type_name": "大型更新",
+                "announcement_body": {
+                    "gid": "announcement-cn", "headline": "大型更新",
+                    "body": "更新内容", "posttime": 1700000000
+                }
+            }]}),
+        )]);
+        let rows = steam_partner_events_for_appid(&http, 400, 10, "schinese").await;
+        assert_eq!(rows[0]["title"], "大型更新");
+        assert_eq!(rows[0]["feedLabel"], "大型更新");
+        assert_eq!(rows[0]["body"], "更新内容");
+        http.assert_drained();
+
+        // An unknown language must not leak into the Steam query; it falls back to English.
+        let fallback = Http::fixtures(vec![json_fixture(EVENTS_URL, event_fixture())]);
+        assert_eq!(
+            steam_partner_events_for_appid(&fallback, 400, 10, "klingon")
+                .await
+                .len(),
+            1
+        );
+        fallback.assert_drained();
+    }
+
+    #[tokio::test]
     async fn steam_news_falls_back_to_news_feed_and_announcement_page_images() {
         let page_url = "https://steamcommunity.com/games/400/announcements/detail/2";
         let page = "<html><head><meta property=\"og:image\" content=\"https://cdn.example.com/page-image.jpg\"></head></html>";
@@ -1778,7 +2010,7 @@ mod tests {
             ),
             Fixture::text(page_url, page),
         ]);
-        let rows = steam_news_for_appid(&http, 400, "Portal", 6).await.unwrap();
+        let rows = steam_news_for_appid(&http, 400, "Portal", 6, "english").await.unwrap();
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0]["title"], "Update one");
         assert_eq!(rows[0]["event_type"], 28);
@@ -1793,7 +2025,7 @@ mod tests {
     #[tokio::test]
     async fn steam_news_prefers_partner_activity_and_swallows_news_failures() {
         let partner = Http::fixtures(vec![json_fixture(EVENTS_URL, event_fixture())]);
-        let rows = steam_news_for_appid(&partner, 400, "Example", 6)
+        let rows = steam_news_for_appid(&partner, 400, "Example", 6, "english")
             .await
             .unwrap();
         assert_eq!(rows.len(), 1);
@@ -1806,7 +2038,7 @@ mod tests {
             Fixture::failure(NEWS_URL),
         ]);
         assert_eq!(
-            steam_news_for_appid(&failure, 400, "Example", 6)
+            steam_news_for_appid(&failure, 400, "Example", 6, "english")
                 .await
                 .unwrap(),
             Vec::<Value>::new()

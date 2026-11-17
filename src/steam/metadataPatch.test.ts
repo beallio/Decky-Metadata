@@ -130,6 +130,8 @@ afterEach(() => {
   metadataState.bypassCounter = 0;
   metadataState.routeShield = null;
   metadataState.compatibilityBaselines = {};
+  metadataState.compatibilityBaselineBits = 10;
+  metadataState.compatibilityPendingLegacyBits.clear();
   metadataState.compatibilityDefault = null;
   metadataState.compatibilityDefaultLoaded = false;
   metadataState.compatibilityDefaultScope = "all";
@@ -173,7 +175,7 @@ describe("installMetadataPatches BIsModOrShortcut wiring", () => {
     metadataCache[String(matchedShortcutAppId)] = compatibilityMetadata(3, 3) as any;
 
     expect(applyMetadata(matchedShortcutAppId)).toBe(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     // Steam renders the rich matched Game Info tree only when this reports
     // native-app identity for the exact editor app.
     expect(overview.BIsModOrShortcut()).toBe(false);
@@ -421,7 +423,7 @@ describe("compatibility metadata application", () => {
     metadataState.compatibilityDefault = 3;
 
     expect(applyCompatibilityDefault()).toBe(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(metadataCache[String(appId)]).toBeUndefined();
   });
 
@@ -436,7 +438,7 @@ describe("compatibility metadata application", () => {
     const stop = startMetadataBootstrap();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(metadataCache[String(appId)]).toBeUndefined();
     stop();
     await Promise.resolve();
@@ -460,8 +462,8 @@ describe("compatibility metadata application", () => {
 
     setConfirmedCompatibilityDefault(2);
 
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
-    expect(observed).toEqual([0xaa]);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2aa);
+    expect(observed).toEqual([0x2aa]);
     unsubscribe();
   });
 
@@ -479,7 +481,7 @@ describe("compatibility metadata application", () => {
     await pending;
 
     expect(metadataState.compatibilityDefault).toBe(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
   });
 
   it("does not apply a late global-save acknowledgement after the plugin dismounts", () => {
@@ -532,17 +534,280 @@ describe("compatibility metadata application", () => {
     expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
   });
 
-  it.each([0, 1, 2, 3] as const)("writes category %i without changing higher packed bits", (category) => {
+  it.each([
+    [0, 0x000],
+    [1, 0x155],
+    [2, 0x2aa],
+    [3, 0x3ef],
+  ] as const)("writes user category %i into every per-device field", (category, packed) => {
     const appId = 9000 + category;
     const overview = installCompatibilityOverview(appId, 0xab);
     metadataCache[String(appId)] = compatibilityMetadata(null, category) as any;
 
     expect(applyMetadata(appId)).toBe(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa0 | category | (category << 2));
+    expect(overview.steam_hw_compat_category_packed).toBe(packed);
     expect(applyMetadata(appId)).toBe(false);
   });
 
-  it("restores the original packed low nibble after metadata removal", () => {
+  it("preserves packed bits at and above bit 10", () => {
+    const appId = 9004;
+    const overview = installCompatibilityOverview(appId, 0x1c00 | 0x2aa);
+    metadataCache[String(appId)] = compatibilityMetadata(null, 3) as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x1c00 | 0x3ef);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x1c00 | 0x2aa);
+  });
+
+  it("writes Valve's per-device categories for a Valve-sourced deck category", () => {
+    const appId = 9005;
+    const overview = installCompatibilityOverview(appId, 0x2a5);
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: 1,
+      steam_machine_compat_category: 2,
+      steam_frame_compat_category: 1,
+    } as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x19f);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2a5);
+  });
+
+  it("falls back to the mapped deck category for a legacy record or an unreadable value", () => {
+    const missingAppId = 9006;
+    const missing = installCompatibilityOverview(missingAppId, 0);
+    metadataCache[String(missingAppId)] = compatibilityMetadata(3, "valve") as any;
+    applyMetadata(missingAppId);
+    // SteamOS maps Deck Verified to Compatible; Machine and Frame keep native 0.
+    expect(missing.steam_hw_compat_category_packed).toBe(0x2f);
+
+    // SteamOS has no Verified value; a stale 3 keeps Steam's native bits, which
+    // are Compatible here, and the absent Machine/Frame keys keep native too.
+    const staleAppId = 9007;
+    const stale = installCompatibilityOverview(staleAppId, 0xa0);
+    metadataCache[String(staleAppId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: 3,
+    } as any;
+    applyMetadata(staleAppId);
+    expect(stale.steam_hw_compat_category_packed).toBe(0xaf);
+
+    const partialAppId = 9008;
+    const partial = installCompatibilityOverview(partialAppId, 0x2aa);
+    metadataCache[String(partialAppId)] = {
+      ...compatibilityMetadata(2, "valve"),
+      steamos_compat_category: 1,
+    } as any;
+    applyMetadata(partialAppId);
+    expect(partial.steam_hw_compat_category_packed).toBe(0x29a);
+  });
+
+  it("keeps native machine and frame bits for a legacy record", () => {
+    // Absent Machine/Frame keys never inherit Deck: Valve can rate them lower.
+    const appId = 9017;
+    const overview = installCompatibilityOverview(appId, 0x140);
+    metadataCache[String(appId)] = compatibilityMetadata(3, "valve") as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x16f);
+  });
+
+  it("keeps Steam's own bits for a device Valve has no rating for", () => {
+    // Wobbly Life: Valve rates Deck, SteamOS and Steam Machine, but the Frame is null.
+    const appId = 1211020;
+    const overview = installCompatibilityOverview(appId, 0);
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: 2,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: null,
+    };
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xef);
+  });
+
+  it("keeps native SteamOS bits when Valve returns an explicit null", () => {
+    const nativeAppId = 9014;
+    const native = installCompatibilityOverview(nativeAppId, 0x20);
+    metadataCache[String(nativeAppId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: 3,
+    };
+    applyMetadata(nativeAppId);
+    expect(native.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    const unknownAppId = 9015;
+    const unknown = installCompatibilityOverview(unknownAppId, 0);
+    metadataCache[String(unknownAppId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: 3,
+    };
+    applyMetadata(unknownAppId);
+    expect(unknown.steam_hw_compat_category_packed).toBe(0x3cf);
+  });
+
+  it("uses the stored baseline for an explicit null after a previous write", () => {
+    const appId = 9016;
+    const overview = installCompatibilityOverview(appId, 0x2a5);
+    metadataCache[String(appId)] = compatibilityMetadata(null, 3);
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, "valve"),
+      steamos_compat_category: null,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: null,
+    };
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2ef);
+  });
+
+  it("applies a user choice to every field even when Valve data disagrees", () => {
+    const appId = 9009;
+    const overview = installCompatibilityOverview(appId, 0x2a5);
+    metadataCache[String(appId)] = {
+      ...compatibilityMetadata(3, 1),
+      steamos_compat_category: 2,
+      steam_machine_compat_category: 3,
+      steam_frame_compat_category: 3,
+    } as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x155);
+  });
+
+  it("upgrades an old 4-bit runtime baseline before writing", () => {
+    const appId = 9010;
+    const overview = installCompatibilityOverview(appId, 0x2a5);
+    delete metadataState.compatibilityBaselineBits;
+    metadataState.compatibilityBaselines[String(appId)] = 0x05;
+    metadataCache[String(appId)] = compatibilityMetadata(null, 3) as any;
+
+    expect(applyMetadata(appId)).toBe(true);
+    expect(metadataState.compatibilityBaselineBits).toBe(10);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    delete metadataCache[String(appId)];
+    applyMetadata(appId);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2a5);
+  });
+
+  it("upgrades an old 4-bit held value before reconciling Game Info", () => {
+    const appId = 9011;
+    const overview = installCompatibilityOverview(appId, 0x2a9);
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    delete metadataState.compatibilityBaselineBits;
+    metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldPacked: 0x09 });
+    metadataState.compatibilityDefault = 2;
+    metadataState.compatibilityDefaultLoaded = true;
+
+    expect(applyCompatibilityDefault()).toBe(false);
+    expect(metadataState.compatibilityBaselineBits).toBe(10);
+    expect(metadataState.deferredCompatibilityUpdates.get(appId)?.heldPacked).toBe(0x2a9);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2a9);
+
+    setRoute("/library/home");
+    flushDeferredCompatibilityPublications();
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2aa);
+
+    metadataState.compatibilityDefault = null;
+    applyMetadata(appId);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2a9);
+  });
+
+  it("keeps a legacy baseline whose overview is missing and converts it on the incoming overview", () => {
+    const appId = 9012;
+    const initial = installCompatibilityOverview(appId, 0x2a3);
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    let liveOverview = initial;
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? liveOverview : null,
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    // An in-place reload adopted a 4-bit runtime while no overview was listed.
+    appStore.allApps = [];
+    delete metadataState.compatibilityBaselineBits;
+    metadataState.compatibilityBaselines[String(appId)] = 0x05;
+    metadataCache[String(appId)] = compatibilityMetadata(2, null);
+
+    restoreAllCompatibilityBaselines();
+    expect(metadataState.compatibilityBaselineBits).toBe(10);
+    expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0x05);
+    expect(metadataState.compatibilityPendingLegacyBits.has(appId)).toBe(true);
+
+    // Steam later sends the native overview with the injected nibble still set.
+    appInfoStore.OnAppOverviewChange([incomingOverview(appId, 0x2a3)]);
+    expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0x2a5);
+    expect(metadataState.compatibilityPendingLegacyBits.has(appId)).toBe(false);
+
+    liveOverview = { ...initial, steam_hw_compat_category_packed: 0x2aa };
+    appStore.allApps = [liveOverview];
+    restoreAllCompatibilityBaselines();
+    expect(liveOverview.steam_hw_compat_category_packed).toBe(0x2a0 | 0x05);
+  });
+
+  it("keeps a legacy held value whose overview is missing and converts it on the incoming overview", () => {
+    const appId = 9013;
+    const initial = installCompatibilityOverview(appId, 0x2a9);
+    const host = globalThis as Record<string, unknown>;
+    const appInfoStore = { OnAppOverviewChange: vi.fn() };
+    let liveOverview = initial;
+    const appStore = {
+      allApps: [initial],
+      GetAppOverviewByAppID: (candidate: number) => candidate === appId ? liveOverview : null,
+    };
+    host.appStore = appStore;
+    host.appDetailsStore = {};
+    host.appInfoStore = appInfoStore;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    appStore.allApps = [];
+    delete metadataState.compatibilityBaselineBits;
+    metadataState.deferredCompatibilityUpdates.set(appId, { appId, heldPacked: 0x09 });
+    metadataCache[String(appId)] = compatibilityMetadata(null, 3);
+
+    restoreAllCompatibilityBaselines();
+    expect(metadataState.compatibilityBaselineBits).toBe(10);
+    expect(metadataState.deferredCompatibilityUpdates.get(appId)?.heldPacked).toBe(0x09);
+    expect(metadataState.compatibilityPendingLegacyBits.has(appId)).toBe(true);
+
+    setRoute(`/library/app/${appId}/tab/GameInfo`);
+    appInfoStore.OnAppOverviewChange([incomingOverview(appId, 0x2a9)]);
+    expect(metadataState.deferredCompatibilityUpdates.get(appId)?.heldPacked).toBe(0x2a9);
+    expect(metadataState.compatibilityPendingLegacyBits.has(appId)).toBe(false);
+
+    liveOverview = { ...initial, steam_hw_compat_category_packed: 0x2a9 };
+    appStore.allApps = [liveOverview];
+    setRoute("/library/home");
+    flushDeferredCompatibilityPublications();
+    expect(liveOverview.steam_hw_compat_category_packed).toBe(0x3ef);
+
+    restoreAllCompatibilityBaselines();
+    expect(liveOverview.steam_hw_compat_category_packed).toBe(0x2a0 | 0x09);
+  });
+
+  it("restores the original packed value after metadata removal", () => {
     const appId = 9100;
     const overview = installCompatibilityOverview(appId, 0x9b);
     metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
@@ -582,17 +847,17 @@ describe("compatibility metadata application", () => {
     delete metadataCache[String(appId)];
     applyMetadata(appId);
 
-    expect(overview.steam_hw_compat_category_packed).toBe(0x95);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x155);
   });
 
   it("removes a prior positive category when the confirmed default is explicit Unknown", () => {
     const appId = 9102;
     const overview = installCompatibilityOverview(appId, 0xa0);
     setConfirmedCompatibilityDefault(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
 
     setConfirmedCompatibilityDefault(0);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(overview.steam_hw_compat_category_packed).toBe(0);
   });
 
   it("publishes scope-only changes with real entry replacements", () => {
@@ -629,9 +894,9 @@ describe("compatibility metadata application", () => {
     const defaultBare = overviews.get(bareAppId);
     const defaultSteam = overviews.get(steamAppId);
     const defaultNoSteam = overviews.get(noSteamAppId);
-    expect(defaultBare?.steam_hw_compat_category_packed).toBe(0xbf);
-    expect(defaultSteam?.steam_hw_compat_category_packed).toBe(0xaf);
-    expect(defaultNoSteam?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(defaultBare?.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(defaultSteam?.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(defaultNoSteam?.steam_hw_compat_category_packed).toBe(0x3ef);
 
     setConfirmedCompatibilityDefaultScope("steam");
     const restoredBare = overviews.get(bareAppId);
@@ -639,19 +904,19 @@ describe("compatibility metadata application", () => {
     expect(restoredBare?.steam_hw_compat_category_packed).toBe(0xb9);
     expect(overviews.get(steamAppId)).toBe(defaultSteam);
     expect(overviews.get(noSteamAppId)).not.toBe(defaultNoSteam);
-    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xb5);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0x95);
 
     setConfirmedCompatibilityDefaultScope("no-steam");
     expect(overviews.get(steamAppId)).not.toBe(defaultSteam);
     expect(overviews.get(steamAppId)?.steam_hw_compat_category_packed).toBe(0xaa);
-    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(overviews.get(bareAppId)).toBe(restoredBare);
     setConfirmedCompatibilityDefaultScope("metadata");
-    expect(overviews.get(steamAppId)?.steam_hw_compat_category_packed).toBe(0xaf);
-    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(steamAppId)?.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(overviews.get(noSteamAppId)?.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0xb9);
     setConfirmedCompatibilityDefaultScope("all");
-    expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(bareAppId)?.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(metadataCache[String(bareAppId)]).toBeUndefined();
   });
 
@@ -683,7 +948,7 @@ describe("compatibility metadata application", () => {
     metadataCache[String(appId)] = compatibilityMetadata(null, null, 55150);
     metadataState.compatibilityDefaultScope = "steam";
     setConfirmedCompatibilityDefault(1);
-    expect(overview.steam_hw_compat_category_packed).toBe(0x95);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x155);
 
     metadataCache[String(appId)] = compatibilityMetadata(null, null);
     applyMetadata(appId);
@@ -696,11 +961,11 @@ describe("compatibility metadata application", () => {
     const overview = installCompatibilityOverview(appId, 0xa0);
     setRoute("/library/home");
     setConfirmedCompatibilityDefault(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
 
     setRoute(`/library/app/${appId}/tab/GameInfo`);
     setConfirmedCompatibilityDefaultScope("steam");
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
 
     setRoute("/library/home");
     flushDeferredCompatibilityPublications();
@@ -750,7 +1015,7 @@ describe("compatibility metadata application", () => {
     metadataState.compatibilityDefault = 3;
     metadataCache[String(appId)] = compatibilityMetadata(2, null, 55150);
     applyMetadata(appId);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     mocks.getAllMetadata.mockResolvedValue({ [appId]: compatibilityMetadata(2, null) });
 
     await refreshMetadataCache();
@@ -790,13 +1055,13 @@ describe("compatibility metadata application", () => {
     // the default, then its Steam match and scope change. Clearing that match
     // must resolve from the acknowledged record, not its former Steam data.
     expect(applyMetadata(appId)).toBe(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     record.steam_appid = 15100;
     record.deck_compat_category = 2;
     expect(applyMetadata(appId)).toBe(true);
-    expect(overview.steam_hw_compat_category_packed).toBe(0x8a);
+    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
     setConfirmedCompatibilityDefaultScope("steam");
-    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
 
     retainCompatibilityBaselinesForReload();
     cancelCompatibilityDefaultLoad();
@@ -818,7 +1083,7 @@ describe("compatibility metadata application", () => {
     }));
 
     setConfirmedCompatibilityDefaultScope("no-steam");
-    expect(overview.steam_hw_compat_category_packed).toBe(0x8f);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x3ef);
     setConfirmedCompatibilityDefaultScope("steam");
     expect(overview.steam_hw_compat_category_packed).toBe(0x80);
   });
@@ -837,7 +1102,7 @@ describe("compatibility metadata application", () => {
 
   it("publishes a revision when Follow Valve availability changes without a packed write", async () => {
     const appId = 9201;
-    const overview = installCompatibilityOverview(appId, 0xaa);
+    const overview = installCompatibilityOverview(appId, 0x2aa);
     metadataState.metadataLoaded = true;
     metadataCache[String(appId)] = compatibilityMetadata(null, "valve") as any;
     mocks.getAllMetadata.mockResolvedValue({
@@ -848,7 +1113,7 @@ describe("compatibility metadata application", () => {
 
     await refreshMetadataCache();
 
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2aa);
     expect(revisions).toEqual([1]);
     unsubscribe();
   });
@@ -896,12 +1161,12 @@ describe("compatibility metadata application", () => {
     });
     metadataCache[String(appId)] = compatibilityMetadata(3, null) as any;
     applyMetadata(appId);
-    expect(packed).toBe(0x9f);
+    expect(packed).toBe(0xaf);
 
     writable = false;
     mocks.getAllMetadata.mockResolvedValue({});
     await refreshMetadataCache();
-    expect(packed).toBe(0x9f);
+    expect(packed).toBe(0xaf);
 
     writable = true;
     await refreshMetadataCache();
@@ -1501,14 +1766,14 @@ describe("compatibility metadata application", () => {
     });
 
     expect((host.appStore as any).UpdateAppOverview(replacementInput)).toBe(currentOverview);
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
-    expect(observedRevisions).toEqual([0x0a]);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(observedRevisions).toEqual([0xaa]);
 
-    (host.appStore as any).UpdateAppOverview(incomingOverview(appId, 0x0a));
-    expect(observedRevisions).toEqual([0x0a]);
+    (host.appStore as any).UpdateAppOverview(incomingOverview(appId, 0xaa));
+    expect(observedRevisions).toEqual([0xaa]);
 
     restoreAllCompatibilityBaselines();
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0b);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xab);
     unsubscribe();
   });
 
@@ -1552,8 +1817,8 @@ describe("compatibility metadata application", () => {
     expect(appStore.UpdateAppOverview(incomingOverview(appId, 0))).toBe(currentOverview);
     await Promise.resolve();
 
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
-    expect(observedRevisions).toEqual([0x0a]);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(observedRevisions).toEqual([0xaa]);
     unsubscribe();
   });
 
@@ -1629,7 +1894,7 @@ describe("compatibility metadata application", () => {
     expect(constructions).toBe(2);
     expect(packedAtFirstPublication).toBe(0xaa);
     expect(current.BHasObservables()).toBe(observable);
-    expect(current.nativeApi()).toBe(`${appId}:170`);
+    expect(current.nativeApi()).toBe(`${appId}:${0xaa}`);
     expect(current.LOG_CHANGE.owner).toBe(2);
     expect((current as any).constructorState).toEqual({ owner: 2 });
     expect(restoreCalls).toBe(1);
@@ -1781,7 +2046,7 @@ describe("compatibility metadata application", () => {
     beginCompatibilityLifecycle();
     setConfirmedCompatibilityDefault(3);
 
-    expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0);
+    expect(metadataState.compatibilityBaselines[String(appId)]).toBe(0xa0);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(overviews.get(appId)).toBe(published);
   });
@@ -1834,7 +2099,7 @@ describe("compatibility metadata application", () => {
     expect(currentModule.publishDeferredEditorCompatibility(appId)).toBe(true);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(overviews.get(appId)).not.toBe(original);
-    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0x2aa);
   });
 
   it("holds an active Game Info compatibility value until the view exits", () => {
@@ -1885,7 +2150,7 @@ describe("compatibility metadata application", () => {
 
     expect(publish).toHaveBeenCalledWith(appId, expect.any(NativeOverview));
     expect(overviews.get(appId)).not.toBe(original);
-    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0xaf);
+    expect(overviews.get(appId)?.steam_hw_compat_category_packed).toBe(0x3ef);
   });
 
   it("holds the active Game Info status while other shortcuts use the latest policy", () => {
@@ -1933,7 +2198,7 @@ describe("compatibility metadata application", () => {
     setConfirmedCompatibilityDefault(3);
 
     expect(active.steam_hw_compat_category_packed).toBe(0xa0);
-    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0x3ef);
 
     host.appStore = {
       ...(host.appStore as object),
@@ -1942,7 +2207,7 @@ describe("compatibility metadata application", () => {
     setConfirmedCompatibilityDefault(2);
 
     expect(active.steam_hw_compat_category_packed).toBe(0xa0);
-    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0xba);
+    expect(overviews.get(otherAppId)?.steam_hw_compat_category_packed).toBe(0x2aa);
 
     // Closing QAM leaves the exact Game Info tab selected, so the held status
     // must not be released. The direct history location is authoritative even
@@ -1951,7 +2216,7 @@ describe("compatibility metadata application", () => {
     expect(active.steam_hw_compat_category_packed).toBe(0xa0);
 
     flushDeferredCompatibilityPublications(`/library/app/${activeAppId}/tab/Activity`);
-    expect(overviews.get(activeAppId)?.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(overviews.get(activeAppId)?.steam_hw_compat_category_packed).toBe(0x2aa);
   });
 
   it("releases an active update with a newer editor choice instead of replaying the old default", () => {
@@ -1967,10 +2232,10 @@ describe("compatibility metadata application", () => {
     metadataCache[String(appId)] = compatibilityMetadata(null, 1) as any;
     flushDeferredCompatibilityPublications(`/decky-metadata/${appId}`);
 
-    expect(overview.steam_hw_compat_category_packed).toBe(0xa5);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x155);
   });
 
-  it("keeps the held nibble on an incoming active-view replacement, then applies after exit", () => {
+  it("keeps the held packed value on an incoming active-view replacement, then applies after exit", () => {
     const appId = 9459;
     const initial = installCompatibilityOverview(appId, 0x0a);
     let currentOverview: any = initial;
@@ -2002,7 +2267,7 @@ describe("compatibility metadata application", () => {
     expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0a);
 
     flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x0f);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x3ef);
   });
 
   it("preserves the held category when repeated global changes return to it before an active replacement", () => {
@@ -2036,7 +2301,7 @@ describe("compatibility metadata application", () => {
     setConfirmedCompatibilityDefault(2);
     appStore.UpdateAppOverview(incomingOverview(appId, 0x70));
 
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x7a);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x9a);
   });
 
   it("preserves the held numeric Unknown category on an incoming active replacement", () => {
@@ -2069,21 +2334,21 @@ describe("compatibility metadata application", () => {
 
     appStore.UpdateAppOverview(incomingOverview(appId, 0xaf));
 
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xa0);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0xb0);
   });
 
   it("reconciles the retained held value when the latest reload policy collapses pending work", () => {
     const appId = 9460;
-    const overview = installCompatibilityOverview(appId, 0xaa);
+    const overview = installCompatibilityOverview(appId, 0x2aa);
     setRoute(`/library/app/${appId}/tab/GameInfo`);
     setConfirmedCompatibilityDefault(3);
-    expect(overview.steam_hw_compat_category_packed).toBe(0xaa);
+    expect(overview.steam_hw_compat_category_packed).toBe(0x2aa);
 
     retainCompatibilityBaselinesForReload();
     cancelCompatibilityDefaultLoad();
     const replacement = {
       ...overview,
-      steam_hw_compat_category_packed: 0x70,
+      steam_hw_compat_category_packed: 0x2aa,
     };
     const set = vi.fn();
     const host = globalThis as Record<string, unknown>;
@@ -2097,21 +2362,21 @@ describe("compatibility metadata application", () => {
     };
     beginCompatibilityLifecycle();
     // Returning to the held Playable value removes the pending update. The
-    // replacement still needs that retained held nibble before Game Info exits.
+    // replacement still needs that retained held value before Game Info exits.
     metadataState.compatibilityDefault = 2;
     metadataState.compatibilityDefaultLoaded = true;
 
     expect(applyCompatibilityDefault()).toBe(false);
-    expect(replacement.steam_hw_compat_category_packed).toBe(0x7a);
+    expect(replacement.steam_hw_compat_category_packed).toBe(0x2aa);
     expect(set).not.toHaveBeenCalled();
 
     flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
-    expect(replacement.steam_hw_compat_category_packed).toBe(0x7a);
+    expect(replacement.steam_hw_compat_category_packed).toBe(0x2aa);
   });
 
   it("reconciles a retained held value on an incoming reload replacement when pending work collapses", () => {
     const appId = 9466;
-    const initial = installCompatibilityOverview(appId, 0xaa);
+    const initial = installCompatibilityOverview(appId, 0x2aa);
     setRoute(`/library/app/${appId}/tab/GameInfo`);
     setConfirmedCompatibilityDefault(3);
 
@@ -2119,7 +2384,7 @@ describe("compatibility metadata application", () => {
     cancelCompatibilityDefaultLoad();
     let currentOverview: any = {
       ...initial,
-      steam_hw_compat_category_packed: 0x70,
+      steam_hw_compat_category_packed: 0x2aa,
     };
     const host = globalThis as Record<string, unknown>;
     const appInfoStore = { OnAppOverviewChange: vi.fn() };
@@ -2145,11 +2410,11 @@ describe("compatibility metadata application", () => {
     unpatchers = [];
     installMetadataPatches(unpatchers);
 
-    appStore.UpdateAppOverview(incomingOverview(appId, 0x70));
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x7a);
+    appStore.UpdateAppOverview(incomingOverview(appId, 0x2aa));
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x2aa);
 
     flushDeferredCompatibilityPublications(`/library/app/${appId}/tab/Activity`);
-    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x7a);
+    expect(currentOverview.steam_hw_compat_category_packed).toBe(0x2aa);
   });
 
   it("clears a held update on real teardown instead of writing it later", () => {
@@ -2215,12 +2480,12 @@ describe("compatibility metadata application", () => {
 
     setConfirmedCompatibilityDefault(3);
 
-    expect(first.steam_hw_compat_category_packed).toBe(0xaf);
-    expect(second.steam_hw_compat_category_packed).toBe(0xbf);
+    expect(first.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(second.steam_hw_compat_category_packed).toBe(0x3ef);
     expect(official.steam_hw_compat_category_packed).toBe(0xc2);
     expect(publications).toEqual([
-      { appId: first.appid, first: 0xaf, second: 0xbf },
-      { appId: second.appid, first: 0xaf, second: 0xbf },
+      { appId: first.appid, first: 0x3ef, second: 0x3ef },
+      { appId: second.appid, first: 0x3ef, second: 0x3ef },
     ]);
     expect(overviews.get(first.appid)).not.toBe(first);
     expect(overviews.get(second.appid)).not.toBe(second);

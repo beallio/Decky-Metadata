@@ -41,11 +41,11 @@ heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
 
-To edit one game, open its menu and select **Decky metadata...**. Use **Find a
+To edit one game, open its menu and select **Change Metadata...**. Use **Find a
 Steam match** to search by name. Select a result to check its artwork, developer,
-and release date, then select **Use this Steam match**. You can still paste a
-Steam page link or app ID under **Steam App ID**. Select **Save** after you make
-further edits.
+and release date, then select **Use this Steam match** to fill the form. You can
+still paste a Steam page link or app ID under **Steam App ID**, then select
+**Apply Steam App ID**. Nothing is saved until you select **Save**.
 
 The editor can preview a cleaner shortcut name. It changes the name only if you
 confirm; you can restore the original name later. See [matching and editing
@@ -53,7 +53,7 @@ games](docs/help/editing-games.md) for the full steps.
 
 ![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=202610011846)
 
-![Decky Metadata editor for a non-Steam game](assets/decky-metadata-editor.png?cacheBuster=202610011846)
+![Decky Metadata editor for Wobbly Life, a non-Steam game, with the Find a Steam match section](assets/decky-metadata-editor.png?cacheBuster=20261115)
 
 ## What you can see
 
@@ -72,9 +72,9 @@ Older saved timestamps are converted once, keeping their local calendar day.
 Correct an already-wrong date in the editor or import that game's metadata again.
 See [editing games](docs/help/editing-games.md).
 
-![Game Info details for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-top.png?cacheBuster=202610011846)
+![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=202611151912)
 
-![Game Info buttons for Warhammer 40,000: Space Marine](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202610011846)
+![Game Info buttons and SteamOS compatibility for Wobbly Life](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202611151912)
 
 ### Compatibility status
 
@@ -96,7 +96,7 @@ show cover badges only when a game is focused or hovered.
 
 Select the game-page button or the Store box to open that game's ProtonDB
 reports. On a Steam Store game page the rating is in a boxed info row below the
-trailers and screenshots, beside a HowLongToBeat box. The ratings are
+trailers and screenshots, beside a **How Long To Beat** box. The ratings are
 **Platinum**, **Gold**, **Silver**, **Bronze**, or **Borked**.
 They describe community experience, not Valve certification or a guarantee
 that your copy will run. Games without a match or rating have no badge.
@@ -106,20 +106,34 @@ Store row requirements, and troubleshooting.
 
 ![ProtonDB tier icons on Steam Library game covers](assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
 
+![Store info row with How Long To Beat times and the ProtonDB rating for Brotato](assets/decky-metadata-store-row.png?cacheBuster=20261115)
+
 ### HowLongToBeat times
 
 Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. The same times appear in a
-box on Steam Store game pages. Steam games are matched by
+**How Long To Beat** box on Steam Store game pages. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
 You can choose the HowLongToBeat game for a non-Steam game in its editor. The
 styles and appearance options of HLTB for Deck are included. The **"Clean"**
 styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
 Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
 and the Play bar form one blurred panel. **Background blur** never changes the
-Play bar's blur. **Use Steam button corners** keeps the **Details**
-button's corners as Steam draws them.
+Play bar's blur. **Use Steam button corners** gives the **"Clean"** styles'
+**Details** button Steam's normal corners instead of the theme's rounded ones.
+**Push Play button down** is available in the **Default** and **"Clean" Default**
+styles. It moves the Play button below the times instead of layering the times
+over the header image. **Keep Play above the footer**, on by default, moves
+Play down only as far as its button stays a few pixels above Big Picture's
+footer (Menu, Options, Select, Back), including footers that themes make taller,
+shorter, or hide. When there is no room, the times stay on the image and Play
+does not move. Turn it off to always move Play down by the full height of the
+times.
+While a Steam Cloud or SDH-Ludusavi save status bar sits at the bottom of the
+header image, the times stay on the image and the Play button does not move, so
+the bar keeps its artwork background. With themes that already put Play below
+the image, the times get their own row when it fits above the footer.
 
 When HLTB times are turned on, Decky Metadata sends game titles and
 HowLongToBeat game numbers to howlongtobeat.com. It does not need your Steam
@@ -182,6 +196,32 @@ Steam game. Your own layouts and Steam's templates remain available. See
 [using controller layouts](docs/help/controller-layouts.md).
 
 ![Controller layouts for Warhammer 40,000: Space Marine](assets/decky-metadata-controller-layouts.png?cacheBuster=202610011846)
+
+## Languages
+
+The plugin's own text follows your Steam language. It is available in Albanian,
+Arabic, Bulgarian, Chinese (Simplified and Traditional), Czech, Dutch, English,
+Finnish, French, Georgian, German, Greek, Italian, Japanese, Korean, Polish,
+Portuguese (Brazil and Portugal), Romanian, Russian, Spanish, Swedish, Turkish,
+and Ukrainian. If your Steam language has no plugin text, the plugin uses your
+system language when that language has plugin text. Otherwise, the plugin uses
+English. Steam has no Albanian or Georgian setting. The plugin uses those only
+when your system language is Albanian or Georgian and the Steam language has no
+plugin text.
+
+The non-English text is a machine translation that no native speaker has
+reviewed yet. Corrections are welcome. HowLongToBeat data and IGN details stay
+in English.
+
+For a non-Steam game matched to a Steam store page, Steam news follows your
+Steam language. Steam sends the news in your language when the publisher wrote
+a translation, and in English when not. The description and genres follow your
+Steam language when the plugin first gets the game's Steam details. Names,
+developers, publishers, and release dates stay in English. If you change your
+Steam language later, the plugin does not replace a description by itself,
+because you may have edited it. Open the game's metadata editor and select
+**Fetch Steam text in** *your language* to get the description again. Steam
+gives English text when the store page has no text in your language.
 
 ## Updates and help
 

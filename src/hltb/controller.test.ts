@@ -11,6 +11,15 @@ import { DEFAULT_HLTB_SETTINGS, type HltbSettings } from "./settings";
 import { HltbStore } from "./store";
 
 const flush = async () => { for (let index = 0; index < 5; index += 1) await Promise.resolve(); };
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+};
 const monitors: PluginConflictMonitor[] = [];
 afterEach(() => { for (const monitor of monitors.splice(0)) monitor.stop(); });
 
@@ -70,6 +79,71 @@ describe("HltbController", () => {
     controller.mount();
     await flush();
     expect(seed).toHaveBeenCalledWith({});
+  });
+
+  it("keeps both changes when a toggle is pressed during a save", async () => {
+    const { controller, settings } = setup({ enabled: true, store: true });
+    controller.mount();
+    await flush();
+
+    const firstSave = deferred<HltbSettings>();
+    settings.set.mockReturnValueOnce(firstSave.promise);
+    const first = controller.setSettings({ ...controller.getSnapshot().settings, store: false });
+    const second = controller.setSettings({ ...controller.getSnapshot().settings, showMain: false });
+
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, store: false, showMain: false }, busy: true });
+    expect(settings.set).toHaveBeenCalledTimes(1);
+    expect(settings.set).toHaveBeenNthCalledWith(1, expect.objectContaining({ store: false, showMain: true }));
+
+    firstSave.resolve({ ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false });
+    await flush();
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(settings.set).toHaveBeenCalledTimes(2);
+    expect(settings.set).toHaveBeenNthCalledWith(2, expect.objectContaining({ store: false, showMain: false }));
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, store: false, showMain: false }, busy: false });
+  });
+
+  it("saves at most two changes when three are pressed in a row", async () => {
+    const { controller, settings } = setup({ enabled: true });
+    controller.mount();
+    await flush();
+
+    const firstSave = deferred<HltbSettings>();
+    settings.set.mockReturnValueOnce(firstSave.promise);
+    const changes = [
+      controller.setSettings({ ...controller.getSnapshot().settings, store: false }),
+      controller.setSettings({ ...controller.getSnapshot().settings, style: "clean" }),
+      controller.setSettings({ ...controller.getSnapshot().settings, hideViewDetails: true }),
+    ];
+    expect(controller.getSnapshot()).toMatchObject({ settings: { store: false, style: "clean", hideViewDetails: true }, busy: true });
+
+    firstSave.resolve({ ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false });
+    await flush();
+    expect(await Promise.all(changes)).toEqual([true, true, true]);
+    expect(settings.set).toHaveBeenCalledTimes(2);
+    expect(settings.set).toHaveBeenLastCalledWith(expect.objectContaining({ store: false, style: "clean", hideViewDetails: true }));
+    expect(controller.getSnapshot()).toMatchObject({ settings: { store: false, style: "clean", hideViewDetails: true }, busy: false });
+  });
+
+  it("restores the saved settings and drops the queued change when a save fails", async () => {
+    const { controller, settings } = setup({ enabled: true, store: true });
+    controller.mount();
+    await flush();
+
+    const firstSave = deferred<HltbSettings>();
+    settings.set.mockReturnValueOnce(firstSave.promise);
+    const first = controller.setSettings({ ...controller.getSnapshot().settings, store: false });
+    const queued = controller.setSettings({ ...controller.getSnapshot().settings, showMain: false });
+    expect(controller.getSnapshot()).toMatchObject({ settings: { store: false, showMain: false }, busy: true });
+
+    firstSave.reject(new Error("disk full"));
+    await flush();
+    expect(await first).toBe(false);
+    expect(await queued).toBe(false);
+    expect(settings.set).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, store: true, showMain: true }, busy: false });
+    expect(controller.getSnapshot().settingsError).not.toBe("");
   });
 
   it("reports whether Clear HLTB cache worked", async () => {

@@ -1,12 +1,10 @@
 import { findModuleChild } from "@decky/ui";
 import { frontendLog, getCommunityFallbackPage, getMetadata, refreshSteamActivityForApp } from "../backend";
-import {
-  requestedCommunityPage,
-  resolveCommunityRequest,
-  rewriteCommunityFeedUrlForSteamApp,
-} from "../communityFeed";
+import { requestedCommunityPage, resolveCommunityRequest } from "../communityFeed";
+import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeedUrl";
 import { MetadataData, NativePartnerEvent, NativePartnerEventStore } from "../types";
 import * as log from "../log";
+import { currentSteamLanguage, t } from "../i18n";
 import { createActivityRefreshGate } from "./activityRefreshGate";
 import {
   DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY,
@@ -88,15 +86,27 @@ const maybeRefreshSteamNewsForApp = (appId: number) => {
     try {
       const previous = metadataCache[String(appId)];
       const removals = metadataRemovalSnapshot(appId);
-      const refreshed = await refreshSteamActivityForApp(appId);
+      const refreshed = await refreshSteamActivityForApp(appId, await currentSteamLanguage());
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
       if (!refreshed || metadataRemovalSnapshot(appId) !== removals) return;
+      // Steam often translates only the body while the headline stays English.
       const newsKey = (metadata?: MetadataData | null) =>
-        JSON.stringify((metadata?.steam_news || []).map((item) => [item.id, item.gid, item.title, item.date]));
+        JSON.stringify((metadata?.steam_news || []).map((item) => [
+          item.id,
+          item.gid,
+          item.title,
+          item.date,
+          item.summary,
+          item.body,
+          item.raw_body,
+        ]));
       const changed = newsKey(previous) !== newsKey(refreshed);
       const compatibilityChanged =
         previous?.deck_compat_override !== refreshed.deck_compat_override ||
-        previous?.deck_compat_category !== refreshed.deck_compat_category;
+        previous?.deck_compat_category !== refreshed.deck_compat_category ||
+        previous?.steamos_compat_category !== refreshed.steamos_compat_category ||
+        previous?.steam_machine_compat_category !== refreshed.steam_machine_compat_category ||
+        previous?.steam_frame_compat_category !== refreshed.steam_frame_compat_category;
       setMetadataCacheEntry(appId, refreshed);
       if (compatibilityChanged) {
         applyMetadataFn(appId);
@@ -315,16 +325,20 @@ export const steamActivityPayloadForApp = async (appId: number) => {
 const STEAM_POSTED_ANNOUNCEMENT_EVENT_TYPE = 1002;
 const STEAM_PARTNER_EVENT_TYPE_NEWS = 28;
 const DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES = new Set([12, 13, 14, 15, 23, 24, 25, 28, 35]);
-const DECKY_STEAM_ACTIVITY_TYPE_LABELS: Record<number, string> = {
-  12: "Minor update / Patch notes",
-  13: "Update",
-  14: "Major update",
-  15: "Downloadable content",
-  23: "Event: Loot",
-  24: "Event: Perks",
-  25: "Event: Challenge",
-  28: "News",
-  35: "In-game event",
+/** Resolved per call so the feed follows the current language. */
+const deckySteamActivityTypeLabel = (type: number): string => {
+  switch (type) {
+    case 12: return t("activity.minorUpdatePatchNotes");
+    case 13: return t("activity.update");
+    case 14: return t("activity.majorUpdate");
+    case 15: return t("activity.dlc");
+    case 23: return t("activity.eventLoot");
+    case 24: return t("activity.eventPerks");
+    case 25: return t("activity.eventChallenge");
+    case 28: return t("activity.news");
+    case 35: return t("activity.inGameEvent");
+    default: return t("activity.news");
+  }
 };
 const DECKY_STEAM_ACTIVITY_TYPE_TAGS: Record<number, string[]> = {
   12: ["patchnotes", "update", "decky_metadata"],
@@ -341,7 +355,6 @@ const normalizeDeckySteamActivityType = (value: unknown) => {
   const type = Number(value || 0) || STEAM_PARTNER_EVENT_TYPE_NEWS;
   return DECKY_SUPPORTED_STEAM_ACTIVITY_TYPES.has(type) ? type : STEAM_PARTNER_EVENT_TYPE_NEWS;
 };
-const deckySteamActivityTypeLabel = (type: number) => DECKY_STEAM_ACTIVITY_TYPE_LABELS[type] || "News";
 const deckySteamActivityTypeTags = (type: number) => DECKY_STEAM_ACTIVITY_TYPE_TAGS[type] || DECKY_STEAM_ACTIVITY_TYPE_TAGS[28];
 const isDeckyPatchNoteActivity = (item: any) => normalizeDeckySteamActivityType(item?.event_type || item?.type) === 12;
 type DeckyNativeActivityDay = {
@@ -540,6 +553,16 @@ export const deckyNativePartnerEventForGid = (value: unknown, cloneForRoute = fa
   return cloneForRoute ? cloneDeckyNativePartnerEventForRoute(event, raw || gid) : event;
 };
 
+// Steam's event overlay (sp.js) calls eventModel.GetDiscussionURL(vanityUrl) and the whole
+// modal render throws when it is missing. Native returns "" or a community URL: the forum
+// topic URL when the event has a forum topic, else the legacy announcement comments URL.
+// Our events have no forum topic, so link the community announcement page that hosts the
+// comments; fall back to the news URL, then to "" like native.
+export const deckyNativePartnerEventDiscussionUrl = (steamAppId: number, gid: string, fallbackUrl: string) =>
+  steamAppId && gid
+    ? `https://steamcommunity.com/games/${steamAppId}/announcements/detail/${gid}`
+    : fallbackUrl || "";
+
 const makeDeckyNativePartnerEvent = (appId: number, steamAppId: number, item: any, index: number) => {
   const date = Number(item.date || item.posttime || item.published || 0) || Math.floor(Date.now() / 1000) - index * 60;
   const announcementGid = numericSteamNewsGid(item.announcement_gid || item.news_id || item.gid || item.id || item.url);
@@ -734,6 +757,9 @@ const makeDeckyNativePartnerEvent = (appId: number, steamAppId: number, item: an
     GetLastUpdaterSteamIDStr: () => "",
     GetStoreOrCommunityURL: () => announcementUrl,
     GetCommunityDiscussionURL: () => announcementUrl,
+    // Native takes an optional clan vanity URL; only its forum-topic branch uses it and our
+    // events have no forum topic, so the community announcement page is always the answer.
+    GetDiscussionURL: () => deckyNativePartnerEventDiscussionUrl(steamAppId, announcementGid, announcementUrl),
     GetStoreNewsURL: () => steamAppId && (announcementGid || eventGid || gid) ? `https://store.steampowered.com/news/app/${steamAppId}/view/${announcementGid || eventGid || gid}` : announcementUrl,
     url: announcementUrl,
   };
@@ -960,7 +986,13 @@ export const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
         patchMethod(store, "GetAppActivity", (_thisValue, original, args) => {
           const appId = Number(args[0]);
           const native = getDeckyNativeActivityForApp(appId);
-          if (native) return native;
+          if (native) {
+            // The Activity feed is a MobX observer. This read subscribes it to the shallow
+            // observable entry that refreshDeckyNativeActivityForApp replaces, so a mounted
+            // list repaints in place instead of keeping the object it received at mount.
+            store.m_mapAppActivity?.get?.(appId);
+            return native;
+          }
           if (appId && isNonSteamApp(getOverview(appId))) {
             void refreshDeckyNativeActivityForApp(appId, store);
           }

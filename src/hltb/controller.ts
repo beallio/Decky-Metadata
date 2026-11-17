@@ -1,4 +1,5 @@
 import { clearHltbCache, getHltbSettings, setHltbSettings, type ProviderCacheSnapshot } from "../backend";
+import { t } from "../i18n";
 import * as log from "../log";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import { loadProviderCache } from "../providerCache";
@@ -26,6 +27,11 @@ export class HltbController {
   private disposeRuntime: (() => void) | undefined;
   private unsubscribeConflicts: (() => void) | undefined;
   private readonly listeners = new Set<() => void>();
+  /** Last settings the backend confirmed; a failed save shows these again. */
+  private confirmed: HltbSettings | undefined;
+  /** Latest requested settings waiting for the in-flight save, plus their callers. */
+  private queued: { settings: HltbSettings; settles: Array<(saved: boolean) => void> } | undefined;
+  private saving = false;
 
   constructor(
     private readonly runtime: Runtime,
@@ -58,12 +64,15 @@ export class HltbController {
     );
     void this.settingsStore.get().then(
       (settings) => {
-        if (this.isCurrent(generation)) this.publish({ settings: normalizeHltbSettings(settings), settingsLoaded: true, busy: false });
+        if (!this.isCurrent(generation)) return;
+        const saved = normalizeHltbSettings(settings);
+        this.confirmed = saved;
+        this.publish({ settings: saved, settingsLoaded: true, busy: false });
       },
       (error: unknown) => {
         if (!this.isCurrent(generation)) return;
         log.warn("bridge", "HLTB settings load failed", error);
-        this.publish({ busy: false, settingsError: "HLTB settings could not be loaded. Reload the plugin to retry." });
+        this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
       },
     );
   }
@@ -72,6 +81,9 @@ export class HltbController {
     if (!this.mounted) return;
     this.mounted = false;
     this.generation += 1;
+    this.queued?.settles.forEach((settle) => settle(false));
+    this.queued = undefined;
+    this.saving = false;
     this.unsubscribeConflicts?.();
     this.unsubscribeConflicts = undefined;
     this.publish({ settingsLoaded: false, busy: false });
@@ -81,21 +93,57 @@ export class HltbController {
 
   async setSettings(next: HltbSettings): Promise<boolean> {
     const current = this.snapshot;
-    if (!this.mounted || !current.settingsLoaded || current.busy) return false;
-    if (next.enabled && !current.settings.enabled && current.conflict.pluginName) return false;
+    if (!this.mounted || !current.settingsLoaded) return false;
+    const requested = normalizeHltbSettings(next);
+    if (requested.enabled && !current.settings.enabled && current.conflict.pluginName) return false;
+    // Publish optimistically: the section builds its next change from the snapshot,
+    // and controls must not dim while a save is in flight.
+    this.publish({ settings: requested, busy: true, settingsError: "" });
+    return new Promise<boolean>((resolve) => {
+      if (this.queued) {
+        // Latest wins; earlier callers settle with this newer value's save.
+        this.queued.settings = requested;
+        this.queued.settles.push(resolve);
+      } else {
+        this.queued = { settings: requested, settles: [resolve] };
+      }
+      if (this.saving) return;
+      this.saving = true;
+      void this.drainSaves();
+    });
+  }
+
+  /** Saves one request at a time so a toggle pressed during a save is not lost. */
+  private async drainSaves(): Promise<void> {
     const generation = this.generation;
-    this.publish({ busy: true, settingsError: "" });
-    try {
-      const saved = normalizeHltbSettings(await this.settingsStore.set(normalizeHltbSettings(next)));
-      if (!this.isCurrent(generation)) return false;
-      this.publish({ settings: saved, busy: false });
-      return true;
-    } catch (error) {
-      if (!this.isCurrent(generation)) return false;
-      log.warn("bridge", "HLTB settings save failed", error);
-      this.publish({ busy: false, settingsError: "HLTB settings could not be saved." });
-      return false;
+    while (this.queued && this.isCurrent(generation)) {
+      const { settings, settles } = this.queued;
+      this.queued = undefined;
+      let saved = false;
+      try {
+        const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+        if (this.isCurrent(generation)) {
+          this.confirmed = confirmed;
+          saved = true;
+          // A newer request is queued; showing this value first would flash it.
+          if (!this.queued) this.publish({ settings: confirmed, busy: false });
+        }
+      } catch (error) {
+        if (this.isCurrent(generation)) {
+          log.warn("bridge", "HLTB settings save failed", error);
+          this.queued?.settles.forEach((settle) => settle(false));
+          this.queued = undefined;
+          this.publish({
+            settings: this.confirmed ?? this.snapshot.settings,
+            busy: false,
+            settingsError: t("hltb.settingsError.saveFailed"),
+          });
+        }
+      }
+      for (const settle of settles) settle(saved);
     }
+    // A remount may already own the save state; only the current generation clears it.
+    if (this.isCurrent(generation)) this.saving = false;
   }
 
   async clearCache(): Promise<boolean> {
@@ -150,7 +198,7 @@ export class HltbController {
       }
     } catch (error) {
       log.error("patch", "HLTB runtime transition failed", error);
-      this.snapshot = Object.freeze({ ...this.snapshot, settingsError: "HLTB times could not be applied. Reload the plugin." });
+      this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
     }
   }
 }

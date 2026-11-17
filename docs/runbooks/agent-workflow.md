@@ -124,7 +124,7 @@ Pinned inputs (both harness files check them):
 |---|---|
 |Upstream Loader|`SteamDeckHomebrew/decky-loader` `v3.3.0` `PluginLoader` (tag commit `67196adf`); get it with `gh release download v3.3.0 -R SteamDeckHomebrew/decky-loader -p PluginLoader` and check the release asset digest|
 |Fork Loader|`beallio/decky-loader` `main` at `98bce11`, the measured runtime bundle built from source; its constants move only with a new run|
-|Plugin SDK and shim|`58072a7`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and root `main.py` copied from `backend-rust/decky-plugin/shim/main.py`|
+|Plugin SDK and shim|`58072a7`: `backend-rust/Cargo.toml` `decky-plugin` `rev`, and the root `main.py`, which copies the SDK's `backend-rust/decky-plugin/shim/main.py` (see the `main.py` header; `scripts/package.mjs` stages it)|
 
 Build the fork bundle from a detached clone of that commit. Its build checks the
 upstream `v3.3.0` tag, so fetch it first:
@@ -134,11 +134,11 @@ git -C "$FORK" fetch https://github.com/SteamDeckHomebrew/decky-loader 'refs/tag
 python3 "$FORK/scripts/runtime/build.py" --release-version dev --output "$RUN_ROOT/fork-runtime"
 ```
 
-Use the fork's pinned Rust toolchain (`backend-rust/build-config.json`), not this
-repository's. Pass `"$RUN_ROOT/fork-runtime/bundle"` as `--fork-runtime`. When you
-move the SDK pin, change the shim with it. The fork runtime commit and its
-SHA-256 baselines in the harness follow a rebuilt and re-measured bundle, not the
-SDK pin.
+Use the fork's pinned Rust toolchain (`$FORK/backend-rust/build-config.json`),
+not this repository's (`rust-toolchain.toml`, Rust `1.99.0`). Pass
+`"$RUN_ROOT/fork-runtime/bundle"` as `--fork-runtime`. When you move the SDK
+pin, change the shim with it. The fork runtime commit and its SHA-256 baselines
+in the harness follow a rebuilt and re-measured bundle, not the SDK pin.
 
 Resolve the evidence directory with `./run.sh python3 scripts/deck/temp_paths.py root`.
 Pass the original ZIP, candidate ZIP, upstream executable and complete fork bundle

@@ -115,6 +115,72 @@ describe("ProtonDbBadgeController", () => {
     });
   });
 
+  it("keeps a change made during a save and persists both", async () => {
+    const firstSave = deferred<ProtonDbBadgeSettings>();
+    const set = vi.fn(async (value: ProtonDbBadgeSettings) => value);
+    set.mockReturnValueOnce(firstSave.promise);
+    const controller = newController({ get: async () => settings(), set });
+    controller.mount();
+    await flushMicrotasks();
+
+    const first = controller.setSettings(settings({ enabled: true, home: false }));
+    const second = controller.setSettings({ ...controller.getSnapshot().settings, library: false });
+
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, home: false, library: false }, busy: true });
+    expect(set).toHaveBeenCalledTimes(1);
+    expect(set).toHaveBeenNthCalledWith(1, settings({ enabled: true, home: false }));
+
+    firstSave.resolve(settings({ enabled: true, home: false }));
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(set).toHaveBeenCalledTimes(2);
+    expect(set).toHaveBeenNthCalledWith(2, settings({ enabled: true, home: false, library: false }));
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, home: false, library: false }, busy: false });
+  });
+
+  it("collapses three quick changes into at most two saves", async () => {
+    const firstSave = deferred<ProtonDbBadgeSettings>();
+    const set = vi.fn(async (value: ProtonDbBadgeSettings) => value);
+    set.mockReturnValueOnce(firstSave.promise);
+    const controller = newController({ get: async () => settings(), set });
+    controller.mount();
+    await flushMicrotasks();
+
+    const changes = [
+      controller.setSettings(settings({ enabled: true })),
+      controller.setSettings({ ...controller.getSnapshot().settings, home: false }),
+      controller.setSettings({ ...controller.getSnapshot().settings, library: false }),
+    ];
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, home: false, library: false }, busy: true });
+
+    firstSave.resolve(settings({ enabled: true }));
+    expect(await Promise.all(changes)).toEqual([true, true, true]);
+    expect(set).toHaveBeenCalledTimes(2);
+    expect(set).toHaveBeenLastCalledWith(settings({ enabled: true, home: false, library: false }));
+    expect(controller.getSnapshot()).toMatchObject({ settings: { enabled: true, home: false, library: false }, busy: false });
+  });
+
+  it("restores the saved settings and drops the queued change when a save fails", async () => {
+    const persisted = settings({ enabled: true, home: true });
+    const firstSave = deferred<ProtonDbBadgeSettings>();
+    const set = vi.fn(async (value: ProtonDbBadgeSettings) => value);
+    set.mockReturnValueOnce(firstSave.promise);
+    const controller = newController({ get: async () => persisted, set });
+    controller.mount();
+    await flushMicrotasks();
+
+    const first = controller.setSettings(settings({ enabled: true, home: false }));
+    const queued = controller.setSettings({ ...controller.getSnapshot().settings, library: false });
+    expect(controller.getSnapshot()).toMatchObject({ settings: { home: false, library: false }, busy: true });
+
+    firstSave.reject(new Error("disk full"));
+    await flushMicrotasks();
+    expect(await first).toBe(false);
+    expect(await queued).toBe(false);
+    expect(set).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot()).toMatchObject({ settings: persisted, busy: false, settingsError: "disk full" });
+  });
+
   it("ignores an older settings load that completes after a later mount", async () => {
     const firstLoad = deferred<ProtonDbBadgeSettings>();
     const newerSettings = settings({ enabled: true, store: false });

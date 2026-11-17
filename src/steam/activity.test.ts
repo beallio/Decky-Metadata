@@ -2,10 +2,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MetadataData } from "../types";
 
 const mocks = vi.hoisted(() => ({
+  currentSteamLanguage: vi.fn(async () => "english"),
   refreshSteamActivityForApp: vi.fn(),
 }));
 
 vi.mock("@decky/ui", () => ({ findModuleChild: vi.fn() }));
+vi.mock("../i18n", () => ({
+  currentSteamLanguage: mocks.currentSteamLanguage,
+  t: (key: string) => key,
+}));
 vi.mock("../backend", () => ({
   frontendLog: vi.fn(() => Promise.resolve()),
   getCommunityFallbackPage: vi.fn(),
@@ -15,6 +20,7 @@ vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import {
   configureActivityMetadataLoader,
+  deckyNativePartnerEventDiscussionUrl,
   installNativeActivityStorePatch,
   refreshDeckyNativeActivityForApp,
   steamActivityPayloadForApp,
@@ -31,6 +37,8 @@ import {
 const makeMetadata = (
   compatibilityOverride: number | null,
   compatibilityCategory: number | null,
+  perDevice: Partial<Pick<MetadataData,
+    "steamos_compat_category" | "steam_machine_compat_category" | "steam_frame_compat_category">> = {},
 ): MetadataData => ({
   title: "Example",
   id: "example",
@@ -42,6 +50,7 @@ const makeMetadata = (
   steam_news_enriched_at: 0,
   deck_compat_override: compatibilityOverride,
   deck_compat_category: compatibilityCategory,
+  ...perDevice,
 } as MetadataData);
 
 const makeNewsMetadata = (title: string, gid: string): MetadataData => ({
@@ -58,6 +67,10 @@ const makeNewsMetadata = (title: string, gid: string): MetadataData => ({
 });
 
 const activityNewsTitle = (activity: any) => activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GetNameWithFallback?.();
+
+type RepaintActivity = {
+  appActivityByDay?: Array<{ events?: Array<{ preview?: { strSummary?: string } }> }>;
+};
 
 const installShortcut = (appId: number) => {
   const overview = {
@@ -79,6 +92,8 @@ afterEach(() => {
   metadataState.compatibilityLifecycleGeneration = 0;
   patchInstallStatus.activity = "pending";
   mocks.refreshSteamActivityForApp.mockReset();
+  mocks.currentSteamLanguage.mockReset();
+  mocks.currentSteamLanguage.mockResolvedValue("english");
   configureActivityMetadataLoader(async () => undefined, () => false);
   delete (globalThis as Record<string, unknown>).appStore;
   delete (globalThis as Record<string, unknown>).appActivityStore;
@@ -112,12 +127,61 @@ describe("activity compatibility refresh", () => {
 
     await steamActivityPayloadForApp(appId);
     await vi.waitFor(() => {
-      expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId);
+      expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english");
       expect(metadataCache[String(appId)]).toBe(refreshed);
     });
 
     expect(applyMetadata).not.toHaveBeenCalled();
     expect(compatibilityRevisionSnapshot()).toBe(0);
+  });
+
+  it("applies and publishes a change limited to a per-device category", async () => {
+    const appId = 9613;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeMetadata(null, 1, { steamos_compat_category: 2 });
+    const refreshed = makeMetadata(null, 1, { steamos_compat_category: 1 });
+    mocks.refreshSteamActivityForApp.mockResolvedValue(refreshed);
+    const applyMetadata = vi.fn(() => true);
+    configureActivityMetadataLoader(async () => undefined, applyMetadata);
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => expect(applyMetadata).toHaveBeenCalledWith(appId));
+
+    expect(metadataCache[String(appId)]).toBe(refreshed);
+    expect(compatibilityRevisionSnapshot()).toBe(1);
+  });
+
+  it("rebuilds native Activity when only the news body language changed", async () => {
+    const appId = 9609;
+    const gid = "12345678901234567";
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Unchanged headline", gid);
+    const translated = makeNewsMetadata("Unchanged headline", gid);
+    translated.steam_news![0] = {
+      ...translated.steam_news![0],
+      summary: "Corps traduit",
+      body: "Corps traduit",
+      raw_body: "Corps traduit",
+    };
+    mocks.refreshSteamActivityForApp.mockResolvedValue(translated);
+
+    await steamActivityPayloadForApp(appId);
+    await vi.waitFor(() => {
+      const activity = deckyNativeActivityCache().get(appId) as RepaintActivity | undefined;
+      expect(activity?.appActivityByDay?.[0]?.events?.[0]?.preview?.strSummary).toBe("Corps traduit");
+    });
+  });
+
+  it("passes the current Steam language to the news refresh", async () => {
+    const appId = 9610;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeMetadata(null, null);
+    mocks.currentSteamLanguage.mockResolvedValue("french");
+    mocks.refreshSteamActivityForApp.mockResolvedValue(makeMetadata(null, null));
+
+    await steamActivityPayloadForApp(appId);
+
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "french"));
   });
 
   it("keeps a late activity refresh inert after the plugin lifecycle ends", async () => {
@@ -135,7 +199,7 @@ describe("activity compatibility refresh", () => {
     }));
 
     await steamActivityPayloadForApp(appId);
-    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english"));
     metadataState.compatibilityLifecycleGeneration += 1;
     resolveRefresh(refreshed);
     await Promise.resolve();
@@ -164,7 +228,7 @@ describe("activity compatibility refresh", () => {
     }));
 
     await steamActivityPayloadForApp(appId);
-    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId));
+    await vi.waitFor(() => expect(mocks.refreshSteamActivityForApp).toHaveBeenCalledWith(appId, "english"));
     removeMetadataCacheEntry(appId);
     resolveRefresh(makeNewsMetadata("Fresh news", "22345678901234567"));
     for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
@@ -194,6 +258,117 @@ describe("synthetic native Activity contract", () => {
     expect(events.every((event) => event.BCanRender() === true)).toBe(true);
     expect(events[0].preview.strTitle).toBe("Renderable news");
     expect(events[0].preview.strSummary).toBe("Renderable news summary");
+  });
+});
+
+describe("synthetic native Activity event discussion URL", () => {
+  // The refresh returns the Steam-shaped Activity tree; only the event model is drilled below.
+  type RenderableActivity = { appActivityByDay?: Array<{ events?: Array<{ eventModel?: Record<string, unknown> }> }> };
+  const partnerEvent = async (appId: number, metadata: MetadataData) => {
+    installShortcut(appId);
+    metadataCache[String(appId)] = metadata;
+    const activity = await refreshDeckyNativeActivityForApp(appId) as unknown as RenderableActivity | null;
+    return activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel;
+  };
+
+  // Steam's event overlay (sp.js) reads these from eventModel while rendering the detail
+  // modal. A missing method throws "TypeError: X is not a function" and the whole event
+  // view fails; GetDiscussionURL was missing and crashed the matched-shortcut card.
+  const overlayMethods = [
+    "BEventCanShowBroadcastWidget",
+    "BHasSubTitle",
+    "BHasTag",
+    "BImageNeedScreenshotFallback",
+    "BIsEventActionEnabled",
+    "BIsUnlistedEvent",
+    "GetCategoryAsString",
+    "GetDescriptionWithFallback",
+    "GetDiscussionURL",
+    "GetEndTimeAndDateUnixSeconds",
+    "GetNameWithFallback",
+    "GetPostTimeAndDateUnixSeconds",
+    "GetStartTimeAndDateUnixSeconds",
+    "GetSteamAwardCategory",
+    "GetSteamAwardNomineeCategories",
+    "GetSubTitle",
+  ];
+
+  it("exposes every partner-event method the native overlay calls", async () => {
+    const event = await partnerEvent(9610, makeNewsMetadata("Overlay news", "12345678901234567"));
+
+    const missing = overlayMethods.filter((name) => typeof event?.[name] !== "function");
+
+    expect(missing).toEqual([]);
+  });
+
+  it("answers GetDiscussionURL with the community announcement page", async () => {
+    const event = await partnerEvent(9611, makeNewsMetadata("Discussion news", "12345678901234567"));
+
+    expect(typeof event?.GetDiscussionURL).toBe("function");
+    expect((event?.GetDiscussionURL as () => unknown)()).toBe(
+      "https://steamcommunity.com/games/55150/announcements/detail/12345678901234567",
+    );
+  });
+});
+
+describe("deckyNativePartnerEventDiscussionUrl", () => {
+  const newsUrl = "https://store.steampowered.com/news/app/1942280/view/677389136248701284";
+
+  it("prefers the community announcement page when the Steam appid and gid are known", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(1942280, "677389136248701284", newsUrl)).toBe(
+      "https://steamcommunity.com/games/1942280/announcements/detail/677389136248701284",
+    );
+  });
+
+  it("falls back to the news url when the appid or gid is unknown", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(1942280, "", newsUrl)).toBe(newsUrl);
+    expect(deckyNativePartnerEventDiscussionUrl(0, "677389136248701284", newsUrl)).toBe(newsUrl);
+  });
+
+  it("returns an empty string like native when nothing is known", () => {
+    expect(deckyNativePartnerEventDiscussionUrl(0, "", "")).toBe("");
+  });
+});
+
+describe("mounted Activity repaint", () => {
+  it("reads the observable Activity map for the requested shortcut only", async () => {
+    const appId = 9612;
+    const nativeAppId = 9613;
+    (globalThis as Record<string, unknown>).appStore = {
+      GetAppOverviewByAppID: (candidate: number) =>
+        candidate === appId
+          ? { appid: appId, app_type: 1073741824, BIsShortcut: () => true, BIsModOrShortcut: () => true }
+          : candidate === nativeAppId
+            ? { appid: nativeAppId, app_type: 0, BIsShortcut: () => false, BIsModOrShortcut: () => false }
+            : null,
+    };
+    const reads: number[] = [];
+    const store = {
+      m_mapAppActivity: {
+        get: (candidate: number) => {
+          reads.push(candidate);
+          return undefined;
+        },
+        set: () => undefined,
+        has: () => false,
+        delete: () => undefined,
+      },
+      GetAppActivity: vi.fn((_appId: number) => ({ nativeSteamActivity: true })),
+    };
+    (globalThis as Record<string, unknown>).appActivityStore = store;
+    metadataCache[String(appId)] = makeNewsMetadata("Repaint card", "12345678901234567");
+    await refreshDeckyNativeActivityForApp(appId, store);
+
+    const unpatchers: Array<() => void> = [];
+    installNativeActivityStorePatch(unpatchers);
+
+    expect(store.GetAppActivity(appId)).toMatchObject({ __deckyNativeActivity: true });
+    expect(reads).toEqual([appId]);
+
+    expect(store.GetAppActivity(nativeAppId)).toEqual({ nativeSteamActivity: true });
+    expect(reads).toEqual([appId]);
+
+    unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
   });
 });
 

@@ -3,6 +3,7 @@ import type {
   SteamInputBoundary,
   SteamInternals,
 } from "../types";
+import { t } from "../i18n";
 import type { Unpatch } from "./core";
 import {
   installControllerTabPersistence,
@@ -24,10 +25,11 @@ import {
   resolveControllerSearchContext,
 } from "./controllerLayoutPolicy";
 
+// Getters translate at notify time, in the current language.
 export const CONTROLLER_LAYOUT_WARNING = {
-  heading: "Controller layouts disabled",
-  body: "Using Steam's standard controller layout UI until Decky Metadata is reloaded.",
-} as const;
+  get heading() { return t("controllerLayouts.disabledHeading"); },
+  get body() { return t("controllerLayouts.disabledBody"); },
+};
 
 export type ControllerLayoutTargets = {
   input: SteamInputBoundary;

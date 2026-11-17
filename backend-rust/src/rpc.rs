@@ -48,15 +48,18 @@ pub const METHODS: &[&str] = &[
     "get_local_shortcuts",
     "eval_in_big_picture",
     "save_metadata",
+    "save_previewed_metadata",
     "search_metadata",
     "search_steam_matches",
     "get_steam_match_preview",
     "fetch_metadata",
     "find_ign_trailer",
     "apply_fetched_metadata",
+    "preview_fetched_metadata",
     "auto_fetch_metadata",
     "get_community_fallback_page",
     "enrich_steam_app",
+    "preview_steam_metadata",
     "refresh_delisted_index",
     "get_delisted_index_status",
     "start_scan_missing",
@@ -162,16 +165,16 @@ impl Serialize for Summary<'_> {
     }
 }
 
-/// Preference getters reject when the settings file could not be read, like the original backend.
+/// Preference getters reject with a stable code when the settings file could not be read, like the original backend.
 async fn loaded_store<'a>(
     state: &'a AppState,
-    what: &str,
+    code: &str,
 ) -> Result<tokio::sync::MutexGuard<'a, storage::Storage>, String> {
     let storage = state.store().await?;
     if storage.loaded_successfully() {
         Ok(storage)
     } else {
-        Err(format!("{what} could not be loaded"))
+        Err(code.to_owned())
     }
 }
 
@@ -186,7 +189,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_hltb_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_hltb_settings(
-                &loaded_store(&state, "HLTB settings").await?.data()["settings"]["hltb"],
+                &loaded_store(&state, "hltb_settings_unavailable").await?.data()["settings"]["hltb"],
             ))
         }
         "set_hltb_settings" => {
@@ -252,7 +255,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default" => {
             arity(&args, 0, 0)?;
             Ok(json!(storage::compatibility_default(
-                &loaded_store(&state, "compatibility default").await?.data()["settings"]["deck_compat_default"]
+                &loaded_store(&state, "compat_default_unavailable").await?.data()["settings"]["deck_compat_default"]
             )))
         }
         "set_compatibility_default" => {
@@ -267,7 +270,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_compatibility_default_scope" => {
             arity(&args, 0, 0)?;
             Ok(storage::compatibility_default_scope(
-                &loaded_store(&state, "compatibility default scope").await?.data()["settings"]
+                &loaded_store(&state, "compat_scope_unavailable").await?.data()["settings"]
                     ["deck_compat_default_scope"],
             )
             .unwrap_or("all")
@@ -285,7 +288,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_trailer_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_trailer_settings(
-                &loaded_store(&state, "trailer settings").await?.data()["settings"]["game_trailers"],
+                &loaded_store(&state, "trailer_settings_unavailable").await?.data()["settings"]["game_trailers"],
             ))
         }
         "set_trailer_settings" => {
@@ -300,7 +303,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_mini_achievements_enabled" => {
             arity(&args, 0, 0)?;
             Ok(
-                loaded_store(&state, "mini achievements settings").await?.data()["settings"]
+                loaded_store(&state, "mini_achievements_settings_unavailable").await?.data()["settings"]
                     ["mini_achievements_enabled"]
                     .as_bool()
                     .unwrap_or(false)
@@ -319,7 +322,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_protondb_badge_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_protondb_badge_settings(
-                &loaded_store(&state, "ProtonDB badge settings").await?.data()["settings"]
+                &loaded_store(&state, "protondb_settings_unavailable").await?.data()["settings"]
                     ["protondb_badges"],
             ))
         }
@@ -442,6 +445,15 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 .map(|saved| saved.unwrap_or(Value::Null)),
             }
         }
+        "save_previewed_metadata" => {
+            arity(&args, 3, 3)?;
+            // The scan pipeline's trust rule applies: only a positive ID equal to the saved
+            // record's steam_appid keeps the sent compat and news fields.
+            let trusted = crate::matching::safe_int(&args[2]).filter(|id| *id > 0);
+            Ok(json!(
+                metadata::save(&state, &args[0], args[1].clone(), false, trusted).await?
+            ))
+        }
         "search_metadata" => {
             arity(&args, 1, 2)?;
             Ok(json!(
@@ -488,6 +500,12 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 metadata::apply_fetched(&state, &args[0], &metadata::text(&args[1])).await?
             ))
         }
+        "preview_fetched_metadata" => {
+            arity(&args, 2, 2)?;
+            Ok(json!(
+                metadata::preview_fetched(&state, &args[0], &metadata::text(&args[1])).await?
+            ))
+        }
         "auto_fetch_metadata" => {
             arity(&args, 2, 2)?;
             Ok(json!(
@@ -514,9 +532,24 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             Ok(result)
         }
         "enrich_steam_app" => {
-            arity(&args, 2, 2)?;
+            arity(&args, 2, 3)?;
             let mode = args[1].as_str().ok_or("Invalid Steam enrichment mode")?;
-            Ok(json!(metadata::enrich_steam(&state, &args[0], mode).await?))
+            Ok(json!(
+                metadata::enrich_steam(
+                    &state,
+                    &args[0],
+                    mode,
+                    steam::steam_language(args.get(2)),
+                )
+                .await?
+            ))
+        }
+        "preview_steam_metadata" => {
+            arity(&args, 1, 2)?;
+            Ok(json!(
+                metadata::preview_steam(&state, &args[0], steam::steam_language(args.get(1)))
+                    .await?
+            ))
         }
         "refresh_delisted_index" => {
             arity(&args, 0, 0)?;
@@ -531,8 +564,13 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             Ok(state.delisted_status().await)
         }
         "start_scan_missing" => {
-            arity(&args, 1, 1)?;
-            crate::scan_runner::start_scan_missing(Arc::clone(&state), &args[0]).await
+            arity(&args, 1, 2)?;
+            crate::scan_runner::start_scan_missing(
+                Arc::clone(&state),
+                &args[0],
+                steam::steam_language(args.get(1)),
+            )
+            .await
         }
         "get_scan_progress" => {
             arity(&args, 0, 0)?;
@@ -545,13 +583,23 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             ))
         }
         "start_refresh_steam_activities" => {
-            arity(&args, 1, 1)?;
-            crate::scan_runner::start_refresh_steam_activities(Arc::clone(&state), &args[0]).await
+            arity(&args, 1, 2)?;
+            crate::scan_runner::start_refresh_steam_activities(
+                Arc::clone(&state),
+                &args[0],
+                steam::steam_language(args.get(1)),
+            )
+            .await
         }
         "refresh_steam_activity_for_app" => {
-            arity(&args, 1, 1)?;
+            arity(&args, 1, 2)?;
             Ok(json!(
-                crate::scan_runner::refresh_steam_activity_for_app(&state, &args[0]).await?
+                crate::scan_runner::refresh_steam_activity_for_app(
+                    &state,
+                    &args[0],
+                    steam::steam_language(args.get(1)),
+                )
+                .await?
             ))
         }
         "get_activity_refresh_progress" => {
@@ -652,6 +700,136 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn previewed_save_trusts_only_the_previewed_steam_match() {
+        let (root, state) = test_state(None).await;
+        let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
+        let news = |id: &str| {
+            json!([{"id":id,"title":id,"url":"https://store.steampowered.com/news/1"}])
+        };
+        let seed = |app_id: i64| {
+            let state = Arc::clone(&state);
+            let news = news("stored");
+            async move {
+                dispatch(
+                    state,
+                    "save_metadata",
+                    vec![json!(app_id), json!({"title":"Game","steam_appid":10,
+                        "deck_compat_category":1,"steamos_compat_category":2,
+                        "steam_news":news,"steam_dlc_appids":[11],"has_points_shop":true})],
+                )
+                .await
+                .unwrap()
+            }
+        };
+
+        // A trusted preview of a new match keeps the previewed provider fields.
+        assert_eq!(seed(7).await["steam_appid"], 10);
+        let saved = call(
+            "save_previewed_metadata",
+            vec![
+                json!(7),
+                json!({"title":"Game","steam_appid":20,"deck_compat_category":3,
+                    "steamos_compat_category":1,"steam_news":news("fresh"),
+                    "steam_dlc_appids":[22],"has_points_shop":true}),
+                json!(20),
+            ],
+        )
+        .await
+        .unwrap();
+        assert_eq!(saved["steam_appid"], 20);
+        assert_eq!(saved["deck_compat_category"], 3);
+        assert_eq!(saved["steamos_compat_category"], 1);
+        assert_eq!(saved["steam_news"][0]["id"], "fresh");
+        assert_eq!(saved["steam_dlc_appids"], json!([22]));
+        assert_eq!(saved["has_points_shop"], true);
+
+        // A mismatched trusted id is an untrusted save: the new match clears the fields.
+        assert_eq!(seed(8).await["steam_appid"], 10);
+        let untrusted = call(
+            "save_previewed_metadata",
+            vec![
+                json!(8),
+                json!({"title":"Game","steam_appid":20,"deck_compat_category":3,
+                    "steamos_compat_category":1,"steam_news":news("fresh"),
+                    "steam_dlc_appids":[22],"has_points_shop":true}),
+                json!(99),
+            ],
+        )
+        .await
+        .unwrap();
+        assert_eq!(untrusted["steam_appid"], 20);
+        for field in [
+            "deck_compat_category",
+            "steamos_compat_category",
+            "steam_machine_compat_category",
+            "steam_frame_compat_category",
+        ] {
+            assert!(untrusted[field].is_null(), "{field}");
+        }
+        assert_eq!(untrusted["steam_news"], json!([]));
+        assert_eq!(untrusted["steam_dlc_appids"], json!([]));
+        assert_eq!(untrusted["has_points_shop"], false);
+
+        // Refreshing the same match stores the previewed categories, not the stored ones.
+        assert_eq!(seed(9).await["steam_appid"], 10);
+        let refreshed = call(
+            "save_previewed_metadata",
+            vec![
+                json!(9),
+                json!({"title":"Game","steam_appid":10,"deck_compat_category":3,
+                    "steamos_compat_category":1,"steam_news":news("fresh")}),
+                json!(10),
+            ],
+        )
+        .await
+        .unwrap();
+        assert_eq!(refreshed["steam_appid"], 10);
+        assert_eq!(refreshed["deck_compat_category"], 3);
+        assert_eq!(refreshed["steamos_compat_category"], 1);
+        assert_eq!(refreshed["steam_news"][0]["id"], "fresh");
+
+        // Arity is exactly three arguments; a non-positive id means a plain save.
+        assert!(call("save_previewed_metadata", vec![json!(1), json!({"title":"Game"})])
+            .await
+            .is_err());
+        assert!(call(
+            "save_previewed_metadata",
+            vec![json!(1), json!({"title":"Game"}), json!(0), json!("extra")],
+        )
+        .await
+        .is_err());
+        assert_eq!(
+            call(
+                "save_previewed_metadata",
+                vec![json!(1), json!({"title":"Plain"}), json!(0)],
+            )
+            .await
+            .unwrap()["title"],
+            "Plain"
+        );
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn preview_fetched_metadata_dispatch_requires_two_arguments() {
+        let (root, state) = test_state(None).await;
+        let call = |args: Vec<Value>| {
+            dispatch(Arc::clone(&state), "preview_fetched_metadata", args)
+        };
+        // An empty slug fetches nothing, so no network is reached.
+        assert_eq!(call(vec![json!({"title":"Game"}), json!("")]).await.unwrap(), Value::Null);
+        assert!(call(vec![json!({"title":"Game"})]).await.is_err());
+        assert!(call(vec![json!({"title":"Game"}), json!(""), json!("extra")])
+            .await
+            .is_err());
+        // A non-object draft is rejected before fetching.
+        assert!(call(vec![json!("nope"), json!("")]).await.is_err());
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
     async fn removal_is_saved_on_disk_until_clear_cache() {
         let (root, state) = test_state(None).await;
         let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
@@ -695,6 +873,73 @@ mod tests {
         let full = read("get_metadata", vec![json!(1)]).await;
         assert_eq!(full["steam_news"][0]["id"], "n1");
         assert_eq!(state.store().await.unwrap().data()["metadata"]["1"], full);
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_language_arguments_are_optional_and_unknown_values_fall_back() {
+        let (root, state) = test_state(None).await;
+        // Old one- and two-argument callers still dispatch.
+        for (method, args) in [
+            ("enrich_steam_app", vec![json!(1), json!("metadata")]),
+            ("start_scan_missing", vec![json!([])]),
+            ("start_refresh_steam_activities", vec![json!([])]),
+            ("refresh_steam_activity_for_app", vec![json!(1)]),
+        ] {
+            dispatch(Arc::clone(&state), method, args).await.unwrap();
+        }
+        state.jobs.drain().await;
+        // An unknown language is accepted and normalized instead of rejecting the call.
+        for (method, args) in [
+            (
+                "enrich_steam_app",
+                vec![json!(1), json!("metadata"), json!("klingon")],
+            ),
+            ("start_scan_missing", vec![json!([]), json!("klingon")]),
+            (
+                "start_refresh_steam_activities",
+                vec![json!([]), json!("klingon")],
+            ),
+            (
+                "refresh_steam_activity_for_app",
+                vec![json!(1), json!("klingon")],
+            ),
+        ] {
+            dispatch(Arc::clone(&state), method, args).await.unwrap();
+        }
+        state.jobs.drain().await;
+        assert!(
+            dispatch(
+                Arc::clone(&state),
+                "enrich_steam_app",
+                vec![json!(1), json!("metadata"), json!("english"), json!("extra")],
+            )
+            .await
+            .is_err()
+        );
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_preview_dispatch_accepts_one_or_two_arguments() {
+        let (root, state) = test_state(None).await;
+        let call = |args: Vec<Value>| {
+            dispatch(Arc::clone(&state), "preview_steam_metadata", args)
+        };
+        // No explicit match, so neither call reaches the network.
+        assert_eq!(call(vec![json!({"title":"Game"})]).await.unwrap(), Value::Null);
+        assert_eq!(
+            call(vec![json!({"title":"Game"}), json!("klingon")])
+                .await
+                .unwrap(),
+            Value::Null
+        );
+        assert!(call(Vec::new()).await.is_err());
+        assert!(call(vec![json!({"title":"Game"}), json!("english"), json!("extra")])
+            .await
+            .is_err());
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

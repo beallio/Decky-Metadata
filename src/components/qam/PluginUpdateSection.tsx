@@ -17,6 +17,7 @@ import { CollapsibleSection } from "./CollapsibleSection";
 import { FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
 import { IoMdRefresh } from "react-icons/io";
 
+import { formatDateTime, translateBackendError, useT } from "../../i18n";
 import { PluginUpdateCandidate, UpdateChannel } from "../../types";
 import {
   isDeckyInstallerAvailable,
@@ -61,11 +62,13 @@ export function PluginUpdateSection({
   onToggleAutomaticUpdateChecks,
   onInstallVersionConfirmed
 }: PluginUpdateSectionProps) {
+  const t = useT();
   const {
     effectiveCurrentVersion,
     candidate,
     checkResult,
     errorMessage: errorMsg,
+    checkTimedOut,
     isChecking,
     isInstalling,
     isHandoffPending,
@@ -84,11 +87,11 @@ export function PluginUpdateSection({
     if (checked) {
       showModal(
         <ConfirmModal
-          strTitle="Enable Development Releases?"
+          strTitle={t("qam.update.enableDevelopmentTitle")}
           onOK={() => onToggleUpdateChannel(true)}
         >
           <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            Includes prerelease builds intended for testing. These builds may contain regressions.
+            {t("qam.update.receiveDevelopmentDescription")}
           </div>
         </ConfirmModal>
       );
@@ -101,11 +104,11 @@ export function PluginUpdateSection({
     if (targetCandidate.action === "downgrade_to_stable") {
       showModal(
         <ConfirmModal
-          strTitle="Revert to Stable?"
+          strTitle={t("qam.update.confirmRevertTitle")}
           onOK={() => handleInstall(targetCandidate)}
         >
           <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            Are you sure you want to revert to stable v{targetCandidate.version}? This is a downgrade and could result in data loss or configuration issues.
+            {t("qam.update.confirmRevertBody", { version: targetCandidate.version })}
           </div>
         </ConfirmModal>
       );
@@ -122,14 +125,14 @@ export function PluginUpdateSection({
   const getActionText = (c: PluginUpdateCandidate) => {
     switch (c.action) {
       case "move_to_stable":
-        return `Move to Stable v${c.version}`;
+        return t("qam.update.actionMoveToStable", { version: c.version });
       case "downgrade_to_stable":
-        return `Revert to Stable v${c.version}`;
+        return t("qam.update.actionRevertToStable", { version: c.version });
       default:
         if (c.channel === "development") {
-          return `Install development build v${c.version}`;
+          return t("qam.update.actionInstallDevelopment", { version: c.version });
         }
-        return `Update to v${c.version}`;
+        return t("qam.update.actionUpdate", { version: c.version });
     }
   };
 
@@ -138,58 +141,58 @@ export function PluginUpdateSection({
       return (
         <>
           <Spinner size="small" style={{ color: "#1a9fff" }} />
-          <span>Checking...</span>
+          <span>{t("qam.update.checking")}</span>
         </>
       );
     }
     if (errorMsg) {
       return (
         <span style={{ color: "#f87171" }}>
-          {errorMsg.includes("interrupted")
-            ? `Check interrupted after ${UPDATE_CHECK_UI_TIMEOUT_MS / 1000} seconds`
-            : "Failed to check"}
+          {checkTimedOut
+            ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+            : t("qam.update.checkFailed")}
         </span>
       );
     }
     if (checkResult?.status === "current") {
-      return <span style={{ color: "#4ade80" }}>Up to date</span>;
+      return <span style={{ color: "#4ade80" }}>{t("qam.update.upToDate")}</span>;
     }
     if (checkResult?.status === "available") {
       return (
         <span style={{ color: "#60a5fa" }}>
           {candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
-            ? "Latest available development build"
-            : "Update available"}
+            ? t("qam.update.latestDevelopment")
+            : t("qam.update.updateAvailable")}
         </span>
       );
     }
-    return <span>Never checked</span>;
+    return <span>{t("qam.update.neverChecked")}</span>;
   };
 
   const lastCheckedText = checkResult?.checked_at
-    ? `Last checked: ${new Date(checkResult.checked_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}`
+    ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
     : undefined;
 
   return (
-    <CollapsibleSection title="Updates" icon={<FaSyncAlt size={16} />}>
+    <CollapsibleSection title={t("qam.update.title")} icon={<FaSyncAlt size={16} />}>
       <PanelSectionRow>
         <Field
-          label="Installed Version"
+          label={t("qam.update.installedVersion")}
           childrenLayout="below"
           padding="standard"
           focusable={true}
           highlightOnFocus={true}
         >
           <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            {effectiveCurrentVersion} {isLocalBuild ? "(Local Build)" : ""}
+            {effectiveCurrentVersion} {isLocalBuild ? t("qam.update.localBuild") : ""}
           </div>
         </Field>
       </PanelSectionRow>
 
       <PanelSectionRow>
         <ToggleField
-          label="Receive development releases"
-          description="Includes prerelease builds intended for testing. These builds may contain regressions."
+          label={t("qam.update.receiveDevelopment")}
+          description={t("qam.update.receiveDevelopmentDescription")}
           checked={updateChannel === "development"}
           onChange={handleToggleChannel}
         />
@@ -197,8 +200,8 @@ export function PluginUpdateSection({
 
       <PanelSectionRow>
         <ToggleField
-          label="Automatically check for updates"
-          description="Checks in the background while the plugin is loaded."
+          label={t("qam.update.autoCheck")}
+          description={t("qam.update.autoCheckDescription")}
           checked={automaticUpdateChecks}
           onChange={onToggleAutomaticUpdateChecks}
         />
@@ -206,7 +209,7 @@ export function PluginUpdateSection({
 
       <PanelSectionRow>
         <Field
-          label="Status"
+          label={t("qam.update.status")}
           description={lastCheckedText}
           padding="standard"
           focusable={true}
@@ -225,10 +228,10 @@ export function PluginUpdateSection({
               <FaExclamationTriangle />
             </span>
             <div>
-              <div>{errorMsg}</div>
+              <div>{translateBackendError(errorMsg)}</div>
               {checkResult?.status === "failed" && checkResult.retry_after && (
                 <div>
-                  Try again after {new Date(checkResult.retry_after).toLocaleString()}
+                  {t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) })}
                 </div>
               )}
             </div>
@@ -239,16 +242,19 @@ export function PluginUpdateSection({
       {candidate && (
         <PanelSectionRow>
           <Field
-            label="Candidate"
+            label={t("qam.update.candidate")}
             padding="standard"
             focusable={true}
             highlightOnFocus={true}
           >
             <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
-            <div>New version: v{candidate.version} ({candidate.channel})</div>
+            <div>{t("qam.update.newVersion", {
+              version: candidate.version,
+              channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+            })}</div>
             {candidate.action === "downgrade_to_stable" && (
               <div style={{ color: "#f87171", fontSize: "12px", marginTop: "4px" }}>
-                Warning: Reverting to stable is a downgrade.
+                {t("qam.update.downgradeWarning")}
               </div>
             )}
             </div>
@@ -270,7 +276,7 @@ export function PluginUpdateSection({
                     <div style={spinnerSlotStyle}>
                       <Spinner size="small" style={{ color: "#1a9fff" }} />
                     </div>
-                    <span>{isHandoffPending ? "Waiting for Decky..." : "Preparing..."}</span>
+                    <span>{isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")}</span>
                   </>
                 ) : (
                   <span>{getActionText(candidate)}</span>
@@ -285,8 +291,8 @@ export function PluginUpdateSection({
           <Field focusable={true} highlightOnFocus={true} padding="standard">
             <div style={{ color: "#f87171", fontSize: "13px", marginBottom: "8px" }}>
               {isLocalBuild && candidate.channel !== "stable"
-                ? "Local builds can only self-update to a stable release. Install this development release manually from GitHub Releases."
-                : "Automatic installation is unavailable in this Decky environment. Install this release manually from GitHub Releases."}
+                ? t("qam.update.localBuildOnlyStable")
+                : t("qam.update.manualInstallUnavailable")}
             </div>
           </Field>
         </PanelSectionRow>
@@ -298,7 +304,7 @@ export function PluginUpdateSection({
               layout="below"
               onClick={() => Navigation.NavigateToExternalWeb(candidate.release_url)}
             >
-              View Release Notes
+              {t("qam.update.viewReleaseNotes")}
             </ButtonItem>
         </PanelSectionRow>
       )}
@@ -316,7 +322,7 @@ export function PluginUpdateSection({
               ) : (
                 <IoMdRefresh />
               )}
-              <span>Check now</span>
+              <span>{t("qam.update.checkNow")}</span>
             </div>
           </ButtonItem>
       </PanelSectionRow>

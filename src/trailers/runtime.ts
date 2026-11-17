@@ -19,13 +19,21 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
     const routeScanIntervalMs = 2400;
     const queuedScanDelayMs = 360;
+    // Steam's page-entry animation ends within about 0.5 s on a Deck.
+    const earlyBackdropMs = 1000;
     const directPlaybackTimeoutMs = 12000;
     const audioFadeDurationMs = 1200;
     const MAX_METADATA_BYTES = 1024 * 1024;
     const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
     const MAX_INIT_BYTES = 4 * 1024 * 1024;
     const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
-    const translations = injectedTranslations || { en: {} };
+    // Shared on window so a reused runtime picks up the strings of the latest install.
+    const translationsKey = `${runtimeKey}Translations`;
+    if (injectedTranslations) window[translationsKey] = injectedTranslations;
+    const rt = (key, vars = {}) => {
+        const template = window[translationsKey]?.[key] ?? key;
+        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
+    };
     let nativeStatusRowClass;
     let nativeBackgroundClass;
     const isStatusBand = (element) => {
@@ -50,14 +58,15 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
     };
     const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
-    const isPaintedStatusBand = (element) => {
+    const isPaintedStatusBand = (element, target) => {
         if (element.getAttribute?.("aria-hidden") === "true") return false;
         const band = element.getBoundingClientRect();
         for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
             if (ancestor.hidden) return false;
             const style = getComputedStyle(ancestor);
+            // Steam fades the whole entering page in from 0; an ancestor that also holds the art hides both alike.
             if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                (style.opacity !== undefined && Number(style.opacity) <= 0)) return false;
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ancestor.contains?.(target))) return false;
             if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky")) return false;
             if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
                 const bounds = ancestor.getBoundingClientRect();
@@ -190,7 +199,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     let activeIgnFallback = normalizeIgnFallback(nextIgnFallback);
     const ownerRecord = findOwnerRecord();
     if (activeOwnerId && (!ownerRecord || ownerRecord.ownerId !== activeOwnerId || ownerRecord.active !== true)) {
-        return { status: "Steam UI unavailable", runtimeMissing: true };
+        return { status: rt("steamUiUnavailable"), runtimeMissing: true };
     }
     if (ownerRecord && ownerRecord.ownerId === activeOwnerId && Number.isSafeInteger(ownerRecord.settingsRevision) && ownerRecord.settingsRevision > activeRevision) {
         activeRevision = ownerRecord.settingsRevision;
@@ -198,10 +207,6 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         activeIdentity = normalizeIdentity(ownerRecord.identity);
         activeIgnFallback = normalizeIgnFallback(ownerRecord.ignFallback);
     }
-    const rt = (key, vars = {}) => {
-        const template = translations.en?.[key] ?? key;
-        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
-    };
     const isLikelyNonSteamShortcutAppId = (appId) => Number.isInteger(appId) && appId >= 2147483648;
     const coerceAppId = (value) => {
         if (typeof value !== "number" && (typeof value !== "string" || !/^\d{1,10}$/.test(value))) return undefined;
@@ -283,7 +288,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         const offscreenPenalty = Math.max(0, Math.abs(rect.left) - 4) * 4 + Math.max(0, Math.abs(rect.top) - 8) * 4;
         return areaScore + topBias + heroBias + customHeroBias + backgroundBias - smallMediaPenalty - offscreenPenalty;
     };
-    function findHeroCandidate(preferredAppId = detectLocationAppId()) {
+    function findHeroCandidate(preferredAppId = detectLocationAppId(), within) {
         const selector = [
             "[style*='steam/apps']", "[style*='store_item_assets']", "[style*='/assets/']", "[style*='/customimages/']", "[style*='library_hero']",
             "img[src*='steam/apps']", "img[src*='store_item_assets']", "img[src*='/assets/']", "img[src*='/customimages/']", "img[src*='library_hero']", "a[href*='/app/']"
@@ -295,7 +300,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const appId = extractAppIdFromText(assetText);
             if (!appId || (preferredAppId && appId !== preferredAppId)) continue;
             const target = node.tagName === "IMG" ? node.parentElement : node;
-            if (!(target instanceof HTMLElement)) continue;
+            if (!(target instanceof HTMLElement) || (within && !target.closest?.(within))) continue;
             const score = scoreHeroElement(target, assetText);
             if (score > 0 && (!best || score > best.score)) best = { appId, element: target, score, assetText };
         }
@@ -324,6 +329,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             return logo;
         }
         return undefined;
+    }
+    function otherTrailerPluginActive() {
+        return Boolean(document.getElementById("trailerhero-style") ||
+            document.querySelector(".trailerhero-video") ||
+            document.getElementById("decky-trailerhero-style") ||
+            document.querySelector(".decky-trailerhero-video"));
     }
     function isProbablyGameDetailsPage() {
         if (!document.body) return false;
@@ -688,9 +699,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.rootRouteKey = readRootRouteKey();
             this.handleResize = () => {
                 if (this.destroyed || !this.settings.enabled) return;
-                if (this.currentTarget) {
+                const target = this.currentTarget ?? this.statusBackdrop?.target;
+                if (target) {
                     this.restoreStatusBackdrop();
-                    this.syncStatusBackdrop(this.currentTarget);
+                    this.syncStatusBackdrop(target);
                 }
                 this.queueScan();
             };
@@ -959,7 +971,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             const scaleY = hero.height / layoutHeight;
             const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
             const edge = hero.top + naturalHeight * scaleY;
-            let element = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            const hit = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            let element = hit;
             let bandHeight = 0;
             let reservationHeight = 0;
             let hasStatusBand = false;
@@ -968,7 +981,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 const height = this.statusBandLayoutHeight(element, hero, edge);
                 if (height) {
                     reservationHeight = height;
-                    if (isPaintedStatusBand(element)) {
+                    if (isPaintedStatusBand(element, target)) {
                         bandHeight = height;
                         break;
                     }
@@ -976,14 +989,19 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 element = element.parentElement;
             }
             if (!reservationHeight) {
-                // Occlusion must not change layout; paint still requires the hit-test above.
+                // Occlusion must not change layout; on-page cover still blocks paint.
                 isStatusBand(target);
                 const selector = '[data-sdh-ludusavi-status-row="true"]' +
                     (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
                 for (const row of document.querySelectorAll(selector)) {
                     hasStatusBand = true;
                     reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
-                    if (reservationHeight) break;
+                    if (!reservationHeight) continue;
+                    // Steam's outgoing page covers the entering one for its first frames; that cover is not occlusion.
+                    let page = row.parentElement;
+                    while (page && !page.contains(target)) page = page.parentElement;
+                    if (hit && page && !page.contains(hit) && isPaintedStatusBand(row, target)) bandHeight = reservationHeight;
+                    break;
                 }
             }
             if (!bandHeight) {
@@ -1006,6 +1024,38 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             // Extend the clipped artwork and trailer, not Steam's play-section layout.
             target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
         }
+        syncDetailBackdrop(target) {
+            if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
+        }
+        // The current detail route's hero; nothing when this runtime does not paint that route.
+        routeHero(within) {
+            if (!this.settings.enabled || !this.settings.detailEnabled || this.isHomeRoute()) return undefined;
+            const appId = detectLocationAppId();
+            const hero = appId ? findHeroCandidate(appId, within) : undefined;
+            return hero && hero.appId === appId ? hero : undefined;
+        }
+        // cleanupVideo restores the inline height, so a band kept for this hero is detached and re-attached around it.
+        // Route-derived: playback still needs identity, but the band must not wait for it, and a repeat scan writes nothing.
+        syncRouteBackdrop(hero = this.routeHero()) {
+            const keep = hero && this.statusBackdrop?.target === hero.element ? this.statusBackdrop : undefined;
+            if (keep) this.statusBackdrop = undefined;
+            this.cleanupVideo(true);
+            if (keep) this.statusBackdrop = keep;
+            if (hero) this.syncStatusBackdrop(hero.element);
+        }
+        // The queued scan lands after Steam's entry animation; size the art while the page is still entering.
+        syncEarlyBackdrop() {
+            const appId = detectLocationAppId();
+            const now = Date.now();
+            if (this.earlyBackdrop?.appId !== appId) this.earlyBackdrop = { appId, until: now + earlyBackdropMs };
+            if (!appId || now > this.earlyBackdrop.until) return;
+            // The same stops as scan(): a held launch, a hidden page, or TrailerHero owning the art.
+            if (this.launchHeld || document.hidden || otherTrailerPluginActive()) return;
+            isStatusBand(document.body); // resolves Steam's class names
+            // Library Home's background can show the same hero while it leaves; only the game page's header art counts.
+            const hero = this.routeHero(nativeBackgroundClass && "." + nativeBackgroundClass);
+            if (hero && this.statusBackdrop?.target !== hero.element) this.syncStatusBackdrop(hero.element);
+        }
         mount() {
             this.mounted = true;
             this.installStyle();
@@ -1024,7 +1074,10 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     if (!isCurrent()) return;
                     if (this.settings.homeEnabled && mutations.some((mutation) =>
                         mutation.type === "childList" || mutation.attributeName === "class")) this.refreshHomeSelection();
-                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) this.queueScan();
+                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) {
+                        this.queueScan();
+                        this.syncEarlyBackdrop();
+                    }
                 });
                 this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
                 if (document.head) {
@@ -1077,14 +1130,14 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.needsIgnFallback = false;
                 this.failedVisit = undefined;
                 this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
-                this.cleanupVideo(true);
+                this.syncRouteBackdrop();
             }
             if (fallbackChanged && !identityChanged) {
                 this.failedVisit = undefined;
                 this.needsIgnFallback = false;
                 if (this.ignFallback === undefined) {
                     this.steamUnavailable = false;
-                    this.cleanupVideo(true);
+                    this.syncRouteBackdrop();
                 }
             }
             if (previous.audioEnabled !== this.settings.audioEnabled) this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
@@ -1141,6 +1194,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             return true;
         }
         snapshot() {
+            const video = this.currentVideo;
             return {
                 appId: this.currentAppId,
                 sourceAppId: this.identity?.sourceAppId,
@@ -1152,7 +1206,11 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 displayWidth: this.displaySize?.width ?? null,
                 displayHeight: this.displaySize?.height ?? null,
                 targetHeight: this.targetHeight,
-                needsIgnFallback: this.needsIgnFallback
+                needsIgnFallback: this.needsIgnFallback,
+                // Still resolving or starting a source; bridge-only polling continues until this clears.
+                pending: this.pendingRequestToken !== undefined ||
+                    Boolean(video?.isConnected && !video.classList?.contains(visibleClass) &&
+                        !this.failedVisit && !this.needsIgnFallback)
             };
         }
         destroy() {
@@ -1396,12 +1454,9 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.cleanupVideo(true);
                 return;
             }
-            if (document.getElementById("trailerhero-style") ||
-                document.querySelector(".trailerhero-video") ||
-                document.getElementById("decky-trailerhero-style") ||
-                document.querySelector(".decky-trailerhero-video")) {
+            if (otherTrailerPluginActive()) {
                 this.cleanupVideo(true);
-                this.status = "Another trailer plugin is still active. Disable it and reload Steam UI before using Metadata trailers.";
+                this.status = rt("otherPluginActive");
                 return;
             }
             if (this.launchHeld) {
@@ -1410,7 +1465,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 return;
             }
             const home = this.isHomeRoute() && this.settings.homeEnabled;
-            if (!document.body || (!home && (!this.settings.detailEnabled || !isProbablyGameDetailsPage()))) {
+            // Route-derived, not identity-derived: the status band must not wait for the identity poll.
+            if (!document.body || (!home && (!this.settings.detailEnabled || !detectLocationAppId()))) {
                 this.failedVisit = undefined;
                 this.currentAppId = undefined;
                 this.currentGameTitle = undefined;
@@ -1427,7 +1483,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 this.needsIgnFallback = false;
                 this.currentAppId = undefined;
                 this.failedVisit = undefined;
-                this.cleanupVideo(true);
+                // Identity can arrive a poll interval late; the art takes its band height now instead of after it.
+                this.syncRouteBackdrop(!home && hero?.appId === appId ? hero : undefined);
                 this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
                 return;
             }
@@ -1453,6 +1510,8 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pageEnteredAt = home ? this.identity.enteredAt
                 : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
             this.currentTarget = hero.element;
+            // After cleanupVideo, so the art already has its final height when the page paints.
+            this.syncDetailBackdrop(hero.element);
             this.pendingAppId = appId;
             this.pendingTarget = hero.element;
             this.pendingRequestToken = token;
@@ -1489,6 +1548,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             this.pendingTarget = undefined;
             this.pendingRequestToken = undefined;
             if (!trailer.ok || !trailer.candidates?.length) {
+                // The art keeps its status-band height without a trailer; leaving the page restores it.
                 this.failedVisit = { appId, hero: hero.element };
                 this.releaseThemeBand();
                 this.status = trailer.error || rt("noGameTrailer");
@@ -1524,6 +1584,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                 if (!candidate.isCurrent()) return;
                 this.failedVisit = { appId, hero };
                 this.cleanupVideo(true);
+                this.syncDetailBackdrop(hero);
                 this.releaseThemeBand();
                 this.status = rt("autoplayBlocked");
             });
@@ -1632,7 +1693,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         attachVideo(target, appId, candidates, token, options = {}) {
             let index = 0;
             target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
-            if (this.identity?.view !== "home") this.syncStatusBackdrop(target);
+            this.syncDetailBackdrop(target);
             this.currentTarget = target;
             this.currentAppId = appId;
             this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
@@ -1683,12 +1744,14 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                             this.needsIgnFallback = true;
                             this.failedVisit = { appId, hero: target };
                             this.cleanupVideo();
+                            this.syncDetailBackdrop(target);
                             this.status = rt("searchIgnTrailer");
                             return;
                         }
                     }
                     this.failedVisit = { appId, hero: target };
                     this.cleanupVideo();
+                    this.syncDetailBackdrop(target);
                     this.releaseThemeBand();
                     this.status = rt("noGameTrailer");
                     return;
@@ -2182,7 +2245,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const existing = window[runtimeKey];
     if (existing) {
         if (existing.product !== "decky-metadata-trailer") {
-            return { status: "Metadata trailer runtime conflict", runtimeMissing: true };
+            return { status: rt("runtimeConflict"), runtimeMissing: true };
         }
         if (existing.ownerId === activeOwnerId && existing.version === runtimeVersion) {
             return existing.update(settings, activeRevision, activeIdentity, activeIgnFallback);

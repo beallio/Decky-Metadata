@@ -37,6 +37,16 @@ import { ProtonDbBadgesSection } from "./components/qam/ProtonDbBadgesSection";
 import { HltbSection } from "./components/qam/HltbSection";
 import { hltbController } from "./hltb/gameView";
 import { hltbStore } from "./hltb/store";
+import {
+  currentSteamLanguage,
+  formatDate,
+  formatNumber,
+  refreshLanguage,
+  t,
+  translateBackendError,
+  translateProgress,
+  useT,
+} from "./i18n";
 import * as log from "./log";
 import {
   compatibilityDefaultLoadedSnapshot,
@@ -182,12 +192,12 @@ const scanCompleteMessage = (progress: {
   failed?: number;
 }) => {
   const total = Number(progress.total || 0);
-  if (!total) return "Refresh complete";
+  if (!total) return t("panel.refreshComplete");
   const assigned = Number(progress.assigned || 0);
   const failed = Number(progress.failed || 0);
   return failed
-    ? `Refresh complete: ${assigned}/${total} saved, ${failed} not matched`
-    : `Refresh complete: ${assigned}/${total} saved`;
+    ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
+    : t("panel.scanCompleteSaved", { assigned, total });
 };
 
 const scanCompleteStatusKind = (progress: {
@@ -201,16 +211,19 @@ const scanCompleteStatusKind = (progress: {
   return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
-const epochToUsDate = (value?: number | null) => {
+const epochToDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
   if (Number.isNaN(date.getTime())) return "";
-  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  return `${mm}-${dd}-${date.getUTCFullYear()}`;
+  return formatDate(date);
 };
 
 export const Content = () => {
+  const t = useT();
+  // Steam can change its UI language while QAM is closed.
+  useEffect(() => {
+    void refreshLanguage();
+  }, []);
   const [trailerSnapshot, setTrailerSnapshot] = useState(trailerController.getSnapshot());
   useEffect(() => trailerController.subscribe(() => {
     setTrailerSnapshot(trailerController.getSnapshot());
@@ -241,6 +254,7 @@ export const Content = () => {
       : null;
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
+  const panelVisibilityCleanup = useRef<(() => void) | null>(null);
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
   const [missing, setMissing] = useState(0);
@@ -378,6 +392,21 @@ export const Content = () => {
   }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbBlurControl]);
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
+    // QAM keeps this tree mounted while closed, so only its document reports visibility.
+    panelVisibilityCleanup.current?.();
+    panelVisibilityCleanup.current = null;
+    if (element) {
+      const panelDocument = element.ownerDocument;
+      const syncPanelVisibility = () => trailerController.setPanelVisible(panelDocument.visibilityState === "visible");
+      panelDocument.addEventListener("visibilitychange", syncPanelVisibility);
+      syncPanelVisibility();
+      panelVisibilityCleanup.current = () => {
+        panelDocument.removeEventListener("visibilitychange", syncPanelVisibility);
+        trailerController.setPanelVisible(false);
+      };
+    } else {
+      trailerController.setPanelVisible(false);
+    }
     if (focusFrame.current !== null) {
       window.cancelAnimationFrame(focusFrame.current);
       focusFrame.current = null;
@@ -572,7 +601,9 @@ export const Content = () => {
           synchronizeCompatibilityPolicySave();
           return;
         }
-        setCompatibilityDefaultError(`Compatibility default could not be loaded: ${String(error)}`);
+        setCompatibilityDefaultError(t("panel.compatibilityDefaultLoadError", {
+          error: translateBackendError(error),
+        }));
         log.warn("bridge", "compatibility default load failed", error);
       });
     const unsubscribeRevision = subscribeCompatibilityRevision(() => {
@@ -703,12 +734,14 @@ export const Content = () => {
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
-      toastSuccess("Compatibility", "Default compatibility status saved");
+      toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilitySaved"));
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      const message = `Compatibility default could not be saved: ${String(error)}`;
+      const message = t("panel.compatibilitySaveError", {
+        error: translateBackendError(error),
+      });
       settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
-      toastError("Compatibility", message);
+      toastError(t("panel.toast.compatibility"), message);
       log.warn("bridge", "compatibility default save failed", error);
     }
   };
@@ -737,12 +770,14 @@ export const Content = () => {
       if (noteCompatibilityDropdownSelectionSaved()) {
         setCompatibilityDropdownReturnVersion((version) => version + 1);
       }
-      toastSuccess("Compatibility", "Default compatibility scope saved");
+      toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilityScopeSaved"));
     } catch (error) {
       if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-      const message = `Compatibility default scope could not be saved: ${String(error)}`;
+      const message = t("panel.compatibilityScopeSaveError", {
+        error: translateBackendError(error),
+      });
       settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
-      toastError("Compatibility", message);
+      toastError(t("panel.toast.compatibility"), message);
       log.warn("bridge", "compatibility default scope save failed", error);
     }
   };
@@ -762,7 +797,12 @@ export const Content = () => {
           saved
         );
         setUpdateChannelState(rolledBack.update_channel);
-        toastError("Updates", saved.message || "Update channel could not be saved");
+        toastError(
+          t("panel.toast.updates"),
+          saved.message
+            ? translateBackendError(saved.message)
+            : t("panel.updateChannelSaveError")
+        );
         return;
       }
       setUpdateChannelState(saved.update_channel);
@@ -788,8 +828,10 @@ export const Content = () => {
         );
         setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
         toastError(
-          "Updates",
-          saved.message || "Automatic update setting could not be saved"
+          t("panel.toast.updates"),
+          saved.message
+            ? translateBackendError(saved.message)
+            : t("panel.automaticUpdateSaveError")
         );
         return;
       }
@@ -809,11 +851,11 @@ export const Content = () => {
     const failScan = (error: unknown) => {
       setBusy(false);
       setScanStatusKind("error");
-      setScanMessage(String(error));
-      toastError("Metadata refresh failed", String(error));
+      setScanMessage(translateBackendError(error));
+      toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
     };
     try {
-      await startScanMissing(games);
+      await startScanMissing(games, await currentSteamLanguage());
     } catch (error) {
       failScan(error);
       return;
@@ -827,7 +869,7 @@ export const Content = () => {
         setScanStatusKind("active");
         setScanMessage(
           progress.current ||
-            progress.message ||
+            translateProgress(progress) ||
             `${progress.completed}/${progress.total}`
         );
         if (progress.running) {
@@ -839,7 +881,7 @@ export const Content = () => {
         setBusy(false);
         setScanStatusKind(scanCompleteStatusKind(progress));
         setScanMessage(scanCompleteMessage(progress));
-        toastSuccess("Metadata", "Refresh complete");
+        toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
       } catch (error) {
         if (!poll.stopped) failScan(error);
       }
@@ -856,15 +898,15 @@ export const Content = () => {
       hltbStore.reset();
       await refreshMetadataCache();
       if (games.length) {
-        void startScanMissing(games).catch((error) => {
+        void startScanMissing(games, await currentSteamLanguage()).catch((error) => {
           log.warn("bridge", "metadata scan start after clear cache failed", error);
         });
       }
       setMetadataCount(Object.keys(metadataCache).length);
       updateMissingCount(games);
-      toastSuccess("Cache", "Metadata cache cleared");
+      toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
     } catch (error) {
-      toastError("Cache clear failed", String(error));
+      toastError(t("panel.toast.cacheClearFailed"), translateBackendError(error));
     } finally {
       setCacheBusy(false);
     }
@@ -878,11 +920,11 @@ export const Content = () => {
       if (!result.ok) {
         throw new Error("Delisted index refresh failed");
       }
-      toastSuccess("Delisted Steam games", "Delisted Steam games updated");
+      toastSuccess(t("panel.toast.delisted"), t("panel.delistedUpdated"));
       await loadDelistedStatus();
     } catch (error) {
       log.warn("bridge", "delisted index refresh failed", error);
-      toastError("Delisted Steam games", "Delisted Steam games refresh failed");
+      toastError(t("panel.toast.delisted"), t("panel.delistedRefreshFailed"));
     } finally {
       setDelistedBusy(false);
     }
@@ -899,7 +941,7 @@ export const Content = () => {
       );
     } catch (error) {
       log.warn("bridge", "plugin log load failed", error);
-      toastError("Logs", "Plugin logs could not be loaded");
+      toastError(t("panel.toast.logs"), t("panel.logsLoadFailed"));
     } finally {
       setLogsBusy(false);
     }
@@ -907,11 +949,11 @@ export const Content = () => {
 
   const delistedCountText =
     delistedStatus?.count && delistedStatus.fetched_at
-      ? `Delisted games: ${delistedStatus.count.toLocaleString("en-US")}`
-      : "Delisted Steam games not downloaded yet";
+      ? t("panel.delistedCount", { value: formatNumber(delistedStatus.count) })
+      : t("panel.delistedNotDownloaded");
   const delistedDateText =
     delistedStatus?.count && delistedStatus.fetched_at
-      ? `Last updated: ${epochToUsDate(delistedStatus.fetched_at)}`
+      ? t("panel.delistedLastUpdated", { date: epochToDate(delistedStatus.fetched_at) })
       : "";
 
   // A native dropdown remounts QAM; reopen its section before restoring focus.
@@ -958,7 +1000,7 @@ export const Content = () => {
       <ProtonDbBadgesSection
         initiallyExpanded={returningDropdown === "protondb-cover-position"}
         snapshot={protonDbSnapshot}
-        onSettingsChange={(settings) => protonDbBadgeController.setSettings(settings)}
+        onSettingsChange={(update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings))}
         onCoverPositionChange={async (coverPosition) => {
           requestCompatibilityDropdownReturn("protondb-cover-position");
           noteCompatibilityDropdownControlUnmounted();
@@ -982,11 +1024,10 @@ export const Content = () => {
         initiallyExpanded={returningDropdown === "hltb-style" || returningDropdown === "hltb-blur"}
         settings={hltbSnapshot.settings}
         settingsLoaded={hltbSnapshot.settingsLoaded}
-        busy={hltbSnapshot.busy}
         conflict={hltbSnapshot.conflict}
         settingsError={hltbSnapshot.settingsError}
         cacheStatus={hltbSnapshot.cacheStatus}
-        onSettingsChange={(settings) => hltbController.setSettings(settings)}
+        onSettingsChange={(update) => hltbController.setSettings(update(hltbController.getSnapshot().settings))}
         onClearCache={() => hltbController.clearCache()}
         onStyleChange={async (style) => {
           requestCompatibilityDropdownReturn("hltb-style");

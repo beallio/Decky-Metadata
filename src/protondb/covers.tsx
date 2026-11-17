@@ -2,6 +2,7 @@ import { createModuleMapping, Router } from "@decky/ui";
 import { createElement, memo } from "react";
 import type { ReactNode } from "react";
 import { createPortal, flushSync } from "react-dom";
+import { useT } from "../i18n";
 import { getNativeOverview, getOverview, subscribeMetadataMatchChanges } from "../steam/core";
 import { findSteamUiDocumentMatch } from "../steam/steamUiHost";
 import type { ProtonDbBadgeSettings, ProtonDbTier } from "../types";
@@ -42,12 +43,14 @@ const CoverIcon = memo(function CoverIcon({ appId, sourceId, tier, position, foc
   appId: number; sourceId: number | null; tier: ProtonDbTier | null;
   position: ProtonDbBadgeSettings["coverPosition"]; focusOnly: boolean;
 }) {
+  const t = useT();
   if (!tier || sourceId === null) return null;
   const color = PROTONDB_COLORS[tier];
+  const tierLabel = protonDbTierLabel(tier);
   return (
     <div className={`decky-metadata-protondb-cover decky-metadata-protondb-cover--${position}${focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`}
       data-appid={appId} data-protondb-appid={sourceId} data-protondb-tier={tier}
-      role="img" aria-label={`ProtonDB ${protonDbTierLabel(tier)}`} title={`ProtonDB: ${protonDbTierLabel(tier)}`}>
+      role="img" aria-label={t("protondb.coverAriaLabel", { tier: tierLabel })} title={t("protondb.badge", { tier: tierLabel })}>
       <svg viewBox="0 0 512 512" width="16" height="16" aria-hidden="true">
         <circle cx="256" cy="256" r="36" fill={color} />
         <ellipse cx="256" cy="256" rx="220" ry="88" fill="none" stroke={color} strokeWidth="28" />

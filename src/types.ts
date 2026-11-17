@@ -120,6 +120,9 @@ export type UpdateRpcResult<T> = T | UpdateRpcStatus;
 /** Steam's packed Deck compatibility category values. */
 export type DeckCompatibilityCategory = 0 | 1 | 2 | 3;
 
+/** Steam's SteamOS compatibility categories. Valve maps Verified to Compatible. */
+export type SteamOsCompatibilityCategory = 0 | 1 | 2;
+
 /** Which native non-Steam shortcuts inherit a numeric global default. */
 export type CompatibilityDefaultScope = "steam" | "no-steam" | "metadata" | "all";
 
@@ -146,10 +149,15 @@ export type MetadataData = {
   hltb_game_id?: number | null;
   /** Steam's own cleaned display name, kept separate from editable title data. */
   steam_store_name?: string;
+  /** Steam language of the stored Steam-sourced description/genres; absent means English. */
+  metadata_language?: string;
   steam_dlc_appids: number[];
   has_points_shop: boolean;
   steam_store_state?: "available" | "delisted" | "unknown";
   deck_compat_category?: DeckCompatibilityCategory | null;
+  steamos_compat_category?: SteamOsCompatibilityCategory | null;
+  steam_machine_compat_category?: DeckCompatibilityCategory | null;
+  steam_frame_compat_category?: DeckCompatibilityCategory | null;
   /** A user-selected status. Null inherits the global default; "valve" bypasses it. */
   deck_compat_override?: DeckCompatibilityOverride;
   steam_store_url?: string;
@@ -475,6 +483,7 @@ export type NativePartnerEvent = {
   GetVisibilityStartTimeAndDateUnixSeconds: () => number;
   BHasForumTopicGID: () => boolean;
   GetForumTopicURL: () => string;
+  GetDiscussionURL: (vanityUrl?: string) => string;
   GetAppIDOrReferenceAppID: () => number;
   GetEventType: () => number;
   BIsVisibleEvent: () => boolean;
@@ -506,6 +515,8 @@ export type ScanProgress = {
   failed: number;
   current: string;
   message: string;
+  message_code?: string | null;
+  message_args?: Record<string, unknown> | null;
   error?: string;
 };
 
@@ -523,16 +534,46 @@ export enum StoreCategory {
   LocalCoOp = 392,
 }
 
+/** Steam information toggles in display order, mapped to their label keys. */
 export const CATEGORY_LABELS: Record<number, string> = {
-  [StoreCategory.SinglePlayer]: "Single-player",
-  [StoreCategory.MultiPlayer]: "Multiplayer",
-  [StoreCategory.CoOp]: "Co-op",
-  [StoreCategory.OnlineMultiPlayer]: "Online multiplayer",
-  [StoreCategory.OnlineCoOp]: "Online co-op",
-  [StoreCategory.LocalMultiPlayer]: "Local multiplayer",
-  [StoreCategory.LocalCoOp]: "Local co-op",
-  [StoreCategory.SplitScreen]: "Split screen",
-  [StoreCategory.FullController]: "Full controller support",
-  [StoreCategory.MMO]: "MMO",
-  [StoreCategory.Achievements]: "Achievements",
+  [StoreCategory.SinglePlayer]: "categories.singlePlayer",
+  [StoreCategory.MultiPlayer]: "categories.multiPlayer",
+  [StoreCategory.CoOp]: "categories.coOp",
+  [StoreCategory.OnlineMultiPlayer]: "categories.onlineMultiPlayer",
+  [StoreCategory.OnlineCoOp]: "categories.onlineCoOp",
+  [StoreCategory.LocalMultiPlayer]: "categories.localMultiPlayer",
+  [StoreCategory.LocalCoOp]: "categories.localCoOp",
+  [StoreCategory.SplitScreen]: "categories.splitScreen",
+  [StoreCategory.FullController]: "categories.fullController",
+  [StoreCategory.MMO]: "categories.mmo",
+  [StoreCategory.Achievements]: "categories.achievements",
+};
+
+export const categoryLabel = (category: number, t: (key: string) => string): string => {
+  switch (category) {
+    case StoreCategory.SinglePlayer:
+      return t("categories.singlePlayer");
+    case StoreCategory.MultiPlayer:
+      return t("categories.multiPlayer");
+    case StoreCategory.CoOp:
+      return t("categories.coOp");
+    case StoreCategory.OnlineMultiPlayer:
+      return t("categories.onlineMultiPlayer");
+    case StoreCategory.OnlineCoOp:
+      return t("categories.onlineCoOp");
+    case StoreCategory.LocalMultiPlayer:
+      return t("categories.localMultiPlayer");
+    case StoreCategory.LocalCoOp:
+      return t("categories.localCoOp");
+    case StoreCategory.SplitScreen:
+      return t("categories.splitScreen");
+    case StoreCategory.FullController:
+      return t("categories.fullController");
+    case StoreCategory.MMO:
+      return t("categories.mmo");
+    case StoreCategory.Achievements:
+      return t("categories.achievements");
+    default:
+      return "";
+  }
 };

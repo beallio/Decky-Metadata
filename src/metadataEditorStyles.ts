@@ -1,3 +1,5 @@
+import { colors } from "./tokens";
+
 export const editorRootClassName = "decky-metadata-editor";
 export const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 export const editorToolbarClearance = 104;
@@ -26,18 +28,6 @@ export const editorActionButtonStyle = {
   width: "100%",
   minWidth: 0,
   whiteSpace: "nowrap",
-} as const;
-
-export const editorSaveButtonStyle = {
-  ...editorActionButtonStyle,
-  color: "white",
-  background: "linear-gradient(180deg, #75b022 0%, #588a1b 100%)",
-} as const;
-
-export const editorRemoveButtonStyle = {
-  ...editorActionButtonStyle,
-  color: "white",
-  background: "linear-gradient(180deg, #d94b43 0%, #a92f2a 100%)",
 } as const;
 
 export const editorSearchRowStyle = {
@@ -165,6 +155,45 @@ export const editorAppIdButtonStyle = {
   whiteSpace: "nowrap",
 } as const;
 
+export const editorActionBarNativeStyle = {
+  ...editorActionBarStyle,
+  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 72px",
+} as const;
+
+export const editorMoreButtonStyle = {
+  width: "100%",
+  minWidth: 0,
+} as const;
+
+export const editorFieldMarkerBaseStyle = {
+  borderLeft: "3px solid transparent",
+  paddingLeft: 12,
+} as const;
+
+export const editorFieldEditedStyle = {
+  ...editorFieldMarkerBaseStyle,
+  borderLeftColor: colors.accent,
+} as const;
+
+export const editorFieldPreviewStyle = {
+  ...editorFieldMarkerBaseStyle,
+  borderLeftColor: colors.warning,
+} as const;
+
+export const editorFieldEditedLabelStyle = {
+  color: colors.accent,
+} as const;
+
+export const editorFieldPreviewLabelStyle = {
+  color: colors.warning,
+} as const;
+
+export const editorFieldMarkerTagStyle = {
+  marginLeft: 8,
+  fontSize: 12,
+  fontWeight: 600,
+} as const;
+
 export const editorScopedCss = `
 .decky-metadata-editor .decky-metadata-editor__focus-target,
 .decky-metadata-editor .decky-metadata-editor__category-grid > div,
@@ -173,38 +202,7 @@ export const editorScopedCss = `
   scroll-margin-bottom: 24px;
 }
 
-.decky-metadata-editor .decky-metadata-editor__action--save:hover {
-  color: white !important;
-  background: #75b022 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--remove:hover {
-  color: white !important;
-  background: #d94b43 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus,
-.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
-  color: white !important;
-  outline: 3px solid white !important;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px #1a9fff !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--save.gpfocus {
-  background: #75b022 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--remove:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__action--remove.gpfocus {
-  background: #d94b43 !important;
-}
-
-.decky-metadata-editor .decky-metadata-editor__action--save:disabled,
-.decky-metadata-editor .decky-metadata-editor__action--remove:disabled {
+.decky-metadata-editor .decky-metadata-editor__action--save:disabled {
   opacity: 0.55;
   filter: saturate(0.45);
 }

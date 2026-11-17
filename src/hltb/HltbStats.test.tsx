@@ -1,6 +1,12 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
+import type * as I18nModule from "../i18n";
 vi.mock("@decky/ui", () => ({ findClassModule: () => undefined, Focusable: "div", Navigation: { NavigateToExternalWeb: vi.fn() } }));
+// The component is called directly here, so its hook must not need a React renderer.
+vi.mock("../i18n", async (importOriginal) => {
+  const actual = await importOriginal<typeof I18nModule>();
+  return { ...actual, useT: () => actual.t };
+});
 import { Navigation } from "@decky/ui";
 import { HltbStats } from "./HltbStats";
 import { DEFAULT_HLTB_SETTINGS } from "./settings";
@@ -21,7 +27,7 @@ function text(node: React.ReactNode): string {
 describe("HLTB stats", () => {
   it("formats hours and opens the details page", () => {
     const tree = render();
-    expect(text(tree)).toContain("1.0 hours");
+    expect(text(tree)).toContain("1.0 hour");
     expect(text(tree)).toContain("1.5 hours");
     expect(text(tree)).toContain("-- hours");
     const button = nodes(tree).find(node => node.props.onActivate)!;
@@ -40,5 +46,16 @@ describe("HLTB stats", () => {
     expect(text(tree)).not.toContain("Completionist");
     expect(text(tree)).toContain("Main + Extras");
     expect(text(tree)).not.toContain("Details");
+  });
+  it("takes layout space below the header only for the bottom styles when asked", () => {
+    const className = (style: (typeof DEFAULT_HLTB_SETTINGS)["style"], pushPlayDown: boolean) =>
+      render({ settings: { ...DEFAULT_HLTB_SETTINGS, style, pushPlayDown } })!.props.className as string;
+    for (const style of ["default", "clean-default"] as const) {
+      expect(className(style, true)).toContain("decky-metadata-hltb-flow");
+      expect(className(style, false)).not.toContain("decky-metadata-hltb-flow");
+    }
+    for (const style of ["clean", "clean-left"] as const) {
+      expect(className(style, true)).not.toContain("decky-metadata-hltb-flow");
+    }
   });
 });

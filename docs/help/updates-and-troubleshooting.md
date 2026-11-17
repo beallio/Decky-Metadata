@@ -10,6 +10,8 @@ By default, the updater checks stable releases. Turn on **Receive development re
 
 If the updater cannot install a candidate in your Decky environment, open **View Release Notes** and install the release ZIP manually. For the stable release, download `Decky-Metadata.zip` from the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then use Decky's **Developer** settings and **Install Plugin from ZIP File** to choose the ZIP with **Browse** and select **Install**. Do not unzip it. The [README installation steps](../../README.md#install) show the full path through Decky.
 
+Version 0.6.0 changed how the plugin saves your game details. When you go back to a version older than 0.6.0 with the plugin's updater, it first saves your game details in a form that the older version can read. A version older than 0.6.0 that you install by hand from a ZIP file does not show your saved details. Older versions from 0.6.0 onward read your details normally.
+
 ### Development ZIPs are not the same updater channel
 
 The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build) provides a development ZIP for manual sideload testing. That fixed tag is not an in-plugin updater source. **Receive development releases** instead includes versioned development prereleases (`vX.Y.Z-dev.g<sha>`). Both are testing builds and may be less stable than a stable release. The updater may not automatically install a development release over a local `+` build.
@@ -81,7 +83,7 @@ plugin supplies that feature.
 
 ## Share useful troubleshooting information
 
-In **Logs**, select **View Logs** to see recent plugin logs. Turn on **Debug Logging** to enable more verbose troubleshooting logs, reproduce the issue, then include the logs with your report. Turn it off when you no longer need verbose logging.
+In **Logs**, select **View Logs** to see recent plugin logs. Turn on **Debug Logging** to enable more verbose troubleshooting logs, reproduce the issue, then include the logs with your report. Turn it off when you no longer need verbose logging. Decky Loader's own debug setting also records the plugin's debug messages, even while **Debug Logging** is off.
 
 Include the values shown in **Versions** as well: Decky Metadata, Decky, and SteamOS. If an update check fails, include the message shown in **Status** and any retry time shown with it. The status may say **Check interrupted** or **Failed to check**; if a retry time is displayed, wait until then before trying again.
 

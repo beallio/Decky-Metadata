@@ -1,6 +1,7 @@
 import { PanelSectionRow, TextField } from "@decky/ui";
 import { useRef, useState } from "react";
 import { searchHltbGames, type HltbSearchResult } from "../backend";
+import { formatHours, translateBackendError, useT } from "../i18n";
 import {
   editorFocusTargetClassName,
   editorSearchButtonStyle,
@@ -18,6 +19,7 @@ type Props = {
 
 /** Search HowLongToBeat by name and pick the game whose times this game shows. */
 export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
+  const t = useT();
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<HltbSearchResult[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -35,7 +37,7 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
     } catch (searchError) {
       if (request === requestRef.current) {
         setResults(null);
-        setError(String(searchError));
+        setError(translateBackendError(searchError));
       }
     } finally {
       if (request === requestRef.current) setSearching(false);
@@ -58,14 +60,14 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
             onClick={() => void search()}
             style={editorSearchButtonStyle}
           >
-            {searching ? "Searching..." : "Search HLTB"}
+            {searching ? t("hltb.search.searching") : t("hltb.search.action")}
           </FocusableButton>
         </div>
       </PanelSectionRow>
       <PanelSectionRow>
         <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
           {error ? <div style={compactTextStyle}>{error}</div> : null}
-          {!searching && results?.length === 0 ? <div style={compactTextStyle}>{"HowLongToBeat found no games."}</div> : null}
+          {!searching && results?.length === 0 ? <div style={compactTextStyle}>{t("hltb.search.noGames")}</div> : null}
           {results?.map((result) => (
             <FocusableButton
               key={result.game_id}
@@ -77,7 +79,7 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
               <div style={rowStackStyle}>
                 <b>{result.game_name}</b>
                 <span style={compactTextStyle}>
-                  {result.main_seconds > 0 ? `Main Story ${(result.main_seconds / 3600).toFixed(1)} hours` : "No Main Story time yet"}
+                  {result.main_seconds > 0 ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) }) : t("hltb.search.noMainStory")}
                 </span>
               </div>
             </FocusableButton>

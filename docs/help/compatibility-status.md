@@ -31,7 +31,7 @@ With a manual default, only games in the selected group inherit it; a per-game c
 
 ## Choose a status for one game
 
-Open the game's menu, select **Decky metadata...**, and find **Compatibility status**. Choose one of these options:
+Open the game's menu, select **Change Metadata...**, and find **Compatibility status**. Choose one of these options:
 
 - **Use global default** follows your Quick Access Menu default when the game is included in **Apply default to**. If it is outside that group, it uses Steam's status when available or keeps its original status.
 - **Follow Valve** ignores your default and scope for this game. It uses the matched Steam game's status, or keeps the original status if no Steam status is available.
@@ -46,6 +46,8 @@ Other eligible games update when you change the default or its scope. If the gam
 ## What the status means
 
 A status you choose is your label. It does not mean Valve tested or certified the game, guarantee that it will run, or report emulator performance.
+
+On a SteamOS device that is not a Steam Deck, such as the Lenovo Legion Go S, Steam shows a **SteamOS Compatibility** row. Decky Metadata sets that row too. SteamOS has only **Compatible**, **Unsupported**, and **Unknown**, so **Verified** and **Playable** show as **Compatible** there. Steam Machine and Steam Frame devices use their own rows in the same way.
 
 For implementation-level details, see the [compatibility status technical reference](../specs/compatibility-status.md).
 

@@ -446,6 +446,214 @@ test('An early theme reservation is adopted before trailer attachment and never 
   assert.equal(h.hero.offsetHeight, 430, 'a final lookup failure returns the original theme reservation');
 });
 
+function bandHeroHarness() {
+  const h = pendingHeroHarness();
+  const naturalHeight = 400;
+  const bandHeight = 52;
+  const band = {
+    textContent: 'Steam Cloud: Up to date', parentElement: null, offsetHeight: bandHeight,
+    classList: { contains: name => name === 'native-cloud-row' },
+    getAttribute: () => null,
+    getBoundingClientRect: () => ({ top: naturalHeight, left: 0, width: 1000, height: bandHeight,
+      right: 1000, bottom: naturalHeight + bandHeight }),
+  };
+  const label = { parentElement: band, getBoundingClientRect: () => ({
+    top: naturalHeight + 4, left: 400, width: 200, height: 22,
+  }) };
+  h.window.DFL = { playSectionClasses: { CloudStatusRow: 'native-cloud-row' } };
+  h.hero.style = {
+    height: '400px',
+    getPropertyValue(name) { return this[name] || ''; },
+    getPropertyPriority() { return ''; },
+    setProperty(name, value) { this[name] = value; },
+    removeProperty(name) { this[name] = ''; },
+  };
+  Object.defineProperty(h.hero, 'offsetHeight', {
+    get: () => Number.parseFloat(h.hero.style.height) || naturalHeight,
+  });
+  h.hero.getBoundingClientRect = () => ({
+    width: 1000, height: h.hero.offsetHeight, top: 0, left: 0, right: 1000, bottom: h.hero.offsetHeight,
+  });
+  h.hero.insertBefore = video => { video.isConnected = true; video.parentElement = h.hero; };
+  h.document.elementFromPoint = (x, y) => x === 500 && y >= naturalHeight && y < naturalHeight + 6 ? label : null;
+  h.document.createElement = tag => tag === 'video' ? {
+    isConnected: false, paused: true, currentTime: 0, dataset: {},
+    classList: { add() {}, remove() {}, contains: () => false },
+    addEventListener() {}, removeEventListener() {}, setAttribute() {}, removeAttribute() {},
+    load() {}, play: () => Promise.resolve(), pause() {}, remove() { this.isConnected = false; },
+  } : { style: {}, appendChild() {}, addEventListener() {} };
+  return h;
+}
+
+test('The header art takes its status-band height on the first scan, before the trailer lookup resolves', async () => {
+  const h = bandHeroHarness();
+  const { promise, resolve } = Promise.withResolvers();
+  h.runtime.getTrailer = () => promise;
+  const scanning = h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 452, 'the first scan extends the art without waiting for the lookup');
+  assert.equal(h.hero.style.height, '452px');
+  assert.equal(h.runtime.snapshot().pending, true, 'the Steam lookup is still in flight');
+  resolve({ ok: true, name: 'Fixture trailer',
+    candidates: [{ format: 'mp4', url: movie.mp4[720], height: 720 }] });
+  await scanning;
+  assert.ok(h.runtime.currentVideo, 'the trailer still attaches');
+  assert.equal(h.hero.offsetHeight, 452, 'attachment must not add a second band height');
+  assert.equal(h.runtime.statusBackdrop.bandHeight, 52);
+  h.runtime.destroy();
+});
+
+test('A game without a trailer keeps the extended art and leaving the page restores it', async () => {
+  const h = bandHeroHarness();
+  h.runtime.ignFallback = null;
+  h.runtime.getTrailer = async () => ({ ok: false, error: 'No movie' });
+  await h.runtime.scan();
+  assert.ok(h.runtime.failedVisit);
+  assert.equal(h.hero.offsetHeight, 452, 'the art keeps the band height without a trailer');
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 452, 'a rescan must not restore and re-extend');
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.hero.style.height, '400px', 'leaving the page restores the original inline height');
+});
+
+test('A video that fails before playback keeps the extended art on the same page', async () => {
+  const h = bandHeroHarness();
+  h.runtime.ignFallback = null;
+  h.runtime.getTrailer = () => new Promise(() => {});
+  void h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 452);
+  h.runtime.attachVideo(h.hero, 570, [], h.runtime.requestToken);
+  assert.ok(h.runtime.failedVisit);
+  assert.equal(h.hero.offsetHeight, 452, 'a failed video must not shrink the art back');
+});
+
+test('A detail route extends the header art before the controller delivers its identity', async () => {
+  const h = bandHeroHarness();
+  h.runtime.identity = undefined;
+  h.runtime.getTrailer = () => new Promise(() => {});
+  await h.runtime.scan();
+  assert.equal(h.runtime.snapshot().status, 'waitingGamePage', 'no identity means no playback');
+  assert.equal(h.hero.style.height, '452px', 'the route alone extends the art');
+  assert.equal(h.hero.offsetHeight, 452);
+});
+
+test('Repeated scans while the identity is missing write the header art once', async () => {
+  const h = bandHeroHarness();
+  h.runtime.identity = undefined;
+  h.runtime.getTrailer = () => new Promise(() => {});
+  const writes = [];
+  const setProperty = h.hero.style.setProperty;
+  h.hero.style.setProperty = function (name, value, priority) {
+    writes.push(`${name}:${value}`);
+    return setProperty.call(this, name, value, priority);
+  };
+  await h.runtime.scan();
+  await h.runtime.scan();
+  await h.runtime.scan();
+  assert.deepEqual(writes, ['height:452px'], 'our own restore/extend loop must not feed the mutation observer');
+  assert.equal(h.hero.offsetHeight, 452);
+  assert.equal(h.runtime.statusBackdrop.naturalHeight, 400);
+});
+
+test('Identity arriving through update keeps the band height in the same task and leaving restores it', async () => {
+  const h = bandHeroHarness();
+  h.runtime.identity = undefined;
+  h.runtime.getTrailer = () => new Promise(() => {});
+  await h.runtime.scan();
+  assert.equal(h.hero.style.height, '452px');
+
+  h.runtime.update({ ...h.runtime.settings }, 1, { view: 'detail', pageAppId: 570, sourceAppId: 570 });
+  assert.equal(h.hero.style.height, '452px', 'identity arrival must not restore the art even for one frame');
+  assert.equal(h.runtime.statusBackdrop.naturalHeight, 400, 'the band height is never counted twice');
+  assert.equal(h.runtime.statusBackdrop.bandHeight, 52);
+  await h.runtime.scan();
+  assert.equal(h.hero.offsetHeight, 452, 'the next scan keeps the band height');
+
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.hero.style.height, '400px', 'leaving the detail route restores the inline height');
+});
+
+// The status row inside one page container, as Steam lays out an entering game page.
+function enteringPageBand(h) {
+  const band = h.document.elementFromPoint(500, 400).parentElement;
+  const rowWrapper = { parentElement: null, contains: node => node === band };
+  const onPage = { parentElement: null };
+  const page = { parentElement: null, contains: node => [h.hero, band, rowWrapper, onPage].includes(node) };
+  band.parentElement = rowWrapper;
+  rowWrapper.parentElement = page;
+  onPage.parentElement = page;
+  const query = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('native-cloud-row') ? [band] : query(selector);
+  const opacity = new Map();
+  const style = h.context.getComputedStyle;
+  h.context.getComputedStyle = element => ({ ...style(element), opacity: opacity.get(element) ?? '1' });
+  return { band, rowWrapper, onPage, page, opacity };
+}
+
+test('Steam\'s outgoing page over the entering one does not stop the band; cover on the same page does', () => {
+  const h = bandHeroHarness();
+  const { onPage, page, rowWrapper, opacity } = enteringPageBand(h);
+  const outgoing = { parentElement: null };
+  opacity.set(page, '0');
+  h.document.elementFromPoint = () => outgoing;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '452px', 'the transparent entering page takes its final art height');
+
+  h.document.elementFromPoint = () => onPage;
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '400px', 'an element on the same page still hides the row');
+
+  h.document.elementFromPoint = () => outgoing;
+  opacity.set(rowWrapper, '0');
+  h.runtime.syncStatusBackdrop(h.hero);
+  assert.equal(h.hero.style.height, '400px', 'a transparent row container without the art still hides the row');
+});
+
+test('A page mutation sizes the header art before the queued scan, only while the page enters', () => {
+  const h = bandHeroHarness();
+  enteringPageBand(h);
+  // Library Home leaves a larger background with the same hero while the game page enters.
+  h.window.DFL.appDetailsHeaderClasses = { HeaderBackgroundImage: 'native-background' };
+  h.hero.closest = selector => selector === '.native-background' ? h.hero : null;
+  const home = Object.assign(new h.hero.constructor(), { closest: () => null });
+  home.getBoundingClientRect = () => ({ width: 1100, height: 700, top: 0, left: 0, right: 1100, bottom: 700 });
+  const query = h.document.querySelectorAll;
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [home, h.hero] : query(selector);
+  let now = 1_000_000;
+  h.context.Date = class extends Date { static now() { return now; } };
+  let observe;
+  h.context.MutationObserver = class { constructor(callback) { observe ??= callback; } observe() {} disconnect() {} };
+  h.runtime.mounted = true;
+  h.runtime.startMonitoring();
+  const mutate = () => observe([{ type: 'childList', target: h.document.body }]);
+  mutate();
+  assert.equal(h.hero.style.height, '452px', 'the first mutation extends the art; the scan is still queued');
+
+  h.runtime.restoreStatusBackdrop();
+  now += 1001;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'after the entry window only the queued scan measures the page');
+
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  mutate();
+  h.window.location = new URL('https://steamloopback.host/routes/library/app/570');
+  mutate();
+  assert.equal(h.hero.style.height, '452px', 'entering the page again opens a new window');
+
+  h.runtime.restoreStatusBackdrop();
+  h.runtime.launchHeld = true;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'a held launch keeps the art as launch cleanup left it');
+  h.runtime.launchHeld = false;
+  h.document.getElementById = id => id === 'trailerhero-style' ? {} : null;
+  mutate();
+  assert.equal(h.hero.style.height, '400px', 'TrailerHero owns the art while it is active');
+  h.runtime.destroy();
+});
+
 test('Y toggles a clean trailer view without restarting playback and restores the game page on exit', async () => {
   const clock = fakeClock();
   const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
@@ -2280,4 +2488,67 @@ test('Home tracking can resume a selected controller card when enabled from a po
   await Promise.resolve();
   assert.equal(h.runtime.homeAppId, 570);
   h.runtime.destroy();
+});
+
+function pendingHeroHarness(fetchReply) {
+  const h = setup({ fetchReply });
+  class Hero {
+    constructor() {
+      this.tagName = 'DIV';
+      this.className = 'library-hero';
+      this.asset = 'url(https://steam.test/steam/apps/570/library_hero.jpg)';
+      this.classList = { add() {}, remove() {}, contains: () => false };
+    }
+    getAttribute(name) { return name === 'style' ? this.asset : ''; }
+    getBoundingClientRect() { return { width: 1000, height: 400, top: 0, left: 0, right: 1000, bottom: 400 }; }
+  }
+  const hero = new Hero();
+  h.document.body = {};
+  h.document.querySelectorAll = selector => selector.includes('steam/apps') ? [hero] : [];
+  h.context.HTMLElement = Hero;
+  h.context.getComputedStyle = element => ({ backgroundImage: element.asset, display: 'block', visibility: 'visible' });
+  return { ...h, hero };
+}
+
+test('snapshot pending is true while the Steam movie request is in flight', async () => {
+  const { promise, resolve } = Promise.withResolvers();
+  const h = pendingHeroHarness(() => promise);
+  h.runtime.attachVideo = () => {};
+  const scanning = h.runtime.scan();
+  assert.equal(h.runtime.snapshot().pending, true, 'an unresolved Steam lookup is pending');
+  resolve(responseBody(JSON.stringify({ 570: { data: { movies: [] } } })));
+  await scanning;
+  assert.equal(h.runtime.snapshot().needsIgnFallback, true);
+  assert.equal(h.runtime.snapshot().pending, false, 'waiting for the controller IGN fallback is not pending');
+});
+
+test('snapshot pending covers attach-to-reveal and clears once the trailer is visible', async () => {
+  const clock = fakeClock();
+  const h = await readyDirectTrailer({ clock, pageEnteredAt: clock.now });
+  assert.equal(h.runtime.snapshot().pending, true, 'an attached but unrevealed video is pending');
+  assert.equal(h.video.paused, false);
+  assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), false);
+  clock.advance(3000);
+  assert.equal(h.video.classList.contains('decky-metadata-trailer-visible'), true);
+  assert.equal(h.runtime.snapshot().pending, false, 'a visible playing trailer is not pending');
+});
+
+test('snapshot pending clears after a terminal no-trailer failure', async () => {
+  const h = pendingHeroHarness(async () => {
+    throw new Error('Steam lookup failed');
+  });
+  h.runtime.ignFallback = null;
+  await h.runtime.scan();
+  assert.ok(h.runtime.failedVisit);
+  assert.equal(h.runtime.currentVideo, undefined);
+  assert.equal(h.runtime.snapshot().pending, false);
+});
+
+test('snapshot pending is false while waiting for a game page', async () => {
+  const h = pendingHeroHarness(async () => responseBody(JSON.stringify({ 570: { data: { movies: [movie] } } })));
+  h.window.location = new URL('https://steamloopback.host/routes/library/home');
+  h.document.URL = h.window.location.href;
+  await h.runtime.scan();
+  assert.equal(h.runtime.snapshot().status, 'waitingGamePage');
+  assert.equal(h.runtime.snapshot().pending, false);
 });

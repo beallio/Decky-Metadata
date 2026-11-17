@@ -312,17 +312,17 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
               if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
               }
-              // A completed editor Save wrote this overview directly while
-              // Steam still had editor route tokens. Publish its replacement
-              // only after this exact Game Info tree has re-entered under the
-              // concrete shield, so native collections update without losing
-              // the matched rich render.
-              publishDeferredEditorCompatibility(appId);
             } else {
               if (isBypassTraceEnabled()) {
                 void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
               }
             }
+            // An editor Save or Remove wrote this overview while Steam still
+            // had editor route tokens. Publish its replacement only after this
+            // exact Game Info tree has re-entered (under the shield when a
+            // record exists). Remove deletes the record, but the restored
+            // non-observable compat nibble still needs this publication.
+            publishDeferredEditorCompatibility(appId);
             void ensureMetadataCache().then(() => {
               if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
               if (applyMetadata(appId)) notifyCompatibilityRevision();

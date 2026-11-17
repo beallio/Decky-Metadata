@@ -193,9 +193,9 @@ before testing, and restore them after the checks.
    the native Play section and its root: background and opacity must match.
    HLTB never writes the native section's inline styles, and its bounds stay
    the same except in one case: in **"Clean" Default** with a blurred Play bar
-   (Clean Gameview **Blur**) and a blur selection other than **None**, HLTB's
-   own stylesheet extends the Play section's box up behind the times, so one
-   blur covers both rows. The HLTB
+   (Clean Gameview **Blur**), a blur selection other than **None**, and
+   **Push Play button down** off, HLTB's own stylesheet extends the Play
+   section's box up behind the times, so one blur covers both rows. The HLTB
    row then draws no surface, the Play content stays in place, and removing the
    row removes the rule. Confirm on Brotato that the border between the rows
    shows no seam.
@@ -203,8 +203,30 @@ before testing, and restore them after the checks.
    behind HLTB; a tint change or computed `backdrop-filter` alone is not proof.
    Keep Steam's 3D rendering context through both HLTB wrappers: flattening an
    intermediate wrapper can silently stop the filter from sampling the header.
-4. Check all four HLTB layouts. The times must stay visible, and Play must stay
-   in place. Restore the original trailer preference and all other test changes.
+4. Check all four HLTB layouts. The times must stay visible. With **Push Play
+   button down** off (the default), Play must stay in place. For **Default** and
+   **"Clean" Default** with it on, the times must sit below the header image in
+   their own row and Play must move down by at most the row's height, only as
+   far as needed for the Play button to end a few pixels above the footer bar.
+   With plenty of room it moves by the full row; with less room it moves less;
+   with no room the times stay on the header image and Play does not move. With
+   a theme that changes the footer (Clean Gameview's footer options, Art Hero's
+   **No Footer**), make the footer shorter or hidden and confirm the push grows
+   back, then make it taller and confirm the push shrinks. Turn **Keep Play
+   above the footer** off and confirm Play moves by the full row again, even
+   when that would put it behind the footer. Then confirm on the controller
+   that D-pad down from the times reaches the Play button. Both push-down
+   toggles are hidden for the two **"Clean"** styles.
+5. Make a save status bar sit at the bottom of the header image: a Steam Cloud
+   row, or the SDH-Ludusavi **Status** row. With **Push Play button down** on,
+   the times must overlay the bottom of the header image and Play must stay in
+   place. The trailer or artwork must still reach the bottom of the status bar,
+   with no seam above it.
+6. Show the status bar after the page has loaded, for example by toggling the
+   SDH-Ludusavi **Status** row. The layout must switch once to the overlay and
+   must not flicker. Hide the bar again and confirm that the times return to
+   their own row and Play moves down. Restore the original trailer preference
+   and all other test changes.
 
 The frontend surface regression covers preference, theme-update and cleanup
 behavior without writing native styles. It does not replace these rendering
@@ -248,8 +270,12 @@ identify that reservation. Steam scales the entering page, so
 original artwork edge into viewport coordinates for hit-testing. Rescans retain
 the original layout height; a change in page scale must not shrink the target,
 add another band, or briefly restore its shorter height. Layout-row discovery
-does not depend on hit-testing: temporary coverage preserves valid layout space
-without claiming a paintable backdrop. A native-window shared reservation record
+does not depend on hit-testing. Cover from an element on the same page preserves
+valid layout space without claiming a paintable backdrop. Steam's outgoing page
+covers the entering one, and the entering page fades in from opacity 0, so
+neither blocks the band: page mutations size the art during the first second of
+entry, before the queued scan, and an ancestor that also holds the art does not
+hide the row by opacity. A native-window shared reservation record
 saves the first genuine inline variable value and restores it only for its current
 owner. Trailer disable or final playback/lookup failure releases that ownership.
 Animated route exit retains it until the header disconnects.
@@ -315,7 +341,7 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
    content and links while other eligible shortcuts and their native filter
    membership update. Change tabs and return to confirm Verified. Repeat back
    to Automatic. Closing QAM or a context-menu overlay must not release the
-   held value; opening **Decky metadata...** must release it, and a later editor
+   held value; opening **Change Metadata...** must release it, and a later editor
    Save must take priority. Repeat changes before exit and verify only the
    latest result applies. Navigate from game A to game B, replace/delete only a
    disposable pending fixture, and confirm no state leaks or recreation occur.
