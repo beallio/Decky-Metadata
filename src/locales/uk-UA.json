@@ -427,8 +427,26 @@
   },
   "editor": {
     "save": "Зберегти",
+    "saveCount": "Зберегти ({{count}})",
     "removeMetadata": "Видалити метадані",
     "done": "Готово",
+    "moreOptions": "Більше параметрів",
+    "moreMenuTitle": "Метадані",
+    "refreshFromSteam": "Оновити зі Steam",
+    "fieldEdited": "Змінено",
+    "fieldFromSteam": "Зі Steam, не збережено",
+    "steamDataChanged": "Дані Steam, не показані у формі (скриншоти, новини, сумісність), змінилися й не збережені.",
+    "unsaved": {
+      "title": "Зберегти зміни?",
+      "body": "У вас є незбережені зміни метаданих цієї гри.",
+      "discard": "Відхилити",
+      "cancel": "Скасувати"
+    },
+    "removeConfirm": {
+      "title": "Видалити метадані?",
+      "body": "Це видалить усі збережені метадані для {{name}}. Скасувати цю дію неможливо.",
+      "cancel": "Скасувати"
+    },
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
     "searchIgn": "Шукати метадані в IGN",
     "search": "Шукати",
@@ -441,7 +459,9 @@
       "developers": "Розробники",
       "publishers": "Видавці",
       "releaseDate": "Дата виходу",
-      "rating": "Рейтинг"
+      "rating": "Рейтинг",
+      "categories": "Категорії",
+      "steamData": "Дані Steam, не показані у формі"
     },
     "compat": {
       "useGlobalDefault": "Використовувати глобальне значення за замовчуванням",

@@ -43,9 +43,9 @@ below it.
 
 To edit one game, open its menu and select **Change Metadata...**. Use **Find a
 Steam match** to search by name. Select a result to check its artwork, developer,
-and release date, then select **Use this Steam match**. You can still paste a
-Steam page link or app ID under **Steam App ID**. Select **Save** after you make
-further edits.
+and release date, then select **Use this Steam match** to fill the form. You can
+still paste a Steam page link or app ID under **Steam App ID**, then select
+**Apply Steam App ID**. Nothing is saved until you select **Save**.
 
 The editor can preview a cleaner shortcut name. It changes the name only if you
 confirm; you can restore the original name later. See [matching and editing

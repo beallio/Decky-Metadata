@@ -426,8 +426,26 @@
   },
   "editor": {
     "save": "Salvar",
+    "saveCount": "Salvar ({{count}})",
     "removeMetadata": "Remover metadados",
     "done": "Concluído",
+    "moreOptions": "Mais opções",
+    "moreMenuTitle": "Metadados",
+    "refreshFromSteam": "Atualizar da Steam",
+    "fieldEdited": "Editado",
+    "fieldFromSteam": "Da Steam, não salvo",
+    "steamDataChanged": "Os dados da Steam não exibidos no formulário (capturas de tela, notícias, compatibilidade) mudaram e não foram salvos.",
+    "unsaved": {
+      "title": "Salvar alterações?",
+      "body": "Você tem alterações não salvas nos metadados deste jogo.",
+      "discard": "Descartar",
+      "cancel": "Cancelar"
+    },
+    "removeConfirm": {
+      "title": "Remover metadados?",
+      "body": "Isso exclui todos os metadados salvos de {{name}}. Não é possível desfazer.",
+      "cancel": "Cancelar"
+    },
     "nonSteamOnly": "Este plugin só altera jogos que não são da Steam.",
     "searchIgn": "Pesquisar metadados na IGN",
     "search": "Pesquisar",
@@ -440,7 +458,9 @@
       "developers": "Desenvolvedoras",
       "publishers": "Distribuidoras",
       "releaseDate": "Data de lançamento",
-      "rating": "Classificação"
+      "rating": "Classificação",
+      "categories": "Categorias",
+      "steamData": "Dados da Steam não exibidos no formulário"
     },
     "compat": {
       "useGlobalDefault": "Usar padrão global",

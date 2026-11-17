@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  editorActionBarNativeStyle,
   editorActionBarStyle,
   editorActionButtonStyle,
   editorAppIdRowStyle,
@@ -8,8 +9,6 @@ import {
   editorDescriptionFieldStyle,
   editorLabelStyle,
   editorReleaseRatingRowStyle,
-  editorRemoveButtonStyle,
-  editorSaveButtonStyle,
   editorScopedCss,
   editorScrollViewportStyle,
   editorSearchInputRowSpacingStyle,
@@ -39,15 +38,11 @@ describe("metadata editor layout contract", () => {
     });
   });
 
-  it("gives Save and Remove their approved semantic treatments", () => {
-    expect(editorSaveButtonStyle).toMatchObject({
-      color: "white",
-      background: "linear-gradient(180deg, #75b022 0%, #588a1b 100%)",
-    });
-    expect(editorRemoveButtonStyle).toMatchObject({
-      color: "white",
-      background: "linear-gradient(180deg, #d94b43 0%, #a92f2a 100%)",
-    });
+  it("keeps the native action bar gradient-free with a compact More column", () => {
+    expect(editorActionBarNativeStyle.gridTemplateColumns).toBe(
+      "minmax(0, 1fr) minmax(0, 1fr) 72px"
+    );
+    expect(editorScopedCss).not.toContain("linear-gradient");
     expect(editorScopedCss).toContain(":focus-visible");
     expect(editorScopedCss).toContain(":disabled");
   });

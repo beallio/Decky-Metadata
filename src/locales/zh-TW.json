@@ -424,8 +424,26 @@
   },
   "editor": {
     "save": "儲存",
+    "saveCount": "儲存 ({{count}})",
     "removeMetadata": "移除中繼資料",
     "done": "完成",
+    "moreOptions": "更多選項",
+    "moreMenuTitle": "中繼資料",
+    "refreshFromSteam": "從 Steam 重新整理",
+    "fieldEdited": "已編輯",
+    "fieldFromSteam": "來自 Steam，未儲存",
+    "steamDataChanged": "表單中未顯示的 Steam 資料（截圖、新聞、相容性）已變更且尚未儲存。",
+    "unsaved": {
+      "title": "儲存變更？",
+      "body": "此遊戲的中繼資料有未儲存的變更。",
+      "discard": "捨棄",
+      "cancel": "取消"
+    },
+    "removeConfirm": {
+      "title": "移除中繼資料？",
+      "body": "這會刪除 {{name}} 的所有已儲存中繼資料。此操作無法復原。",
+      "cancel": "取消"
+    },
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
     "searchIgn": "搜尋 IGN 中繼資料",
     "search": "搜尋",
@@ -438,7 +456,9 @@
       "developers": "開發人員",
       "publishers": "發行商",
       "releaseDate": "發行日期",
-      "rating": "分級"
+      "rating": "分級",
+      "categories": "分類",
+      "steamData": "表單中未顯示的 Steam 資料"
     },
     "compat": {
       "useGlobalDefault": "使用全域預設值",

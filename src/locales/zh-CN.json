@@ -424,8 +424,26 @@
   },
   "editor": {
     "save": "保存",
+    "saveCount": "保存 ({{count}})",
     "removeMetadata": "移除元数据",
     "done": "完成",
+    "moreOptions": "更多选项",
+    "moreMenuTitle": "元数据",
+    "refreshFromSteam": "从 Steam 刷新",
+    "fieldEdited": "已编辑",
+    "fieldFromSteam": "来自 Steam，未保存",
+    "steamDataChanged": "表单中未显示的 Steam 数据（截图、新闻、兼容性）已更改且尚未保存。",
+    "unsaved": {
+      "title": "保存更改？",
+      "body": "此游戏的元数据有未保存的更改。",
+      "discard": "放弃",
+      "cancel": "取消"
+    },
+    "removeConfirm": {
+      "title": "移除元数据？",
+      "body": "这将删除 {{name}} 的所有已保存元数据。此操作无法撤销。",
+      "cancel": "取消"
+    },
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
     "searchIgn": "搜索 IGN 元数据",
     "search": "搜索",
@@ -438,7 +456,9 @@
       "developers": "开发商",
       "publishers": "发行商",
       "releaseDate": "发行日期",
-      "rating": "分级"
+      "rating": "分级",
+      "categories": "分类",
+      "steamData": "表单中未显示的 Steam 数据"
     },
     "compat": {
       "useGlobalDefault": "使用全局默认值",

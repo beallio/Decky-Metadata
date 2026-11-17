@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Save",
+    "saveCount": "Save ({{count}})",
     "removeMetadata": "Remove metadata",
     "done": "Done",
+    "moreOptions": "More options",
+    "moreMenuTitle": "Metadata",
+    "refreshFromSteam": "Refresh from Steam",
+    "fieldEdited": "Edited",
+    "fieldFromSteam": "From Steam, not saved",
+    "steamDataChanged": "Steam data not shown in the form (screenshots, news, compatibility) changed and is not saved.",
+    "unsaved": {
+      "title": "Save changes?",
+      "body": "You have unsaved changes to this game's metadata.",
+      "discard": "Discard",
+      "cancel": "Cancel"
+    },
+    "removeConfirm": {
+      "title": "Remove metadata?",
+      "body": "This deletes all saved metadata for {{name}}. You cannot undo this.",
+      "cancel": "Cancel"
+    },
     "nonSteamOnly": "This plugin only changes non-Steam games.",
     "searchIgn": "Search IGN metadata",
     "search": "Search",
@@ -439,7 +457,9 @@
       "developers": "Developers",
       "publishers": "Publishers",
       "releaseDate": "Release date",
-      "rating": "Rating"
+      "rating": "Rating",
+      "categories": "Categories",
+      "steamData": "Steam data not shown in the form"
     },
     "compat": {
       "useGlobalDefault": "Use global default",

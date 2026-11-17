@@ -426,8 +426,26 @@
   },
   "editor": {
     "save": "Enregistrer",
+    "saveCount": "Enregistrer ({{count}})",
     "removeMetadata": "Supprimer les métadonnées",
     "done": "Terminé",
+    "moreOptions": "Plus d'options",
+    "moreMenuTitle": "Métadonnées",
+    "refreshFromSteam": "Actualiser depuis Steam",
+    "fieldEdited": "Modifié",
+    "fieldFromSteam": "Depuis Steam, non enregistré",
+    "steamDataChanged": "Les données Steam non affichées dans le formulaire (captures d'écran, actualités, compatibilité) ont changé et ne sont pas enregistrées.",
+    "unsaved": {
+      "title": "Enregistrer les modifications ?",
+      "body": "Vous avez des modifications non enregistrées pour les métadonnées de ce jeu.",
+      "discard": "Abandonner",
+      "cancel": "Annuler"
+    },
+    "removeConfirm": {
+      "title": "Supprimer les métadonnées ?",
+      "body": "Cela supprime toutes les métadonnées enregistrées pour {{name}}. Cette action est irréversible.",
+      "cancel": "Annuler"
+    },
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
     "searchIgn": "Rechercher des métadonnées IGN",
     "search": "Rechercher",
@@ -440,7 +458,9 @@
       "developers": "Développeurs",
       "publishers": "Éditeurs",
       "releaseDate": "Date de sortie",
-      "rating": "Classification"
+      "rating": "Classification",
+      "categories": "Catégories",
+      "steamData": "Données Steam non affichées dans le formulaire"
     },
     "compat": {
       "useGlobalDefault": "Utiliser la valeur globale par défaut",

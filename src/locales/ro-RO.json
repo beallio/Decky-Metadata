@@ -426,8 +426,26 @@
   },
   "editor": {
     "save": "Salvează",
+    "saveCount": "Salvează ({{count}})",
     "removeMetadata": "Elimină metadatele",
     "done": "Gata",
+    "moreOptions": "Mai multe opțiuni",
+    "moreMenuTitle": "Metadate",
+    "refreshFromSteam": "Reîmprospătează din Steam",
+    "fieldEdited": "Editat",
+    "fieldFromSteam": "Din Steam, nesalvat",
+    "steamDataChanged": "Datele Steam care nu sunt afișate în formular (capturi de ecran, știri, compatibilitate) s-au schimbat și nu sunt salvate.",
+    "unsaved": {
+      "title": "Salvezi modificările?",
+      "body": "Ai modificări nesalvate la metadatele acestui joc.",
+      "discard": "Renunță",
+      "cancel": "Anulează"
+    },
+    "removeConfirm": {
+      "title": "Elimini metadatele?",
+      "body": "Aceasta șterge toate metadatele salvate pentru {{name}}. Nu poți anula această acțiune.",
+      "cancel": "Anulează"
+    },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
     "search": "Caută",
@@ -440,7 +458,9 @@
       "developers": "Dezvoltatori",
       "publishers": "Editori",
       "releaseDate": "Data lansării",
-      "rating": "Clasificare"
+      "rating": "Clasificare",
+      "categories": "Categorii",
+      "steamData": "Date Steam care nu sunt afișate în formular"
     },
     "compat": {
       "useGlobalDefault": "Folosește valoarea implicită globală",

@@ -4,7 +4,7 @@ When a non-Steam game has a saved match to a Steam game, its Community area can 
 
 News and announcements from the matched Steam game can also appear in Steam's Activity area. Decky Metadata adds that news for the non-Steam game; it does not replace Steam's normal Activity area. The news follows your Steam language when the publisher wrote a translation. When the publisher did not, some news stays in English.
 
-To remove a game's saved metadata, open its **Change Metadata...** editor and select **Remove metadata**. This also removes that game's injected Activity news. The editor closes and returns you to the game page, where the compatibility badge in **Game Info** goes back to its original state. Metadata then does not match that game again by itself, so the news does not come back. The README explains how to open the editor: [Get started](../../README.md#get-started).
+To remove a game's saved metadata, open its **Change Metadata...** editor and select **Remove metadata**, then confirm. This also removes that game's injected Activity news. The editor closes and returns you to the game page, where the compatibility badge in **Game Info** goes back to its original state. Metadata then does not match that game again by itself, so the news does not come back. The README explains how to open the editor: [Get started](../../README.md#get-started).
 
 ## If posts or news are missing
 

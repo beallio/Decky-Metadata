@@ -35,6 +35,7 @@ import {
   compatibilityDefaultScopeSnapshot,
   cleanTitle,
   classifyShortcutNameState,
+  currentRoutePath,
   getOverview,
   hasShortcutNameApi,
   isNonSteamApp,
@@ -75,18 +76,23 @@ import {
   textToPersons,
 } from "./metadataForm";
 import {
-  editorActionBarStyle,
+  editorActionBarNativeStyle,
   editorActionButtonStyle,
   editorAppIdButtonStyle,
   editorAppIdRowStyle,
   editorCategoryGridStyle,
   editorDescriptionFieldStyle,
+  editorFieldEditedLabelStyle,
+  editorFieldEditedStyle,
+  editorFieldMarkerBaseStyle,
+  editorFieldMarkerTagStyle,
+  editorFieldPreviewLabelStyle,
+  editorFieldPreviewStyle,
   editorFocusTargetClassName,
   editorLabelStyle,
+  editorMoreButtonStyle,
   editorReleaseRatingRowStyle,
-  editorRemoveButtonStyle,
   editorRootClassName,
-  editorSaveButtonStyle,
   editorScopedCss,
   editorScrollViewportStyle,
   editorSearchButtonStyle,
@@ -97,6 +103,15 @@ import {
   editorSourceGroupStyle,
   editorSourceStackStyle,
 } from "./metadataEditorStyles";
+import { changedDraftFields, changedFormFields } from "./metadataDraft";
+import type { DraftFieldKey, DraftFormState } from "./metadataDraft";
+import {
+  saveButtonLabel,
+  showEditorMoreMenu,
+  showRemoveMetadataModal,
+  showUnsavedChangesModal,
+} from "./editorDialogs";
+import { colors } from "./tokens";
 import {
   compactTextStyle,
   fieldStyle,
@@ -372,6 +387,8 @@ export const MetadataPage = () => {
   const savedRecordRef = useRef<MetadataData | null>(null);
   // The Steam match currently previewed into the form but not stored yet.
   const previewedSteamAppIdRef = useRef<number | null>(null);
+  // Fields the last Steam preview filled; a later user edit clears one.
+  const steamPreviewedFieldsRef = useRef<Set<DraftFieldKey>>(new Set());
   // A null owner only exists during initial state hydration/tests and remains
   // conservative. A known owner from another editor entry must not block this
   // view or be cleared by its completion callback.
@@ -416,6 +433,11 @@ export const MetadataPage = () => {
     formRevisionRef.current += 1;
   }, []);
 
+  /** A user edit is no longer "from Steam" even if a preview put the value there. */
+  const clearPreviewMarker = useCallback((key: DraftFieldKey) => {
+    steamPreviewedFieldsRef.current.delete(key);
+  }, []);
+
   const setSteamAppIdInput = useCallback((value: string) => {
     steamAppIdTextRef.current = value;
     setSteamAppIdText(value);
@@ -427,6 +449,17 @@ export const MetadataPage = () => {
     releaseText: releaseTextRef.current,
     ratingText: ratingTextRef.current,
     steamAppIdText: steamAppIdTextRef.current,
+  });
+
+  /** The draft as the preview markers compare it, one snapshot at a time. */
+  const draftFormState = (): DraftFormState => ({
+    metadata: metadataRef.current,
+    developerText: developerTextRef.current,
+    publisherText: publisherTextRef.current,
+    releaseText: releaseTextRef.current,
+    ratingText: ratingTextRef.current,
+    steamAppIdText: steamAppIdTextRef.current,
+    hltbIdDraft,
   });
 
   /**
@@ -522,6 +555,7 @@ export const MetadataPage = () => {
       const saved = metadataResult.value || metadataTemplate(appName(appId));
       savedRecordRef.current = saved;
       previewedSteamAppIdRef.current = null;
+      steamPreviewedFieldsRef.current.clear();
       if (formRevisionRef.current === requestedRevision) {
         setFormMetadata(saved);
         setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
@@ -588,6 +622,7 @@ export const MetadataPage = () => {
     // A stored snapshot and an unsaved preview belong to one game's editor.
     savedRecordRef.current = null;
     previewedSteamAppIdRef.current = null;
+    steamPreviewedFieldsRef.current.clear();
     // The editor stays mounted across games, so its search belongs to one entry (#43).
     setQuery(appName(appId));
     setResults([]);
@@ -732,7 +767,67 @@ export const MetadataPage = () => {
   const [steamLanguage, setSteamLanguage] = useState<string | null>(null);
   // The HLTB game the game page shows, chosen or found automatically.
   const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+  // Declared after the other hooks so their slots stay unchanged.
+  const mountedRef = useRef(true);
+  // The form revision this entry began with: an edit typed before the record
+  // finished loading is still a draft, even though it cannot be diffed yet.
+  const entryStartRef = useRef({ entry: editorEntryToken, revision: formRevisionRef.current });
+  if (entryStartRef.current.entry !== editorEntryToken) {
+    entryStartRef.current = { entry: editorEntryToken, revision: formRevisionRef.current };
+  }
+  // The leave prompt outlives its render; it must save the form as it is when Save is chosen.
+  const saveCurrentRef = useRef<() => Promise<boolean>>(async () => false);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    [],
+  );
   const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
+  // The visible fields whose value differs from the stored record.
+  const changed = changedDraftFields(savedRecordRef.current, {
+    metadata,
+    developerText,
+    publisherText,
+    releaseText,
+    ratingText,
+    steamAppIdText,
+    hltbIdDraft,
+  });
+  const fieldMarker = (key: DraftFieldKey) => {
+    const edited = changed.includes(key);
+    const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
+    return {
+      container: !edited
+        ? editorFieldMarkerBaseStyle
+        : fromSteam
+          ? editorFieldPreviewStyle
+          : editorFieldEditedStyle,
+      label: !edited
+        ? undefined
+        : fromSteam
+          ? editorFieldPreviewLabelStyle
+          : editorFieldEditedLabelStyle,
+      tag: !edited
+        ? null
+        : fromSteam
+          ? t("editor.fieldFromSteam")
+          : t("editor.fieldEdited"),
+    };
+  };
+  const markedContainer = (key: DraftFieldKey, base: CSSProperties): CSSProperties => ({
+    ...base,
+    ...fieldMarker(key).container,
+  });
+  const markedLabel = (key: DraftFieldKey, labelKey: string) => {
+    const marker = fieldMarker(key);
+    return (
+      <label style={{ ...editorLabelStyle, ...marker.label }}>
+        {t(labelKey)}
+        {marker.tag ? <span style={editorFieldMarkerTagStyle}>{marker.tag}</span> : null}
+      </label>
+    );
+  };
   // Undefined means the field is not a usable HLTB game; the user has been told why.
   const checkHltbIdText = async (): Promise<{ id: number | null; name: string } | undefined> => {
     const text = hltbIdText.trim();
@@ -785,8 +880,14 @@ export const MetadataPage = () => {
         toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
         return false;
       }
+      const beforeMerge = draftFormState();
       reconcileMetadataResponse(previewed, baselineMetadata, baselineText);
       previewedSteamAppIdRef.current = previewedSteamAppId;
+      // Mark every visible field this merge changed; a value the user typed
+      // while the request was pending stays a normal edit.
+      for (const key of changedFormFields(beforeMerge, draftFormState())) {
+        steamPreviewedFieldsRef.current.add(key);
+      }
       setSteamNameUnavailable(false);
       toastSuccess(t("editor.toast.detailsLoadedTitle"), t("editor.toast.steamPreviewBody"));
       return true;
@@ -832,7 +933,8 @@ export const MetadataPage = () => {
     }
     const requestedEntry = editorEntryToken;
     // Until this entry's record loads, the form holds defaults that would overwrite it.
-    if (metadataHydratedEntry !== requestedEntry) {
+    // The Steam-name backfill is still writing the stored record, so a save now would race it.
+    if (metadataHydratedEntry !== requestedEntry || steamNameLoading) {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return false;
     }
@@ -863,7 +965,9 @@ export const MetadataPage = () => {
       if (!isCurrentEditorEntry(requestedEntry)) return false;
       savedRecordRef.current = saved;
       previewedSteamAppIdRef.current = null;
+      // An edit made while the save was pending stays in the form, unsaved.
       if (formRevisionRef.current !== requestedRevision) return false;
+      steamPreviewedFieldsRef.current.clear();
       setMetadataCacheEntry(appId, saved);
       setFormMetadata(saved);
       if (hltb) setHltbIdDraft(null);
@@ -877,6 +981,43 @@ export const MetadataPage = () => {
     } finally {
       endBusy(requestedEntry);
     }
+  };
+  saveCurrentRef.current = saveCurrent;
+
+  /**
+   * A delayed save may only navigate back while this entry is still the
+   * editor the user sees; Steam or Home may have moved on meanwhile.
+   */
+  const stillOnEditor = (requestedEntry: number): boolean => {
+    if (!mountedRef.current || !isCurrentEditorEntry(requestedEntry)) return false;
+    // currentRoutePath joins every location source it can read.
+    const editorPaths = [`/decky-metadata/${appId}`, `/routes/decky-metadata/${appId}`];
+    return currentRoutePath().split(" ").some((path) => editorPaths.includes(path));
+  };
+
+  /** Done and B leave the editor; a draft asks before it is dropped. */
+  const requestLeave = (): void => {
+    const requestedEntry = editorEntryToken;
+    const editedBeforeLoad =
+      metadataHydratedEntry !== requestedEntry &&
+      formRevisionRef.current !== entryStartRef.current.revision;
+    if (changed.length === 0 && !editedBeforeLoad) {
+      Navigation.NavigateBack();
+      return;
+    }
+    showUnsavedChangesModal({
+      changed,
+      onSave: () => {
+        // A prompt opened for another game or a closed editor must not save this form.
+        if (!stillOnEditor(requestedEntry)) return;
+        void saveCurrentRef.current().then((ok) => {
+          if (ok && stillOnEditor(requestedEntry)) Navigation.NavigateBack();
+        });
+      },
+      onDiscard: () => {
+        if (stillOnEditor(requestedEntry)) Navigation.NavigateBack();
+      },
+    });
   };
 
   const applySteamAppId = async (explicitSteamAppId?: number) => {
@@ -899,6 +1040,7 @@ export const MetadataPage = () => {
       if (parsed === null) {
         // Clearing the match is a form edit; Save removes the stored match.
         previewedSteamAppIdRef.current = null;
+        clearPreviewMarker("steamAppId");
         setSteamAppIdInput("");
         // Clear everything fetched for the old match, as a changed match does.
         const cleared: MetadataData = {
@@ -966,6 +1108,7 @@ export const MetadataPage = () => {
       if (!isCurrentEditorEntry(requestedEntry) || formRevisionRef.current !== requestedRevision) return;
       const { id, name } = hltb;
       markFormEdited();
+      clearPreviewMarker("hltb");
       setHltbIdDraft(id === null ? "" : String(id));
       toastSuccess(
         id === null ? t("editor.toast.hltbCleared") : t("editor.toast.hltbGame", { name }),
@@ -1001,7 +1144,12 @@ export const MetadataPage = () => {
       const fetched = await previewFetchedMetadata(normalizedMetadata, result.slug || result.url);
       if (!fetched || !isCurrentEditorEntry(requestedEntry)) return;
       // An IGN result fills the draft; its release date keeps the stored baseline.
+      const beforeMerge = draftFormState();
       reconcileMetadataResponse(fetched, baselineMetadata, baselineText, false);
+      // IGN is a normal edit source, so nothing it fills stays marked "From Steam".
+      for (const key of changedFormFields(beforeMerge, draftFormState())) {
+        steamPreviewedFieldsRef.current.delete(key);
+      }
       // An explicit pick takes the game off the removed list; ask HLTB again.
       hltbStore.forget(appId);
       toastSuccess(t("editor.toast.detailsLoadedTitle"), t("editor.toast.ignPreviewBody"));
@@ -1025,6 +1173,7 @@ export const MetadataPage = () => {
       const template = metadataTemplate(appName(appId));
       savedRecordRef.current = template;
       previewedSteamAppIdRef.current = null;
+      steamPreviewedFieldsRef.current.clear();
       setFormMetadata(template);
       toastSuccess(t("editor.toast.removedTitle"), t("editor.toast.removedBody"));
       // Leave the editor: its reset form would otherwise let Save write an empty Manual record (#40).
@@ -1259,6 +1408,7 @@ export const MetadataPage = () => {
 
 
   const toggleCategory = (category: number, checked: boolean) => {
+    clearPreviewMarker("categories");
     updateMetadata((prev) => {
       const next = new Set(prev.store_categories || []);
       if (checked) next.add(category);
@@ -1269,7 +1419,16 @@ export const MetadataPage = () => {
 
   return (
     <ScrollPanel>
-      <div ref={editorRootRef} className={editorRootClassName} style={pageStyle}>
+      <Focusable
+        ref={editorRootRef}
+        className={editorRootClassName}
+        style={pageStyle}
+        onSecondaryButton={() => {
+          if (changed.length && !steamNameLoading) void saveCurrent();
+        }}
+        onSecondaryActionDescription={t("editor.save")}
+        onCancelButton={requestLeave}
+      >
         <style>{editorScopedCss}</style>
         <Focusable
           className={editorFocusTargetClassName}
@@ -1278,28 +1437,40 @@ export const MetadataPage = () => {
         >
           {`${"Decky Metadata"} - ${appName(appId)}`}
         </Focusable>
-        <div style={editorActionBarStyle}>
+        <div style={editorActionBarNativeStyle}>
           <FocusableButton
             className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--save`}
             onClick={saveCurrent}
-            disabled={steamNameLoading}
-            style={editorSaveButtonStyle}
+            disabled={changed.length === 0 || steamNameLoading}
+            style={editorActionButtonStyle}
           >
-            {t("editor.save")}
-          </FocusableButton>
-          <FocusableButton
-            className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--remove`}
-            onClick={removeCurrent}
-            style={editorRemoveButtonStyle}
-          >
-            {t("editor.removeMetadata")}
+            {saveButtonLabel(t, changed.length)}
           </FocusableButton>
           <FocusableButton
             className={`DialogButton ${editorFocusTargetClassName}`}
-            onClick={() => Navigation.NavigateBack()}
+            onClick={requestLeave}
             style={editorActionButtonStyle}
           >
             {t("editor.done")}
+          </FocusableButton>
+          <FocusableButton
+            className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__action--more`}
+            aria-label={t("editor.moreOptions")}
+            onClick={(event: { currentTarget: EventTarget }) =>
+              showEditorMoreMenu({
+                canRefresh: nonSteam && hasSteamMatch && !entryBusy,
+                onRefresh: () => void refreshFromSteam(),
+                onRemove: () =>
+                  showRemoveMetadataModal({
+                    gameName: appName(appId),
+                    onConfirm: () => void removeCurrent(),
+                  }),
+                parent: event.currentTarget,
+              })
+            }
+            style={editorMoreButtonStyle}
+          >
+            {"⋯"}
           </FocusableButton>
         </div>
         {!nonSteam ? (
@@ -1380,30 +1551,32 @@ export const MetadataPage = () => {
         <PanelSection title={t("editor.source")}>
           <PanelSectionRow>
             <div style={editorSourceStackStyle}>
-              <div style={editorSourceFieldStyle}>
-                <label style={editorLabelStyle}>{t("editor.field.title")}</label>
+              <div style={markedContainer("title", editorSourceFieldStyle)}>
+                {markedLabel("title", "editor.field.title")}
                 <TextField
                   className={editorFocusTargetClassName}
                   value={metadata.title}
-                  onChange={(e) =>
-                    updateMetadata((prev) => ({ ...prev, title: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    clearPreviewMarker("title");
+                    updateMetadata((prev) => ({ ...prev, title: e.target.value }));
+                  }}
                   style={fieldStyle}
                 />
               </div>
-              <div style={editorDescriptionFieldStyle}>
-                <label style={editorLabelStyle}>{t("editor.field.description")}</label>
+              <div style={markedContainer("description", editorDescriptionFieldStyle)}>
+                {markedLabel("description", "editor.field.description")}
                 {GamepadTextArea ? (
                   <GamepadTextArea
                     className={editorFocusTargetClassName}
                     value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      clearPreviewMarker("description");
                       updateMetadata((prev) => ({
                         ...prev,
                         description: e.target.value,
                         short_description: e.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                     style={descriptionTextareaStyle}
                   />
                 ) : (
@@ -1417,38 +1590,41 @@ export const MetadataPage = () => {
                       className={editorFocusTargetClassName}
                       tabIndex={0}
                       value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        clearPreviewMarker("description");
                         updateMetadata((prev) => ({
                           ...prev,
                           description: e.target.value,
                           short_description: e.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       style={descriptionTextareaStyle}
                     />
                   </Focusable>
                 )}
               </div>
-              <div style={editorSourceGroupStyle}>
-                <label style={editorLabelStyle}>{t("editor.field.developers")}</label>
+              <div style={markedContainer("developers", editorSourceGroupStyle)}>
+                {markedLabel("developers", "editor.field.developers")}
                 <TextField
                   className={editorFocusTargetClassName}
                   value={developerText}
                   onChange={(e) => {
                     markFormEdited();
+                    clearPreviewMarker("developers");
                     developerTextRef.current = e.target.value;
                     setDeveloperText(e.target.value);
                   }}
                   style={fieldStyle}
                 />
               </div>
-              <div style={editorSourceGroupStyle}>
-                <label style={editorLabelStyle}>{t("editor.field.publishers")}</label>
+              <div style={markedContainer("publishers", editorSourceGroupStyle)}>
+                {markedLabel("publishers", "editor.field.publishers")}
                 <TextField
                   className={editorFocusTargetClassName}
                   value={publisherText}
                   onChange={(e) => {
                     markFormEdited();
+                    clearPreviewMarker("publishers");
                     publisherTextRef.current = e.target.value;
                     setPublisherText(e.target.value);
                   }}
@@ -1456,26 +1632,28 @@ export const MetadataPage = () => {
                 />
               </div>
               <div style={editorReleaseRatingRowStyle}>
-                <div style={{ minWidth: 0 }}>
-                  <label style={editorLabelStyle}>{t("editor.field.releaseDate")}</label>
+                <div style={markedContainer("releaseDate", { minWidth: 0 })}>
+                  {markedLabel("releaseDate", "editor.field.releaseDate")}
                   <TextField
                     className={editorFocusTargetClassName}
                     value={releaseText}
                   onChange={(e) => {
                     markFormEdited();
+                    clearPreviewMarker("releaseDate");
                     releaseTextRef.current = e.target.value;
                     setReleaseText(e.target.value);
                   }}
                     style={fieldStyle}
                   />
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <label style={editorLabelStyle}>{t("editor.field.rating")}</label>
+                <div style={markedContainer("rating", { minWidth: 0 })}>
+                  {markedLabel("rating", "editor.field.rating")}
                   <TextField
                     className={editorFocusTargetClassName}
                     value={ratingText}
                   onChange={(e) => {
                     markFormEdited();
+                    clearPreviewMarker("rating");
                     ratingTextRef.current = e.target.value;
                     setRatingText(e.target.value);
                   }}
@@ -1490,30 +1668,37 @@ export const MetadataPage = () => {
         {nonSteam ? (
           <PanelSection title={t("editor.compatibilityStatus")}>
             <PanelSectionRow>
-              <DropdownItem
-                label={t("editor.compatibilityStatus")}
-                rgOptions={compatibilityStatusOptions.map((data) => ({
-                  data,
-                  label: compatibilityStatusOptionLabel(data, t),
-                }))}
-                selectedOption={compatibilityStatusValue(
-                  metadata.deck_compat_override
-                )}
-                onChange={(option) =>
-                  updateMetadata((prev) => ({
-                    ...prev,
-                    deck_compat_override: compatibilityStatusValue(option.data),
-                  }))
-                }
-                renderButtonValue={() =>
-                  compatibilityStatusDisplay(
-                    metadata,
-                    compatibilityDefault,
-                    compatibilityDefaultScope,
-                    t,
-                  )
-                }
-              />
+              <div style={fieldMarker("compatibility").container}>
+                {fieldMarker("compatibility").tag ? (
+                  <span style={editorFieldMarkerTagStyle}>
+                    {fieldMarker("compatibility").tag}
+                  </span>
+                ) : null}
+                <DropdownItem
+                  label={t("editor.compatibilityStatus")}
+                  rgOptions={compatibilityStatusOptions.map((data) => ({
+                    data,
+                    label: compatibilityStatusOptionLabel(data, t),
+                  }))}
+                  selectedOption={compatibilityStatusValue(
+                    metadata.deck_compat_override
+                  )}
+                  onChange={(option) =>
+                    updateMetadata((prev) => ({
+                      ...prev,
+                      deck_compat_override: compatibilityStatusValue(option.data),
+                    }))
+                  }
+                  renderButtonValue={() =>
+                    compatibilityStatusDisplay(
+                      metadata,
+                      compatibilityDefault,
+                      compatibilityDefaultScope,
+                      t,
+                    )
+                  }
+                />
+              </div>
               <Field
                 focusable={false}
                 childrenLayout="below"
@@ -1533,20 +1718,25 @@ export const MetadataPage = () => {
 
         <PanelSection title={t("editor.steamInfoFields")}>
           <PanelSectionRow>
-            <div
-              className="decky-metadata-editor__category-grid"
-              style={editorCategoryGridStyle}
-            >
-              {Object.keys(CATEGORY_LABELS).map((category) => (
-                <ToggleField
-                  key={category}
-                  highlightOnFocus={false}
-                  bottomSeparator="none"
-                  label={categoryLabel(Number(category), t)}
-                  checked={(metadata.store_categories || []).includes(Number(category))}
-                  onChange={(checked) => toggleCategory(Number(category), checked)}
-                />
-              ))}
+            <div style={fieldMarker("categories").container}>
+              {fieldMarker("categories").tag ? (
+                <span style={editorFieldMarkerTagStyle}>{fieldMarker("categories").tag}</span>
+              ) : null}
+              <div
+                className="decky-metadata-editor__category-grid"
+                style={editorCategoryGridStyle}
+              >
+                {Object.keys(CATEGORY_LABELS).map((category) => (
+                  <ToggleField
+                    key={category}
+                    highlightOnFocus={false}
+                    bottomSeparator="none"
+                    label={categoryLabel(Number(category), t)}
+                    checked={(metadata.store_categories || []).includes(Number(category))}
+                    onChange={(checked) => toggleCategory(Number(category), checked)}
+                  />
+                ))}
+              </div>
             </div>
           </PanelSectionRow>
         </PanelSection>
@@ -1555,7 +1745,10 @@ export const MetadataPage = () => {
         {nonSteam ? (
           <PanelSection title={t("editor.hltbGame")}>
             <PanelSectionRow>
-              <div style={rowStackStyle}>
+              <div style={markedContainer("hltb", rowStackStyle)}>
+                {fieldMarker("hltb").tag ? (
+                  <span style={editorFieldMarkerTagStyle}>{fieldMarker("hltb").tag}</span>
+                ) : null}
                 <div style={compactTextStyle}>{t("editor.hltbHelp")}</div>
                 {hltbMatch?.game_name ? (
                   <div style={compactTextStyle}>
@@ -1570,6 +1763,7 @@ export const MetadataPage = () => {
                     value={hltbIdText}
                     onChange={(e) => {
                       markFormEdited();
+                      clearPreviewMarker("hltb");
                       setHltbIdDraft(e.target.value);
                     }}
                     style={fieldStyle}
@@ -1596,7 +1790,10 @@ export const MetadataPage = () => {
 
         <PanelSection title={t("editor.steamAppId")}>
           <PanelSectionRow>
-            <div style={rowStackStyle}>
+            <div style={markedContainer("steamAppId", rowStackStyle)}>
+              {fieldMarker("steamAppId").tag ? (
+                <span style={editorFieldMarkerTagStyle}>{fieldMarker("steamAppId").tag}</span>
+              ) : null}
               <div style={compactTextStyle}>{t("editor.steamAppIdHelp")}</div>
               <div style={editorAppIdRowStyle}>
                 <TextField
@@ -1604,6 +1801,7 @@ export const MetadataPage = () => {
                   value={steamAppIdText}
                   onChange={(e) => {
                     markFormEdited();
+                    clearPreviewMarker("steamAppId");
                     setSteamAppIdInput(e.target.value);
                   }}
                   style={fieldStyle}
@@ -1617,6 +1815,11 @@ export const MetadataPage = () => {
                   {t("editor.steamAppIdApply")}
                 </FocusableButton>
               </div>
+              {changed.includes("steamData") ? (
+                <div style={{ ...compactTextStyle, color: colors.warning }}>
+                  {t("editor.steamDataChanged")}
+                </div>
+              ) : null}
             </div>
           </PanelSectionRow>
           {steamLanguageMismatch ? (
@@ -1686,7 +1889,7 @@ export const MetadataPage = () => {
           </PanelSectionRow>
         </PanelSection>
 
-      </div>
+      </Focusable>
     </ScrollPanel>
   );
 };

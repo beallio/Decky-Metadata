@@ -66,13 +66,14 @@ row](protondb-badges.md#enable-the-store-row).
    game whose times the game page shows, and whether you chose it or it was
    found automatically. To choose another game, either:
    - select **Search HLTB**, change the name if needed, and select a game from
-     the results. It is saved right away; or
+     the results. It is loaded into the editor; or
    - paste the game's number or its page link, for example
-     `https://howlongtobeat.com/game/7231`, then select **Apply HLTB game** or
-     **Save**. Decky Metadata checks the number and does not save a number
-     HowLongToBeat does not have.
-3. To go back to automatic matching, empty the number field and select
-   **Apply HLTB game**.
+     `https://howlongtobeat.com/game/7231`, then select **Apply HLTB game**.
+     Decky Metadata checks the number or link and shows the game it found. If
+     HowLongToBeat does not have the number, nothing is changed.
+3. Select **Save** to store the chosen game. Nothing is saved until then.
+4. To go back to automatic matching, empty the number field, select
+   **Apply HLTB game**, then select **Save**.
 
 ## How fresh the times are
 

@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Kaydet",
+    "saveCount": "Kaydet ({{count}})",
     "removeMetadata": "Meta verileri kaldır",
     "done": "Bitti",
+    "moreOptions": "Diğer seçenekler",
+    "moreMenuTitle": "Meta veriler",
+    "refreshFromSteam": "Steam'den yenile",
+    "fieldEdited": "Düzenlendi",
+    "fieldFromSteam": "Steam'den, kaydedilmedi",
+    "steamDataChanged": "Formda gösterilmeyen Steam verileri (ekran görüntüleri, haberler, uyumluluk) değişti ve kaydedilmedi.",
+    "unsaved": {
+      "title": "Değişiklikler kaydedilsin mi?",
+      "body": "Bu oyunun meta verilerinde kaydedilmemiş değişiklikleriniz var.",
+      "discard": "Vazgeç",
+      "cancel": "İptal"
+    },
+    "removeConfirm": {
+      "title": "Meta veriler kaldırılsın mı?",
+      "body": "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
+      "cancel": "İptal"
+    },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
     "searchIgn": "IGN meta verilerinde ara",
     "search": "Ara",
@@ -439,7 +457,9 @@
       "developers": "Geliştiriciler",
       "publishers": "Yayıncılar",
       "releaseDate": "Çıkış tarihi",
-      "rating": "Derecelendirme"
+      "rating": "Derecelendirme",
+      "categories": "Kategoriler",
+      "steamData": "Formda gösterilmeyen Steam verileri"
     },
     "compat": {
       "useGlobalDefault": "Genel varsayılanı kullan",

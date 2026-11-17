@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Opslaan",
+    "saveCount": "Opslaan ({{count}})",
     "removeMetadata": "Metadata verwijderen",
     "done": "Klaar",
+    "moreOptions": "Meer opties",
+    "moreMenuTitle": "Metadata",
+    "refreshFromSteam": "Vernieuwen vanuit Steam",
+    "fieldEdited": "Bewerkt",
+    "fieldFromSteam": "Van Steam, niet opgeslagen",
+    "steamDataChanged": "Steam-gegevens die niet in het formulier worden getoond (screenshots, nieuws, compatibiliteit) zijn gewijzigd en niet opgeslagen.",
+    "unsaved": {
+      "title": "Wijzigingen opslaan?",
+      "body": "Je hebt niet-opgeslagen wijzigingen aan de metadata van deze game.",
+      "discard": "Verwerpen",
+      "cancel": "Annuleren"
+    },
+    "removeConfirm": {
+      "title": "Metadata verwijderen?",
+      "body": "Dit verwijdert alle opgeslagen metadata voor {{name}}. Je kunt dit niet ongedaan maken.",
+      "cancel": "Annuleren"
+    },
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
     "searchIgn": "IGN-metadata doorzoeken",
     "search": "Zoeken",
@@ -439,7 +457,9 @@
       "developers": "Ontwikkelaars",
       "publishers": "Uitgevers",
       "releaseDate": "Releasedatum",
-      "rating": "Beoordeling"
+      "rating": "Beoordeling",
+      "categories": "Categorieën",
+      "steamData": "Steam-gegevens niet in het formulier"
     },
     "compat": {
       "useGlobalDefault": "Globale standaard gebruiken",

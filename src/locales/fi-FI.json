@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Tallenna",
+    "saveCount": "Tallenna ({{count}})",
     "removeMetadata": "Poista metatiedot",
     "done": "Valmis",
+    "moreOptions": "Lisää vaihtoehtoja",
+    "moreMenuTitle": "Metatiedot",
+    "refreshFromSteam": "Päivitä Steamistä",
+    "fieldEdited": "Muokattu",
+    "fieldFromSteam": "Steamistä, ei tallennettu",
+    "steamDataChanged": "Lomakkeessa näyttämättömät Steam-tiedot (kuvakaappaukset, uutiset, yhteensopivuus) ovat muuttuneet, eikä niitä ole tallennettu.",
+    "unsaved": {
+      "title": "Tallennetaanko muutokset?",
+      "body": "Tämän pelin metatiedoissa on tallentamattomia muutoksia.",
+      "discard": "Hylkää",
+      "cancel": "Peruuta"
+    },
+    "removeConfirm": {
+      "title": "Poistetaanko metatiedot?",
+      "body": "Tämä poistaa kaikki pelin {{name}} tallennetut metatiedot. Toimintoa ei voi kumota.",
+      "cancel": "Peruuta"
+    },
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
     "searchIgn": "Hae IGN-metatietoja",
     "search": "Hae",
@@ -439,7 +457,9 @@
       "developers": "Kehittäjät",
       "publishers": "Julkaisijat",
       "releaseDate": "Julkaisupäivä",
-      "rating": "Arvosana"
+      "rating": "Arvosana",
+      "categories": "Luokat",
+      "steamData": "Steam-tiedot, joita ei näytetä lomakkeessa"
     },
     "compat": {
       "useGlobalDefault": "Käytä yleistä oletusta",

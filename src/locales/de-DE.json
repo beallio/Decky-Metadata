@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Speichern",
+    "saveCount": "Speichern ({{count}})",
     "removeMetadata": "Metadaten entfernen",
     "done": "Fertig",
+    "moreOptions": "Weitere Optionen",
+    "moreMenuTitle": "Metadaten",
+    "refreshFromSteam": "Von Steam aktualisieren",
+    "fieldEdited": "Bearbeitet",
+    "fieldFromSteam": "Von Steam, nicht gespeichert",
+    "steamDataChanged": "Nicht im Formular angezeigte Steam-Daten (Screenshots, News, Kompatibilität) wurden geändert und sind nicht gespeichert.",
+    "unsaved": {
+      "title": "Änderungen speichern?",
+      "body": "Du hast ungespeicherte Änderungen an den Metadaten dieses Spiels.",
+      "discard": "Verwerfen",
+      "cancel": "Abbrechen"
+    },
+    "removeConfirm": {
+      "title": "Metadaten entfernen?",
+      "body": "Dies löscht alle gespeicherten Metadaten für {{name}}. Dies kann nicht rückgängig gemacht werden.",
+      "cancel": "Abbrechen"
+    },
     "nonSteamOnly": "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
     "searchIgn": "IGN-Metadaten durchsuchen",
     "search": "Suchen",
@@ -439,7 +457,9 @@
       "developers": "Entwickler",
       "publishers": "Publisher",
       "releaseDate": "Veröffentlichungsdatum",
-      "rating": "Bewertung"
+      "rating": "Bewertung",
+      "categories": "Kategorien",
+      "steamData": "Nicht im Formular angezeigte Steam-Daten"
     },
     "compat": {
       "useGlobalDefault": "Globale Voreinstellung verwenden",

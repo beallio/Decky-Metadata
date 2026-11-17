@@ -427,8 +427,26 @@
   },
   "editor": {
     "save": "Uložit",
+    "saveCount": "Uložit ({{count}})",
     "removeMetadata": "Odstranit metadata",
     "done": "Hotovo",
+    "moreOptions": "Další možnosti",
+    "moreMenuTitle": "Metadata",
+    "refreshFromSteam": "Obnovit ze Steamu",
+    "fieldEdited": "Upraveno",
+    "fieldFromSteam": "Ze Steamu, neuloženo",
+    "steamDataChanged": "Data ze Steamu nezobrazená ve formuláři (snímky obrazovky, novinky, kompatibilita) se změnila a nejsou uložena.",
+    "unsaved": {
+      "title": "Uložit změny?",
+      "body": "Máte neuložené změny metadat této hry.",
+      "discard": "Zahodit",
+      "cancel": "Zrušit"
+    },
+    "removeConfirm": {
+      "title": "Odstranit metadata?",
+      "body": "Tímto se smažou všechna uložená metadata pro {{name}}. Akci nelze vrátit zpět.",
+      "cancel": "Zrušit"
+    },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
     "searchIgn": "Hledat metadata na IGN",
     "search": "Hledat",
@@ -441,7 +459,9 @@
       "developers": "Vývojáři",
       "publishers": "Vydavatelé",
       "releaseDate": "Datum vydání",
-      "rating": "Hodnocení"
+      "rating": "Hodnocení",
+      "categories": "Kategorie",
+      "steamData": "Data ze Steamu nezobrazená ve formuláři"
     },
     "compat": {
       "useGlobalDefault": "Použít globální výchozí",

@@ -424,8 +424,26 @@
   },
   "editor": {
     "save": "保存",
+    "saveCount": "保存 ({{count}})",
     "removeMetadata": "メタデータを削除",
     "done": "完了",
+    "moreOptions": "その他のオプション",
+    "moreMenuTitle": "メタデータ",
+    "refreshFromSteam": "Steam から再取得",
+    "fieldEdited": "編集済み",
+    "fieldFromSteam": "Steam から取得、未保存",
+    "steamDataChanged": "フォームに表示されない Steam データ（スクリーンショット、ニュース、互換性）が変更され、保存されていません。",
+    "unsaved": {
+      "title": "変更を保存しますか？",
+      "body": "このゲームのメタデータに未保存の変更があります。",
+      "discard": "破棄",
+      "cancel": "キャンセル"
+    },
+    "removeConfirm": {
+      "title": "メタデータを削除しますか？",
+      "body": "{{name}} の保存済みメタデータをすべて削除します。元に戻せません。",
+      "cancel": "キャンセル"
+    },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
     "searchIgn": "IGN メタデータを検索",
     "search": "検索",
@@ -438,7 +456,9 @@
       "developers": "開発元",
       "publishers": "パブリッシャー",
       "releaseDate": "リリース日",
-      "rating": "レーティング"
+      "rating": "レーティング",
+      "categories": "カテゴリ",
+      "steamData": "フォームに表示されない Steam データ"
     },
     "compat": {
       "useGlobalDefault": "グローバル既定値を使用",

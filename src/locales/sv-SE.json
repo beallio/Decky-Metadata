@@ -425,8 +425,26 @@
   },
   "editor": {
     "save": "Spara",
+    "saveCount": "Spara ({{count}})",
     "removeMetadata": "Ta bort metadata",
     "done": "Klar",
+    "moreOptions": "Fler alternativ",
+    "moreMenuTitle": "Metadata",
+    "refreshFromSteam": "Uppdatera från Steam",
+    "fieldEdited": "Ändrad",
+    "fieldFromSteam": "Från Steam, inte sparat",
+    "steamDataChanged": "Steam-data som inte visas i formuläret (skärmbilder, nyheter, kompatibilitet) har ändrats och är inte sparad.",
+    "unsaved": {
+      "title": "Spara ändringar?",
+      "body": "Du har osparade ändringar i spelets metadata.",
+      "discard": "Släng",
+      "cancel": "Avbryt"
+    },
+    "removeConfirm": {
+      "title": "Ta bort metadata?",
+      "body": "Detta tar bort all sparad metadata för {{name}}. Det går inte att ångra.",
+      "cancel": "Avbryt"
+    },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
     "searchIgn": "Sök IGN-metadata",
     "search": "Sök",
@@ -439,7 +457,9 @@
       "developers": "Utvecklare",
       "publishers": "Utgivare",
       "releaseDate": "Utgivningsdatum",
-      "rating": "Betyg"
+      "rating": "Betyg",
+      "categories": "Kategorier",
+      "steamData": "Steam-data som inte visas i formuläret"
     },
     "compat": {
       "useGlobalDefault": "Använd global standard",

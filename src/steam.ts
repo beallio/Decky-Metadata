@@ -32,6 +32,7 @@ export {
   compatibilityLifecycleSnapshot,
   compatibilityRevisionSnapshot,
   cleanTitle,
+  currentRoutePath,
   getOverview,
   getNativeOverview,
   hasActivityStore,

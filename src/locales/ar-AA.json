@@ -429,8 +429,26 @@
   },
   "editor": {
     "save": "حفظ",
+    "saveCount": "حفظ ({{count}})",
     "removeMetadata": "إزالة البيانات الوصفية",
     "done": "تم",
+    "moreOptions": "خيارات إضافية",
+    "moreMenuTitle": "البيانات الوصفية",
+    "refreshFromSteam": "التحديث من Steam",
+    "fieldEdited": "معدّل",
+    "fieldFromSteam": "من Steam، غير محفوظ",
+    "steamDataChanged": "تغيّرت بيانات Steam غير المعروضة في النموذج (لقطات الشاشة والأخبار والتوافق) ولم تُحفظ.",
+    "unsaved": {
+      "title": "حفظ التغييرات؟",
+      "body": "لديك تغييرات غير محفوظة لبيانات هذا اللعبة الوصفية.",
+      "discard": "تجاهل",
+      "cancel": "إلغاء"
+    },
+    "removeConfirm": {
+      "title": "إزالة البيانات الوصفية؟",
+      "body": "سيؤدي هذا إلى حذف جميع البيانات الوصفية المحفوظة لـ {{name}}. لا يمكن التراجع عن ذلك.",
+      "cancel": "إلغاء"
+    },
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
     "searchIgn": "البحث في بيانات IGN الوصفية",
     "search": "بحث",
@@ -443,7 +461,9 @@
       "developers": "المطوّرون",
       "publishers": "الناشرون",
       "releaseDate": "تاريخ الإصدار",
-      "rating": "التقييم"
+      "rating": "التقييم",
+      "categories": "الفئات",
+      "steamData": "بيانات Steam غير المعروضة في النموذج"
     },
     "compat": {
       "useGlobalDefault": "استخدام الافتراضي العام",
