@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-11-17
+
+Add 25 plugin languages, editor Save and Done, and Push Play button down
+
 ### Added
 
 - **Push Play button down.** A new **HLTB times** switch for the **Default**
