@@ -87,6 +87,7 @@ function FaTags (props) {
 const getAllMetadata = callable("get_all_metadata");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
+const savePreviewedMetadata = callable("save_previewed_metadata");
 /** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
 const saveMetadataIfUnchanged = callable("save_metadata");
 const removeMetadata = callable("remove_metadata");
@@ -102,9 +103,11 @@ const searchSteamMatches = callable("search_steam_matches");
 const getSteamMatchPreview = callable("get_steam_match_preview");
 const fetchMetadata = callable("fetch_metadata");
 const applyFetchedMetadata = callable("apply_fetched_metadata");
+const previewFetchedMetadata = callable("preview_fetched_metadata");
 const getCommunityFallbackPage = callable("get_community_fallback_page");
 const autoFetchMetadata = callable("auto_fetch_metadata");
 const enrichSteamApp = callable("enrich_steam_app");
+const previewSteamMetadata = callable("preview_steam_metadata");
 const startScanMissing = callable("start_scan_missing");
 const getMissingMetadataCount = callable("get_missing_metadata_count");
 const getScanProgress = callable("get_scan_progress");
@@ -187,6 +190,8 @@ var backend$p = /*#__PURE__*/Object.freeze({
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
+    previewFetchedMetadata: previewFetchedMetadata,
+    previewSteamMetadata: previewSteamMetadata,
     putProtonDbCache: putProtonDbCache,
     recordUpdateInstallRequested: recordUpdateInstallRequested,
     refreshDelistedIndex: refreshDelistedIndex,
@@ -195,6 +200,7 @@ var backend$p = /*#__PURE__*/Object.freeze({
     revalidatePluginUpdate: revalidatePluginUpdate,
     saveMetadata: saveMetadata,
     saveMetadataIfUnchanged: saveMetadataIfUnchanged,
+    savePreviewedMetadata: savePreviewedMetadata,
     saveShortcutNameState: saveShortcutNameState,
     searchHltbGames: searchHltbGames,
     searchMetadata: searchMetadata,
@@ -3424,6 +3430,8 @@ var editor$o = {
 	toast: {
 		hltbInvalidTitle: "لعبة HLTB غير صالحة",
 		hltbInvalidBody: "أدخل رقم لعبة في HowLongToBeat أو رابط صفحة لعبة.",
+		steamAppIdInvalidTitle: "معرّف Steam App ID غير صالح",
+		steamAppIdInvalidBody: "أدخل معرّف تطبيق Steam أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اترك الحقل فارغًا لإزالة المطابقة.",
 		hltbNotFoundTitle: "لم يُعثر عليها",
 		hltbNotFoundBody: "لا توجد في HowLongToBeat لعبة بهذا الرقم.",
 		notApplicableTitle: "غير قابل للتطبيق",
@@ -4016,6 +4024,8 @@ var editor$n = {
 	toast: {
 		hltbInvalidTitle: "Невалидна игра в HLTB",
 		hltbInvalidBody: "Въведете номер на игра в HowLongToBeat или връзка към страница на игра.",
+		steamAppIdInvalidTitle: "Невалиден Steam App ID",
+		steamAppIdInvalidBody: "Въведете Steam App ID, URL на магазина, URL на общността или URL на SteamDB. Оставете полето празно, за да премахнете съвпадението.",
 		hltbNotFoundTitle: "Не е намерено",
 		hltbNotFoundBody: "HowLongToBeat няма игра с този номер.",
 		notApplicableTitle: "Не е приложимо",
@@ -4610,6 +4620,8 @@ var editor$m = {
 	toast: {
 		hltbInvalidTitle: "Neplatná hra HLTB",
 		hltbInvalidBody: "Zadejte číslo hry HowLongToBeat nebo odkaz na stránku hry.",
+		steamAppIdInvalidTitle: "Neplatné Steam App ID",
+		steamAppIdInvalidBody: "Zadejte Steam App ID, URL obchodu, URL komunity nebo URL SteamDB. Nechte pole prázdné pro zrušení shody.",
 		hltbNotFoundTitle: "Nenalezeno",
 		hltbNotFoundBody: "HowLongToBeat nemá hru s tímto číslem.",
 		notApplicableTitle: "Nelze použít",
@@ -5202,6 +5214,8 @@ var editor$l = {
 	toast: {
 		hltbInvalidTitle: "Ungültiges HLTB-Spiel",
 		hltbInvalidBody: "Gib eine HowLongToBeat-Spielnummer oder einen Spielelink ein.",
+		steamAppIdInvalidTitle: "Ungültige Steam-App-ID",
+		steamAppIdInvalidBody: "Gib eine Steam-App-ID, Store-URL, Community-URL oder SteamDB-URL ein. Lass das Feld leer, um die Zuordnung zu entfernen.",
 		hltbNotFoundTitle: "Nicht gefunden",
 		hltbNotFoundBody: "HowLongToBeat hat kein Spiel mit dieser Nummer.",
 		notApplicableTitle: "Nicht zutreffend",
@@ -5794,6 +5808,8 @@ var editor$k = {
 	toast: {
 		hltbInvalidTitle: "Μη έγκυρο παιχνίδι HLTB",
 		hltbInvalidBody: "Εισαγάγετε αριθμό παιχνιδιού HowLongToBeat ή σύνδεσμο σελίδας παιχνιδιού.",
+		steamAppIdInvalidTitle: "Μη έγκυρο Steam App ID",
+		steamAppIdInvalidBody: "Εισαγάγετε Steam App ID, URL καταστήματος, URL κοινότητας ή URL SteamDB. Αφήστε το πεδίο κενό για να αφαιρέσετε την αντιστοίχιση.",
 		hltbNotFoundTitle: "Δεν βρέθηκε",
 		hltbNotFoundBody: "Το HowLongToBeat δεν έχει παιχνίδι με αυτόν τον αριθμό.",
 		notApplicableTitle: "Δεν εφαρμόζεται",
@@ -6386,6 +6402,8 @@ var editor$j = {
 	toast: {
 		hltbInvalidTitle: "Invalid HLTB game",
 		hltbInvalidBody: "Enter a HowLongToBeat game number or game page link.",
+		steamAppIdInvalidTitle: "Invalid Steam App ID",
+		steamAppIdInvalidBody: "Enter a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave the field empty to clear the match.",
 		hltbNotFoundTitle: "Not found",
 		hltbNotFoundBody: "HowLongToBeat has no game with that number.",
 		notApplicableTitle: "Not applicable",
@@ -6979,6 +6997,8 @@ var editor$i = {
 	toast: {
 		hltbInvalidTitle: "Juego de HLTB no válido",
 		hltbInvalidBody: "Introduce un número de juego de HowLongToBeat o un enlace a su página.",
+		steamAppIdInvalidTitle: "ID de aplicación de Steam no válido",
+		steamAppIdInvalidBody: "Introduce un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB. Deja el campo vacío para quitar la coincidencia.",
 		hltbNotFoundTitle: "No encontrado",
 		hltbNotFoundBody: "HowLongToBeat no tiene ningún juego con ese número.",
 		notApplicableTitle: "No aplicable",
@@ -7571,6 +7591,8 @@ var editor$h = {
 	toast: {
 		hltbInvalidTitle: "Virheellinen HLTB-peli",
 		hltbInvalidBody: "Anna HowLongToBeat-pelinumero tai pelisivun linkki.",
+		steamAppIdInvalidTitle: "Virheellinen Steam-sovellustunnus",
+		steamAppIdInvalidBody: "Anna Steam-sovellustunnus, kauppasivun URL, yhteisösivun URL tai SteamDB-URL. Jätä kenttä tyhjäksi poistaaksesi vastaavuuden.",
 		hltbNotFoundTitle: "Ei löytynyt",
 		hltbNotFoundBody: "HowLongToBeatissa ei ole peliä kyseisellä numerolla.",
 		notApplicableTitle: "Ei sovellu",
@@ -8164,6 +8186,8 @@ var editor$g = {
 	toast: {
 		hltbInvalidTitle: "Jeu HLTB invalide",
 		hltbInvalidBody: "Saisissez un numéro de jeu HowLongToBeat ou un lien vers sa page.",
+		steamAppIdInvalidTitle: "ID d'application Steam invalide",
+		steamAppIdInvalidBody: "Saisissez un ID d'application Steam, une URL de la boutique, de la communauté ou de SteamDB. Laissez le champ vide pour supprimer la correspondance.",
 		hltbNotFoundTitle: "Introuvable",
 		hltbNotFoundBody: "HowLongToBeat n'a aucun jeu avec ce numéro.",
 		notApplicableTitle: "Non applicable",
@@ -8757,6 +8781,8 @@ var editor$f = {
 	toast: {
 		hltbInvalidTitle: "Gioco HLTB non valido",
 		hltbInvalidBody: "Inserisci un numero di gioco HowLongToBeat o un link a una pagina di gioco.",
+		steamAppIdInvalidTitle: "ID applicazione Steam non valido",
+		steamAppIdInvalidBody: "Inserisci un ID applicazione Steam, un URL del negozio, della community o di SteamDB. Lascia il campo vuoto per rimuovere la corrispondenza.",
 		hltbNotFoundTitle: "Non trovato",
 		hltbNotFoundBody: "HowLongToBeat non ha nessun gioco con quel numero.",
 		notApplicableTitle: "Non applicabile",
@@ -9348,6 +9374,8 @@ var editor$e = {
 	toast: {
 		hltbInvalidTitle: "無効な HLTB ゲーム",
 		hltbInvalidBody: "HowLongToBeat のゲーム番号またはゲームページのリンクを入力してください。",
+		steamAppIdInvalidTitle: "無効な Steam アプリ ID",
+		steamAppIdInvalidBody: "Steam アプリ ID、ストア URL、コミュニティ URL、SteamDB URL のいずれかを入力してください。空欄にすると一致を解除します。",
 		hltbNotFoundTitle: "見つかりません",
 		hltbNotFoundBody: "その番号のゲームは HowLongToBeat にありません。",
 		notApplicableTitle: "該当なし",
@@ -9940,6 +9968,8 @@ var editor$d = {
 	toast: {
 		hltbInvalidTitle: "არასწორი HLTB თამაში",
 		hltbInvalidBody: "შეიყვანეთ HowLongToBeat-ის თამაშის ნომერი ან თამაშის გვერდის ბმული.",
+		steamAppIdInvalidTitle: "არასწორი Steam App ID",
+		steamAppIdInvalidBody: "შეიყვანეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ველი ცარიელი შესაბამისობის მოსაშორებლად.",
 		hltbNotFoundTitle: "ვერ მოიძებნა",
 		hltbNotFoundBody: "HowLongToBeat-ში ამ ნომრის თამაში არ არის.",
 		notApplicableTitle: "არ ვრცელდება",
@@ -10531,6 +10561,8 @@ var editor$c = {
 	toast: {
 		hltbInvalidTitle: "잘못된 HLTB 게임",
 		hltbInvalidBody: "HowLongToBeat 게임 번호 또는 게임 페이지 링크를 입력하세요.",
+		steamAppIdInvalidTitle: "잘못된 Steam 앱 ID",
+		steamAppIdInvalidBody: "Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 입력하세요. 필드를 비워 두면 일치를 해제합니다.",
 		hltbNotFoundTitle: "찾을 수 없음",
 		hltbNotFoundBody: "HowLongToBeat에 해당 번호의 게임이 없습니다.",
 		notApplicableTitle: "해당 없음",
@@ -11123,6 +11155,8 @@ var editor$b = {
 	toast: {
 		hltbInvalidTitle: "Ongeldige HLTB-game",
 		hltbInvalidBody: "Voer een HowLongToBeat-gamenummer of link naar de spelpagina in.",
+		steamAppIdInvalidTitle: "Ongeldige Steam-app-ID",
+		steamAppIdInvalidBody: "Voer een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL in. Laat het veld leeg om de koppeling te verwijderen.",
 		hltbNotFoundTitle: "Niet gevonden",
 		hltbNotFoundBody: "HowLongToBeat heeft geen game met dat nummer.",
 		notApplicableTitle: "Niet van toepassing",
@@ -11717,6 +11751,8 @@ var editor$a = {
 	toast: {
 		hltbInvalidTitle: "Nieprawidłowa gra HLTB",
 		hltbInvalidBody: "Wpisz numer gry HowLongToBeat lub link do strony gry.",
+		steamAppIdInvalidTitle: "Nieprawidłowy identyfikator aplikacji Steam",
+		steamAppIdInvalidBody: "Wpisz identyfikator aplikacji Steam, adres URL sklepu, społeczności lub SteamDB. Pozostaw pole puste, aby usunąć dopasowanie.",
 		hltbNotFoundTitle: "Nie znaleziono",
 		hltbNotFoundBody: "HowLongToBeat nie ma gry o tym numerze.",
 		notApplicableTitle: "Nie dotyczy",
@@ -12310,6 +12346,8 @@ var editor$9 = {
 	toast: {
 		hltbInvalidTitle: "Jogo do HLTB inválido",
 		hltbInvalidBody: "Informe o número ou o link da página do jogo no HowLongToBeat.",
+		steamAppIdInvalidTitle: "ID de aplicativo Steam inválido",
+		steamAppIdInvalidBody: "Informe um ID de aplicativo Steam, URL da loja, da comunidade ou do SteamDB. Deixe o campo vazio para remover a correspondência.",
 		hltbNotFoundTitle: "Não encontrado",
 		hltbNotFoundBody: "O HowLongToBeat não tem nenhum jogo com esse número.",
 		notApplicableTitle: "Não aplicável",
@@ -12903,6 +12941,8 @@ var editor$8 = {
 	toast: {
 		hltbInvalidTitle: "Jogo do HLTB inválido",
 		hltbInvalidBody: "Introduza o número ou a ligação da página do jogo no HowLongToBeat.",
+		steamAppIdInvalidTitle: "ID de aplicação Steam inválido",
+		steamAppIdInvalidBody: "Introduza um ID de aplicação Steam, URL da loja, da comunidade ou do SteamDB. Deixe o campo vazio para remover a correspondência.",
 		hltbNotFoundTitle: "Não encontrado",
 		hltbNotFoundBody: "O HowLongToBeat não tem nenhum jogo com esse número.",
 		notApplicableTitle: "Não aplicável",
@@ -13496,6 +13536,8 @@ var editor$7 = {
 	toast: {
 		hltbInvalidTitle: "Joc HLTB nevalid",
 		hltbInvalidBody: "Introdu un număr de joc HowLongToBeat sau un link către pagina jocului.",
+		steamAppIdInvalidTitle: "ID de aplicație Steam nevalid",
+		steamAppIdInvalidBody: "Introdu un ID de aplicație Steam, un URL de magazin, de comunitate sau SteamDB. Lasă câmpul gol pentru a elimina potrivirea.",
 		hltbNotFoundTitle: "Nu a fost găsit",
 		hltbNotFoundBody: "HowLongToBeat nu are niciun joc cu acel număr.",
 		notApplicableTitle: "Nu se aplică",
@@ -14090,6 +14132,8 @@ var editor$6 = {
 	toast: {
 		hltbInvalidTitle: "Недопустимая игра HLTB",
 		hltbInvalidBody: "Введите номер игры HowLongToBeat или ссылку на страницу игры.",
+		steamAppIdInvalidTitle: "Неверный Steam App ID",
+		steamAppIdInvalidBody: "Введите Steam App ID, ссылку на магазин, сообщество или SteamDB. Оставьте поле пустым, чтобы снять совпадение.",
 		hltbNotFoundTitle: "Не найдено",
 		hltbNotFoundBody: "В HowLongToBeat нет игры с таким номером.",
 		notApplicableTitle: "Неприменимо",
@@ -14682,6 +14726,8 @@ var editor$5 = {
 	toast: {
 		hltbInvalidTitle: "Lojë HLTB e pavlefshme",
 		hltbInvalidBody: "Shkruaj një numër loje në HowLongToBeat ose një lidhje faqeje loje.",
+		steamAppIdInvalidTitle: "Steam App ID i pavlefshëm",
+		steamAppIdInvalidBody: "Shkruaj një Steam App ID, URL dyqani, URL komuniteti ose URL SteamDB. Lëre fushën bosh për të hequr përputhjen.",
 		hltbNotFoundTitle: "Nuk u gjet",
 		hltbNotFoundBody: "HowLongToBeat nuk ka lojë me atë numër.",
 		notApplicableTitle: "Nuk zbatohet",
@@ -15274,6 +15320,8 @@ var editor$4 = {
 	toast: {
 		hltbInvalidTitle: "Ogiltigt HLTB-spel",
 		hltbInvalidBody: "Ange ett HowLongToBeat-spelnummer eller en länk till spelsidan.",
+		steamAppIdInvalidTitle: "Ogiltigt Steam-app-ID",
+		steamAppIdInvalidBody: "Ange ett Steam-app-ID, butiks-URL, community-URL eller SteamDB-URL. Lämna fältet tomt för att ta bort matchningen.",
 		hltbNotFoundTitle: "Hittades inte",
 		hltbNotFoundBody: "HowLongToBeat har inget spel med det numret.",
 		notApplicableTitle: "Ej tillämpligt",
@@ -15866,6 +15914,8 @@ var editor$3 = {
 	toast: {
 		hltbInvalidTitle: "Geçersiz HLTB oyunu",
 		hltbInvalidBody: "Bir HowLongToBeat oyun numarası veya oyun sayfası bağlantısı girin.",
+		steamAppIdInvalidTitle: "Geçersiz Steam uygulama kimliği",
+		steamAppIdInvalidBody: "Bir Steam uygulama kimliği, mağaza URL'si, topluluk URL'si veya SteamDB URL'si girin. Eşleşmeyi kaldırmak için alanı boş bırakın.",
 		hltbNotFoundTitle: "Bulunamadı",
 		hltbNotFoundBody: "HowLongToBeat'te bu numaraya sahip bir oyun yok.",
 		notApplicableTitle: "Uygulanamaz",
@@ -16460,6 +16510,8 @@ var editor$2 = {
 	toast: {
 		hltbInvalidTitle: "Неприпустима гра HLTB",
 		hltbInvalidBody: "Введіть номер гри HowLongToBeat або посилання на сторінку гри.",
+		steamAppIdInvalidTitle: "Неприпустимий Steam App ID",
+		steamAppIdInvalidBody: "Введіть Steam App ID, посилання на магазин, спільноту або SteamDB. Залиште поле порожнім, щоб зняти збіг.",
 		hltbNotFoundTitle: "Не знайдено",
 		hltbNotFoundBody: "У HowLongToBeat немає гри з таким номером.",
 		notApplicableTitle: "Не застосовно",
@@ -17051,6 +17103,8 @@ var editor$1 = {
 	toast: {
 		hltbInvalidTitle: "HLTB 游戏无效",
 		hltbInvalidBody: "请输入 HowLongToBeat 游戏编号或游戏页面链接。",
+		steamAppIdInvalidTitle: "Steam 应用 ID 无效",
+		steamAppIdInvalidBody: "请输入 Steam 应用 ID、商店链接、社区链接或 SteamDB 链接。留空可清除匹配。",
 		hltbNotFoundTitle: "未找到",
 		hltbNotFoundBody: "HowLongToBeat 中没有该编号的游戏。",
 		notApplicableTitle: "不适用",
@@ -17642,6 +17696,8 @@ var editor = {
 	toast: {
 		hltbInvalidTitle: "HLTB 遊戲無效",
 		hltbInvalidBody: "請輸入 HowLongToBeat 遊戲編號或遊戲頁面連結。",
+		steamAppIdInvalidTitle: "Steam 應用程式 ID 無效",
+		steamAppIdInvalidBody: "請輸入 Steam 應用程式 ID、商店連結、社群連結或 SteamDB 連結。留空可清除符合項。",
 		hltbNotFoundTitle: "找不到",
 		hltbNotFoundBody: "HowLongToBeat 中沒有該編號的遊戲。",
 		notApplicableTitle: "不適用",
@@ -35892,6 +35948,8 @@ const MetadataPage = () => {
         // The editor stays mounted across games, so its search belongs to one entry (#43).
         setQuery(appName(appId));
         setResults([]);
+        // An unsaved HLTB draft belongs to the game it was typed on.
+        setHltbIdDraft(null);
     }, [appId]);
     SP_REACT.useEffect(() => {
         const steamAppId = Number(metadata.steam_appid);
@@ -36022,6 +36080,17 @@ const MetadataPage = () => {
         }
         return { id, name: found.game_name };
     };
+    // Undefined means the text is not a usable Steam identity; the user has been told why.
+    const checkSteamAppIdText = (text) => {
+        if (!text.trim())
+            return null;
+        const id = parseSteamAppId(text);
+        if (!id) {
+            toastWarn(t("editor.toast.steamAppIdInvalidTitle"), t("editor.toast.steamAppIdInvalidBody"));
+            return undefined;
+        }
+        return id;
+    };
     /** Explicit user action: fetch Steam's description/genres in the Steam client language. */
     const refetchSteamText = async () => {
         if (!nonSteam) {
@@ -36116,6 +36185,11 @@ const MetadataPage = () => {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
             return;
         }
+        const steamAppId = explicitSteamAppId === undefined
+            ? checkSteamAppIdText(steamAppIdText)
+            : explicitSteamAppId;
+        if (steamAppId === undefined)
+            return;
         if (!beginBusy(requestedEntry))
             return;
         const saveBaselineMetadata = metadataRef.current;
@@ -36127,7 +36201,7 @@ const MetadataPage = () => {
             steamAppIdText: steamAppIdTextRef.current,
         };
         try {
-            const parsed = normalizedSteamAppId(explicitSteamAppId === undefined ? parseSteamAppId(steamAppIdText) : explicitSteamAppId);
+            const parsed = normalizedSteamAppId(steamAppId);
             const savedSteamAppId = normalizedSteamAppId(normalizedMetadata.steam_appid);
             const steamAppIdChanged = parsed !== savedSteamAppId;
             const next = {
@@ -36520,7 +36594,10 @@ const MetadataPage = () => {
                                     deck_compat_override: compatibilityStatusValue(option.data),
                                 })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityHelp") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityChoices") })] })] }) })) : null, SP_JSX.jsx(DFL.PanelSection, { title: t("editor.steamInfoFields"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { className: "decky-metadata-editor__category-grid", style: editorCategoryGridStyle, children: Object.keys(CATEGORY_LABELS).map((category) => (SP_JSX.jsx(DFL.ToggleField, { highlightOnFocus: false, bottomSeparator: "none", label: categoryLabel(Number(category), t), checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category))) }) }) }), nonSteam ? (SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.hltbGame"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.hltbHelp") }), hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used
                                             ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                                            : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }) })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => setHltbIdDraft(e.target.value), style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: t("editor.hltbApply") })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.steamAppId"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
+                                            : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }) })) : null, SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => {
+                                                    markFormEdited();
+                                                    setHltbIdDraft(e.target.value);
+                                                }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorAppIdButtonStyle, children: t("editor.hltbApply") })] })] }) }), SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] })) : null, SP_JSX.jsxs(DFL.PanelSection, { title: t("editor.steamAppId"), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), SP_JSX.jsxs("div", { style: editorAppIdRowStyle, children: [SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: steamAppIdText, onChange: (e) => {
                                                     markFormEdited();
                                                     setSteamAppIdInput(e.target.value);
                                                 }, style: fieldStyle }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorAppIdButtonStyle, children: t("editor.steamAppIdApply") })] })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: refetchSteamText, style: editorAppIdButtonStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })] }) })) : null] }), SP_JSX.jsx(DFL.PanelSection, { title: t("editor.shortcutName"), children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx(DFL.Field, { className: `${editorFocusTargetClassName} decky-metadata-editor__shortcut-name`, focusable: true, highlightOnFocus: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.current", {
